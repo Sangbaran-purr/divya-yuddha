@@ -16,7 +16,9 @@ Solo developer (Sangbaran, Creative Director) with Claude as the engineering tea
 - `src/test.js` — simulation harness: 500 AI-vs-AI matches + rule invariants. RUN THIS AFTER EVERY ENGINE CHANGE.
 - `index.html` — playable prototype (engine is inlined by a build step; keep src/engine.js canonical)
 - `docs/DESIGN_DECISIONS.md` — QA log, approved art, open rulings. Update when decisions are made.
-- `assets/cards/` — final framed card PNGs, naming: `{Faction}_{Type}_{Name}_P{power}_r{Rarity}_png.png`
+- `assets/cards/` — final framed card PNGs, naming: `{Faction}_{Type}_{Name}_P{printedPower}_r{RarityName}_png.png`
+  - Faction is the plural (`Devas`, `Asuras`, `Vanaras`, `Nagas`); Type is Title-cased (`Hero`/`Unit`/`Astra`/`Mantra`/`Artifact`); Name strips all spaces to CamelCase (no `%20`); power is the card's **printed/base** power; Rarity is the **full name** (`Legendary`/`Mythic`/`Epic`/`Rare`/`Uncommon`/`Common`).
+  - Examples: `Devas_Hero_Indra_P7_rLegendary_png.png`, `Devas_Unit_SuryaDev_P6_rEpic_png.png`, `Devas_Unit_AshwiniKumars_P3_rUncommon_png.png`
 - The full GDD v2.0 PDF is the design authority (in the owner's Claude Project / Google Drive)
 
 ## Engine architecture rules

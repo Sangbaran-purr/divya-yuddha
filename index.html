@@ -33,6 +33,11 @@ header{ padding:8px 12px; border-bottom:1px solid var(--gold-dim); display:flex;
 .bc .pw.buffed{ color:#7fd88a; } .bc .pw.hurt{ color:#e06050; }
 .bc .badges{ position:absolute; top:2px; right:3px; font-size:9px; line-height:1.1; text-align:right; }
 .bc.hero{ background:#221a08; }
+.bc .art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:5px; z-index:0; }
+.bc.has-art .nm{ display:none; }
+.bc .pw{ position:relative; z-index:2; }
+.bc.has-art .pw{ text-shadow:0 1px 2px #000, 0 0 4px #000; }
+.bc .badges{ z-index:2; }
 .bc.ghostc{ opacity:.55; border-style:dashed; }
 .bc.targetable{ outline:2px solid #e0b040; outline-offset:1px; cursor:pointer; animation:pulse 1s infinite alternate; }
 @keyframes pulse{ from{outline-color:#e0b040} to{outline-color:#fff0c0} }
@@ -57,7 +62,10 @@ header{ padding:8px 12px; border-bottom:1px solid var(--gold-dim); display:flex;
 .hc .ty{ font-size:8px; letter-spacing:1px; color:var(--ink-dim); font-family:Cinzel,serif; text-transform:uppercase; margin:1px 0 3px; }
 .hc .fx{ font-size:8.5px; line-height:1.3; color:#b8ab88; flex:1; overflow:hidden; }
 .hc .pw{ position:absolute; bottom:4px; right:6px; font-family:Cinzel,serif; font-size:15px; font-weight:700; color:var(--gold); }
-.hc .lockicon{ position:absolute; top:3px; right:5px; font-size:11px; }
+.hc .lockicon{ position:absolute; top:3px; right:5px; font-size:11px; z-index:2; }
+.hc .art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:6px; z-index:0; }
+.hc.has-art .nm, .hc.has-art .ty, .hc.has-art .fx{ display:none; }
+.hc.has-art .pw{ z-index:2; text-shadow:0 1px 3px #000, 0 0 4px #000; }
 
 #controls{ display:flex; gap:8px; padding:4px 10px 12px; align-items:center; }
 button{ font-family:Cinzel,serif; letter-spacing:1px; }
@@ -529,6 +537,25 @@ function startGame(){
   $('logwrap').innerHTML=''; render(); pump();
 }
 
+/* Real card art lives in assets/cards/, named per the GDD convention:
+   Devas_{Type}_{Name}_P{printedPower}_r{RarityName}_png.png
+   e.g. Devas_Hero_Indra_P7_rLegendary_png.png, Devas_Unit_SuryaDev_P6_rEpic_png.png
+   Name strips spaces (CamelCase), power is the printed/base power, rarity is the full name.
+   We attempt to load it and only reveal it once it actually loads; on error the
+   text-design card stays visible, so cards without art yet fall back gracefully. */
+function cardArtSrc(c){
+  const type = c.t.charAt(0).toUpperCase()+c.t.slice(1);
+  const name = c.n.replace(/ /g,'');
+  return `assets/cards/Devas_${type}_${name}_P${c.base}_r${RARITY_NAME[c.r]}_png.png`;
+}
+function attachArt(el, c){
+  if (c.ghost || c.id==='ghost') return;            // Yama tokens have no art
+  const img=new Image();
+  img.className='art'; img.alt=c.n;
+  img.onload=()=>{ el.insertBefore(img, el.firstChild); el.classList.add('has-art'); };
+  img.src=cardArtSrc(c);
+}
+
 function boardCard(c, pi, targetSet){
   const d=document.createElement('div');
   d.className='bc'+(c.t==='hero'?' hero':'')+(c.ghost?' ghostc':'');
@@ -537,6 +564,7 @@ function boardCard(c, pi, targetSet){
   let pwc=''; if(!c.ghost){ if(ep>c.base) pwc='buffed'; else if(c.power<c.base) pwc='hurt'; }
   d.innerHTML=`<div class="nm">${c.n}</div><div class="badges">${sh?'🛡':''}</div><div class="pw ${pwc}">${ep}</div>`;
   d.style.borderColor = RARITY_COLOR[c.r]||'#444';
+  attachArt(d, c);
   if (targetSet && targetSet.has(c.uid)){ d.classList.add('targetable'); d.onclick=()=>resolveTarget(c.uid); }
   return d;
 }
@@ -575,6 +603,7 @@ function render(targetSet){
     d.className='hc '+(ok?'playable':'dead');
     d.style.borderColor=RARITY_COLOR[c.r]||'#555';
     d.innerHTML=`<div class="nm">${c.n}</div><div class="ty">${TYPE_ICON[c.t]} ${c.t} · ${RARITY_NAME[c.r]}</div><div class="fx">${c.txt}</div>${c.p>0?`<div class="pw">${c.p}</div>`:''}${c.lockedRound===G.round?'<div class="lockicon">🔒</div>':''}`;
+    attachArt(d, c);
     if (ok) d.onclick=()=>tryPlay(i);
     hand.appendChild(d);
   });
