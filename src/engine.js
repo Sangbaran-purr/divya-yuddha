@@ -58,7 +58,7 @@ function newGame(opts={}){
     roundHistory:[],
   };
   g.firstThisRound = g.turn;
-  log(g, `Coin flip \u2014 ${g.players[g.turn].name} plays first.`);
+  { const nm=g.players[g.turn].name; log(g, `Coin flip \u2014 ${nm} ${nm==='You'?'play':'plays'} first.`); }
   return g;
 }
 

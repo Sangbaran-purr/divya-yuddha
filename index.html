@@ -6,117 +6,273 @@
 <title>Divya Yuddha — Prototype v0.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
-:root{ --gold:#C9A84C; --gold-dim:#8a7434; --bg:#0d0a05; --panel:#171208; --panel2:#1e1810; --ink:#e8ddc0; --ink-dim:#9a8d6a; }
+:root{
+  --gold:#E8C874; --gold-2:#C9A84C; --gold-dim:#8a7434;
+  --ink:#e8ddc0; --ink-dim:#cbbd96;
+  --panel:#201808; --line:#3a2e14; --hi:#F0D080;
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%}
-body{ background:#080604; color:var(--ink); font-family:'Crimson Pro',Georgia,serif; display:flex; justify-content:center; }
-#app{ width:100%; max-width:520px; min-height:100vh; background:var(--bg); display:flex; flex-direction:column; border-left:1px solid #241c0e; border-right:1px solid #241c0e; }
+body{
+  color:var(--ink); font-family:'Crimson Pro',Georgia,serif; display:flex; justify-content:center;
+  background:
+    radial-gradient(120% 78% at 50% 0%, rgba(74,52,16,.20), transparent 62%),
+    linear-gradient(#16110a, #0a0603);
+  background-attachment:fixed;
+}
+/* CSS-only mandala texture */
+body::before{
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0; opacity:.05;
+  background:repeating-radial-gradient(circle at 50% 40%, rgba(201,168,76,.65) 0 1px, transparent 1px 26px);
+  -webkit-mask:radial-gradient(circle at 50% 40%, #000, transparent 72%);
+  mask:radial-gradient(circle at 50% 40%, #000, transparent 72%);
+}
+#app{ position:relative; z-index:1; width:100%; max-width:520px; min-height:100vh; min-height:100dvh;
+  display:flex; flex-direction:column; overflow:hidden;
+  border-left:1px solid var(--line); border-right:1px solid var(--line);
+  background:linear-gradient(rgba(20,15,8,.72),rgba(11,7,4,.72)); }
 
-header{ padding:8px 12px; border-bottom:1px solid var(--gold-dim); display:flex; align-items:center; justify-content:space-between; background:linear-gradient(#141008,#0d0a05); }
+header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; align-items:center; justify-content:space-between; background:linear-gradient(#1b140a,#120d06); position:relative; z-index:6; }
 .title{ font-family:Cinzel,serif; font-size:14px; letter-spacing:2px; color:var(--gold); font-weight:600; }
 .title small{ display:block; font-size:9px; letter-spacing:3px; color:var(--ink-dim); font-weight:400; }
 .roundbox{ text-align:right; font-family:Cinzel,serif; font-size:11px; color:var(--ink-dim); }
 .pips{ letter-spacing:3px; font-size:13px; }
-.pip-w{ color:var(--gold); } .pip-l{ color:#3a3020; }
+.pip-w{ color:var(--gold); } .pip-l{ color:#5a4a28; }
 
-.zone{ padding:6px 10px; }
-.zlabel{ font-family:Cinzel,serif; font-size:9px; letter-spacing:2px; color:var(--ink-dim); display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; }
-.total{ font-family:Cinzel,serif; font-size:18px; font-weight:700; color:var(--gold); }
-.total.losing{ color:#7a6848; }
-.row{ display:flex; gap:5px; overflow-x:auto; min-height:64px; padding:3px 0; align-items:stretch; }
-.row.hero-row{ min-height:64px; }
-.row::-webkit-scrollbar{ height:3px; } .row::-webkit-scrollbar-thumb{ background:#33280f; }
+/* battlefield */
+#field{ position:relative; flex:1; display:flex; flex-direction:column; overflow:hidden; }
+#embers{ position:absolute; inset:0; pointer-events:none; z-index:2; overflow:hidden; }
+.ember{ position:absolute; bottom:-8px; border-radius:50%; opacity:0;
+  background:radial-gradient(circle, #ffe9a8, #C9A84C 60%, transparent 72%);
+  animation:emberRise linear infinite; }
+@keyframes emberRise{
+  0%{ transform:translateY(0) scale(.8); opacity:0; }
+  12%{ opacity:.7; } 85%{ opacity:.45; }
+  100%{ transform:translateY(-44vh) scale(1.1); opacity:0; }
+}
+.half{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column; z-index:3; overflow:hidden; }
+.half.opp{ background:radial-gradient(130% 92% at 50% -12%, rgba(122,26,22,.34), transparent 62%); }
+.half.me{  background:radial-gradient(130% 92% at 50% 112%, rgba(150,112,36,.30), transparent 62%); }
+/* thin sticky zone header */
+.zhead{ flex:0 0 auto; position:sticky; top:0; z-index:4; padding:3px 70px 3px 10px;
+  font-family:Cinzel,serif; font-size:9px; letter-spacing:2px; color:var(--ink-dim);
+  background:linear-gradient(#160f07, rgba(20,14,7,.35)); border-bottom:1px solid #241c0e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* rows scroll WITHIN their half — never grow over another zone */
+.zbody{ flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:2px; padding:2px 70px 2px 8px; scrollbar-width:none; }
+.zbody::-webkit-scrollbar{ display:none; }
+.half.opp .zbody{ justify-content:flex-end; }   /* opponent cards hug the divider */
+.half.me  .zbody{ justify-content:flex-start; }  /* my cards hug the divider */
+/* only when minis can't shrink to fit (very short screens): scroll within the zone with a fade affordance */
+.half.scrollzone .zbody{ justify-content:flex-start; -webkit-mask:linear-gradient(#000 82%, transparent); mask:linear-gradient(#000 82%, transparent); }
 
-.bc{ flex:0 0 auto; width:64px; min-height:60px; background:var(--panel2); border:1.5px solid #444; border-radius:6px; padding:3px 4px; position:relative; display:flex; flex-direction:column; justify-content:space-between; cursor:default; }
-.bc .nm{ font-family:Cinzel,serif; font-size:8px; line-height:1.15; color:var(--ink); font-weight:600; }
-.bc .pw{ font-family:Cinzel,serif; font-size:16px; font-weight:700; color:var(--gold); line-height:1; }
-.bc .pw.buffed{ color:#7fd88a; } .bc .pw.hurt{ color:#e06050; }
-.bc .badges{ position:absolute; top:2px; right:3px; font-size:9px; line-height:1.1; text-align:right; }
-.bc.hero{ background:#221a08; }
-.bc .art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:5px; z-index:0; }
-.bc.has-art .nm{ display:none; }
-.bc .pw{ position:relative; z-index:2; }
-.bc.has-art .pw{ text-shadow:0 1px 2px #000, 0 0 4px #000; }
-.bc .badges{ z-index:2; }
-.bc.ghostc{ opacity:.55; border-style:dashed; }
-.bc.targetable{ outline:2px solid #e0b040; outline-offset:1px; cursor:pointer; animation:pulse 1s infinite alternate; }
-@keyframes pulse{ from{outline-color:#e0b040} to{outline-color:#fff0c0} }
-.slot-empty{ flex:0 0 auto; width:64px; min-height:60px; border:1px dashed #302610; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#3a2f16; font-size:9px; font-family:Cinzel,serif; }
+#divider{ position:relative; height:2px; z-index:4; overflow:hidden;
+  background:linear-gradient(90deg, transparent, var(--gold-dim) 12%, var(--gold) 50%, var(--gold-dim) 88%, transparent);
+  box-shadow:0 0 8px rgba(232,200,116,.4); }
+#divider::after{ content:''; position:absolute; inset:0;
+  background:linear-gradient(90deg, transparent 42%, rgba(255,244,200,.95) 50%, transparent 58%);
+  background-size:250% 100%; animation:shimmer 4.5s linear infinite; }
+@keyframes shimmer{ 0%{ background-position:160% 0; } 100%{ background-position:-160% 0; } }
 
-.art-slot{ display:flex; gap:6px; align-items:center; margin-top:2px; }
-.art-chip{ font-size:10px; font-family:Cinzel,serif; color:var(--gold); border:1px solid var(--gold-dim); border-radius:4px; padding:2px 7px; background:#1a1408; }
-.art-none{ color:#4a3d1e; border-color:#2c230f; }
+/* SCORE HUD — fixed on the right edge of the battlefield column, above everything */
+#hudwrap{ position:fixed; inset:0; z-index:95; display:flex; justify-content:center; pointer-events:none; }
+#hudcol{ position:relative; width:100%; max-width:520px; }
+#hud{ position:absolute; right:5px; top:50%; transform:translateY(-50%); width:58px; display:flex; flex-direction:column; align-items:center; gap:6px; pointer-events:auto; }
+.hud-plaque{ width:56px; height:50px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  background:radial-gradient(circle at 50% 32%, #241a0a, #0e0904); border:1px solid var(--gold);
+  box-shadow:0 2px 8px rgba(0,0,0,.65); transition:box-shadow .25s; }
+.hud-total{ font-family:Cinzel,serif; font-size:30px; font-weight:700; color:var(--hi); line-height:1; text-shadow:0 1px 0 #140d04; }
+.hud-plaque.leading{ border-color:#ffe9a8; box-shadow:0 0 14px rgba(240,208,128,.6), 0 2px 8px rgba(0,0,0,.65); }
+.hud-plaque.pulse{ animation:hudPulse .5s ease-out; }
+@keyframes hudPulse{ 0%{ transform:scale(1); } 42%{ transform:scale(1.18); } 100%{ transform:scale(1); } }
+.hud-pips{ font-size:12px; letter-spacing:1px; text-align:center; line-height:1.1; }
 
-#logwrap{ flex:1; min-height:70px; max-height:120px; overflow-y:auto; background:#0a0803; border-top:1px solid #241c0e; border-bottom:1px solid #241c0e; padding:6px 12px; font-size:12px; line-height:1.5; color:var(--ink-dim); }
-#logwrap .me{ color:#d8c890; } #logwrap .foe{ color:#b09a80; } #logwrap .sys{ color:#8a7434; font-style:italic; }
-#logwrap::-webkit-scrollbar{ width:4px; } #logwrap::-webkit-scrollbar-thumb{ background:#33280f; }
+.row{ display:flex; gap:6px; overflow-x:auto; overflow-y:visible; min-height:0; padding:3px 0; align-items:center; scrollbar-width:none; }
+.row.empty{ min-height:0; }
+.row::-webkit-scrollbar{ display:none; }
 
-#handwrap{ padding:6px 10px 4px; }
-#hand{ display:flex; gap:6px; overflow-x:auto; padding:4px 0 6px; }
-#hand::-webkit-scrollbar{ height:4px; } #hand::-webkit-scrollbar-thumb{ background:#4a3a14; }
-.hc{ flex:0 0 auto; width:88px; height:118px; background:linear-gradient(#201808,#151006); border:2px solid #555; border-radius:8px; padding:5px 6px; display:flex; flex-direction:column; cursor:pointer; transition:transform .12s; position:relative; }
-.hc:active{ transform:scale(.96); }
-.hc.playable{ box-shadow:0 0 0 1px rgba(201,168,76,.25), 0 4px 10px rgba(0,0,0,.5); }
-.hc.dead{ opacity:.38; cursor:not-allowed; }
-.hc .nm{ font-family:Cinzel,serif; font-size:9px; font-weight:700; color:var(--gold); line-height:1.2; min-height:22px; }
-.hc .ty{ font-size:8px; letter-spacing:1px; color:var(--ink-dim); font-family:Cinzel,serif; text-transform:uppercase; margin:1px 0 3px; }
-.hc .fx{ font-size:8.5px; line-height:1.3; color:#b8ab88; flex:1; overflow:hidden; }
-.hc .pw{ position:absolute; bottom:4px; right:6px; font-family:Cinzel,serif; font-size:15px; font-weight:700; color:var(--gold); }
-.hc .lockicon{ position:absolute; top:3px; right:5px; font-size:11px; z-index:2; }
-.hc .art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; border-radius:6px; z-index:0; }
-.hc.has-art .nm, .hc.has-art .ty, .hc.has-art .fx{ display:none; }
-.hc.has-art .pw{ z-index:2; text-shadow:0 1px 3px #000, 0 0 4px #000; }
+/* board mini — art-first, no name strip */
+.bc{ flex:0 0 auto; height:var(--mini-h,90px); width:calc(var(--mini-h,90px)*0.75); background:var(--panel); border:1px solid var(--line); border-radius:7px; position:relative; overflow:hidden; cursor:pointer; }
+.bc .art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+.bc .mini-name{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:3px; z-index:1;
+  font-family:Cinzel,serif; font-size:9px; font-weight:600; line-height:1.15; color:var(--ink); }
+.bc.has-art .mini-name{ display:none; }
+.bc.hero{ border-color:var(--gold-dim); }
+.bc.ghostc{ opacity:.6; border-style:dashed; }
+.shieldbadge{ position:absolute; top:2px; right:3px; font-size:12px; z-index:3; filter:drop-shadow(0 1px 1px #000); }
+.medallion{ position:absolute; right:2px; bottom:2px; width:23px; height:23px; border-radius:50%; z-index:3;
+  background:radial-gradient(circle at 40% 34%, #2b2110, #120c04); border:1px solid var(--gold);
+  box-shadow:0 1px 3px rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center;
+  font-family:Cinzel,serif; font-size:13px; font-weight:700; color:var(--hi); }
+.medallion.buffed{ border-color:#5fd06f; box-shadow:0 0 7px rgba(95,208,111,.55); }
+.medallion.hurt{ border-color:#e05a4a; box-shadow:0 0 7px rgba(224,90,74,.55); }
+.medallion .mark{ position:absolute; top:-9px; right:-3px; font-size:9px; }
+.medallion.buffed .mark{ color:#5fd06f; } .medallion.hurt .mark{ color:#e05a4a; }
+.bc.targetable{ outline:2px solid var(--gold); outline-offset:1px; z-index:6; animation:pulse 1s infinite alternate; }
+@keyframes pulse{ from{ outline-color:#e0b040; box-shadow:0 0 6px #c9a84c; } to{ outline-color:#fff0c0; box-shadow:0 0 15px #ffe9a8; } }
+.bc.landing{ animation:land .45s ease-out; }
+@keyframes land{ 0%{ transform:scale(.82); box-shadow:0 0 0 0 rgba(255,233,168,.9);} 45%{ box-shadow:0 0 0 4px rgba(255,233,168,.75);} 100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(255,233,168,0);} }
+.slot-empty{ flex:1; min-height:24px; display:flex; align-items:center; justify-content:center; color:#6a5730; opacity:.55; font-size:13px; }
 
-#controls{ display:flex; gap:8px; padding:4px 10px 12px; align-items:center; }
+.art-slot{ display:flex; gap:6px; align-items:center; justify-content:center; min-height:0; }
+.art-chip{ font-size:10px; font-family:Cinzel,serif; color:var(--gold); border:1px solid var(--gold-dim); border-radius:4px; padding:2px 8px; background:#1a1408; }
+
+/* floating combat text */
+.floater{ position:fixed; z-index:66; font-family:Cinzel,serif; font-weight:700; font-size:16px; pointer-events:none; text-shadow:0 1px 2px #000; animation:floatUp .6s ease-out forwards; }
+.floater.up{ color:#6fe07e; } .floater.down{ color:#ff6a58; }
+@keyframes floatUp{ 0%{ transform:translateY(0); opacity:0; } 22%{ opacity:1; } 100%{ transform:translateY(-26px); opacity:0; } }
+
+/* hand carousel */
+#handwrap{ position:relative; z-index:5; padding:2px 0; }
+#hand{ display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; padding:14px calc(50% - 66px) 16px; scrollbar-width:none; }
+#hand::-webkit-scrollbar{ display:none; }
+.hc{ flex:0 0 auto; width:132px; aspect-ratio:3/4; scroll-snap-align:center; position:relative; overflow:hidden;
+  background:linear-gradient(#221a0a,#140f06); border:2px solid #4a3a18; border-radius:12px; cursor:pointer;
+  transform:scale(.9); opacity:.72; transition:transform .18s ease, opacity .18s ease, box-shadow .18s ease; }
+.hc.focus{ transform:scale(1.06); opacity:1; box-shadow:0 8px 20px rgba(0,0,0,.55); border-color:var(--gold-dim); }
+.hc:active{ transform:scale(1.02); }
+.hc.dead{ filter:grayscale(.55) brightness(.78); }
+.hc .art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+.hc .cardtext{ position:absolute; inset:0; display:flex; flex-direction:column; padding:9px; z-index:1; }
+.hc.has-art .cardtext{ display:none; }
+.hc .nm{ font-family:Cinzel,serif; font-size:12px; font-weight:700; color:var(--gold); line-height:1.15; }
+.hc .ty{ font-size:8px; letter-spacing:1px; color:var(--ink-dim); font-family:Cinzel,serif; text-transform:uppercase; margin:4px 0; }
+.hc .fx{ font-size:9px; line-height:1.3; color:var(--ink-dim); flex:1; overflow:hidden; }
+.hc .pw{ position:absolute; bottom:5px; right:9px; font-family:Cinzel,serif; font-size:18px; font-weight:700; color:var(--hi); text-shadow:0 1px 2px #000; z-index:2; }
+.hc .lockicon{ position:absolute; top:5px; right:8px; font-size:13px; z-index:2; }
+/* rarity treatments — animated only on focused hand card + inspect */
+.rar-L::after{ content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:linear-gradient(115deg, transparent 42%, rgba(255,244,200,.5) 50%, transparent 58%); background-size:280% 280%; }
+.hc.focus.rar-L::after, .inspect-card.rar-L::after{ animation:legend 4s linear infinite; }
+@keyframes legend{ 0%{ background-position:170% 0; } 100%{ background-position:-170% 0; } }
+.hc.focus.rar-M, .inspect-card.rar-M{ animation:mythic 2.4s ease-in-out infinite; }
+@keyframes mythic{ 0%,100%{ box-shadow:inset 0 0 8px rgba(231,76,60,.28);} 50%{ box-shadow:inset 0 0 20px rgba(231,76,60,.6);} }
+.rar-E::before{ content:''; position:absolute; top:0; right:0; width:44%; height:44%; z-index:2; pointer-events:none;
+  background:radial-gradient(circle at 100% 0, rgba(155,89,182,.4), transparent 70%); }
+
+/* log drawer */
+#logdrawer{ position:relative; z-index:5; background:#0d0a05; border-top:1px solid var(--line); cursor:pointer; }
+.loghead{ display:flex; align-items:center; gap:8px; padding:5px 12px; font-family:Cinzel,serif; font-size:9px; letter-spacing:2px; color:var(--ink-dim); }
+.loghead #loglast{ flex:1; font-size:11px; letter-spacing:0; color:var(--ink-dim); font-style:italic; font-family:'Crimson Pro',serif; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#logtoggle{ transition:transform .25s; }
+#logdrawer.open #logtoggle{ transform:rotate(180deg); }
+#logdrawer.open #loglast{ display:none; }
+#logbody{ max-height:0; overflow-y:auto; transition:max-height .25s ease; padding:0 12px; font-size:12px; line-height:1.5; color:var(--ink-dim); }
+#logdrawer.open #logbody{ max-height:32vh; padding:2px 12px 8px; }
+#logbody .me{ color:#e8d49a; } #logbody .foe{ color:#c9a88a; } #logbody .sys{ color:#a68c3c; font-style:italic; }
+#logbody::-webkit-scrollbar{ width:4px; } #logbody::-webkit-scrollbar-thumb{ background:#33280f; }
+
+/* controls */
+#controls{ display:flex; gap:10px; align-items:center; z-index:5; position:relative;
+  padding:6px 12px calc(8px + env(safe-area-inset-bottom)); background:linear-gradient(#120d06,#0b0704); border-top:1px solid var(--line); }
 button{ font-family:Cinzel,serif; letter-spacing:1px; }
-#passbtn{ flex:1; background:#241a08; color:var(--gold); border:1.5px solid var(--gold-dim); border-radius:8px; padding:11px; font-size:13px; font-weight:700; cursor:pointer; }
-#passbtn:disabled{ opacity:.35; }
-#turnind{ font-size:11px; color:var(--ink-dim); font-family:Cinzel,serif; min-width:90px; text-align:center; }
-#turnind.you{ color:#8fd89a; } 
+#turnind{ font-size:11px; color:var(--ink-dim); font-family:Cinzel,serif; min-width:86px; text-align:center; }
+#turnind.you{ color:var(--hi); text-shadow:0 0 10px rgba(240,208,128,.6); }
+#passbtn{ flex:1; background:linear-gradient(#2a1e0a,#1d1507); color:var(--gold); border:1.5px solid var(--gold-dim); border-radius:10px; padding:13px; font-size:13px; font-weight:700; cursor:pointer; transition:transform .1s, box-shadow .15s, background .15s; }
+#passbtn:hover:not(:disabled){ background:linear-gradient(#3a2a0e,#241a08); box-shadow:0 0 12px rgba(201,168,76,.3); }
+#passbtn:active:not(:disabled){ transform:scale(.97); }
+#passbtn:disabled{ opacity:.4; cursor:default; }
 
-.overlay{ position:fixed; inset:0; background:rgba(5,3,0,.88); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
-.modal{ background:var(--panel); border:1.5px solid var(--gold-dim); border-radius:12px; padding:18px; max-width:440px; width:100%; max-height:80vh; overflow-y:auto; }
+/* round-end banner */
+#banner{ position:fixed; top:38%; left:0; right:0; z-index:70; text-align:center; pointer-events:none; }
+#banner .txt{ display:inline-block; font-family:Cinzel,serif; font-size:19px; letter-spacing:3px; font-weight:700; color:var(--hi);
+  padding:10px 26px; background:linear-gradient(90deg, transparent, rgba(40,28,10,.92), transparent);
+  border-top:1px solid var(--gold-dim); border-bottom:1px solid var(--gold-dim); text-shadow:0 0 12px rgba(240,208,128,.55); }
+@keyframes bannerSweep{ 0%{ transform:translateX(-18px); opacity:0; } 18%{ opacity:1; } 82%{ opacity:1; } 100%{ transform:translateX(18px); opacity:0; } }
+
+/* overlays */
+.overlay{ position:fixed; inset:0; background:rgba(6,4,1,.9); display:flex; align-items:center; justify-content:center; z-index:80; padding:20px; }
+.modal{ background:var(--panel); border:1px solid var(--gold-dim); border-radius:12px; padding:18px; max-width:440px; width:100%; max-height:80vh; overflow-y:auto; }
 .modal h3{ font-family:Cinzel,serif; color:var(--gold); font-size:14px; margin-bottom:10px; letter-spacing:1px; }
 .modal .opts{ display:flex; flex-wrap:wrap; gap:8px; }
-.modal .opt{ background:var(--panel2); border:1.5px solid var(--gold-dim); border-radius:8px; padding:8px 10px; cursor:pointer; min-width:100px; }
-.modal .opt .nm{ font-family:Cinzel,serif; font-size:10px; color:var(--gold); font-weight:700; }
+.modal .opt{ background:#181206; border:1px solid var(--gold-dim); border-radius:8px; padding:8px 10px; cursor:pointer; min-width:110px; }
+.modal .opt .nm{ font-family:Cinzel,serif; font-size:11px; color:var(--gold); font-weight:700; }
 .modal .opt .dt{ font-size:9px; color:var(--ink-dim); margin-top:2px; }
 .modal .cancel{ margin-top:12px; background:none; border:1px solid #3a2f16; color:var(--ink-dim); border-radius:6px; padding:7px 14px; cursor:pointer; font-size:11px; }
+
+/* inspect overlay */
+#inspect{ flex-direction:column; gap:16px; }
+.inspect-card{ position:relative; width:85vw; max-width:330px; aspect-ratio:3/4; border-radius:16px; overflow:hidden;
+  border:2px solid var(--gold-dim); background:linear-gradient(#221a0a,#140f06); box-shadow:0 14px 44px rgba(0,0,0,.65); }
+.inspect-card .art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+.inspect-card .ipw{ position:absolute; top:12px; right:15px; z-index:3; font-family:Cinzel,serif; font-size:30px; font-weight:700; color:var(--hi); text-shadow:0 1px 4px #000; }
+.inspect-card .itext{ position:absolute; left:0; right:0; bottom:0; z-index:2; padding:16px 18px; background:linear-gradient(transparent, rgba(8,5,1,.94) 42%); }
+.inspect-card:not(.has-art) .itext{ inset:0; background:linear-gradient(#221a0a,#140f06); display:flex; flex-direction:column; justify-content:flex-end; }
+.inspect-card .inm{ font-family:Cinzel,serif; font-size:19px; font-weight:700; color:var(--gold); }
+.inspect-card .isub{ font-size:12px; color:var(--ink-dim); font-style:italic; margin-bottom:6px; }
+.inspect-card .ity{ font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-dim); font-family:Cinzel,serif; margin-bottom:9px; }
+.inspect-card .ifx{ font-size:13px; line-height:1.42; color:var(--ink); }
+.inspect-actions{ display:flex; gap:14px; }
+.inspect-actions button{ padding:12px 30px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; transition:transform .1s; }
+.inspect-actions button:active{ transform:scale(.96); }
+.ibtn-play{ background:linear-gradient(#3a2a0e,#241a08); color:var(--gold); border:1.5px solid var(--gold); }
+.ibtn-cancel{ background:none; color:var(--ink-dim); border:1px solid #4a3a18; }
+.inspect-hint{ font-family:Cinzel,serif; font-size:11px; letter-spacing:2px; color:var(--ink-dim); }
+
 #gameover .modal{ text-align:center; }
-#gameover h2{ font-family:Cinzel,serif; color:var(--gold); font-size:20px; letter-spacing:2px; margin-bottom:6px; }
+#gameover h2{ font-family:Cinzel,serif; color:var(--gold); font-size:22px; letter-spacing:2px; margin-bottom:6px; }
 #gameover p{ color:var(--ink-dim); font-size:13px; margin-bottom:14px; }
 #gameover button{ background:#241a08; color:var(--gold); border:1.5px solid var(--gold-dim); border-radius:8px; padding:10px 22px; font-size:13px; cursor:pointer; }
 .hidden{ display:none !important; }
+
+@media (prefers-reduced-motion: reduce){
+  .ember{ display:none; }
+  #divider::after, .hc.focus.rar-L::after, .inspect-card.rar-L::after, .hc.focus.rar-M, .inspect-card.rar-M,
+  .bc.landing, .floater, .bc.targetable, #banner .txt{ animation:none !important; }
+}
 </style>
 </head>
 <body>
 <div id="app">
   <header>
     <div class="title">DIVYA YUDDHA<small>PROTOTYPE v0.1 · DEVA MIRROR</small></div>
-    <div class="roundbox">ROUND <span id="rnum">1</span><div class="pips" id="pips"></div></div>
+    <div class="roundbox">ROUND <span id="rnum">1</span></div>
   </header>
 
-  <div class="zone">
-    <div class="zlabel"><span>OPPONENT · HAND <span id="ohand">10</span> · DECK <span id="odeck">12</span> <span id="opassed"></span></span><span class="total" id="ototal">0</span></div>
-    <div class="row hero-row" id="oheroes"></div>
-    <div class="row" id="ounits"></div>
-    <div class="art-slot">DIVYA ROW: <span id="oart" class="art-chip art-none">no artifact</span></div>
+  <div id="field">
+    <div id="embers"></div>
+    <div class="half opp">
+      <div class="zhead"><span>OPPONENT · HAND <span id="ohand">10</span> · DECK <span id="odeck">12</span><span id="opassed"></span></span></div>
+      <div class="zbody">
+        <div class="row hero-row" id="oheroes"></div>
+        <div class="row" id="ounits"></div>
+        <div class="art-slot"><span id="oart" class="art-chip hidden"></span></div>
+      </div>
+    </div>
+    <div id="divider"></div>
+    <div class="half me">
+      <div class="zhead"><span>YOU · DECK <span id="pdeck">12</span><span id="ppassed"></span></span></div>
+      <div class="zbody">
+        <div class="art-slot"><span id="part" class="art-chip hidden"></span></div>
+        <div class="row" id="punits"></div>
+        <div class="row hero-row" id="pheroes"></div>
+      </div>
+    </div>
   </div>
 
-  <div id="logwrap"></div>
-
-  <div class="zone">
-    <div class="zlabel"><span>YOU · DECK <span id="pdeck">12</span> <span id="ppassed"></span></span><span class="total" id="ptotal">0</span></div>
-    <div class="art-slot" style="margin-bottom:4px">DIVYA ROW: <span id="part" class="art-chip art-none">no artifact</span></div>
-    <div class="row" id="punits"></div>
-    <div class="row hero-row" id="pheroes"></div>
+  <div id="logdrawer">
+    <div class="loghead" id="loghead"><span>⚔ LOG</span><span id="loglast"></span><span id="logtoggle">▲</span></div>
+    <div id="logbody"></div>
   </div>
 
   <div id="handwrap"><div id="hand"></div></div>
+
   <div id="controls">
     <div id="turnind">—</div>
     <button id="passbtn">PASS ROUND</button>
   </div>
+</div>
+
+<div id="hudwrap"><div id="hudcol"><div id="hud">
+  <div class="hud-plaque" id="hud-o"><span class="hud-total" id="ototal">0</span></div>
+  <div class="hud-pips" id="pips"></div>
+  <div class="hud-plaque" id="hud-p"><span class="hud-total" id="ptotal">0</span></div>
+</div></div></div>
+
+<div id="banner" class="hidden"><span class="txt"></span></div>
+
+<div class="overlay hidden" id="inspect">
+  <div class="inspect-card" id="inspectCard"></div>
+  <div id="inspectFooter"></div>
 </div>
 
 <div class="overlay hidden" id="targeting"><div class="modal">
@@ -191,7 +347,7 @@ function newGame(opts={}){
     roundHistory:[],
   };
   g.firstThisRound = g.turn;
-  log(g, `Coin flip \u2014 ${g.players[g.turn].name} plays first.`);
+  { const nm=g.players[g.turn].name; log(g, `Coin flip \u2014 ${nm} ${nm==='You'?'play':'plays'} first.`); }
   return g;
 }
 
@@ -528,13 +684,60 @@ if (typeof module!=='undefined'){
 <script>
 const $=id=>document.getElementById(id);
 const TYPE_ICON={hero:'👑',unit:'⚔',astra:'🔱',mantra:'🕉',artifact:'🧿'};
+const RAR_CLASS={ L:'rar-L', M:'rar-M', E:'rar-E' };
 let G=null, pendingPlay=null, aiTimer=null, seenLog=0;
+let inspectContext=null, pendingFly=null, knownUids=new Set(), lastPowers={}, lastRoundLen=0, focusRaf=0;
+let lastTotals={o:null,p:null};
+const reducedMotion=()=> window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const rarClass=c=> RAR_CLASS[c.r]||'';
+function pulsePlaque(el){ if(reducedMotion())return; el.classList.remove('pulse'); void el.offsetWidth; el.classList.add('pulse'); }
+
+/* Scale board minis so both rows of a half always fit fully — never clipped.
+   Each half gets a --mini-h; only below the 56px floor do we fall back to
+   within-zone scrolling (with a fade affordance via .scrollzone). */
+const MINI_MIN=56, MINI_MAX=96, ROW_PAD=6, EMPTY_ROW=28;
+function sizeBoard(){
+  for (const side of ['opp','me']){
+    const half=document.querySelector('.half.'+side); if(!half) continue;
+    const zbody=half.querySelector('.zbody');
+    const rows=[...half.querySelectorAll('.row')];
+    const art=half.querySelector('.art-slot');
+    const cs=getComputedStyle(zbody);
+    const padV=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+    const gap=parseFloat(cs.rowGap||cs.gap)||0;
+    const cardRows=rows.filter(r=>r.querySelector('.bc'));
+    const emptyRows=rows.filter(r=>!r.querySelector('.bc'));
+    const nRows=cardRows.length||1;
+    const artH=art?art.getBoundingClientRect().height:0;
+    const childGaps=Math.max(0, rows.length+(artH>1?1:0)-1)*gap;
+    const content=zbody.clientHeight - padV - artH - childGaps - emptyRows.length*EMPTY_ROW;
+    const per=Math.floor((content - nRows*ROW_PAD)/nRows) - 1; // -1 safety
+    if (per>=MINI_MIN){ half.style.setProperty('--mini-h', Math.min(per, MINI_MAX)+'px'); half.classList.remove('scrollzone'); }
+    else { half.style.setProperty('--mini-h', MINI_MIN+'px'); half.classList.add('scrollzone'); }
+  }
+}
 
 function startGame(){
   if (aiTimer) clearTimeout(aiTimer);
   G=newGame({p0:'You',p1:'Opponent'}); seenLog=0;
-  $('gameover').classList.add('hidden'); $('targeting').classList.add('hidden');
-  $('logwrap').innerHTML=''; render(); pump();
+  knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null};
+  ['gameover','targeting','inspect','banner'].forEach(id=>$(id).classList.add('hidden'));
+  $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
+  makeEmbers();
+  render(); pump();
+}
+
+function makeEmbers(){
+  const box=$('embers'); box.innerHTML=''; if (reducedMotion()) return;
+  for (let i=0;i<12;i++){
+    const e=document.createElement('div'); e.className='ember';
+    const s=(3+Math.random()*3).toFixed(1);
+    e.style.left=(4+Math.random()*92)+'%';
+    e.style.width=s+'px'; e.style.height=s+'px';
+    e.style.animationDuration=(7+Math.random()*7).toFixed(1)+'s';
+    e.style.animationDelay=(-Math.random()*12).toFixed(1)+'s';
+    box.appendChild(e);
+  }
 }
 
 /* Real card art lives in assets/cards/, named per the GDD convention:
@@ -556,23 +759,37 @@ function attachArt(el, c){
   img.src=cardArtSrc(c);
 }
 
+/* ---------- board minis (art-first, medallion power) ---------- */
 function boardCard(c, pi, targetSet){
   const d=document.createElement('div');
   d.className='bc'+(c.t==='hero'?' hero':'')+(c.ghost?' ghostc':'');
+  d.dataset.uid=c.uid;
   const ep=effPower(G,pi,c);
   const sh=!c.ghost && c.t==='unit' && isShielded(G,pi,c);
-  let pwc=''; if(!c.ghost){ if(ep>c.base) pwc='buffed'; else if(c.power<c.base) pwc='hurt'; }
-  d.innerHTML=`<div class="nm">${c.n}</div><div class="badges">${sh?'🛡':''}</div><div class="pw ${pwc}">${ep}</div>`;
-  d.style.borderColor = RARITY_COLOR[c.r]||'#444';
+  let state='', mark='';
+  if(!c.ghost){ if(ep>c.base){ state='buffed'; mark='▲'; } else if(c.power<c.base){ state='hurt'; mark='▼'; } }
+  d.innerHTML=
+    `<div class="mini-name">${c.n}</div>`+
+    (sh?'<div class="shieldbadge">🛡</div>':'')+
+    `<div class="medallion ${state}">${ep}${mark?`<span class="mark">${mark}</span>`:''}</div>`;
   attachArt(d, c);
   if (targetSet && targetSet.has(c.uid)){ d.classList.add('targetable'); d.onclick=()=>resolveTarget(c.uid); }
+  else d.onclick=()=>{ if(!pendingPlay) openInspect(c, pi, null); };
+  if (!knownUids.has(c.uid) && !(pendingFly && pendingFly.uid===c.uid)) d.classList.add('landing');
   return d;
 }
 
-function fillRow(el, cards, pi, emptyLabel, targetSet){
+function fillRow(el, cards, pi, targetSet){
   el.innerHTML='';
-  if(!cards.length){ const e=document.createElement('div'); e.className='slot-empty'; e.textContent=emptyLabel; el.appendChild(e); return; }
+  if(!cards.length){ el.classList.add('empty'); const e=document.createElement('div'); e.className='slot-empty'; e.textContent='☀'; el.appendChild(e); return; }
+  el.classList.remove('empty');
   for (const c of cards) el.appendChild(boardCard(c,pi,targetSet));
+}
+
+function setArtChip(id, artifact){
+  const el=$(id);
+  if (artifact){ el.textContent='🧿 '+artifact.n; el.classList.remove('hidden'); }
+  else el.classList.add('hidden');
 }
 
 function render(targetSet){
@@ -585,49 +802,156 @@ function render(targetSet){
   $('opassed').textContent=op.passed?' · PASSED':''; $('ppassed').textContent=me.passed?' · PASSED':'';
   const t0=totalPower(G,0), t1=totalPower(G,1);
   $('ptotal').textContent=t0; $('ototal').textContent=t1;
-  $('ptotal').className='total'+(t0<t1?' losing':''); $('ototal').className='total'+(t1<t0?' losing':'');
-  fillRow($('oheroes'), op.heroes, 1, 'heroes', targetSet);
-  fillRow($('ounits'),  op.units,  1, 'yuddha row', targetSet);
-  fillRow($('punits'),  me.units,  0, 'yuddha row');
-  fillRow($('pheroes'), me.heroes, 0, 'heroes');
-  $('oart').textContent=op.artifact?op.artifact.n:'no artifact'; $('oart').className='art-chip'+(op.artifact?'':' art-none');
-  $('part').textContent=me.artifact?me.artifact.n:'no artifact'; $('part').className='art-chip'+(me.artifact?'':' art-none');
+  const hudO=$('hud-o'), hudP=$('hud-p');
+  hudO.classList.toggle('leading', t1>t0); hudP.classList.toggle('leading', t0>t1);
+  if (lastTotals.o!=null && t1!==lastTotals.o) pulsePlaque(hudO);
+  if (lastTotals.p!=null && t0!==lastTotals.p) pulsePlaque(hudP);
+  lastTotals={o:t1, p:t0};
+  fillRow($('oheroes'), op.heroes, 1, targetSet);
+  fillRow($('ounits'),  op.units,  1, targetSet);
+  fillRow($('punits'),  me.units,  0);
+  fillRow($('pheroes'), me.heroes, 0);
+  setArtChip('oart', op.artifact); setArtChip('part', me.artifact);
+  sizeBoard();   // scale minis so nothing is ever clipped
 
-  // hand
+  // hand carousel
   const hand=$('hand'); hand.innerHTML='';
   const play=new Set(playableIndices(G,0));
   const myTurn = G.turn===0 && !me.passed && !G.over;
   me.hand.forEach((c,i)=>{
     const d=document.createElement('div');
     const ok = myTurn && play.has(i);
-    d.className='hc '+(ok?'playable':'dead');
-    d.style.borderColor=RARITY_COLOR[c.r]||'#555';
-    d.innerHTML=`<div class="nm">${c.n}</div><div class="ty">${TYPE_ICON[c.t]} ${c.t} · ${RARITY_NAME[c.r]}</div><div class="fx">${c.txt}</div>${c.p>0?`<div class="pw">${c.p}</div>`:''}${c.lockedRound===G.round?'<div class="lockicon">🔒</div>':''}`;
+    d.className='hc '+rarClass(c)+(ok?'':' dead');
+    d.innerHTML=`<div class="cardtext"><div class="nm">${c.n}</div><div class="ty">${TYPE_ICON[c.t]} ${c.t} · ${RARITY_NAME[c.r]}</div><div class="fx">${c.txt}</div></div>${c.p>0?`<div class="pw">${c.p}</div>`:''}${c.lockedRound===G.round?'<div class="lockicon">🔒</div>':''}`;
     attachArt(d, c);
-    if (ok) d.onclick=()=>tryPlay(i);
+    d.onclick=()=>openInspect(c, 0, ok?i:-1);
     hand.appendChild(d);
   });
+  updateFocus();
+
   $('passbtn').disabled=!myTurn;
   $('turnind').textContent = G.over?'MATCH OVER': myTurn?'YOUR TURN': me.passed&&op.passed?'—': (G.turn===1?'OPPONENT…':'…');
   $('turnind').className = myTurn?'you':'';
 
-  // log
-  const lw=$('logwrap');
+  // log body + collapsed last line
+  const lb=$('logbody');
   for (; seenLog<G.log.length; seenLog++){
     const l=G.log[seenLog]; const p=document.createElement('div');
     p.className = l.msg.startsWith('You')?'me': l.msg.startsWith('Opponent')?'foe':'sys';
-    p.textContent=l.msg; lw.appendChild(p);
+    p.textContent=l.msg; lb.appendChild(p);
   }
-  lw.scrollTop=lw.scrollHeight;
+  lb.scrollTop=lb.scrollHeight;
+  if (G.log.length) $('loglast').textContent=G.log[G.log.length-1].msg;
+
+  // juice: floating combat text for power changes since last render
+  spawnFloaters();
+  knownUids = boardUidSet();
+
+  // consume pending fly-to-slot (human play)
+  if (pendingFly){ const el=$('field').querySelector(`.bc[data-uid="${pendingFly.uid}"]`); flyClone(pendingFly.rect, el); pendingFly=null; }
+
+  // round-end banner (skip on match over — gameover modal takes over)
+  if (G.roundHistory.length>lastRoundLen){ if(!G.over) showRoundBanner(); lastRoundLen=G.roundHistory.length; }
 
   if (G.over) showGameOver();
 }
 
-function tryPlay(i){
+/* ---------- board power tracking / floaters ---------- */
+function boardUnits(){ const out=[]; for(const pi of [0,1]){ const pl=G.players[pi]; for(const u of pl.units) out.push([pi,u]); for(const h of pl.heroes) out.push([pi,h]); } return out; }
+function boardUidSet(){ const s=new Set(); for(const [,c] of boardUnits()) s.add(c.uid); return s; }
+function spawnFloaters(){
+  const cur={};
+  for(const [pi,c] of boardUnits()){
+    const ep=effPower(G,pi,c); cur[c.uid]=ep;
+    if ((c.uid in lastPowers) && lastPowers[c.uid]!==ep){
+      const el=$('field').querySelector(`.bc[data-uid="${c.uid}"]`);
+      if (el) floatText(el, ep-lastPowers[c.uid]);
+    }
+  }
+  lastPowers=cur;
+}
+function floatText(el, delta){
+  if (reducedMotion()) return;
+  const r=el.getBoundingClientRect();
+  const f=document.createElement('div');
+  f.className='floater '+(delta>0?'up':'down');
+  f.textContent=(delta>0?'+':'')+delta;
+  f.style.left=(r.left+r.width/2-9)+'px'; f.style.top=(r.top+6)+'px';
+  document.body.appendChild(f);
+  setTimeout(()=>f.remove(), 620);
+}
+function flyClone(rect, destEl){
+  const flash=el=>{ if(el){ el.classList.remove('landing'); void el.offsetWidth; el.classList.add('landing'); } };
+  if (!rect || !destEl || reducedMotion()){ flash(destEl); return; }
+  const dr=destEl.getBoundingClientRect();
+  const clone=document.createElement('div');
+  clone.style.cssText=`position:fixed;left:${rect.left}px;top:${rect.top}px;width:${rect.width}px;height:${rect.height}px;`+
+    `border-radius:12px;background:linear-gradient(#2a1e0a,#140f06);border:2px solid #E8C874;z-index:75;pointer-events:none;`+
+    `box-shadow:0 8px 24px rgba(0,0,0,.6);transition:left .26s ease-out,top .26s ease-out,width .26s ease-out,height .26s ease-out,opacity .26s ease-out`;
+  document.body.appendChild(clone);
+  destEl.style.visibility='hidden';
+  requestAnimationFrame(()=>{ clone.style.left=dr.left+'px'; clone.style.top=dr.top+'px'; clone.style.width=dr.width+'px'; clone.style.height=dr.height+'px'; clone.style.opacity='.5'; });
+  setTimeout(()=>{ clone.remove(); destEl.style.visibility='visible'; flash(destEl); }, 280);
+}
+function showRoundBanner(){
+  const h=G.roundHistory[G.roundHistory.length-1];
+  const res = h.winner==null?'ROUND DRAWN': h.winner===0?'YOU WIN':'OPPONENT WINS';
+  const w0=G.players[0].roundWins, w1=G.players[1].roundWins;
+  const lead = w0>w1?' · YOU LEAD': w1>w0?' · YOU TRAIL':'';
+  const b=$('banner'), t=b.querySelector('.txt');
+  t.textContent=`ROUND ${h.round} — ${res}${lead}`;
+  b.classList.remove('hidden');
+  t.style.animation='none'; void t.offsetWidth; t.style.animation='bannerSweep 1.2s ease-out';
+  clearTimeout(b._t); b._t=setTimeout(()=>b.classList.add('hidden'), 1400);
+}
+
+/* ---------- hand carousel focus ---------- */
+function updateFocus(){
+  const hand=$('hand'); const cards=[...hand.children]; if(!cards.length) return;
+  const mid=hand.scrollLeft + hand.clientWidth/2;
+  let best=null, bd=Infinity;
+  for (const el of cards){ const c=el.offsetLeft+el.offsetWidth/2; const dd=Math.abs(c-mid); if(dd<bd){ bd=dd; best=el; } }
+  for (const el of cards) el.classList.toggle('focus', el===best);
+}
+
+/* ---------- inspect overlay ---------- */
+function openInspect(c, pi, handIndex){
+  inspectContext={ card:c, handIndex };
+  const card=$('inspectCard');
+  card.className='inspect-card '+rarClass(c);
+  const live = pi!=null && !c.ghost && (c.t==='unit'||c.t==='hero') ? effPower(G,pi,c) : c.p;
+  const showPw = c.p>0 || c.t==='unit' || c.t==='hero';
+  card.innerHTML=
+    (showPw?`<div class="ipw">${live}</div>`:'')+
+    `<div class="itext"><div class="inm">${c.n}</div>`+
+    (c.sub?`<div class="isub">${c.sub}</div>`:'')+
+    `<div class="ity">${TYPE_ICON[c.t]||''} ${c.t} · ${RARITY_NAME[c.r]}</div>`+
+    `<div class="ifx">${c.txt||''}</div></div>`;
+  attachArt(card, c);
+  const foot=$('inspectFooter');
+  if (handIndex!=null && handIndex>=0){
+    foot.innerHTML='<div class="inspect-actions"><button class="ibtn-play">PLAY ⚔</button><button class="ibtn-cancel">CANCEL</button></div>';
+    foot.querySelector('.ibtn-play').onclick=()=>{ const r=$('inspectCard').getBoundingClientRect(); closeInspect(); startPlay(handIndex, r); };
+    foot.querySelector('.ibtn-cancel').onclick=closeInspect;
+  } else {
+    foot.innerHTML=`<div class="inspect-hint">${handIndex===-1?'not playable now · tap to dismiss':'tap anywhere to dismiss'}</div>`;
+  }
+  $('inspect').classList.remove('hidden');
+}
+function closeInspect(){ $('inspect').classList.add('hidden'); inspectContext=null; }
+
+/* ---------- play flow ---------- */
+function doPlay(i, uid, srcRect){
   const c=G.players[0].hand[i];
+  pendingFly = (srcRect && c) ? { rect:srcRect, uid:c.uid } : null;
+  playCard(G,0,i,uid); render(); pump();
+}
+
+function startPlay(i, srcRect){
+  const c=G.players[0].hand[i]; if(!c) return;
   const spec=targetSpec(G,0,c);
   if (spec && spec.options.length){
-    pendingPlay={ index:i, spec };
+    pendingPlay={ index:i, spec, srcRect };
     if (spec.kind==='oppHandCard'){
       $('tgtitle').textContent='Saraswati sees all — lock one card in the opponent\u2019s hand:';
       const box=$('tgopts'); box.innerHTML='';
@@ -638,22 +962,20 @@ function tryPlay(i){
     } else {
       $('tgtitle').textContent = c.id==='vajra' ? 'Vajra — strike which enemy Unit?' : 'Sudarshana — remove which enemy Hero?';
       $('targeting').classList.add('hidden');
-      const set=new Set(spec.options.map(o=>o.uid));
-      render(set);
-      $('tgtitle').textContent+=''; // board-targeting mode
+      render(new Set(spec.options.map(o=>o.uid)));
       showBoardTargetBar(c);
     }
     return;
   }
-  playCard(G,0,i,null); render(); pump();
+  doPlay(i, null, srcRect);
 }
 
 let targetBar=null;
 function showBoardTargetBar(c){
   hideBoardTargetBar();
   targetBar=document.createElement('div');
-  targetBar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#241a08;border-top:1.5px solid #C9A84C;padding:10px;text-align:center;font-family:Cinzel,serif;font-size:12px;color:#C9A84C;z-index:40';
-  targetBar.innerHTML=`${c.n}: tap a glowing target &nbsp; <button style="background:none;border:1px solid #8a7434;color:#9a8d6a;border-radius:6px;padding:4px 10px;cursor:pointer" onclick="cancelTarget()">Cancel</button>`;
+  targetBar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#241a08;border-top:1.5px solid #C9A84C;padding:calc(10px + env(safe-area-inset-bottom)) 10px 10px;text-align:center;font-family:Cinzel,serif;font-size:12px;color:#E8C874;z-index:82';
+  targetBar.innerHTML=`${c.n}: tap a glowing target &nbsp; <button style="background:none;border:1px solid #8a7434;color:#cbbd96;border-radius:6px;padding:4px 10px;cursor:pointer" onclick="cancelTarget()">Cancel</button>`;
   document.body.appendChild(targetBar);
 }
 function hideBoardTargetBar(){ if(targetBar){ targetBar.remove(); targetBar=null; } }
@@ -662,10 +984,14 @@ function cancelTarget(){ pendingPlay=null; hideBoardTargetBar(); $('targeting').
 function resolveTarget(uid){
   const pp=pendingPlay; if(!pp) return;
   pendingPlay=null; hideBoardTargetBar(); $('targeting').classList.add('hidden');
-  playCard(G,0,pp.index,uid); render(); pump();
+  doPlay(pp.index, uid, pp.srcRect);
 }
 $('tgcancel').onclick=cancelTarget;
 $('passbtn').onclick=()=>{ if(G.turn===0&&!G.players[0].passed&&!G.over){ pass(G,0); render(); pump(); } };
+$('loghead').onclick=()=>$('logdrawer').classList.toggle('open');
+$('inspect').onclick=e=>{ if(e.target.id==='inspect' || e.target.closest('.inspect-hint')) closeInspect(); };
+$('hand').addEventListener('scroll', ()=>{ if(focusRaf) return; focusRaf=requestAnimationFrame(()=>{ focusRaf=0; updateFocus(); }); });
+window.addEventListener('resize', ()=>{ if(G){ sizeBoard(); updateFocus(); } });
 
 function pump(){
   if (G.over) return;
