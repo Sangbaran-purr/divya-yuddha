@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Divya Yuddha — Prototype v0.1</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root{ --gold:#C9A84C; --gold-dim:#8a7434; --bg:#0d0a05; --panel:#171208; --panel2:#1e1810; --ink:#e8ddc0; --ink-dim:#9a8d6a; }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{ background:#080604; color:var(--ink); font-family:'Crimson Pro',Georgia,serif; display:flex; justify-content:center; }
+#app{ width:100%; max-width:520px; min-height:100vh; background:var(--bg); display:flex; flex-direction:column; border-left:1px solid #241c0e; border-right:1px solid #241c0e; }
+
+header{ padding:8px 12px; border-bottom:1px solid var(--gold-dim); display:flex; align-items:center; justify-content:space-between; background:linear-gradient(#141008,#0d0a05); }
+.title{ font-family:Cinzel,serif; font-size:14px; letter-spacing:2px; color:var(--gold); font-weight:600; }
+.title small{ display:block; font-size:9px; letter-spacing:3px; color:var(--ink-dim); font-weight:400; }
+.roundbox{ text-align:right; font-family:Cinzel,serif; font-size:11px; color:var(--ink-dim); }
+.pips{ letter-spacing:3px; font-size:13px; }
+.pip-w{ color:var(--gold); } .pip-l{ color:#3a3020; }
+
+.zone{ padding:6px 10px; }
+.zlabel{ font-family:Cinzel,serif; font-size:9px; letter-spacing:2px; color:var(--ink-dim); display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; }
+.total{ font-family:Cinzel,serif; font-size:18px; font-weight:700; color:var(--gold); }
+.total.losing{ color:#7a6848; }
+.row{ display:flex; gap:5px; overflow-x:auto; min-height:64px; padding:3px 0; align-items:stretch; }
+.row.hero-row{ min-height:64px; }
+.row::-webkit-scrollbar{ height:3px; } .row::-webkit-scrollbar-thumb{ background:#33280f; }
+
+.bc{ flex:0 0 auto; width:64px; min-height:60px; background:var(--panel2); border:1.5px solid #444; border-radius:6px; padding:3px 4px; position:relative; display:flex; flex-direction:column; justify-content:space-between; cursor:default; }
+.bc .nm{ font-family:Cinzel,serif; font-size:8px; line-height:1.15; color:var(--ink); font-weight:600; }
+.bc .pw{ font-family:Cinzel,serif; font-size:16px; font-weight:700; color:var(--gold); line-height:1; }
+.bc .pw.buffed{ color:#7fd88a; } .bc .pw.hurt{ color:#e06050; }
+.bc .badges{ position:absolute; top:2px; right:3px; font-size:9px; line-height:1.1; text-align:right; }
+.bc.hero{ background:#221a08; }
+.bc.ghostc{ opacity:.55; border-style:dashed; }
+.bc.targetable{ outline:2px solid #e0b040; outline-offset:1px; cursor:pointer; animation:pulse 1s infinite alternate; }
+@keyframes pulse{ from{outline-color:#e0b040} to{outline-color:#fff0c0} }
+.slot-empty{ flex:0 0 auto; width:64px; min-height:60px; border:1px dashed #302610; border-radius:6px; display:flex; align-items:center; justify-content:center; color:#3a2f16; font-size:9px; font-family:Cinzel,serif; }
+
+.art-slot{ display:flex; gap:6px; align-items:center; margin-top:2px; }
+.art-chip{ font-size:10px; font-family:Cinzel,serif; color:var(--gold); border:1px solid var(--gold-dim); border-radius:4px; padding:2px 7px; background:#1a1408; }
+.art-none{ color:#4a3d1e; border-color:#2c230f; }
+
+#logwrap{ flex:1; min-height:70px; max-height:120px; overflow-y:auto; background:#0a0803; border-top:1px solid #241c0e; border-bottom:1px solid #241c0e; padding:6px 12px; font-size:12px; line-height:1.5; color:var(--ink-dim); }
+#logwrap .me{ color:#d8c890; } #logwrap .foe{ color:#b09a80; } #logwrap .sys{ color:#8a7434; font-style:italic; }
+#logwrap::-webkit-scrollbar{ width:4px; } #logwrap::-webkit-scrollbar-thumb{ background:#33280f; }
+
+#handwrap{ padding:6px 10px 4px; }
+#hand{ display:flex; gap:6px; overflow-x:auto; padding:4px 0 6px; }
+#hand::-webkit-scrollbar{ height:4px; } #hand::-webkit-scrollbar-thumb{ background:#4a3a14; }
+.hc{ flex:0 0 auto; width:88px; height:118px; background:linear-gradient(#201808,#151006); border:2px solid #555; border-radius:8px; padding:5px 6px; display:flex; flex-direction:column; cursor:pointer; transition:transform .12s; position:relative; }
+.hc:active{ transform:scale(.96); }
+.hc.playable{ box-shadow:0 0 0 1px rgba(201,168,76,.25), 0 4px 10px rgba(0,0,0,.5); }
+.hc.dead{ opacity:.38; cursor:not-allowed; }
+.hc .nm{ font-family:Cinzel,serif; font-size:9px; font-weight:700; color:var(--gold); line-height:1.2; min-height:22px; }
+.hc .ty{ font-size:8px; letter-spacing:1px; color:var(--ink-dim); font-family:Cinzel,serif; text-transform:uppercase; margin:1px 0 3px; }
+.hc .fx{ font-size:8.5px; line-height:1.3; color:#b8ab88; flex:1; overflow:hidden; }
+.hc .pw{ position:absolute; bottom:4px; right:6px; font-family:Cinzel,serif; font-size:15px; font-weight:700; color:var(--gold); }
+.hc .lockicon{ position:absolute; top:3px; right:5px; font-size:11px; }
+
+#controls{ display:flex; gap:8px; padding:4px 10px 12px; align-items:center; }
+button{ font-family:Cinzel,serif; letter-spacing:1px; }
+#passbtn{ flex:1; background:#241a08; color:var(--gold); border:1.5px solid var(--gold-dim); border-radius:8px; padding:11px; font-size:13px; font-weight:700; cursor:pointer; }
+#passbtn:disabled{ opacity:.35; }
+#turnind{ font-size:11px; color:var(--ink-dim); font-family:Cinzel,serif; min-width:90px; text-align:center; }
+#turnind.you{ color:#8fd89a; } 
+
+.overlay{ position:fixed; inset:0; background:rgba(5,3,0,.88); display:flex; align-items:center; justify-content:center; z-index:50; padding:20px; }
+.modal{ background:var(--panel); border:1.5px solid var(--gold-dim); border-radius:12px; padding:18px; max-width:440px; width:100%; max-height:80vh; overflow-y:auto; }
+.modal h3{ font-family:Cinzel,serif; color:var(--gold); font-size:14px; margin-bottom:10px; letter-spacing:1px; }
+.modal .opts{ display:flex; flex-wrap:wrap; gap:8px; }
+.modal .opt{ background:var(--panel2); border:1.5px solid var(--gold-dim); border-radius:8px; padding:8px 10px; cursor:pointer; min-width:100px; }
+.modal .opt .nm{ font-family:Cinzel,serif; font-size:10px; color:var(--gold); font-weight:700; }
+.modal .opt .dt{ font-size:9px; color:var(--ink-dim); margin-top:2px; }
+.modal .cancel{ margin-top:12px; background:none; border:1px solid #3a2f16; color:var(--ink-dim); border-radius:6px; padding:7px 14px; cursor:pointer; font-size:11px; }
+#gameover .modal{ text-align:center; }
+#gameover h2{ font-family:Cinzel,serif; color:var(--gold); font-size:20px; letter-spacing:2px; margin-bottom:6px; }
+#gameover p{ color:var(--ink-dim); font-size:13px; margin-bottom:14px; }
+#gameover button{ background:#241a08; color:var(--gold); border:1.5px solid var(--gold-dim); border-radius:8px; padding:10px 22px; font-size:13px; cursor:pointer; }
+.hidden{ display:none !important; }
+</style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="title">DIVYA YUDDHA<small>PROTOTYPE v0.1 · DEVA MIRROR</small></div>
+    <div class="roundbox">ROUND <span id="rnum">1</span><div class="pips" id="pips"></div></div>
+  </header>
+
+  <div class="zone">
+    <div class="zlabel"><span>OPPONENT · HAND <span id="ohand">10</span> · DECK <span id="odeck">12</span> <span id="opassed"></span></span><span class="total" id="ototal">0</span></div>
+    <div class="row hero-row" id="oheroes"></div>
+    <div class="row" id="ounits"></div>
+    <div class="art-slot">DIVYA ROW: <span id="oart" class="art-chip art-none">no artifact</span></div>
+  </div>
+
+  <div id="logwrap"></div>
+
+  <div class="zone">
+    <div class="zlabel"><span>YOU · DECK <span id="pdeck">12</span> <span id="ppassed"></span></span><span class="total" id="ptotal">0</span></div>
+    <div class="art-slot" style="margin-bottom:4px">DIVYA ROW: <span id="part" class="art-chip art-none">no artifact</span></div>
+    <div class="row" id="punits"></div>
+    <div class="row hero-row" id="pheroes"></div>
+  </div>
+
+  <div id="handwrap"><div id="hand"></div></div>
+  <div id="controls">
+    <div id="turnind">—</div>
+    <button id="passbtn">PASS ROUND</button>
+  </div>
+</div>
+
+<div class="overlay hidden" id="targeting"><div class="modal">
+  <h3 id="tgtitle">Choose a target</h3>
+  <div class="opts" id="tgopts"></div>
+  <button class="cancel" id="tgcancel">Cancel</button>
+</div></div>
+
+<div class="overlay hidden" id="gameover"><div class="modal">
+  <h2 id="goh">VICTORY</h2><p id="gop"></p>
+  <button onclick="startGame()">REMATCH ⚔</button>
+</div></div>
+
+<script>
+/* ============================================================
+   DIVYA YUDDHA — Rules Engine v0.1 (Deva mirror match)
+   Headless, UI-agnostic. Runs in browser and Node.
+   ============================================================ */
+const RARITY_COLOR = { L:'#C9A84C', M:'#E74C3C', E:'#9B59B6', R:'#3498DB', U:'#27AE60', C:'#888888' };
+const RARITY_NAME  = { L:'Legendary', M:'Mythic', E:'Epic', R:'Rare', U:'Uncommon', C:'Common' };
+
+const DEVA_DECK_DEF = [
+  // ---- HEROES (3) ----
+  { id:'indra',   n:'Indra',          sub:'King of Devas',        t:'hero', p:7, r:'L', txt:'PASSIVE: All Deva Units gain +1 power while Indra is on the board.' },
+  { id:'agni',    n:'Agni',           sub:'Flame of Sacrifice',   t:'hero', p:5, r:'E', txt:'TRIGGERED: Whenever any Mantra is played, deal 1 damage to a random enemy Unit.' },
+  { id:'varuna',  n:'Varuna',         sub:'Lord of Oceans',       t:'hero', p:6, r:'E', txt:'PASSIVE: Opponent cannot play more than 1 Astra per round.' },
+  // ---- UNITS (12) ----
+  { id:'surya',   n:'Surya Dev',      sub:'Radiance of the Dawn', t:'unit', p:6, r:'E', txt:'ON PLAY: All other friendly Units gain +1 power.' },
+  { id:'brihaspati',n:'Brihaspati',   sub:'Guru of the Gods',     t:'unit', p:5, r:'E', txt:'ON PLAY: Copy the effect of the last Mantra played by either player.' },
+  { id:'vayu',    n:'Vayu',           sub:'The Invisible Force',  t:'unit', p:5, r:'R', txt:'ON PLAY: The highest power enemy Unit loses 2 power. (v0.1: swap omitted)' },
+  { id:'vishwakarma',n:'Vishwakarma', sub:'Divine Architect',     t:'unit', p:4, r:'R', txt:'ON PLAY: Destroy the opponent\u2019s Artifact. Gain +2 power for each Artifact destroyed this game.' },
+  { id:'kubera',  n:'Kubera',         sub:'Lord of Wealth',       t:'unit', p:3, r:'R', txt:'ON PLAY: Draw 2 cards. If both are Units they gain +1 power each.' },
+  { id:'urvashi', n:'Urvashi',        sub:'The Eternal Apsara',   t:'unit', p:4, r:'R', txt:'ON PLAY: Opponent discards their highest power card from hand.' },
+  { id:'yama',    n:'Yama',           sub:'Lord of Dharma',       t:'unit', p:6, r:'E', txt:'PASSIVE: Destroyed friendly Units leave a 1-power ghost token behind.' },
+  { id:'saraswati',n:'Saraswati',     sub:'Voice of Creation',    t:'unit', p:4, r:'R', txt:'ON PLAY: Look at opponent\u2019s hand. Lock one card \u2014 it cannot be played this round.' },
+  { id:'ashwini', n:'Ashwini Kumars', sub:'Twin Healers',         t:'unit', p:3, r:'U', txt:'ON PLAY: Restore 2 power to the most wounded friendly Unit.' },
+  { id:'marut',   n:'Marut',          sub:'Storm Soldier',        t:'unit', p:3, r:'C', txt:'ON PLAY: If Vayu is on your board, gain +3 power.' },
+  { id:'gandharva',n:'Gandharva',     sub:'Celestial Warrior',    t:'unit', p:2, r:'C', txt:'ON PLAY: If 3+ friendly Units are on the board, gain +2 power.' },
+  { id:'soldier', n:'Deva Soldier',   sub:'Keeper of Order',      t:'unit', p:2, r:'C', txt:'PASSIVE: With Indra on board, +1 power at the start of each round. (design flag: see notes)' },
+  // ---- ASTRAS (3) ----
+  { id:'vajra',   n:'Vajra',          sub:'Thunderbolt of Indra', t:'astra', p:0, r:'L', txt:'Destroy one enemy Unit with power 6+. If Indra is on your board: destroy ANY enemy Unit.' },
+  { id:'brahmastra',n:'Brahmastra',   sub:'The Ultimate Weapon',  t:'astra', p:0, r:'M', txt:'Destroy ALL enemy Units. Overrides all shields and immunities.' },
+  { id:'sudarshana',n:'Sudarshana Chakra',sub:'Disc of Vishnu',   t:'astra', p:0, r:'M', txt:'Remove one enemy Hero for this round. It returns next round at half power.' },
+  // ---- MANTRAS (2) ----
+  { id:'gayatri', n:'Gayatri Mantra', sub:'Light of All Worlds',  t:'mantra', p:0, r:'R', txt:'Revive the lowest power friendly Unit from your discard pile at full power, with Dharma Shield.' },
+  { id:'pavamana',n:'Pavamana',       sub:'The Purifying Chant',  t:'mantra', p:0, r:'U', txt:'Heal all wounded friendly Units to full. Each healed unit gains +1 power.' },
+  // ---- ARTIFACTS (2) ----
+  { id:'amrita',  n:'Amrita Kalasha', sub:'Vessel of Immortality',t:'artifact', p:0, r:'M', txt:'ON PLAY: Lowest friendly Unit gains +2 power. If it is destroyed this round it revives at 1 power. (v0.1 rework)' },
+  { id:'kavacha', n:'Dharma Kavacha', sub:'Shield of Sacred Law', t:'artifact', p:0, r:'R', txt:'PASSIVE: Dharma Shield protects TWO Units instead of one.' },
+];
+
+let UID = 1;
+function mkCard(def){ return { ...def, uid: UID++, power: def.p, base: def.p, ghost:false, lockedRound:0, aegis:false, revivedShield:false }; }
+function shuffle(a, rng){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+
+function mkPlayer(name, rng){
+  const deck = shuffle(DEVA_DECK_DEF.map(mkCard), rng);
+  const hand = deck.splice(0,10);
+  return { name, deck, hand, discard:[],
+    units:[], heroes:[], artifact:null,
+    passed:false, roundWins:0,
+    heroPlayedThisRound:false, astrasThisRound:0,
+    artifactsDestroyedByMe:0, removedHeroes:[] };
+}
+
+function newGame(opts={}){
+  const rng = opts.rng || Math.random;
+  const g = {
+    rng, round:1, over:false, winner:null,
+    players:[ mkPlayer(opts.p0||'You', rng), mkPlayer(opts.p1||'Opponent', rng) ],
+    turn: rng()<0.5?0:1, lastMantra:null, log:[],
+    roundHistory:[],
+  };
+  g.firstThisRound = g.turn;
+  log(g, `Coin flip \u2014 ${g.players[g.turn].name} plays first.`);
+  return g;
+}
+
+function log(g, msg){ g.log.push({ round:g.round, msg }); }
+
+/* ---------- power & shields ---------- */
+function indraOnBoard(pl){ return pl.heroes.some(h=>h.id==='indra'); }
+function effPower(g, pi, c){
+  if (c.t==='hero') return c.power;
+  let p = c.power;
+  if (!c.ghost && indraOnBoard(g.players[pi])) p += 1;   // Indra aura
+  return p;
+}
+function shieldedSet(g, pi){
+  // v0.1 auto-shield: highest effective-power unit(s) hold Dharma Shield.
+  const pl = g.players[pi];
+  const n = pl.artifact && pl.artifact.id==='kavacha' ? 2 : 1;
+  const real = pl.units.filter(u=>!u.ghost);
+  const sorted = [...real].sort((a,b)=>effPower(g,pi,b)-effPower(g,pi,a));
+  const set = new Set(sorted.slice(0,n).map(u=>u.uid));
+  for (const u of real) if (u.revivedShield) set.add(u.uid); // Gayatri revival shield
+  return set;
+}
+function isShielded(g, pi, c){ return shieldedSet(g, pi).has(c.uid); }
+function totalPower(g, pi){
+  const pl = g.players[pi];
+  let t = 0;
+  for (const h of pl.heroes) t += effPower(g, pi, h);
+  for (const u of pl.units)  t += effPower(g, pi, u);
+  return t;
+}
+
+/* ---------- destruction / damage ---------- */
+function destroyUnit(g, pi, unit, cause){
+  const pl = g.players[pi];
+  const ix = pl.units.indexOf(unit); if (ix<0) return;
+  pl.units.splice(ix,1);
+  log(g, `${unit.n} is destroyed (${cause}).`);
+  if (unit.aegis && !unit.ghost){
+    unit.aegis=false; unit.power=1;
+    pl.units.push(unit);
+    log(g, `Amrita Kalasha revives ${unit.n} at 1 power!`);
+    return;
+  }
+  if (!unit.ghost){
+    pl.discard.push(unit);
+    if (pl.units.some(u=>u.id==='yama')){
+      pl.units.push({ uid:UID++, id:'ghost', n:`Ghost of ${unit.n}`, sub:'Yama\u2019s token', t:'unit', p:1, r:'C', power:1, base:1, ghost:true, txt:'' });
+      log(g, `Yama binds a 1-power ghost of ${unit.n} to the row.`);
+    }
+  }
+}
+function damageUnit(g, pi, unit, amt, cause){
+  unit.power -= amt;
+  log(g, `${unit.n} takes ${amt} damage (${cause}) \u2192 ${Math.max(unit.power,0)}.`);
+  if (unit.power<=0) destroyUnit(g, pi, unit, cause);
+}
+
+/* ---------- mantra effects (shared for Brihaspati copy) ---------- */
+function castMantra(g, pi, id){
+  const pl=g.players[pi];
+  if (id==='gayatri'){
+    const units = pl.discard.filter(c=>c.t==='unit');
+    if (!units.length){ log(g,'Gayatri Mantra: no fallen Unit to revive.'); return; }
+    const lowest = units.reduce((a,b)=>a.base<=b.base?a:b);
+    pl.discard.splice(pl.discard.indexOf(lowest),1);
+    lowest.power = lowest.base; lowest.revivedShield = true;
+    pl.units.push(lowest);
+    log(g, `Gayatri Mantra revives ${lowest.n} at full power, shielded.`);
+  } else if (id==='pavamana'){
+    let healed=0;
+    for (const u of pl.units){ if (!u.ghost && u.power<u.base){ u.power=u.base+1; healed++; } }
+    log(g, healed?`Pavamana purifies ${healed} unit(s): healed +1.`:'Pavamana: nothing to purify.');
+  }
+  // Agni trigger — any mantra, either player
+  for (let s=0;s<2;s++){
+    if (g.players[s].heroes.some(h=>h.id==='agni')){
+      const foes = g.players[1-s].units.filter(u=>!u.ghost);
+      if (foes.length){
+        const t = foes[Math.floor(g.rng()*foes.length)];
+        log(g, `Agni (${g.players[s].name}) flares at the mantra!`);
+        damageUnit(g, 1-s, t, 1, 'Agni');
+      }
+    }
+  }
+  g.lastMantra = id;
+}
+
+/* ---------- legality ---------- */
+function playableIndices(g, pi){
+  const pl=g.players[pi], opp=g.players[1-pi], res=[];
+  pl.hand.forEach((c,i)=>{
+    if (c.lockedRound===g.round) return;
+    if (c.t==='hero' && pl.heroPlayedThisRound) return;
+    if (c.t==='astra'){
+      if (opp.heroes.some(h=>h.id==='varuna') && pl.astrasThisRound>=1) return;
+      if (c.id==='vajra'){
+        const indra = indraOnBoard(pl);
+        const targets = opp.units.filter(u=>!u.ghost && !isShielded(g,1-pi,u) && (indra || effPower(g,1-pi,u)>=6));
+        if (!targets.length) return;
+      }
+      if (c.id==='sudarshana' && !opp.heroes.length) return;
+      if (c.id==='brahmastra' && !opp.units.some(u=>!u.ghost)) return;
+    }
+    if (c.t==='mantra' && c.id==='gayatri' && !pl.discard.some(x=>x.t==='unit')) return;
+    res.push(i);
+  });
+  return res;
+}
+
+/* Targets a card needs (for UI): returns {kind, options} or null */
+function targetSpec(g, pi, card){
+  const opp=g.players[1-pi];
+  if (card.id==='vajra'){
+    const indra = indraOnBoard(g.players[pi]);
+    return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !isShielded(g,1-pi,u) && (indra||effPower(g,1-pi,u)>=6)) };
+  }
+  if (card.id==='sudarshana') return { kind:'enemyHero', options:[...opp.heroes] };
+  if (card.id==='saraswati' && opp.hand.length) return { kind:'oppHandCard', options:[...opp.hand] };
+  return null;
+}
+
+/* ---------- play a card ---------- */
+function playCard(g, pi, handIndex, targetUid=null){
+  const pl=g.players[pi], opp=g.players[1-pi];
+  const c = pl.hand[handIndex];
+  if (!c) throw new Error('bad hand index');
+  pl.hand.splice(handIndex,1);
+  log(g, `${pl.name} plays ${c.n}${c.sub?' \u2014 '+c.sub:''}.`);
+
+  if (c.t==='hero'){
+    pl.heroes.push(c); pl.heroPlayedThisRound=true;
+  }
+  else if (c.t==='unit'){
+    pl.units.push(c);
+    switch(c.id){
+      case 'surya': for (const u of pl.units) if (u!==c && !u.ghost) u.power+=1;
+        log(g,'Surya Dev: all other friendly Units +1.'); break;
+      case 'vayu': {
+        const foes=opp.units.filter(u=>!u.ghost);
+        if (foes.length){ const t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b); damageUnit(g,1-pi,t,2,'Vayu'); }
+        break; }
+      case 'vishwakarma':
+        if (opp.artifact){ log(g,`Vishwakarma unmakes ${opp.artifact.n}.`); opp.discard.push(opp.artifact); opp.artifact=null; pl.artifactsDestroyedByMe++; }
+        if (pl.artifactsDestroyedByMe>0){ c.power += 2*pl.artifactsDestroyedByMe; log(g,`Vishwakarma stands at ${c.power}.`); }
+        break;
+      case 'kubera': {
+        const drawn = pl.deck.splice(0,2); pl.hand.push(...drawn);
+        log(g, `Kubera draws ${drawn.length} card(s).`);
+        if (drawn.length===2 && drawn.every(d=>d.t==='unit')){ drawn.forEach(d=>d.power+=1); log(g,'Both were Units \u2014 each gains +1.'); }
+        break; }
+      case 'urvashi': {
+        const withP = opp.hand.filter(h=>h.p>0);
+        if (withP.length){ const t=withP.reduce((a,b)=>a.p>=b.p?a:b); opp.hand.splice(opp.hand.indexOf(t),1); opp.discard.push(t);
+          log(g,`Urvashi\u2019s glance \u2014 ${opp.name} discards ${t.n}.`); }
+        break; }
+      case 'saraswati': {
+        let t = targetUid!=null ? opp.hand.find(h=>h.uid===targetUid) : null;
+        if (!t && opp.hand.length) t = opp.hand.reduce((a,b)=>a.p>=b.p?a:b);
+        if (t){ t.lockedRound=g.round; log(g,`Saraswati locks ${t.n} for this round.`); }
+        break; }
+      case 'ashwini': {
+        const wounded = pl.units.filter(u=>!u.ghost && u.power<u.base);
+        if (wounded.length){ const t=wounded.reduce((a,b)=>(a.base-a.power)>=(b.base-b.power)?a:b);
+          t.power=Math.min(t.base, t.power+2); log(g,`Ashwini Kumars heal ${t.n} \u2192 ${t.power}.`); }
+        else log(g,'Ashwini Kumars: no wounds to heal.');
+        break; }
+      case 'marut': if (pl.units.some(u=>u.id==='vayu')){ c.power+=3; log(g,'Marut rides Vayu\u2019s wind: +3.'); } break;
+      case 'gandharva': if (pl.units.filter(u=>!u.ghost).length>=4){ c.power+=2; log(g,'Gandharva\u2019s harmony: +2.'); } break; // itself + 3 others
+      case 'brihaspati':
+        if (g.lastMantra){ log(g,`Brihaspati repeats ${g.lastMantra==='gayatri'?'Gayatri Mantra':'Pavamana'}.`); castMantra(g, pi, g.lastMantra); }
+        else log(g,'Brihaspati: no Mantra has been spoken yet.');
+        break;
+    }
+  }
+  else if (c.t==='astra'){
+    pl.astrasThisRound++;
+    if (c.id==='vajra'){
+      const spec = targetSpec(g, pi, c);
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+      log(g,'Vajra falls!'); destroyUnit(g, 1-pi, t, 'Vajra');
+    } else if (c.id==='brahmastra'){
+      log(g,'BRAHMASTRA. The earth remembers, and trembles.');
+      for (const u of [...opp.units]) destroyUnit(g, 1-pi, u, 'Brahmastra');
+    } else if (c.id==='sudarshana'){
+      let t = targetUid!=null ? opp.heroes.find(h=>h.uid===targetUid) : null;
+      if (!t) t = opp.heroes.reduce((a,b)=>a.power>=b.power?a:b);
+      opp.heroes.splice(opp.heroes.indexOf(t),1);
+      opp.removedHeroes.push(t);
+      log(g,`Sudarshana Chakra removes ${t.n} for this round.`);
+    }
+    pl.discard.push(c);
+  }
+  else if (c.t==='mantra'){ castMantra(g, pi, c.id); pl.discard.push(c); }
+  else if (c.t==='artifact'){
+    if (pl.artifact){ pl.discard.push(pl.artifact); log(g,`${pl.artifact.n} is replaced.`); }
+    pl.artifact = c;
+    if (c.id==='amrita'){
+      const real=pl.units.filter(u=>!u.ghost);
+      if (real.length){ const t=real.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);
+        t.power+=2; t.aegis=true; log(g,`Amrita Kalasha blesses ${t.n}: +2, revives once if destroyed.`); }
+    } else log(g,'Dharma Kavacha raised \u2014 two Units now shielded.');
+  }
+  afterAction(g, pi);
+}
+
+function pass(g, pi){
+  const pl=g.players[pi];
+  pl.passed=true;
+  log(g, `${pl.name} passes.`);
+  afterAction(g, pi);
+}
+
+function afterAction(g, pi){
+  const a=g.players[0], b=g.players[1];
+  if (a.passed && b.passed){ endRound(g); return; }
+  const other = 1-pi;
+  g.turn = g.players[other].passed ? pi : other;
+}
+
+/* ---------- round / match resolution ---------- */
+function endRound(g){
+  const t0=totalPower(g,0), t1=totalPower(g,1);
+  log(g, `Round ${g.round} ends \u2014 ${g.players[0].name} ${t0} vs ${g.players[1].name} ${t1}.`);
+  let winner=null;
+  if (t0>t1) winner=0; else if (t1>t0) winner=1;
+  if (winner!=null){ g.players[winner].roundWins++; log(g, `${g.players[winner].name} wins Round ${g.round}!`); }
+  else log(g, 'The round is a draw \u2014 both sides bleed.');
+  g.roundHistory.push({ round:g.round, t0, t1, winner });
+
+  if (g.players[0].roundWins>=2 || g.players[1].roundWins>=2 || g.round>=3){
+    g.over=true;
+    if (g.players[0].roundWins>g.players[1].roundWins) g.winner=0;
+    else if (g.players[1].roundWins>g.players[0].roundWins) g.winner=1;
+    else g.winner=null;
+    log(g, g.winner==null ? 'The match ends in a cosmic stalemate.' : `\u2694 ${g.players[g.winner].name} WINS THE MATCH ${g.players[g.winner].roundWins}\u2013${g.players[1-(g.winner)].roundWins}!`);
+    return;
+  }
+
+  // board reset
+  for (let s=0;s<2;s++){
+    const pl=g.players[s];
+    for (const u of pl.units) if (!u.ghost){ u.revivedShield=false; u.aegis=false; u.power=u.base===u.power?u.power:u.power; pl.discard.push(u); }
+    pl.units=[];
+    if (pl.artifact){ pl.discard.push(pl.artifact); pl.artifact=null; }
+    // removed heroes return at half power
+    for (const h of pl.removedHeroes){ h.power=Math.max(1, Math.ceil(h.power/2)); pl.heroes.push(h); log(g,`${h.n} returns at ${h.power} power.`); }
+    pl.removedHeroes=[];
+    pl.passed=false; pl.heroPlayedThisRound=false; pl.astrasThisRound=0;
+    const drawn = pl.deck.splice(0,2); pl.hand.push(...drawn);
+    for (const c of pl.hand) c.lockedRound=0;
+  }
+  g.round++;
+  const prev = g.roundHistory[g.roundHistory.length-1];
+  g.turn = prev.winner!=null ? prev.winner : g.firstThisRound;  // round winner leads (design note)
+  g.firstThisRound = g.turn;
+  log(g, `\u2014\u2014 Round ${g.round} begins. Each side draws 2. ${g.players[g.turn].name} leads. \u2014\u2014`);
+}
+
+/* ---------- AI ---------- */
+function aiScoreCard(g, pi, c){
+  const pl=g.players[pi], opp=g.players[1-pi];
+  let s = c.p;
+  switch(c.id){
+    case 'indra': s += Math.min(pl.units.filter(u=>!u.ghost).length, 5) + 2; break;
+    case 'varuna': s += 2; break;
+    case 'agni': s += 1; break;
+    case 'surya': s += pl.units.filter(u=>!u.ghost).length; break;
+    case 'marut': if (pl.units.some(u=>u.id==='vayu')) s += 3; break;
+    case 'gandharva': if (pl.units.filter(u=>!u.ghost).length>=3) s += 2; break;
+    case 'kubera': s += 2.5; break;
+    case 'urvashi': s += 2; break;
+    case 'saraswati': s += opp.hand.length? 2:0; break;
+    case 'vayu': s += opp.units.some(u=>!u.ghost)? 2:0; break;
+    case 'vishwakarma': s += opp.artifact? 3:0; break;
+    case 'yama': s += 1.5; break;
+    case 'brihaspati': s += g.lastMantra? 2:0; break;
+    case 'vajra': { const spec=targetSpec(g,pi,c); s = spec.options.length? 1+Math.max(...spec.options.map(u=>effPower(g,1-pi,u))) : -99; break; }
+    case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
+    case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
+    case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
+    case 'pavamana': s = pl.units.filter(u=>!u.ghost&&u.power<u.base).length*2 - 1; break;
+    case 'amrita': s = pl.units.some(u=>!u.ghost)? 2.5 : -1; break;
+    case 'kavacha': s = pl.units.filter(u=>!u.ghost).length>=2? 2 : 0; break;
+  }
+  return s;
+}
+
+function aiMove(g, pi){
+  const pl=g.players[pi], opp=g.players[1-pi];
+  const idxs = playableIndices(g, pi);
+  const my=totalPower(g,pi), their=totalPower(g,1-pi);
+  const lead = my-their;
+  const mustWin = opp.roundWins===1;               // losing this round loses the match
+  const wantWin = pl.roundWins===1;                // winning this round wins the match
+
+  if (!idxs.length) return { pass:true };
+
+  if (opp.passed){
+    if (lead>0) return { pass:true };
+    // find cheapest single play that flips the round
+    let best=null;
+    for (const i of idxs){
+      const c=pl.hand[i];
+      const gain = c.t==='unit'||c.t==='hero' ? c.p + (indraOnBoard(pl)&&c.t==='unit'?1:0) : aiScoreCard(g,pi,c)-c.p;
+      if (gain > -lead){ if (!best || pl.hand[best].p>c.p) best=i; }
+    }
+    if (best!=null) return { play:best };
+    // can't flip with one card: fight on if the match is at stake, else concede the round
+    if (mustWin){ const i = idxs.reduce((a,b)=> aiScoreCard(g,pi,pl.hand[a])>=aiScoreCard(g,pi,pl.hand[b])?a:b); return { play:i }; }
+    return { pass:true };
+  }
+
+  // opponent still active
+  if (!mustWin && !wantWin && g.round===1 && lead>=10 && pl.hand.length<=opp.hand.length-1) return { pass:true }; // card-advantage bluff
+  if (!mustWin && lead<=-14 && g.round<3) return { pass:true };  // concede a lost round, preserve cards
+
+  const i = idxs.reduce((a,b)=> aiScoreCard(g,pi,pl.hand[a])>=aiScoreCard(g,pi,pl.hand[b])?a:b);
+  return { play:i };
+}
+
+function aiTakeTurn(g, pi){
+  const mv = aiMove(g, pi);
+  if (mv.pass) pass(g, pi); else playCard(g, pi, mv.play, null);
+}
+
+/* ---------- Node export & simulation harness ---------- */
+if (typeof module!=='undefined'){
+  module.exports = { newGame, playCard, pass, aiMove, aiTakeTurn, totalPower, playableIndices, targetSpec, effPower, isShielded, DEVA_DECK_DEF, RARITY_COLOR, RARITY_NAME };
+}
+
+</script>
+<script>
+const $=id=>document.getElementById(id);
+const TYPE_ICON={hero:'👑',unit:'⚔',astra:'🔱',mantra:'🕉',artifact:'🧿'};
+let G=null, pendingPlay=null, aiTimer=null, seenLog=0;
+
+function startGame(){
+  if (aiTimer) clearTimeout(aiTimer);
+  G=newGame({p0:'You',p1:'Opponent'}); seenLog=0;
+  $('gameover').classList.add('hidden'); $('targeting').classList.add('hidden');
+  $('logwrap').innerHTML=''; render(); pump();
+}
+
+function boardCard(c, pi, targetSet){
+  const d=document.createElement('div');
+  d.className='bc'+(c.t==='hero'?' hero':'')+(c.ghost?' ghostc':'');
+  const ep=effPower(G,pi,c);
+  const sh=!c.ghost && c.t==='unit' && isShielded(G,pi,c);
+  let pwc=''; if(!c.ghost){ if(ep>c.base) pwc='buffed'; else if(c.power<c.base) pwc='hurt'; }
+  d.innerHTML=`<div class="nm">${c.n}</div><div class="badges">${sh?'🛡':''}</div><div class="pw ${pwc}">${ep}</div>`;
+  d.style.borderColor = RARITY_COLOR[c.r]||'#444';
+  if (targetSet && targetSet.has(c.uid)){ d.classList.add('targetable'); d.onclick=()=>resolveTarget(c.uid); }
+  return d;
+}
+
+function fillRow(el, cards, pi, emptyLabel, targetSet){
+  el.innerHTML='';
+  if(!cards.length){ const e=document.createElement('div'); e.className='slot-empty'; e.textContent=emptyLabel; el.appendChild(e); return; }
+  for (const c of cards) el.appendChild(boardCard(c,pi,targetSet));
+}
+
+function render(targetSet){
+  const me=G.players[0], op=G.players[1];
+  $('rnum').textContent=G.round;
+  $('pips').innerHTML =
+    '<span class="pip-w">'+'★'.repeat(me.roundWins)+'</span><span class="pip-l">'+'★'.repeat(2-me.roundWins)+'</span>'+
+    ' · <span class="pip-w">'+'★'.repeat(op.roundWins)+'</span><span class="pip-l">'+'★'.repeat(2-op.roundWins)+'</span>';
+  $('ohand').textContent=op.hand.length; $('odeck').textContent=op.deck.length; $('pdeck').textContent=me.deck.length;
+  $('opassed').textContent=op.passed?' · PASSED':''; $('ppassed').textContent=me.passed?' · PASSED':'';
+  const t0=totalPower(G,0), t1=totalPower(G,1);
+  $('ptotal').textContent=t0; $('ototal').textContent=t1;
+  $('ptotal').className='total'+(t0<t1?' losing':''); $('ototal').className='total'+(t1<t0?' losing':'');
+  fillRow($('oheroes'), op.heroes, 1, 'heroes', targetSet);
+  fillRow($('ounits'),  op.units,  1, 'yuddha row', targetSet);
+  fillRow($('punits'),  me.units,  0, 'yuddha row');
+  fillRow($('pheroes'), me.heroes, 0, 'heroes');
+  $('oart').textContent=op.artifact?op.artifact.n:'no artifact'; $('oart').className='art-chip'+(op.artifact?'':' art-none');
+  $('part').textContent=me.artifact?me.artifact.n:'no artifact'; $('part').className='art-chip'+(me.artifact?'':' art-none');
+
+  // hand
+  const hand=$('hand'); hand.innerHTML='';
+  const play=new Set(playableIndices(G,0));
+  const myTurn = G.turn===0 && !me.passed && !G.over;
+  me.hand.forEach((c,i)=>{
+    const d=document.createElement('div');
+    const ok = myTurn && play.has(i);
+    d.className='hc '+(ok?'playable':'dead');
+    d.style.borderColor=RARITY_COLOR[c.r]||'#555';
+    d.innerHTML=`<div class="nm">${c.n}</div><div class="ty">${TYPE_ICON[c.t]} ${c.t} · ${RARITY_NAME[c.r]}</div><div class="fx">${c.txt}</div>${c.p>0?`<div class="pw">${c.p}</div>`:''}${c.lockedRound===G.round?'<div class="lockicon">🔒</div>':''}`;
+    if (ok) d.onclick=()=>tryPlay(i);
+    hand.appendChild(d);
+  });
+  $('passbtn').disabled=!myTurn;
+  $('turnind').textContent = G.over?'MATCH OVER': myTurn?'YOUR TURN': me.passed&&op.passed?'—': (G.turn===1?'OPPONENT…':'…');
+  $('turnind').className = myTurn?'you':'';
+
+  // log
+  const lw=$('logwrap');
+  for (; seenLog<G.log.length; seenLog++){
+    const l=G.log[seenLog]; const p=document.createElement('div');
+    p.className = l.msg.startsWith('You')?'me': l.msg.startsWith('Opponent')?'foe':'sys';
+    p.textContent=l.msg; lw.appendChild(p);
+  }
+  lw.scrollTop=lw.scrollHeight;
+
+  if (G.over) showGameOver();
+}
+
+function tryPlay(i){
+  const c=G.players[0].hand[i];
+  const spec=targetSpec(G,0,c);
+  if (spec && spec.options.length){
+    pendingPlay={ index:i, spec };
+    if (spec.kind==='oppHandCard'){
+      $('tgtitle').textContent='Saraswati sees all — lock one card in the opponent\u2019s hand:';
+      const box=$('tgopts'); box.innerHTML='';
+      spec.options.forEach(o=>{ const b=document.createElement('div'); b.className='opt';
+        b.innerHTML=`<div class="nm">${o.n}</div><div class="dt">${o.t}${o.p?` · power ${o.p}`:''}</div>`;
+        b.onclick=()=>resolveTarget(o.uid); box.appendChild(b); });
+      $('targeting').classList.remove('hidden');
+    } else {
+      $('tgtitle').textContent = c.id==='vajra' ? 'Vajra — strike which enemy Unit?' : 'Sudarshana — remove which enemy Hero?';
+      $('targeting').classList.add('hidden');
+      const set=new Set(spec.options.map(o=>o.uid));
+      render(set);
+      $('tgtitle').textContent+=''; // board-targeting mode
+      showBoardTargetBar(c);
+    }
+    return;
+  }
+  playCard(G,0,i,null); render(); pump();
+}
+
+let targetBar=null;
+function showBoardTargetBar(c){
+  hideBoardTargetBar();
+  targetBar=document.createElement('div');
+  targetBar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#241a08;border-top:1.5px solid #C9A84C;padding:10px;text-align:center;font-family:Cinzel,serif;font-size:12px;color:#C9A84C;z-index:40';
+  targetBar.innerHTML=`${c.n}: tap a glowing target &nbsp; <button style="background:none;border:1px solid #8a7434;color:#9a8d6a;border-radius:6px;padding:4px 10px;cursor:pointer" onclick="cancelTarget()">Cancel</button>`;
+  document.body.appendChild(targetBar);
+}
+function hideBoardTargetBar(){ if(targetBar){ targetBar.remove(); targetBar=null; } }
+function cancelTarget(){ pendingPlay=null; hideBoardTargetBar(); $('targeting').classList.add('hidden'); render(); }
+
+function resolveTarget(uid){
+  const pp=pendingPlay; if(!pp) return;
+  pendingPlay=null; hideBoardTargetBar(); $('targeting').classList.add('hidden');
+  playCard(G,0,pp.index,uid); render(); pump();
+}
+$('tgcancel').onclick=cancelTarget;
+$('passbtn').onclick=()=>{ if(G.turn===0&&!G.players[0].passed&&!G.over){ pass(G,0); render(); pump(); } };
+
+function pump(){
+  if (G.over) return;
+  if (G.turn===1 && !G.players[1].passed){
+    aiTimer=setTimeout(()=>{ aiTakeTurn(G,1); render(); pump(); }, 850);
+  }
+}
+
+function showGameOver(){
+  const me=G.players[0];
+  $('goh').textContent = G.winner===0?'⚔ VICTORY ⚔': G.winner===1?'DEFEAT':'STALEMATE';
+  $('gop').textContent = `Final: ${me.roundWins}–${G.players[1].roundWins} across ${G.roundHistory.length} rounds.`;
+  $('gameover').classList.remove('hidden');
+}
+
+startGame();
+</script>
+</body>
+</html>
