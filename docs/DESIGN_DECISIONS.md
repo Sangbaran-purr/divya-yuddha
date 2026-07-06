@@ -20,9 +20,17 @@
 3. **R3 Deva Soldier** — redesigned: "While Indra is on the board, +1 power at the start of each of your turns" (`onTurnStart()`).
 4. **R4 Amrita Kalasha** — "ON PLAY: your lowest power Unit gains +2; if destroyed this round it revives at 1 power (once)."
 
-## Blocked
-- **docs/ASURA_ROSTER.md missing** — the Asura faction (22 cards, Chaos Surge / Chandrahas, Nagastra + Venom tokens, GDD §9 cross-faction rulings) cannot be built until the roster file is provided. Engine faction plumbing is scaffolded: `DECKS = { devas, asuras:[] }`, per-player `faction`, `newGame({p0Faction,p1Faction})`. Faction-select UI + Asura-vs-Deva balance sims also deferred to that file.
+## Asura faction (2026-07 — implemented, docs/ASURA_ROSTER.md)
+- 22 cards; mechanic CHAOS SURGE; Chandrahas double; generic Venom-token infra (reused later by Nagas).
+- §9 cross-faction paths coded (Brahmastra>Hiranya, Chandrahas+Bana, Tamasa≠Mahabali). Manasa/Surasa hooks present but dormant (Naga not built).
+- Ambiguity rulings: Mahabali extra-turn tempo; Kumbhakarna asleep=0 then wakes+sweeps; Nagastra venom vs Hiranyakashipu → immunity holds (floors at 1); **Tataka excludes itself** from "lowest Unit" (owner may revisit).
+- UI: faction-select screen (any Deva/Asura combo); Asura half/cards/HUD themed crimson; Asura art naming `Asuras_...` (PNGs pending, text fallback shows crimson frames).
 
-## Simulation baselines
-- v0.1 (Deva mirror, 500): win split 51/47/6(draw), 53% reach Round 3
-- Post-rulings R1–R4 (Deva mirror, 500): win split ~48/47/5(draw), 52% reach Round 3, all invariants pass
+## Build
+- `node src/build.js` inlines src/engine.js into index.html between ENGINE markers. Run after every engine change.
+
+## Simulation baselines (500 sims/matchup)
+- v0.1 (Deva mirror): 51/47/6(draw), 53% reach R3
+- Post R1–R4 (Deva mirror): ~48/47/5, 52% R3
+- **Asura release**: Deva mirror 48/47/5 · Asura mirror 53/43/3 · Deva-vs-Asura **Devas 66% / Asuras 34%**. All invariants pass.
+- ⚠ Asuras underperform (~34% vs Devas) — combo-heavy kit + simple AI; Chandrahas correlates with losing (33% win-rate when played). Flag for balance tuning; not yet adjusted (roster is verbatim GDD).
