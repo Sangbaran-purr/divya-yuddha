@@ -14,11 +14,15 @@
 - [ ] Name bar subtitles inconsistent across cards — pick one standard
 - [ ] Urvashi: costume review for 12+ rating before store submission
 
-## Open rulings (owner to decide)
-1. Deva Soldier ability dead as written — redesign needed
-2. Amrita Kalasha "start of round" dead trigger — v0.1 uses on-play
-3. Round 2/3 lead rule — confirm or change
-4. Death at 0 power — confirm (affects Venom balance)
+## Resolved rulings (2026-07 — official, implemented in engine.js)
+1. **R1 Death at 0** — Unit at ≤0 power is destroyed (discard + death triggers); enforced generically by `sweepDeaths()`.
+2. **R2 Round lead** — R2/R3 previous winner leads; a drawn round keeps the prior leader.
+3. **R3 Deva Soldier** — redesigned: "While Indra is on the board, +1 power at the start of each of your turns" (`onTurnStart()`).
+4. **R4 Amrita Kalasha** — "ON PLAY: your lowest power Unit gains +2; if destroyed this round it revives at 1 power (once)."
 
-## Simulation baselines (v0.1, 500 matches, Deva mirror)
-- Win split 51/47/6(draw), 53% of matches reach Round 3
+## Blocked
+- **docs/ASURA_ROSTER.md missing** — the Asura faction (22 cards, Chaos Surge / Chandrahas, Nagastra + Venom tokens, GDD §9 cross-faction rulings) cannot be built until the roster file is provided. Engine faction plumbing is scaffolded: `DECKS = { devas, asuras:[] }`, per-player `faction`, `newGame({p0Faction,p1Faction})`. Faction-select UI + Asura-vs-Deva balance sims also deferred to that file.
+
+## Simulation baselines
+- v0.1 (Deva mirror, 500): win split 51/47/6(draw), 53% reach Round 3
+- Post-rulings R1–R4 (Deva mirror, 500): win split ~48/47/5(draw), 52% reach Round 3, all invariants pass
