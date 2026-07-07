@@ -228,8 +228,50 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .inspect-card.fac-asura .inm{ color:var(--crimson); }
 .hud-plaque.fac-asura{ border-color:var(--crimson); }
 .hud-plaque.fac-asura.leading{ border-color:#ff8a7a; box-shadow:0 0 14px rgba(224,72,60,.6), 0 2px 8px rgba(0,0,0,.65); }
-.venombadge{ position:absolute; top:2px; left:3px; font-size:12px; z-index:3; filter:drop-shadow(0 1px 1px #000); }
+/* Vanaras — forest green */
+:root{ --green:#6fc257; --green-2:#4e9c3a; --green-dim:#2f6a22; }
+.half.fac-vanara.opp{ background:radial-gradient(130% 92% at 50% -12%, rgba(46,120,40,.34), transparent 62%); }
+.half.fac-vanara.me{  background:radial-gradient(130% 92% at 50% 112%, rgba(46,120,40,.34), transparent 62%); }
+.bc.fac-vanara{ border-color:var(--green-dim); }
+.hc.fac-vanara{ border-color:#2f5a24; background:linear-gradient(#12240e,#0a1406); }
+.hc.fac-vanara .nm{ color:var(--green); }
+.inspect-card.fac-vanara{ border-color:var(--green-dim); background:linear-gradient(#12240e,#0a1406); }
+.inspect-card.fac-vanara:not(.has-art) .itext{ background:linear-gradient(#12240e,#0a1406); }
+.inspect-card.fac-vanara .inm{ color:var(--green); }
+.hud-plaque.fac-vanara{ border-color:var(--green); }
+.hud-plaque.fac-vanara.leading{ border-color:#9be888; box-shadow:0 0 14px rgba(111,194,87,.6), 0 2px 8px rgba(0,0,0,.65); }
+.fbtn[data-f="vanaras"].sel{ border-color:var(--green); background:linear-gradient(#12240e,#0a1806); }
+.fbtn[data-f="vanaras"].sel b{ color:var(--green); }
+#leapbtn{ background:linear-gradient(#1c3a12,#12240e); color:var(--green); border:1.5px solid var(--green-dim); border-radius:10px; padding:11px 12px; font-size:12px; font-weight:700; cursor:pointer; font-family:Cinzel,serif; letter-spacing:1px; }
+#leapbtn:active{ transform:scale(.97); } #leapbtn.hidden{ display:none !important; }
+.slot-place{ flex:0 0 auto; width:14px; align-self:stretch; min-height:56px; border-radius:5px; border:2px dashed var(--green); cursor:pointer; background:rgba(111,194,87,.10); }
+.slot-place:hover{ background:rgba(111,194,87,.25); }
+.venombadge{ position:absolute; top:2px; left:3px; font-size:12px; z-index:3; filter:drop-shadow(0 1px 1px #000); color:var(--venom); }
+.venombadge .vstack{ font-family:Cinzel,serif; font-size:9px; font-weight:700; color:#eafff0; margin-left:-2px; vertical-align:super; text-shadow:0 1px 1px #000; }
+.bindbadge{ position:absolute; top:2px; right:3px; font-size:12px; z-index:3; filter:drop-shadow(0 1px 1px #000); }
+.stealbadge{ position:absolute; bottom:2px; left:3px; font-size:12px; z-index:3; filter:drop-shadow(0 1px 2px #000); }
 .shieldbadge.sleep{ left:3px; right:auto; }
+
+/* Nagas — serpent teal (#1F6B62) + venom-green accent */
+:root{ --teal:#3fb9a8; --teal-2:#1F6B62; --teal-dim:#154b45; --venom:#78e08f; }
+.half.fac-naga.opp{ background:radial-gradient(130% 92% at 50% -12%, rgba(31,107,98,.36), transparent 62%); }
+.half.fac-naga.me{  background:radial-gradient(130% 92% at 50% 112%, rgba(31,107,98,.36), transparent 62%); }
+.bc.fac-naga{ border-color:var(--teal-dim); }
+.hc.fac-naga{ border-color:#173f3a; background:linear-gradient(#0c211f,#061211); }
+.hc.fac-naga .nm{ color:var(--teal); }
+.inspect-card.fac-naga{ border-color:var(--teal-dim); background:linear-gradient(#0c211f,#061211); }
+.inspect-card.fac-naga:not(.has-art) .itext{ background:linear-gradient(#0c211f,#061211); }
+.inspect-card.fac-naga .inm{ color:var(--teal); }
+.hud-plaque.fac-naga{ border-color:var(--teal); }
+.hud-plaque.fac-naga.leading{ border-color:#6fe6d6; box-shadow:0 0 14px rgba(63,185,168,.6), 0 2px 8px rgba(0,0,0,.65); }
+.fbtn[data-f="nagas"].sel{ border-color:var(--teal); background:linear-gradient(#0c211f,#06120f); }
+.fbtn[data-f="nagas"].sel b{ color:var(--teal); }
+/* bound (Nagapasha) — greyed, chained; stolen (Mohini) — teal-glow poached unit */
+.bc.bound{ filter:grayscale(.7) brightness(.62); border-color:#555 !important; }
+.bc.bound .medallion{ background:#444 !important; color:#bbb !important; }
+.bc.stolen{ border-color:var(--teal) !important; box-shadow:0 0 10px rgba(63,185,168,.55); }
+#unbindbtn{ background:linear-gradient(#123330,#0a201d); color:var(--teal); border:1.5px solid var(--teal-dim); border-radius:10px; padding:11px 12px; font-size:12px; font-weight:700; cursor:pointer; font-family:Cinzel,serif; letter-spacing:1px; }
+#unbindbtn:active{ transform:scale(.97); } #unbindbtn.hidden{ display:none !important; }
 
 /* ===== faction select ===== */
 .modal.fsel{ text-align:center; max-width:400px; }
@@ -249,6 +291,31 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fsel-start:active{ transform:scale(.98); }
 .go-btns{ display:flex; flex-direction:column; gap:8px; align-items:center; }
 .go-alt{ background:none !important; border:1px solid #4a3a18 !important; color:var(--ink-dim) !important; font-size:11px !important; padding:8px 16px !important; }
+
+/* ===== event choreography ===== */
+#choreolayer{ position:fixed; inset:0; z-index:64; pointer-events:none; }
+#choreolayer.locked{ pointer-events:auto; cursor:pointer; }
+.bc.choreo-src{ animation:choreoLift .42s ease-out; z-index:5; }
+@keyframes choreoLift{ 0%{ transform:translateY(0) scale(1);} 40%{ transform:translateY(-8px) scale(1.09); filter:brightness(1.25);} 100%{ transform:translateY(0) scale(1);} }
+.bc.hit{ animation:choreoHit .3s ease-out; }
+@keyframes choreoHit{ 0%,100%{ transform:translateX(0);} 20%{ transform:translateX(-4px);} 40%{ transform:translateX(4px) ;} 60%{ transform:translateX(-3px);} 80%{ transform:translateX(2px);} }
+.bc.pumped{ animation:choreoPump .32s ease-out; }
+@keyframes choreoPump{ 0%,100%{ transform:scale(1);} 45%{ transform:scale(1.13); filter:brightness(1.3);} }
+.dissolve-clone{ position:fixed; z-index:65; border-radius:12px; pointer-events:none; background:linear-gradient(#3a1414,#180808); border:2px solid #b0483c; display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-size:11px; color:#ffd9d0; text-align:center; padding:4px; animation:dissolveAway .5s ease-in forwards; }
+@keyframes dissolveAway{ 0%{ opacity:1; transform:scale(1);} 100%{ opacity:0; transform:scale(.7) rotate(4deg); filter:blur(3px);} }
+.floater.venom{ color:var(--venom); } .floater.note{ color:#ffe08a; font-size:13px; }
+.callout{ position:fixed; z-index:67; font-family:Cinzel,serif; font-weight:700; font-size:12px; letter-spacing:1px; color:#fff2cf; pointer-events:none; text-shadow:0 1px 3px #000, 0 0 8px rgba(255,220,140,.5); animation:calloutPop .5s ease-out forwards; white-space:nowrap; }
+@keyframes calloutPop{ 0%{ transform:translateY(4px) scale(.85); opacity:0;} 25%{ opacity:1;} 78%{ opacity:1; transform:translateY(-6px) scale(1);} 100%{ opacity:0; transform:translateY(-12px);} }
+#ftoast{ position:fixed; top:31%; left:0; right:0; z-index:69; text-align:center; pointer-events:none; }
+#ftoast .ft{ display:inline-block; font-family:Cinzel,serif; font-size:17px; font-weight:700; letter-spacing:3px; padding:8px 22px; border-radius:12px; border:1.5px solid; background:rgba(8,6,3,.82); animation:ftPop .62s ease-out; text-transform:uppercase; }
+@keyframes ftPop{ 0%{ transform:scale(.8); opacity:0;} 22%{ transform:scale(1.04); opacity:1;} 80%{ opacity:1;} 100%{ opacity:0; transform:scale(1);} }
+.ft.f-chaos{ color:var(--crimson); border-color:var(--crimson); box-shadow:0 0 18px rgba(224,72,60,.5); }
+.ft.f-dharma{ color:var(--gold); border-color:var(--gold); box-shadow:0 0 18px rgba(201,168,76,.5); }
+.ft.f-leap{ color:var(--green); border-color:var(--green); box-shadow:0 0 18px rgba(111,194,87,.5); }
+.ft.f-venom{ color:var(--venom); border-color:var(--teal); box-shadow:0 0 18px rgba(63,185,168,.5); }
+.ft.f-other{ color:#e8d6a8; border-color:#6a5a30; }
+.kwtip{ font-size:10px; color:var(--ink-dim); margin-top:5px; line-height:1.45; border-top:1px solid #2c2414; padding-top:6px; }
+.kwtip b{ color:var(--ink); font-family:Cinzel,serif; letter-spacing:.5px; }
 
 @media (prefers-reduced-motion: reduce){
   .ember{ display:none; }
@@ -294,6 +361,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 
   <div id="controls">
     <div id="turnind">—</div>
+    <button id="leapbtn" class="hidden">🌿 LEAP</button>
+    <button id="unbindbtn" class="hidden">⛓ UNBIND</button>
     <button id="passbtn">PASS ROUND</button>
   </div>
 </div>
@@ -305,6 +374,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 </div></div></div>
 
 <div id="banner" class="hidden"><span class="txt"></span></div>
+<div id="ftoast" class="hidden"><span class="ft"></span></div>
+<div id="choreolayer"></div>
 
 <div class="overlay hidden" id="inspect">
   <div class="inspect-card" id="inspectCard"></div>
@@ -329,13 +400,17 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <h3>⚔ CHOOSE YOUR BATTLE</h3>
   <div class="fsel-row"><span class="fsel-lbl">YOUR FACTION</span>
     <div class="fsel-opts" data-side="p0">
-      <button class="fbtn sel" data-f="devas"><b>DEVAS</b><em>☀ celestials · gold</em></button>
-      <button class="fbtn" data-f="asuras"><b>ASURAS</b><em>🩸 demons · crimson</em></button>
+      <button class="fbtn sel" data-f="devas"><b>DEVAS</b><em>☀ gold</em></button>
+      <button class="fbtn" data-f="asuras"><b>ASURAS</b><em>🩸 crimson</em></button>
+      <button class="fbtn" data-f="vanaras"><b>VANARAS</b><em>🌿 green</em></button>
+      <button class="fbtn" data-f="nagas"><b>NAGAS</b><em>🐍 teal</em></button>
     </div></div>
   <div class="fsel-row"><span class="fsel-lbl">OPPONENT</span>
     <div class="fsel-opts" data-side="p1">
-      <button class="fbtn sel" data-f="devas"><b>DEVAS</b><em>☀ celestials</em></button>
-      <button class="fbtn" data-f="asuras"><b>ASURAS</b><em>🩸 demons</em></button>
+      <button class="fbtn sel" data-f="devas"><b>DEVAS</b><em>☀ gold</em></button>
+      <button class="fbtn" data-f="asuras"><b>ASURAS</b><em>🩸 crimson</em></button>
+      <button class="fbtn" data-f="vanaras"><b>VANARAS</b><em>🌿 green</em></button>
+      <button class="fbtn" data-f="nagas"><b>NAGAS</b><em>🐍 teal</em></button>
     </div></div>
   <button id="fselstart" class="fsel-start">BEGIN ⚔</button>
 </div></div>
@@ -389,7 +464,7 @@ const ASURA_DECK_DEF = [
   // ---- UNITS (12) ----
   { id:'hiranya',  n:'Hiranyakashipu',sub:'The Immortal Tyrant',  t:'unit', p:7, r:'E', txt:'PASSIVE: Cannot be destroyed by any Astra (Brahmastra overrides). Only a Mantra may remove it.' },
   { id:'ravana',   n:'Ravana',        sub:'The Ten Headed King',  t:'unit', p:7, r:'E', txt:'ON PLAY: Gains +1 power for each card in the opponent’s hand (max +5).' },
-  { id:'kumbha',   n:'Kumbhakarna',   sub:'The Sleeping Giant',   t:'unit', p:8, r:'E', txt:'ON PLAY: Sleeps (power does not count). At the start of your next turn it wakes and deals 3 damage to all enemy Units.' },
+  { id:'kumbha',   n:'Kumbhakarna',   sub:'The Sleeping Giant',   t:'unit', p:8, r:'E', txt:'ON PLAY: Its power counts at once. At the start of your next turn it wakes and deals 3 damage to all enemy Units.' },
   { id:'meghnad',  n:'Meghnad',       sub:'Son of Thunder',       t:'unit', p:6, r:'R', txt:'ON PLAY: If an enemy Hero is on the board, deal 2 damage to it directly (bypasses Hero immunity).' },
   { id:'kalanemi', n:'Kalanemi',      sub:'The False Saint',      t:'unit', p:5, r:'R', txt:'ON PLAY: Disguised until your next turn; when revealed, deal 2 damage to all enemy Units.' },
   { id:'bana',     n:'Bana Asura',    sub:'The Thousand Armed',   t:'unit', p:6, r:'E', txt:'PASSIVE: Gains +1 power for each Astra played this round (a Chandrahas-doubled Astra counts twice). No limit.' },
@@ -408,14 +483,76 @@ const ASURA_DECK_DEF = [
   { id:'ahamkara', n:'Ahamkara',      sub:'The Ego Weapon',       t:'mantra', p:0, r:'U', txt:'Choose a friendly Unit: double its current power until round end, then it is destroyed regardless.' },
   // ---- ARTIFACTS (2) ----
   { id:'tripura',  n:'Tripura',       sub:'The Three Demon Cities',t:'artifact', p:0, r:'M', txt:'PASSIVE: All your Units gain +1 power at the start of every turn. Ends the instant any Astra is played by either player.' },
-  { id:'chandrahas',n:'Chandrahas',   sub:'Ravana’s Moon Blade',t:'artifact', p:0, r:'R', txt:'PASSIVE: Your first Astra each round deals double effect. Chaos Surge triggers twice while active.' },
+  { id:'chandrahas',n:'Chandrahas',   sub:'Ravana’s Moon Blade',t:'artifact', p:0, r:'R', txt:'ON PLAY: trigger one Chaos Surge. PASSIVE: your first Astra each round deals double effect; Chaos Surge triggers twice while active.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
-const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF };
+// Vanara roster — docs/VANARA_ROSTER.md (GDD v2.0 §7). Mechanic: LEAP (see doLeap()). Units-only positions.
+const VANARA_DECK_DEF = [
+  // ---- HEROES (3) ----
+  { id:'hanuman', n:'Hanuman',       sub:'Devotion Incarnate',   t:'hero', p:9, r:'L', txt:'PASSIVE: Each Vanara Unit of printed power 4+ you play gains +1 on entry (+2 while Jambavan is on the board).' },
+  { id:'sugriva', n:'Sugriva',       sub:'King of the Vanaras',  t:'hero', p:6, r:'E', txt:'ON PLAY: Draw 1 extra card immediately.' },
+  { id:'angad',   n:'Angad',         sub:'The Unyielding Messenger', t:'hero', p:7, r:'E', txt:'PASSIVE: Immune to opponent Mantras. When the opponent plays an Astra, they forfeit their next turn.' },
+  // ---- UNITS (12) ----
+  { id:'nala',    n:'Nala',          sub:'The Bridge Builder',   t:'unit', p:5, r:'E', txt:'ON PLAY: Place a copy of the lowest-power Vanara Unit in your hand onto the row at half power.' },
+  { id:'neela',   n:'Neela',         sub:'Commander of the Vanguard', t:'unit', p:5, r:'R', txt:'ON PLAY: All Vanara Units on the board gain +1 power.' },
+  { id:'jambavan',n:'Jambavan',      sub:'The Ancient Bear King',t:'unit', p:6, r:'E', txt:'PASSIVE: Hanuman’s entry bonus becomes +2 per Unit while Jambavan is on the board.' },
+  { id:'kesari',  n:'Kesari',        sub:'Father of Hanuman',    t:'unit', p:5, r:'R', txt:'ON PLAY: If Hanuman is on the board, gain power equal to Hanuman’s current power.' },
+  { id:'tara',    n:'Tara',          sub:'Queen of the Vanaras', t:'unit', p:4, r:'R', txt:'ON PLAY: Look at the top 3 cards of your deck; keep one, return the rest.' },
+  { id:'dwivida', n:'Dwivida',       sub:'The Rogue Vanara',     t:'unit', p:5, r:'R', txt:'ON PLAY: Destroy one random card in the opponent’s hand.' },
+  { id:'mainda',  n:'Mainda',        sub:'The Swift Striker',    t:'unit', p:4, r:'U', txt:'ON PLAY: Immediately Leap onto an adjacent Unit — free, without spending your round’s Leap.' },
+  { id:'sharabha',n:'Sharabha',      sub:'The Forest Sentinel',  t:'unit', p:3, r:'U', txt:'PASSIVE: The opponent cannot target your Vanara Units of power 3 or less with Astras.' },
+  { id:'scout',   n:'Vanara Scout',  sub:'Eyes of the Jungle',   t:'unit', p:2, r:'C', txt:'ON PLAY: Reveal the opponent’s hand; gain +1 power for each Vanara Unit already on the board.' },
+  { id:'warrior', n:'Vanara Warrior',sub:'Loyal to the Last',    t:'unit', p:3, r:'C', txt:'PASSIVE: +1 power for each other Vanara Unit on the board (max +4).' },
+  { id:'dadhimukha',n:'Dadhimukha',  sub:'Guardian of Madhuvana',t:'unit', p:3, r:'U', txt:'ON PLAY: Draw 1 card. If Sugriva is on the board, also give all friendly Vanara Units +1 power.' },
+  { id:'riksha',  n:'Riksha',        sub:'Son of the Wind',      t:'unit', p:4, r:'R', txt:'ON PLAY: Move to any position on the row. Gains +3 power while Hanuman is on the board.' },
+  // ---- ASTRAS (3) ----
+  { id:'gandiva', n:'Gandiva Arrow', sub:'Blessed Shaft',        t:'astra', p:0, r:'R', txt:'Destroy one enemy Unit regardless of power. If a Vanara used Leap this round, destroy one more.' },
+  { id:'lankadahan',n:'Lanka Dahan', sub:'Fire of Hanuman',      t:'astra', p:0, r:'L', txt:'Deal 2 damage to ALL enemy Units. All friendly Vanara Units gain +1 power.' },
+  { id:'sanjeevani',n:'Sanjeevani Call',sub:'Mountain of Life',  t:'astra', p:0, r:'U', txt:'Revive your last destroyed Unit at full power (plus Hanuman’s entry bonus if he is on board).' },
+  // ---- MANTRAS (2) ----
+  { id:'ramanaam',n:'Rama Naam',     sub:'The Name Above All',   t:'mantra', p:0, r:'R', txt:'All friendly Vanara Units gain +2 power.' },
+  { id:'kishkindhaoath',n:'Kishkindha Oath',sub:'Bond of Warriors',t:'mantra', p:0, r:'U', txt:'Ward a friendly Vanara Unit: the next time it would be destroyed this round it survives at 1 power, and all other friendly Vanara Units gain +1.' },
+  // ---- ARTIFACTS (2) ----
+  { id:'ramasignet',n:'Rama’s Signet',sub:'Seal of Trust',       t:'artifact', p:0, r:'R', txt:'PASSIVE: Your Vanara Units cannot be reduced below 1 power by any effect; Venom on them is negated.' },
+  { id:'kishkindhacrown',n:'Kishkindha Crown',sub:'Throne of Unity',t:'artifact', p:0, r:'M', txt:'PASSIVE: When a Vanara Unit Leaps, it and the copied Unit both gain +1. Leap limit becomes twice per round.' },
+];
+
+// Naga roster — docs/NAGA_ROSTER.md (GDD v2.0 §8). Mechanic: VENOM (see venomTick / drainAmount). Rulings R10–R16.
+const NAGA_DECK_DEF = [
+  // ---- HEROES (3) ----
+  { id:'vasuki',  n:'Vasuki',         sub:'The Cosmic Serpent',   t:'hero', p:8, r:'L', txt:'ON PLAY: All enemy Units lose 1 power. PASSIVE: In Round 3, the Venom drain is −2 per enemy Unit.' },
+  { id:'takshaka',n:'Takshaka',       sub:'The Inevitable',       t:'hero', p:6, r:'E', txt:'PASSIVE: While Takshaka is on the board, enemy Heroes are NOT immune to your Naga Astras.' },
+  { id:'shesha',  n:'Shesha',         sub:'The Infinite Serpent', t:'hero', p:7, r:'L', txt:'PASSIVE: If you lose a round, at the start of the next round a random friendly Unit returns from your discard at full power.' },
+  // ---- UNITS (12) ----
+  { id:'manasa',  n:'Manasa',         sub:'Goddess of Serpents',  t:'unit', p:5, r:'E', txt:'PASSIVE: The opponent’s Astras are cancelled (effect and Chaos Surge). ON PLAY: gain +1 power for each Naga Unit on the board.' },
+  { id:'karkotaka',n:'Karkotaka',     sub:'The Venomous King',    t:'unit', p:6, r:'E', txt:'PASSIVE: Your Venom drain ticks at the start of each opponent turn instead of once at round end.' },
+  { id:'surasa',  n:'Surasa',         sub:'Mother of Nagas',      t:'unit', p:5, r:'E', txt:'ON PLAY: Trap the opponent’s next card — a Unit enters with −2 power and Surasa gains +2; an Astra is negated (its Chaos Surge still fires).' },
+  { id:'ulupi',   n:'Ulupi',          sub:'The River Naga Princess', t:'unit', p:4, r:'R', txt:'ON PLAY: Revive a destroyed friendly Naga Unit from your discard at full power; it can’t be targeted by Astras this round.' },
+  { id:'nagasadhu',n:'Naga Sadhu',    sub:'The Poison Ascetic',   t:'unit', p:3, r:'R', txt:'ON PLAY: Apply a Venom Token to ALL enemy Units.' },
+  { id:'kaliya',  n:'Kaliya',         sub:'The Multi-Headed Terror', t:'unit', p:6, r:'E', txt:'ON PLAY: Enters with +1 power per round already completed (R1 +0, R2 +1, R3 +2).' },
+  { id:'astika',  n:'Astika',         sub:'The Peacemaker',       t:'unit', p:4, r:'U', txt:'ON PLAY: Skip the next Venom tick; all friendly Units recover 1 power.' },
+  { id:'nagaarcher',n:'Naga Archer',  sub:'Poison Arrow',         t:'unit', p:3, r:'U', txt:'ON PLAY: Deal 1 damage to an enemy Unit; if it survives, apply a Venom Token to it.' },
+  { id:'nagaenchantress',n:'Naga Enchantress',sub:'The Luring Mist',t:'unit', p:3, r:'U', txt:'ON PLAY: The opponent’s next card must be a Unit — they cannot play an Astra or Mantra next turn.' },
+  { id:'nagawarrior',n:'Naga Warrior',sub:'Scales of Darkness',   t:'unit', p:3, r:'C', txt:'PASSIVE: +1 power for each Venom Token on the board.' },
+  { id:'nagahatchling',n:'Naga Hatchling',sub:'Born of Venom',    t:'unit', p:2, r:'C', txt:'ON PLAY: If any enemy Unit carries a Venom Token, gain +2 power.' },
+  { id:'ashvatara',n:'Ashvatara',     sub:'The Naga Prince',      t:'unit', p:5, r:'R', txt:'ON PLAY: An enemy Unit loses power equal to the current round number (R1 −1, R2 −2, R3 −3).' },
+  // ---- ASTRAS (3) ----
+  { id:'nagapasha',n:'Nagapasha',     sub:'Serpent Noose',        t:'astra', p:0, r:'R', txt:'Bind an enemy Unit — it contributes 0 power until the opponent spends a turn to unbind it.' },
+  { id:'venomstrike',n:'Vasuki Venom Strike',sub:'Cosmic Poison', t:'astra', p:0, r:'L', txt:'This round, your Venom drain is tripled (−3, or −4 while Vasuki is on the board).' },
+  { id:'mohini',  n:'Mohini Trap',    sub:'The Illusion Snare',   t:'astra', p:0, r:'R', txt:'Steal an enemy Unit until round end; it fights for you (and is exempt from your Venom).' },
+  // ---- MANTRAS (2) ----
+  { id:'mrityunjaya',n:'Mrityunjaya', sub:'Conquest of Death',    t:'mantra', p:0, r:'R', txt:'Revive any destroyed Unit (either discard) onto your board at full power. It gains a Venom Token.' },
+  { id:'sarpasatra',n:'Sarpa Satra',  sub:'The Serpent Sacrifice',t:'mantra', p:0, r:'U', txt:'Sacrifice a friendly Naga Unit: all enemy Units lose power equal to its current power. Venom Tokens deal double this round.' },
+  // ---- ARTIFACTS (2) ----
+  { id:'patala',  n:'Patala Throne',  sub:'Seat of Serpent Kings',t:'artifact', p:0, r:'M', txt:'PASSIVE: Your Venom drain becomes −(1 + current round number): R1 −2, R2 −3, R3 −4.' },
+  { id:'anantacoil',n:'Ananta Coil',  sub:'The Endless Serpent',  t:'artifact', p:0, r:'R', txt:'PASSIVE: When a friendly Naga Unit is destroyed, leave a permanent Venom Coil that drains 1 from a random enemy Unit each Venom tick (persists all match).' },
+];
+
+const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
 
 let UID = 1;
-function mkCard(def){ return { ...def, uid: UID++, power: def.p, base: def.p, ghost:false, lockedRound:0, aegis:false, revivedShield:false, asleep:false, revealPending:false, venom:0, doomed:false, disguisedAs:null }; }
+function mkCard(def){ return { ...def, uid: UID++, power: def.p, base: def.p, ghost:false, lockedRound:0, aegis:false, revivedShield:false, asleep:false, revealPending:false, venom:0, doomed:false, disguisedAs:null, ward:false, bound:false, astraImmuneRound:0, stolenBy:-1 }; }
 function shuffle(a, rng){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
 function mkPlayer(name, rng, faction='devas'){
@@ -427,7 +564,9 @@ function mkPlayer(name, rng, faction='devas'){
     passed:false, roundWins:0,
     heroPlayedThisRound:false, astrasThisRound:0,
     artifactsDestroyedByMe:0, removedHeroes:[],
-    skipNext:false, mahabaliArm:-1, chaosThisRound:false, seesOppHand:false };
+    skipNext:false, mahabaliArm:-1, chaosThisRound:false, seesOppHand:false,
+    shieldUids:[], leapsUsed:0,
+    boardTokens:0, surasaTrap:false, astikaPause:false, sarpaDouble:false, venomStrike:0, mustPlayUnit:false };
 }
 
 function newGame(opts={}){
@@ -436,7 +575,7 @@ function newGame(opts={}){
     rng, round:1, over:false, winner:null,
     players:[ mkPlayer(opts.p0||'You', rng, opts.p0Faction||'devas'),
               mkPlayer(opts.p1||'Opponent', rng, opts.p1Faction||'devas') ],
-    turn: rng()<0.5?0:1, lastMantra:null, log:[],
+    turn: rng()<0.5?0:1, lastMantra:null, log:[], events:[],
     roundHistory:[],
     lastKillThisRound:null, astraPlays:0, astraBanaCount:0, grantExtraTurn:null,
   };
@@ -447,35 +586,187 @@ function newGame(opts={}){
 }
 
 function log(g, msg){ g.log.push({ round:g.round, msg }); }
+/* Structured event stream — the UI choreographs these SEQUENTIALLY. Purely OBSERVATIONAL:
+   emit() never touches game state or g.rng, so outcomes are byte-identical whether or not g.events
+   is consumed. Every damage / buff / destroy / revive / trigger / token / faction-passive emits one. */
+function emit(g, type, o){
+  o = o||{};
+  if (!g.events) g.events = [];
+  g.events.push({ round:g.round, seq:g.events.length, type,
+    sourceUid: o.sourceUid==null?null:o.sourceUid,
+    targetUids: o.targetUids||[], amount: o.amount==null?null:o.amount,
+    abilityName: o.abilityName||null, text: o.text||null });
+}
 
 /* ---------- power & shields ---------- */
 function indraOnBoard(pl){ return pl.heroes.some(h=>h.id==='indra'); }
 function effPower(g, pi, c){
   if (c.t==='hero') return c.power;
-  if (c.asleep) return 0;                                // Kumbhakarna: no power while asleep
+  // EXP-G (ruling revision): Kumbhakarna's power DOES count while asleep — 'asleep' now only defers his wake-sweep.
   let p = c.power;
   if (!c.ghost && indraOnBoard(g.players[pi])) p += 1;   // Indra aura (Deva)
+  if (!c.ghost && c.id==='warrior'){                     // Vanara Warrior: +1 per other Vanara Unit (max +4)
+    const n = g.players[pi].units.filter(u=>!u.ghost && u!==c).length;
+    p += Math.min(4, n);
+  }
+  if (!c.ghost && c.id==='nagawarrior') p += venomTokenCount(g);   // Naga Warrior: +1 per Venom Token on the board
   return p;
+}
+/* EXP-A (GDD-accurate Dharma Shield): the shield is a STICKY designation, not dynamic re-targeting.
+   At each shield opportunity (a Deva Unit hitting the board) an open slot latches onto the highest-power
+   unshielded Unit and STAYS there for the round — even if a bigger Unit arrives later or the shielded one
+   dies (the shield dies with it). Dharma Kavacha = 2 sticky slots. */
+function designateShields(g, pi){
+  const pl = g.players[pi];
+  if (pl.faction!=='devas') return;
+  const cap = pl.artifact && pl.artifact.id==='kavacha' ? 2 : 1;
+  while (pl.shieldUids.length < cap){
+    const cands = pl.units.filter(u=>!u.ghost && !pl.shieldUids.includes(u.uid));
+    if (!cands.length) break;
+    const pick = cands.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b);   // AI designates highest-power
+    pl.shieldUids.push(pick.uid);
+    emit(g,'toast',{abilityName:'Dharma Shield',text:'Dharma Shield'});
+    emit(g,'shield',{targetUids:[pick.uid],abilityName:'Dharma Shield',text:`${pick.n} shielded`});
+  }
 }
 function shieldedSet(g, pi){
   // Dharma Shield is the DEVA faction passive — Asura (and other) units never hold it.
   const pl = g.players[pi];
   if (pl.faction!=='devas') return new Set();
-  // v0.1 auto-shield: highest effective-power unit(s) hold Dharma Shield.
-  const n = pl.artifact && pl.artifact.id==='kavacha' ? 2 : 1;
-  const real = pl.units.filter(u=>!u.ghost);
-  const sorted = [...real].sort((a,b)=>effPower(g,pi,b)-effPower(g,pi,a));
-  const set = new Set(sorted.slice(0,n).map(u=>u.uid));
-  for (const u of real) if (u.revivedShield) set.add(u.uid); // Gayatri revival shield
+  const set = new Set(pl.shieldUids);                         // sticky designations (dead uids harmlessly ignored)
+  for (const u of pl.units) if (!u.ghost && u.revivedShield) set.add(u.uid); // Gayatri revival shield
   return set;
 }
 function isShielded(g, pi, c){ return shieldedSet(g, pi).has(c.uid); }
+
+/* ---------- Vanara: faction helpers, positioning, LEAP ---------- */
+function heroOnBoard(pl, id){ return pl.heroes.some(h=>h.id===id); }
+function hasUnit(pl, id){ return pl.units.some(u=>!u.ghost && u.id===id); }
+// Hanuman's on-entry bonus: +1, or +2 while Jambavan is on the board; 0 without Hanuman.
+function hanumanEntryBonus(pl){ return heroOnBoard(pl,'hanuman') ? (hasUnit(pl,'jambavan')?2:1) : 0; }
+// Rama's Signet active for a Vanara player.
+function signetActive(pl){ return pl.faction==='vanaras' && pl.artifact && pl.artifact.id==='ramasignet'; }
+// Positioning: Units occupy ordered slots in pl.units (index = position). Adjacency = array neighbours.
+function adjacentUnits(pl, unit){
+  const i = pl.units.indexOf(unit); if (i<0) return [];
+  return [pl.units[i-1], pl.units[i+1]].filter(Boolean);
+}
+function leapLimit(pl){ return (pl.artifact && pl.artifact.id==='kishkindhacrown') ? 2 : 1; }
+// LEAP: `leaper` copies `target`'s current power (§9: power only — not the shield). Crown → both +2. free = Mainda's bonus.
+function doLeap(g, pi, leaper, target, free){
+  const pl = g.players[pi];
+  leaper.power = effPower(g, pi, target);
+  log(g, `Leap! ${leaper.n} copies ${target.n} → ${leaper.power}.`);
+  emit(g,'toast',{abilityName:'Leap',text:'Leap!'});
+  emit(g,'buff',{sourceUid:leaper.uid,targetUids:[leaper.uid],amount:null,abilityName:'Leap',text:`copies ${target.n}`});
+  if (pl.artifact && pl.artifact.id==='kishkindhacrown'){ leaper.power += 1; target.power += 1; log(g, `Kishkindha Crown: ${leaper.n} and ${target.n} both +1.`); emit(g,'buff',{targetUids:[leaper.uid,target.uid],amount:1,abilityName:'Kishkindha Crown',text:'+1'}); }   // EXP-E: +1/+1 (was +2/+2)
+  if (!free) pl.leapsUsed++;
+}
+// AI helper: best beneficial (leaper, adjacent target) pair by power gain.
+function bestLeap(g, pi){
+  const pl = g.players[pi]; let best=null;
+  for (const u of pl.units){
+    if (u.ghost) continue;
+    for (const t of adjacentUnits(pl, u)){
+      if (t.ghost || t===u) continue;
+      const gain = effPower(g,pi,t) - effPower(g,pi,u);
+      if (gain>0 && (!best || gain>best.gain)) best={ leaper:u, target:t, gain };
+    }
+  }
+  return best;
+}
+function canLeap(g, pi){
+  const pl = g.players[pi];
+  return pl.faction==='vanaras' && pl.leapsUsed < leapLimit(pl) && !!bestLeap(g, pi);
+}
 function totalPower(g, pi){
   const pl = g.players[pi];
   let t = 0;
-  for (const h of pl.heroes) t += effPower(g, pi, h);
-  for (const u of pl.units)  t += effPower(g, pi, u);
+  for (const h of pl.heroes) if (!h.bound) t += effPower(g, pi, h);   // Takshaka+Nagapasha can bind a Hero (§9)
+  for (const u of pl.units)  if (!u.bound) t += effPower(g, pi, u);   // Nagapasha-bound Units contribute 0
   return t;
+}
+
+/* ================= VENOM PIPELINE (Naga) — one ordered system =================
+   Base drain (faction passive: enemy Units −N at each tick) + Venom Tokens (per-unit).
+   Order per tick: pause check → passive drain → token drain → Ananta board-tokens → sweep.
+   Amount is ADDITIVE (R11 Patala + Vasuki-R3 + Venom Strike); timing is round-end, or
+   per-opponent-turn while Karkotaka is on the Naga board (R10). Signet/Pavamana counter tokens. */
+function isNaga(pl){ return pl.faction==='nagas'; }
+function nagaHasUnit(pl, id){ return pl.units.some(u=>!u.ghost && u.id===id); }
+// Total Venom Tokens visible on the board (per-unit stacks both sides + Ananta board-coils). Naga Warrior scales on this.
+function venomTokenCount(g){
+  let n=0;
+  for (let s=0;s<2;s++){ for (const u of g.players[s].units) if (!u.ghost) n+=(u.venom||0); n+=g.players[s].boardTokens; }
+  return n;
+}
+// Per-Unit passive drain for Naga np this round (additive; ruling: Patala + Vasuki-R3 + Strike stack).
+function drainAmount(g, np){
+  const pl=g.players[np]; let amt=1;
+  if (pl.artifact && pl.artifact.id==='patala') amt += g.round;            // R11: −(1+round)
+  if (heroOnBoard(pl,'vasuki') && g.round===3) amt += 1;                   // Vasuki R3 passive → −2 base
+  if (pl.venomStrike===g.round) amt += (heroOnBoard(pl,'vasuki')?3:2);     // Venom Strike this round → +2 (+3 w/Vasuki)
+  return amt;
+}
+// A Venom power loss to unit u (owner pi). §9: Signet FLOORS friendly Vanara Units at 1 (the drain still applies,
+// grinding them down — but never below 1, never destroyed). Token negation is handled separately in venomTokens (b).
+function venomLoss(g, pi, u, amt){
+  const before=u.power;
+  if (signetActive(g.players[pi]) && u.t==='unit'){ u.power = Math.max(1, u.power - amt); emit(g,'venom',{targetUids:[u.uid],amount:u.power-before,abilityName:'Venom',text:'☠'}); return; }   // §9 Signet: floor, not immunity
+  u.power -= amt;
+  if (u.power<1 && u.id==='hiranya') u.power=1;                            // Hiranyakashipu endures venom
+  emit(g,'venom',{targetUids:[u.uid],amount:u.power-before,abilityName:'Venom',text:'☠'});
+}
+// PASSIVE drain: Naga np drains its opponent's surviving Units. Skips Astika-paused / Mohini-stolen Units.
+function venomPassive(g, np, amtOverride){
+  const opp=1-np, o=g.players[opp];
+  if (o.astikaPause) return;
+  const amt = amtOverride!=null ? amtOverride : drainAmount(g, np);   // EXP-L: Karkotaka per-turn tick passes a flat 1
+  const foes=o.units.filter(u=>!u.ghost && u.stolenBy!==np);
+  if (!foes.length) return;
+  emit(g,'toast',{abilityName:'Venom',text:`Venom drains ${o.name}’s Units −${amt}`});
+  for (const u of foes) venomLoss(g, opp, u, amt);
+  log(g, `Venom drains ${o.name}’s Units −${amt} each.`);
+}
+// TOKEN drain (R13: drains bearer on any side) + Ananta board-tokens. Sarpa Satra doubles tokens on the caster's foes.
+function venomTokens(g){
+  for (let pi=0;pi<2;pi++){
+    if (g.players[pi].astikaPause) continue;
+    const dbl=g.players[1-pi].sarpaDouble ? 2 : 1;
+    for (const u of g.players[pi].units){
+      if (u.ghost || !u.venom) continue;
+      if (signetActive(g.players[pi]) && u.t==='unit') continue;          // §9 (b): Venom Tokens are NEGATED on friendly Vanara Units
+      venomLoss(g, pi, u, u.venom*dbl);
+    }
+  }
+  for (let np=0;np<2;np++){                                                 // R14: Ananta Coil board-tokens (persist all match)
+    const pl=g.players[np], opp=1-np;
+    if (pl.boardTokens>0 && !g.players[opp].astikaPause){
+      for (let k=0;k<pl.boardTokens;k++){
+        const foes=g.players[opp].units.filter(u=>!u.ghost && u.stolenBy!==np);
+        if (foes.length) venomLoss(g, opp, foes[Math.floor(g.rng()*foes.length)], 1);
+      }
+    }
+  }
+}
+// EXP-L2 (R10 revision): while a Karkotaka Naga is on board, the drain is a SINGLE flat −1 tick fired the
+// moment the first player passes each round (early snipe) — no longer per-opponent-turn. Escalation modifiers
+// ride only the (non-Karkotaka) round-end tick. Called once, from pass(), on the first pass of the round.
+function venomKarkotakaEarly(g){
+  for (let np=0;np<2;np++){
+    if (!isNaga(g.players[np]) || !nagaHasUnit(g.players[np],'karkotaka')) continue;
+    const opp=1-np;
+    if (g.players[opp].astikaPause){ g.players[opp].astikaPause=false; log(g, `Astika’s calm holds the venom back.`); continue; }
+    venomPassive(g, np, 1);
+  }
+  sweepDeaths(g);
+}
+// The round-end tick (before scoring): non-Karkotaka Naga passives + all tokens. R1 death-at-0 via sweep.
+function venomRoundEnd(g){
+  for (let np=0;np<2;np++) if (isNaga(g.players[np]) && !nagaHasUnit(g.players[np],'karkotaka')) venomPassive(g, np);
+  venomTokens(g);
+  g.players[0].astikaPause=false; g.players[1].astikaPause=false;
+  sweepDeaths(g);
 }
 
 /* ---------- destruction / damage ---------- */
@@ -485,19 +776,31 @@ function isAstraImmune(unit, cause){ return unit.id==='hiranya' && ASTRA_KILL.ha
 
 function destroyUnit(g, pi, unit, cause){
   const pl = g.players[pi];
-  if (isAstraImmune(unit, cause)){ log(g, `${unit.n} shrugs off the Astra \u2014 immune.`); return; }
+  if (isAstraImmune(unit, cause)){ log(g, `${unit.n} shrugs off the Astra \u2014 immune.`); emit(g,'block',{targetUids:[unit.uid],abilityName:cause,text:`${unit.n} immune`}); return; }
+  // R8: Kishkindha Oath ward \u2014 the next destruction is prevented; unit survives at 1, others rally +1.
+  if (unit.ward && !unit.ghost){
+    unit.ward=false; unit.power=1;
+    log(g, `Kishkindha Oath \u2014 ${unit.n} refuses to fall, surviving at 1 power!`);
+    emit(g,'ward',{targetUids:[unit.uid],abilityName:'Kishkindha Oath',text:`${unit.n} survives at 1`});
+    for (const u of pl.units) if (!u.ghost && u!==unit) u.power+=1;
+    return;
+  }
   const ix = pl.units.indexOf(unit); if (ix<0) return;
   pl.units.splice(ix,1);
   log(g, `${unit.n} is destroyed (${cause}).`);
+  emit(g,'destroy',{targetUids:[unit.uid],abilityName:cause,text:`${unit.n} destroyed`});
   if (unit.aegis && !unit.ghost){
     unit.aegis=false; unit.power=1;
     pl.units.push(unit);
     log(g, `Amrita Kalasha revives ${unit.n} at 1 power!`);
+    emit(g,'revive',{targetUids:[unit.uid],abilityName:'Amrita Kalasha',text:`${unit.n} revives at 1`});
     return;
   }
   if (!unit.ghost){
     pl.discard.push(unit);
     g.lastKillThisRound = { owner: pi, unit };            // for Sanjivani Corruption
+    // R14: Ananta Coil — a destroyed friendly Naga Unit leaves a permanent Venom Coil (persists all match).
+    if (pl.faction==='nagas' && pl.artifact && pl.artifact.id==='anantacoil'){ pl.boardTokens++; log(g, `Ananta Coil: ${unit.n}’s venom lingers on the field.`); emit(g,'passive',{abilityName:'Ananta Coil',text:'A Venom Coil lingers'}); }
     if (pl.units.some(u=>u.id==='yama')){
       pl.units.push({ uid:UID++, id:'ghost', n:`Ghost of ${unit.n}`, sub:'Yama\u2019s token', t:'unit', p:1, r:'C', power:1, base:1, ghost:true, txt:'' });
       log(g, `Yama binds a 1-power ghost of ${unit.n} to the row.`);
@@ -507,8 +810,11 @@ function destroyUnit(g, pi, unit, cause){
 function damageUnit(g, pi, unit, amt, cause){
   unit.power -= amt;
   log(g, `${unit.n} takes ${amt} damage (${cause}) \u2192 ${Math.max(unit.power,0)}.`);
+  emit(g,'damage',{targetUids:[unit.uid],amount:-amt,abilityName:cause,text:`\u2212${amt}`});
   if (unit.power<=0){
-    if (isAstraImmune(unit, cause)){ unit.power=1; log(g, `${unit.n} endures the Astra \u2014 floors at 1.`); return; }
+    if (isAstraImmune(unit, cause)){ unit.power=1; log(g, `${unit.n} endures the Astra \u2014 floors at 1.`); emit(g,'block',{targetUids:[unit.uid],abilityName:cause,text:`${unit.n} floors at 1`}); return; }
+    // Rama's Signet: friendly Vanara Units cannot be reduced below 1 by any effect (damage floors, no death).
+    if (!unit.ghost && signetActive(g.players[pi])){ unit.power=1; log(g, `Rama's Signet holds ${unit.n} at 1.`); emit(g,'block',{targetUids:[unit.uid],abilityName:"Rama's Signet",text:`held at 1`}); return; }
     destroyUnit(g, pi, unit, cause);
   }
 }
@@ -558,17 +864,19 @@ function onTurnStart(g, pi){
   sweepDeaths(g);
 }
 
-/* CHAOS SURGE \u2014 Asura faction passive. Fires when the Asura player plays an Astra:
-   one random friendly Unit gains +2. Chandrahas makes it fire twice per Astra. */
-function chaosSurge(g, pi, times){
+/* CHAOS SURGE \u2014 Asura faction passive. Fires when the Asura player plays an Astra OR a Mantra (EXP-H):
+   one random friendly Unit gains +3 (EXP-C). Chandrahas makes it fire twice while active. */
+function chaosSurge(g, pi, times, amount=3){
   const pl=g.players[pi];
   if (pl.faction!=='asuras') return;
   for (let k=0;k<times;k++){
     const real=pl.units.filter(u=>!u.ghost);
     if (!real.length) continue;
     const u=real[Math.floor(g.rng()*real.length)];
-    u.power+=2;
-    log(g, `Chaos Surge! ${u.n} +2 \u2192 ${u.power}.`);
+    u.power+=amount;                                        // EXP-C: +3 from spells; EXP-I: +2 from Unit plays
+    log(g, `Chaos Surge! ${u.n} +${amount} \u2192 ${u.power}.`);
+    emit(g,'toast',{abilityName:'Chaos Surge',text: amount===1 ? 'Chaos finds a way\u2026' : 'Chaos Surge!'});
+    emit(g,'buff',{sourceUid:u.uid,targetUids:[u.uid],amount,abilityName:'Chaos Surge',text:`+${amount}`});
   }
   pl.chaosThisRound=true;                                 // for Kali Asura
 }
@@ -581,8 +889,8 @@ function onAstraResolved(g, astraPi, doubled){
   for (let s=0;s<2;s++){
     for (const u of g.players[s].units){
       if (u.ghost) continue;
-      if (u.id==='bana'){ const inc=doubled?2:1; u.power+=inc; log(g, `Bana Asura\u2019s arms multiply (+${inc} \u2192 ${u.power}).`); }
-      else if (u.id==='berserker'){ u.power+=1; log(g, `Asura Berserker rages (+1 \u2192 ${u.power}).`); }
+      if (u.id==='bana'){ const inc=doubled?2:1; u.power+=inc; log(g, `Bana Asura\u2019s arms multiply (+${inc} \u2192 ${u.power}).`); emit(g,'buff',{sourceUid:u.uid,targetUids:[u.uid],amount:inc,abilityName:'Bana Asura',text:`+${inc}`}); }
+      else if (u.id==='berserker'){ u.power+=1; log(g, `Asura Berserker rages (+1 \u2192 ${u.power}).`); emit(g,'buff',{sourceUid:u.uid,targetUids:[u.uid],amount:1,abilityName:'Asura Berserker',text:`+1`}); }
     }
   }
   for (let s=0;s<2;s++){
@@ -603,9 +911,40 @@ function castMantra(g, pi, id, targetUid=null){
     pl.units.push(lowest);
     log(g, `Gayatri Mantra revives ${lowest.n} at full power, shielded.`);
   } else if (id==='pavamana'){
-    let healed=0;
-    for (const u of pl.units){ if (!u.ghost && u.power<u.base){ u.power=u.base+1; healed++; } }
-    log(g, healed?`Pavamana purifies ${healed} unit(s): healed +1.`:'Pavamana: nothing to purify.');
+    // GDD fidelity: (a) remove ALL debuffs (net power loss) AND Venom Tokens from ALL friendly Units;
+    // (b) grant +1 power PER effect removed — one for the power-debuff, one per Venom Token. v0.1 dropped (b) for tokens.
+    let cleansed=0, effects=0;
+    for (const u of pl.units){
+      if (u.ghost) continue;
+      const deb = u.power < u.base ? 1 : 0;              // engine represents a debuff as net power below base
+      const tok = u.venom||0;                            // each Venom Token is a removable effect
+      if (deb+tok===0) continue;                         // nothing to cleanse — don't disturb clean / buffed Units
+      if (deb) u.power = u.base;                          // (a) heal the net debuff (preserve any buff above base)
+      u.venom = 0;                                        // (a) strip Venom Tokens
+      u.power += deb + tok;                               // (b) +1 power PER effect removed
+      effects += deb + tok; cleansed++;
+    }
+    log(g, cleansed ? `Pavamana purifies ${cleansed} Unit(s) — ${effects} effect(s) lifted, +1 power each.` : 'Pavamana: nothing to purify.');
+  } else if (id==='mrityunjaya'){
+    // R13: revive ANY destroyed Unit (either discard) onto your board at full power; it takes a Venom Token.
+    const pool=[]; for (let s=0;s<2;s++) for (const u of g.players[s].discard) if (u.t==='unit' && !u.ghost) pool.push([s,u]);
+    if (pool.length){ const [s,t] = targetUid!=null ? (pool.find(x=>x[1].uid===targetUid)||pool.reduce((a,b)=>a[1].base>=b[1].base?a:b)) : pool.reduce((a,b)=>a[1].base>=b[1].base?a:b);
+      g.players[s].discard.splice(g.players[s].discard.indexOf(t),1);
+      t.power=t.base; t.venom=1; t.bound=false; t.stolenBy=-1; t.aegis=false; t.revivedShield=false; t.ward=false; t.asleep=false; t.doomed=false; t.revealPending=false; t.astraImmuneRound=0;
+      pl.units.push(t); log(g, `Mrityunjaya wrests ${t.n} from death — it rises venom-marked (Token).`);
+    } else log(g, 'Mrityunjaya: no fallen Unit to reclaim.');
+  } else if (id==='sarpasatra'){
+    const real=pl.units.filter(u=>!u.ghost);
+    if (real.length){
+      let sac = targetUid!=null ? real.find(u=>u.uid===targetUid) : null;
+      if (!sac) sac = real.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);   // default: offer the weakest
+      const dmg = effPower(g,pi,sac);
+      destroyUnit(g, pi, sac, 'Sarpa Satra');                                        // triggers Ananta Coil hook
+      const foes=opp.units.filter(u=>!u.ghost);
+      for (const f of [...foes]) damageUnit(g, 1-pi, f, dmg, 'Sarpa Satra');
+      pl.sarpaDouble=true;                                                           // Venom Tokens deal double this round
+      log(g, `Sarpa Satra — ${sac.n} is offered; the enemy line withers −${dmg}, and Venom runs double this round.`);
+    } else log(g, 'Sarpa Satra: no Naga Unit to sacrifice.');
   } else if (id==='sanjivani'){
     // Steal the opponent's last destroyed Unit this round; place it at original power for the Asura player.
     const lk=g.lastKillThisRound;
@@ -624,6 +963,20 @@ function castMantra(g, pi, id, targetUid=null){
       t.power*=2; t.doomed=true;
       log(g, `Ahamkara doubles ${t.n} to ${t.power} — doomed to shatter at round end.`);
     }
+  } else if (id==='ramanaam'){
+    // §9: cannot be countered by any Naga effect this round (dormant hook — Nagas not built).
+    const buff = 2;   // EXP-D: flat +2 (dropped Hanuman upgrade)
+    for (const u of pl.units) if (!u.ghost) u.power+=buff;
+    log(g, `Rama Naam resounds — all Vanara Units +${buff}.`);
+  } else if (id==='kishkindhaoath'){
+    const real=pl.units.filter(u=>!u.ghost);
+    if (!real.length){ log(g, 'Kishkindha Oath: no Vanara Unit to ward.'); }
+    else {
+      let t = targetUid!=null ? real.find(u=>u.uid===targetUid) : null;
+      if (!t) t = real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b);   // AI wards the strongest
+      t.ward=true;
+      log(g, `Kishkindha Oath wards ${t.n} — it will survive its next fall this round.`);
+    }
   }
   // Agni trigger — any mantra, either player
   for (let s=0;s<2;s++){
@@ -640,26 +993,49 @@ function castMantra(g, pi, id, targetUid=null){
 }
 
 /* ---------- legality ---------- */
+// Sharabha: the opponent cannot target the Vanara player's Units of power ≤3 with Astras.
+function sharabhaProtected(g, ownerPi, unit){
+  const pl=g.players[ownerPi];
+  return !unit.ghost && pl.units.some(u=>!u.ghost && u.id==='sharabha') && effPower(g,ownerPi,unit)<=3;
+}
+// Any reason unit (owned by ownerPi) is an illegal Astra target: Dharma Shield, Sharabha, or Ulupi's round immunity.
+function astraProtected(g, ownerPi, unit){
+  return isShielded(g,ownerPi,unit) || sharabhaProtected(g,ownerPi,unit) || unit.astraImmuneRound===g.round;
+}
+
 function playableIndices(g, pi){
   const pl=g.players[pi], opp=g.players[1-pi], res=[];
   pl.hand.forEach((c,i)=>{
     if (c.lockedRound===g.round) return;
+    if (pl.mustPlayUnit && (c.t==='astra'||c.t==='mantra')) return;   // Naga Enchantress: next card must be a Unit
     if (c.t==='hero' && pl.heroPlayedThisRound) return;
     if (c.t==='astra'){
       if (opp.heroes.some(h=>h.id==='varuna') && pl.astrasThisRound>=1) return;
       if (c.id==='vajra'){
         const indra = indraOnBoard(pl);
-        const targets = opp.units.filter(u=>!u.ghost && !isShielded(g,1-pi,u) && (indra || effPower(g,1-pi,u)>=6));
+        const targets = opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u) && (indra || effPower(g,1-pi,u)>=6));
         if (!targets.length) return;
       }
       if (c.id==='sudarshana' && !opp.heroes.length) return;
       if (c.id==='brahmastra' && !opp.units.some(u=>!u.ghost)) return;
-      if ((c.id==='pashupata'||c.id==='nagastra') && !opp.units.some(u=>!u.ghost)) return;
+      if ((c.id==='pashupata'||c.id==='nagastra'||c.id==='lankadahan') && !opp.units.some(u=>!u.ghost)) return;
+      if (c.id==='gandiva' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;
+      if (c.id==='sanjeevani'){ const lk=g.lastKillThisRound; if (!(lk && lk.owner===pi && pl.discard.includes(lk.unit))) return; }
+      // ---- Naga astras ----
+      if (c.id==='nagapasha'){
+        const bindUnit = opp.units.some(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u));
+        const bindHero = heroOnBoard(pl,'takshaka') && opp.heroes.some(h=>!h.bound);   // §9 Takshaka
+        if (!bindUnit && !bindHero) return;
+      }
+      if (c.id==='mohini' && !opp.units.some(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u))) return;
+      // venomstrike is always legal (self-buff, useful even pre-emptively)
     }
     if (c.t==='mantra'){
       if (c.id==='gayatri' && !pl.discard.some(x=>x.t==='unit')) return;
-      if (c.id==='ahamkara' && !pl.units.some(u=>!u.ghost)) return;
+      if ((c.id==='ahamkara'||c.id==='kishkindhaoath') && !pl.units.some(u=>!u.ghost)) return;
       if (c.id==='sanjivani'){ const lk=g.lastKillThisRound; if (!(lk && lk.owner===1-pi && opp.discard.includes(lk.unit))) return; }
+      if (c.id==='sarpasatra' && !pl.units.some(u=>!u.ghost)) return;
+      if (c.id==='mrityunjaya' && !g.players[0].discard.concat(g.players[1].discard).some(u=>u.t==='unit' && !u.ghost)) return;
     }
     res.push(i);
   });
@@ -671,11 +1047,20 @@ function targetSpec(g, pi, card){
   const opp=g.players[1-pi];
   if (card.id==='vajra'){
     const indra = indraOnBoard(g.players[pi]);
-    return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !isShielded(g,1-pi,u) && (indra||effPower(g,1-pi,u)>=6)) };
+    return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u) && (indra||effPower(g,1-pi,u)>=6)) };
   }
+  if (card.id==='gandiva') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };
   if (card.id==='sudarshana') return { kind:'enemyHero', options:[...opp.heroes] };
   if (card.id==='saraswati' && opp.hand.length) return { kind:'oppHandCard', options:[...opp.hand] };
-  if (card.id==='ahamkara') return { kind:'friendlyUnit', options: g.players[pi].units.filter(u=>!u.ghost) };
+  if (card.id==='ahamkara' || card.id==='kishkindhaoath' || card.id==='sarpasatra') return { kind:'friendlyUnit', options: g.players[pi].units.filter(u=>!u.ghost) };
+  // ---- Naga targeted cards ----
+  if (card.id==='nagapasha'){
+    let opts = opp.units.filter(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u));
+    if (heroOnBoard(g.players[pi],'takshaka')) opts = opts.concat(opp.heroes.filter(h=>!h.bound));   // §9 Takshaka breaks Hero immunity
+    return { kind:'enemyUnit', options:opts };
+  }
+  if (card.id==='mohini') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u)) };
+  if (card.id==='ashvatara' || card.id==='nagaarcher') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost) };
   return null;
 }
 
@@ -711,36 +1096,114 @@ function resolveAstra(g, pi, c, targetUid){
     case 'nagastra': {
       const foes=opp.units.filter(u=>!u.ghost);
       for (const u of foes) u.venom=(u.venom||0)+1;
+      if (foes.length) emit(g,'token',{targetUids:foes.map(u=>u.uid),abilityName:'Nagastra',text:'Venom Token'});
       log(g, foes.length?`Nagastra envenoms ${foes.length} enemy Unit(s).`:'Nagastra hisses at empty air.'); break;
     }
     case 'tamasa':
       opp.skipNext=true;
       log(g, `Tamasa smothers ${opp.name}’s next turn.`); break;
+    case 'gandiva': {
+      const spec=targetSpec(g,pi,c);
+      if (!spec.options.length){ log(g,'Gandiva Arrow finds no mark.'); break; }
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+      log(g,'Gandiva Arrow flies true!'); destroyUnit(g, 1-pi, t, 'Gandiva');
+      if (pl.leapsUsed>0){                                    // a Vanara Leaped this round → a second shaft
+        const more=opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u));
+        if (more.length){ const t2=more.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b); log(g,'The Leap empowers a second shaft!'); destroyUnit(g, 1-pi, t2, 'Gandiva'); }
+      }
+      break; }
+    case 'lankadahan':
+      log(g,'Lanka Dahan blazes across the field.');
+      for (const u of [...opp.units]) if (!u.ghost) damageUnit(g, 1-pi, u, 2, 'Lanka Dahan');
+      for (const u of pl.units) if (!u.ghost) u.power+=1;
+      log(g,'The fire inspires the host: all Vanara Units +1.'); break;
+    case 'sanjeevani': {
+      const lk=g.lastKillThisRound;
+      if (lk && lk.owner===pi && pl.discard.includes(lk.unit)){
+        const u=lk.unit; pl.discard.splice(pl.discard.indexOf(u),1);
+        u.power=u.base; u.aegis=false; u.revivedShield=false; u.venom=0; u.asleep=false; u.doomed=false; u.ward=false;
+        const hb = u.base>=4 ? hanumanEntryBonus(pl) : 0; if (hb) u.power+=hb;   // EXP-F: entry bonus only for printed ≥4
+        pl.units.push(u); g.lastKillThisRound=null;
+        log(g,`Sanjeevani Call revives ${u.n} at full power${hb?` (+${hb} Hanuman)`:''}.`);
+      } else log(g,'Sanjeevani Call: no fallen ally to revive.'); break; }
+    // ---- Naga astras ----
+    case 'nagapasha': {
+      const spec=targetSpec(g,pi,c);
+      if (!spec.options.length){ log(g,'Nagapasha finds nothing to bind.'); break; }
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+      t.bound=true;
+      log(g, `Nagapasha nooses ${t.n} — it cannot fight until ${opp.name} spends a turn to free it.`); break; }
+    case 'venomstrike':
+      pl.venomStrike=g.round;
+      log(g, `Vasuki Venom Strike — the Venom runs ${heroOnBoard(pl,'vasuki')?'quadruple':'triple'} this round.`); break;
+    case 'mohini': {
+      const spec=targetSpec(g,pi,c);
+      if (!spec.options.length){ log(g,'Mohini finds no mind to snare.'); break; }
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+      const ti=opp.units.indexOf(t);
+      if (ti>=0){ opp.units.splice(ti,1); t.stolenBy=pi; t.origOwner=1-pi; pl.units.push(t);
+        log(g, `Mohini’s illusion turns ${t.n} to ${pl.name}’s side (exempt from your Venom).`); }
+      break; }
   }
 }
 
 /* ---------- play a card ---------- */
-function playCard(g, pi, handIndex, targetUid=null){
+function playCard(g, pi, handIndex, targetUid=null, position=null){
   const pl=g.players[pi], opp=g.players[1-pi];
   const c = pl.hand[handIndex];
   if (!c) throw new Error('bad hand index');
   pl.hand.splice(handIndex,1);
+  pl.mustPlayUnit=false;                                   // consume Naga Enchantress restriction (this card satisfies it)
   log(g, `${pl.name} plays ${c.n}${c.sub?' \u2014 '+c.sub:''}.`);
+  emit(g,'play',{sourceUid:c.uid,abilityName:c.n,text:`${pl.name} plays ${c.n}`});
+
+  // R12: Surasa's trap on the opponent's next card \u2014 a Unit is sapped (\u22122) and feeds Surasa (+2); an Astra is negated.
+  let surasaNegateAstra=false;
+  if (opp.surasaTrap){
+    const sur = opp.units.find(u=>u.uid===opp.surasaTrap && !u.ghost);
+    if (c.t==='unit'){ c.power-=2; if (sur) sur.power+=2; opp.surasaTrap=false;
+      log(g, `Surasa\u2019s trap saps ${c.n} (\u22122)${sur?` and feeds Surasa (+2 \u2192 ${sur.power})`:''}.`); }
+    else if (c.t==='astra'){ surasaNegateAstra=true; opp.surasaTrap=false;
+      log(g, `Surasa\u2019s trap swallows ${c.n} \u2014 its effect is negated (Chaos Surge still churns, \u00a79).`); }
+    else { opp.surasaTrap=false; }                         // any other card springs and expires the trap harmlessly
+  }
 
   if (c.t==='hero'){
     pl.heroes.push(c); pl.heroPlayedThisRound=true;
+    if (c.id==='sugriva'){ const d=pl.deck.splice(0,1); pl.hand.push(...d); if(d.length) log(g,`Sugriva rallies: ${pl.name} draws a card.`); }   // Sugriva TRIGGERED
+    if (c.id==='vasuki'){                                   // ON PLAY: all enemy Units lose 1 power
+      const foes=opp.units.filter(u=>!u.ghost);
+      for (const f of [...foes]) damageUnit(g, 1-pi, f, 1, 'Vasuki');
+      log(g, foes.length?`Vasuki uncoils — the enemy line recoils (−1 each).`:`Vasuki uncoils over an empty field.`);
+    }
   }
   else if (c.t==='unit'){
     // Mahabali (§9): the first Unit played the round after a VOLUNTARY Pass grants an extra turn.
     const mahaBonus = pl.mahabaliArm===g.round-1 && pl.heroes.some(h=>h.id==='mahabali');
     if (mahaBonus) pl.mahabaliArm=0;
-    pl.units.push(c);
+    // Positioning: insert at the chosen slot (Vanaras leverage adjacency; others just append).
+    if (position!=null && position>=0 && position<=pl.units.length) pl.units.splice(position, 0, c);
+    else pl.units.push(c);
+    // Hanuman: every Unit the Vanara player plays gains +1 (or +2 with Jambavan) on entry.
+    // EXP-F: Hanuman's entry bonus only applies to Vanara Units of printed power ≥4.
+    if (pl.faction==='vanaras' && c.base>=4){ const hb=hanumanEntryBonus(pl); if (hb){ c.power+=hb; log(g,`Hanuman blesses ${c.n}: +${hb} on entry.`); } }
     switch(c.id){
-      case 'surya': for (const u of pl.units) if (u!==c && !u.ghost) u.power+=1;
-        log(g,'Surya Dev: all other friendly Units +1.'); break;
+      case 'surya': { const tgt=pl.units.filter(u=>u!==c && !u.ghost); for (const u of tgt) u.power+=1;
+        if (tgt.length) emit(g,'buff',{sourceUid:c.uid,targetUids:tgt.map(u=>u.uid),amount:1,abilityName:'Surya Dev',text:'+1'});
+        log(g,'Surya Dev: all other friendly Units +1.'); break; }
       case 'vayu': {
         const foes=opp.units.filter(u=>!u.ghost);
-        if (foes.length){ const t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b); damageUnit(g,1-pi,t,2,'Vayu'); }
+        if (foes.length){
+          const t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+          // GDD Vayu (positioning now real): "swap positions with the highest enemy Unit" — adapted to
+          // per-player rows as a DISPLACE that hurls it out of formation (breaks Vanara Leap adjacency), then -2.
+          const ti=opp.units.indexOf(t);
+          if (ti>=0){ opp.units.splice(ti,1); opp.units.push(t); log(g,'Vayu’s gale hurls it out of formation.'); }
+          damageUnit(g,1-pi,t,2,'Vayu');
+        }
         break; }
       case 'vishwakarma':
         if (opp.artifact){ log(g,`Vishwakarma unmakes ${opp.artifact.n}.`); opp.discard.push(opp.artifact); opp.artifact=null; pl.artifactsDestroyedByMe++; }
@@ -792,8 +1255,8 @@ function playCard(g, pi, handIndex, targetUid=null){
         else log(g,'Maricha finds no form to mimic.'); break; }
       case 'vibhishana': pl.seesOppHand=g.round; log(g,`Vibhishana lays bare ${opp.name}’s hand.`); break;
       case 'tataka': {
-        // "lowest power Unit on the board — friendly or enemy." Interpretation: excludes Tataka itself
-        // (a removal Unit shouldn't primarily suicide); can still hit your OTHER Units. Owner may revisit.
+        // R5 (RESOLVED): "lowest power Unit on the board — friendly or enemy" EXCLUDES Tataka herself
+        // (a removal Unit shouldn't primarily suicide); can still hit your OTHER Units.
         const pool=[]; for (let s=0;s<2;s++) for (const u of g.players[s].units) if (!u.ghost && u!==c) pool.push([s,u]);
         if (pool.length){ let mn=Math.min(...pool.map(([s,u])=>effPower(g,s,u)));
           const cands=pool.filter(([s,u])=>effPower(g,s,u)===mn);
@@ -808,19 +1271,75 @@ function playCard(g, pi, handIndex, targetUid=null){
         if (foes.length){ let stolen=0; for (const f of foes){ f.power-=1; stolen++; } c.power+=stolen;
           log(g,`Narakasura drains ${stolen} power from the enemy line (→ ${c.power}).`); }
         else log(g,'Narakasura: no enemy Units to drain.'); break; }
+      // ---- Vanara units (passives — jambavan / sharabha / warrior — handled in helpers/effPower) ----
+      case 'neela': { const buff = 1; const tgt=pl.units.filter(u=>!u.ghost); for (const u of tgt) u.power+=buff; emit(g,'buff',{sourceUid:c.uid,targetUids:tgt.map(u=>u.uid),amount:buff,abilityName:'Neela',text:`+${buff}`}); log(g,`Neela rallies the host: +${buff} to all Vanara Units.`); break; }   // EXP-D: flat +1 (dropped Sugriva upgrade)
+      case 'kesari': { const h=pl.heroes.find(x=>x.id==='hanuman'); if (h){ c.power+=h.power; log(g,`Kesari swells with Hanuman’s might: +${h.power}.`); } break; }
+      case 'tara': { const top=pl.deck.splice(0,3);
+        if (top.length){ const keep=top.reduce((a,b)=>a.p>=b.p?a:b); pl.hand.push(keep); pl.deck.unshift(...top.filter(x=>x!==keep)); log(g,`Tara scouts the deck and keeps ${keep.n}.`); } break; }
+      case 'dwivida': { if (opp.hand.length){ const i=Math.floor(g.rng()*opp.hand.length); const d=opp.hand.splice(i,1)[0]; opp.discard.push(d); log(g,`Dwivida’s blade takes a card from ${opp.name}.`); } else log(g,'Dwivida: the enemy hand is empty.'); break; }
+      case 'scout': { const others=pl.units.filter(u=>!u.ghost && u!==c).length; if (others) c.power+=others; pl.seesOppHand=g.round; log(g,`Vanara Scout eyes the foe (+${others}).`); break; }
+      case 'dadhimukha': { const d=pl.deck.splice(0,1); pl.hand.push(...d);
+        if (pl.heroes.some(h=>h.id==='sugriva')){ for (const u of pl.units) if(!u.ghost) u.power+=1; log(g,'Dadhimukha draws; under Sugriva the host swells +1.'); }
+        else log(g,'Dadhimukha draws a card.'); break; }
+      case 'riksha': if (pl.heroes.some(h=>h.id==='hanuman')){ c.power+=3; log(g,'Riksha fights beside Hanuman: +3.'); } break;   // ruling: +3 while Hanuman on board
+      case 'nala': {
+        const inHand=pl.hand.filter(x=>x.t==='unit');
+        if (inHand.length){ const low=inHand.reduce((a,b)=>a.base<=b.base?a:b);
+          const tok=mkCard(low); tok.power=Math.max(1, Math.ceil(low.base/2)); tok.base=tok.power;
+          const idx=pl.units.indexOf(c); pl.units.splice(idx+1, 0, tok);
+          log(g,`Nala builds a bridge — a copy of ${low.n} joins at ${tok.power} power.`); }
+        else log(g,'Nala: no Unit in hand to copy.'); break; }
+      case 'mainda': { const adj=adjacentUnits(pl, c).filter(u=>!u.ghost);
+        if (adj.length){ const t=adj.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b);
+          if (effPower(g,pi,t)>effPower(g,pi,c)) doLeap(g, pi, c, t, true); else log(g,'Mainda: no stronger neighbour to vault from.'); }
+        else log(g,'Mainda finds no adjacent ally.'); break; }
+      // ---- Naga units ----
+      case 'manasa': { const n=pl.units.filter(u=>!u.ghost).length; if (n){ c.power+=n; } log(g,`Manasa coils forth (+${n} for the serpent host); the opponent’s Astras now fizzle.`); break; }   // PASSIVE negation handled in astra branch
+      case 'karkotaka': log(g,'Karkotaka takes the field — Venom now bites at the start of each enemy turn.'); break;   // R10 timing handled in venomKarkotakaTick
+      case 'surasa': pl.surasaTrap=c.uid; log(g,`Surasa coils to strike — the opponent’s next card is trapped.`); break;   // R12
+      case 'ulupi': {
+        const units=pl.discard.filter(x=>x.t==='unit' && !x.ghost);
+        if (units.length){ const t=units.reduce((a,b)=>a.base>=b.base?a:b);   // recall the strongest fallen Naga
+          pl.discard.splice(pl.discard.indexOf(t),1);
+          t.power=t.base; t.venom=0; t.bound=false; t.stolenBy=-1; t.aegis=false; t.ward=false; t.astraImmuneRound=g.round;
+          pl.units.push(t); log(g,`Ulupi calls ${t.n} back from the deep — untouchable by Astras this round.`); }
+        else log(g,'Ulupi: no fallen Naga to revive.'); break; }
+      case 'nagasadhu': { const foes=opp.units.filter(u=>!u.ghost); for (const f of foes) f.venom=(f.venom||0)+1;
+        if (foes.length) emit(g,'token',{sourceUid:c.uid,targetUids:foes.map(u=>u.uid),abilityName:'Naga Sadhu',text:'Venom Token'});
+        log(g, foes.length?`Naga Sadhu envenoms all ${foes.length} enemy Unit(s).`:'Naga Sadhu: no enemy to poison.'); break; }
+      case 'kaliya': { const b=g.round-1; if (b>0){ c.power+=b; log(g,`Kaliya rises many-headed (+${b}).`); } break; }   // R16
+      case 'astika': pl.astikaPause=true; for (const u of pl.units) if (!u.ghost) u.power+=1;
+        log(g,`Astika calls a truce — the next Venom tick is stayed and friendly Units recover +1.`); break;   // R19
+      case 'nagaarcher': { const foes=opp.units.filter(u=>!u.ghost);
+        if (foes.length){ let t = targetUid!=null ? foes.find(u=>u.uid===targetUid) : null; if (!t) t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+          damageUnit(g, 1-pi, t, 1, 'Naga Archer');
+          if (opp.units.includes(t) && !t.ghost){ t.venom=(t.venom||0)+1; log(g,`The poison arrow festers in ${t.n}.`); emit(g,'token',{sourceUid:c.uid,targetUids:[t.uid],abilityName:'Naga Archer',text:'Venom Token'}); } }
+        else log(g,'Naga Archer: no target.'); break; }
+      case 'nagaenchantress': opp.mustPlayUnit=true; log(g,`Naga Enchantress lures — ${opp.name}’s next card must be a Unit.`); break;
+      case 'nagawarrior': break;   // PASSIVE handled in effPower (venomTokenCount)
+      case 'nagahatchling': if (opp.units.some(u=>!u.ghost && u.venom>0)){ c.power+=2; log(g,'Naga Hatchling feeds on the venom in the air (+2).'); } break;
+      case 'ashvatara': { const foes=opp.units.filter(u=>!u.ghost);
+        if (foes.length){ let t = targetUid!=null ? foes.find(u=>u.uid===targetUid) : null; if (!t) t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+          damageUnit(g, 1-pi, t, g.round, 'Ashvatara'); }   // R16: −current round number
+        else log(g,'Ashvatara: no target.'); break; }
     }
     if (mahaBonus){ g.grantExtraTurn=pi; log(g,`Mahabali’s decree — ${c.n} is played free; ${pl.name} takes another turn.`); }
+    // EXP-J — "Chaos always finds a way": if no Chaos Surge has fired this round, the Asura player's
+    // first Unit play triggers exactly one. Guaranteed floor; can't be stacked or engineered beyond that.
+    if (pl.faction==='asuras' && !pl.chaosThisRound) chaosSurge(g, pi, 1, 1);   // floor surge is +1 (spell surges stay +3)
+    designateShields(g, pi);   // EXP-A: a shield opportunity — latch an open slot onto the strongest Unit
   }
   else if (c.t==='astra'){
     const firstAstra = pl.astrasThisRound===0;
     pl.astrasThisRound++;
     const chandrahasActive = pl.faction==='asuras' && pl.artifact && pl.artifact.id==='chandrahas';
-    // §9 negation (Naga): Manasa cancels the Astra AND its Chaos Surge; Surasa cancels the effect but
-    // Chaos Surge STILL triggers. Dormant until the Naga faction lands (ids manasa/surasa).
-    const negator = opp.units.find(u=>!u.ghost && (u.id==='manasa'||u.id==='surasa'));
+    // §9 negation (Naga): Manasa (on board) cancels the Astra AND its Chaos Surge; Surasa's armed trap
+    // (surasaNegateAstra, resolved at the top of playCard) cancels the effect but the Chaos Surge STILL fires.
+    const manasa = opp.units.find(u=>!u.ghost && u.id==='manasa');
     let effectNegated=false, surgeNegated=false;
-    if (negator){ effectNegated=true; if (negator.id==='manasa') surgeNegated=true;
-      log(g, `${negator.n} negates ${c.n}${surgeNegated?' — its Chaos Surge fizzles too (§9)':' — but Chaos Surge still churns (§9)'}.`); }
+    if (manasa){ effectNegated=true; surgeNegated=true;
+      log(g, `Manasa negates ${c.n} — its Chaos Surge fizzles too (§9).`); }
+    else if (surasaNegateAstra){ effectNegated=true; /* R12: Surge still churns (logged at trap spring) */ }
     const doubled = chandrahasActive && firstAstra && !effectNegated;
     if (!effectNegated){
       resolveAstra(g, pi, c, targetUid);
@@ -828,9 +1347,17 @@ function playCard(g, pi, handIndex, targetUid=null){
     }
     if (pl.faction==='asuras' && !surgeNegated) chaosSurge(g, pi, chandrahasActive?2:1);
     onAstraResolved(g, pi, doubled);
+    // R7: Angad — playing an Astra while the opponent has Angad forfeits your next turn (stacks with Varuna).
+    if (opp.heroes.some(h=>h.id==='angad')){ pl.skipNext=true; log(g,`Angad exacts the cost — ${pl.name} forfeits their next turn.`); }
     pl.discard.push(c);
   }
-  else if (c.t==='mantra'){ castMantra(g, pi, c.id, targetUid); pl.discard.push(c); }
+  else if (c.t==='mantra'){
+    castMantra(g, pi, c.id, targetUid);
+    // EXP-H: Chaos Surge also triggers on the Asura player's Mantras (5 spell-triggers in deck, not 3).
+    // Still spell-gated; Chandrahas's "twice while active" applies, but Bana/Berserker/Tripura (Astra-only) do not.
+    if (pl.faction==='asuras'){ const chandra = pl.artifact && pl.artifact.id==='chandrahas'; chaosSurge(g, pi, chandra?2:1); }
+    pl.discard.push(c);
+  }
   else if (c.t==='artifact'){
     if (pl.artifact){ pl.discard.push(pl.artifact); log(g,`${pl.artifact.n} is replaced.`); }
     pl.artifact = c;
@@ -841,17 +1368,23 @@ function playCard(g, pi, handIndex, targetUid=null){
         t.power+=2; t.aegis=true; log(g,`Amrita Kalasha blesses ${t.n}: +2, revives once if destroyed.`); }
       else log(g,'Amrita Kalasha: no Unit to bless.');
     }
-    else if (c.id==='kavacha') log(g,'Dharma Kavacha raised \u2014 two Units now shielded.');
+    else if (c.id==='kavacha'){ designateShields(g, pi); log(g,'Dharma Kavacha raised \u2014 two Units now shielded.'); }
     else if (c.id==='tripura')  log(g,'Tripura rises \u2014 the three cities empower the host each turn.');
-    else if (c.id==='chandrahas') log(g,'Chandrahas gleams \u2014 Astras redouble.');
+    else if (c.id==='chandrahas'){ log(g,'Chandrahas gleams \u2014 Astras redouble.'); chaosSurge(g, pi, 1); }   // R9-candidate (EXP-B): ON PLAY one Chaos Surge
+    else if (c.id==='ramasignet') log(g,'Rama\u2019s Signet seals the host \u2014 none may be ground below 1.');
+    else if (c.id==='kishkindhacrown') log(g,'Kishkindha Crown shines \u2014 Leaps empower, and may be twice this round.');
+    else if (c.id==='patala') log(g, `Patala Throne rises \u2014 Venom deepens to \u2212${1+g.round} this round.`);   // R11
+    else if (c.id==='anantacoil') log(g,'Ananta Coil uncoils \u2014 every fallen Naga will leave its venom on the field.');   // R14
   }
   afterAction(g, pi);
 }
 
 function pass(g, pi){
   const pl=g.players[pi];
+  const firstPass = !g.players[1-pi].passed;   // EXP-L2: Karkotaka's single early drain fires the moment the first player passes
   pl.passed=true;
   log(g, `${pl.name} passes.`);
+  if (firstPass) venomKarkotakaEarly(g);
   if (pl.heroes.some(h=>h.id==='mahabali')) pl.mahabaliArm=g.round;   // §9: voluntary Pass arms Mahabali
   afterAction(g, pi);
 }
@@ -876,17 +1409,7 @@ function afterAction(g, pi){
 
 /* ---------- round / match resolution ---------- */
 function endRound(g){
-  // Venom Tokens tick at round end, BEFORE scoring \u2014 R1: reaching 0 kills.
-  for (let pi=0;pi<2;pi++){
-    for (const u of g.players[pi].units){
-      if (!u.ghost && u.venom>0){
-        u.power-=u.venom; log(g, `Venom courses through ${u.n} (-${u.venom}).`);
-        // Ruling (2026-07): venom is Astra-sourced, so Hiranyakashipu's immunity holds \u2014 floors at 1.
-        if (u.id==='hiranya' && u.power<1){ u.power=1; log(g, `${u.n} endures the venom \u2014 immune.`); }
-      }
-    }
-  }
-  sweepDeaths(g);
+  venomRoundEnd(g);                                  // Venom pipeline ticks BEFORE scoring (R1 death-at-0 via sweep)
   const t0=totalPower(g,0), t1=totalPower(g,1);
   log(g, `Round ${g.round} ends \u2014 ${g.players[0].name} ${t0} vs ${g.players[1].name} ${t1}.`);
   let winner=null;
@@ -907,14 +1430,15 @@ function endRound(g){
   // board reset
   for (let s=0;s<2;s++){
     const pl=g.players[s];
-    for (const u of pl.units) if (!u.ghost){ u.revivedShield=false; u.aegis=false; u.venom=0; u.asleep=false; u.doomed=false; u.revealPending=false; pl.discard.push(u); }
+    for (const u of pl.units) if (!u.ghost){ u.revivedShield=false; u.aegis=false; u.venom=0; u.asleep=false; u.doomed=false; u.revealPending=false; u.ward=false; u.bound=false; u.stolenBy=-1; u.astraImmuneRound=0; pl.discard.push(u); }
     pl.units=[];
     if (pl.artifact){ pl.discard.push(pl.artifact); pl.artifact=null; }
     // removed heroes return at half power
     for (const h of pl.removedHeroes){ h.power=Math.max(1, Math.ceil(h.power/2)); pl.heroes.push(h); log(g,`${h.n} returns at ${h.power} power.`); }
     pl.removedHeroes=[];
     pl.passed=false; pl.heroPlayedThisRound=false; pl.astrasThisRound=0;
-    pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false;   // mahabaliArm persists for next-round consumption
+    pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0;   // shields + Leaps re-designate each round; mahabaliArm persists
+    pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
     const drawn = pl.deck.splice(0,2); pl.hand.push(...drawn);
     for (const c of pl.hand) c.lockedRound=0;
   }
@@ -932,6 +1456,17 @@ function endRound(g){
         log(g, `Rahu devours a card from ${foe.name}\u2019s hand (${d.n}).`); }
     }
   }
+  // R15: Shesha \u2014 if the Naga player LOST the round just ended, a random friendly Unit returns to the board.
+  for (let s=0;s<2;s++){
+    const pl=g.players[s];
+    if (pl.heroes.some(h=>h.id==='shesha') && prev.winner!=null && prev.winner===1-s){
+      const units=pl.discard.filter(u=>u.t==='unit' && !u.ghost);
+      if (units.length){ const t=units[Math.floor(g.rng()*units.length)];
+        pl.discard.splice(pl.discard.indexOf(t),1);
+        t.power=t.base; t.venom=0; t.bound=false; t.stolenBy=-1; t.aegis=false; t.ward=false; t.astraImmuneRound=0;
+        pl.units.push(t); log(g, `Shesha\u2019s coils stir \u2014 ${t.n} rises to fight again for ${pl.name}.`); }
+    }
+  }
   log(g, `\u2014\u2014 Round ${g.round} begins. Each side draws 2. ${g.players[g.turn].name} leads. \u2014\u2014`);
   onTurnStart(g, g.turn);                            // start-of-turn hooks for the new round
 }
@@ -939,6 +1474,9 @@ function endRound(g){
 /* ---------- AI ---------- */
 function aiScoreCard(g, pi, c){
   const pl=g.players[pi], opp=g.players[1-pi];
+  const astrasInHand = pl.hand.filter(x=>x.t==='astra').length;
+  const unitsInHand  = pl.hand.filter(x=>x.t==='unit').length;
+  const chandrahasActive = pl.artifact && pl.artifact.id==='chandrahas';
   let s = c.p;
   switch(c.id){
     case 'indra': s += Math.min(pl.units.filter(u=>!u.ghost).length, 5) + 2; break;
@@ -958,24 +1496,30 @@ function aiScoreCard(g, pi, c){
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
-    case 'pavamana': s = pl.units.filter(u=>!u.ghost&&u.power<u.base).length*2 - 1; break;
+    case 'pavamana': {
+      const wounded = pl.units.filter(u=>!u.ghost&&u.power<u.base).length;
+      if (isNaga(opp)){   // EXP-M: hold Pavamana until 2+ friendly Venom Tokens, or the round is ending
+        const ftok = pl.units.filter(u=>!u.ghost).reduce((n,u)=>n+(u.venom||0),0);
+        s = (ftok>=2 || opp.passed) ? 3 + wounded + ftok*2 : -6;
+      } else s = wounded*2 - 1;
+      break; }
     case 'amrita': s = pl.units.some(u=>!u.ghost)? 2.5 : -1; break;
     case 'kavacha': s = pl.units.filter(u=>!u.ghost).length>=2? 2 : 0; break;
     // ---- Asura ----
-    case 'mahabali': s += 2; break;
+    case 'mahabali': s += 3; break;                                 // (d) get it down early to arm free plays
     case 'shukra': s += pl.discard.some(x=>x.t==='unit')? 2.5 : 0; break;
     case 'rahu': s += 2; break;
     case 'hiranya': s += 2; break;                                   // durable body
     case 'ravana': s += Math.min(5, opp.hand.length); break;
-    case 'kumbha': s -= 1; break;                                    // strong but sleeps a turn
+    case 'kumbha': s += 1; break;                                    // EXP-G: P8 that counts now AND detonates next turn
     case 'meghnad': s += opp.heroes.length? 2 : 0; break;
     case 'kalanemi': s += opp.units.filter(u=>!u.ghost).length>=2? 2 : 0; break;
-    case 'bana': s += 1 + Math.min(4, g.astraBanaCount); break;
+    case 'bana': s += 1 + Math.min(4, g.astraBanaCount) + (astrasInHand>0 ? 2+Math.min(3,astrasInHand) : 0); break;   // (c) play BEFORE the round's Astras
     case 'maricha': { const pool=[]; for (let t=0;t<2;t++) for (const u of g.players[t].units) if (!u.ghost && u.id!=='maricha') pool.push(effPower(g,t,u));
       s = pool.length? Math.max(...pool) : 3; break; }
     case 'vibhishana': s += 0.5; break;
     case 'tataka': s += 1.5; break;
-    case 'kali': s += pl.chaosThisRound? 3 : 0; break;
+    case 'kali': if (pl.chaosThisRound) s += 3; else if (astrasInHand>0) s -= 2; break;   // (e) hold Kali until after a Surge
     case 'berserker': s += Math.min(3, g.astraPlays); break;
     case 'naraka': s += opp.units.filter(u=>!u.ghost).length; break;
     case 'pashupata': { const foes=opp.units.filter(u=>!u.ghost); s = foes.length? 2+Math.min(foes.length*2, totalPower(g,pi)) : -99; break; }
@@ -983,11 +1527,69 @@ function aiScoreCard(g, pi, c){
     case 'tamasa': s = 2; break;
     case 'sanjivani': { const lk=g.lastKillThisRound; s = (lk && lk.owner===1-pi && opp.discard.includes(lk.unit))? 1+lk.unit.base : -99; break; }
     case 'ahamkara': { const real=pl.units.filter(u=>!u.ghost); s = real.length? Math.max(...real.map(u=>effPower(g,pi,u))) : -99; break; }
-    case 'tripura': s += 2; break;
-    case 'chandrahas': s += 1.5; break;
+    case 'tripura': s = unitsInHand>=2 ? (astrasInHand ? 0.5 : 3) : -99; break;   // (a) only with a Unit-heavy hand; own Astras break it
+    case 'chandrahas': s = astrasInHand>=2 ? 4 : -99; break;                       // (a) only worth playing holding 2+ Astras
+    // ---- Vanara ----
+    case 'hanuman': s += 3; break;                                  // build engine early
+    case 'sugriva': s += 2; break;                                  // card advantage + enables others
+    case 'angad': s += 2; break;
+    case 'jambavan': s += pl.heroes.some(h=>h.id==='hanuman')? 3 : 1.5; break;
+    case 'neela': s += 1 + pl.units.filter(u=>!u.ghost).length; break;
+    case 'kesari': { const h=pl.heroes.find(x=>x.id==='hanuman'); s += h? h.power : 0; break; }
+    case 'tara': s += 1.5; break;
+    case 'dwivida': s += opp.hand.length? 2:0; break;
+    case 'mainda': { const best=Math.max(0,...pl.units.filter(u=>!u.ghost).map(u=>effPower(g,pi,u))); s += Math.max(0, best-4)*0.5 + 1; break; }
+    case 'sharabha': s += 1; break;
+    case 'scout': s += pl.units.filter(u=>!u.ghost).length*0.5 + 0.5; break;
+    case 'warrior': s += Math.min(4, pl.units.filter(u=>!u.ghost).length); break;
+    case 'dadhimukha': s += pl.heroes.some(h=>h.id==='sugriva')? 2.5 : 1; break;
+    case 'riksha': s += pl.heroes.some(h=>h.id==='hanuman')? 3 : 0; break;
+    case 'nala': s += pl.hand.some(x=>x.t==='unit')? 1.5 : 0; break;
+    case 'gandiva': { const spec=targetSpec(g,pi,c); s = spec.options.length? 2+Math.max(...spec.options.map(u=>effPower(g,1-pi,u))) : -99; break; }
+    case 'lankadahan': { const foes=opp.units.filter(u=>!u.ghost); s = foes.length? 2+foes.length : -99; break; }
+    case 'sanjeevani': { const lk=g.lastKillThisRound; s = (lk && lk.owner===pi && pl.discard.includes(lk.unit))? 1+lk.unit.base : -99; break; }
+    case 'ramanaam': s = pl.units.filter(u=>!u.ghost).length ? 1+pl.units.filter(u=>!u.ghost).length*2 : -99; break;
+    case 'kishkindhaoath': s = pl.units.some(u=>!u.ghost)? 1.5 : -99; break;
+    case 'ramasignet': s += isNaga(opp) ? 5 : 1.5; break;   // EXP-M: Vanara AI prioritises Signet vs Nagas (floors venom)
+    case 'kishkindhacrown': s += 2; break;
+    // ---- Naga ----
+    case 'vasuki': s += 2 + opp.units.filter(u=>!u.ghost).length; break;                 // body + on-play sweep + R3 venom
+    case 'takshaka': s += opp.heroes.length? 2 : 1; break;
+    case 'shesha': s += 2; break;
+    case 'manasa': s += pl.units.filter(u=>!u.ghost).length + (opp.hand.some(x=>x.t==='astra')||opp.astrasThisRound>0? 2 : 0); break;
+    case 'karkotaka': s += 2; break;
+    case 'surasa': s += 1.5; break;
+    case 'ulupi': s += pl.discard.some(x=>x.t==='unit'&&!x.ghost)? 2 : 0; break;
+    case 'nagasadhu': s += opp.units.filter(u=>!u.ghost).length*0.7; break;
+    case 'kaliya': s += g.round-1; break;
+    case 'astika': s += (isNaga(opp)||opp.units.some(u=>!u.ghost&&u.venom>0))? 1.5 : 0.3; break;
+    case 'nagaarcher': s += opp.units.some(u=>!u.ghost)? 1 : 0; break;
+    case 'nagaenchantress': s += 1; break;
+    case 'nagawarrior': s += venomTokenCount(g); break;
+    case 'nagahatchling': s += opp.units.some(u=>!u.ghost && u.venom>0)? 2 : 0; break;
+    case 'ashvatara': s += opp.units.some(u=>!u.ghost)? g.round : 0; break;
+    case 'nagapasha': { const spec=targetSpec(g,pi,c); s = spec.options.length? 2+Math.max(...spec.options.map(u=>effPower(g,1-pi,u))) : -99; break; }
+    case 'venomstrike': { const foes=opp.units.filter(u=>!u.ghost).length; s = foes>=2? 2+foes : (foes?1:-2); break; }
+    case 'mohini': { const spec=targetSpec(g,pi,c); s = spec.options.length? 3+Math.max(...spec.options.map(u=>effPower(g,1-pi,u))) : -99; break; }
+    case 'mrityunjaya': { const pool=[...pl.discard,...opp.discard].filter(u=>u.t==='unit'&&!u.ghost); s = pool.length? 2+Math.max(...pool.map(u=>u.base)) : -99; break; }
+    case 'sarpasatra': { const real=pl.units.filter(u=>!u.ghost); const foes=opp.units.filter(u=>!u.ghost).length; s = real.length? 1+foes : -99; break; }
+    case 'patala': s += 2.5; break;
+    case 'anantacoil': s += 1.5; break;
   }
-  // Chaos Surge upside: Asuras value Astras a touch more when they have Units to buff.
-  if (c.t==='astra' && pl.faction==='asuras' && pl.units.some(u=>!u.ghost)) s += 1;
+  // Chaos Surge upside: Asuras value Astras more with Units to buff, and much more once Chandrahas is down.
+  if (c.t==='astra' && pl.faction==='asuras'){
+    if (pl.units.some(u=>!u.ghost)) s += 1;
+    if (chandrahasActive) s += (pl.astrasThisRound===0 ? 5 : 3);   // (b) prefer Astras; grab the doubled first one
+  }
+  // EXP-F: Hanuman's entry bonus only helps printed power ≥4 — value those Units up, nudge go-wide chaff down under Hanuman.
+  if (c.t==='unit' && pl.faction==='vanaras' && pl.heroes.some(h=>h.id==='hanuman')){
+    s += c.base>=4 ? (pl.units.some(u=>!u.ghost && u.id==='jambavan')?2:1) : -0.75;
+  }
+  // EXP-M: facing Nagas, each extra small body is just another Venom target — devalue go-wide chaff slightly (tall > wide).
+  if (c.t==='unit' && isNaga(opp) && c.base<=3){
+    const mine=pl.units.filter(u=>!u.ghost).length;
+    s -= 0.5 + mine*0.15;
+  }
   return s;
 }
 
@@ -998,6 +1600,16 @@ function aiMove(g, pi){
   const lead = my-their;
   const mustWin = opp.roundWins===1;               // losing this round loses the match
   const wantWin = pl.roundWins===1;                // winning this round wins the match
+
+  // R20: a Nagapasha-bound Unit costs the owner a whole turn to free. Unbind if freeing it is worth more
+  // than the best card play this turn (and it actually matters — contested round, not already coasting ahead).
+  const bound = pl.units.filter(u=>u.bound && !u.ghost);
+  if (bound.length && !(opp.passed && lead>0)){
+    const t = bound.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b);
+    const freeVal = effPower(g,pi,t);
+    const bestScore = idxs.length ? Math.max(...idxs.map(i=>aiScoreCard(g,pi,pl.hand[i]))) : -Infinity;
+    if (freeVal>=4 && freeVal>=bestScore) return { unbind:t.uid };
+  }
 
   if (!idxs.length) return { pass:true };
 
@@ -1018,20 +1630,51 @@ function aiMove(g, pi){
 
   // opponent still active
   if (!mustWin && !wantWin && g.round===1 && lead>=10 && pl.hand.length<=opp.hand.length-1) return { pass:true }; // card-advantage bluff
-  if (!mustWin && lead<=-14 && g.round<3) return { pass:true };  // concede a lost round, preserve cards
+  // (d) if behind and Mahabali is on our board, concede sooner — the Pass arms a free Unit + extra turn next round.
+  const mahaOnBoard = pl.faction==='asuras' && pl.heroes.some(h=>h.id==='mahabali');
+  const concedeAt = (mahaOnBoard && g.round<3) ? -8 : -14;
+  if (!mustWin && lead<=concedeAt && g.round<3) return { pass:true };  // concede a lost round, preserve cards
 
   const i = idxs.reduce((a,b)=> aiScoreCard(g,pi,pl.hand[a])>=aiScoreCard(g,pi,pl.hand[b])?a:b);
   return { play:i };
 }
 
+// AI placement (Vanara Units only): slot the new Unit beside the strongest ally so Leap pairs form
+// and Leap-enabled Units aren't edge-isolated. Non-Vanara / non-Unit → append (position irrelevant).
+function aiPlacement(g, pi, card){
+  const pl=g.players[pi];
+  if (pl.faction!=='vanaras' || card.t!=='unit') return null;
+  if (!pl.units.length) return 0;
+  let bestIdx=0, bestP=-1;
+  pl.units.forEach((u,idx)=>{ const p=effPower(g,pi,u); if (p>bestP){ bestP=p; bestIdx=idx; } });
+  return bestIdx+1;                                   // immediately after the strongest ally
+}
 function aiTakeTurn(g, pi){
+  const pl=g.players[pi];
+  // LEAP is a FREE action (reverted from the costs-a-turn experiment): take the best beneficial Leap(s) before playing.
+  if (pl.faction==='vanaras'){
+    let guard=0;
+    while (canLeap(g, pi) && guard++<4){
+      const bl=bestLeap(g, pi);
+      if (!bl || bl.gain < 3) break;                 // only spend a Leap on a meaningful gain
+      doLeap(g, pi, bl.leaper, bl.target, false);
+    }
+  }
   const mv = aiMove(g, pi);
-  if (mv.pass) pass(g, pi); else playCard(g, pi, mv.play, null);
+  if (mv.unbind!=null){                                    // R20: spend the turn to free a bound Unit
+    const u=pl.units.find(x=>x.uid===mv.unbind);
+    if (u){ u.bound=false; log(g, `${pl.name} wrenches ${u.n} free of the Nagapasha noose.`); }
+    afterAction(g, pi); return;
+  }
+  if (mv.pass) pass(g, pi); else playCard(g, pi, mv.play, null, aiPlacement(g, pi, pl.hand[mv.play]));
 }
 
 /* ---------- Node export & simulation harness ---------- */
 if (typeof module!=='undefined'){
-  module.exports = { newGame, playCard, pass, aiMove, aiTakeTurn, totalPower, playableIndices, targetSpec, effPower, isShielded, DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, RARITY_COLOR, RARITY_NAME };
+  module.exports = { newGame, playCard, pass, aiMove, aiTakeTurn, totalPower, playableIndices, targetSpec, effPower, isShielded,
+    canLeap, bestLeap, doLeap, adjacentUnits, leapLimit, sharabhaProtected,
+    drainAmount, venomPassive, venomTokens, venomRoundEnd, venomKarkotakaEarly, sweepDeaths,
+    DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME };
 }
 </script>
 <!-- ENGINE:END -->
@@ -1041,6 +1684,7 @@ const TYPE_ICON={hero:'👑',unit:'⚔',astra:'🔱',mantra:'🕉',artifact:'�
 const RAR_CLASS={ L:'rar-L', M:'rar-M', E:'rar-E' };
 let G=null, pendingPlay=null, aiTimer=null, seenLog=0;
 let inspectContext=null, pendingFly=null, knownUids=new Set(), lastPowers={}, lastRoundLen=0, focusRaf=0;
+let leapMode=null, placeMode=null;   // Vanara: Leap selection state / unit-placement state
 let lastTotals={o:null,p:null};
 const reducedMotion=()=> window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rarClass=c=> RAR_CLASS[c.r]||'';
@@ -1076,7 +1720,7 @@ function startGame(p0Faction, p1Faction){
   currentFactions={ p0: p0Faction||currentFactions.p0, p1: p1Faction||currentFactions.p1 };
   if (aiTimer) clearTimeout(aiTimer);
   G=newGame({p0:'You',p1:'Opponent',p0Faction:currentFactions.p0,p1Faction:currentFactions.p1}); seenLog=0;
-  knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null};
+  knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; hideBoardTargetBar();
   ['gameover','targeting','inspect','banner','factionselect'].forEach(id=>$(id).classList.add('hidden'));
   $('hudwrap').classList.remove('hidden');
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
@@ -1084,13 +1728,13 @@ function startGame(p0Faction, p1Faction){
   makeEmbers();
   render(); pump();
 }
-const FAC_LABEL = f => f==='asuras' ? 'ASURA' : 'DEVA';
+const FAC_LABEL = f => f==='asuras' ? 'ASURA' : f==='vanaras' ? 'VANARA' : f==='nagas' ? 'NAGA' : 'DEVA';
 function applyFactionTheme(){
-  const setHalf=(sel,fac)=>{ const h=document.querySelector(sel); if(!h)return; h.classList.toggle('fac-asura', fac==='asuras'); h.classList.toggle('fac-deva', fac!=='asuras'); };
-  setHalf('.half.me', currentFactions.p0); setHalf('.half.opp', currentFactions.p1);
-  $('hud-p').classList.toggle('fac-asura', currentFactions.p0==='asuras');
-  $('hud-o').classList.toggle('fac-asura', currentFactions.p1==='asuras');
-  document.body.classList.toggle('me-asura', currentFactions.p0==='asuras');
+  const setFac=(el,fac)=>{ if(!el)return; el.classList.remove('fac-deva','fac-asura','fac-vanara'); el.classList.add(facClass(fac)); };
+  setFac(document.querySelector('.half.me'), currentFactions.p0);
+  setFac(document.querySelector('.half.opp'), currentFactions.p1);
+  setFac($('hud-p'), currentFactions.p0);
+  setFac($('hud-o'), currentFactions.p1);
   const fl=$('facline'); if(fl) fl.textContent=`PROTOTYPE · ${FAC_LABEL(currentFactions.p0)} vs ${FAC_LABEL(currentFactions.p1)}`;
 }
 
@@ -1126,22 +1770,23 @@ function makeEmbers(){
 }
 
 /* Real card art lives in assets/cards/. Two filename patterns (see CLAUDE.md):
-   • Powered cards (Units/Heroes, base>0): {Faction}_{Type}_{Name}_P{printedPower}_r{RarityName}_png.png
-       e.g. Devas_Hero_Indra_P7_rLegendary_png.png, Devas_Unit_SuryaDev_P6_rEpic_png.png
+   • Powered cards (Units/Heroes, base>0): {Faction}_{Type}_{Name}_P{printedPower}_r{RarityName}.png
+       e.g. Devas_Hero_Indra_P7_rLegendary.png, Devas_Unit_SuryaDev_P6_rEpic.png
    • Powerless cards (Astra/Mantra/Artifact, base===0): {Faction}_{Type}_{Name}_r{RarityName}.png
-       (no power segment, no _png suffix)  e.g. Devas_Astra_Vajra_rLegendary.png
+       (no power segment)  e.g. Devas_Astra_Vajra_rLegendary.png
    Name strips spaces (CamelCase), rarity is the full name.
    We attempt to load it and only reveal it once it actually loads; on error the
    text-design card stays visible, so cards without art yet fall back gracefully. */
-const factionToken = f => f==='asuras' ? 'Asuras' : 'Devas';
+const factionToken = f => f==='asuras' ? 'Asuras' : f==='vanaras' ? 'Vanaras' : f==='nagas' ? 'Nagas' : 'Devas';
+const facClass = f => f==='asuras' ? 'fac-asura' : f==='vanaras' ? 'fac-vanara' : f==='nagas' ? 'fac-naga' : 'fac-deva';
 function cardArtSrc(c, faction){
   const type = c.t.charAt(0).toUpperCase()+c.t.slice(1);
-  const name = c.n.replace(/ /g,'');
+  const name = c.n.replace(/[^A-Za-z0-9]/g,'');   // name segment = card name with ALL non-alphanumerics removed (spaces, apostrophes, …)
   const stem = `assets/cards/${factionToken(faction)}_${type}_${name}`;
   const rar = RARITY_NAME[c.r];
   return c.base > 0
-    ? `${stem}_P${c.base}_r${rar}_png.png`   // Units / Heroes
-    : `${stem}_r${rar}.png`;                  // Astras / Mantras / Artifacts
+    ? `${stem}_P${c.base}_r${rar}.png`   // Units / Heroes
+    : `${stem}_r${rar}.png`;             // Astras / Mantras / Artifacts
 }
 function attachArt(el, c, faction){
   if (c.ghost || c.id==='ghost') return;            // Yama tokens have no art
@@ -1155,21 +1800,28 @@ function attachArt(el, c, faction){
 function boardCard(c, pi, targetSet){
   const fac=G.players[pi].faction;
   const d=document.createElement('div');
-  d.className='bc fac-'+(fac==='asuras'?'asura':'deva')+(c.t==='hero'?' hero':'')+(c.ghost?' ghostc':'');
+  d.className='bc '+facClass(fac)+(c.t==='hero'?' hero':'')+(c.ghost?' ghostc':'');
   d.dataset.uid=c.uid;
   const ep=effPower(G,pi,c);
   const sh=!c.ghost && c.t==='unit' && isShielded(G,pi,c);
+  if(c.bound) d.classList.add('bound');
+  if(c.stolenBy===0) d.classList.add('stolen');   // shown on player-0 side after a Mohini steal
   let state='', mark='';
   if(!c.ghost){ if(ep>c.base){ state='buffed'; mark='▲'; } else if(c.power<c.base){ state='hurt'; mark='▼'; } }
   d.innerHTML=
     `<div class="mini-name">${c.n}</div>`+
     (sh?'<div class="shieldbadge">🛡</div>':'')+
     (c.asleep?'<div class="shieldbadge sleep">💤</div>':'')+
-    (c.venom>0?'<div class="venombadge">☠</div>':'')+
-    `<div class="medallion ${state}">${ep}${mark?`<span class="mark">${mark}</span>`:''}</div>`;
+    (c.venom>0?`<div class="venombadge">☠${c.venom>1?`<span class="vstack">${c.venom}</span>`:''}</div>`:'')+
+    (c.bound?'<div class="bindbadge">⛓</div>':'')+
+    (c.stolenBy!==-1?'<div class="stealbadge">🌀</div>':'')+
+    `<div class="medallion ${state}">${c.bound?'0':ep}${mark?`<span class="mark">${mark}</span>`:''}</div>`;
   attachArt(d, c, fac);
+  // Leap selection (my own units, pi===0): pick a leaper, then an adjacent target.
+  const leapPick = pi===0 && leapMode && ((leapMode==='leaper') || (leapMode.leaper && leapMode.adj && leapMode.adj.has(c.uid)));
   if (targetSet && targetSet.has(c.uid)){ d.classList.add('targetable'); d.onclick=()=>resolveTarget(c.uid); }
-  else d.onclick=()=>{ if(!pendingPlay) openInspect(c, pi, null); };
+  else if (leapPick){ d.classList.add('targetable'); d.onclick=()=>leapClick(c); }
+  else d.onclick=()=>{ if(!pendingPlay && !leapMode && !placeMode) openInspect(c, pi, null); };
   if (!knownUids.has(c.uid) && !(pendingFly && pendingFly.uid===c.uid)) d.classList.add('landing');
   return d;
 }
@@ -1178,8 +1830,15 @@ function fillRow(el, cards, pi, targetSet){
   el.innerHTML='';
   if(!cards.length){ el.classList.add('empty'); const e=document.createElement('div'); e.className='slot-empty'; e.textContent='☀'; el.appendChild(e); return; }
   el.classList.remove('empty');
+  // Placement mode: interleave clickable slots in MY units row.
+  if (pi===0 && placeMode && el.id==='punits'){
+    el.appendChild(placeSlot(0));
+    cards.forEach((c,idx)=>{ el.appendChild(boardCard(c,0,targetSet)); el.appendChild(placeSlot(idx+1)); });
+    return;
+  }
   for (const c of cards) el.appendChild(boardCard(c,pi,targetSet));
 }
+function placeSlot(index){ const s=document.createElement('div'); s.className='slot-place'; s.title='place here'; s.onclick=()=>resolvePlacement(index); return s; }
 
 function setArtChip(id, artifact){
   const el=$(id);
@@ -1216,7 +1875,7 @@ function render(targetSet){
   me.hand.forEach((c,i)=>{
     const d=document.createElement('div');
     const ok = myTurn && play.has(i);
-    d.className='hc fac-'+(me.faction==='asuras'?'asura':'deva')+' '+rarClass(c)+(ok?'':' dead');
+    d.className='hc '+facClass(me.faction)+' '+rarClass(c)+(ok?'':' dead');
     d.innerHTML=`<div class="cardtext"><div class="nm">${c.n}</div><div class="ty">${TYPE_ICON[c.t]} ${c.t} · ${RARITY_NAME[c.r]}</div><div class="fx">${c.txt}</div></div>${c.p>0?`<div class="pw">${c.p}</div>`:''}${c.lockedRound===G.round?'<div class="lockicon">🔒</div>':''}`;
     attachArt(d, c, me.faction);
     d.onclick=()=>openInspect(c, 0, ok?i:-1);
@@ -1225,6 +1884,8 @@ function render(targetSet){
   updateFocus();
 
   $('passbtn').disabled=!myTurn;
+  $('leapbtn').classList.toggle('hidden', !(myTurn && me.faction==='vanaras' && canLeap(G,0) && !leapMode && !placeMode && !pendingPlay));
+  $('unbindbtn').classList.toggle('hidden', !(myTurn && me.units.some(u=>u.bound && !u.ghost) && !leapMode && !placeMode && !pendingPlay));
   $('turnind').textContent = G.over?'MATCH OVER': myTurn?'YOUR TURN': me.passed&&op.passed?'—': (G.turn===1?'OPPONENT…':'…');
   $('turnind').className = myTurn?'you':'';
 
@@ -1258,7 +1919,7 @@ function spawnFloaters(){
   const cur={};
   for(const [pi,c] of boardUnits()){
     const ep=effPower(G,pi,c); cur[c.uid]=ep;
-    if ((c.uid in lastPowers) && lastPowers[c.uid]!==ep){
+    if (!choreoActive && (c.uid in lastPowers) && lastPowers[c.uid]!==ep){   // choreography owns floaters while active
       const el=$('field').querySelector(`.bc[data-uid="${c.uid}"]`);
       if (el) floatText(el, ep-lastPowers[c.uid]);
     }
@@ -1300,6 +1961,95 @@ function showRoundBanner(){
   clearTimeout(b._t); b._t=setTimeout(()=>b.classList.add('hidden'), 1400);
 }
 
+/* ---------- event choreography (sequential) ---------- */
+let choreoActive=false, choreoSkip=false, choreoTimers=[], roundCountAtActionStart=0;
+function snapshotBoard(){
+  const m={};
+  document.querySelectorAll('#field .bc').forEach(el=>{
+    const r=el.getBoundingClientRect();
+    m[el.dataset.uid]={ left:r.left, top:r.top, width:r.width, height:r.height, name:(el.querySelector('.mini-name')?.textContent)||'' };
+  });
+  return m;
+}
+function posOf(uid, snap){
+  const el=document.querySelector(`#field .bc[data-uid="${uid}"]`);
+  if (el){ const r=el.getBoundingClientRect(); return { el, cx:r.left+r.width/2, top:r.top+6, rect:r }; }
+  const s=snap&&snap[uid];
+  if (s) return { el:null, cx:s.left+s.width/2, top:s.top+6, rect:s };
+  return null;
+}
+function cDelay(ms){ return new Promise(r=>{ if(choreoSkip) return r(); const t=setTimeout(r,ms); choreoTimers.push([t,r]); }); }
+function skipChoreo(){ if(!choreoActive) return; choreoSkip=true; choreoTimers.forEach(([t,r])=>{ clearTimeout(t); r(); }); choreoTimers=[]; }
+const FTOAST_CLASS = a => a==='Chaos Surge'?'f-chaos': a==='Dharma Shield'?'f-dharma': a==='Leap'?'f-leap': a==='Venom'?'f-venom':'f-other';
+function factionToast(ability, text){
+  if (reducedMotion()) return;
+  const b=$('ftoast'), t=b.querySelector('.ft');
+  t.className='ft '+FTOAST_CLASS(ability); t.textContent=text||ability;
+  b.classList.remove('hidden'); t.style.animation='none'; void t.offsetWidth; t.style.animation='ftPop .62s ease-out';
+  clearTimeout(b._t); b._t=setTimeout(()=>b.classList.add('hidden'), 640);
+}
+function calloutAt(pos, txt){
+  if (!pos || !txt || reducedMotion()) return;
+  const c=document.createElement('div'); c.className='callout'; c.textContent=txt;
+  c.style.left=pos.cx+'px'; c.style.top=(pos.rect.top-14)+'px'; c.style.transform='translateX(-50%)';
+  $('choreolayer').appendChild(c); setTimeout(()=>c.remove(), 520);
+}
+function floatAt(pos, txt, kind){
+  if (!pos || reducedMotion()) return;
+  const f=document.createElement('div'); f.className='floater '+kind; f.textContent=txt;
+  f.style.left=(pos.cx-9)+'px'; f.style.top=pos.top+'px';
+  $('choreolayer').appendChild(f); setTimeout(()=>f.remove(), 620);
+}
+function dissolveAt(pos, name){
+  if (!pos || reducedMotion()) return;
+  const d=document.createElement('div'); d.className='dissolve-clone';
+  d.style.left=pos.rect.left+'px'; d.style.top=pos.rect.top+'px'; d.style.width=pos.rect.width+'px'; d.style.height=pos.rect.height+'px';
+  d.textContent='✖ '+(name||''); $('choreolayer').appendChild(d); setTimeout(()=>d.remove(), 520);
+}
+function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320); }
+async function playEvent(ev, snap){
+  const src = ev.sourceUid!=null ? posOf(ev.sourceUid, snap) : null;
+  if (ev.type==='toast'){ factionToast(ev.abilityName, ev.text); await cDelay(560); return; }
+  if (ev.type==='play'){ if(src){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); } await cDelay(430); return; }
+  if (src && (ev.type==='buff'||ev.type==='token')){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
+  const tgts=ev.targetUids||[];
+  if (!tgts.length){ await cDelay(140); return; }
+  for (let i=0;i<tgts.length;i++){
+    if (choreoSkip) break;
+    const pos=posOf(tgts[i], snap);
+    if (ev.type==='destroy'){ dissolveAt(pos, (snap[tgts[i]]&&snap[tgts[i]].name)); }
+    else if (pos){
+      if (ev.type==='damage'){ cpulse(pos.el,'hit'); floatAt(pos, ev.text||String(ev.amount), 'down'); }
+      else if (ev.type==='venom'){ cpulse(pos.el,'hit'); floatAt(pos, '☠ '+(ev.amount||''), 'venom'); }
+      else if (ev.type==='buff'){ cpulse(pos.el,'pumped'); floatAt(pos, ev.text||('+'+ev.amount), 'up'); }
+      else if (ev.type==='token'){ floatAt(pos, '☠', 'venom'); }
+      else { floatAt(pos, ev.text||ev.abilityName||'', 'note'); }
+    }
+    await cDelay(150);
+  }
+  await cDelay(120);
+}
+function runAction(mutate){
+  const snap = snapshotBoard();
+  roundCountAtActionStart = G.roundHistory.length;
+  const evStart = G.events.length;
+  mutate();
+  const evs = G.events.slice(evStart);
+  if (reducedMotion() || !evs.length){ render(); afterChoreo(); return; }
+  choreoActive=true; choreoSkip=false;
+  const layer=$('choreolayer'); layer.classList.add('locked'); layer.onclick=skipChoreo;
+  render();                              // final board; spawnFloaters is suppressed while choreoActive
+  (async()=>{
+    for (const ev of evs){ if(choreoSkip) break; await playEvent(ev, snap); }
+    choreoActive=false; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML='';
+    render(); afterChoreo();
+  })();
+}
+function afterChoreo(){
+  if (G.roundHistory.length>roundCountAtActionStart && !G.over) showRoundBanner();
+  pump();
+}
+
 /* ---------- hand carousel focus ---------- */
 function updateFocus(){
   const hand=$('hand'); const cards=[...hand.children]; if(!cards.length) return;
@@ -1311,18 +2061,30 @@ function updateFocus(){
 
 /* ---------- inspect overlay ---------- */
 function openInspect(c, pi, handIndex){
+  if (choreoActive) return;               // input locked while a choreography drains (tap skips it instead)
   inspectContext={ card:c, handIndex };
   const fac=G.players[pi!=null?pi:0].faction;
   const card=$('inspectCard');
-  card.className='inspect-card fac-'+(fac==='asuras'?'asura':'deva')+' '+rarClass(c);
+  card.className='inspect-card '+facClass(fac)+' '+rarClass(c);
   const live = pi!=null && !c.ghost && (c.t==='unit'||c.t==='hero') ? effPower(G,pi,c) : c.p;
   const showPw = c.p>0 || c.t==='unit' || c.t==='hero';
+  // keyword tooltips — one line per active status on this card (tap a badge → inspect shows it)
+  const kws=[];
+  if (pi!=null && !c.ghost){
+    if (c.venom>0) kws.push(['☠ Venom Token', `Loses ${c.venom} power at each Venom tick; reaching 0 destroys it.`]);
+    if (c.bound) kws.push(['⛓ Bound', 'Contributes 0 power until its owner spends a turn to unbind it.']);
+    if (c.ward) kws.push(['Ward', 'Survives its next destruction this round, at 1 power.']);
+    if (c.asleep) kws.push(['💤 Sleep', 'Its wake effect resolves at the start of its owner’s next turn.']);
+    if (c.t==='unit' && isShielded(G,pi,c)) kws.push(['🛡 Dharma Shield', 'Blocks the next Astra that would destroy it.']);
+    if (c.stolenBy!==-1) kws.push(['🌀 Ensnared', 'Turned by Mohini — fights for the other side until round end.']);
+  }
+  const kwHtml = kws.map(([k,v])=>`<div class="kwtip"><b>${k}</b> — ${v}</div>`).join('');
   card.innerHTML=
     (showPw?`<div class="ipw">${live}</div>`:'')+
     `<div class="itext"><div class="inm">${c.n}</div>`+
     (c.sub?`<div class="isub">${c.sub}</div>`:'')+
     `<div class="ity">${TYPE_ICON[c.t]||''} ${c.t} · ${RARITY_NAME[c.r]}</div>`+
-    `<div class="ifx">${c.txt||''}</div></div>`;
+    `<div class="ifx">${c.txt||''}</div>${kwHtml}</div>`;
   attachArt(card, c, fac);
   const foot=$('inspectFooter');
   if (handIndex!=null && handIndex>=0){
@@ -1337,14 +2099,18 @@ function openInspect(c, pi, handIndex){
 function closeInspect(){ $('inspect').classList.add('hidden'); inspectContext=null; }
 
 /* ---------- play flow ---------- */
-function doPlay(i, uid, srcRect){
+function doPlay(i, uid, srcRect, position){
   const c=G.players[0].hand[i];
   pendingFly = (srcRect && c) ? { rect:srcRect, uid:c.uid } : null;
-  playCard(G,0,i,uid); render(); pump();
+  runAction(()=>playCard(G,0,i,uid,position));
 }
 
 function startPlay(i, srcRect){
   const c=G.players[0].hand[i]; if(!c) return;
+  // Vanara Unit placement: pick a slot on the Yuddha Row (only when it can matter — units already present).
+  if (c.t==='unit' && G.players[0].faction==='vanaras' && G.players[0].units.some(u=>!u.ghost)){
+    placeMode={ index:i, srcRect }; render(); showActionBar(`Place ${c.n} — tap a slot`, cancelPlace); return;
+  }
   const spec=targetSpec(G,0,c);
   if (spec && spec.options.length){
     pendingPlay={ index:i, spec, srcRect };
@@ -1379,13 +2145,53 @@ function showBoardTargetBar(c){
 function hideBoardTargetBar(){ if(targetBar){ targetBar.remove(); targetBar=null; } }
 function cancelTarget(){ pendingPlay=null; hideBoardTargetBar(); $('targeting').classList.add('hidden'); render(); }
 
+// generic green action bar (Leap / placement)
+function showActionBar(text, onCancel){
+  hideBoardTargetBar();
+  targetBar=document.createElement('div');
+  targetBar.style.cssText='position:fixed;bottom:0;left:0;right:0;background:#12240e;border-top:1.5px solid #6fc257;padding:calc(10px + env(safe-area-inset-bottom)) 10px 10px;text-align:center;font-family:Cinzel,serif;font-size:12px;color:#9be888;z-index:82';
+  targetBar.appendChild(document.createTextNode(text+'  '));
+  const b=document.createElement('button'); b.textContent='Cancel';
+  b.style.cssText='background:none;border:1px solid #2f6a22;color:#cbbd96;border-radius:6px;padding:4px 10px;cursor:pointer';
+  b.onclick=onCancel; targetBar.appendChild(b);
+  document.body.appendChild(targetBar);
+}
+
+/* ---------- Vanara placement ---------- */
+function resolvePlacement(pos){ const pm=placeMode; if(!pm) return; placeMode=null; hideBoardTargetBar(); doPlay(pm.index, null, pm.srcRect, pos); }
+function cancelPlace(){ placeMode=null; hideBoardTargetBar(); render(); }
+
+/* ---------- Vanara Leap ---------- */
+function startLeap(){ if(choreoActive || !canLeap(G,0)) return; leapMode='leaper'; render(); showActionBar('Leap — tap one of your Units', cancelLeap); }
+function cancelLeap(){ leapMode=null; hideBoardTargetBar(); render(); }
+function leapClick(c){
+  if (leapMode==='leaper'){
+    const adj=new Set(adjacentUnits(G.players[0], c).filter(u=>!u.ghost).map(u=>u.uid));
+    if (!adj.size){ showActionBar(`${c.n} has no adjacent ally — pick another`, cancelLeap); return; }
+    leapMode={ leaper:c, adj }; render(); showActionBar(`${c.n} leaps onto which neighbour?`, cancelLeap);
+  } else if (leapMode && leapMode.leaper && leapMode.adj.has(c.uid)){
+    const leaper=leapMode.leaper;
+    leapMode=null; hideBoardTargetBar();
+    runAction(()=>doLeap(G, 0, leaper, c, false));   // Leap is FREE — choreographs, still your turn
+  }
+}
+
 function resolveTarget(uid){
   const pp=pendingPlay; if(!pp) return;
   pendingPlay=null; hideBoardTargetBar(); $('targeting').classList.add('hidden');
   doPlay(pp.index, uid, pp.srcRect);
 }
 $('tgcancel').onclick=cancelTarget;
-$('passbtn').onclick=()=>{ if(G.turn===0&&!G.players[0].passed&&!G.over){ pass(G,0); render(); pump(); } };
+$('leapbtn').onclick=startLeap;
+// R20: Nagapasha unbind — spend the turn to free your most valuable bound Unit (one per turn).
+$('unbindbtn').onclick=()=>{
+  if(!(G.turn===0 && !G.players[0].passed && !G.over)) return;
+  const bound=G.players[0].units.filter(u=>u.bound && !u.ghost);
+  if(!bound.length) return;
+  const t=bound.reduce((a,b)=>effPower(G,0,a)>=effPower(G,0,b)?a:b);
+  runAction(()=>{ t.bound=false; log(G,`You wrench ${t.n} free of the Nagapasha noose.`); afterAction(G,0); });
+};
+$('passbtn').onclick=()=>{ if(G.turn===0&&!G.players[0].passed&&!G.over && !choreoActive){ runAction(()=>pass(G,0)); } };
 $('loghead').onclick=()=>$('logdrawer').classList.toggle('open');
 $('inspect').onclick=e=>{ if(e.target.id==='inspect' || e.target.closest('.inspect-hint')) closeInspect(); };
 $('hand').addEventListener('scroll', ()=>{ if(focusRaf) return; focusRaf=requestAnimationFrame(()=>{ focusRaf=0; updateFocus(); }); });
@@ -1393,8 +2199,9 @@ window.addEventListener('resize', ()=>{ if(G){ sizeBoard(); updateFocus(); } });
 
 function pump(){
   if (G.over) return;
+  if (choreoActive) return;                       // don't schedule while a choreography is draining
   if (G.turn===1 && !G.players[1].passed){
-    aiTimer=setTimeout(()=>{ aiTakeTurn(G,1); render(); pump(); }, 850);
+    aiTimer=setTimeout(()=>{ runAction(()=>aiTakeTurn(G,1)); }, 850);
   }
 }
 

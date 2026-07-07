@@ -1,5 +1,43 @@
 # Divya Yuddha — Design Decisions & QA Log
 
+## Naga faction — COMPLETE, BALANCE FROZEN FOR LAUNCH (2026-07, docs/NAGA_ROSTER.md)
+Flags A–G ruled official as **R10–R16**; four supplementary engine rulings carry **R17–R20** (see GDD_DELTAS.md). R17 additive Venom stacking · R18 Manasa on-board Astra negation (effect + Surge) · R19 Astika skip-tick + heal · R20 Nagapasha turn-costing unbind.
+
+**Venom pipeline (verified, one ordered system):** `drainAmount` (additive: 1 + Patala round + Vasuki-R3 + Strike), `venomPassive`, `venomTokens` (R13 any-side + Sarpa double + R14 Ananta board-tokens), Karkotaka **single early tick on first pass** (`venomKarkotakaEarly`, post-L2) vs round-end (`venomRoundEnd`), Astika pause, Signet floor / Hiranya floor. **`src/test_venom.js` — 31 tests all green** (incl. §9 Patala+Karkotaka, Signet floor, Pavamana +1/effect).
+
+**Cards + §9 + UI + harness (DONE):** all 22 card behaviours wired. §9 live — **Manasa** on-board Astra negation (effect + Surge); **Surasa** R12 one-shot trap (Unit −2 / Astra negated but Surge still fires — the asymmetry with Manasa); **Takshaka** Hero-immunity break (Nagapasha may bind a Hero; `totalPower` skips bound Heroes); **Pavamana** anti-Venom (see fidelity below); **Rama Naam** uncounterable-by-Naga (satisfied — Manasa negates Astras only, not Mantras). Nagapasha **bind + turn-costing unbind** in AI (`aiMove`→`{unbind}`) and UI (UNBIND button). `astraProtected` helper folds shields + Sharabha + Ulupi's round immunity. Shesha R15 round-start revive. Teal UI (#1F6B62 frames, venom-green accents, `☠×stack` / ⛓ bind / 🌀 steal badges, faction-select entry). 640 smoke games / 16 matchups crash-free; `node src/test.js` (10×500) **ALL INVARIANTS PASS**.
+
+### BALANCE — FROZEN. LAUNCH BASELINE (all future balance work diffs against this table)
+Decided-game win% (draws excluded), 500 sims/matchup:
+
+| Matchup | Result | Note |
+|---|---|---|
+| Deva mirror | 49.8 / 50.2 | |
+| Asura mirror | 53.6 / 46.4 | |
+| Vanara mirror | 52.8 / 47.2 | |
+| Naga mirror | 51.4 / 48.6 | |
+| Devas vs Asuras | 47.7 / 52.3 | |
+| Devas vs Vanaras | 45.1 / 54.9 | |
+| Asuras vs Vanaras | 42.3 / 57.7 | |
+| **Devas vs Nagas** | 40.9 / **59.1** | ◆ ACCEPTED counter-matchup (Venom vs go-wide = design intent; all counters fidelity-correct; clean provenance) |
+| Asuras vs Nagas | 49.0 / 51.0 | |
+| Vanaras vs Nagas | 57.3 / 42.7 | |
+
+**Naga integration levers (applied, in order):**
+- **EXP-L** — Karkotaka per-opponent-turn tick → flat −1; escalation (Patala/Vasuki/Strike) rides only the round-end tick.
+- **EXP-L2** — Karkotaka → a single flat −1 early tick fired the moment the first player passes each round (removed the ~6×/round attrition volume that drove the win-rate).
+- **EXP-M** — counter-piloting AI (Deva holds Pavamana until 2+ Venom Tokens / round-end; Vanara prioritises Rama's Signet vs Nagas; all AIs devalue go-wide vs Nagas). This MEASURES the matchup at competent play — deliberately NOT a detune. Base −1 round-end drain is GDD-verbatim, never touched.
+
+**Fidelity fixes (the cautionary record behind engine rule #6):** four counters have been over/under-implemented in this project, each causing a balance distortion:
+1. **Dharma Shield** (Deva) — dynamic auto-retarget → corrected to sticky single designation (EXP-A).
+2. **Karkotaka R10** (Naga) — escalated amount × per-turn volume → EXP-L flat, EXP-L2 single early tick.
+3. **Rama's Signet** (Vanara) — blanket Venom immunity → corrected to floor-at-1 + token-negation (Vanara-vs-Naga 63.8 → 57.3).
+4. **Pavamana** (Deva) — v0.1 dropped clause (b) → restored +1 power per effect removed (Deva-vs-Naga 60.4 → 59.1).
+
+**Pavamana played-vs-held reads −18pt in Deva-vs-Naga — EXPECTED, not a defect:** it's reactive damage-control; you only hold 2+ Venom Tokens once already being ground down, so playing it correlates with (not causes) losing. Left as-is.
+
+**Known design hole (owner — Season content / errata):** GDD §9 prescribes answering Rama's Signet by **destroying the Artifact**, but no Naga card can destroy Artifacts (only Deva Vishwakarma). Flagged in GDD_DELTAS; not papered over in-engine.
+
 ## Locked decisions
 - 2026-04: GDD v2.0 locked (88 cards, 4 factions, best-of-3)
 - 2026-07: Engine/stack switched from Unity to JS web stack + Capacitor

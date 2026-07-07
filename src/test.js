@@ -11,26 +11,51 @@ function assert(cond, msg, g){
 
 // card name -> id (for parsing "X plays <Name> — <sub>." log lines)
 const NAME2ID = {}; const ID2FACTION = {};
-for (const f of ['devas','asuras']) for (const c of E.DECKS[f]){ NAME2ID[c.n]=c.id; ID2FACTION[c.id]=f; }
+for (const f of ['devas','asuras','vanaras','nagas']) for (const c of E.DECKS[f]){ NAME2ID[c.n]=c.id; ID2FACTION[c.id]=f; }
 
 const N = 500;
+// All 10 matchups: 4 mirrors + 6 crosses (Nagas complete the roster).
 const MATCHUPS = [
-  { key:'Deva mirror',   f0:'devas',  f1:'devas'  },
-  { key:'Asura mirror',  f0:'asuras', f1:'asuras' },
-  { key:'Deva vs Asura', f0:'devas',  f1:'asuras' },
+  { key:'Deva mirror',     f0:'devas',   f1:'devas'   },
+  { key:'Asura mirror',    f0:'asuras',  f1:'asuras'  },
+  { key:'Vanara mirror',   f0:'vanaras', f1:'vanaras' },
+  { key:'Naga mirror',     f0:'nagas',   f1:'nagas'   },
+  { key:'Deva vs Asura',   f0:'devas',   f1:'asuras'  },
+  { key:'Deva vs Vanara',  f0:'devas',   f1:'vanaras' },
+  { key:'Deva vs Naga',    f0:'devas',   f1:'nagas'   },
+  { key:'Asura vs Vanara', f0:'asuras',  f1:'vanaras' },
+  { key:'Asura vs Naga',   f0:'asuras',  f1:'nagas'   },
+  { key:'Vanara vs Naga',  f0:'vanaras', f1:'nagas'   },
 ];
 
-// global card-impact tallies (played by the winning side vs the losing side)
-const wonWith = {}, lostWith = {};
-function collectPlays(g){
+// card-impact tallies (played by the winning side vs the losing side).
+// "M" buckets count only mirror matches, where both sides share a deck — this
+// isolates card QUALITY from faction balance (the fair nerf/buff signal).
+const wonWith = {}, lostWith = {}, wonWithM = {}, lostWithM = {};
+// Conditional metric: in a specific cross-matchup, did the counter-card's owner (always p0='A') win,
+// split by whether they actually PLAYED the card vs HELD it in hand? Isolates counter value where it matters.
+const cond = {
+  pavamana:   { key:'Deva vs Naga',   re:/^A plays Pavamana\b/,       playedW:0, playedD:0, heldW:0, heldD:0 },
+  ramasignet: { key:'Vanara vs Naga', re:/^A plays Rama.s Signet\b/,  playedW:0, playedD:0, heldW:0, heldD:0 },
+};
+function collectConditional(g, muKey){
+  for (const c of Object.values(cond)){
+    if (muKey!==c.key || g.winner==null) continue;               // decided games only
+    const played = g.log.some(l=>c.re.test(l.msg));
+    const won = g.winner===0;                                    // p0 ('A') is the counter faction in these matchups
+    if (played){ won?c.playedW++:c.playedD++; } else { won?c.heldW++:c.heldD++; }
+  }
+}
+function collectPlays(g, isMirror){
   if (g.winner==null) return;                       // draw — no winner to attribute
   const winnerName = g.players[g.winner].name;
   for (const l of g.log){
     const m = /^([AB]) plays (.+?) —/.exec(l.msg);
     if (!m) continue;
     const id = NAME2ID[m[2]]; if (!id) continue;
-    const bucket = (m[1]===winnerName) ? wonWith : lostWith;
-    bucket[id] = (bucket[id]||0)+1;
+    const won = m[1]===winnerName;
+    (won?wonWith:lostWith)[id] = ((won?wonWith:lostWith)[id]||0)+1;
+    if (isMirror) (won?wonWithM:lostWithM)[id] = ((won?wonWithM:lostWithM)[id]||0)+1;
   }
 }
 
@@ -57,7 +82,8 @@ function runMatchup(mu){
     st.rounds += g.roundHistory.length;
     if (g.roundHistory.length===3) st.r3++;
     st.turns += g.log.length;
-    collectPlays(g);
+    collectPlays(g, mu.f0===mu.f1);
+    collectConditional(g, mu.key);
   }
   return st;
 }
@@ -91,17 +117,42 @@ for (const {mu,st} of results){
     pad((st.rounds/N).toFixed(2),9)+
     pct(st.r3,N)+lead);
 }
-// Cross-faction faction win rate (excludes draws)
-const cf = results.find(r=>r.mu.key==='Deva vs Asura').st;
-const decided = cf.p0+cf.p1;
-console.log(`\nFaction balance (decided games): Devas ${pct(cf.p0,decided)}  vs  Asuras ${pct(cf.p1,decided)}`);
+// Cross-faction faction win rates (decided games, draws excluded)
+const CAP = s => s.charAt(0).toUpperCase()+s.slice(1);
+console.log('\nFaction balance — decided games (draws excluded):');
+for (const {mu,st} of results){
+  if (mu.f0===mu.f1) continue;
+  const d = st.p0+st.p1;
+  console.log(`  ${pad(mu.key,16)} ${CAP(mu.f0)} ${pct(st.p0,d)}  vs  ${CAP(mu.f1)} ${pct(st.p1,d)}`);
+}
 
 console.log('\nTOP 5 IMPACT — net times played by winner − loser (all sims):');
 for (const c of topNet) console.log(`  ${pad(c.id,12)} net ${c.net>=0?'+':''}${c.net}   (won ${c.w} / lost ${c.l})  [${ID2FACTION[c.id]}]`);
 console.log(`\nHighest win-rate when played (≥${MIN_SAMPLE} samples):`);
 for (const c of topRate) console.log(`  ${pad(c.id,12)} ${pct(c.w,c.tot)}   (${c.tot} plays)  [${ID2FACTION[c.id]}]`);
-console.log(`Lowest win-rate when played (≥${MIN_SAMPLE} samples):`);
+console.log(`Lowest win-rate when played, all sims (≥${MIN_SAMPLE}) — confounded by faction balance:`);
 for (const c of botRate) console.log(`  ${pad(c.id,12)} ${pct(c.w,c.tot)}   (${c.tot} plays)  [${ID2FACTION[c.id]}]`);
+
+// ---- mirror-isolated win-rate: faction neutralised → fair card-quality signal ----
+const impactM = Object.keys({ ...wonWithM, ...lostWithM }).map(id => {
+  const w = wonWithM[id]||0, l = lostWithM[id]||0, tot = w+l;
+  return { id, w, tot, winRate: tot ? w/tot : 0 };
+});
+const nerfCandidates = impactM.filter(c=>c.tot>=MIN_SAMPLE && c.winRate<0.40).sort((a,b)=>a.winRate-b.winRate);
+console.log(`\nNERF/BUFF CANDIDATES — cards <40% win-rate in their MIRROR (faction-neutral, ≥${MIN_SAMPLE} plays):`);
+if (!nerfCandidates.length) console.log('  (none — every card is ≥40% once faction balance is controlled)');
+for (const c of nerfCandidates) console.log(`  ${pad(c.id,12)} ${pct(c.w,c.tot)}   (${c.tot} mirror plays)  [${ID2FACTION[c.id]}]`);
+
+// ---- COUNTER-CARD metric: win-rate-when-PLAYED vs HELD, in the matchup where the counter matters ----
+console.log('\nCOUNTER-CARD IMPACT — owner win-rate, played vs held in hand (decided games):');
+for (const [id,c] of Object.entries(cond)){
+  const pTot=c.playedW+c.playedD, hTot=c.heldW+c.heldD;
+  const delta = (pTot&&hTot) ? `  Δ ${((100*c.playedW/pTot)-(100*c.heldW/hTot)>=0?'+':'')}${((100*c.playedW/pTot)-(100*c.heldW/hTot)).toFixed(1)}pt` : '';
+  console.log(`  ${pad(id,11)} [${c.key}]  played ${pct(c.playedW,pTot)} (${pTot})  ·  held ${pct(c.heldW,hTot)} (${hTot})${delta}`);
+}
+// Chandrahas kept as a mirror-isolated no-regression check (unchanged by the Naga pass).
+{ const w=wonWithM['chandrahas']||0, l=lostWithM['chandrahas']||0, t=w+l;
+  console.log(`  chandrahas  [Asura mirror, no-regression]  ${t?pct(w,t):'—'} (${t} mirror plays)`); }
 
 console.log('\n' + (fails ? `✖ ${fails} INVARIANT FAILURES` : '✓ ALL INVARIANTS PASS'));
 
