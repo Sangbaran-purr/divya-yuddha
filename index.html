@@ -270,6 +270,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .bc.bound{ filter:grayscale(.7) brightness(.62); border-color:#555 !important; }
 .bc.bound .medallion{ background:#444 !important; color:#bbb !important; }
 .bc.stolen{ border-color:var(--teal) !important; box-shadow:0 0 10px rgba(63,185,168,.55); }
+#shieldbtn{ background:linear-gradient(#2a1e0a,#1a1206); color:var(--gold); border:1.5px solid var(--gold-dim); border-radius:10px; padding:11px 12px; font-size:12px; font-weight:700; cursor:pointer; font-family:Cinzel,serif; letter-spacing:1px; }
+#shieldbtn:active{ transform:scale(.97); } #shieldbtn.hidden{ display:none !important; }
 #unbindbtn{ background:linear-gradient(#123330,#0a201d); color:var(--teal); border:1.5px solid var(--teal-dim); border-radius:10px; padding:11px 12px; font-size:12px; font-weight:700; cursor:pointer; font-family:Cinzel,serif; letter-spacing:1px; }
 #unbindbtn:active{ transform:scale(.97); } #unbindbtn.hidden{ display:none !important; }
 
@@ -387,6 +389,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <div id="controls">
     <div id="turnind">—</div>
     <button id="leapbtn" class="hidden">🌿 LEAP</button>
+    <button id="shieldbtn" class="hidden">🛡 SHIELD</button>
     <button id="unbindbtn" class="hidden">⛓ UNBIND</button>
     <button id="passbtn">PASS ROUND</button>
   </div>
@@ -616,7 +619,7 @@ function mkPlayer(name, rng, faction='devas'){
     skipNext:false, mahabaliArm:-1, chaosThisRound:false, seesOppHand:false,
     shieldUids:[], leapsUsed:0,
     boardTokens:0, surasaTrap:false, astikaPause:false, sarpaDouble:false, venomStrike:0, mustPlayUnit:false,
-    mulliganed:false };
+    mulliganed:false, manualShield:false };
 }
 
 /* MULLIGAN (GDD §2.2): before Round 1, a player may swap up to 3 cards — returned to deck, reshuffled, redraw the
@@ -708,10 +711,12 @@ function effPower(g, pi, c){
    At each shield opportunity (a Deva Unit hitting the board) an open slot latches onto the highest-power
    unshielded Unit and STAYS there for the round — even if a bigger Unit arrives later or the shielded one
    dies (the shield dies with it). Dharma Kavacha = 2 sticky slots. */
+function shieldCap(pl){ return pl.artifact && pl.artifact.id==='kavacha' ? 2 : 1; }
 function designateShields(g, pi){
   const pl = g.players[pi];
   if (pl.faction!=='devas') return;
-  const cap = pl.artifact && pl.artifact.id==='kavacha' ? 2 : 1;
+  if (pl.manualShield) return;   // human designates Dharma Shield manually (see designateShield) — no auto-assignment
+  const cap = shieldCap(pl);
   while (pl.shieldUids.length < cap){
     const cands = pl.units.filter(u=>!u.ghost && !pl.shieldUids.includes(u.uid));
     if (!cands.length) break;
@@ -720,6 +725,18 @@ function designateShields(g, pi){
     emit(g,'toast',{abilityName:'Dharma Shield',text:'Dharma Shield'});
     emit(g,'shield',{targetUids:[pick.uid],abilityName:'Dharma Shield',text:`${pick.n} shielded`});
   }
+}
+// Manual Dharma Shield designation (human): sticky (EXP-A), one Unit per call, up to cap (Kavacha=2). No un-designate.
+function designateShield(g, pi, uid){
+  const pl = g.players[pi];
+  if (pl.faction!=='devas' || pl.shieldUids.length >= shieldCap(pl)) return false;
+  const u = pl.units.find(x=>!x.ghost && x.uid===uid && !pl.shieldUids.includes(uid));
+  if (!u) return false;
+  pl.shieldUids.push(uid);
+  log(g, `${pl.name} raises Dharma Shield over ${u.n}.`);
+  emit(g,'toast',{abilityName:'Dharma Shield',text:'Dharma Shield'});
+  emit(g,'shield',{targetUids:[uid],abilityName:'Dharma Shield',text:`${u.n} shielded`});
+  return true;
 }
 function shieldedSet(g, pi){
   // Dharma Shield is the DEVA faction passive — Asura (and other) units never hold it.
@@ -1784,7 +1801,7 @@ if (typeof module!=='undefined'){
   module.exports = { newGame, playCard, pass, aiMove, aiTakeTurn, totalPower, playableIndices, targetSpec, effPower, isShielded,
     canLeap, bestLeap, doLeap, adjacentUnits, leapLimit, sharabhaProtected,
     drainAmount, venomPassive, venomTokens, venomRoundEnd, venomKarkotakaEarly, sweepDeaths,
-    mulligan, aiMulliganPlan, REALMS, REALM_INFO,
+    mulligan, aiMulliganPlan, REALMS, REALM_INFO, designateShield, shieldCap,
     DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME };
 }
 </script>
@@ -1795,7 +1812,7 @@ const TYPE_ICON={hero:'👑',unit:'⚔',astra:'🔱',mantra:'🕉',artifact:'�
 const RAR_CLASS={ L:'rar-L', M:'rar-M', E:'rar-E' };
 let G=null, pendingPlay=null, aiTimer=null, seenLog=0;
 let inspectContext=null, pendingFly=null, knownUids=new Set(), lastPowers={}, lastRoundLen=0, focusRaf=0;
-let leapMode=null, placeMode=null;   // Vanara: Leap selection state / unit-placement state
+let leapMode=null, placeMode=null, shieldMode=false;   // Vanara Leap / unit-placement / Deva Dharma-Shield selection state
 let lastTotals={o:null,p:null};
 const reducedMotion=()=> window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const rarClass=c=> RAR_CLASS[c.r]||'';
@@ -1831,7 +1848,8 @@ function startGame(p0Faction, p1Faction){
   currentFactions={ p0: p0Faction||currentFactions.p0, p1: p1Faction||currentFactions.p1 };
   if (aiTimer) clearTimeout(aiTimer);
   G=newGame({p0:'You',p1:'Opponent',p0Faction:currentFactions.p0,p1Faction:currentFactions.p1}); seenLog=0;
-  knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; hideBoardTargetBar();
+  G.players[0].manualShield=true;   // the human designates Dharma Shield by hand (AI keeps auto-designate)
+  knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; shieldMode=false; hideBoardTargetBar();
   ['gameover','targeting','inspect','banner','factionselect','mulligan','realmpop'].forEach(id=>$(id).classList.add('hidden'));
   $('hudwrap').classList.remove('hidden');
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
@@ -1981,9 +1999,12 @@ function boardCard(c, pi, targetSet){
   attachArt(d, c, fac);
   // Leap selection (my own units, pi===0): pick a leaper, then an adjacent target.
   const leapPick = pi===0 && leapMode && ((leapMode==='leaper') || (leapMode.leaper && leapMode.adj && leapMode.adj.has(c.uid)));
+  // Dharma Shield designation (my own un-shielded Units, pi===0).
+  const shieldPick = pi===0 && shieldMode && !c.ghost && c.t==='unit' && !isShielded(G,0,c);
   if (targetSet && targetSet.has(c.uid)){ d.classList.add('targetable'); d.onclick=()=>resolveTarget(c.uid); }
+  else if (shieldPick){ d.classList.add('targetable'); d.onclick=()=>shieldClick(c); }
   else if (leapPick){ d.classList.add('targetable'); d.onclick=()=>leapClick(c); }
-  else d.onclick=()=>{ if(!pendingPlay && !leapMode && !placeMode) openInspect(c, pi, null); };
+  else d.onclick=()=>{ if(!pendingPlay && !leapMode && !placeMode && !shieldMode) openInspect(c, pi, null); };
   if (!knownUids.has(c.uid) && !(pendingFly && pendingFly.uid===c.uid)) d.classList.add('landing');
   return d;
 }
@@ -2047,6 +2068,9 @@ function render(targetSet){
 
   $('passbtn').disabled=!myTurn;
   $('leapbtn').classList.toggle('hidden', !(myTurn && me.faction==='vanaras' && canLeap(G,0) && !leapMode && !placeMode && !pendingPlay));
+  // Dharma Shield: Deva human, designations remaining (< cap), an un-shielded Unit to protect.
+  const shieldable = me.faction==='devas' && me.shieldUids.length < shieldCap(me) && me.units.some(u=>!u.ghost && u.t==='unit' && !isShielded(G,0,u));
+  $('shieldbtn').classList.toggle('hidden', !(myTurn && shieldable && !leapMode && !placeMode && !shieldMode && !pendingPlay));
   $('unbindbtn').classList.toggle('hidden', !(myTurn && me.units.some(u=>u.bound && !u.ghost) && !leapMode && !placeMode && !pendingPlay));
   $('turnind').textContent = G.over?'MATCH OVER': myTurn?'YOUR TURN': me.passed&&op.passed?'—': (G.turn===1?'OPPONENT…':'…');
   $('turnind').className = myTurn?'you':'';
@@ -2326,6 +2350,10 @@ function cancelPlace(){ placeMode=null; hideBoardTargetBar(); render(); }
 /* ---------- Vanara Leap ---------- */
 function startLeap(){ if(choreoActive || !canLeap(G,0)) return; leapMode='leaper'; render(); showActionBar('Leap — tap one of your Units', cancelLeap); }
 function cancelLeap(){ leapMode=null; hideBoardTargetBar(); render(); }
+// Dharma Shield: free action — tap SHIELD, then a friendly Unit to designate (sticky, no un-designate, no auto-fallback).
+function startShield(){ if(choreoActive) return; shieldMode=true; render(); showActionBar('Dharma Shield — tap a friendly Unit to protect', cancelShield); }
+function cancelShield(){ shieldMode=false; hideBoardTargetBar(); render(); }
+function shieldClick(c){ shieldMode=false; hideBoardTargetBar(); runAction(()=>designateShield(G, 0, c.uid)); }
 function leapClick(c){
   if (leapMode==='leaper'){
     const adj=new Set(adjacentUnits(G.players[0], c).filter(u=>!u.ghost).map(u=>u.uid));
@@ -2345,6 +2373,7 @@ function resolveTarget(uid){
 }
 $('tgcancel').onclick=cancelTarget;
 $('leapbtn').onclick=startLeap;
+$('shieldbtn').onclick=startShield;
 // R20: Nagapasha unbind — spend the turn to free your most valuable bound Unit (one per turn).
 $('unbindbtn').onclick=()=>{
   if(!(G.turn===0 && !G.players[0].passed && !G.over)) return;

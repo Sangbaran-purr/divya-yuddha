@@ -165,7 +165,7 @@ function mkPlayer(name, rng, faction='devas'){
     skipNext:false, mahabaliArm:-1, chaosThisRound:false, seesOppHand:false,
     shieldUids:[], leapsUsed:0,
     boardTokens:0, surasaTrap:false, astikaPause:false, sarpaDouble:false, venomStrike:0, mustPlayUnit:false,
-    mulliganed:false };
+    mulliganed:false, manualShield:false };
 }
 
 /* MULLIGAN (GDD §2.2): before Round 1, a player may swap up to 3 cards — returned to deck, reshuffled, redraw the
@@ -257,10 +257,12 @@ function effPower(g, pi, c){
    At each shield opportunity (a Deva Unit hitting the board) an open slot latches onto the highest-power
    unshielded Unit and STAYS there for the round — even if a bigger Unit arrives later or the shielded one
    dies (the shield dies with it). Dharma Kavacha = 2 sticky slots. */
+function shieldCap(pl){ return pl.artifact && pl.artifact.id==='kavacha' ? 2 : 1; }
 function designateShields(g, pi){
   const pl = g.players[pi];
   if (pl.faction!=='devas') return;
-  const cap = pl.artifact && pl.artifact.id==='kavacha' ? 2 : 1;
+  if (pl.manualShield) return;   // human designates Dharma Shield manually (see designateShield) — no auto-assignment
+  const cap = shieldCap(pl);
   while (pl.shieldUids.length < cap){
     const cands = pl.units.filter(u=>!u.ghost && !pl.shieldUids.includes(u.uid));
     if (!cands.length) break;
@@ -269,6 +271,18 @@ function designateShields(g, pi){
     emit(g,'toast',{abilityName:'Dharma Shield',text:'Dharma Shield'});
     emit(g,'shield',{targetUids:[pick.uid],abilityName:'Dharma Shield',text:`${pick.n} shielded`});
   }
+}
+// Manual Dharma Shield designation (human): sticky (EXP-A), one Unit per call, up to cap (Kavacha=2). No un-designate.
+function designateShield(g, pi, uid){
+  const pl = g.players[pi];
+  if (pl.faction!=='devas' || pl.shieldUids.length >= shieldCap(pl)) return false;
+  const u = pl.units.find(x=>!x.ghost && x.uid===uid && !pl.shieldUids.includes(uid));
+  if (!u) return false;
+  pl.shieldUids.push(uid);
+  log(g, `${pl.name} raises Dharma Shield over ${u.n}.`);
+  emit(g,'toast',{abilityName:'Dharma Shield',text:'Dharma Shield'});
+  emit(g,'shield',{targetUids:[uid],abilityName:'Dharma Shield',text:`${u.n} shielded`});
+  return true;
 }
 function shieldedSet(g, pi){
   // Dharma Shield is the DEVA faction passive — Asura (and other) units never hold it.
@@ -1333,6 +1347,6 @@ if (typeof module!=='undefined'){
   module.exports = { newGame, playCard, pass, aiMove, aiTakeTurn, totalPower, playableIndices, targetSpec, effPower, isShielded,
     canLeap, bestLeap, doLeap, adjacentUnits, leapLimit, sharabhaProtected,
     drainAmount, venomPassive, venomTokens, venomRoundEnd, venomKarkotakaEarly, sweepDeaths,
-    mulligan, aiMulliganPlan, REALMS, REALM_INFO,
+    mulligan, aiMulliganPlan, REALMS, REALM_INFO, designateShield, shieldCap,
     DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME };
 }

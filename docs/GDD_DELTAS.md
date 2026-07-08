@@ -107,7 +107,7 @@ Deltas vs GDD v2.0 (Chaos Surge = "+2 on Astra only"):
 
 ## Other adaptations (mechanics, not card text)
 - **Vayu** (Deva Unit) — GDD "swap positions with the highest enemy Unit; that unit loses 2 power." With per-player rows, the positional swap is realised as a **displace** (the target is hurled out of formation, breaking Vanara Leap adjacency) plus −2 power.
-- **Dharma Shield** (Deva passive) — sticky single designation per round (Dharma Kavacha = two sticky). The shield latches onto the strongest Unit at the first shield opportunity and stays; it dies with that Unit and does not re-target. *(Closer to the GDD's "designated once per round" than the old dynamic auto-shield; still auto-picks rather than player-designated.)*
+- **Dharma Shield** (Deva passive) — sticky single designation per round (Dharma Kavacha = two sticky). The shield latches onto a Unit at the shield opportunity and stays; it dies with that Unit and does not re-target. **The HUMAN designates by hand** (🛡 SHIELD button → tap a Unit, `designateShield()`); if unused at round end there is NO auto-fallback (unused is unused — that's the skill). The **AI** keeps designate-at-first-opportunity auto-pick (highest-power) so the balance baseline is untouched (`pl.manualShield` gates the two paths).
 - **Board positioning** — added faction-agnostically (Units occupy ordered slots; adjacency = neighbours). Devas/Asuras ignore position; only Vanara Leap uses it.
 
 ---

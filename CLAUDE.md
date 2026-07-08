@@ -45,7 +45,7 @@ Solo developer (Sangbaran, Creative Director) with Claude as the engineering tea
 - Faction passives: Devas=Dharma Shield, Asuras=Chaos Surge, Vanaras=Leap, Nagas=Venom
 
 ## v0.1 simplifications (KNOWN, intentional — do not treat as bugs)
-- Dharma Shield auto-targets highest-power unit (should be player-designated once per round)
+- Dharma Shield: the HUMAN Deva player **designates manually** (🛡 SHIELD button → tap a friendly Unit; sticky per EXP-A, Kavacha = 2 designations, **no auto-fallback if unused — unused is unused**). The AI keeps its designate-at-first-opportunity auto-pick (highest-power), so the balance baseline is untouched (`pl.manualShield` gates the two paths; `designateShield()` is the manual call).
 - Board positioning: units occupy ordered slots (`pl.units` order = position); adjacency = array neighbours. Units-only (Heroes positionless); Devas/Asuras ignore position, Vanaras use it for Leap. Placement passed as `playCard(...position)`.
 - Vayu: original GDD ability restored — displaces the highest enemy Unit out of formation (breaks Vanara Leap adjacency) and −2 power.
 - All 4 factions implemented (88 cards): Devas + Asuras + Vanaras + **Nagas (complete — cards, §9, Venom pipeline, teal UI)**. Faction select in the UI; any combo playable. (Balance FROZEN for launch — see BALANCE.)
@@ -115,9 +115,10 @@ Solo developer (Sangbaran, Creative Director) with Claude as the engineering tea
 - ✅ **Mulligan (GDD §2.2)** — up to 3 pre-Round-1, tap-to-mark UI + AI heuristic + choreographed redraw
 - ✅ **7 Cosmic Realms (GDD §10)** — `g.realm` engine modifier at chokepoints; match banner + tappable header chip; Mrityulok regression byte-identical to baseline, Swarga/Patala swing measured
 
+- ✅ **Dharma Shield player-designation** — human designates by hand (🛡 SHIELD button, sticky, Kavacha=2, no auto-fallback); AI unchanged, harness byte-identical
+
 **Still open (refinements / content, NOT loop-blockers):**
 1. **Deck building** — faction-select ships fixed 22-card decks; card-level deckbuilding is a scope decision (collection + validation + builder UI). Owner call.
-2. **Dharma Shield player-designation** — v0.1 auto-targets highest-power Unit; GDD wants a player-designated pick once per round (small UX + a ruling).
-3. **Real card art** — Deva + Vanara PNGs live; Asura/Naga frames pending (art production; `cardArtSrc` naming already handles them).
+2. **Real card art** — Deva + Vanara PNGs live; Asura/Naga frames pending (art production; `cardArtSrc` naming already handles them).
 
 **Post-launch (explicitly out of the core loop):** Capacitor mobile wrap · multiplayer (Node + Colyseus/Nakama) · tutorial/onboarding.
