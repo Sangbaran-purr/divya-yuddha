@@ -385,6 +385,9 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .tgl.on{ border-color:var(--gold); color:var(--gold); background:linear-gradient(#2a1e0a,#1a1206); }
 .set-vol{ display:flex; align-items:center; gap:10px; font-size:11px; color:var(--ink-dim); font-family:Cinzel,serif; letter-spacing:1px; }
 .set-vol input{ flex:1; accent-color:var(--gold); }
+.set-hint{ font-size:10px; color:var(--ink-dim); line-height:1.45; margin:2px 0 8px; }
+.set-hint code{ color:var(--gold); font-size:10px; }
+.set-hint.hidden{ display:none; }
 
 /* ===== opponent thinking indicator ===== */
 #oppthinking{ position:absolute; z-index:8; top:14px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:8px; padding:6px 14px; border-radius:20px; background:rgba(10,7,4,.7); border:1px solid #3a2e14; font-family:Cinzel,serif; font-size:11px; letter-spacing:1px; color:var(--ink-dim); pointer-events:none; }
@@ -395,15 +398,18 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #oppthinking.hidden{ display:none; }
 
 /* ===== showcase (opponent card reveal) ===== */
-#showcase{ position:fixed; inset:0; z-index:72; display:flex; align-items:center; justify-content:center; background:rgba(4,3,1,.72); pointer-events:none; animation:showcaseIn .28s ease-out; }
+#showcase{ position:fixed; inset:0; z-index:72; display:flex; align-items:center; justify-content:center; padding:10px; box-sizing:border-box; background:rgba(4,3,1,.72); pointer-events:none; animation:showcaseIn .28s ease-out; }
 #showcase.hidden{ display:none; }
 #showcase.out{ animation:showcaseOut .3s ease-in forwards; }
 @keyframes showcaseIn{ 0%{ opacity:0; } 100%{ opacity:1; } }
 @keyframes showcaseOut{ 0%{ opacity:1; } 100%{ opacity:0; } }
-#showcaseCard{ width:60%; max-width:340px; border-radius:16px; overflow:hidden; border:2px solid var(--gold); background:linear-gradient(#241a0a,#120c05); box-shadow:0 20px 60px rgba(0,0,0,.7), 0 0 40px rgba(201,168,76,.35); animation:showcasePop .42s cubic-bezier(.2,1.3,.5,1); position:relative; }
-@keyframes showcasePop{ 0%{ transform:scale(.7) translateY(20px); } 100%{ transform:scale(1) translateY(0); } }
-#showcaseCard .sc-art{ width:100%; aspect-ratio:1/1; object-fit:cover; display:block; background:#0a0704; }
-#showcaseCard .sc-txt{ padding:12px 14px 16px; }
+/* width is capped by available HEIGHT (0.72 ≈ 750/1050 aspect + a text strip) so the FULL 750×1050 frame + name/ability
+   always fits the viewport, phone-first. Flex-column lets the art shrink (never the text) as an extreme-case safety. */
+#showcaseCard{ width:max(150px, min(60vw, calc((100vh - 210px) * 0.72), 320px)); max-height:calc(100vh - 20px); display:flex; flex-direction:column;
+  border-radius:16px; overflow:hidden; border:2px solid var(--gold); background:linear-gradient(#241a0a,#120c05); box-shadow:0 20px 60px rgba(0,0,0,.7), 0 0 40px rgba(201,168,76,.35); animation:showcasePop .42s cubic-bezier(.2,1.3,.5,1); position:relative; }
+@keyframes showcasePop{ 0%{ transform:scale(.72); } 100%{ transform:scale(1); } }
+#showcaseCard .sc-art{ width:100%; aspect-ratio:750/1050; object-fit:cover; display:block; background:#0a0704; flex:0 1 auto; min-height:0; }
+#showcaseCard .sc-txt{ padding:12px 14px 16px; flex:0 0 auto; }
 #showcaseCard .sc-nm{ font-family:Cinzel,serif; font-size:20px; font-weight:700; color:var(--gold); }
 #showcaseCard .sc-sub{ font-size:11px; color:var(--ink-dim); font-style:italic; margin-bottom:5px; }
 #showcaseCard .sc-ty{ font-size:10px; letter-spacing:1px; color:var(--ink-dim); margin-bottom:7px; }
@@ -498,7 +504,10 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
       <button id="musictoggle" class="tgl">♪ Music</button>
       <button id="sfxtoggle" class="tgl">🔊 SFX</button>
     </div>
-    <div class="set-vol"><span>Volume</span><input id="mastervol" type="range" min="0" max="100" value="70"></div>
+    <div id="musichint" class="set-hint hidden">No music loaded. The owner can set <code>window.MUSIC_URL</code> to a looping tanpura track — SFX are independent.</div>
+    <div class="set-vol"><span>SFX vol</span><input id="sfxvol" type="range" min="0" max="100" value="80"></div>
+    <div class="set-vol"><span>Master</span><input id="mastervol" type="range" min="0" max="100" value="70"></div>
+    <button id="testsfx" class="tgl" style="width:100%;margin-top:8px;">▶ Test all SFX</button>
   </div>
   <button class="fsel-start" onclick="$('settings').classList.add('hidden')">DONE</button>
 </div></div>
@@ -2261,93 +2270,69 @@ function findCardByUid(uid){
   return null;
 }
 
-/* ---- Web Audio (all synthesized — zero asset files) ---- */
+/* ---- Web Audio: LOUD layered SFX (with body) + optional MUSIC_URL file loop. No synthesized music. ---- */
 const Audio2 = (()=>{
-  let ctx=null, master=null, musicGain=null, sfxGain=null, tablaTimer=null, started=false;
-  let musicOn=localStorage.getItem('dy_music')!=='0', sfxOn=localStorage.getItem('dy_sfx')!=='0';
+  let ctx=null, master=null, musicGain=null, sfxGain=null, sfxComp=null, started=false, musicEl=null;
+  const MUSIC_URL=(typeof window!=='undefined' && window.MUSIC_URL)||'';   // owner supplies a real tanpura loop here — no code change
+  const MUSIC_LEVEL=0.5;
+  let sfxOn = localStorage.getItem('dy_sfx')!=='0';
+  let musicOn = localStorage.getItem('dy_music')!=null ? localStorage.getItem('dy_music')==='1' : !!MUSIC_URL;   // default OFF unless a URL exists
   let vol=(parseInt(localStorage.getItem('dy_vol'))||70)/100;
-  const MUSIC_LEVEL=0.05;                                   // ~ −26dB vs SFX
-  const MUSIC_URL=(typeof window!=='undefined' && window.MUSIC_URL)||'';   // owner hook: set window.MUSIC_URL to a real tanpura recording (looped) — no code change
-  const TANPURA=[196.00, 130.81, 130.81, 65.41];           // Pa – Sa – Sa – Sa(low octave)
-  let musicTimer=null, pluckIdx=0, musicEl=null, round3=false;
+  let sfxVol=(parseInt(localStorage.getItem('dy_sfxvol'))||80)/100;
   function ensure(){
     if(ctx) return;
     try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
     master=ctx.createGain(); master.gain.value=vol; master.connect(ctx.destination);
-    sfxGain=ctx.createGain(); sfxGain.gain.value=sfxOn?1:0; sfxGain.connect(master);
-    musicGain=ctx.createGain(); musicGain.gain.value=0.0001; musicGain.connect(master);  // fades to MUSIC_LEVEL on start
+    sfxComp=ctx.createDynamicsCompressor();                 // safety limiter so SFX can be loud without digital clipping
+    sfxComp.threshold.value=-3; sfxComp.knee.value=2; sfxComp.ratio.value=6; sfxComp.attack.value=0.002; sfxComp.release.value=0.15; sfxComp.connect(master);
+    sfxGain=ctx.createGain(); sfxGain.gain.value=sfxOn?sfxVol:0; sfxGain.connect(sfxComp);
+    musicGain=ctx.createGain(); musicGain.gain.value=0.0001; musicGain.connect(master);
   }
-  function unlock(){ ensure(); if(!ctx) return; if(ctx.state==='suspended') ctx.resume(); if(!started){ started=true; if(musicOn) startMusic(); } }
+  function unlock(){ ensure(); if(!ctx) return; if(ctx.state==='suspended') ctx.resume(); if(!started){ started=true; if(musicOn && MUSIC_URL) startMusic(); } }
   function noiseBuf(dur){ const n=Math.max(1,Math.floor(ctx.sampleRate*dur)); const b=ctx.createBuffer(1,n,ctx.sampleRate); const d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return b; }
-  function tone(freq,dur,type,gain,glideTo){
-    if(!ctx||!sfxOn) return; const t=ctx.currentTime; const o=ctx.createOscillator(), g=ctx.createGain();
-    o.type=type||'sine'; o.frequency.setValueAtTime(freq,t); if(glideTo) o.frequency.exponentialRampToValueAtTime(glideTo,t+dur);
-    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(gain||0.3,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+dur+0.02);
+  function osc(freq,dur,type,gain,glideTo,delay){
+    if(!ctx) return; const t=ctx.currentTime+(delay||0); const o=ctx.createOscillator(), g=ctx.createGain();
+    o.type=type||'sine'; o.frequency.setValueAtTime(freq,t); if(glideTo) o.frequency.exponentialRampToValueAtTime(Math.max(1,glideTo),t+dur);
+    g.gain.setValueAtTime(0.0001,t); g.gain.linearRampToValueAtTime(gain,t+0.008); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o.connect(g); g.connect(sfxGain); o.start(t); o.stop(t+dur+0.03);
   }
-  function noise(dur,gain,filt,freq){
-    if(!ctx||!sfxOn) return; const t=ctx.currentTime; const s=ctx.createBufferSource(); s.buffer=noiseBuf(dur);
-    const g=ctx.createGain(); g.gain.setValueAtTime(gain||0.2,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    let node=s; if(filt){ const f=ctx.createBiquadFilter(); f.type=filt; f.frequency.value=freq||1200; s.connect(f); node=f; }
+  function nz(dur,gain,filt,f0,f1,delay){
+    if(!ctx) return; const t=ctx.currentTime+(delay||0); const s=ctx.createBufferSource(); s.buffer=noiseBuf(dur);
+    const g=ctx.createGain(); g.gain.setValueAtTime(gain,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    let node=s; if(filt){ const bf=ctx.createBiquadFilter(); bf.type=filt; bf.frequency.setValueAtTime(f0,t); if(f1) bf.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur); bf.Q.value=filt==='bandpass'?2:0.7; s.connect(bf); node=bf; }
     node.connect(g); g.connect(sfxGain); s.start(t); s.stop(t+dur+0.02);
   }
-  const SFX={
-    cardplay:()=>noise(0.22,0.13,'bandpass',900),
-    damage:  ()=>tone(90,0.28,'sine',0.42,55),
-    buff:    ()=>tone(520,0.3,'sine',0.2,880),
-    destroy: ()=>{ noise(0.16,0.28,'highpass',1600); tone(70,0.42,'sawtooth',0.26,38); },
-    venom:   ()=>noise(0.4,0.11,'bandpass',3200),
-    shield:  ()=>{ tone(1300,0.5,'triangle',0.17); tone(1307,0.5,'triangle',0.13); },
-    surge:   ()=>{ tone(300,0.5,'sawtooth',0.19); tone(319,0.5,'sawtooth',0.17); },
-    leap:    ()=>tone(300,0.28,'sine',0.22,760),
-    draw:    ()=>noise(0.12,0.09,'highpass',2400),
-    roundwin:()=>[523,659,784].forEach((f,i)=>setTimeout(()=>tone(f,0.4,'triangle',0.24),i*130)),
-    roundloss:()=>[392,294].forEach((f,i)=>setTimeout(()=>tone(f,0.5,'triangle',0.24),i*180)),
-    victory: ()=>[523,659,784,1047].forEach((f,i)=>setTimeout(()=>tone(f,0.5,'triangle',0.28),i*150)),
-    defeat:  ()=>tone(140,1.6,'sawtooth',0.2,90),
+  const SFX={   // each layered for body, 150–400ms, distinct silhouettes
+    cardplay:()=>{ nz(0.26,0.5,'bandpass',200,2000); },                                   // fuller whoosh 200→2k
+    damage:  ()=>{ nz(0.12,0.6,'lowpass',900,300); osc(60,0.28,'sine',0.7,40); },         // noise thump + low sine drop 60→40
+    destroy: ()=>{ nz(0.1,0.7,'highpass',1400); nz(0.34,0.5,'bandpass',1200,220,0.03); osc(80,0.4,'sawtooth',0.5,38,0.02); },  // crack + descending debris
+    buff:    ()=>{ osc(523,0.3,'triangle',0.5); osc(784,0.34,'triangle',0.4,0,0.08); osc(1046,0.3,'sine',0.2,0,0.08); },        // two-note chime + harmonic
+    venom:   ()=>{ nz(0.5,0.45,'bandpass',600,3600); },                                   // longer wet hiss sweep
+    shield:  ()=>{ osc(1200,0.5,'triangle',0.4); osc(1808,0.5,'triangle',0.22); osc(2400,0.4,'sine',0.12); },
+    surge:   ()=>{ osc(300,0.5,'sawtooth',0.4); osc(319,0.5,'sawtooth',0.36); osc(600,0.4,'square',0.14); },
+    leap:    ()=>{ osc(300,0.3,'sine',0.5,900); },
+    draw:    ()=>{ nz(0.14,0.4,'highpass',2200); },
+    boom:    ()=>{ osc(70,0.7,'sine',0.9,32); nz(0.5,0.35,'lowpass',260,80); },            // low boom under Mythic/Legendary showcase
+    roundwin:()=>[523,659,784].forEach((f,i)=>osc(f,0.42,'triangle',0.5,0,i*0.13)),
+    roundloss:()=>[392,294].forEach((f,i)=>osc(f,0.5,'triangle',0.5,0,i*0.18)),
+    victory: ()=>[523,659,784,1047].forEach((f,i)=>osc(f,0.5,'triangle',0.55,0,i*0.15)),
+    defeat:  ()=>{ osc(140,1.6,'sawtooth',0.5,88); nz(1.2,0.2,'lowpass',300,120); },
   };
-  function sfx(name){ ensure(); if(sfxOn && SFX[name]) SFX[name](); }
-  // Karplus–Strong plucked string: noise burst → feedback delay line (delayTime = 1/freq) → lowpass. Sounds plucked, not droned.
-  function pluck(freq, when, ring){
-    if(!ctx) return;
-    const dl=ctx.createDelay(0.05); dl.delayTime.value=1/freq;
-    const lp=ctx.createBiquadFilter(); lp.type='lowpass'; lp.frequency.value=2200;
-    const fb=ctx.createGain(); fb.gain.value=0.985;                          // string decay
-    const amp=ctx.createGain(); amp.gain.setValueAtTime(1,when); amp.gain.exponentialRampToValueAtTime(0.0008, when+ring);
-    dl.connect(lp); lp.connect(fb); fb.connect(dl); dl.connect(amp); amp.connect(musicGain);   // feedback loop + tap
-    const b=ctx.createBufferSource(); b.buffer=noiseBuf(0.015); const bg=ctx.createGain(); bg.gain.value=0.55;
-    b.connect(bg); bg.connect(dl); b.start(when); b.stop(when+0.015);        // excite the string
-    const jb=ctx.createBufferSource(); jb.buffer=noiseBuf(0.05); const jf=ctx.createBiquadFilter(); jf.type='highpass'; jf.frequency.value=freq*4;
-    const jg=ctx.createGain(); jg.gain.setValueAtTime(0.07,when); jg.gain.exponentialRampToValueAtTime(0.0005, when+0.4);
-    jb.connect(jf); jf.connect(jg); jg.connect(musicGain); jb.start(when); jb.stop(when+0.05);  // jvari buzz layer
-    setTimeout(()=>{ try{ dl.disconnect();lp.disconnect();fb.disconnect();amp.disconnect(); }catch(e){} }, (when-ctx.currentTime+ring+0.4)*1000);
-  }
-  function musicStep(){ if(!ctx||!musicOn) return; const f=TANPURA[pluckIdx%TANPURA.length]*(1+(Math.random()-0.5)*0.004); pluck(f, ctx.currentTime+0.02, 4.2); pluckIdx++; }
-  function startPlucks(rate){ stopPlucks(); musicStep(); musicTimer=setInterval(musicStep, rate); }
-  function stopPlucks(){ if(musicTimer){ clearInterval(musicTimer); musicTimer=null; } }
-  function fadeMusic(to, secs){ if(!musicGain) return; const t=ctx.currentTime; const cur=Math.max(0.0001,musicGain.gain.value); musicGain.gain.cancelScheduledValues(t); musicGain.gain.setValueAtTime(cur,t); musicGain.gain.linearRampToValueAtTime(Math.max(0.0001,to), t+secs); }
-  function startMusic(){
-    if(!ctx) return;
-    if(MUSIC_URL){ try{ musicEl=new Audio(MUSIC_URL); musicEl.loop=true; musicEl.crossOrigin='anonymous'; ctx.createMediaElementSource(musicEl).connect(musicGain); musicEl.play().catch(()=>{}); }catch(e){} }
-    else { startPlucks(round3?850:1100); }
-    fadeMusic(MUSIC_LEVEL, 2);
-  }
-  function setRound3(on){
-    if(!ctx || on===round3) return;                                          // act only on the round-3 transition
-    round3=on;
-    if(!MUSIC_URL && musicTimer) startPlucks(on?850:1100);                    // quicker plucks under tension
-    if(on && !tablaTimer){ tablaTimer=setInterval(()=>{ if(!musicOn) return; const t=ctx.currentTime; const s=ctx.createBufferSource(); s.buffer=noiseBuf(0.09); const f=ctx.createBiquadFilter(); f.type='bandpass'; f.frequency.value=180; const g=ctx.createGain(); g.gain.setValueAtTime(0.09,t); g.gain.exponentialRampToValueAtTime(0.001,t+0.13); s.connect(f); f.connect(g); g.connect(musicGain); s.start(t); s.stop(t+0.14); }, 850); }
-    else if(!on && tablaTimer){ clearInterval(tablaTimer); tablaTimer=null; }
-  }
+  function duck(){ if(!ctx||!musicEl) return; const t=ctx.currentTime; const cur=Math.max(0.0001,musicGain.gain.value); musicGain.gain.cancelScheduledValues(t); musicGain.gain.setValueAtTime(cur,t); musicGain.gain.linearRampToValueAtTime(cur*0.4,t+0.02); musicGain.gain.linearRampToValueAtTime(musicOn?MUSIC_LEVEL:0.0001,t+0.35); }  // sidechain −8dB
+  function sfx(name){ ensure(); if(sfxOn && SFX[name]){ SFX[name](); duck(); } }
+  function fadeMusic(to,secs){ if(!musicGain||!ctx) return; const t=ctx.currentTime; const cur=Math.max(0.0001,musicGain.gain.value); musicGain.gain.cancelScheduledValues(t); musicGain.gain.setValueAtTime(cur,t); musicGain.gain.linearRampToValueAtTime(Math.max(0.0001,to),t+secs); }
+  function startMusic(){ if(!ctx||!MUSIC_URL||musicEl) return; try{ musicEl=new Audio(MUSIC_URL); musicEl.loop=true; musicEl.crossOrigin='anonymous'; ctx.createMediaElementSource(musicEl).connect(musicGain); musicEl.play().catch(()=>{}); fadeMusic(MUSIC_LEVEL,2); }catch(e){} }
+  function testAll(){ ensure(); if(ctx&&ctx.state==='suspended') ctx.resume(); const names=Object.keys(SFX); names.forEach((n,i)=>setTimeout(()=>{ if(SFX[n]){ SFX[n](); } }, i*650)); return names; }
   return {
-    unlock, sfx, setRound3,
+    unlock, sfx, testAll,
+    setRound3:()=>{},                                       // no synthesized percussion (music is file-only now)
     setMusic:(on)=>{ musicOn=on; localStorage.setItem('dy_music',on?'1':'0'); if(!ctx) return;
-      if(on){ if(!musicTimer && !musicEl) startMusic(); else fadeMusic(MUSIC_LEVEL,2); }
-      else { fadeMusic(0.0001,2); if(tablaTimer){ clearInterval(tablaTimer); tablaTimer=null; } round3=false;
-        setTimeout(()=>{ if(!musicOn){ stopPlucks(); if(musicEl){ try{musicEl.pause();}catch(e){} musicEl=null; } } }, 2100); } },
-    setSfx:(on)=>{ sfxOn=on; localStorage.setItem('dy_sfx',on?'1':'0'); if(sfxGain) sfxGain.gain.value=on?1:0; },
+      if(on){ if(MUSIC_URL){ if(!musicEl) startMusic(); else fadeMusic(MUSIC_LEVEL,2); } }
+      else { fadeMusic(0.0001,2); setTimeout(()=>{ if(!musicOn && musicEl){ try{musicEl.pause();}catch(e){} } }, 2100); } },
+    setSfx:(on)=>{ sfxOn=on; localStorage.setItem('dy_sfx',on?'1':'0'); if(sfxGain) sfxGain.gain.value=on?sfxVol:0; },
     setVol:(v)=>{ vol=v; localStorage.setItem('dy_vol',Math.round(v*100)); if(master) master.gain.value=v; },
-    get musicOn(){return musicOn;}, get sfxOn(){return sfxOn;}, get vol(){return vol;},
+    setSfxVol:(v)=>{ sfxVol=v; localStorage.setItem('dy_sfxvol',Math.round(v*100)); if(sfxGain&&sfxOn) sfxGain.gain.value=v; },
+    get musicOn(){return musicOn;}, get sfxOn(){return sfxOn;}, get vol(){return vol;}, get sfxVol(){return sfxVol;}, get hasMusic(){return !!MUSIC_URL;},
   };
 })();
 function sfxForEvent(ev){
@@ -2362,28 +2347,36 @@ function unlockAudioOnce(){ if(audioUnlocked)return; audioUnlocked=true; Audio2.
 /* ---- settings panel ---- */
 function syncSettingsUI(){
   document.querySelectorAll('#speedseg button').forEach(b=>b.classList.toggle('sel', SPEEDS[b.dataset.sp]===speedMult));
-  $('musictoggle').classList.toggle('on', Audio2.musicOn); $('sfxtoggle').classList.toggle('on', Audio2.sfxOn);
+  $('musictoggle').textContent = Audio2.hasMusic ? '♪ Music' : '♪ Add music';
+  $('musictoggle').classList.toggle('on', Audio2.hasMusic && Audio2.musicOn);
+  $('musichint').classList.toggle('hidden', Audio2.hasMusic);
+  $('sfxtoggle').classList.toggle('on', Audio2.sfxOn);
+  $('sfxvol').value=Math.round(Audio2.sfxVol*100);
   $('mastervol').value=Math.round(Audio2.vol*100);
 }
-/* quick mute — one tap cycles: All on → Music muted → All muted → All on */
+/* quick mute — with a music file: All on → Music muted → All muted → All on. Without one: SFX on ↔ off. */
 function muteState(){ return (Audio2.musicOn&&Audio2.sfxOn)?'all':(!Audio2.musicOn&&Audio2.sfxOn)?'musicoff':'alloff'; }
-function updateMuteIcon(){ const s=muteState(); const b=$('mutebtn'); if(b) b.textContent = s==='all'?'🔊': s==='musicoff'?'🎵':'🔇'; }
+function updateMuteIcon(){ const b=$('mutebtn'); if(!b) return; if(!Audio2.hasMusic){ b.textContent=Audio2.sfxOn?'🔊':'🔇'; return; } const s=muteState(); b.textContent = s==='all'?'🔊': s==='musicoff'?'🎵':'🔇'; }
 function toastMute(text){ const d=document.createElement('div'); d.className='mutetoast'; d.textContent=text; document.body.appendChild(d); setTimeout(()=>d.remove(),1200); }
 $('mutebtn').onclick=()=>{
   unlockAudioOnce();
-  const s=muteState();
-  if(s==='all'){ Audio2.setMusic(false); Audio2.setSfx(true); toastMute('🎵 Music muted'); }
-  else if(s==='musicoff'){ Audio2.setMusic(false); Audio2.setSfx(false); toastMute('🔇 All muted'); }
-  else { Audio2.setMusic(true); Audio2.setSfx(true); toastMute('🔊 Sound on'); }
+  if(!Audio2.hasMusic){ const on=!Audio2.sfxOn; Audio2.setSfx(on); toastMute(on?'🔊 Sound on':'🔇 Sound off'); }
+  else { const s=muteState();
+    if(s==='all'){ Audio2.setMusic(false); Audio2.setSfx(true); toastMute('🎵 Music muted'); }
+    else if(s==='musicoff'){ Audio2.setMusic(false); Audio2.setSfx(false); toastMute('🔇 All muted'); }
+    else { Audio2.setMusic(true); Audio2.setSfx(true); toastMute('🔊 Sound on'); } }
   updateMuteIcon(); syncSettingsUI();
 };
 updateMuteIcon();
 $('gearbtn').onclick=()=>{ syncSettingsUI(); $('settings').classList.remove('hidden'); };
 $('settings').onclick=e=>{ if(e.target.id==='settings') $('settings').classList.add('hidden'); };
 document.querySelectorAll('#speedseg button').forEach(b=> b.onclick=()=>setSpeed(b.dataset.sp));
-$('musictoggle').onclick=()=>{ Audio2.setMusic(!Audio2.musicOn); syncSettingsUI(); updateMuteIcon(); };
-$('sfxtoggle').onclick=()=>{ Audio2.setSfx(!Audio2.sfxOn); if(Audio2.sfxOn) Audio2.sfx('buff'); syncSettingsUI(); updateMuteIcon(); };
+$('musictoggle').onclick=()=>{ unlockAudioOnce(); if(!Audio2.hasMusic){ toastMute('Set window.MUSIC_URL to add music'); return; } Audio2.setMusic(!Audio2.musicOn); syncSettingsUI(); updateMuteIcon(); };
+$('sfxtoggle').onclick=()=>{ unlockAudioOnce(); Audio2.setSfx(!Audio2.sfxOn); if(Audio2.sfxOn) Audio2.sfx('buff'); syncSettingsUI(); updateMuteIcon(); };
+$('sfxvol').oninput=e=>{ Audio2.setSfxVol(e.target.value/100); };
+$('sfxvol').onchange=()=>{ unlockAudioOnce(); Audio2.sfx('cardplay'); };   // preview at the new level
 $('mastervol').oninput=e=>Audio2.setVol(e.target.value/100);
+$('testsfx').onclick=()=>{ unlockAudioOnce(); const names=Audio2.testAll(); toastMute('Playing '+names.length+' SFX…'); };
 
 /* ---- opponent "thinking" pause + showcase + result summary + total count-up ---- */
 function aiThinkTime(){
@@ -2553,7 +2546,7 @@ async function playEvent(ev, snap){
   if (ev.type==='play'){
     if(src){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
     const c=findCardByUid(ev.sourceUid); let hold=700;
-    if(c && (c.r==='L'||c.r==='M')){ hold+=300; screenShake(); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); }   // Mythic/Legendary: physical weight
+    if(c && (c.r==='L'||c.r==='M')){ hold+=300; screenShake(); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); Audio2.sfx('boom'); }   // Mythic/Legendary: physical weight + low boom
     else if(c && c.t==='hero') hold+=300;
     await cDelay(hold); return;
   }
