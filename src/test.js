@@ -59,10 +59,10 @@ function collectPlays(g, isMirror){
   }
 }
 
-function runMatchup(mu){
+function runMatchup(mu, realm='mrityulok'){   // baseline runs on Mrityulok (no realm effect → byte-identical to launch baseline)
   const st = { p0:0, p1:0, draw:0, rounds:0, r3:0, turns:0 };
   for (let k=0;k<N;k++){
-    const g = E.newGame({ rng:seeded(1000+k), p0:'A', p1:'B', p0Faction:mu.f0, p1Faction:mu.f1 });
+    const g = E.newGame({ rng:seeded(1000+k), p0:'A', p1:'B', p0Faction:mu.f0, p1Faction:mu.f1, realm });
     let guard=0;
     while(!g.over && guard++<800) E.aiTakeTurn(g, g.turn);
 
@@ -155,6 +155,26 @@ for (const [id,c] of Object.entries(cond)){
   console.log(`  chandrahas  [Asura mirror, no-regression]  ${t?pct(w,t):'—'} (${t} mirror plays)`); }
 
 console.log('\n' + (fails ? `✖ ${fails} INVARIANT FAILURES` : '✓ ALL INVARIANTS PASS'));
+
+// ---- COSMIC REALM regression + swing: Mrityulok must equal the baseline; Swarga/Patala measure realm-induced swing ----
+function quickP0(mu, realm){
+  let p0=0,p1=0;
+  for (let k=0;k<N;k++){
+    const g=E.newGame({ rng:seeded(1000+k), p0:'A', p1:'B', p0Faction:mu.f0, p1Faction:mu.f1, realm });
+    let guard=0; while(!g.over && guard++<800) E.aiTakeTurn(g,g.turn);
+    if (g.winner===0) p0++; else if (g.winner===1) p1++;
+  }
+  return p0+p1 ? 100*p0/(p0+p1) : 0;   // p0 decided win%
+}
+console.log('\n╔══ COSMIC REALM regression (all 10 matchups × ' + N + ' sims) ══╗');
+console.log('MATCHUP           Mrityulok(base)   Swarga (Δ)      Patala (Δ)');
+for (const {mu,st} of results){
+  const base = st.p0+st.p1 ? 100*st.p0/(st.p0+st.p1) : 0;    // Mrityulok = main table (baseline)
+  const sw = quickP0(mu,'swarga'), pa = quickP0(mu,'patala');
+  const d = (x)=> (x-base>=0?'+':'')+(x-base).toFixed(1);
+  console.log(`  ${pad(mu.key,16)} ${pad(base.toFixed(1)+'%',16)} ${pad(sw.toFixed(1)+'% ('+d(sw)+')',15)} ${pa.toFixed(1)}% (${d(pa)})`);
+}
+console.log('Mrityulok column IS the main table above (realm inert) — verify it matches the LAUNCH BASELINE byte-for-byte.');
 
 // sample cross-faction transcript tail
 const g = E.newGame({ rng:seeded(42), p0:'Deva', p1:'Asura', p0Faction:'devas', p1Faction:'asuras' });

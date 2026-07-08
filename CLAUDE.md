@@ -35,7 +35,8 @@ Solo developer (Sangbaran, Creative Director) with Claude as the engineering tea
 7. **Event stream (`g.events`) is OBSERVATIONAL, never causal.** Every damage/buff/destroy/revive/trigger/token/faction-passive calls `emit(g,type,{sourceUid,targetUids,amount,abilityName,text})` alongside its `log()`. `emit()` must never touch game state or `g.rng` — outcomes must stay byte-identical whether or not `g.events` is consumed (verify: harness win-rates unchanged vs the LAUNCH BASELINE). The flat `g.log` stays as the backup channel. The UI (`index.html`) choreographs `g.events` **sequentially** via `runAction()`/`playEvent()` (source pulse + ability callout → staggered per-target floaters/dissolves, faction toasts, input-locked with tap-to-skip); `prefers-reduced-motion` bypasses choreography for instant resolution + log.
 
 ## Game rules cheat sheet
-- 22-card decks, draw 10 at start, +2 at rounds 2 and 3, no hand limit, mulligan 3 (NOT yet implemented)
+- 22-card decks, draw 10 at start, +2 at rounds 2 and 3, no hand limit, **mulligan up to 3 before Round 1 (implemented — GDD §2.2)**
+- **Each match is assigned one of the 7 Cosmic Realms (GDD §10) — an engine-level modifier; random by default, `opts.realm` fixes it for tests**
 - Play exactly 1 card per turn OR pass; once passed, out for the round; round ends when both pass
 - Rounds: higher Yuddha Row total wins; best of 3
 - Between rounds: Units and Artifacts CLEAR, Heroes PERSIST, unused hand carries forward, played cards never return
@@ -47,8 +48,7 @@ Solo developer (Sangbaran, Creative Director) with Claude as the engineering tea
 - Dharma Shield auto-targets highest-power unit (should be player-designated once per round)
 - Board positioning: units occupy ordered slots (`pl.units` order = position); adjacency = array neighbours. Units-only (Heroes positionless); Devas/Asuras ignore position, Vanaras use it for Leap. Placement passed as `playCard(...position)`.
 - Vayu: original GDD ability restored — displaces the highest enemy Unit out of formation (breaks Vanara Leap adjacency) and −2 power.
-- Mulligan not implemented
-- All 4 factions implemented (88 cards): Devas + Asuras + Vanaras + **Nagas (complete — cards, §9, Venom pipeline, teal UI)**. Faction select in the UI; any combo playable. (Naga balance is over-band — see BALANCE.)
+- All 4 factions implemented (88 cards): Devas + Asuras + Vanaras + **Nagas (complete — cards, §9, Venom pipeline, teal UI)**. Faction select in the UI; any combo playable. (Balance FROZEN for launch — see BALANCE.)
 - `index.html` engine is generated from `src/engine.js` by `node src/build.js` (run after every engine change).
 
 ## RESOLVED RULINGS (2026-07, official — implemented in engine.js)
@@ -106,11 +106,18 @@ Solo developer (Sangbaran, Creative Director) with Claude as the engineering tea
 - Pre-Naga tuning (unchanged, folded in): Chandrahas ON-PLAY Surge · Chaos Surge +3 on Astras+Mantras · +1 floor (EXP-J) · Kumbhakarna counts asleep (EXP-G) · Hanuman entry printed ≥4 (EXP-F) · Kishkindha Crown +1/+1 (EXP-E). All gameplay deltas live in **docs/GDD_DELTAS.md**.
 - **Known design hole (owner, Season/errata):** GDD §9 says the Naga answers Rama's Signet by destroying the Artifact, but **no Naga card can destroy Artifacts** (only Deva Vishwakarma). Logged in GDD_DELTAS; not papered over in-engine.
 
-## Current phase: Phase 3
-Next up, in order:
-1. **Naga balance EXP pass** (over-band at 67.3/63.6/54.5 — see BALANCE; owner-directed levers, do not auto-tune)
-2. Real card art in the UI (Deva PNGs live; Asura/Vanara/Naga art pending — `Asuras_...`/`Vanaras_...`/`Nagas_...` naming, cardArtSrc handles it)
-3. ~~Asura faction abilities + Chaos Surge~~ ✅ done
-4. ~~Vanara faction (board positioning + Leap)~~ ✅ done
-5. ~~Naga faction + Venom tokens + §9 (Manasa/Surasa/Takshaka/Pavamana) + teal UI~~ ✅ done (balance pending)
-6. Deck selection screen (faction select done; card-level deckbuilding later)
+## FEATURE-COMPLETE CHECKLIST (core single-player game loop)
+**Core loop is COMPLETE** — mulligan → faction-select → best-of-3 rounds under a Cosmic Realm → match result, with AI opponent and full event choreography.
+- ✅ All 4 factions, 88 cards, every §9 cross-faction ruling (R1–R20)
+- ✅ Best-of-3 round loop, round-lead (R2), between-round persistence
+- ✅ Balance FROZEN for launch (LAUNCH BASELINE table; all counters fidelity-correct)
+- ✅ Event stream + sequential UI choreography (rule #7), faction toasts, keyword tooltips, `prefers-reduced-motion` bypass
+- ✅ **Mulligan (GDD §2.2)** — up to 3 pre-Round-1, tap-to-mark UI + AI heuristic + choreographed redraw
+- ✅ **7 Cosmic Realms (GDD §10)** — `g.realm` engine modifier at chokepoints; match banner + tappable header chip; Mrityulok regression byte-identical to baseline, Swarga/Patala swing measured
+
+**Still open (refinements / content, NOT loop-blockers):**
+1. **Deck building** — faction-select ships fixed 22-card decks; card-level deckbuilding is a scope decision (collection + validation + builder UI). Owner call.
+2. **Dharma Shield player-designation** — v0.1 auto-targets highest-power Unit; GDD wants a player-designated pick once per round (small UX + a ruling).
+3. **Real card art** — Deva + Vanara PNGs live; Asura/Naga frames pending (art production; `cardArtSrc` naming already handles them).
+
+**Post-launch (explicitly out of the core loop):** Capacitor mobile wrap · multiplayer (Node + Colyseus/Nakama) · tutorial/onboarding.

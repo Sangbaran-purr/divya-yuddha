@@ -317,6 +317,27 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .kwtip{ font-size:10px; color:var(--ink-dim); margin-top:5px; line-height:1.45; border-top:1px solid #2c2414; padding-top:6px; }
 .kwtip b{ color:var(--ink); font-family:Cinzel,serif; letter-spacing:.5px; }
 
+/* ===== cosmic realm chip + popover ===== */
+.hdr-right{ display:flex; align-items:center; gap:8px; }
+#realmchip{ font-family:Cinzel,serif; font-size:10px; letter-spacing:1px; color:#cbb9e8; background:linear-gradient(#241a3a,#140f22); border:1px solid #4a3a70; border-radius:20px; padding:5px 11px; cursor:pointer; white-space:nowrap; }
+#realmchip:active{ transform:scale(.96); } #realmchip.hidden{ display:none; }
+#realmpop{ position:fixed; z-index:71; max-width:230px; background:rgba(14,10,26,.97); border:1px solid #5a4a86; border-radius:10px; padding:9px 12px; font-size:11px; line-height:1.5; color:#e6dcff; box-shadow:0 8px 24px rgba(0,0,0,.6); }
+#realmpop .rn{ font-family:Cinzel,serif; font-size:12px; letter-spacing:1px; color:#c9b6f2; display:block; margin-bottom:3px; }
+#realmpop.hidden{ display:none; }
+#banner .txt.realm{ color:#cbb9e8; border-color:#5a4a86; box-shadow:0 0 22px rgba(120,90,180,.55); }
+
+/* ===== mulligan overlay ===== */
+.modal.mull{ max-width:460px; text-align:center; }
+.mull-sub{ font-size:11px; color:var(--ink-dim); margin:6px 0 12px; }
+#mullcount{ color:var(--gold); font-weight:700; }
+#mullhand{ display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin-bottom:6px; }
+.mull-card{ width:82px; min-height:112px; border-radius:9px; border:1.5px solid #3a2e14; background:linear-gradient(#1c1710,#100c07); position:relative; cursor:pointer; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; transition:transform .1s, border-color .15s, opacity .15s; }
+.mull-card .mc-art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.mull-card .mc-nm{ position:relative; z-index:1; font-family:Cinzel,serif; font-size:9px; line-height:1.15; padding:3px 4px; background:linear-gradient(transparent,rgba(0,0,0,.85)); color:#f0e2c0; }
+.mull-card .mc-pw{ position:absolute; top:3px; right:4px; z-index:1; font-family:Cinzel,serif; font-weight:700; font-size:12px; color:#fff; text-shadow:0 1px 3px #000; }
+.mull-card.marked{ border-color:var(--crimson); opacity:.55; transform:scale(.94); }
+.mull-card.marked::after{ content:'↺ SWAP'; position:absolute; z-index:2; top:50%; left:0; right:0; transform:translateY(-50%); font-family:Cinzel,serif; font-size:10px; letter-spacing:1px; color:#ff9c8c; text-shadow:0 1px 3px #000; }
+
 @media (prefers-reduced-motion: reduce){
   .ember{ display:none; }
   #divider::after, .hc.focus.rar-L::after, .inspect-card.rar-L::after, .hc.focus.rar-M, .inspect-card.rar-M,
@@ -328,8 +349,12 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 <div id="app">
   <header>
     <div class="title">DIVYA YUDDHA<small id="facline">PROTOTYPE · DEVA vs DEVA</small></div>
-    <div class="roundbox">ROUND <span id="rnum">1</span></div>
+    <div class="hdr-right">
+      <button id="realmchip" class="hidden" title="tap for realm effect">🌌 <span id="realmname"></span></button>
+      <div class="roundbox">ROUND <span id="rnum">1</span></div>
+    </div>
   </header>
+  <div id="realmpop" class="hidden"></div>
 
   <div id="field">
     <div id="embers"></div>
@@ -394,6 +419,13 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     <button onclick="startGame()">REMATCH ⚔</button>
     <button class="go-alt" onclick="showFactionSelect()">CHANGE FACTIONS</button>
   </div>
+</div></div>
+
+<div class="overlay hidden" id="mulligan"><div class="modal mull">
+  <h3>OPENING HAND</h3>
+  <p class="mull-sub">Tap up to 3 cards to return to your deck and redraw. <span id="mullcount">0 / 3 marked</span></p>
+  <div id="mullhand"></div>
+  <button id="mullconfirm" class="fsel-start">KEEP HAND</button>
 </div></div>
 
 <div class="overlay hidden" id="factionselect"><div class="modal fsel">
@@ -551,6 +583,23 @@ const NAGA_DECK_DEF = [
 
 const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
 
+/* THE 7 COSMIC REALMS (GDD §10). One is assigned per match (random by default; fixable via opts.realm for tests).
+   Each is an engine-level modifier consulted at the relevant chokepoint — NOTE: realm key 'patala' is the REALM
+   (astra damage +1); the Naga artifact is card.id 'patala' (Patala Throne). They never mix: realm is g.realm,
+   artifact is card.id, always accessed distinctly. */
+const REALMS = ['swarga','mrityulok','patala','gandharva','yaksha','rishi','kalki'];
+const REALM_INFO = {
+  swarga:    { name:'Swarga',        fx:'All Heroes have +1 power for the match.' },
+  mrityulok: { name:'Mrityulok',     fx:'The mortal plane — no realm effect.' },
+  patala:    { name:'Patala',        fx:'All Astra damage is increased by +1.' },
+  gandharva: { name:'Gandharva Lok', fx:'Both players draw 1 extra card at the start of Round 2.' },
+  yaksha:    { name:'Yaksha Lok',    fx:'Artifacts cannot be destroyed.' },
+  rishi:     { name:'Rishi Mandala', fx:'Each Mantra can be used twice — it returns to your hand after its first cast.' },
+  kalki:     { name:'Kalki Kshetra', fx:'The last card played each round gains +2 power (only if it is a Unit or Hero).' },
+};
+const realmIs = (g, key) => g.realm===key;
+const ASTRA_DMG = new Set(['Pashupatastra','Lanka Dahan']);   // damage-dealing Astras (Patala realm +1)
+
 let UID = 1;
 function mkCard(def){ return { ...def, uid: UID++, power: def.p, base: def.p, ghost:false, lockedRound:0, aegis:false, revivedShield:false, asleep:false, revealPending:false, venom:0, doomed:false, disguisedAs:null, ward:false, bound:false, astraImmuneRound:0, stolenBy:-1 }; }
 function shuffle(a, rng){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
@@ -566,7 +615,46 @@ function mkPlayer(name, rng, faction='devas'){
     artifactsDestroyedByMe:0, removedHeroes:[],
     skipNext:false, mahabaliArm:-1, chaosThisRound:false, seesOppHand:false,
     shieldUids:[], leapsUsed:0,
-    boardTokens:0, surasaTrap:false, astikaPause:false, sarpaDouble:false, venomStrike:0, mustPlayUnit:false };
+    boardTokens:0, surasaTrap:false, astikaPause:false, sarpaDouble:false, venomStrike:0, mustPlayUnit:false,
+    mulliganed:false };
+}
+
+/* MULLIGAN (GDD §2.2): before Round 1, a player may swap up to 3 cards — returned to deck, reshuffled, redraw the
+   same count. Consumes rng (reshuffle) only when cards are actually swapped. */
+function mulligan(g, pi, uids){
+  const pl=g.players[pi];
+  if (g.round!==1 || g.roundHistory.length || pl.mulliganed) return [];   // pre-Round-1, once
+  const swap=(uids||[]).slice(0,3).map(u=>pl.hand.find(c=>c.uid===u)).filter(Boolean);
+  pl.mulliganed=true;
+  if (!swap.length) return [];
+  for (const c of swap){ pl.hand.splice(pl.hand.indexOf(c),1); pl.deck.push(c); }
+  shuffle(pl.deck, g.rng);
+  const redrawn=pl.deck.splice(0, swap.length); pl.hand.push(...redrawn);
+  log(g, `${pl.name} mulligans ${swap.length} card(s).`);
+  emit(g,'toast',{abilityName:'Mulligan',text:`${pl.name} redraws ${swap.length}`});
+  return redrawn.map(c=>c.uid);
+}
+// AI mulligan heuristic: toss dead conditionals (Marut w/o Vayu, Kali, Riksha/Kesari w/o Hanuman) and low vanilla
+// filler, keep the curve, never ditch your only Hero. Returns up to 3 uids.
+function aiMulliganPlan(g, pi){
+  const pl=g.players[pi], hand=pl.hand;
+  const has=id=>hand.some(c=>c.id===id);
+  const heroCount=hand.filter(c=>c.t==='hero').length;
+  const bad=[];
+  for (const c of hand){
+    let b=0;
+    if (c.id==='marut' && !has('vayu')) b+=3;                          // dead without Vayu
+    if (c.id==='kali') b+=2;                                            // needs a prior Chaos Surge
+    if (c.id==='riksha' && !has('hanuman')) b+=1.5;
+    if (c.id==='kesari' && !has('hanuman')) b+=1.5;
+    if (c.id==='marut' && has('vayu')) b-=1;
+    if (c.id==='soldier') b+=1.2;                                      // 2-power vanilla unless Indra
+    if (c.id==='gandharva') b+=1;                                     // needs a wide board
+    if (c.id==='nagahatchling') b+=1;                                 // needs enemy Venom Tokens
+    if (b>0 && !(c.t==='hero' && heroCount<=1)) bad.push([c,b]);      // keep your only Hero
+  }
+  bad.sort((a,b)=>b[1]-a[1]);
+  return bad.slice(0,3).map(([c])=>c.uid);
 }
 
 function newGame(opts={}){
@@ -578,8 +666,12 @@ function newGame(opts={}){
     turn: rng()<0.5?0:1, lastMantra:null, log:[], events:[],
     roundHistory:[],
     lastKillThisRound:null, astraPlays:0, astraBanaCount:0, grantExtraTurn:null,
+    lastCardThisRound:null,                            // Kalki Kshetra: {uid, isBody}
   };
+  // Realm: fixed via opts.realm consumes NO rng (so a fixed-realm test stays byte-identical); random default draws one.
+  g.realm = opts.realm || REALMS[Math.floor(rng()*REALMS.length)];
   g.firstThisRound = g.turn;
+  log(g, `Cosmic Realm: ${REALM_INFO[g.realm].name} — ${REALM_INFO[g.realm].fx}`);
   { const nm=g.players[g.turn].name; log(g, `Coin flip \u2014 ${nm} ${nm==='You'?'play':'plays'} first.`); }
   onTurnStart(g, g.turn);
   return g;
@@ -601,7 +693,7 @@ function emit(g, type, o){
 /* ---------- power & shields ---------- */
 function indraOnBoard(pl){ return pl.heroes.some(h=>h.id==='indra'); }
 function effPower(g, pi, c){
-  if (c.t==='hero') return c.power;
+  if (c.t==='hero') return c.power + (g.realm==='swarga'?1:0);   // Swarga realm: all Heroes +1 for the match
   // EXP-G (ruling revision): Kumbhakarna's power DOES count while asleep — 'asleep' now only defers his wake-sweep.
   let p = c.power;
   if (!c.ghost && indraOnBoard(g.players[pi])) p += 1;   // Indra aura (Deva)
@@ -808,6 +900,7 @@ function destroyUnit(g, pi, unit, cause){
   }
 }
 function damageUnit(g, pi, unit, amt, cause){
+  if (g.realm==='patala' && ASTRA_DMG.has(cause)) amt += 1;   // Patala realm: all Astra damage +1
   unit.power -= amt;
   log(g, `${unit.n} takes ${amt} damage (${cause}) \u2192 ${Math.max(unit.power,0)}.`);
   emit(g,'damage',{targetUids:[unit.uid],amount:-amt,abilityName:cause,text:`\u2212${amt}`});
@@ -1206,7 +1299,9 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
         }
         break; }
       case 'vishwakarma':
-        if (opp.artifact){ log(g,`Vishwakarma unmakes ${opp.artifact.n}.`); opp.discard.push(opp.artifact); opp.artifact=null; pl.artifactsDestroyedByMe++; }
+        // Yaksha Lok: Artifacts cannot be destroyed → Vishwakarma whiffs (no destroy, no +2 scaling all match).
+        if (opp.artifact && g.realm==='yaksha'){ log(g,`Yaksha Lok shields ${opp.artifact.n} — Vishwakarma cannot unmake it.`); }
+        else if (opp.artifact){ log(g,`Vishwakarma unmakes ${opp.artifact.n}.`); opp.discard.push(opp.artifact); opp.artifact=null; pl.artifactsDestroyedByMe++; }
         if (pl.artifactsDestroyedByMe>0){ c.power += 2*pl.artifactsDestroyedByMe; log(g,`Vishwakarma stands at ${c.power}.`); }
         break;
       case 'kubera': {
@@ -1356,7 +1451,11 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
     // EXP-H: Chaos Surge also triggers on the Asura player's Mantras (5 spell-triggers in deck, not 3).
     // Still spell-gated; Chandrahas's "twice while active" applies, but Bana/Berserker/Tripura (Astra-only) do not.
     if (pl.faction==='asuras'){ const chandra = pl.artifact && pl.artifact.id==='chandrahas'; chaosSurge(g, pi, chandra?2:1); }
-    pl.discard.push(c);
+    // Rishi Mandala: each Mantra is usable twice — after its FIRST cast it returns to hand (once) instead of the discard.
+    if (g.realm==='rishi' && !c.rishiUsed){ c.rishiUsed=true; c.lockedRound=0; pl.hand.push(c);
+      log(g,`Rishi Mandala returns ${c.n} to ${pl.name}'s hand — it may be cast once more.`);
+      emit(g,'passive',{sourceUid:c.uid,abilityName:'Rishi Mandala',text:`${c.n} returns to hand`}); }
+    else pl.discard.push(c);
   }
   else if (c.t==='artifact'){
     if (pl.artifact){ pl.discard.push(pl.artifact); log(g,`${pl.artifact.n} is replaced.`); }
@@ -1376,6 +1475,8 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
     else if (c.id==='patala') log(g, `Patala Throne rises \u2014 Venom deepens to \u2212${1+g.round} this round.`);   // R11
     else if (c.id==='anantacoil') log(g,'Ananta Coil uncoils \u2014 every fallen Naga will leave its venom on the field.');   // R14
   }
+  // Kalki Kshetra tracks the round's last-played card (the +2 lands at round end, only if it's a Unit/Hero).
+  g.lastCardThisRound = { uid:c.uid, isBody:(c.t==='unit'||c.t==='hero') };
   afterAction(g, pi);
 }
 
@@ -1409,6 +1510,12 @@ function afterAction(g, pi){
 
 /* ---------- round / match resolution ---------- */
 function endRound(g){
+  // Kalki Kshetra: the round's last-played card — if a Unit/Hero still on the board — gains +2 (before venom & scoring).
+  if (g.realm==='kalki' && g.lastCardThisRound && g.lastCardThisRound.isBody){
+    const uid=g.lastCardThisRound.uid;
+    for (let s=0;s<2;s++){ const c=[...g.players[s].units, ...g.players[s].heroes].find(u=>u.uid===uid && !u.ghost);
+      if (c){ c.power+=2; log(g,`Kalki Kshetra blesses the last-played ${c.n}: +2.`); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:2,abilityName:'Kalki Kshetra',text:'+2'}); break; } }
+  }
   venomRoundEnd(g);                                  // Venom pipeline ticks BEFORE scoring (R1 death-at-0 via sweep)
   const t0=totalPower(g,0), t1=totalPower(g,1);
   log(g, `Round ${g.round} ends \u2014 ${g.players[0].name} ${t0} vs ${g.players[1].name} ${t1}.`);
@@ -1439,10 +1546,13 @@ function endRound(g){
     pl.passed=false; pl.heroPlayedThisRound=false; pl.astrasThisRound=0;
     pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0;   // shields + Leaps re-designate each round; mahabaliArm persists
     pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
-    const drawn = pl.deck.splice(0,2); pl.hand.push(...drawn);
+    // Gandharva Lok: both players draw 1 extra at the START of Round 2 (g.round is still 1 here, pre-increment).
+    const extra = (g.realm==='gandharva' && g.round===1) ? 1 : 0;
+    const drawn = pl.deck.splice(0,2+extra); pl.hand.push(...drawn);
+    if (extra) log(g,`Gandharva Lok: ${pl.name} draws an extra card for Round 2.`);
     for (const c of pl.hand) c.lockedRound=0;
   }
-  g.lastKillThisRound=null; g.astraPlays=0; g.astraBanaCount=0; g.grantExtraTurn=null;
+  g.lastKillThisRound=null; g.astraPlays=0; g.astraBanaCount=0; g.grantExtraTurn=null; g.lastCardThisRound=null;
   g.round++;
   const prev = g.roundHistory[g.roundHistory.length-1];
   // R2 (RESOLVED): previous round's WINNER plays first; on a drawn round, the same leader as before.
@@ -1674,6 +1784,7 @@ if (typeof module!=='undefined'){
   module.exports = { newGame, playCard, pass, aiMove, aiTakeTurn, totalPower, playableIndices, targetSpec, effPower, isShielded,
     canLeap, bestLeap, doLeap, adjacentUnits, leapLimit, sharabhaProtected,
     drainAmount, venomPassive, venomTokens, venomRoundEnd, venomKarkotakaEarly, sweepDeaths,
+    mulligan, aiMulliganPlan, REALMS, REALM_INFO,
     DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME };
 }
 </script>
@@ -1721,16 +1832,67 @@ function startGame(p0Faction, p1Faction){
   if (aiTimer) clearTimeout(aiTimer);
   G=newGame({p0:'You',p1:'Opponent',p0Faction:currentFactions.p0,p1Faction:currentFactions.p1}); seenLog=0;
   knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; hideBoardTargetBar();
-  ['gameover','targeting','inspect','banner','factionselect'].forEach(id=>$(id).classList.add('hidden'));
+  ['gameover','targeting','inspect','banner','factionselect','mulligan','realmpop'].forEach(id=>$(id).classList.add('hidden'));
   $('hudwrap').classList.remove('hidden');
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme();
   makeEmbers();
-  render(); pump();
+  showRealmIntro();
+  render();
+  beginMulligan();          // play begins when the player confirms their opening hand
 }
 const FAC_LABEL = f => f==='asuras' ? 'ASURA' : f==='vanaras' ? 'VANARA' : f==='nagas' ? 'NAGA' : 'DEVA';
+/* ---------- cosmic realm intro + chip + mulligan ---------- */
+function showRealmIntro(){
+  const info=REALM_INFO[G.realm];
+  $('realmname').textContent=info.name; $('realmchip').classList.remove('hidden');
+  if (reducedMotion()) return;
+  const b=$('banner'), t=b.querySelector('.txt');
+  t.className='txt realm'; t.textContent=`COSMIC REALM · ${info.name.toUpperCase()}`;
+  b.classList.remove('hidden'); t.style.animation='none'; void t.offsetWidth; t.style.animation='bannerSweep 2.4s ease-out';
+  clearTimeout(b._t); b._t=setTimeout(()=>{ b.classList.add('hidden'); t.className='txt'; }, 2500);
+}
+$('realmchip').onclick=(e)=>{
+  const pop=$('realmpop');
+  if(!pop.classList.contains('hidden')){ pop.classList.add('hidden'); return; }
+  const info=REALM_INFO[G.realm];
+  pop.innerHTML=`<span class="rn">🌌 ${info.name}</span>${info.fx}`;
+  const r=e.currentTarget.getBoundingClientRect();
+  pop.classList.remove('hidden');
+  pop.style.top=(r.bottom+6)+'px'; pop.style.left='auto'; pop.style.right=Math.max(6,(window.innerWidth-r.right))+'px';
+  e.stopPropagation();
+};
+document.addEventListener('click', e=>{ if(!e.target.closest('#realmchip') && !e.target.closest('#realmpop')) $('realmpop').classList.add('hidden'); });
+
+let mullMarked=new Set();
+function beginMulligan(){ mullMarked=new Set(); renderMulligan(); $('mulligan').classList.remove('hidden'); }
+function renderMulligan(){
+  const box=$('mullhand'); box.innerHTML='';
+  for (const c of G.players[0].hand){
+    const d=document.createElement('div'); d.className='mull-card'+(mullMarked.has(c.uid)?' marked':'');
+    d.innerHTML=`${c.p>0?`<div class="mc-pw">${c.p}</div>`:''}<div class="mc-nm">${c.n}</div>`;
+    const img=new Image(); img.className='mc-art'; img.onload=()=>d.insertBefore(img,d.firstChild); img.src=cardArtSrc(c, currentFactions.p0);
+    d.onclick=()=>{ if(mullMarked.has(c.uid)) mullMarked.delete(c.uid); else if(mullMarked.size<3) mullMarked.add(c.uid); renderMulligan(); };
+    box.appendChild(d);
+  }
+  $('mullcount').textContent=`${mullMarked.size} / 3 marked`;
+  $('mullconfirm').textContent = mullMarked.size ? `MULLIGAN ${mullMarked.size} ⟳` : 'KEEP HAND';
+}
+$('mullconfirm').onclick=()=>{
+  const snap=snapshotBoard(); const evStart=G.events.length;
+  mulligan(G, 0, [...mullMarked]);
+  mulligan(G, 1, aiMulliganPlan(G, 1));
+  $('mulligan').classList.add('hidden');
+  const evs=G.events.slice(evStart); render();
+  if (reducedMotion() || !evs.length){ pump(); return; }
+  choreoActive=true; choreoSkip=false;
+  const layer=$('choreolayer'); layer.classList.add('locked'); layer.onclick=skipChoreo;
+  (async()=>{ for(const ev of evs){ if(choreoSkip) break; await playEvent(ev, snap); }
+    choreoActive=false; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML=''; render(); pump(); })();
+};
+
 function applyFactionTheme(){
-  const setFac=(el,fac)=>{ if(!el)return; el.classList.remove('fac-deva','fac-asura','fac-vanara'); el.classList.add(facClass(fac)); };
+  const setFac=(el,fac)=>{ if(!el)return; el.classList.remove('fac-deva','fac-asura','fac-vanara','fac-naga'); el.classList.add(facClass(fac)); };
   setFac(document.querySelector('.half.me'), currentFactions.p0);
   setFac(document.querySelector('.half.opp'), currentFactions.p1);
   setFac($('hud-p'), currentFactions.p0);

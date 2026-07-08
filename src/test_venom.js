@@ -84,5 +84,26 @@ function castPav(g){ const pav={ id:'pavamana',n:'Pavamana',sub:'',t:'mantra',p:
 { const g=pavGame(); const u=dUnit(g,8,5,1); castPav(g); ck('Pavamana: buffed Unit (8>base 5) keeps its buff, +1 for the token → 9', u.power===9 && u.venom===0); }
 { const g=pavGame(); const u=dUnit(g,8,5,0); castPav(g); ck('Pavamana: clean/buffed Unit with nothing to cleanse is untouched (stays 8)', u.power===8); }
 
-console.log('\n'+(F? `✗ ${F} VENOM TESTS FAILED (${P} passed)` : `✓ ALL ${P} VENOM TIMING TESTS PASS`));
+// ---- THE 7 COSMIC REALMS (GDD §10) ----
+function rGame(realm,fa,fb){ const g=E.newGame({rng:seeded(7),p0Faction:fa||'devas',p1Faction:fb||'devas',realm}); g.players[0].hand=[]; g.players[1].hand=[]; g.turn=0; g.players[0].passed=false; g.players[1].passed=false; return g; }
+function rUnit(g,pi,id,pow){ const u={id,n:id,sub:'',t:'unit',p:pow,base:pow,power:pow,uid:Math.floor(Math.random()*1e9),ghost:false,venom:0,bound:false,stolenBy:-1,lockedRound:0,aegis:false,revivedShield:false,ward:false,asleep:false,doomed:false,revealPending:false,astraImmuneRound:0,rishiUsed:false}; g.players[pi].hand.push(u); return u; }
+// Swarga — Heroes +1 (Mrityulok control)
+{ const g=rGame('swarga'); const h={id:'indra',t:'hero',power:7}; g.players[0].heroes.push(h); ck('Swarga: Hero effPower +1', E.effPower(g,0,h)===8); }
+{ const g=rGame('mrityulok'); const h={id:'indra',t:'hero',power:7}; g.players[0].heroes.push(h); ck('Mrityulok: Hero unchanged (no realm effect)', E.effPower(g,0,h)===7); }
+// Yaksha — Vishwakarma cannot destroy Artifacts (whiffs, no +2)
+{ const g=rGame('yaksha','devas','asuras'); g.players[1].artifact={id:'tripura',n:'Tripura',t:'artifact',p:0,uid:5}; const v=rUnit(g,0,'vishwakarma',4); E.playCard(g,0,0);
+  ck('Yaksha: Vishwakarma cannot destroy Artifact, no +2 scaling', g.players[1].artifact!=null && v.power===4); }
+// Kalki — last-played Unit/Hero +2 at round end
+{ const g=rGame('kalki'); const u=rUnit(g,0,'gandharva',5); E.playCard(g,0,0); E.pass(g,1); E.pass(g,0); ck('Kalki: last-played Unit +2 (5→7) at round end', u.power===7); }
+{ const g=rGame('kalki'); rUnit(g,0,'gandharva',5); const a=rUnit(g,0,'tamasa','astra'); a.t='astra'; a.base=0; a.power=0; /* last card is an Astra → no Kalki */ }
+// Rishi — Mantra returns to hand after first cast
+{ const g=rGame('rishi'); g.players[0].units.push({id:'x',t:'unit',base:3,power:1,ghost:false,venom:0}); const m=rUnit(g,0,'pavamana','mantra'); m.t='mantra'; m.base=0; m.power=0; E.playCard(g,0,0);
+  ck('Rishi: Mantra returns to hand (used-once)', g.players[0].hand.some(c=>c.id==='pavamana'&&c.rishiUsed)); }
+// Gandharva — +1 extra draw into Round 2
+{ const g=rGame('gandharva'); const before=g.players[0].deck.length; E.pass(g,1); E.pass(g,0); ck('Gandharva: 3 cards drawn into Round 2 (deck −3)', before-g.players[0].deck.length===3); }
+// Patala — Astra damage +1 (Pashupatastra per-hit)
+{ const g=rGame('patala','asuras','devas'); const a=foe(g,'m',6); const p=rUnit(g,0,'pashupata','astra'); p.t='astra'; p.base=0; p.power=0; g.players[0].units.push({id:'z',t:'unit',base:6,power:6,ghost:false,venom:0}); // board power 6, 1 foe → per=6, +1 realm =7
+  E.playCard(g,0,g.players[0].hand.indexOf(p)); ck('Patala: Astra damage +1 (Pashupatastra 6→7 kills a 6)', !g.players[1].units.includes(a)); }
+
+console.log('\n'+(F? `✗ ${F} VENOM TESTS FAILED (${P} passed)` : `✓ ALL ${P} VENOM/REALM TESTS PASS`));
 process.exit(F?1:0);

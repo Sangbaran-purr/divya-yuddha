@@ -123,3 +123,17 @@ Printed text grants **two distinct** things; they are NOT blanket Venom immunity
 
 ## Pavamana played-vs-held reads negative — EXPECTED, not a defect
 Pavamana is now fidelity-correct (clause (b) restored, above), yet in Deva-vs-Naga its owner wins **~32% when played vs ~50% when held** (Δ ≈ −18pt). This is **reactive tech behaving as designed**, not a bug: you only hold 2+ Venom Tokens once Venom is already grinding you down, so *playing it correlates with (not causes) losing*. It strips Tokens but can't touch the GDD-locked base −1 round-end drain, so Deva-vs-Naga stays ~59/41 — the accepted counter-matchup. Do NOT "fix" the negative delta by buffing Pavamana; that would over-correct a matchup that is working as intended.
+
+## Mulligan (GDD §2.2) — implemented 2026-07
+Before Round 1, each player may return up to 3 cards to the deck, reshuffle, and redraw the same count (`mulligan(g,pi,uids)`; consumes rng only when cards are actually swapped, so a fixed-realm zero-swap game stays byte-identical). AI heuristic (`aiMulliganPlan`): toss dead conditionals (Marut w/o Vayu, Kali, Riksha/Kesari w/o Hanuman), low vanilla filler, keep the curve, never ditch your only Hero. The regression harness does NOT mulligan (keeps the LAUNCH BASELINE comparison clean).
+
+## THE 7 COSMIC REALMS (GDD §10) — implemented 2026-07
+One realm per match (`g.realm`, random by default, `opts.realm` fixes it). Engine-level modifier at the relevant chokepoint:
+- **Swarga** — all Heroes +1 power for the match (`effPower` hero branch).
+- **Mrityulok** — no effect (the byte-identical control; harness baseline runs here).
+- **Patala** *(realm — distinct from Patala Throne the Naga artifact)* — all Astra damage +1 (`damageUnit`, `ASTRA_DMG` = Pashupatastra, Lanka Dahan).
+- **Gandharva Lok** — both players draw 1 extra at the start of Round 2.
+- **Yaksha Lok** — Artifacts cannot be destroyed. **Ruling:** Vishwakarma whiffs — his destroy is a no-op and his +2-per-destroyed never triggers all match (plain 4-power body).
+- **Rishi Mandala** — each Mantra usable twice. **Ruling:** after its FIRST cast the Mantra returns to hand (once, `rishiUsed` flag), recasting costs another turn; the second cast discards normally.
+- **Kalki Kshetra** — the round's last-played card gains +2 at round end. **Ruling:** applies ONLY if that last card is a Unit/Hero still on the board; a round ending on an Astra/Mantra grants no bonus.
+- **Balance:** Mrityulok 10-matchup table is byte-identical to the LAUNCH BASELINE. Swarga/Patala swings are modest (mirrors hold ~50; largest cross swing Swarga Deva-vs-Asura +3.7) — realm-induced, reported not tuned. Realms perturb the frozen baseline by design; the baseline is defined on Mrityulok.
