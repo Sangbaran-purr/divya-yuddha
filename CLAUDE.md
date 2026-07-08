@@ -116,9 +116,16 @@ Solo developer (Sangbaran, Creative Director) with Claude as the engineering tea
 - ✅ **7 Cosmic Realms (GDD §10)** — `g.realm` engine modifier at chokepoints; match banner + tappable header chip; Mrityulok regression byte-identical to baseline, Swarga/Patala swing measured
 
 - ✅ **Dharma Shield player-designation** — human designates by hand (🛡 SHIELD button, sticky, Kavacha=2, no auto-fallback); AI unchanged, harness byte-identical
+- ✅ **Game-feel pass (UI/audio only, engine untouched → harness byte-identical)** — AI think-time 1.2–3.5s scaled by decision weight + "thinking" indicator; opponent-card **showcase** (large center reveal 1.4s) → resolve → **result summary** (plain-language, from event `text`); pacing retune (callout 700ms / stagger 280ms / destroy 600ms dwell; significance & round-end theatre with total count-up); **Settings** (gear): Relaxed/Normal/Fast + music/SFX/volume, localStorage-persisted; tap-to-skip in all modes; reduced-motion keeps audio.
+- ✅ **Audio + VFX refinement** — music is now **Karplus-Strong plucked tanpura** (noise→feedback-delay→lowpass; Pa-Sa-Sa-Sa cycle, ~4s ring, jvari buzz, −26dB, 2s fades, Round-3 faster plucks + tabla) with a `window.MUSIC_URL` hook to swap in a real recording; **quick-mute** speaker in header (🔊→🎵→🔇 cycle, persisted); **board VFX**: destroy crack + faction-colored shards, damage impact flash + heavy arc numeral, buff rising ring, venom drip + wet badge, Mythic/Legendary screen-shake + board color-wash + showcase shimmer, shield gold ring, Leap arc. All transform/opacity, ≤1 shake/sec, through the choreography queue. **NOTE: music was implemented but not audibly verified in-harness (headless); the MUSIC_URL fallback is wired for the owner.**
 
-**Still open (refinements / content, NOT loop-blockers):**
-1. **Deck building** — faction-select ships fixed 22-card decks; card-level deckbuilding is a scope decision (collection + validation + builder UI). Owner call.
-2. **Real card art** — Deva + Vanara PNGs live; Asura/Naga frames pending (art production; `cardArtSrc` naming already handles them).
+**ENGINEERING BACKLOG: EMPTY.** The core single-player game loop is engineering-complete. The only remaining items are art production and a designed deferral (below) — no code work outstanding.
+
+**Deck building — DECIDED: deferred to Season 2 (designed deferral, not open scope).** 22-card decks drawn from 22-card factions have **zero degrees of freedom** — there is nothing to build. Card-level deckbuilding becomes a real feature only when the pool exceeds the deck size (e.g. Rishis expanding it to **44-into-22**). Until then, faction-select is the correct and complete shipping form.
+
+**Art production (content, NOT engineering; `cardArtSrc` naming already handles all of it):**
+- ✅ Devas 22/22 · ✅ **Asuras 22/22** · ✅ Vanaras 22/22 (art present)
+- ⏳ **Nagas 0/22** pending
+- ⏳ **Four blocking re-exports:** Chandrahas, Hanuman, Neela, Angad
 
 **Post-launch (explicitly out of the core loop):** Capacitor mobile wrap · multiplayer (Node + Colyseus/Nakama) · tutorial/onboarding.
