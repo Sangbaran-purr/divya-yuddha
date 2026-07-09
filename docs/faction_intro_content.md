@@ -1,4 +1,6 @@
-# Faction Introduction — Content Pack v1.0
+# Faction Introduction — Content Pack v1.1
+
+v1.1 — corrected to engine truth; the engine remains the sole card-fact authority.
 
 RULES FOR IMPLEMENTATION: All identity/strategy copy below is final — paste as written.
 Card names, power values, and effect texts shown in the UI must come from the ENGINE
@@ -50,7 +52,7 @@ wins itself.
 **Strengths:**
 - Toughest units to remove
 - Revival and cleansing (Gayatri Mantra, Pavamana)
-- Punishes Astra-heavy enemies (Indra's Net)
+- Doubled shielding — Dharma Kavacha protects two units at once
 - Most forgiving faction to learn
 
 **Weaknesses:**
@@ -66,11 +68,14 @@ Step 2: Dharma Shield your strongest unit [shield icon over card thumb] — "The
 now has no target worth hitting."
 Result: "Win the long round. Their damage bounced; yours didn't."
 
-**Diagram D2 — "Turn Their Weapons":**
-Step 1: Indra's Net on board [card thumb].
-Step 2: Enemy plays an Astra [enemy card, crossed arrow] — "Every enemy Astra feeds a
-random Deva +2."
-Result: "Astra decks must choose: hold their weapons, or arm yours."
+**Diagram D2 — "Two Shields, Not One":**
+Step 1: Dharma Kavacha [card thumb] — "Your Dharma Shield now guards two units, not one."
+Step 2: Shield both your best units [shield icon] — "Shield both your best units — their
+Astras run out of targets."
+Result: "Two untouchable threats at once. Their removal was built to answer one."
+
+(v1.1 correction: the v1.0 "Turn Their Weapons" / Indra's Net diagram referenced a card the
+engine never implemented — this strip now uses Dharma Kavacha's real effect.)
 
 ---
 
@@ -117,7 +122,7 @@ on the board. Your army grows sideways: every unit you play makes the next one b
 Go wide, then make wide tall.
 
 **Strengths:**
-- The biggest single power spike in the game (Rama Naam with Hanuman on board)
+- The biggest single power spike in the game (Rama Naam: +2 to your whole Vanara board)
 - Leap turns one good unit into several (Kishkindha Crown doubles down)
 - Buffs stack across the whole board — your total grows faster than any single removal
   can cut
@@ -131,10 +136,13 @@ Go wide, then make wide tall.
 
 **Diagram V1 — "The Rama Naam Spike":**
 Step 1: Go wide — 4+ Vanaras on board [row of small card thumbs].
-Step 2: Land Hanuman [card thumb] — "The army's heart arrives."
-Step 3: Rama Naam [card thumb] — "+3 to every Vanara. On a full board that is the
-largest single play in the game."
+Step 2: Land Hanuman [card thumb] — "Now every 4+ Vanara you play lands with +1 on entry."
+Step 3: Rama Naam [card thumb] — "+2 to every Vanara Unit — on a full board, the biggest
+power spike in the game."
 Result: "Save it for the round that decides the match — it only happens once."
+
+(v1.1 correction: engine Rama Naam is +2, not +3, and Hanuman does not amplify Rama Naam —
+its passive buffs each printed-power-4+ Vanara Unit +1 on entry. Step 2 now states that.)
 
 **Diagram V2 — "Leap Economics":**
 Step 1: Kishkindha Crown on board [card thumb] — "Every Leap now feeds both units, and

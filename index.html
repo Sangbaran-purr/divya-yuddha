@@ -40,7 +40,14 @@ header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; ali
 .pip-w{ color:var(--gold); } .pip-l{ color:#5a4a28; }
 
 /* battlefield */
-#field{ position:relative; flex:1; display:flex; flex-direction:column; overflow:hidden; }
+#field{ position:relative; flex:1; display:flex; flex-direction:column; overflow:hidden; background:#0a0704; }
+/* celestial arena: center/cover so the golden mandala (image vertical center) aligns with the divider (field vertical center) */
+#field::before{ content:''; position:absolute; inset:0; z-index:0; background:url('assets/img/board_bg.jpg') center center/cover no-repeat; }
+#field::after{ content:''; position:absolute; inset:0; z-index:1; background:rgba(6,4,2,.30); pointer-events:none; }   /* ~30% dark overlay for readability */
+#vfxcanvas{ position:absolute; inset:0; z-index:5; pointer-events:none; }
+#vfxflash{ position:absolute; inset:0; z-index:6; pointer-events:none; opacity:0; background:radial-gradient(circle at 50% 50%, rgba(255,251,235,.92), rgba(255,235,175,.5) 42%, transparent 74%); }
+#vfxflash.fire{ animation:mythicFlash .5s ease-out; }
+@keyframes mythicFlash{ 0%{opacity:0;} 8%{opacity:.98;} 24%{opacity:.35;} 100%{opacity:0;} }   /* synced to bolt 2: sharp flash → ~200ms afterglow decay */
 #embers{ position:absolute; inset:0; pointer-events:none; z-index:2; overflow:hidden; }
 .ember{ position:absolute; bottom:-8px; border-radius:50%; opacity:0;
   background:radial-gradient(circle, #ffe9a8, #C9A84C 60%, transparent 72%);
@@ -86,7 +93,8 @@ header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; ali
 @keyframes hudPulse{ 0%{ transform:scale(1); } 42%{ transform:scale(1.18); } 100%{ transform:scale(1); } }
 .hud-pips{ font-size:12px; letter-spacing:1px; text-align:center; line-height:1.1; }
 
-.row{ display:flex; gap:6px; overflow-x:auto; overflow-y:visible; min-height:0; padding:3px 0; align-items:center; scrollbar-width:none; }
+.row{ display:flex; gap:6px; overflow-x:auto; overflow-y:visible; min-height:0; padding:3px 6px; align-items:center; scrollbar-width:none; border-radius:10px; }
+.row:not(.empty){ background:rgba(4,2,1,.24); backdrop-filter:blur(1.5px); }   /* subtle translucent scrim — arena reads through */
 .row.empty{ min-height:0; }
 .row::-webkit-scrollbar{ display:none; }
 
@@ -276,20 +284,142 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #unbindbtn:active{ transform:scale(.97); } #unbindbtn.hidden{ display:none !important; }
 
 /* ===== faction select ===== */
-.modal.fsel{ text-align:center; max-width:400px; }
-.modal.fsel h3{ text-align:center; }
+/* menu background — subtle: cover art, desaturated + blurred, dark bottom-heavy gradient so faction panels stay the focus */
+/* menu is FRAMELESS — faction selection sits directly on the image; per-tile scrims keep text readable */
+#factionselect, #landing, #factionintro{ background:#0a0704; overflow:hidden; }
+#factionselect::before, #landing::before, #factionintro::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
+#factionselect::after, #landing::after, #factionintro::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
+#factionselect .modal{ position:relative; z-index:1; }
+
+/* ===== landing page (first screen, before faction-select) ===== */
+#landing{ display:block; overflow-y:auto; padding:0; }
+#settings{ z-index:90; }   /* settings must sit above the landing overlay */
+.mutetoast{ z-index:95; }  /* toast above landing + settings */
+#landgear{ position:absolute; top:14px; right:14px; z-index:2; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.20); color:var(--ink); border-radius:8px; width:34px; height:32px; font-size:15px; cursor:pointer; padding:0; }
+#landgear:active{ transform:scale(.92); }
+.land-col{ position:relative; z-index:1; min-height:100vh; box-sizing:border-box; max-width:520px; margin:0 auto; padding:64px 20px 28px; display:flex; flex-direction:column; justify-content:center; gap:22px; }
+.land-title{ text-align:center; }
+.land-deva{ font-family:Cinzel,serif; font-size:20px; color:var(--gold); letter-spacing:2px; text-shadow:0 2px 10px rgba(0,0,0,.9); margin-bottom:6px; }
+.land-name{ font-family:Cinzel,serif; font-weight:700; font-size:34px; letter-spacing:8px; color:#fff; margin:0; text-shadow:0 2px 12px rgba(0,0,0,.95), 0 0 26px rgba(0,0,0,.5); }
+.land-sub{ font-family:Cinzel,serif; font-size:10px; letter-spacing:4px; color:var(--ink-dim); margin-top:8px; text-shadow:0 1px 6px rgba(0,0,0,.95); }
+/* profile card */
+.land-profile{ display:flex; align-items:center; gap:14px; padding:14px; border-radius:14px; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.16); }
+.lp-avatar{ flex:0 0 auto; width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-weight:700; font-size:18px; color:#1a1204; background:linear-gradient(150deg,var(--hi),var(--gold-2)); border:2px solid var(--gold); box-shadow:0 2px 10px rgba(0,0,0,.5); }
+.lp-info{ flex:1 1 auto; min-width:0; }
+.lp-name, .lp-name-edit{ font-family:Cinzel,serif; font-size:15px; color:#fff; font-weight:700; letter-spacing:.5px; text-shadow:0 1px 4px #000; cursor:pointer; }
+.lp-name::after{ content:'  ✎'; font-size:10px; color:var(--ink-dim); opacity:.7; }
+.lp-name-edit{ background:rgba(0,0,0,.5); border:1px solid var(--gold-dim); border-radius:6px; color:#fff; padding:2px 6px; width:100%; max-width:200px; outline:none; cursor:text; }
+.lp-level{ display:flex; align-items:center; gap:8px; margin:6px 0 5px; }
+.lp-level span{ font-family:Cinzel,serif; font-size:10px; letter-spacing:1px; color:var(--gold); white-space:nowrap; }
+.lp-bar{ flex:1 1 auto; height:5px; border-radius:3px; background:rgba(255,255,255,.14); overflow:hidden; }
+.lp-bar i{ display:block; height:100%; width:0; border-radius:3px; background:linear-gradient(90deg,var(--gold-2),var(--hi)); transition:width .4s ease; }
+.lp-stats{ font-size:11px; color:var(--ink-dim); letter-spacing:.5px; text-shadow:0 1px 4px #000; }
+/* mode buttons */
+.land-modes{ display:flex; flex-direction:column; gap:10px; }
+.mode{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:14px 16px; border-radius:12px; cursor:pointer; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); border:1.5px solid rgba(255,255,255,.18); color:var(--ink); transition:border-color .15s, background .15s, transform .1s; }
+.mode:active{ transform:scale(.985); }
+.mode .mode-main{ flex:1 1 auto; min-width:0; }
+.mode .mode-title{ font-family:Cinzel,serif; font-size:14px; letter-spacing:1px; color:#fff; text-shadow:0 1px 3px #000; }
+.mode .mode-cap{ font-size:10px; color:var(--ink-dim); margin-top:3px; letter-spacing:.5px; }
+.mode.active{ border-color:var(--gold); background:linear-gradient(rgba(60,44,12,.55),rgba(32,22,8,.5)); }
+.mode.active .mode-title{ color:var(--gold); }
+.mode .mode-chev{ font-size:22px; color:var(--gold); line-height:1; }
+.mode.locked{ opacity:.55; cursor:default; }
+.mode.locked .mode-lock{ display:flex; align-items:center; color:var(--ink-dim); }
+.mode.locked:active{ transform:none; }
+
+/* ===== Faction Introduction ===== */
+#factionintro{ display:block; overflow-y:auto; padding:0; }
+.fi-back{ position:fixed; top:12px; left:12px; z-index:3; width:38px; height:34px; border-radius:9px; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.2); color:var(--gold); font-size:22px; line-height:1; cursor:pointer; padding:0; }
+.fi-back:active{ transform:scale(.92); }
+.fi-col{ position:relative; z-index:1; max-width:520px; margin:0 auto; padding:54px 16px 40px; }
+.fi-tabs{ display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px; margin-bottom:16px; scrollbar-width:none; }
+.fi-tabs::-webkit-scrollbar{ display:none; }
+.fi-tab{ flex:0 0 auto; padding:9px 13px; border-radius:9px; background:rgba(0,0,0,.45); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,.16); color:var(--ink-dim); font-family:Cinzel,serif; font-size:11px; letter-spacing:.5px; white-space:nowrap; cursor:pointer; }
+.fi-tab.sel{ border-color:var(--gold); color:var(--gold); background:rgba(60,44,12,.5); }
+.fi-idhead{ text-align:center; margin-bottom:16px; }
+.fi-facname{ font-family:Cinzel,serif; font-weight:700; font-size:30px; letter-spacing:5px; text-shadow:0 2px 12px rgba(0,0,0,.95); }
+.fi-tagline{ font-size:13px; color:var(--ink); font-style:italic; margin-top:8px; text-shadow:0 1px 6px rgba(0,0,0,.9); line-height:1.4; }
+.fi-badges{ display:flex; gap:8px; justify-content:center; margin-top:12px; flex-wrap:wrap; }
+.fi-badge{ font-size:10px; letter-spacing:.5px; color:var(--ink); padding:5px 10px; border-radius:20px; background:rgba(0,0,0,.5); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,.2); }
+.fi-badge b{ color:var(--gold); font-weight:700; }
+.fi-panel{ background:rgba(0,0,0,.46); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.16); border-radius:12px; padding:14px; margin-bottom:14px; }
+.fi-panel-h{ font-family:Cinzel,serif; font-size:11px; letter-spacing:1.5px; color:var(--gold); margin-bottom:8px; }
+.fi-panel p{ font-size:13px; line-height:1.5; color:var(--ink); }
+.fi-body-txt{ font-size:13px; line-height:1.55; color:var(--ink); }
+.fi-sw{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+.fi-sw ul{ list-style:none; margin:0; padding:0; }
+.fi-sw li{ font-size:11.5px; line-height:1.4; color:var(--ink); margin-bottom:7px; padding-left:14px; position:relative; }
+.fi-strength{ background:rgba(20,40,18,.4); border:1px solid var(--green-dim); border-radius:12px; padding:12px; }
+.fi-weak{ background:rgba(44,16,14,.4); border:1px solid var(--crimson-dim); border-radius:12px; padding:12px; }
+.fi-strength .fi-panel-h{ color:var(--green); }
+.fi-weak .fi-panel-h{ color:var(--crimson); }
+.fi-strength li::before{ content:'+'; position:absolute; left:0; color:var(--green); font-weight:700; }
+.fi-weak li::before{ content:'\2212'; position:absolute; left:0; color:var(--crimson); font-weight:700; }
+@media (max-width:430px){ .fi-sw{ grid-template-columns:1fr; } }
+.fi-gallery{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-top:6px; margin-bottom:6px; }
+.fi-thumb{ position:relative; aspect-ratio:200/280; border-radius:7px; overflow:hidden; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.12); cursor:pointer; }
+.fi-thumb img{ width:100%; height:100%; object-fit:cover; display:block; opacity:0; transition:opacity .3s; }
+.fi-thumb img.on{ opacity:1; }
+.fi-thumb:active{ transform:scale(.97); }
+.fi-loading{ text-align:center; color:var(--ink-dim); font-family:Cinzel,serif; font-size:11px; letter-spacing:1px; padding:16px 0; }
+.fi-spin{ width:22px; height:22px; border:2px solid rgba(255,255,255,.2); border-top-color:var(--gold); border-radius:50%; margin:0 auto 8px; animation:fiSpin .8s linear infinite; }
+@keyframes fiSpin{ to{ transform:rotate(360deg); } }
+.fi-strip{ margin-top:14px; }
+.fi-strip-h{ font-family:Cinzel,serif; font-size:12px; letter-spacing:1px; color:var(--gold); margin-bottom:9px; }
+.fi-steps{ display:flex; align-items:stretch; gap:4px; }
+.fi-step{ flex:1 1 0; min-width:0; background:rgba(0,0,0,.5); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,.16); border-radius:10px; padding:8px 6px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:5px; }
+.fi-step.tappable{ cursor:pointer; }
+.fi-step-lbl{ font-family:Cinzel,serif; font-size:9px; letter-spacing:.5px; color:var(--gold); }
+.fi-step-thumbs{ display:flex; gap:2px; justify-content:center; }
+.fi-step-thumb{ width:42px; aspect-ratio:200/280; border-radius:4px; overflow:hidden; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.14); cursor:pointer; }
+.fi-step-thumb img{ width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .3s; }
+.fi-step-thumb img.on{ opacity:1; }
+.fi-step-icon{ width:42px; height:42px; display:flex; align-items:center; justify-content:center; color:var(--gold); }
+.fi-step-icon svg{ width:30px; height:30px; }
+.fi-step-cap{ font-size:9.5px; line-height:1.3; color:var(--ink); }
+.fi-arrow{ flex:0 0 auto; align-self:center; color:var(--gold); font-size:16px; }
+.fi-result{ margin-top:8px; background:linear-gradient(rgba(60,44,12,.5),rgba(30,22,8,.45)); border:1px solid var(--gold-dim); border-radius:10px; padding:9px 12px; font-size:11.5px; line-height:1.4; color:var(--hi); }
+.fi-result b{ color:var(--gold); font-family:Cinzel,serif; font-size:9px; letter-spacing:1px; display:block; margin-bottom:3px; }
+.fi-econ{ display:flex; flex-direction:column; gap:9px; }
+.fi-econ-panel{ background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.14); border-radius:9px; padding:9px 11px; }
+.fi-econ-h{ font-family:Cinzel,serif; font-size:10px; letter-spacing:1px; color:var(--gold); margin-bottom:7px; }
+.fi-bar-row{ display:flex; align-items:center; gap:8px; margin-bottom:5px; }
+.fi-bar-lbl{ font-size:9px; letter-spacing:.5px; color:var(--ink-dim); width:52px; flex:0 0 auto; }
+.fi-cards{ display:flex; gap:2px; flex-wrap:wrap; }
+.fi-cardpip{ width:9px; height:13px; border-radius:2px; background:linear-gradient(var(--gold-2),var(--gold-dim)); }
+.fi-cardpip.enemy{ background:linear-gradient(var(--crimson-2),var(--crimson-dim)); }
+.fi-bar-note{ font-size:8.5px; color:var(--ink-dim); margin-left:6px; }
+.fi-econ-cap{ font-size:10px; color:var(--ink); margin-top:6px; font-style:italic; }
+.fi-pass{ display:flex; flex-direction:column; gap:8px; }
+.fi-pass-panel{ display:flex; gap:10px; align-items:center; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.14); border-radius:9px; padding:10px 11px; }
+.fi-pass-icon{ flex:0 0 auto; width:24px; height:24px; color:var(--gold); }
+.fi-pass-icon svg{ width:24px; height:24px; }
+.fi-pass-cap{ font-size:11px; line-height:1.4; color:var(--ink); }
+.fi-note{ font-size:10px; color:var(--ink-dim); font-style:italic; margin-top:14px; line-height:1.4; text-align:center; }
+#fi-inspect{ z-index:96; background:rgba(4,3,1,.93); flex-direction:column; padding:24px 16px; cursor:pointer; }
+.fi-insp-frame{ max-width:min(80vw,340px); max-height:62vh; border-radius:12px; box-shadow:0 8px 40px rgba(0,0,0,.7); display:block; }
+.fi-insp-spin{ width:34px; height:34px; border:3px solid rgba(255,255,255,.2); border-top-color:var(--gold); border-radius:50%; animation:fiSpin .8s linear infinite; }
+.fi-insp-txt{ max-width:min(80vw,340px); margin-top:12px; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.16); border-radius:10px; padding:11px 13px; text-align:center; }
+.fi-insp-nm{ font-family:Cinzel,serif; font-size:15px; font-weight:700; }
+.fi-insp-meta{ font-size:10px; letter-spacing:1px; color:var(--ink-dim); margin:4px 0 7px; }
+.fi-insp-eff{ font-size:12px; line-height:1.45; color:var(--ink); }
+.fi-insp-hint{ margin-top:12px; font-size:10px; letter-spacing:1px; color:var(--ink-dim); }
+.modal.fsel{ text-align:center; max-width:420px; background:none; border:none; box-shadow:none; backdrop-filter:none; padding:16px; }
+.modal.fsel h3{ text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.92), 0 0 20px rgba(0,0,0,.5); }
 .fsel-row{ margin:14px 0; }
-.fsel-lbl{ display:block; font-family:Cinzel,serif; font-size:10px; letter-spacing:2px; color:var(--ink-dim); margin-bottom:7px; }
-.fsel-opts{ display:flex; gap:10px; }
-.fbtn{ flex:1; padding:12px 8px; border-radius:10px; cursor:pointer; background:#181206; border:1.5px solid #3a2e14; color:var(--ink-dim); display:flex; flex-direction:column; gap:4px; transition:border-color .15s, background .15s, transform .1s; }
-.fbtn b{ font-family:Cinzel,serif; font-size:13px; letter-spacing:1px; color:var(--ink); }
-.fbtn em{ font-style:normal; font-size:9px; letter-spacing:1px; opacity:.85; }
+.fsel-lbl{ display:block; font-family:Cinzel,serif; font-size:10px; letter-spacing:2px; color:var(--ink); margin-bottom:7px; text-shadow:0 1px 5px rgba(0,0,0,.95); }
+.fsel-opts{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+@media (max-width:480px){ .fsel-opts{ grid-template-columns:repeat(2,1fr); } }   /* 2×2 on narrow portrait — no overflow */
+.fbtn{ padding:12px 6px; border-radius:10px; cursor:pointer; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); border:1.5px solid rgba(255,255,255,.20); color:var(--ink); display:flex; flex-direction:column; gap:4px; align-items:center; transition:border-color .15s, background .15s, transform .1s; }
+.fbtn b{ font-family:Cinzel,serif; font-size:13px; letter-spacing:1px; color:#fff; text-shadow:0 1px 3px #000; }
+.fbtn em{ font-style:normal; font-size:9px; letter-spacing:1px; opacity:.92; text-shadow:0 1px 3px #000; }
 .fbtn:active{ transform:scale(.97); }
 .fbtn[data-f="devas"].sel{ border-color:var(--gold); background:linear-gradient(#2a1e0a,#1d1507); }
 .fbtn[data-f="devas"].sel b{ color:var(--gold); }
 .fbtn[data-f="asuras"].sel{ border-color:var(--crimson); background:linear-gradient(#2a1010,#180808); }
 .fbtn[data-f="asuras"].sel b{ color:var(--crimson); }
-.fsel-start{ margin-top:18px; width:100%; padding:13px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; background:linear-gradient(#3a2a0e,#241a08); color:var(--gold); border:1.5px solid var(--gold); }
+.fsel-start{ margin-top:18px; width:100%; padding:13px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); color:var(--gold); border:1.5px solid var(--gold); text-shadow:0 1px 4px rgba(0,0,0,.85); }
 .fsel-start:active{ transform:scale(.98); }
 .go-btns{ display:flex; flex-direction:column; gap:8px; align-items:center; }
 .go-alt{ background:none !important; border:1px solid #4a3a18 !important; color:var(--ink-dim) !important; font-size:11px !important; padding:8px 16px !important; }
@@ -445,6 +575,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 
   <div id="field">
     <div id="embers"></div>
+    <canvas id="vfxcanvas"></canvas>
+    <div id="vfxflash"></div>
     <div id="oppthinking" class="hidden"><span class="think-emblem">🌀</span><span class="think-txt">Opponent is thinking<span class="td">.</span><span class="td">.</span><span class="td">.</span></span></div>
     <div class="half opp">
       <div class="zhead"><span>OPPONENT · HAND <span id="ohand">10</span> · DECK <span id="odeck">12</span><span id="opassed"></span></span></div>
@@ -507,7 +639,10 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     <div id="musichint" class="set-hint hidden">No music loaded. The owner can set <code>window.MUSIC_URL</code> to a looping tanpura track — SFX are independent.</div>
     <div class="set-vol"><span>SFX vol</span><input id="sfxvol" type="range" min="0" max="100" value="80"></div>
     <div class="set-vol"><span>Master</span><input id="mastervol" type="range" min="0" max="100" value="70"></div>
-    <button id="testsfx" class="tgl" style="width:100%;margin-top:8px;">▶ Test all SFX</button>
+    <div class="set-toggles" style="margin-top:8px;">
+      <button id="testsfx" class="tgl">▶ Test all SFX</button>
+      <button id="testvfx" class="tgl">✦ Test VFX</button>
+    </div>
   </div>
   <button class="fsel-start" onclick="$('settings').classList.add('hidden')">DONE</button>
 </div></div>
@@ -527,7 +662,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <h2 id="goh">VICTORY</h2><p id="gop"></p>
   <div class="go-btns">
     <button onclick="startGame()">REMATCH ⚔</button>
-    <button class="go-alt" onclick="showFactionSelect()">CHANGE FACTIONS</button>
+    <button class="go-alt" onclick="showLanding()">MAIN MENU</button>
   </div>
 </div></div>
 
@@ -537,6 +672,58 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <div id="mullhand"></div>
   <button id="mullconfirm" class="fsel-start">KEEP HAND</button>
 </div></div>
+
+<div class="overlay hidden" id="landing">
+  <button id="landgear" title="settings">⚙</button>
+  <div class="land-col">
+    <div class="land-title">
+      <div class="land-deva">दिव्य युद्ध</div>
+      <h1 class="land-name">DIVYA YUDDHA</h1>
+      <div class="land-sub">BATTLE OF THE CELESTIALS</div>
+    </div>
+    <div class="land-profile">
+      <div class="lp-avatar" id="lpavatar">WA</div>
+      <div class="lp-info">
+        <div class="lp-name" id="lpname">Warrior</div>
+        <div class="lp-level"><span id="lplevel">Level 1</span><div class="lp-bar"><i id="lpbar"></i></div></div>
+        <div class="lp-stats" id="lpstats">0 wins · 0 matches · 0 today</div>
+      </div>
+    </div>
+    <div class="land-modes">
+      <button class="mode active" id="mode-pvai">
+        <div class="mode-main"><div class="mode-title">Player vs AI</div></div>
+        <span class="mode-chev">›</span>
+      </button>
+      <button class="mode locked" data-soon>
+        <div class="mode-main"><div class="mode-title">Story Mode — Divya Yatra</div><div class="mode-cap">Book 1 coming soon</div></div>
+        <span class="mode-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+      </button>
+      <button class="mode active" id="mode-factions">
+        <div class="mode-main"><div class="mode-title">Faction Introduction</div><div class="mode-cap">Meet the four armies</div></div>
+        <span class="mode-chev">›</span>
+      </button>
+      <button class="mode locked" data-soon>
+        <div class="mode-main"><div class="mode-title">Multiplayer</div><div class="mode-cap">Coming soon</div></div>
+        <span class="mode-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="factionintro">
+  <button class="fi-back" id="fi-back" title="back">‹</button>
+  <div class="fi-col">
+    <div class="fi-tabs" id="fi-tabs">
+      <button class="fi-tab sel" data-tab="win">How to win</button>
+      <button class="fi-tab" data-tab="devas">Devas</button>
+      <button class="fi-tab" data-tab="asuras">Asuras</button>
+      <button class="fi-tab" data-tab="vanaras">Vanaras</button>
+      <button class="fi-tab" data-tab="nagas">Nagas</button>
+    </div>
+    <div id="fi-body"></div>
+  </div>
+</div>
+<div class="overlay hidden" id="fi-inspect"></div>
 
 <div class="overlay hidden" id="factionselect"><div class="modal fsel">
   <h3>⚔ CHOOSE YOUR BATTLE</h3>
@@ -1956,14 +2143,18 @@ function startGame(p0Faction, p1Faction){
   if (aiTimer) clearTimeout(aiTimer);
   G=newGame({p0:'You',p1:'Opponent',p0Faction:currentFactions.p0,p1Faction:currentFactions.p1}); seenLog=0;
   G.players[0].manualShield=true;   // the human designates Dharma Shield by hand (AI keeps auto-designate)
+  matchRecorded=false;              // arm the one-shot match-result counter for this new match
   knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; shieldMode=false; hideBoardTargetBar();
-  ['gameover','targeting','inspect','banner','factionselect','mulligan','realmpop'].forEach(id=>$(id).classList.add('hidden'));
+  ['gameover','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','mulligan','realmpop'].forEach(id=>$(id).classList.add('hidden'));
   $('hudwrap').classList.remove('hidden');
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme();
   makeEmbers();
+  Audio2.playTrack('battle');   // crossfade menu → battle music (~1.5s)
+  Audio2.fileSfx('sfx_conch');  // match-start announcement, layered over the crossfade START (music is NOT delayed); once per match — startGame is not called on rounds 2/3
   showRealmIntro();
   render();
+  VFX.init(); VFX.resize();      // size the impact-VFX canvas to the now-visible board
   beginMulligan();          // play begins when the player confirms their opening hand
 }
 const FAC_LABEL = f => f==='asuras' ? 'ASURA' : f==='vanaras' ? 'VANARA' : f==='nagas' ? 'NAGA' : 'DEVA';
@@ -2035,7 +2226,9 @@ function showFactionSelect(){
     box.querySelectorAll('.fbtn').forEach(b=> b.classList.toggle('sel', b.dataset.f===fselChoice[side]));
   });
   $('hudwrap').classList.add('hidden');
+  $('landing').classList.add('hidden');
   $('factionselect').classList.remove('hidden');
+  Audio2.playTrack('menu');   // menu music on the faction-select screen (crossfades back from battle)
 }
 $('factionselect').addEventListener('click', e=>{
   const b=e.target.closest('.fbtn'); if(!b) return;
@@ -2043,6 +2236,339 @@ $('factionselect').addEventListener('click', e=>{
   box.querySelectorAll('.fbtn').forEach(x=>x.classList.toggle('sel', x===b));
 });
 $('fselstart').onclick=()=>startGame(fselChoice.p0, fselChoice.p1);
+
+/* ---------- landing page + player profile (localStorage: dy_profile) ----------
+   Level formula is PROVISIONAL (1 + floor(wins/5)) — placeholder for the M1 XP system.
+   matches/wins/winsToday are the matches-per-day telemetry feeding the Amsha economy. */
+function todayKey(){ const d=new Date(); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+function loadProfile(){
+  let P={}; try{ P=JSON.parse(localStorage.getItem('dy_profile'))||{}; }catch(e){ P={}; }
+  if(typeof P.name!=='string' || !P.name.trim()) P.name='Warrior';
+  P.matches=P.matches|0; P.wins=P.wins|0;
+  if(P.winsDay!==todayKey()){ P.winsDay=todayKey(); P.winsToday=0; }   // day rollover resets wins-today
+  P.winsToday=P.winsToday|0;
+  return P;
+}
+function saveProfile(P){ try{ localStorage.setItem('dy_profile', JSON.stringify(P)); }catch(e){} }
+function profileInitials(name){ const w=name.trim().split(/\s+/); const s=(w.length>1?(w[0][0]+w[1][0]):name.trim().slice(0,2)); return (s||'W').toUpperCase(); }
+function renderProfile(){
+  const P=loadProfile();
+  const lvl=1+Math.floor(P.wins/5), prog=(P.wins%5)/5*100;   // PROVISIONAL level/bar
+  $('lpavatar').textContent=profileInitials(P.name);
+  $('lpname').textContent=P.name;
+  $('lplevel').textContent='Level '+lvl;
+  $('lpbar').style.width=prog+'%';
+  $('lpstats').textContent=`${P.wins} wins · ${P.matches} matches · ${P.winsToday} today`;
+}
+let matchRecorded=false;   // one-shot guard: showGameOver can re-run on re-render — count each match once
+function recordMatchResult(){
+  if(matchRecorded) return; matchRecorded=true;
+  const P=loadProfile();                        // handles day rollover
+  P.matches=(P.matches|0)+1;
+  if(G.winner===0){ P.wins=(P.wins|0)+1; P.winsToday=(P.winsToday|0)+1; }   // player is p0; win only
+  saveProfile(P);
+}
+function showLanding(){
+  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','settings','mulligan','targeting','inspect','banner','realmpop'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
+  renderProfile();
+  $('landing').classList.remove('hidden');
+  Audio2.playTrack('menu');   // menu music covers landing + faction-select (gesture-driven: first tap starts it)
+}
+function editProfileName(){
+  const el=$('lpname'); if(!el || el.tagName==='INPUT') return;
+  const P=loadProfile();
+  const inp=document.createElement('input'); inp.className='lp-name-edit'; inp.id='lpname'; inp.value=P.name; inp.maxLength=16;
+  el.replaceWith(inp); inp.focus(); inp.select();
+  let done=false;
+  const commit=(save)=>{ if(done) return; done=true;
+    const v=save ? (inp.value.trim()||'Warrior') : P.name;
+    if(save){ const P2=loadProfile(); P2.name=v; saveProfile(P2); }
+    const span=document.createElement('div'); span.className='lp-name'; span.id='lpname'; span.textContent=v; span.onclick=editProfileName;
+    inp.replaceWith(span); renderProfile();
+  };
+  inp.addEventListener('blur', ()=>commit(true));
+  inp.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); commit(true); } else if(e.key==='Escape'){ e.preventDefault(); commit(false); } });
+}
+$('lpname').onclick=editProfileName;
+$('landgear').onclick=()=>{ syncSettingsUI(); $('settings').classList.remove('hidden'); };
+$('mode-pvai').onclick=()=>showFactionSelect();
+document.querySelectorAll('#landing .mode.locked').forEach(b=> b.onclick=()=>toastMute('Coming soon'));
+
+/* ===================== FACTION INTRODUCTION =====================
+   All PROSE below is verbatim from docs/faction_intro_content.md v1.1 (corrected to engine truth).
+   Card names / powers / effect texts are pulled LIVE from the engine (DECKS / RARITY_NAME),
+   never hand-typed. Strategy strips reference cards by name and render their real thumbnails;
+   a `card` name absent from the engine falls back to `iconFallback` (name-driven — no strip
+   currently relies on it after the v1.1 correction, but the safety path remains). */
+const FI_FAC_HEX = { devas:'#E8C874', asuras:'#e0483c', vanaras:'#6fc257', nagas:'#3fb9a8' };
+const FI_ICONS = {
+  shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V5z"/></svg>',
+  fire:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1.2 3-1 4.2-1 6.2A3 3 0 0 0 17 8c1.8 2.6 2 4.8 2 6.8A7 7 0 0 1 5 15c0-3.6 3.4-5.6 3.6-8.6C9.6 7.4 11 8 12 6c.6-1.2.4-2.8 0-4z"/></svg>',
+  astrax:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M6 6l12 12"/></svg>',
+  round:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M12 7v5l3 2"/></svg>',
+  swarm:'<svg viewBox="0 0 24 24" fill="currentColor"><rect x="2.5" y="9" width="4" height="9" rx="1"/><rect x="7.5" y="6" width="4" height="12" rx="1"/><rect x="12.5" y="8" width="4" height="10" rx="1"/><rect x="17.5" y="6" width="4" height="12" rx="1"/></svg>',
+  leap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 17c4-9 14-9 18 0"/><path d="M17 12l4 5-5 1"/></svg>',
+  sacrifice:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v12"/><path d="M7 14h10l-5 8z"/></svg>',
+  net:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4"><path d="M3 8h18M3 14h18M8 3v18M14 3v18"/></svg>',
+  ahead:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V5M6 11l6-6 6 6"/></svg>',
+  behind:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v15M6 13l6 6 6-6"/></svg>',
+  final:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 21V4h11l-2 4 2 4H5"/></svg>'
+};
+const FI_CONTENT = {
+  win: {
+    tagline:`Before you pick an army, learn the one rule every army obeys.`,
+    body:`Divya Yuddha is best of three rounds — but your cards must last all three. Every card you spend winning a round is a card you cannot spend later. The player who wins two rounds wins the match; the player who tries to win all three usually loses.`,
+    economy:[
+      { h:`ROUND 1`, rows:[ {lbl:`YOU 8`, n:8, enemy:false, note:`spend 2, concede`}, {lbl:`ENEMY 8`, n:8, enemy:true, note:`spends 5, wins round`} ], cap:`Lose the round. Keep your cards.` },
+      { h:`ROUND 2`, rows:[ {lbl:`YOU 6`, n:6, enemy:false}, {lbl:`ENEMY 3`, n:3, enemy:true} ], cap:`Now you outnumber them.` },
+      { h:`ROUND 3`, rows:[ {lbl:`YOU`, n:6, enemy:false, note:`win both remaining rounds on card advantage`} ], cap:`Two rounds win the match. The third was a gift you gave them.` }
+    ],
+    passRules:[
+      { icon:`ahead`, cap:`They passed while behind? Play one more card, then pass. Never two.` },
+      { icon:`behind`, cap:`Concede. A round lost by 20 costs the same as a round lost by 1.` },
+      { icon:`final`, cap:`There is no next round to save for. Spend everything.` }
+    ],
+    callout:`Mantras are limited to 2 per deck and Artifacts to 2 per deck with one active at a time. These are your match-deciding plays — spend them in the round you intend to win, not the round you happen to be losing.`
+  },
+  devas: {
+    tagline:`The shining ones. They do not fall — and if they fall, they rise.`,
+    difficulty:`Beginner`, playstyle:`Protection and endurance`,
+    mechTitle:`DHARMA SHIELD`,
+    mechBody:`Deva play revolves around protecting what matters. Dharma Shields stop enemy Astras from touching your key units, and Deva revival effects bring the fallen back. Your units are individually strong; keep them alive and the math wins itself.`,
+    strengths:[`Toughest units to remove`,`Revival and cleansing (Gayatri Mantra, Pavamana)`,`Doubled shielding — Dharma Kavacha protects two units at once`,`Most forgiving faction to learn`],
+    weaknesses:[`Slow poison loses to no poison: Nagas grind through shields (the Deva–Naga matchup is the hardest counter in the game — expect to fight uphill)`,`Fewer explosive plays; you win by margins, not spikes`,`Protection spent on the wrong unit is protection wasted`],
+    matchupNote:`At launch balance, Devas vs Nagas is the game's designed counter matchup (roughly 40:60). Countering and being countered is part of faction identity.`
+  },
+  asuras: {
+    tagline:`The breakers of rules. Power now, price later — if later ever comes.`,
+    difficulty:`Intermediate`, playstyle:`Aggression and calculated risk`,
+    mechTitle:`CHAOS SURGE`,
+    mechBody:`Asura Astras can surge with bonus chaos effects. Your weapons hit harder than anyone's — sometimes harder than you planned. Asura play is about choosing when the price is worth paying.`,
+    strengths:[`The heaviest single units in the game (Kumbhakarna, Mahabali)`,`Astra amplification (Chandrahas) — your removal decides rounds`,`Steal and corrupt enemy resources (Sanjivani Corruption)`,`Highest mirror-tested win rate at launch`],
+    weaknesses:[`Self-destructive costs: Ahamkara kills its own target at round end; Tripura shatters the moment any Astra is played`,`Overextending into a conceded round wastes your explosiveness`,`Chaos is chaos — surges can't be scheduled`]
+  },
+  vanaras: {
+    tagline:`The devoted. One is weak. Ten thousand, moving as one, are not.`,
+    difficulty:`Easy to learn, deep to master`, playstyle:`Momentum and swarm`,
+    mechTitle:`LEAP`,
+    mechBody:`Vanara units can Leap — copying the strength of allies already on the board. Your army grows sideways: every unit you play makes the next one better. Go wide, then make wide tall.`,
+    strengths:[`The biggest single power spike in the game (Rama Naam: +2 to your whole Vanara board)`,`Leap turns one good unit into several (Kishkindha Crown doubles down)`,`Buffs stack across the whole board — your total grows faster than any single removal can cut`,`Immune-to-Naga tricks in key moments (Rama Naam cannot be countered by Naga effects; Rama's Signet negates Venom entirely)`],
+    weaknesses:[`Individually small units — a thin board is a weak board`,`Board-wide drains (Sarpa Satra) punish exactly what you want to do`,`The spike is once per match: waste Rama Naam and the ceiling drops hard`]
+  },
+  nagas: {
+    tagline:`The serpent kings of Patala. They do not rush. They do not need to.`,
+    difficulty:`Advanced`, playstyle:`Attrition and inevitability`,
+    mechTitle:`VENOM`,
+    mechBody:`Venom Tokens drain enemy power round after round. No single tick matters; all of them together decide the match. You are not racing your opponent — you are outlasting them. Your win condition is time itself.`,
+    strengths:[`Inevitable chip damage that ignores unit quality`,`The longer the round, the stronger you are`,`Corrupted revival: even the dead serve the poison (Mrityunjaya, Ananta Coil)`,`The designed counter to Devas — shields don't stop attrition`],
+    weaknesses:[`Slow starts: short rounds starve the Venom clock`,`Rama's Signet switches your faction mechanic off entirely`,`Demands planning two rounds ahead — mistakes compound quietly`],
+    matchupNote:`At launch balance, Devas vs Nagas is the game's designed counter matchup (roughly 40:60). Countering and being countered is part of faction identity.`
+  }
+};
+const FI_STRIPS = {
+  devas:[
+    { title:`The Unbreakable Wall`, steps:[
+      { label:`Step 1`, card:`Amrita Kalasha`, caption:`Your weakest unit grows every round and revives if killed.` },
+      { label:`Step 2`, icon:`shield`, caption:`Their removal now has no target worth hitting.` }
+    ], result:`Win the long round. Their damage bounced; yours didn't.` },
+    { title:`Two Shields, Not One`, steps:[
+      { label:`Step 1`, card:`Dharma Kavacha`, caption:`Your Dharma Shield now guards two units, not one.` },
+      { label:`Step 2`, icon:`shield`, caption:`Shield both your best units — their Astras run out of targets.` }
+    ], result:`Two untouchable threats at once. Their removal was built to answer one.` }
+  ],
+  asuras:[
+    { title:`The Doubled Blade`, steps:[
+      { label:`Step 1`, card:`Chandrahas`, caption:`Your first Astra each round is amplified.` },
+      { label:`Step 2`, icon:`fire`, caption:`Open the round with your best Astra.` }
+    ], result:`One play, double payload, Chaos Surge on top. Rounds end early when you start them like this.` },
+    { title:`The Ego Gambit`, steps:[
+      { label:`Step 1`, icon:`round`, caption:`A round you MUST win.` },
+      { label:`Step 2`, cards:[`Ahamkara`,`Kumbhakarna`], caption:`Double a giant. He dies at round end — so make it the round end that decides the match.` }
+    ], result:`Pay the price in a round where the price is already refunded.` }
+  ],
+  vanaras:[
+    { title:`The Rama Naam Spike`, steps:[
+      { label:`Step 1`, icon:`swarm`, caption:`Go wide — 4+ Vanaras on board.` },
+      { label:`Step 2`, card:`Hanuman`, caption:`Now every 4+ Vanara you play lands with +1 on entry.` },
+      { label:`Step 3`, card:`Rama Naam`, caption:`+2 to every Vanara Unit — on a full board, the biggest power spike in the game.` }
+    ], result:`Save it for the round that decides the match — it only happens once.` },
+    { title:`Leap Economics`, steps:[
+      { label:`Step 1`, card:`Kishkindha Crown`, caption:`Every Leap now feeds both units, and you may Leap twice per round.` },
+      { label:`Step 2`, icon:`leap`, caption:`Leap onto your strongest unit.` }
+    ], result:`Copies plus bonuses: one strong unit becomes an economy.` }
+  ],
+  nagas:[
+    { title:`The Patient Kingdom`, steps:[
+      { label:`Step 1`, card:`Patala Throne`, caption:`The drain grows every round it sits.` },
+      { label:`Step 2`, card:`Karkotaka`, caption:`Venom now strikes on every enemy turn, not just at round's end.` }
+    ], result:`Stall the round. Every turn they take costs them power. Time is on your payroll.` },
+    { title:`Death Serves the Poison`, steps:[
+      { label:`Step 1`, card:`Ananta Coil`, caption:`Your dead leave permanent Venom behind.` },
+      { label:`Step 2`, card:`Sarpa Satra`, caption:`Every enemy loses its power; Venom doubles this round.` }
+    ], result:`One sacrifice, board-wide drain, and a permanent token that keeps collecting. Nagas never trade one for one.` }
+  ]
+};
+/* --- helpers --- */
+function fh(tag, props, ...kids){
+  const e=document.createElement(tag);
+  if(props) for(const k in props){
+    const v=props[k];
+    if(v==null) continue;
+    if(k==='class') e.className=v;
+    else if(k==='html') e.innerHTML=v;
+    else if(k==='style') e.setAttribute('style',v);
+    else if(k.slice(0,2)==='on'&&typeof v==='function') e[k.toLowerCase()]=v;
+    else e.setAttribute(k,v);
+  }
+  for(const c of kids){ if(c==null||c===false) continue; e.append(c.nodeType?c:document.createTextNode(c)); }
+  return e;
+}
+function fiCardByName(faction, name){ const deck=DECKS[faction]||[]; return deck.find(c=>c.n===name)||null; }
+function fiArtStem(c, faction){ return cardArtSrc({...c, base:c.p}, faction); }   // cardArtSrc keys on base; deck defs carry p
+function fiThumbSrc(c, faction){ return fiArtStem(c, faction).replace('assets/cards/','assets/thumbs/'); }
+function fiGalleryOrder(faction){
+  const d=DECKS[faction]||[];
+  return [
+    ...d.filter(c=>c.t==='hero'),
+    ...d.filter(c=>c.t==='unit').slice().sort((a,b)=>b.p-a.p),
+    ...d.filter(c=>c.t==='astra'),
+    ...d.filter(c=>c.t==='mantra'),
+    ...d.filter(c=>c.t==='artifact')
+  ];
+}
+/* --- card inspect (full frame on demand, session-cached by the browser) --- */
+const fiLoadedFrames = new Set();
+function fiInspect(c, faction){
+  const ov=$('fi-inspect'); ov.innerHTML='';
+  ov.append(fh('div',{class:'fi-insp-spin'}));
+  ov.classList.remove('hidden');
+  const src=fiArtStem(c, faction);
+  const img=new Image(); img.className='fi-insp-frame'; img.alt=c.n;
+  img.onload=()=>{ fiLoadedFrames.add(src); ov.innerHTML='';
+    ov.append(img);
+    const meta=fh('div',{class:'fi-insp-txt'},
+      fh('div',{class:'fi-insp-nm', style:`color:${FI_FAC_HEX[faction]}`}, c.n),
+      fh('div',{class:'fi-insp-meta'}, `${RARITY_NAME[c.r].toUpperCase()} · ${c.t.toUpperCase()}${c.p>0?' · POWER '+c.p:''}`),
+      fh('div',{class:'fi-insp-eff'}, c.txt||'—')   // engine card text, live
+    );
+    ov.append(meta);
+    ov.append(fh('div',{class:'fi-insp-hint'}, 'tap anywhere to close'));
+  };
+  img.onerror=()=>{ ov.innerHTML=''; ov.append(fh('div',{class:'fi-insp-txt'}, fh('div',{class:'fi-insp-eff'},'Card frame unavailable.')), fh('div',{class:'fi-insp-hint'},'tap anywhere to close')); };
+  img.src=src;
+}
+$('fi-inspect').onclick=()=>$('fi-inspect').classList.add('hidden');
+/* --- renderers --- */
+function fiThumb(c, faction, cls){
+  const wrap=fh('div',{class:cls, onclick:(e)=>{ e.stopPropagation(); fiInspect(c,faction); }});
+  const img=new Image(); img.alt=c.n; img.onload=()=>img.classList.add('on'); img.src=fiThumbSrc(c,faction);
+  wrap.append(img); return wrap;
+}
+function fiRenderGallery(faction){
+  const cards=fiGalleryOrder(faction);
+  const grid=fh('div',{class:'fi-gallery'});
+  const loading=fh('div',{class:'fi-loading'}, fh('div',{class:'fi-spin'}), 'Summoning the roster…');
+  let done=0; const finish=()=>{ if(++done>=cards.length) loading.remove(); };
+  cards.forEach(c=>{
+    const wrap=fh('div',{class:'fi-thumb', onclick:()=>fiInspect(c,faction)});
+    const img=new Image(); img.alt=c.n; img.onload=()=>{ img.classList.add('on'); finish(); }; img.onerror=finish; img.src=fiThumbSrc(c,faction);
+    wrap.append(img); grid.append(wrap);
+  });
+  return fh('div',null, loading, grid);
+}
+function fiRenderStep(step, faction){
+  const kids=[ fh('div',{class:'fi-step-lbl'}, step.label||'') ];
+  const names = step.cards || (step.card?[step.card]:[]);
+  let tappable=false;
+  if(names.length){
+    const found=names.map(n=>fiCardByName(faction,n)).filter(Boolean);
+    if(found.length){ const box=fh('div',{class:'fi-step-thumbs'}); found.forEach(c=>box.append(fiThumb(c,faction,'fi-step-thumb'))); kids.push(box); tappable=true; }
+    else kids.push(fh('div',{class:'fi-step-icon', html:FI_ICONS[step.iconFallback||'net']}));   // named card not in engine → icon
+  } else if(step.icon){
+    kids.push(fh('div',{class:'fi-step-icon', html:FI_ICONS[step.icon]}));
+  }
+  if(step.caption) kids.push(fh('div',{class:'fi-step-cap'}, step.caption));
+  return fh('div',{class:'fi-step'+(tappable?' tappable':'')}, ...kids);
+}
+function fiRenderStrip(strip, faction){
+  const steps=[]; strip.steps.forEach((s,i)=>{ if(i>0) steps.push(fh('div',{class:'fi-arrow'},'→')); steps.push(fiRenderStep(s,faction)); });
+  return fh('div',{class:'fi-strip'},
+    fh('div',{class:'fi-strip-h'}, strip.title),
+    fh('div',{class:'fi-steps'}, ...steps),
+    fh('div',{class:'fi-result'}, fh('b',null,'RESULT'), strip.result)
+  );
+}
+function fiRenderEconomy(){
+  const wrap=fh('div',{class:'fi-econ'});
+  FI_CONTENT.win.economy.forEach(p=>{
+    const panel=fh('div',{class:'fi-econ-panel'}, fh('div',{class:'fi-econ-h'}, p.h));
+    p.rows.forEach(r=>{
+      const pips=fh('div',{class:'fi-cards'}); for(let i=0;i<r.n;i++) pips.append(fh('div',{class:'fi-cardpip'+(r.enemy?' enemy':'')}));
+      panel.append(fh('div',{class:'fi-bar-row'}, fh('div',{class:'fi-bar-lbl'}, r.lbl), pips, r.note?fh('div',{class:'fi-bar-note'}, r.note):null));
+    });
+    panel.append(fh('div',{class:'fi-econ-cap'}, p.cap));
+    wrap.append(panel);
+  });
+  return wrap;
+}
+function fiRenderPassRules(){
+  const box=fh('div',{class:'fi-pass'});
+  FI_CONTENT.win.passRules.forEach(p=> box.append(fh('div',{class:'fi-pass-panel'}, fh('div',{class:'fi-pass-icon', html:FI_ICONS[p.icon]}), fh('div',{class:'fi-pass-cap'}, p.cap))));
+  return box;
+}
+function fiRenderWin(){
+  const C=FI_CONTENT.win, node=fh('div',null);
+  node.append(fh('div',{class:'fi-idhead'},
+    fh('div',{class:'fi-facname', style:'color:var(--gold); font-size:24px; letter-spacing:3px;'}, 'HOW TO WIN'),
+    fh('div',{class:'fi-tagline'}, C.tagline)
+  ));
+  node.append(fh('div',{class:'fi-panel'}, fh('p',{class:'fi-body-txt'}, C.body)));
+  node.append(fh('div',{class:'fi-panel'}, fh('div',{class:'fi-panel-h'},'THE ROUND ECONOMY'), fiRenderEconomy()));
+  node.append(fh('div',{class:'fi-panel'}, fh('div',{class:'fi-panel-h'},'WHEN TO PASS'), fiRenderPassRules()));
+  node.append(fh('div',{class:'fi-panel', style:'border-color:var(--gold-dim)'}, fh('div',{class:'fi-panel-h'},'MATCH-DECIDERS'), fh('p',null, C.callout)));
+  return node;
+}
+function fiRenderFaction(faction){
+  const C=FI_CONTENT[faction], hex=FI_FAC_HEX[faction], node=fh('div',null);
+  node.append(fh('div',{class:'fi-idhead'},
+    fh('div',{class:'fi-facname', style:`color:${hex}`}, factionToken(faction).toUpperCase()),
+    fh('div',{class:'fi-tagline'}, C.tagline),
+    fh('div',{class:'fi-badges'},
+      fh('div',{class:'fi-badge', html:`<b>Difficulty</b> ${C.difficulty}`}),
+      fh('div',{class:'fi-badge', html:`<b>Playstyle</b> ${C.playstyle}`})
+    )
+  ));
+  node.append(fh('div',{class:'fi-panel'}, fh('div',{class:'fi-panel-h', style:`color:${hex}`}, C.mechTitle), fh('p',null, C.mechBody)));
+  const sUL=fh('ul'); C.strengths.forEach(s=>sUL.append(fh('li',null,s)));
+  const wUL=fh('ul'); C.weaknesses.forEach(s=>wUL.append(fh('li',null,s)));
+  node.append(fh('div',{class:'fi-sw'},
+    fh('div',{class:'fi-strength'}, fh('div',{class:'fi-panel-h'},'STRENGTHS'), sUL),
+    fh('div',{class:'fi-weak'}, fh('div',{class:'fi-panel-h'},'WEAKNESSES'), wUL)
+  ));
+  node.append(fh('div',{class:'fi-panel-h', style:'margin-top:2px'}, 'THE 22 CARDS'));
+  node.append(fiRenderGallery(faction));
+  FI_STRIPS[faction].forEach(strip=> node.append(fiRenderStrip(strip, faction)));
+  if(C.matchupNote) node.append(fh('div',{class:'fi-note'}, C.matchupNote));
+  return node;
+}
+/* --- tab controller: build a tab's DOM only on first open (lazy thumbnails), cache thereafter --- */
+const fiTabNodes = {};
+function fiSelectTab(tab){
+  document.querySelectorAll('#fi-tabs .fi-tab').forEach(b=> b.classList.toggle('sel', b.dataset.tab===tab));
+  if(!fiTabNodes[tab]) fiTabNodes[tab] = (tab==='win') ? fiRenderWin() : fiRenderFaction(tab);
+  const body=$('fi-body'); body.innerHTML=''; body.append(fiTabNodes[tab]);
+  $('factionintro').scrollTop=0;
+}
+function showFactionIntro(){
+  ['hudwrap','gameover','factionselect','settings','mulligan','landing','fi-inspect'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
+  fiSelectTab('win');
+  $('factionintro').classList.remove('hidden');
+  $('factionintro').scrollTop=0;
+  Audio2.playTrack('menu');   // menu music keeps playing throughout
+}
+$('fi-tabs').addEventListener('click', e=>{ const b=e.target.closest('.fi-tab'); if(b) fiSelectTab(b.dataset.tab); });
+$('fi-back').onclick=()=>showLanding();
+$('mode-factions').onclick=()=>showFactionIntro();
 
 function makeEmbers(){
   const box=$('embers'); box.innerHTML=''; if (reducedMotion()) return;
@@ -2254,13 +2780,14 @@ function showRoundBanner(){
   t.textContent=`ROUND ${h.round} — ${res}${lead}`;
   b.classList.remove('hidden');
   t.style.animation='none'; void t.offsetWidth; t.style.animation='bannerSweep 1.8s ease-out';
-  Audio2.sfx(h.winner===0?'roundwin': h.winner===1?'roundloss':'roundwin');
+  if(!G.over) Audio2.fileSfx('sfx_round_end');   // round-end gong for rounds 1&2 ONLY — at match end the victory/defeat stinger owns the moment (a gong under a stinger is mud)
   clearTimeout(b._t); b._t=setTimeout(()=>b.classList.add('hidden'), 1800);
 }
 
 /* ================= GAME FEEL: pacing speed, audio, helpers ================= */
 const SPEEDS={ relaxed:1.4, normal:1.0, fast:0.6 };
 let speedMult = SPEEDS[localStorage.getItem('dy_speed')] || 1.0;
+const CHOREO_SPEED = 1.3;   // global baseline pacing multiplier for ALL choreography steps (showcase / effects / summary). ↑ = slower. One number to tune.
 function setSpeed(key){ if(!SPEEDS[key])return; speedMult=SPEEDS[key]; localStorage.setItem('dy_speed',key); syncSettingsUI(); }
 function findCardByUid(uid){
   for(const pi of [0,1]){ const p=G.players[pi];
@@ -2270,25 +2797,56 @@ function findCardByUid(uid){
   return null;
 }
 
-/* ---- Web Audio: LOUD layered SFX (with body) + optional MUSIC_URL file loop. No synthesized music. ---- */
+/* ---- Web Audio: gapless 2-track FILE music (menu ⇄ battle) + FILE Astra impacts + synthesized SFX for everything else ---- */
 const Audio2 = (()=>{
-  let ctx=null, master=null, musicGain=null, sfxGain=null, sfxComp=null, started=false, musicEl=null;
-  const MUSIC_URL=(typeof window!=='undefined' && window.MUSIC_URL)||'';   // owner supplies a real tanpura loop here — no code change
-  const MUSIC_LEVEL=0.5;
+  let ctx=null, master=null, musicGain=null, sfxGain=null, sfxComp=null, fileGain=null, started=false;
+  const MUSIC_LEVEL=0.6;
+  const AUDIO_SRC={ menu:'assets/audio/music_menu.mp3', battle:'assets/audio/music_battle.mp3',
+    sfx_astra:'assets/audio/sfx_astra.mp3', sfx_brahmastra:'assets/audio/sfx_brahmastra.mp3', sfx_unit_clash:'assets/audio/sfx_unit_clash.mp3',
+    // card-play set (completes retirement of synth cardplay): mantra / heal / artifact
+    sfx_mantra:'assets/audio/sfx_mantra.mp3', sfx_heal:'assets/audio/sfx_heal.mp3', sfx_artifact:'assets/audio/sfx_artifact.mp3',
+    // event set (each replaces its synth counterpart)
+    sfx_venom_apply:'assets/audio/sfx_venom_apply.mp3', sfx_unit_destroy:'assets/audio/sfx_unit_destroy.mp3', sfx_leap:'assets/audio/sfx_leap.mp3',
+    sfx_shield_apply:'assets/audio/sfx_shield_apply.mp3', sfx_shield_break:'assets/audio/sfx_shield_break.mp3', sfx_chaos_surge:'assets/audio/sfx_chaos_surge.mp3',
+    // power-change blips (−17 LUFS, the quietest tier — coalesced, ≤2 overlapping)
+    sfx_buff:'assets/audio/sfx_buff.mp3', sfx_debuff:'assets/audio/sfx_debuff.mp3',
+    // match-start conch + round-end gong (rounds 1&2 only; match end owns the stinger)
+    sfx_conch:'assets/audio/sfx_conch.mp3', sfx_round_end:'assets/audio/sfx_round_end.mp3',
+    // match-result stingers
+    sfx_victory:'assets/audio/sfx_victory.mp3', sfx_defeat:'assets/audio/sfx_defeat.mp3' };
+  const buffers={}; let curSrc=null, curTG=null, curTrack=null, desired='menu', loading=null, loaded=false;
   let sfxOn = localStorage.getItem('dy_sfx')!=='0';
-  let musicOn = localStorage.getItem('dy_music')!=null ? localStorage.getItem('dy_music')==='1' : !!MUSIC_URL;   // default OFF unless a URL exists
+  let musicOn = localStorage.getItem('dy_music')!=='0';      // default ON (real music files now)
   let vol=(parseInt(localStorage.getItem('dy_vol'))||70)/100;
   let sfxVol=(parseInt(localStorage.getItem('dy_sfxvol'))||80)/100;
   function ensure(){
     if(ctx) return;
     try{ ctx=new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return; }
     master=ctx.createGain(); master.gain.value=vol; master.connect(ctx.destination);
-    sfxComp=ctx.createDynamicsCompressor();                 // safety limiter so SFX can be loud without digital clipping
-    sfxComp.threshold.value=-3; sfxComp.knee.value=2; sfxComp.ratio.value=6; sfxComp.attack.value=0.002; sfxComp.release.value=0.15; sfxComp.connect(master);
-    sfxGain=ctx.createGain(); sfxGain.gain.value=sfxOn?sfxVol:0; sfxGain.connect(sfxComp);
-    musicGain=ctx.createGain(); musicGain.gain.value=0.0001; musicGain.connect(master);
+    sfxComp=ctx.createDynamicsCompressor(); sfxComp.threshold.value=-3; sfxComp.knee.value=2; sfxComp.ratio.value=6; sfxComp.attack.value=0.002; sfxComp.release.value=0.15; sfxComp.connect(master);
+    sfxGain=ctx.createGain(); sfxGain.gain.value=sfxOn?sfxVol:0; sfxGain.connect(sfxComp);       // SYNTH sfx (through limiter)
+    fileGain=ctx.createGain(); fileGain.gain.value=sfxOn?sfxVol:0; fileGain.connect(master);      // pre-normalized FILE sfx: no limiter, no per-sound gain comp
+    musicGain=ctx.createGain(); musicGain.gain.value=musicOn?MUSIC_LEVEL:0.0001; musicGain.connect(master);
   }
-  function unlock(){ ensure(); if(!ctx) return; if(ctx.state==='suspended') ctx.resume(); if(!started){ started=true; if(musicOn && MUSIC_URL) startMusic(); } }
+  function loadAudio(){ if(loading) return loading; if(!ctx) return Promise.resolve();
+    loading=Promise.all(Object.entries(AUDIO_SRC).map(async ([k,url])=>{ try{ const r=await fetch(url); const a=await r.arrayBuffer(); buffers[k]=await ctx.decodeAudioData(a); }catch(e){} })).then(()=>{ loaded=true; });
+    return loading;
+  }
+  function unlock(){ ensure(); if(!ctx) return; if(ctx.state==='suspended') ctx.resume(); if(!started){ started=true; loadAudio().then(()=>{ if(musicOn) crossTo(desired,1.5); }); } }
+  // gapless 2-track music: decoded AudioBuffer with loop=true (NOT <audio loop> — that has an MP3 seam gap)
+  function crossTo(name, fade){
+    if(!ctx || !buffers[name] || curTrack===name) return;
+    const src=ctx.createBufferSource(); src.buffer=buffers[name]; src.loop=true;
+    const g=ctx.createGain(); g.gain.value=0.0001; src.connect(g); g.connect(musicGain); src.start();
+    const t=ctx.currentTime; g.gain.linearRampToValueAtTime(1, t+fade);
+    if(curSrc && curTG){ const os=curSrc, og=curTG; og.gain.cancelScheduledValues(t); og.gain.setValueAtTime(Math.max(0.0001,og.gain.value),t); og.gain.linearRampToValueAtTime(0.0001, t+fade); setTimeout(()=>{ try{os.stop();os.disconnect();og.disconnect();}catch(e){} }, (fade+0.3)*1000); }
+    curSrc=src; curTG=g; curTrack=name;
+  }
+  // strictly gesture-driven: do NOT create the AudioContext here (a pre-gesture suspended ctx + pre-started source
+  // raced on resume and could surface the wrong track on Android). Just record the desired track; unlock() plays it.
+  function playTrack(name){ desired=name; if(!ctx||!musicOn) return; if(buffers[name]) crossTo(name,1.5); else loadAudio().then(()=>{ if(musicOn && desired===name) crossTo(name,1.5); }); }
+  function fadeMusicGain(to,secs){ if(!musicGain||!ctx) return; const t=ctx.currentTime; const cur=Math.max(0.0001,musicGain.gain.value); musicGain.gain.cancelScheduledValues(t); musicGain.gain.setValueAtTime(cur,t); musicGain.gain.linearRampToValueAtTime(Math.max(0.0001,to),t+secs); }
+  function duckMusic(factor,hold){ if(!ctx||!musicOn) return; const t=ctx.currentTime; musicGain.gain.cancelScheduledValues(t); musicGain.gain.setValueAtTime(Math.max(0.0001,musicGain.gain.value),t); musicGain.gain.linearRampToValueAtTime(MUSIC_LEVEL*factor,t+0.03); musicGain.gain.linearRampToValueAtTime(MUSIC_LEVEL,t+hold); }
   function noiseBuf(dur){ const n=Math.max(1,Math.floor(ctx.sampleRate*dur)); const b=ctx.createBuffer(1,n,ctx.sampleRate); const d=b.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1; return b; }
   function osc(freq,dur,type,gain,glideTo,delay){
     if(!ctx) return; const t=ctx.currentTime+(delay||0); const o=ctx.createOscillator(), g=ctx.createGain();
@@ -2302,42 +2860,109 @@ const Audio2 = (()=>{
     let node=s; if(filt){ const bf=ctx.createBiquadFilter(); bf.type=filt; bf.frequency.setValueAtTime(f0,t); if(f1) bf.frequency.exponentialRampToValueAtTime(Math.max(20,f1),t+dur); bf.Q.value=filt==='bandpass'?2:0.7; s.connect(bf); node=bf; }
     node.connect(g); g.connect(sfxGain); s.start(t); s.stop(t+dur+0.02);
   }
-  const SFX={   // each layered for body, 150–400ms, distinct silhouettes
-    cardplay:()=>{ nz(0.26,0.5,'bandpass',200,2000); },                                   // fuller whoosh 200→2k
-    damage:  ()=>{ nz(0.12,0.6,'lowpass',900,300); osc(60,0.28,'sine',0.7,40); },         // noise thump + low sine drop 60→40
-    destroy: ()=>{ nz(0.1,0.7,'highpass',1400); nz(0.34,0.5,'bandpass',1200,220,0.03); osc(80,0.4,'sawtooth',0.5,38,0.02); },  // crack + descending debris
-    buff:    ()=>{ osc(523,0.3,'triangle',0.5); osc(784,0.34,'triangle',0.4,0,0.08); osc(1046,0.3,'sine',0.2,0,0.08); },        // two-note chime + harmonic
-    venom:   ()=>{ nz(0.5,0.45,'bandpass',600,3600); },                                   // longer wet hiss sweep
+  const SFX={   // synthesized SFX (all EXCEPT the Astra impact, which is a file)
+    cardplay:()=>{ nz(0.26,0.5,'bandpass',200,2000); },
+    damage:  ()=>{ nz(0.12,0.6,'lowpass',900,300); osc(60,0.28,'sine',0.7,40); },
+    destroy: ()=>{ nz(0.1,0.7,'highpass',1400); nz(0.34,0.5,'bandpass',1200,220,0.03); osc(80,0.4,'sawtooth',0.5,38,0.02); },
+    buff:    ()=>{ osc(523,0.3,'triangle',0.5); osc(784,0.34,'triangle',0.4,0,0.08); osc(1046,0.3,'sine',0.2,0,0.08); },
+    venom:   ()=>{ nz(0.5,0.45,'bandpass',600,3600); },
     shield:  ()=>{ osc(1200,0.5,'triangle',0.4); osc(1808,0.5,'triangle',0.22); osc(2400,0.4,'sine',0.12); },
     surge:   ()=>{ osc(300,0.5,'sawtooth',0.4); osc(319,0.5,'sawtooth',0.36); osc(600,0.4,'square',0.14); },
     leap:    ()=>{ osc(300,0.3,'sine',0.5,900); },
     draw:    ()=>{ nz(0.14,0.4,'highpass',2200); },
-    boom:    ()=>{ osc(70,0.7,'sine',0.9,32); nz(0.5,0.35,'lowpass',260,80); },            // low boom under Mythic/Legendary showcase
+    boom:    ()=>{ osc(70,0.7,'sine',0.9,32); nz(0.5,0.35,'lowpass',260,80); },
     roundwin:()=>[523,659,784].forEach((f,i)=>osc(f,0.42,'triangle',0.5,0,i*0.13)),
     roundloss:()=>[392,294].forEach((f,i)=>osc(f,0.5,'triangle',0.5,0,i*0.18)),
     victory: ()=>[523,659,784,1047].forEach((f,i)=>osc(f,0.5,'triangle',0.55,0,i*0.15)),
     defeat:  ()=>{ osc(140,1.6,'sawtooth',0.5,88); nz(1.2,0.2,'lowpass',300,120); },
   };
-  function duck(){ if(!ctx||!musicEl) return; const t=ctx.currentTime; const cur=Math.max(0.0001,musicGain.gain.value); musicGain.gain.cancelScheduledValues(t); musicGain.gain.setValueAtTime(cur,t); musicGain.gain.linearRampToValueAtTime(cur*0.4,t+0.02); musicGain.gain.linearRampToValueAtTime(musicOn?MUSIC_LEVEL:0.0001,t+0.35); }  // sidechain −8dB
-  function sfx(name){ ensure(); if(sfxOn && SFX[name]){ SFX[name](); duck(); } }
-  function fadeMusic(to,secs){ if(!musicGain||!ctx) return; const t=ctx.currentTime; const cur=Math.max(0.0001,musicGain.gain.value); musicGain.gain.cancelScheduledValues(t); musicGain.gain.setValueAtTime(cur,t); musicGain.gain.linearRampToValueAtTime(Math.max(0.0001,to),t+secs); }
-  function startMusic(){ if(!ctx||!MUSIC_URL||musicEl) return; try{ musicEl=new Audio(MUSIC_URL); musicEl.loop=true; musicEl.crossOrigin='anonymous'; ctx.createMediaElementSource(musicEl).connect(musicGain); musicEl.play().catch(()=>{}); fadeMusic(MUSIC_LEVEL,2); }catch(e){} }
-  function testAll(){ ensure(); if(ctx&&ctx.state==='suspended') ctx.resume(); const names=Object.keys(SFX); names.forEach((n,i)=>setTimeout(()=>{ if(SFX[n]){ SFX[n](); } }, i*650)); return names; }
+  function sfx(name){ ensure(); if(sfxOn && SFX[name]) SFX[name](); }
+  function playFile(name, duck){   // pre-normalized file: no gain compensation, bypasses the synth limiter
+    ensure(); if(!ctx||!sfxOn) return;
+    if(!buffers[name]){ if(loaded) return; loadAudio().then(()=>playFile(name,duck)); return; }   // decode done but still absent (e.g. missing file) → give up silently, never spin
+    const src=ctx.createBufferSource(); src.buffer=buffers[name]; src.connect(fileGain); src.start();
+    if(duck) duckMusic(0.63, 1.5);   // −4dB for 1.5s so the impact reads over music on phone speakers
+  }
+  function astraSfx(cardId){ playFile(cardId==='brahmastra'?'sfx_brahmastra':'sfx_astra', true); }   // Brahmastra gets its own impact
+  function clashSfx(){ playFile('sfx_unit_clash', false); }   // Unit/Hero placement; each call = a fresh source, so back-to-back placements overlap (never cut off)
+  function fileSfx(name){ playFile(name, false); }   // generic pre-normalized file trigger; fresh source each call → overlaps layer (chained destroys never cut off)
+  function stopMusic(fade){   // match end: fade the battle track to silence and stop it — no crossfade to menu (musicGain stays, so menu can resume later)
+    if(!ctx || !curSrc || curTrack==='menu') return;   // never silence menu music (guards re-entry once we're back on faction-select)
+    const t=ctx.currentTime, os=curSrc, og=curTG;
+    og.gain.cancelScheduledValues(t); og.gain.setValueAtTime(Math.max(0.0001,og.gain.value),t); og.gain.linearRampToValueAtTime(0.0001, t+(fade||2));
+    setTimeout(()=>{ try{os.stop();os.disconnect();og.disconnect();}catch(e){} }, ((fade||2)+0.3)*1000);
+    curSrc=null; curTG=null; curTrack=null;
+  }
+  function testAll(){ ensure(); loadAudio(); if(ctx&&ctx.state==='suspended') ctx.resume();
+    const names=Object.keys(SFX).concat(['sfx_astra','sfx_brahmastra','sfx_unit_clash',
+      'sfx_mantra','sfx_heal','sfx_artifact','sfx_venom_apply','sfx_unit_destroy','sfx_leap',
+      'sfx_shield_apply','sfx_shield_break','sfx_chaos_surge','sfx_buff','sfx_debuff','sfx_conch','sfx_round_end','sfx_victory','sfx_defeat']);   // 14 synth + 18 files = 32
+    names.forEach((n,i)=>setTimeout(()=>{ if(SFX[n]) SFX[n](); else playFile(n,false); }, i*650)); return names; }
   return {
-    unlock, sfx, testAll,
-    setRound3:()=>{},                                       // no synthesized percussion (music is file-only now)
+    unlock, sfx, astraSfx, clashSfx, fileSfx, testAll, playTrack, stopMusic,
+    setRound3:()=>{},
     setMusic:(on)=>{ musicOn=on; localStorage.setItem('dy_music',on?'1':'0'); if(!ctx) return;
-      if(on){ if(MUSIC_URL){ if(!musicEl) startMusic(); else fadeMusic(MUSIC_LEVEL,2); } }
-      else { fadeMusic(0.0001,2); setTimeout(()=>{ if(!musicOn && musicEl){ try{musicEl.pause();}catch(e){} } }, 2100); } },
-    setSfx:(on)=>{ sfxOn=on; localStorage.setItem('dy_sfx',on?'1':'0'); if(sfxGain) sfxGain.gain.value=on?sfxVol:0; },
+      if(on){ fadeMusicGain(MUSIC_LEVEL,1.5); if(!curTrack) crossTo(desired,1.5); } else { fadeMusicGain(0.0001,1.5); } },
+    setSfx:(on)=>{ sfxOn=on; localStorage.setItem('dy_sfx',on?'1':'0'); const v=on?sfxVol:0; if(sfxGain) sfxGain.gain.value=v; if(fileGain) fileGain.gain.value=v; },
     setVol:(v)=>{ vol=v; localStorage.setItem('dy_vol',Math.round(v*100)); if(master) master.gain.value=v; },
-    setSfxVol:(v)=>{ sfxVol=v; localStorage.setItem('dy_sfxvol',Math.round(v*100)); if(sfxGain&&sfxOn) sfxGain.gain.value=v; },
-    get musicOn(){return musicOn;}, get sfxOn(){return sfxOn;}, get vol(){return vol;}, get sfxVol(){return sfxVol;}, get hasMusic(){return !!MUSIC_URL;},
+    setSfxVol:(v)=>{ sfxVol=v; localStorage.setItem('dy_sfxvol',Math.round(v*100)); if(sfxOn){ if(sfxGain) sfxGain.gain.value=v; if(fileGain) fileGain.gain.value=v; } },
+    get musicOn(){return musicOn;}, get sfxOn(){return sfxOn;}, get vol(){return vol;}, get sfxVol(){return sfxVol;}, get hasMusic(){return true;},
   };
 })();
-function sfxForEvent(ev){
-  if(ev.type==='toast'){ const a=ev.abilityName; return a==='Chaos Surge'?'surge': a==='Leap'?'leap': a==='Dharma Shield'?'shield': a==='Venom'?'venom': null; }
-  return ({ play:'cardplay', damage:'damage', venom:'venom', buff:'buff', token:'venom', destroy:'destroy', shield:'shield', ward:'buff', revive:'buff' })[ev.type]||null;
+// Resolve an event to EITHER a pre-normalized file ({file}) OR a synth key ({synth}). 'play' is handled in the play branch.
+// Files replace their synth counterparts; everything else stays synth. The Venom DRAIN tick stays synth & quiet;
+// only the Venom Token APPLICATION (type 'token') is a file. Dharma Shield: the 'shield' event plays sfx_shield_apply,
+// so the accompanying 'Dharma Shield' toast is suppressed to avoid a double. 'block' (a protective effect absorbing an
+// astra — immunity / floor-at-1 / Signet) is the engine's shield-consumed signal → sfx_shield_break.
+function resolveSound(ev){
+  if(ev.type==='toast'){ const a=ev.abilityName;
+    if(a==='Chaos Surge') return {file:'sfx_chaos_surge'};
+    if(a==='Leap')        return {file:'sfx_leap'};
+    if(a==='Dharma Shield') return null;                 // shield event carries the sound (avoid double)
+    if(a==='Venom')       return {synth:'venom'};        // drain-tick banner stays synth & quiet
+    return null;
+  }
+  switch(ev.type){
+    case 'shield':  return {file:'sfx_shield_apply'};
+    case 'block':   return {file:'sfx_shield_break'};
+    case 'token':   return {file:'sfx_venom_apply'};     // Venom Token APPLIED (drain tick 'venom' stays synth)
+    case 'destroy': return {file:'sfx_unit_destroy'};    // fresh source each call → chained destroys overlap
+    case 'venom':   return {synth:'venom'};              // per-round Venom drain KEEPS its quiet synth identity
+    case 'buff':    return {file:'sfx_buff'};            // power INCREASE → coalesced blip (see powerChangeSound)
+    case 'damage':  return {file:'sfx_debuff'};          // power DECREASE (non-Venom) → coalesced blip
+    case 'ward':    return {synth:'buff'};               // survival/revival cues stay synth (not a power increase)
+    case 'revive':  return {synth:'buff'};
+    default:        return null;
+  }
+}
+// Power-change blip coalescing (rule 3): ONE blip per (sound, effect) within an event beat — never once per unit —
+// and at most 2 instances of a sound ever overlapping. The batching signal is the runAction event beat: powerBeat is
+// reset per beat, and multi-unit effects share one abilityName across their per-unit events, so they collapse to one key.
+let powerBeatKeys = new Set();
+const powerRecent = { sfx_buff:[], sfx_debuff:[] };
+function resetPowerBeat(){ powerBeatKeys = new Set(); }
+function powerChangeSound(sound, abilityName){
+  const key = sound+'|'+(abilityName||'');
+  if (powerBeatKeys.has(key)) return;                    // same effect already blipped this beat → coalesce to one
+  powerBeatKeys.add(key);
+  const rec = powerRecent[sound]; const now = performance.now(), WIN = 350;   // ~blip length window
+  while (rec.length && now-rec[0] > WIN) rec.shift();
+  if (rec.length >= 2) return;                           // at most 2 of this sound overlapping → drop extras
+  rec.push(now); Audio2.fileSfx(sound);
+}
+function playEventSound(ev){
+  if(ev.type==='buff'){ powerChangeSound('sfx_buff', ev.abilityName); return; }
+  if(ev.type==='damage'){ powerChangeSound('sfx_debuff', ev.abilityName); return; }
+  const s=resolveSound(ev); if(!s) return; if(s.file) Audio2.fileSfx(s.file); else if(s.synth) Audio2.sfx(s.synth);
+}
+// Card-play sound — completes retirement of the synth cardplay: Astra→impact file, Unit/Hero→clash file,
+// Mantra→om chant (Gayatri/Pavamana Deva restoration→healing shimmer), Artifact→artifact file.
+function cardPlaySound(c){
+  if(!c) return;
+  if(c.t==='astra'){ Audio2.astraSfx(c.id); return; }
+  if(c.t==='unit'||c.t==='hero'){ Audio2.clashSfx(); return; }
+  if(c.t==='mantra'){ Audio2.fileSfx((c.id==='gayatri'||c.id==='pavamana')?'sfx_heal':'sfx_mantra'); return; }
+  if(c.t==='artifact'){ Audio2.fileSfx('sfx_artifact'); return; }
 }
 let audioUnlocked=false;
 function unlockAudioOnce(){ if(audioUnlocked)return; audioUnlocked=true; Audio2.unlock();
@@ -2374,9 +2999,15 @@ document.querySelectorAll('#speedseg button').forEach(b=> b.onclick=()=>setSpeed
 $('musictoggle').onclick=()=>{ unlockAudioOnce(); if(!Audio2.hasMusic){ toastMute('Set window.MUSIC_URL to add music'); return; } Audio2.setMusic(!Audio2.musicOn); syncSettingsUI(); updateMuteIcon(); };
 $('sfxtoggle').onclick=()=>{ unlockAudioOnce(); Audio2.setSfx(!Audio2.sfxOn); if(Audio2.sfxOn) Audio2.sfx('buff'); syncSettingsUI(); updateMuteIcon(); };
 $('sfxvol').oninput=e=>{ Audio2.setSfxVol(e.target.value/100); };
-$('sfxvol').onchange=()=>{ unlockAudioOnce(); Audio2.sfx('cardplay'); };   // preview at the new level
+$('sfxvol').onchange=()=>{ unlockAudioOnce(); Audio2.clashSfx(); };   // preview at the new level (a file, so it exercises the file bus)
 $('mastervol').oninput=e=>Audio2.setVol(e.target.value/100);
 $('testsfx').onclick=()=>{ unlockAudioOnce(); const names=Audio2.testAll(); toastMute('Playing '+names.length+' SFX…'); };
+// dev: preview the three impact effects at board center without engineering a real Astra — cardLand → astraBurst → full Mythic lightning, 1.5s apart
+$('testvfx').onclick=()=>{ const R=$('field').getBoundingClientRect(); if(!R.width){ toastMute('Start a match first'); return; }
+  const cx=R.left+R.width*0.5, cy=R.top+R.height*0.5;
+  VFX.cardLand(cx, cy); toastMute('VFX: card land → astra → mythic');
+  setTimeout(()=>{ VFX.astraBurst(cx, cy); Audio2.astraSfx('astra'); }, 1500);
+  setTimeout(()=>{ VFX.astraBurst(cx, cy); VFX.mythic(cx, cy); screenShake(); Audio2.astraSfx('brahmastra'); }, 3000); };
 
 /* ---- opponent "thinking" pause + showcase + result summary + total count-up ---- */
 function aiThinkTime(){
@@ -2421,7 +3052,7 @@ function showResultSummary(evs){
   const txt=summarize(evs); if(!txt) return;
   const el=$('resultsummary'); el.textContent=txt; el.classList.remove('hidden');
   el.style.animation='none'; void el.offsetWidth; el.style.animation='summaryIn .3s ease-out';
-  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.add('hidden'), 2000);
+  clearTimeout(el._t); el._t=setTimeout(()=>el.classList.add('hidden'), 2000*CHOREO_SPEED);
 }
 function animateTotals(){
   return new Promise(res=>{
@@ -2458,7 +3089,7 @@ function posOf(uid, snap){
   if (s) return { el:null, cx:s.left+s.width/2, top:s.top+6, rect:s };
   return null;
 }
-function cDelay(ms){ return new Promise(r=>{ if(choreoSkip) return r(); const t=setTimeout(r, ms*speedMult); choreoTimers.push([t,r]); }); }
+function cDelay(ms){ return new Promise(r=>{ if(choreoSkip) return r(); const t=setTimeout(r, ms*speedMult*CHOREO_SPEED); choreoTimers.push([t,r]); }); }
 function skipChoreo(){ if(!choreoActive) return; choreoSkip=true; choreoTimers.forEach(([t,r])=>{ clearTimeout(t); r(); }); choreoTimers=[]; }
 const FTOAST_CLASS = a => a==='Chaos Surge'?'f-chaos': a==='Dharma Shield'?'f-dharma': a==='Leap'?'f-leap': a==='Venom'?'f-venom':'f-other';
 function factionToast(ability, text){
@@ -2538,15 +3169,110 @@ function leapArcFromText(leaperPos, text){
   const el=[...document.querySelectorAll('#field .bc')].find(e=>((e.querySelector('.mini-name')||{}).textContent||'')===name);
   if(el){ const r=el.getBoundingClientRect(); fxLeapArc(leaperPos, { cx:r.left+r.width/2, rect:r }); }
 }
+function halfCenterClient(pi){ const el=document.querySelector(pi===1?'.half.opp':'.half.me'); if(!el) return null; const r=el.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
+
+/* ---------- IMPACT VFX: sprite particles (board-sized canvas) + midpoint-displacement lightning, event-driven ----------
+   Pre-rendered soft sprites (drawImage, not per-frame gradients), cap 120, DPR≤2, rAF+delta, reduced-motion skip, ×CHOREO_SPEED, no libs. */
+const VFX = (()=>{
+  const CAP=120, DPR=Math.min(2, window.devicePixelRatio||1);
+  let canvas, cx, fieldEl, w=0, h=0, parts=[], bolts=[], tint=null, raf=0, last=0, ready=false;
+  let sGlow=[], sEmber=null, sDust=[], sDark=[];
+  const S=()=> (typeof CHOREO_SPEED!=='undefined'?CHOREO_SPEED:1);
+  function offc(size){ const c=document.createElement('canvas'); c.width=c.height=size; return c; }
+  function makeGlow(stops, size){ const c=offc(size), g=c.getContext('2d'), rg=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2); stops.forEach(([o,col])=>rg.addColorStop(o,col)); g.fillStyle=rg; g.fillRect(0,0,size,size); return c; }
+  function makeBlob(rgb, size, a0){ const c=offc(size), g=c.getContext('2d'); g.globalCompositeOperation='source-over';   // 4 irregular radial lobes at random offsets → non-circular edge
+    for(let k=0;k<4;k++){ const ox=size/2+(Math.random()-.5)*size*0.3, oy=size/2+(Math.random()-.5)*size*0.3, rr=size*(0.26+Math.random()*0.2), rg=g.createRadialGradient(ox,oy,0,ox,oy,rr); rg.addColorStop(0,`rgba(${rgb},${a0})`); rg.addColorStop(.6,`rgba(${rgb},${a0*0.5})`); rg.addColorStop(1,`rgba(${rgb},0)`); g.fillStyle=rg; g.beginPath(); g.arc(ox,oy,rr,0,6.283); g.fill(); }
+    return c; }
+  function initSprites(){
+    sGlow=[ makeGlow([[0,'rgba(255,255,244,1)'],[.28,'rgba(255,246,205,.92)'],[1,'rgba(255,242,190,0)']],64),   // white-yellow (birth)
+            makeGlow([[0,'rgba(255,242,190,1)'],[.32,'rgba(255,204,96,.88)'],[1,'rgba(255,184,64,0)']],64),     // yellow
+            makeGlow([[0,'rgba(255,196,96,1)'],[.38,'rgba(255,132,44,.82)'],[1,'rgba(232,92,22,0)']],64),       // orange
+            makeGlow([[0,'rgba(242,112,44,1)'],[.4,'rgba(198,52,22,.72)'],[1,'rgba(140,32,12,0)']],64),         // deep red
+            makeGlow([[0,'rgba(150,42,22,.9)'],[.5,'rgba(88,26,16,.5)'],[1,'rgba(36,14,10,0)']],64) ];          // dark (death)
+    sEmber=makeGlow([[0,'rgba(255,244,196,1)'],[.4,'rgba(255,176,74,.9)'],[1,'rgba(255,146,52,0)']],16);
+    sDust=[]; sDark=[]; for(let i=0;i<3;i++){ sDust.push(makeBlob('152,134,106',72,.5)); sDark.push(makeBlob('54,52,58',96,.6)); }
+  }
+  function init(){ fieldEl=$('field'); canvas=$('vfxcanvas'); if(!canvas) return; cx=canvas.getContext('2d'); if(!sGlow.length) initSprites(); resize(); ready=true; }
+  function resize(){ if(!canvas||!fieldEl) return; const r=fieldEl.getBoundingClientRect(); w=r.width; h=r.height; canvas.width=Math.max(1,Math.round(w*DPR)); canvas.height=Math.max(1,Math.round(h*DPR)); canvas.style.width=w+'px'; canvas.style.height=h+'px'; }
+  function local(cxp, cyp){ const r=fieldEl.getBoundingClientRect(); return { x:cxp-r.left, y:cyp-r.top }; }
+  function room(){ return CAP-parts.length; }
+  function wake(){ if(!raf){ last=performance.now(); raf=requestAnimationFrame(step); } }
+  function add(p){ if(parts.length>=CAP) parts.shift(); parts.push(p); wake(); }
+  function sprite(img, x, y, size, rot, alpha){ if(alpha<=0) return; cx.globalAlpha=alpha<1?alpha:1; const c=Math.cos(rot||0), s=Math.sin(rot||0); cx.setTransform(DPR*c, DPR*s, -DPR*s, DPR*c, DPR*x, DPR*y); cx.drawImage(img, -size/2, -size/2, size, size); }
+  // midpoint-displacement bolt: straight top→impact, recursively displace midpoints perpendicular; fork 2–3 branches
+  function displace(x1,y1,x2,y2,disp,levels){ let pts=[{x:x1,y:y1},{x:x2,y:y2}];
+    for(let l=0;l<levels;l++){ const np=[]; for(let i=0;i<pts.length-1;i++){ const a=pts[i],b=pts[i+1]; np.push(a); const mx=(a.x+b.x)/2,my=(a.y+b.y)/2,dx=b.x-a.x,dy=b.y-a.y,len=Math.hypot(dx,dy)||1,off=(Math.random()-.5)*disp; np.push({x:mx-dy/len*off,y:my+dx/len*off}); } np.push(pts[pts.length-1]); pts=np; disp*=0.5; }
+    return pts; }
+  function mkBolt(ix,iy){ const sx=ix+(Math.random()-.5)*w*0.16, sy=0, full=Math.hypot(ix-sx,iy-sy)||1;
+    const main=displace(sx,sy,ix,iy,full*0.25,6), branches=[], nb=2+Math.floor(Math.random()*2), base=Math.atan2(iy-sy,ix-sx);
+    for(let k=0;k<nb;k++){ const a=main[1+Math.floor(Math.random()*(main.length-2))], dir=base+(Math.random()<.5?1:-1)*(0.52+Math.random()*0.18), len=full*(0.2+Math.random()*0.2); branches.push(displace(a.x,a.y,a.x+Math.cos(dir)*len,a.y+Math.sin(dir)*len,len*0.25,4)); }
+    return { main, branches, life:0.14, max:0.14 }; }
+  function frame(dt, now){
+    const t=now/1000;
+    cx.setTransform(1,0,0,1,0,0); cx.globalAlpha=1; cx.globalCompositeOperation='source-over'; cx.clearRect(0,0,canvas.width,canvas.height);
+    if(tint){ tint.life-=dt; if(tint.life<=0) tint=null; else { cx.globalAlpha=tint.a*(tint.life/tint.max); cx.fillStyle=tint.color; cx.fillRect(0,0,canvas.width,canvas.height); cx.globalAlpha=1; } }
+    for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.life-=dt; if(p.life<=0){ parts.splice(i,1); continue; }
+      if(p.kind==='smoke'){ p.vy+=(p.g||0)*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.rot+=p.spin*dt; }
+      else { p.vy+=p.buoy*dt; p.vx+=(p.cx0-p.x)*p.inward*dt; p.vy+=(p.cy0-p.y)*p.inward*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; } }
+    // PASS 1 — smoke (normal blend, expand + rotate + curl + fade-in/long-tail)
+    for(const p of parts){ if(p.kind!=='smoke') continue; const age=1-p.life/p.max, sc=1+age*1.5, curl=Math.sin(age*p.curlF+p.curlP)*p.curlA, a=(age<0.1?age/0.1:1-(age-0.1)/0.9)*p.a; sprite(p.sprite, p.x+curl, p.y, p.sz*sc, p.rot, Math.max(0,a)); }
+    // PASS 2 — fire glow / embers / bolts (additive)
+    cx.globalCompositeOperation='lighter';
+    for(const p of parts){ if(p.kind==='smoke') continue; const age=1-p.life/p.max, flick=Math.sin(t*p.flHz+p.flP)*p.flA;
+      if(p.kind==='glow'){ const idx=Math.min(4,Math.floor(age*5)), sc=age<0.2?age/0.2:1-(age-0.2)/0.8*0.85; sprite(sGlow[idx], p.x+flick, p.y, p.sz*Math.max(0.1,sc), 0, Math.min(1,p.life/p.max*1.4)); }
+      else sprite(sEmber, p.x+flick, p.y, p.sz, 0, Math.max(0,p.life/p.max)); }
+    cx.setTransform(DPR,0,0,DPR,0,0); cx.globalAlpha=1; cx.lineCap='round'; cx.lineJoin='round';
+    for(let i=bolts.length-1;i>=0;i--){ const b=bolts[i]; b.life-=dt; if(b.life<=0){ bolts.splice(i,1); continue; } const a=b.life/b.max;
+      for(const st of [[9,`rgba(150,190,255,${.16*a})`],[3.5,`rgba(205,228,255,${.5*a})`],[1,`rgba(255,255,255,${.95*a})`]]){ cx.lineWidth=st[0]; cx.strokeStyle=st[1]; poly(b.main); for(const br of b.branches) poly(br); } }
+    cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
+  }
+  function step(now){
+    const dt=Math.min(0.05,(now-last)/1000); last=now; frame(dt, now);
+    if(parts.length||bolts.length||tint) raf=requestAnimationFrame(step); else { raf=0; cx.clearRect(0,0,canvas.width,canvas.height); }
+  }
+  function poly(pts){ cx.beginPath(); cx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) cx.lineTo(pts[i].x,pts[i].y); cx.stroke(); }
+  function addFire(x,y,ang,sp,sz,life,buoy,inward){ add({ kind:'glow', x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, buoy, inward, cx0:x, cy0:y, flHz:63+Math.random()*30, flP:Math.random()*6.28, flA:2+Math.random()*2, sz, life, max:life }); }
+  function addSmoke(set, x, y, vx, vy, g, sz, life, a){ add({ kind:'smoke', sprite:set[Math.floor(Math.random()*set.length)], x, y, vx, vy, g, rot:Math.random()*6.28, spin:(Math.random()-.5)*.8, curlF:1.5+Math.random(), curlP:Math.random()*6.28, curlA:6+Math.random()*8, sz, life, max:life, a }); }
+  function addEmber(x,y,ang,sp,buoy,life,sz){ add({ kind:'ember', x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, buoy, inward:0, cx0:x, cy0:y, flHz:63+Math.random()*30, flP:Math.random()*6.28, flA:.9+Math.random(), sz, life, max:life }); }
+  // (a) CARD LANDS — warm stone dust + gold embers
+  function cardLand(cxp, cyp){ if(reducedMotion()||!ready) return; const {x,y}=local(cxp,cyp), s=S();
+    for(let i=0;i<Math.min(3,room());i++){ const ang=Math.random()*6.28; addSmoke(sDust, x+(Math.random()*24-12), y+6, Math.cos(ang)*16, -6-Math.random()*8, 1, 20+Math.random()*14, (1.5+Math.random()*.6)*s, .42); }
+    const n=Math.min(8, Math.max(5,5+Math.floor(Math.random()*4)), room()); for(let i=0;i<n;i++){ const ang=-Math.PI/2+(Math.random()-.5)*1.9, sp=40+Math.random()*70; addEmber(x, y+4, ang, sp, 100, .6*s, 4+Math.random()*3); } }
+  // (b) ASTRA BURST — 3 fire populations (additive) + delayed smoke puffs
+  function astraBurst(cxp, cyp){ if(reducedMotion()||!ready) return; const {x,y}=local(cxp,cyp), s=S();
+    for(let i=0;i<Math.min(6,room());i++){ const ang=Math.random()*6.28, sp=20+Math.random()*50; addFire(x,y,ang,sp, 30+Math.random()*16, (.5+Math.random()*.3)*s, -70, 1.2); }   // large soft glows (flame body)
+    for(let i=0;i<Math.min(12,room());i++){ const ang=Math.random()*6.28, sp=70+Math.random()*140; addFire(x,y,ang,sp, 12+Math.random()*10, (.4+Math.random()*.25)*s, -110, 2.0); }  // small hot cores
+    for(let i=0;i<Math.min(8,room());i++){ const ang=-Math.PI/2+(Math.random()-.5)*2.2, sp=60+Math.random()*90; addEmber(x,y,ang,sp,-60,(.6+Math.random()*.5)*s, 5+Math.random()*3.5); }   // rising embers
+    setTimeout(()=>{ if(!ready) return; for(let i=0;i<Math.min(4,room());i++){ const ang=Math.random()*6.28; addSmoke(sDust, x+(Math.random()-.5)*20, y-6, Math.cos(ang)*14, -10-Math.random()*10, -2, 24+Math.random()*18, (1.4+Math.random()*.6)*s, .4); } }, 220*s);   // smoke after the flame peak
+  }
+  // (c) BRAHMASTRA / Mythic — dim → bolt → dark → bolt+flash → afterglow → smoke roll + embers
+  function brahmastraSmoke(ix,iy){ const s=S();
+    for(let i=0;i<Math.min(16,room());i++){ const ang=Math.random()*6.28, spread=30+Math.random()*90; addSmoke(sDark, ix+(Math.random()-.5)*40, iy+(Math.random()-.5)*20, Math.cos(ang)*spread, -6-Math.random()*14, -3, 34+Math.random()*30, (1.6+Math.random()*.8)*s, .55); }   // rolls outward across the board
+    for(let i=0;i<Math.min(8,room());i++){ const ang=-Math.PI/2+(Math.random()-.5)*2, sp=50+Math.random()*90; addEmber(ix,iy,ang,sp,-40,(.7+Math.random()*.5)*s, 6+Math.random()*4); }
+  }
+  function flashDiv(){ const f=$('vfxflash'); if(f){ f.classList.remove('fire'); void f.offsetWidth; f.classList.add('fire'); } }
+  function mythic(cxp, cyp){ if(reducedMotion()||!ready) return; const s=S(); const p=(cxp!=null)?local(cxp,cyp):{x:w*0.5,y:h*0.5}, ix=p.x, iy=p.y;
+    tint={ a:.42, life:.12*s, max:.12*s, color:'#080a16' };  wake();                                   // brief dim
+    setTimeout(()=>{ if(ready){ bolts.push(mkBolt(ix,iy)); wake(); } }, 90*s);                          // bolt 1 (~100ms visible)
+    setTimeout(()=>{ if(ready){ bolts.push(mkBolt(ix,iy)); flashDiv(); wake(); } }, (90+100+60)*s);     // 60ms dark → bolt 2 (new shape) + full-screen flash
+    setTimeout(()=>{ if(ready) brahmastraSmoke(ix,iy); }, (90+100+60+140)*s);                            // afterglow tail (flash div) → smoke + embers
+  }
+  return { init, resize, cardLand, astraBurst, mythic };
+})();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320); }
 async function playEvent(ev, snap){
-  const s=sfxForEvent(ev); if(s) Audio2.sfx(s);
+  playEventSound(ev);
   const src = ev.sourceUid!=null ? posOf(ev.sourceUid, snap) : null;
   if (ev.type==='toast'){ factionToast(ev.abilityName, ev.text); await cDelay(620); return; }
   if (ev.type==='play'){
+    const c=findCardByUid(ev.sourceUid); const isAstra = c && c.t==='astra';
+    const isBody = c && (c.t==='unit'||c.t==='hero');
+    cardPlaySound(c);                             // Astra→impact file · Unit/Hero→clash file · Mantra→om/heal file · Artifact→artifact file (synth cardplay fully retired)
     if(src){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
-    const c=findCardByUid(ev.sourceUid); let hold=700;
-    if(c && (c.r==='L'||c.r==='M')){ hold+=300; screenShake(); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); Audio2.sfx('boom'); }   // Mythic/Legendary: physical weight + low boom
+    if(isBody && src) VFX.cardLand(src.cx, src.rect.top+src.rect.height/2);   // (a) card-lands dust + embers — same beat as the clash SFX
+    if(isAstra){ const tp=halfCenterClient(1-ownerPiOfUid(ev.sourceUid)); if(tp){ VFX.astraBurst(tp.x, tp.y); if(c.r==='M') VFX.mythic(tp.x, tp.y); } }   // (b) fire burst on the sfx_astra beat; (c) Mythic → lightning + flash + smoke
+    let hold=700;
+    if(c && (c.r==='L'||c.r==='M')){ hold+=300; screenShake(); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); if(!isAstra) Audio2.sfx('boom'); }   // non-astra Mythic/Legendary keep the synth boom
     else if(c && c.t==='hero') hold+=300;
     await cDelay(hold); return;
   }
@@ -2576,10 +3302,12 @@ function runAction(mutate, opts={}){
   const evStart = G.events.length;
   mutate();
   const evs = G.events.slice(evStart);
+  resetPowerBeat();   // new event beat — power-change blips coalesce within this batch
   if (reducedMotion() || !evs.length){
     // reduced-motion keeps AUDIO (it's not motion): fire the key sounds, skip the visual choreography.
-    if (evs.some(e=>e.type==='play')) Audio2.sfx('cardplay');
-    if (evs.some(e=>e.type==='destroy')) Audio2.sfx('destroy');
+    const pe=evs.find(e=>e.type==='play'); if(pe) cardPlaySound(findCardByUid(pe.sourceUid));
+    for(const e of evs){ if(e.type==='buff') powerChangeSound('sfx_buff', e.abilityName); else if(e.type==='damage') powerChangeSound('sfx_debuff', e.abilityName); }
+    if (evs.some(e=>e.type==='destroy')) Audio2.fileSfx('sfx_unit_destroy');
     render(); showResultSummary(evs); afterChoreo(); return;
   }
   choreoActive=true; choreoSkip=false;
@@ -2754,7 +3482,7 @@ $('passbtn').onclick=()=>{ if(G.turn===0&&!G.players[0].passed&&!G.over && !chor
 $('loghead').onclick=()=>$('logdrawer').classList.toggle('open');
 $('inspect').onclick=e=>{ if(e.target.id==='inspect' || e.target.closest('.inspect-hint')) closeInspect(); };
 $('hand').addEventListener('scroll', ()=>{ if(focusRaf) return; focusRaf=requestAnimationFrame(()=>{ focusRaf=0; updateFocus(); }); });
-window.addEventListener('resize', ()=>{ if(G){ sizeBoard(); updateFocus(); } });
+window.addEventListener('resize', ()=>{ if(G){ sizeBoard(); updateFocus(); } VFX.resize(); });
 
 function pump(){
   if (G.over) return;
@@ -2767,15 +3495,20 @@ function pump(){
 }
 
 function showGameOver(){
+  recordMatchResult();   // one-shot: bump matches/wins/wins-today telemetry (guarded against re-render)
   const me=G.players[0];
   $('goh').textContent = G.winner===0?'⚔ VICTORY ⚔': G.winner===1?'DEFEAT':'STALEMATE';
   $('gop').textContent = `Final: ${me.roundWins}–${G.players[1].roundWins} across ${G.roundHistory.length} rounds.`;
   $('gameover').classList.remove('hidden');
   Audio2.setRound3(false);
-  Audio2.sfx(G.winner===0?'victory': G.winner===1?'defeat':'roundloss');
+  Audio2.stopMusic(2);   // fade battle music to SILENCE (no crossfade to menu) — result screen plays over silence; menu resumes on return to faction-select
+  if(G.winner===0) Audio2.fileSfx('sfx_victory');        // match-win stinger, immediately on reveal, over the music fade-out
+  else if(G.winner===1) Audio2.fileSfx('sfx_defeat');    // match-loss stinger
+  else Audio2.sfx('roundloss');                          // stalemate keeps the synth cue
 }
 
-showFactionSelect();
+VFX.init();
+showLanding();
 </script>
 </body>
 </html>
