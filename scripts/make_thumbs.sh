@@ -28,14 +28,15 @@ done
 
 echo "Generated $count card thumbnails in $OUT/"
 
-# --- board thumbnails (Realm Introduction banners) ---
+# --- board thumbnails (Realm Introduction vertical banners) ---
 # The seven realm board images in assets/img/ (board_bg + the six board_<realm>.jpg) → assets/thumbs/
-# at 200 px wide, JPEG ~q60 (~15 KB each). RE-RUN this if a board image is replaced.
+# at 320 px wide, JPEG ~q50 (~25-38 KB each). The Realms tab shows these UNCROPPED at ~220 px wide,
+# so 320 px keeps them crisp (incl. on retina). RE-RUN this if a board image is replaced.
 IMG="assets/img"
 bcount=0
 for f in "$IMG"/board_*.jpg; do
   base="$(basename "$f")"
-  sips --resampleWidth 200 -s format jpeg -s formatOptions 60 "$f" --out "$OUT/$base" >/dev/null 2>&1
+  sips --resampleWidth 320 -s format jpeg -s formatOptions 50 "$f" --out "$OUT/$base" >/dev/null 2>&1
   bcount=$((bcount+1))
 done
 echo "Generated $bcount board thumbnails in $OUT/"

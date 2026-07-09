@@ -402,8 +402,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-pass-cap{ font-size:11px; line-height:1.4; color:var(--ink); }
 .fi-note{ font-size:10px; color:var(--ink-dim); font-style:italic; margin-top:14px; line-height:1.4; text-align:center; }
 /* Realms tab */
-.fi-realm-banner{ width:100%; height:120px; border-radius:12px; overflow:hidden; margin:16px 0 10px; cursor:pointer; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.14); }
-.fi-realm-banner img{ width:100%; height:100%; object-fit:cover; object-position:center; display:block; opacity:0; transition:opacity .3s; }
+.fi-realm-banner{ width:60%; max-width:230px; margin:16px auto 10px; border-radius:12px; overflow:hidden; cursor:pointer; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.16); }   /* vertical: whole board, small — border-color set inline to the realm accent */
+.fi-realm-banner img{ width:100%; height:auto; display:block; opacity:0; transition:opacity .3s; }   /* native portrait aspect, UNCROPPED — no object-fit, no fixed height */
 .fi-realm-banner img.on{ opacity:1; }
 .fi-realm-banner:active{ transform:scale(.99); }
 .fi-realm-head{ margin-bottom:3px; }
@@ -2701,7 +2701,7 @@ function fiRenderRealms(){
   ));
   REALMS.forEach((id,i)=>{
     const info=REALM_INFO[id], C=FI_REALM_CONTENT[id], hex=REALM_ACCENT[id];
-    const banner=fh('div',{class:'fi-realm-banner', onclick:()=>fiOpenBoardInspect(i)});   // tap → full board in the inspect view
+    const banner=fh('div',{class:'fi-realm-banner', style:`border-color:${hex}59`, onclick:()=>fiOpenBoardInspect(i)});   // tap → full board in the inspect view; thin accent border at low opacity
     const bimg=new Image(); bimg.alt=info.name; bimg.onload=()=>bimg.classList.add('on'); bimg.src=fiBoardThumb(id);
     banner.append(bimg); node.append(banner);
     node.append(fh('div',{class:'fi-realm-head'},
