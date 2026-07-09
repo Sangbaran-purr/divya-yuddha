@@ -401,9 +401,15 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-pass-cap{ font-size:11px; line-height:1.4; color:var(--ink); }
 .fi-note{ font-size:10px; color:var(--ink-dim); font-style:italic; margin-top:14px; line-height:1.4; text-align:center; }
 #fi-inspect{ z-index:96; background:rgba(4,3,1,.93); flex-direction:column; padding:24px 16px; cursor:pointer; }
-.fi-insp-frame{ max-width:min(80vw,340px); max-height:62vh; border-radius:12px; box-shadow:0 8px 40px rgba(0,0,0,.7); display:block; }
+.fi-insp-inner{ display:flex; flex-direction:column; align-items:center; max-width:100%; }
+.fi-insp-count{ font-family:Cinzel,serif; font-size:12px; letter-spacing:2px; color:var(--gold); margin-bottom:10px; text-shadow:0 1px 4px #000; }
+.fi-insp-stage{ display:flex; align-items:center; justify-content:center; min-height:130px; min-width:130px; cursor:pointer; }
+.fi-nav{ position:fixed; top:50%; transform:translateY(-50%); z-index:98; width:44px; height:44px; border-radius:10px; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.2); color:var(--gold); font-size:26px; line-height:1; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
+.fi-nav.prev{ left:8px; } .fi-nav.next{ right:8px; }
+.fi-nav:active{ transform:translateY(-50%) scale(.9); }
+.fi-insp-frame{ max-width:min(76vw,330px); max-height:60vh; border-radius:12px; box-shadow:0 8px 40px rgba(0,0,0,.7); display:block; }
 .fi-insp-spin{ width:34px; height:34px; border:3px solid rgba(255,255,255,.2); border-top-color:var(--gold); border-radius:50%; animation:fiSpin .8s linear infinite; }
-.fi-insp-txt{ max-width:min(80vw,340px); margin-top:12px; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.16); border-radius:10px; padding:11px 13px; text-align:center; }
+.fi-insp-txt{ max-width:min(76vw,330px); margin-top:12px; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.16); border-radius:10px; padding:11px 13px; text-align:center; }
 .fi-insp-nm{ font-family:Cinzel,serif; font-size:15px; font-weight:700; }
 .fi-insp-meta{ font-size:10px; letter-spacing:1px; color:var(--ink-dim); margin:4px 0 7px; }
 .fi-insp-eff{ font-size:12px; line-height:1.45; color:var(--ink); }
@@ -2443,31 +2449,60 @@ function fiGalleryOrder(faction){
     ...d.filter(c=>c.t==='artifact')
   ];
 }
-/* --- card inspect (full frame on demand, session-cached by the browser) --- */
-const fiLoadedFrames = new Set();
-function fiInspect(c, faction){
-  const ov=$('fi-inspect'); ov.innerHTML='';
-  ov.append(fh('div',{class:'fi-insp-spin'}));
-  ov.classList.remove('hidden');
-  const src=fiArtStem(c, faction);
-  const img=new Image(); img.className='fi-insp-frame'; img.alt=c.n;
-  img.onload=()=>{ fiLoadedFrames.add(src); ov.innerHTML='';
-    ov.append(img);
-    const meta=fh('div',{class:'fi-insp-txt'},
-      fh('div',{class:'fi-insp-nm', style:`color:${FI_FAC_HEX[faction]}`}, c.n),
-      fh('div',{class:'fi-insp-meta'}, `${RARITY_NAME[c.r].toUpperCase()} · ${c.t.toUpperCase()}${c.p>0?' · POWER '+c.p:''}`),
-      fh('div',{class:'fi-insp-eff'}, c.txt||'—')   // engine card text, live
-    );
-    ov.append(meta);
-    ov.append(fh('div',{class:'fi-insp-hint'}, 'tap anywhere to close'));
-  };
-  img.onerror=()=>{ ov.innerHTML=''; ov.append(fh('div',{class:'fi-insp-txt'}, fh('div',{class:'fi-insp-eff'},'Card frame unavailable.')), fh('div',{class:'fi-insp-hint'},'tap anywhere to close')); };
+/* --- card inspect + in-view navigation across the faction's 22 revealed cards (gallery order) --- */
+const fiLoadedFrames = new Set();   // srcs whose full frame has finished loading (browser also HTTP-caches)
+const fiFrameCache = {};            // off-DOM preload Image objects (kept alive so N±1 neighbors stay warm)
+let fiInspState = null, fiInspEls = null, fiSwiped = false, fiTouchX = null, fiTouchY = null;
+function fiPreload(src){ if(fiFrameCache[src]) return; const img=new Image(); fiFrameCache[src]=img; img.onload=()=>fiLoadedFrames.add(src); img.src=src; }
+function fiShowCard(){
+  const st=fiInspState, {order,faction}=st, idx=st.idx, c=order[idx], n=order.length, src=fiArtStem(c,faction);
+  fiInspEls.count.textContent = `${idx+1} / ${n}`;
+  fiInspEls.txt.replaceChildren(
+    fh('div',{class:'fi-insp-nm', style:`color:${FI_FAC_HEX[faction]}`}, c.n),
+    fh('div',{class:'fi-insp-meta'}, `${RARITY_NAME[c.r].toUpperCase()} · ${c.t.toUpperCase()}${c.p>0?' · POWER '+c.p:''}`),
+    fh('div',{class:'fi-insp-eff'}, c.txt||'—')   // engine card text, live
+  );
+  const stage=fiInspEls.stage, img=new Image(); img.className='fi-insp-frame'; img.alt=c.n;
+  const isCurrent=()=> fiInspState && fiArtStem(fiInspState.order[fiInspState.idx],fiInspState.faction)===src;
+  img.onload=()=>{ fiLoadedFrames.add(src); if(isCurrent()) stage.replaceChildren(img); };
+  img.onerror=()=>{ if(isCurrent()) stage.replaceChildren(fh('div',{class:'fi-insp-eff'},'Card frame unavailable.')); };
+  if(fiLoadedFrames.has(src)) stage.replaceChildren(img);                 // cached → no spinner
+  else stage.replaceChildren(fh('div',{class:'fi-insp-spin'}));           // uncached → spinner until onload
   img.src=src;
+  fiPreload(fiArtStem(order[(idx+1)%n],faction));                         // preload neighbors only (lazy)
+  fiPreload(fiArtStem(order[(idx-1+n)%n],faction));
 }
-$('fi-inspect').onclick=()=>$('fi-inspect').classList.add('hidden');
+function fiNav(delta){ if(!fiInspState) return; const n=fiInspState.order.length; fiInspState.idx=(fiInspState.idx+delta+n)%n; fiShowCard(); }   // wrap-around
+function fiCloseInspect(){ $('fi-inspect').classList.add('hidden'); }
+function fiOpenInspect(faction, idx){
+  fiInspState={ faction, order:fiGalleryOrder(faction), idx };
+  const swallow=e=>e.stopPropagation();
+  const navClick=d=>e=>{ e.stopPropagation(); if(fiSwiped){ fiSwiped=false; return; } fiNav(d); };
+  const prev=fh('button',{class:'fi-nav prev', title:'previous', onclick:navClick(-1)}, '‹');
+  const next=fh('button',{class:'fi-nav next', title:'next', onclick:navClick(1)}, '›');
+  const count=fh('div',{class:'fi-insp-count'});
+  const stage=fh('div',{class:'fi-insp-stage', onclick:navClick(1)});     // tap card = next
+  const txt=fh('div',{class:'fi-insp-txt', onclick:swallow});             // dead-zone (reading) — never closes
+  const hint=fh('div',{class:'fi-insp-hint'}, '‹ › or swipe · tap outside to close');
+  const inner=fh('div',{class:'fi-insp-inner', onclick:swallow}, count, stage, txt, hint);
+  $('fi-inspect').replaceChildren(prev, next, inner);
+  fiInspEls={ count, stage, txt };
+  fiShowCard();
+  $('fi-inspect').classList.remove('hidden');
+}
+function fiOpenInspectCard(faction, c){ const order=fiGalleryOrder(faction); fiOpenInspect(faction, Math.max(0, order.findIndex(x=>x.id===c.id))); }
+// persistent inspect handlers (attached ONCE; the shell is rebuilt per open but #fi-inspect is stable)
+(()=>{ const ov=$('fi-inspect');
+  ov.onclick=e=>{ if(fiSwiped){ fiSwiped=false; return; } if(e.target===ov) fiCloseInspect(); };   // only the backdrop closes
+  ov.addEventListener('touchstart', e=>{ if(e.touches.length===1){ fiTouchX=e.touches[0].clientX; fiTouchY=e.touches[0].clientY; fiSwiped=false; } }, {passive:true});
+  ov.addEventListener('touchend', e=>{ if(fiTouchX==null) return; const t=e.changedTouches[0], dx=t.clientX-fiTouchX, dy=t.clientY-fiTouchY; fiTouchX=null;
+    if(Math.abs(dx)>=50 && Math.abs(dx)>Math.abs(dy)){ fiSwiped=true; fiNav(dx<0?1:-1); } });   // swipe left = next, right = prev; vertical ignored
+  document.addEventListener('keydown', e=>{ if($('fi-inspect').classList.contains('hidden')) return;
+    if(e.key==='ArrowLeft') fiNav(-1); else if(e.key==='ArrowRight') fiNav(1); else if(e.key==='Escape') fiCloseInspect(); });
+})();
 /* --- renderers --- */
 function fiThumb(c, faction, cls){
-  const wrap=fh('div',{class:cls, onclick:(e)=>{ e.stopPropagation(); fiInspect(c,faction); }});
+  const wrap=fh('div',{class:cls, onclick:(e)=>{ e.stopPropagation(); fiOpenInspectCard(faction, c); }});
   const img=new Image(); img.alt=c.n; img.onload=()=>img.classList.add('on'); img.src=fiThumbSrc(c,faction);
   wrap.append(img); return wrap;
 }
@@ -2476,8 +2511,8 @@ function fiRenderGallery(faction){
   const grid=fh('div',{class:'fi-gallery'});
   const loading=fh('div',{class:'fi-loading'}, fh('div',{class:'fi-spin'}), 'Summoning the roster…');
   let done=0; const finish=()=>{ if(++done>=cards.length) loading.remove(); };
-  cards.forEach(c=>{
-    const wrap=fh('div',{class:'fi-thumb', onclick:()=>fiInspect(c,faction)});
+  cards.forEach((c,i)=>{
+    const wrap=fh('div',{class:'fi-thumb', onclick:()=>fiOpenInspect(faction, i)});
     const img=new Image(); img.alt=c.n; img.onload=()=>{ img.classList.add('on'); finish(); }; img.onerror=finish; img.src=fiThumbSrc(c,faction);
     wrap.append(img); grid.append(wrap);
   });
