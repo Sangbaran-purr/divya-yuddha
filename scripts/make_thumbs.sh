@@ -26,5 +26,17 @@ for f in "$SRC"/*.png; do
   count=$((count+1))
 done
 
-echo "Generated $count thumbnails in $OUT/"
+echo "Generated $count card thumbnails in $OUT/"
+
+# --- board thumbnails (Realm Introduction banners) ---
+# The seven realm board images in assets/img/ (board_bg + the six board_<realm>.jpg) → assets/thumbs/
+# at 200 px wide, JPEG ~q60 (~15 KB each). RE-RUN this if a board image is replaced.
+IMG="assets/img"
+bcount=0
+for f in "$IMG"/board_*.jpg; do
+  base="$(basename "$f")"
+  sips --resampleWidth 200 -s format jpeg -s formatOptions 60 "$f" --out "$OUT/$base" >/dev/null 2>&1
+  bcount=$((bcount+1))
+done
+echo "Generated $bcount board thumbnails in $OUT/"
 du -sh "$OUT" 2>/dev/null || true

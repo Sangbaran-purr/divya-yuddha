@@ -401,6 +401,18 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-pass-icon svg{ width:24px; height:24px; }
 .fi-pass-cap{ font-size:11px; line-height:1.4; color:var(--ink); }
 .fi-note{ font-size:10px; color:var(--ink-dim); font-style:italic; margin-top:14px; line-height:1.4; text-align:center; }
+/* Realms tab */
+.fi-realm-banner{ width:100%; height:120px; border-radius:12px; overflow:hidden; margin:16px 0 10px; cursor:pointer; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.14); }
+.fi-realm-banner img{ width:100%; height:100%; object-fit:cover; object-position:center; display:block; opacity:0; transition:opacity .3s; }
+.fi-realm-banner img.on{ opacity:1; }
+.fi-realm-banner:active{ transform:scale(.99); }
+.fi-realm-head{ margin-bottom:3px; }
+.fi-realm-nm{ font-family:Cinzel,serif; font-weight:700; font-size:18px; letter-spacing:1px; text-shadow:0 1px 6px rgba(0,0,0,.9); }
+.fi-realm-ep{ font-family:Cinzel,serif; font-size:11px; color:var(--ink-dim); letter-spacing:.5px; }
+.fi-realm-mood{ font-size:12px; font-style:italic; color:var(--ink); margin-bottom:10px; line-height:1.4; text-shadow:0 1px 5px rgba(0,0,0,.85); }
+.fi-realm-tip{ margin-top:10px; background:linear-gradient(rgba(60,44,12,.5),rgba(30,22,8,.45)); border:1px solid var(--gold-dim); border-radius:10px; padding:9px 12px; font-size:11.5px; line-height:1.4; color:var(--hi); }
+.fi-realm-tip b{ color:var(--gold); font-family:Cinzel,serif; font-size:9px; letter-spacing:1px; display:block; margin-bottom:3px; }
+.fi-realm-sep{ height:1px; background:rgba(255,255,255,.1); margin:22px 0 4px; }
 #fi-inspect{ z-index:96; background:rgba(4,3,1,.93); flex-direction:column; padding:24px 16px; cursor:pointer; }
 .fi-insp-inner{ display:flex; flex-direction:column; align-items:center; max-width:100%; }
 .fi-insp-count{ font-family:Cinzel,serif; font-size:12px; letter-spacing:2px; color:var(--gold); margin-bottom:10px; text-shadow:0 1px 4px #000; }
@@ -710,7 +722,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
         <span class="mode-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
       </button>
       <button class="mode active" id="mode-factions">
-        <div class="mode-main"><div class="mode-title">Faction Introduction</div><div class="mode-cap">Meet the four armies</div></div>
+        <div class="mode-main"><div class="mode-title">Faction Introduction</div><div class="mode-cap">Meet the armies and the realms</div></div>
         <span class="mode-chev">›</span>
       </button>
       <button class="mode locked" data-soon>
@@ -730,6 +742,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
       <button class="fi-tab" data-tab="asuras">Asuras</button>
       <button class="fi-tab" data-tab="vanaras">Vanaras</button>
       <button class="fi-tab" data-tab="nagas">Nagas</button>
+      <button class="fi-tab" data-tab="realms">Realms</button>
     </div>
     <div id="fi-body"></div>
   </div>
@@ -2184,7 +2197,7 @@ const REALM_BOARDS = {
   kalki:     { img:'assets/img/board_kalki.jpg',  overlay:.32 /* , ambience:'assets/audio/amb_kalki.mp3'  */ },   // dark ash floor (Patala-class darkness)
   yaksha:    { img:'assets/img/board_yaksha.jpg', overlay:.33 /* , ambience:'assets/audio/amb_yaksha.mp3' */ },
   rishi:     { img:'assets/img/board_rishi.jpg',  overlay:.32 /* , ambience:'assets/audio/amb_rishi.mp3'  */ },
-  gandharva: { img:'assets/img/board_gandharva.jpg', overlay:.32 /* , ambience:'assets/audio/amb_gandharva.mp3' */ },   // lightest (tan stage) — deepen if it competes; asset pending → 404s to board_bg until it lands
+  gandharva: { img:'assets/img/board_gandharva.jpg', overlay:.40 /* , ambience:'assets/audio/amb_gandharva.mp3' */ },   // lightest (tan stage) → deeper overlay so badges read; asset pending → 404s to board_bg until it lands
 };
 const boardImgLoaded = {};   // per-session cache: img URL → true once decoded (a rematch in the same realm never refetches)
 function applyRealmBoard(realm){
@@ -2486,7 +2499,15 @@ const fiLoadedFrames = new Set();   // srcs whose full frame has finished loadin
 const fiFrameCache = {};            // off-DOM preload Image objects (kept alive so N±1 neighbors stay warm)
 let fiInspState = null, fiInspEls = null, fiSwiped = false, fiTouchX = null, fiTouchY = null;
 function fiPreload(src){ if(fiFrameCache[src]) return; const img=new Image(); fiFrameCache[src]=img; img.onload=()=>fiLoadedFrames.add(src); img.src=src; }
+function fiStageFrame(src, alt, isCurrent){   // shared: spinner-if-uncached → swap the full frame in when loaded
+  const stage=fiInspEls.stage, img=new Image(); img.className='fi-insp-frame'; img.alt=alt;
+  img.onload=()=>{ fiLoadedFrames.add(src); if(isCurrent()) stage.replaceChildren(img); };
+  img.onerror=()=>{ if(isCurrent()) stage.replaceChildren(fh('div',{class:'fi-insp-eff'},'Image unavailable.')); };
+  if(fiLoadedFrames.has(src)) stage.replaceChildren(img); else stage.replaceChildren(fh('div',{class:'fi-insp-spin'}));
+  img.src=src;
+}
 function fiShowCard(){
+  if(fiInspState.mode==='board') return fiShowBoard();
   const st=fiInspState, {order,faction}=st, idx=st.idx, c=order[idx], n=order.length, src=fiArtStem(c,faction);
   fiInspEls.count.textContent = `${idx+1} / ${n}`;
   fiInspEls.txt.replaceChildren(
@@ -2494,35 +2515,41 @@ function fiShowCard(){
     fh('div',{class:'fi-insp-meta'}, `${RARITY_NAME[c.r].toUpperCase()} · ${c.t.toUpperCase()}${c.p>0?' · POWER '+c.p:''}`),
     fh('div',{class:'fi-insp-eff'}, c.txt||'—')   // engine card text, live
   );
-  const stage=fiInspEls.stage, img=new Image(); img.className='fi-insp-frame'; img.alt=c.n;
-  const isCurrent=()=> fiInspState && fiArtStem(fiInspState.order[fiInspState.idx],fiInspState.faction)===src;
-  img.onload=()=>{ fiLoadedFrames.add(src); if(isCurrent()) stage.replaceChildren(img); };
-  img.onerror=()=>{ if(isCurrent()) stage.replaceChildren(fh('div',{class:'fi-insp-eff'},'Card frame unavailable.')); };
-  if(fiLoadedFrames.has(src)) stage.replaceChildren(img);                 // cached → no spinner
-  else stage.replaceChildren(fh('div',{class:'fi-insp-spin'}));           // uncached → spinner until onload
-  img.src=src;
+  fiStageFrame(src, c.n, ()=> fiInspState.mode==='card' && fiArtStem(fiInspState.order[fiInspState.idx],fiInspState.faction)===src);
   fiPreload(fiArtStem(order[(idx+1)%n],faction));                         // preload neighbors only (lazy)
   fiPreload(fiArtStem(order[(idx-1+n)%n],faction));
 }
+function fiBoardImg(id){ return (REALM_BOARDS[id]||BOARD_FALLBACK).img; }
+function fiShowBoard(){
+  const st=fiInspState, idx=st.idx, id=st.order[idx], n=st.order.length, src=fiBoardImg(id), info=REALM_INFO[id];
+  fiInspEls.count.textContent = `${idx+1} / ${n}`;
+  fiInspEls.txt.replaceChildren(
+    fh('div',{class:'fi-insp-nm', style:`color:${REALM_ACCENT[id]}`}, info.name),
+    fh('div',{class:'fi-insp-eff'}, info.fx)   // engine REALM_INFO effect text, live
+  );
+  fiStageFrame(src, info.name, ()=> fiInspState.mode==='board' && fiBoardImg(fiInspState.order[fiInspState.idx])===src);
+  fiPreload(fiBoardImg(st.order[(idx+1)%n]));                             // preload neighbor boards only (lazy)
+  fiPreload(fiBoardImg(st.order[(idx-1+n)%n]));
+}
 function fiNav(delta){ if(!fiInspState) return; const n=fiInspState.order.length; fiInspState.idx=(fiInspState.idx+delta+n)%n; fiShowCard(); }   // wrap-around
 function fiCloseInspect(){ $('fi-inspect').classList.add('hidden'); }
-function fiOpenInspect(faction, idx){
-  fiInspState={ faction, order:fiGalleryOrder(faction), idx };
+function fiBuildInspShell(){   // arrows + counter + stage + text + hint; reused by card and board inspect
   const swallow=e=>e.stopPropagation();
   const navClick=d=>e=>{ e.stopPropagation(); if(fiSwiped){ fiSwiped=false; return; } fiNav(d); };
   const prev=fh('button',{class:'fi-nav prev', title:'previous', onclick:navClick(-1)}, '‹');
   const next=fh('button',{class:'fi-nav next', title:'next', onclick:navClick(1)}, '›');
   const count=fh('div',{class:'fi-insp-count'});
-  const stage=fh('div',{class:'fi-insp-stage', onclick:navClick(1)});     // tap card = next
+  const stage=fh('div',{class:'fi-insp-stage', onclick:navClick(1)});     // tap = next
   const txt=fh('div',{class:'fi-insp-txt', onclick:swallow});             // dead-zone (reading) — never closes
   const hint=fh('div',{class:'fi-insp-hint'}, '‹ › or swipe · tap outside to close');
   const inner=fh('div',{class:'fi-insp-inner', onclick:swallow}, count, stage, txt, hint);
   $('fi-inspect').replaceChildren(prev, next, inner);
   fiInspEls={ count, stage, txt };
-  fiShowCard();
   $('fi-inspect').classList.remove('hidden');
 }
+function fiOpenInspect(faction, idx){ fiInspState={ mode:'card', faction, order:fiGalleryOrder(faction), idx }; fiBuildInspShell(); fiShowCard(); }
 function fiOpenInspectCard(faction, c){ const order=fiGalleryOrder(faction); fiOpenInspect(faction, Math.max(0, order.findIndex(x=>x.id===c.id))); }
+function fiOpenBoardInspect(idx){ fiInspState={ mode:'board', order:[...REALMS], idx }; fiBuildInspShell(); fiShowCard(); }   // navigates between the 7 realm boards
 // persistent inspect handlers (attached ONCE; the shell is rebuilt per open but #fi-inspect is stable)
 (()=>{ const ov=$('fi-inspect');
   ov.onclick=e=>{ if(fiSwiped){ fiSwiped=false; return; } if(e.target===ov) fiCloseInspect(); };   // only the backdrop closes
@@ -2632,11 +2659,71 @@ function fiRenderFaction(faction){
   if(C.matchupNote) node.append(fh('div',{class:'fi-note'}, C.matchupNote));
   return node;
 }
+/* --- Realms tab: prose verbatim from docs/realm_intro_content.md; the EFFECT line is REALM_INFO[id].fx at runtime (never hand-typed) --- */
+const REALM_ACCENT = { swarga:'#e8c95a', mrityulok:'#c9a86b', patala:'#2dd4b8', gandharva:'#a78bda', yaksha:'#4fae8a', rishi:'#8fa3c8', kalki:'#9db4c9' };
+const FI_REALM_INTRO = `Every match is fought in one of seven Cosmic Realms, drawn at random as the armies assemble. The realm bends the rules for BOTH players equally — the edge goes to whoever reads it faster. When the realm is revealed, adjust your plan before your first card, not after.`;
+const FI_REALM_CONTENT = {
+  swarga: { epithet:`Realm of Gods and Divine Power`, mood:`The high court of the Devas. Even your enemies stand taller here.`,
+    thrives:[`Hero-anchored plans — every Hero on both sides carries +1 all match`,`Hanuman decks especially: the game's largest Hero grows larger still`,`Rounds you intend to win with your Hero on the board`],
+    suffers:[`Nobody directly — the blessing is even-handed`,`But Hero-removal gains value: the bigger the Heroes, the more Sudarshana-style answers swing the match`,`Plans that bench the Hero waste the realm entirely`],
+    tip:`The +1 is symmetric — the realm doesn't pick a winner, it raises the stakes on whose Hero survives.` },
+  mrityulok: { epithet:`The Mortal Plane of Karma and War`, mood:`No gods intervene here. Only the armies, and what they've earned.`,
+    thrives:[`Fundamentals — the better deck and the better round plan, with no modifier to hide behind`,`Factions on the strong side of a counter matchup: nothing here softens the Naga grip on Devas`],
+    suffers:[`Whoever needed the realm's help — there is none`,`Devas facing Nagas: the designed counter bites at full strength`],
+    tip:`The no-effect realm is not the no-strategy realm. With nothing to leverage, the round economy IS the whole game here — reread How to Win.` },
+  patala: { epithet:`Dark Depths of the Serpent Kings`, mood:`The serpent kings sharpen every blade brought into their halls — even their enemies'.`,
+    thrives:[`Astra aggression: damage-dealing Astras hit +1 harder`,`Asuras (Pashupatastra) and Vanaras (Lanka Dahan) — the factions carrying the game's damage Astras`,`Asura amplifiers stack: a Chandrahas-doubled opening Astra in Patala is the hardest single hit in the game`],
+    suffers:[`Boards of mid-power Units — what survived elsewhere dies here`,`Devas: bigger incoming hits make every un-shielded unit a liability`,`Note the irony: the Naga home realm boosts weapons, not Venom — Nagas gain nothing from their own kingdom`],
+    tip:`Count your opponent's damage Astras before committing a round — each one is worth 1 more here than your instincts say.` },
+  gandharva: { epithet:`Plane of Sages, Mantras, and Wisdom`, mood:`The sages give freely — to both sides. Knowledge is never a weapon until someone makes it one.`,
+    thrives:[`Long-game factions: more total cards means longer rounds 2 and 3 — every extra turn is another Venom tick for Nagas`,`Combo assembly: the extra draw digs toward your Rama Naam, your Mrityunjaya, your missing piece`,`Round-1 conceders: the refill softens the cost of a cheap surrender`],
+    suffers:[`Card-advantage grinders: out-carding the enemy matters less when both hands refill deeper`,`Short-round tempo plans — the realm stretches the match against you`],
+    tip:`The extra card arrives entering Round 2 — plan Round 1 knowing both of you get a partial refund on whatever it costs.` },
+  yaksha: { epithet:`Vault of Celestial Treasures and Secrets`, mood:`In Kubera's vault, nothing placed is ever taken. Choose what you lock away with care.`,
+    thrives:[`Artifact engines, above all Patala Throne: its escalating drain runs the whole match untouchable — this is the Throne's dream realm`,`Kishkindha Crown, Ananta Coil, Amrita Kalasha — every passive engine runs uncontested`,`Nagas and any Mythic-artifact deck`],
+    suffers:[`Devas specifically: Vishwakarma's artifact-destruction is blank here — the game's only artifact answer does not work`,`Anyone whose plan against Artifacts was "destroy it"`,`(Tripura is NOT saved by this realm — it ends when any Astra is played, which is its own bargain, not destruction)`],
+    tip:`If you carry an Artifact, play it early and without fear. If your opponent does, your only answer left is winning faster.` },
+  rishi: { epithet:`Dancers, Warriors, and Cosmic Music`, mood:`In the amphitheater of the cosmos, every verse is sung twice.`,
+    thrives:[`The biggest Mantras gain the most: Rama Naam twice is two board-wide surges — the realm's single largest prize`,`Nagas: Mrityunjaya twice means two corrupted revivals; Sarpa Satra twice, two board drains`,`Devas defensively: Pavamana twice is a double cleanse — Venom's worst nightmare doubled`],
+    suffers:[`Tempo plans that end matches before Mantras matter`,`Nagas AND anti-Nagas both spike here — whoever times their doubled Mantra for the deciding round wins the exchange`],
+    tip:`Your 2-per-deck Mantras become up to 4 casts. Spend the first cast freely; save the return for the round that decides the match.` },
+  kalki: { epithet:`Future Battlefield of the Final Avatar`, mood:`The last battlefield rewards the one who strikes last.`,
+    thrives:[`Patience: the player who passes LAST plays the last card — and its +2`,`Big closers: end the round on a fat Unit or Hero and bank the blessing`,`Protectors: a Dharma Shield on your closer guarantees the +2 lands (the bonus is lost if the last card dies before round end)`],
+    suffers:[`Early passers: conceding the round also gifts the enemy a free +2`,`Fragile closers — removal on the last card played erases the blessing`],
+    tip:`This realm turns every pass into a bid. The question each turn is no longer "should I pass?" but "can I afford to let them have the last word?"` },
+};
+function fiBoardThumb(id){ return fiBoardImg(id).replace('assets/img/','assets/thumbs/'); }
+function fiRenderRealms(){
+  const node=fh('div',null);
+  node.append(fh('div',{class:'fi-idhead'},
+    fh('div',{class:'fi-facname', style:'color:var(--gold); font-size:24px; letter-spacing:3px;'}, 'REALMS'),
+    fh('div',{class:'fi-tagline'}, FI_REALM_INTRO)
+  ));
+  REALMS.forEach((id,i)=>{
+    const info=REALM_INFO[id], C=FI_REALM_CONTENT[id], hex=REALM_ACCENT[id];
+    const banner=fh('div',{class:'fi-realm-banner', onclick:()=>fiOpenBoardInspect(i)});   // tap → full board in the inspect view
+    const bimg=new Image(); bimg.alt=info.name; bimg.onload=()=>bimg.classList.add('on'); bimg.src=fiBoardThumb(id);
+    banner.append(bimg); node.append(banner);
+    node.append(fh('div',{class:'fi-realm-head'},
+      fh('span',{class:'fi-realm-nm', style:`color:${hex}`}, info.name),
+      fh('span',{class:'fi-realm-ep'}, ` — ${C.epithet}`)));
+    node.append(fh('div',{class:'fi-realm-mood'}, C.mood));
+    node.append(fh('div',{class:'fi-panel'}, fh('div',{class:'fi-panel-h', style:`color:${hex}`}, 'REALM EFFECT'), fh('p',null, info.fx)));   // runtime engine fx
+    const tUL=fh('ul'); C.thrives.forEach(s=>tUL.append(fh('li',null,s)));
+    const sUL=fh('ul'); C.suffers.forEach(s=>sUL.append(fh('li',null,s)));
+    node.append(fh('div',{class:'fi-sw'},
+      fh('div',{class:'fi-strength'}, fh('div',{class:'fi-panel-h'},'THRIVES HERE'), tUL),
+      fh('div',{class:'fi-weak'}, fh('div',{class:'fi-panel-h'},'SUFFERS HERE'), sUL)));
+    node.append(fh('div',{class:'fi-realm-tip'}, fh('b',null,'TIP'), C.tip));
+    if(i<REALMS.length-1) node.append(fh('div',{class:'fi-realm-sep'}));
+  });
+  return node;
+}
 /* --- tab controller: build a tab's DOM only on first open (lazy thumbnails), cache thereafter --- */
 const fiTabNodes = {};
 function fiSelectTab(tab){
   document.querySelectorAll('#fi-tabs .fi-tab').forEach(b=> b.classList.toggle('sel', b.dataset.tab===tab));
-  if(!fiTabNodes[tab]) fiTabNodes[tab] = (tab==='win') ? fiRenderWin() : fiRenderFaction(tab);
+  if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : fiRenderFaction(tab);
   const body=$('fi-body'); body.innerHTML=''; body.append(fiTabNodes[tab]);
   $('factionintro').scrollTop=0;
 }
