@@ -42,8 +42,9 @@ header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; ali
 /* battlefield */
 #field{ position:relative; flex:1; display:flex; flex-direction:column; overflow:hidden; background:#0a0704; }
 /* celestial arena: center/cover so the golden mandala (image vertical center) aligns with the divider (field vertical center) */
-#field::before{ content:''; position:absolute; inset:0; z-index:0; background:url('assets/img/board_bg.jpg') center center/cover no-repeat; }
-#field::after{ content:''; position:absolute; inset:0; z-index:1; background:rgba(6,4,2,.30); pointer-events:none; }   /* ~30% dark overlay for readability */
+#field::before{ content:''; position:absolute; inset:0; z-index:0; background:url('assets/img/board_bg.jpg') center center/cover no-repeat; }   /* base board = Mrityulok (board_bg), also the lazy-load/404 fallback shown under #realmboard */
+#realmboard{ position:absolute; inset:0; z-index:0; background:center center/cover no-repeat; opacity:0; transition:opacity .45s ease; pointer-events:none; }   /* per-realm board, crossfaded in over the base once its image loads */
+#field::after{ content:''; position:absolute; inset:0; z-index:1; background:rgba(6,4,2,var(--board-overlay,.30)); pointer-events:none; }   /* dark overlay for readability; per-realm strength via --board-overlay */
 #vfxcanvas{ position:absolute; inset:0; z-index:5; pointer-events:none; }
 #vfxflash{ position:absolute; inset:0; z-index:6; pointer-events:none; opacity:0; background:radial-gradient(circle at 50% 50%, rgba(255,251,235,.92), rgba(255,235,175,.5) 42%, transparent 74%); }
 #vfxflash.fire{ animation:mythicFlash .5s ease-out; }
@@ -583,6 +584,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <div id="realmpop" class="hidden"></div>
 
   <div id="field">
+    <div id="realmboard"></div>
     <div id="embers"></div>
     <canvas id="vfxcanvas"></canvas>
     <div id="vfxflash"></div>
@@ -2160,6 +2162,7 @@ function startGame(p0Faction, p1Faction){
   $('hudwrap').classList.remove('hidden');
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme();
+  applyRealmBoard(G.realm);   // swap the battle board to this match's Cosmic Realm (lazy-loaded, base board_bg until ready)
   makeEmbers();
   Audio2.playTrack('battle');   // crossfade menu → battle music (~1.5s) — music at mulligan
   conchPending=true;            // arm the once-per-match conch; it fires at ROUND 1 START (first pump), not during the mulligan
@@ -2169,6 +2172,31 @@ function startGame(p0Faction, p1Faction){
   beginMulligan();          // play begins when the player confirms their opening hand
 }
 const FAC_LABEL = f => f==='asuras' ? 'ASURA' : f==='vanaras' ? 'VANARA' : f==='nagas' ? 'NAGA' : 'DEVA';
+/* ---------- per-realm battle boards ----------
+   realm id → { img, overlay, ambience? }. Add a future realm as ONE line here.
+   `overlay` is the dark-overlay strength (--board-overlay) tuned per realm for readability.
+   `ambience` is a RESERVED slot for a future per-realm ambience track — NOT implemented (no audio wired). */
+const BOARD_FALLBACK = { img:'assets/img/board_bg.jpg', overlay:.30 };   // canonical Mrityulok board; used for any realm not mapped below
+const REALM_BOARDS = {
+  mrityulok: { img:'assets/img/board_bg.jpg',     overlay:.30 /* , ambience:'assets/audio/amb_mrityulok.mp3' */ },
+  patala:    { img:'assets/img/board_patala.jpg', overlay:.32 /* , ambience:'assets/audio/amb_patala.mp3' */ },
+  swarga:    { img:'assets/img/board_swarga.jpg', overlay:.44 /* , ambience:'assets/audio/amb_swarga.mp3' */ },   // brightest board → deeper overlay so power/Venom badges read over the grey marble
+  // future realms — one line each, e.g.:
+  // gandharva: { img:'assets/img/board_gandharva.jpg', overlay:.30 /* , ambience:'assets/audio/amb_gandharva.mp3' */ },
+};
+const boardImgLoaded = {};   // per-session cache: img URL → true once decoded (a rematch in the same realm never refetches)
+function applyRealmBoard(realm){
+  const cfg = REALM_BOARDS[realm] || BOARD_FALLBACK;   // unmapped realm → Mrityulok's board_bg
+  const field=$('field'), bg=$('realmboard');
+  field.style.setProperty('--board-overlay', cfg.overlay);
+  if (cfg.img===BOARD_FALLBACK.img){ bg.style.opacity=0; bg.style.backgroundImage=''; return; }   // fallback/Mrityulok = the base ::before board_bg; no extra fetch
+  if (boardImgLoaded[cfg.img]){ bg.style.backgroundImage=`url('${cfg.img}')`; bg.style.opacity=1; return; }   // cached → instant, no refetch
+  bg.style.opacity=0; bg.style.backgroundImage='';                                     // show base board_bg until the realm image is ready (no flash)
+  const img=new Image();
+  img.onload =()=>{ boardImgLoaded[cfg.img]=true; if(G && G.realm===realm){ bg.style.backgroundImage=`url('${cfg.img}')`; bg.style.opacity=1; } };   // crossfade in (guarded to the still-current realm)
+  img.onerror=()=>{ bg.style.opacity=0; bg.style.backgroundImage=''; };                // 404 → stay on the base board_bg fallback
+  img.src=cfg.img;                                                                     // LAZY: only the active realm's image is ever fetched
+}
 /* ---------- cosmic realm intro + chip + mulligan ---------- */
 function showRealmIntro(){
   const info=REALM_INFO[G.realm];
