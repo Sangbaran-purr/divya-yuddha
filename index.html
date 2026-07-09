@@ -362,6 +362,9 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-thumb img{ width:100%; height:100%; object-fit:cover; display:block; opacity:0; transition:opacity .3s; }
 .fi-thumb img.on{ opacity:1; }
 .fi-thumb:active{ transform:scale(.97); }
+.fi-hidden{ aspect-ratio:200/280; border-radius:7px; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.12); display:flex; align-items:center; justify-content:center; cursor:pointer; }
+.fi-hidden .fi-q{ font-family:Cinzel,serif; font-weight:700; font-size:30px; line-height:1; }
+.fi-hidden:active{ transform:scale(.97); }
 .fi-loading{ text-align:center; color:var(--ink-dim); font-family:Cinzel,serif; font-size:11px; letter-spacing:1px; padding:16px 0; }
 .fi-spin{ width:22px; height:22px; border:2px solid rgba(255,255,255,.2); border-top-color:var(--gold); border-radius:50%; margin:0 auto 8px; animation:fiSpin .8s linear infinite; }
 @keyframes fiSpin{ to{ transform:rotate(360deg); } }
@@ -2301,6 +2304,7 @@ document.querySelectorAll('#landing .mode.locked').forEach(b=> b.onclick=()=>toa
    a `card` name absent from the engine falls back to `iconFallback` (name-driven — no strip
    currently relies on it after the v1.1 correction, but the safety path remains). */
 const FI_FAC_HEX = { devas:'#E8C874', asuras:'#e0483c', vanaras:'#6fc257', nagas:'#3fb9a8' };
+const FI_HIDDEN = 22;   // unreleased future-wave slots per faction (LIVE_GAME_DESIGN seasonal waves → 22 real + 22 = 44)
 const FI_ICONS = {
   shield:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l7 3v6c0 5-3.5 8-7 9-3.5-1-7-4-7-9V5z"/></svg>',
   fire:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c1.2 3-1 4.2-1 6.2A3 3 0 0 0 17 8c1.8 2.6 2 4.8 2 6.8A7 7 0 0 1 5 15c0-3.6 3.4-5.6 3.6-8.6C9.6 7.4 11 8 12 6c.6-1.2.4-2.8 0-4z"/></svg>',
@@ -2474,6 +2478,12 @@ function fiRenderGallery(faction){
     const img=new Image(); img.alt=c.n; img.onload=()=>{ img.classList.add('on'); finish(); }; img.onerror=finish; img.src=fiThumbSrc(c,faction);
     wrap.append(img); grid.append(wrap);
   });
+  // unreleased future-wave slots (LIVE_GAME_DESIGN seasonal waves): pure CSS, NO network, all identical
+  const hex=FI_FAC_HEX[faction];
+  for(let i=0;i<FI_HIDDEN;i++){
+    grid.append(fh('div',{class:'fi-hidden', style:`border-color:${hex}4d`, onclick:()=>toastMute('The realms have not revealed this card yet.')},
+      fh('div',{class:'fi-q', style:`color:${hex}59`}, '?')));
+  }
   return fh('div',null, loading, grid);
 }
 function fiRenderStep(step, faction){
@@ -2545,7 +2555,8 @@ function fiRenderFaction(faction){
     fh('div',{class:'fi-strength'}, fh('div',{class:'fi-panel-h'},'STRENGTHS'), sUL),
     fh('div',{class:'fi-weak'}, fh('div',{class:'fi-panel-h'},'WEAKNESSES'), wUL)
   ));
-  node.append(fh('div',{class:'fi-panel-h', style:'margin-top:2px'}, 'THE 22 CARDS'));
+  const realCount=fiGalleryOrder(faction).length, totalCount=realCount+FI_HIDDEN;
+  node.append(fh('div',{class:'fi-panel-h', style:'margin-top:2px'}, `CARDS — ${realCount} OF ${totalCount} REVEALED`));
   node.append(fiRenderGallery(faction));
   FI_STRIPS[faction].forEach(strip=> node.append(fiRenderStrip(strip, faction)));
   if(C.matchupNote) node.append(fh('div',{class:'fi-note'}, C.matchupNote));
