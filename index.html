@@ -2181,8 +2181,10 @@ const REALM_BOARDS = {
   mrityulok: { img:'assets/img/board_bg.jpg',     overlay:.30 /* , ambience:'assets/audio/amb_mrityulok.mp3' */ },
   patala:    { img:'assets/img/board_patala.jpg', overlay:.32 /* , ambience:'assets/audio/amb_patala.mp3' */ },
   swarga:    { img:'assets/img/board_swarga.jpg', overlay:.44 /* , ambience:'assets/audio/amb_swarga.mp3' */ },   // brightest board → deeper overlay so power/Venom badges read over the grey marble
-  // future realms — one line each, e.g.:
-  // gandharva: { img:'assets/img/board_gandharva.jpg', overlay:.30 /* , ambience:'assets/audio/amb_gandharva.mp3' */ },
+  kalki:     { img:'assets/img/board_kalki.jpg',  overlay:.32 /* , ambience:'assets/audio/amb_kalki.mp3'  */ },   // dark ash floor (Patala-class darkness)
+  yaksha:    { img:'assets/img/board_yaksha.jpg', overlay:.33 /* , ambience:'assets/audio/amb_yaksha.mp3' */ },
+  rishi:     { img:'assets/img/board_rishi.jpg',  overlay:.32 /* , ambience:'assets/audio/amb_rishi.mp3'  */ },
+  gandharva: { img:'assets/img/board_gandharva.jpg', overlay:.32 /* , ambience:'assets/audio/amb_gandharva.mp3' */ },   // lightest (tan stage) — deepen if it competes; asset pending → 404s to board_bg until it lands
 };
 const boardImgLoaded = {};   // per-session cache: img URL → true once decoded (a rematch in the same realm never refetches)
 function applyRealmBoard(realm){
