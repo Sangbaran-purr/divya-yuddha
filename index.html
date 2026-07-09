@@ -2161,8 +2161,8 @@ function startGame(p0Faction, p1Faction){
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme();
   makeEmbers();
-  Audio2.playTrack('battle');   // crossfade menu → battle music (~1.5s)
-  Audio2.fileSfx('sfx_conch');  // match-start announcement, layered over the crossfade START (music is NOT delayed); once per match — startGame is not called on rounds 2/3
+  Audio2.playTrack('battle');   // crossfade menu → battle music (~1.5s) — music at mulligan
+  conchPending=true;            // arm the once-per-match conch; it fires at ROUND 1 START (first pump), not during the mulligan
   showRealmIntro();
   render();
   VFX.init(); VFX.resize();      // size the impact-VFX canvas to the now-visible board
@@ -2273,6 +2273,8 @@ function renderProfile(){
   $('lpstats').textContent=`${P.wins} wins · ${P.matches} matches · ${P.winsToday} today`;
 }
 let matchRecorded=false;   // one-shot guard: showGameOver can re-run on re-render — count each match once
+let conchPending=false;    // one-shot guard: fire sfx_conch once at round-1 start (armed in startGame, consumed by fireConch in pump)
+function fireConch(){ if(conchPending){ conchPending=false; Audio2.fileSfx('sfx_conch'); } }   // match-start announcement — first playable turn, never during mulligan or on rounds 2/3
 function recordMatchResult(){
   if(matchRecorded) return; matchRecorded=true;
   const P=loadProfile();                        // handles day rollover
@@ -3535,6 +3537,7 @@ window.addEventListener('resize', ()=>{ if(G){ sizeBoard(); updateFocus(); } VFX
 
 function pump(){
   if (G.over) return;
+  fireConch();                                    // round-1 start = first pump of the match (mulligan resolved); guard makes it once-per-match, so rounds 2/3 are silent
   if (choreoActive) return;                       // don't schedule while a choreography is draining
   Audio2.setRound3(G.round>=3);                   // Round 3 brings in the tabla-like pulse
   if (G.turn===1 && !G.players[1].passed){
