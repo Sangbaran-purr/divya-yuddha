@@ -402,10 +402,26 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-pass-cap{ font-size:11px; line-height:1.4; color:var(--ink); }
 .fi-note{ font-size:10px; color:var(--ink-dim); font-style:italic; margin-top:14px; line-height:1.4; text-align:center; }
 /* Realms tab */
-.fi-realm-banner{ width:60%; max-width:230px; margin:16px auto 10px; border-radius:12px; overflow:hidden; cursor:pointer; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.16); }   /* vertical: whole board, small — border-color set inline to the realm accent */
-.fi-realm-banner img{ width:100%; height:auto; display:block; opacity:0; transition:opacity .3s; }   /* native portrait aspect, UNCROPPED — no object-fit, no fixed height */
+/* vertical board, whole & small, in a subtle double-rule picture frame — accent set inline as --ra:<hex> */
+.fi-realm-banner{ position:relative; width:60%; max-width:230px; margin:16px auto 10px; padding:4px; border-radius:6px; cursor:pointer;
+  background:rgba(4,3,1,.6);                                                  /* the ~4px dark mat gap shows through the padding */
+  border:1px solid color-mix(in srgb, var(--ra) 50%, transparent); }         /* outer rule ~50% */
+.fi-realm-inner{ border-radius:3px; overflow:hidden; line-height:0;
+  border:1px solid color-mix(in srgb, var(--ra) 30%, transparent); }         /* inner rule ~30% */
+.fi-realm-banner img{ width:100%; height:auto; display:block; opacity:0; transition:opacity .3s; }   /* native portrait aspect, UNCROPPED */
 .fi-realm-banner img.on{ opacity:1; }
 .fi-realm-banner:active{ transform:scale(.99); }
+/* L-shaped corner ticks (~10px arms, 1px) in the accent — 8 gradient segments = 4 brackets, just inside the outer corners */
+.fi-realm-banner::before{ content:''; position:absolute; inset:3px; pointer-events:none; --t:color-mix(in srgb, var(--ra) 70%, transparent);
+  background:
+    linear-gradient(var(--t),var(--t)) left top/10px 1px no-repeat,
+    linear-gradient(var(--t),var(--t)) left top/1px 10px no-repeat,
+    linear-gradient(var(--t),var(--t)) right top/10px 1px no-repeat,
+    linear-gradient(var(--t),var(--t)) right top/1px 10px no-repeat,
+    linear-gradient(var(--t),var(--t)) left bottom/10px 1px no-repeat,
+    linear-gradient(var(--t),var(--t)) left bottom/1px 10px no-repeat,
+    linear-gradient(var(--t),var(--t)) right bottom/10px 1px no-repeat,
+    linear-gradient(var(--t),var(--t)) right bottom/1px 10px no-repeat; }
 .fi-realm-head{ margin-bottom:3px; }
 .fi-realm-nm{ font-family:Cinzel,serif; font-weight:700; font-size:18px; letter-spacing:1px; text-shadow:0 1px 6px rgba(0,0,0,.9); }
 .fi-realm-ep{ font-family:Cinzel,serif; font-size:11px; color:var(--ink-dim); letter-spacing:.5px; }
@@ -2701,9 +2717,10 @@ function fiRenderRealms(){
   ));
   REALMS.forEach((id,i)=>{
     const info=REALM_INFO[id], C=FI_REALM_CONTENT[id], hex=REALM_ACCENT[id];
-    const banner=fh('div',{class:'fi-realm-banner', style:`border-color:${hex}59`, onclick:()=>fiOpenBoardInspect(i)});   // tap → full board in the inspect view; thin accent border at low opacity
+    const banner=fh('div',{class:'fi-realm-banner', style:`--ra:${hex}`, onclick:()=>fiOpenBoardInspect(i)});   // tap → full board in the inspect view; --ra drives the double-rule frame + corner ticks
+    const inner=fh('div',{class:'fi-realm-inner'});
     const bimg=new Image(); bimg.alt=info.name; bimg.onload=()=>bimg.classList.add('on'); bimg.src=fiBoardThumb(id);
-    banner.append(bimg); node.append(banner);
+    inner.append(bimg); banner.append(inner); node.append(banner);
     node.append(fh('div',{class:'fi-realm-head'},
       fh('span',{class:'fi-realm-nm', style:`color:${hex}`}, info.name),
       fh('span',{class:'fi-realm-ep'}, ` — ${C.epithet}`)));
