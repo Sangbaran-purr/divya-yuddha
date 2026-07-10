@@ -2309,7 +2309,7 @@ let currentFactions={ p0:'devas', p1:'devas' };
 function startGame(p0Faction, p1Faction){
   Story=null;   // a PvAI match is never a story chapter
   currentFactions={ p0: p0Faction||currentFactions.p0, p1: p1Faction||currentFactions.p1 };
-  if (aiTimer) clearTimeout(aiTimer);
+  resetChoreo();   // never inherit a stuck choreoActive from a prior match
   G=newGame({p0:'You',p1:'Opponent',p0Faction:currentFactions.p0,p1Faction:currentFactions.p1}); seenLog=0;
   G.players[0].manualShield=true;   // the human designates Dharma Shield by hand (AI keeps auto-designate)
   matchRecorded=false;              // arm the one-shot match-result counter for this new match
@@ -2401,8 +2401,8 @@ $('mullconfirm').onclick=()=>{
   if (reducedMotion() || !evs.length){ pump(); return; }
   choreoActive=true; choreoSkip=false;
   const layer=$('choreolayer'); layer.classList.add('locked'); layer.onclick=skipChoreo;
-  (async()=>{ for(const ev of evs){ if(choreoSkip) break; await playEvent(ev, snap); }
-    choreoActive=false; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML=''; render(); pump(); })();
+  (async()=>{ try{ for(const ev of evs){ if(choreoSkip) break; try{ await playEvent(ev, snap); }catch(e){} } }
+    finally{ choreoActive=false; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML=''; try{ render(); }catch(e){} pump(); } })();
 };
 
 function applyFactionTheme(){
@@ -2954,7 +2954,7 @@ function showBossPlate(ch, done){
 }
 function startStoryChapter(id){
   const ch=CHAPTERS[id]; if(!ch) return;
-  if (aiTimer) clearTimeout(aiTimer);
+  resetChoreo();   // never inherit a stuck choreoActive from a prior match (a retry after a frozen/aborted choreo)
   Story = { chapter:ch, mode:ch.mode||'LOCKED', beatIdx:0, scriptIdx:0, handoff:false, lineBeat:-1,
             oppTurns:0, midFired:{}, holdLine:ch.introLine||null, round2Shown:false, asideShown:false };   // SUGGESTED (ch3–5) adds free-play beat/aside/mid state
   currentFactions={ p0:ch.playerFaction, p1:ch.opponentFaction };
@@ -3778,6 +3778,11 @@ function posOf(uid, snap){
 }
 function cDelay(ms){ return new Promise(r=>{ if(choreoSkip) return r(); const t=setTimeout(r, ms*speedMult*CHOREO_SPEED); choreoTimers.push([t,r]); }); }
 function skipChoreo(){ if(!choreoActive) return; choreoSkip=true; choreoTimers.forEach(([t,r])=>{ clearTimeout(t); r(); }); choreoTimers=[]; }
+// Defensive reset of ALL choreography globals — a new match must never inherit a stuck choreoActive from a prior match
+// whose choreo async was left pending (a hung rAF await) or rejected (an uncaught step exception, e.g. the drawImage race).
+function resetChoreo(){ choreoActive=false; choreoSkip=false; if(aiTimer){ try{ clearTimeout(aiTimer); }catch(e){} aiTimer=null; }
+  choreoTimers.forEach(([t])=>{ try{ clearTimeout(t); }catch(e){} }); choreoTimers=[]; pendingPlay=null; roundCountAtActionStart=0;
+  const layer=$('choreolayer'); if(layer){ layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML=''; } }
 const FTOAST_CLASS = a => a==='Chaos Surge'?'f-chaos': a==='Dharma Shield'?'f-dharma': a==='Leap'?'f-leap': a==='Venom'?'f-venom':'f-other';
 function factionToast(ability, text){
   if (reducedMotion()) return;
@@ -4002,18 +4007,20 @@ function runAction(mutate, opts={}){
   choreoActive=true; choreoSkip=false;
   const layer=$('choreolayer'); layer.classList.add('locked'); layer.onclick=skipChoreo;
   (async()=>{
-    const playEv = evs.find(e=>e.type==='play');
-    if (opts.actor===1 && playEv){ await showcaseCard(playEv.sourceUid); }   // SHOWCASE: opponent's card revealed large, then it resolves
-    render();                              // final board; spawnFloaters + HUD totals held while choreoActive
-    for (const ev of evs){ if(choreoSkip) break; await playEvent(ev, snap); }
-    const roundEnded = G.roundHistory.length>roundCountAtActionStart && !G.over;
-    if (roundEnded && !choreoSkip) await cDelay(500);   // theatre: pause after the poison settles
-    await animateTotals();                               // totals count up to their final values
-    choreoActive=false; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML='';
-    render();
-    showResultSummary(evs);
-    if (roundEnded) showRoundBanner();
-    pump();
+    try{
+      const playEv = evs.find(e=>e.type==='play');
+      if (opts.actor===1 && playEv){ try{ await showcaseCard(playEv.sourceUid); }catch(e){} }   // SHOWCASE; a broken showcase never aborts the match
+      render();                              // final board; spawnFloaters + HUD totals held while choreoActive
+      for (const ev of evs){ if(choreoSkip) break; try{ await playEvent(ev, snap); }catch(e){} }   // skip a broken step (e.g. a VFX drawImage race) — keep the match playable
+      const roundEnded = G.roundHistory.length>roundCountAtActionStart && !G.over;
+      if (roundEnded && !choreoSkip){ try{ await cDelay(500); }catch(e){} }   // theatre: pause after the poison settles
+      try{ await animateTotals(); }catch(e){}                               // totals count up to their final values
+    } finally {
+      // GUARANTEE: no thrown/skipped step can leave the choreo locked — always release the lock and resume the match
+      choreoActive=false; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML='';
+      try{ render(); showResultSummary(evs); if (G.roundHistory.length>roundCountAtActionStart && !G.over) showRoundBanner(); }catch(e){}
+      pump();
+    }
   })();
 }
 function afterChoreo(){

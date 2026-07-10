@@ -48,8 +48,11 @@ const STORY_PREDICATES = {
   // removes an enemy Artifact (only Deva Vishwakarma can), so this fails only by CHOICE (never playing Amrita in the
   // deciding round). Star text must not imply protection.
   ch6_artifact_kept: g => g.winner===0 && !!(g.players && g.players[0] && g.players[0].artifact),
-  // CH7 bonus: win the BOSS 2–0 (a round-win sweep). Trivially failable (drop any round).
-  ch7_sweep: g => g.winner===0 && !!g.players && (g.players[1].roundWins||0)===0 && (g.players[0].roundWins||0)>=(g.winTarget||2),
+  // CH7 bonus: win with the boss's Chandrahas UNMADE — the taught graduation play (Vishwakarma unmakes the stolen
+  // blade). VALIDATED: enemy-artifact destruction is STATE-ONLY (no event) — Vishwakarma sets opp.artifact=null and
+  // increments the DESTROYER's counter players[0].artifactsDestroyedByMe (Yaksha Lok is the one realm that blocks it).
+  // So: won AND the player destroyed ≥1 enemy Artifact (the boss's only Artifact is Chandrahas).
+  ch7_unmake: g => g.winner===0 && !!g.players && (g.players[0].artifactsDestroyedByMe||0) > 0,
 };
 
 const CHAPTERS = {
@@ -331,7 +334,7 @@ const CHAPTERS = {
       defeat:[],
     },
     win:{ type:'matchWin' },
-    bonus:{ predicateId:'ch7_sweep', label:'The betrayal answered without a round lost', rewardId:'wave1-stub-b1c7' },
+    bonus:{ predicateId:'ch7_unmake', label:'The stolen blade, unmade', rewardId:'wave1-stub-b1c7' },
     rewards:{ xp:null, coins:null },
     unlocks:null,
   },

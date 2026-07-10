@@ -225,28 +225,42 @@ console.log('\nCH6–7 (FREE mode) headless validation:');
   ok('CH6 artifact bonus EARNABLE (kept in ≥1 keep-game)', keptEarn>=1);
   ok('CH6 artifact bonus FAILABLE (never-play keeps 0)', keptNever===0);
 }
-{ // CH7 — BOSS band 6–10/12 + 2–0 bonus + Chaos Surge + Mahabali notes
-  const N=48; let wins=0, sweep=0, chaos=0;
-  for(let s=1;s<=N;s++){ const g=driveFree(CHAPTERS.b1c7, s*31+3, 'auto'); if(g.winner===0){ wins++; if(g.players[1].roundWins===0) sweep++; }
+{ // CH7 — BOSS band 6–10/12 + ch7_unmake bonus (REPLACES ch7_sweep, which was unearnable) + validation items
+  const N=48; let wins=0, unmakeEarn=0, chaos=0, sig=null;
+  for(let s=1;s<=N;s++){ const g=driveFree(CHAPTERS.b1c7, s*31+3, 'auto'); if(g.winner===0){ wins++; if(STORY_PREDICATES.ch7_unmake(g)) unmakeEarn++;
+      if(!sig && (g.players[0].artifactsDestroyedByMe||0)>0) sig={ destroyed:g.players[0].artifactsDestroyedByMe, bossArtifact:g.players[1].artifact, revive:(g.events||[]).some(e=>e.type==='destroy'&&e.abilityName==='Chandrahas') }; }
     chaos += (g.log||[]).filter(l=>/Chaos Surge/.test(l.msg)).length; }
   const per12 = wins/N*12;
-  console.log(`  CH7 BOSS: competent wins ${per12.toFixed(1)}/12 (${wins}/${N}); 2–0 sweeps ${sweep}/${N}; Chaos Surge avg ${(chaos/N).toFixed(1)}/game`);
-  console.log(`  CH7 NOTE (validation items): (a) Mahabali works across the script→AI handoff (no misbehavior) but an 8-power Hero pushes the boss to 0% → EXCLUDED from the boss list. (b) Chaos Surge is frequent (Chandrahas doubles it) but does NOT swing the band — win rate is stable ~6.6/12 across 4×96-seed samples. (c) The 2–0 bonus is UNEARNABLE vs an in-band boss by the driver: the boss's round-1 Chandrahas dominance forces round economy (concede R1) → 2–1 wins, never 2–0. It is earnable in principle (predicate fires on real 2–0 streams, e.g. every ch6 win) and by a skilled human on a favorable realm; failable trivially.`);
+  console.log(`  CH7 BOSS: competent wins ${per12.toFixed(1)}/12 (${wins}/${N}); ch7_unmake EARNED ${unmakeEarn}/${N}; Chaos Surge avg ${(chaos/N).toFixed(1)}/game`);
+  console.log(`  CH7 signature (real stream): enemy-Artifact destruction is STATE-ONLY (no 'destroy' event: ${sig?sig.revive:'?'}) — on an unmake-win players[0].artifactsDestroyedByMe=${sig?sig.destroyed:'?'} AND the boss Artifact=${sig?(sig.bossArtifact?sig.bossArtifact.n:'null (Chandrahas unmade)'):'?'}.`);
+  console.log(`  CH7 NOTES: (a) Mahabali works across the script→AI handoff (no misbehavior) but an 8-power Hero pushes the boss to 0% → EXCLUDED. (b) Chaos Surge ~5/game (Chandrahas doubles) but does NOT swing the band (stable across 4×96-seed samples). (c) ch7 bonus REPLACED sweep→unmake: sweep was unearnable vs an in-band boss (round-1 dominance forces 2–1, R1won=0). Unmake IS the taught graduation play — and note a NO-Vishwakarma line wins 0/96 (you MUST unmake Chandrahas to survive the doubled Pashupatastra), so the bonus is earned on almost every win; it FAILS only when the removal whiffs — the Yaksha realm ("Artifacts cannot be destroyed").`);
   ok(`CH7 boss band 6–10/12 (${per12.toFixed(1)})`, per12>=6 && per12<=10);
+  ok('CH7 ch7_unmake EARNABLE (removal line unmakes Chandrahas on a win)', unmakeEarn>=1);
+  ok('CH7 unmake signature: destroyed a boss Artifact + boss Artifact now null', !!sig && sig.destroyed>0 && !sig.bossArtifact);
 }
-{ // CH7 2–0 predicate on a REAL 2–0 stream (a ch6 win — the player sweeps the honest ch6 opponent 2–0)
-  const g=driveFree(CHAPTERS.b1c6, 31+3, 'auto');
-  console.log(`  CH7 2–0 predicate on a real 2–0 stream (ch6 sweep): winner=${g.winner} roundWins=${g.players[0].roundWins}-${g.players[1].roundWins} → ch7_sweep=${STORY_PREDICATES.ch7_sweep(g)}`);
-  ok('CH7 sweep predicate TRUE on a real 2–0 win stream', STORY_PREDICATES.ch7_sweep(g)===true);
+{ // CH7 unmake FAILABLE — the Yaksha realm shields the boss's Chandrahas → Vishwakarma whiffs, the win earns NOTHING
+  function driveYaksha(seed){ const ch=CHAPTERS.b1c7;
+    const g=E.newGame({ p0:'You', p1:'Foe', p0Faction:'devas', p1Faction:'asuras', realm:'yaksha', rng:storyRng(seed), scenario:ch.scenario });
+    let si=0, guard=0, handoff=false;
+    while(!g.over && guard++<600){ if(g.turn===1){ const st=ch.opponentScript[si]; if(handoff||!st||st.handoff){handoff=true;E.aiTakeTurn(g,1);}else{si++;const idx=g.players[1].hand.findIndex(c=>c.n===st.cardName);if(idx>=0)E.playCard(g,1,idx);else E.pass(g,1);} }
+      else { const pl=g.players[0],opp=g.players[1],idxs=E.playableIndices(g,0);
+        const wi=idxs.find(i=>pl.hand[i].id==='vishwakarma'); if(wi!=null&&opp.artifact){ E.playCard(g,0,wi); continue; }   // played, but Yaksha blocks the destruction
+        const d=E.aiMove(g,0); if(d&&d.play!=null)E.playCard(g,0,d.play,d.target,d.position); else E.pass(g,0);
+      } }
+    return g; }
+  let yWins=0, yEarn=0, sample=null;
+  for(let s=1;s<=24;s++){ const g=driveYaksha(s*31+3); if(g.winner===0){ yWins++; if(STORY_PREDICATES.ch7_unmake(g)) yEarn++; if(!sample) sample=g; } }
+  console.log(`  CH7 unmake FAILABLE (Yaksha realm): wins ${yWins}/24, unmake-earned ${yEarn}/24 → Vishwakarma whiffs, the bonus is MISSED on a win.`);
+  ok('CH7 unmake FAILABLE (a Yaksha win does not earn it)', !!sample && STORY_PREDICATES.ch7_unmake(sample)===false && yEarn===0);
 }
 
 console.log('\nch6–7 predicate unit tests (synthetic state):');
 ok('ch6_artifact_kept true: won with artifact', STORY_PREDICATES.ch6_artifact_kept({ winner:0, players:[{artifact:{n:'Amrita Kalasha'}},{}] })===true);
 ok('ch6_artifact_kept false: won, no artifact', STORY_PREDICATES.ch6_artifact_kept({ winner:0, players:[{artifact:null},{}] })===false);
 ok('ch6_artifact_kept false: artifact but lost', STORY_PREDICATES.ch6_artifact_kept({ winner:1, players:[{artifact:{n:'Amrita Kalasha'}},{}] })===false);
-ok('ch7_sweep true: won 2–0', STORY_PREDICATES.ch7_sweep({ winner:0, winTarget:2, players:[{roundWins:2},{roundWins:0}] })===true);
-ok('ch7_sweep false: won 2–1', STORY_PREDICATES.ch7_sweep({ winner:0, winTarget:2, players:[{roundWins:2},{roundWins:1}] })===false);
-ok('ch7_sweep false: lost', STORY_PREDICATES.ch7_sweep({ winner:1, winTarget:2, players:[{roundWins:1},{roundWins:2}] })===false);
+ok('ch7_unmake true: won + destroyed an enemy Artifact', STORY_PREDICATES.ch7_unmake({ winner:0, players:[{artifactsDestroyedByMe:1},{}] })===true);
+ok('ch7_unmake false: won but destroyed none', STORY_PREDICATES.ch7_unmake({ winner:0, players:[{artifactsDestroyedByMe:0},{}] })===false);
+ok('ch7_unmake false: destroyed one but lost', STORY_PREDICATES.ch7_unmake({ winner:1, players:[{artifactsDestroyedByMe:1},{}] })===false);
 
 console.log(`\n${fail===0?'✓ ALL':'✗'} ${pass} STORY CHECKS PASS${fail?`, ${fail} FAILED`:''}`);
 process.exit(fail===0?0:1);
