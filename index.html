@@ -307,11 +307,14 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .story-ch.done .ch-num{ color:var(--green); border-color:var(--green-dim); }
 .story-ch .ch-check{ color:var(--green); }
 .story-ch .ch-bonus{ color:var(--gold); font-size:13px; }
-#cutscene{ background:rgba(4,3,1,.97); }
-#cutsceneskip{ position:fixed; top:14px; right:14px; z-index:3; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.2); color:var(--ink); border-radius:8px; padding:6px 12px; font-size:11px; letter-spacing:1px; cursor:pointer; }
-#cutscene-plate{ position:relative; z-index:1; min-height:100vh; box-sizing:border-box; max-width:520px; margin:0 auto; display:flex; flex-direction:column; justify-content:flex-end; padding:20px 22px 64px; }
-.cut-title{ font-family:Cinzel,serif; font-size:22px; letter-spacing:3px; color:var(--gold); margin-bottom:14px; text-shadow:0 2px 10px #000; }
-.cut-line{ font-size:15px; line-height:1.6; color:var(--ink); margin-bottom:10px; text-shadow:0 1px 6px #000; }
+#cutscene{ display:block; overflow:hidden; background:#000; padding:0; }
+.cut-panel{ position:fixed; inset:0; z-index:0; background-position:center; background-size:cover; background-repeat:no-repeat; opacity:0; will-change:transform,opacity; backface-visibility:hidden; }   /* Ken Burns via transform; cover = never letterboxes (handles the 896×1284 panel too) */
+#cut-vfx{ position:fixed; inset:0; z-index:1; pointer-events:none; }                                  /* embers/smoke overlay, above panels, below scrim+plate */
+#cut-scrim{ position:fixed; inset:0; z-index:2; pointer-events:none; background:linear-gradient(to bottom, transparent 40%, rgba(0,0,0,.35) 62%, rgba(0,0,0,.88) 100%); }
+#cutsceneskip{ position:fixed; top:14px; right:14px; z-index:4; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.2); color:var(--ink); border-radius:8px; padding:6px 12px; font-size:11px; letter-spacing:1px; cursor:pointer; }
+#cutscene-plate{ position:fixed; left:0; right:0; bottom:0; z-index:3; box-sizing:border-box; max-width:520px; margin:0 auto; padding:22px 22px 44px; }
+.cut-title{ font-family:Cinzel,serif; font-size:21px; letter-spacing:2.5px; color:var(--gold); margin-bottom:12px; text-shadow:0 2px 10px #000; line-height:1.2; }
+.cut-body{ font-size:15px; line-height:1.6; color:var(--ink); text-shadow:0 1px 6px #000; white-space:pre-line; min-height:1.6em; }
 .cut-hint{ margin-top:16px; font-size:10px; letter-spacing:1px; color:var(--ink-dim); }
 #brihaspati{ position:fixed; left:50%; transform:translateX(-50%); bottom:98px; z-index:60; width:min(92vw,460px); display:flex; gap:11px; align-items:center; background:rgba(10,7,3,.94); border:1px solid var(--gold-dim); border-radius:12px; padding:10px 13px; box-shadow:0 6px 24px rgba(0,0,0,.6); cursor:pointer; }
 #brihaspati.hidden{ display:none; }
@@ -792,8 +795,12 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   </div>
 </div>
 <div class="overlay hidden" id="cutscene">
+  <div id="cut-panelA" class="cut-panel"></div>
+  <div id="cut-panelB" class="cut-panel"></div>
+  <canvas id="cut-vfx"></canvas>
+  <div id="cut-scrim"></div>
   <button id="cutsceneskip">skip ›</button>
-  <div id="cutscene-plate"></div>
+  <div id="cutscene-plate"><div class="cut-title" id="cut-title"></div><div class="cut-body" id="cut-body"></div><div class="cut-hint" id="cut-hint"></div></div>
 </div>
 <div id="brihaspati" class="hidden">
   <div class="bri-chip">ब</div>
@@ -2872,7 +2879,8 @@ $('mode-story').onclick=()=>showStorySelect();
 $('story-back').onclick=()=>showLanding();
 /* --- chapter entry: intro cutscene → match --- */
 function enterChapter(id){ const ch=CHAPTERS[id]; if(!ch) return;
-  playCutscenes(ch.cutscenes && ch.cutscenes.intro, ()=>startStoryChapter(id)); }
+  prefetchPanels(ch.cutscenes && ch.cutscenes.intro);   // lazy: only this chapter's intro panels prefetch on the tap
+  playCutscenes(ch.cutscenes && ch.cutscenes.intro, ()=>startStoryChapter(id), 'intro'); }
 function startStoryChapter(id){
   const ch=CHAPTERS[id]; if(!ch) return;
   if (aiTimer) clearTimeout(aiTimer);
@@ -2885,7 +2893,7 @@ function startStoryChapter(id){
   $('hudwrap').classList.remove('hidden');
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers();
-  Audio2.playTrack('battle'); conchPending=true;
+  Audio2.musicDuck(false); Audio2.playTrack('battle'); conchPending=true;   // release the intro duck INTO the menu→battle crossfade (the crossfade + conch stay the hinge)
   showRealmIntro(); render(); VFX.init(); VFX.resize();
   pump();   // mulligan:0 → straight into round 1 (player-first via storyRng)
 }
@@ -2936,21 +2944,102 @@ $('brihaspati').onclick=()=>storyPlayerTap();
 // in a story chapter, intercept the pass button (capture phase) so the default PvAI handler never fires; route to the guided pass only when it's highlighted
 $('passbtn').addEventListener('click', (e)=>{ if(Story){ e.stopImmediatePropagation(); if($('passbtn').classList.contains('story-hi')) storyPlayerTap(); } }, true);
 /* --- cutscene player (text plates; §5 manifest shape — image drops in later) --- */
-function playCutscenes(panels, onDone){
+/* ===== motion-comic cutscene player (Ken Burns + crossfade + typewriter + VFX + audio) ===== */
+const CUT_MOTION = {   // id → { from, to, origin, dur(s), ease, vfx } (BOOK1_DESIGN §5 + this task's motion manifest)
+  b1c1_i1:{ from:'scale(1.12) translateY(0%)', to:'scale(1.12) translateY(-6%)', origin:'50% 50%', dur:8, ease:'linear',  vfx:'none' },
+  b1c1_i2:{ from:'scale(1.08) translateX(0%)', to:'scale(1.08) translateX(-6%)', origin:'50% 50%', dur:7, ease:'linear',  vfx:'embers-sparse' },
+  b1c1_i3:{ from:'scale(1.05)',                to:'scale(1.12)',                origin:'50% 60%', dur:7, ease:'ease-out', vfx:'none' },
+  b1c1_v1:{ from:'scale(1.16)',                to:'scale(1.06)',                origin:'45% 55%', dur:8, ease:'ease-out', vfx:'embers-fade' },
+  b1c2_i1:{ from:'scale(1.10) translateX(0%)', to:'scale(1.10) translateX(6%)', origin:'50% 50%', dur:8, ease:'linear',  vfx:'smoke' },
+  b1c2_i2:{ from:'scale(1.06)',                to:'scale(1.15)',                origin:'50% 35%', dur:8, ease:'ease-out', vfx:'none' },
+  b1c2_i3:{ from:'scale(1.18)',                to:'scale(1.05)',                origin:'72% 30%', dur:8, ease:'ease-out', vfx:'none' },
+  b1c2_v1:{ from:'scale(1.12) translateY(5%)', to:'scale(1.12) translateY(-5%)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'embers' },
+};
+const CUT_DEFAULT_M={ from:'scale(1.08)', to:'scale(1.12)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'none' };
+function cutImgUrl(id){ return `assets/story/${id}.jpg`; }
+function prefetchPanels(panels){ (panels||[]).forEach(p=>{ const im=new Image(); im.src=cutImgUrl(p.id); }); }   // lazy: only the entered chapter's panels
+let CutState=null, CutVfx=null;
+function applyMotion(el, m){
+  el.style.transition='none'; el.style.transformOrigin=m.origin; el.style.transform=m.from; el.style.opacity='0';
+  if(reducedMotion()){ el.style.transform=m.to; el.style.opacity='1'; return; }   // reduced motion: static, no travel
+  void el.offsetWidth;                                              // commit the START state (transition:none)
+  el.style.transition=`transform ${m.dur}s ${m.ease}, opacity .8s ease`;
+  void el.offsetWidth;                                              // commit the transition BEFORE changing the value, else it snaps
+  el.style.transform=m.to; el.style.opacity='1';                   // now animates from→to over dur, and fades in over .8s
+}
+function typewriter(el, text, onDone){
+  el.textContent=''; let i=0, tc=0, done=false, timer=null; const speed=1000/35;   // ~35 chars/sec
+  function step(){ if(i>=text.length){ done=true; onDone&&onDone(); return; }
+    el.textContent+=text[i++]; tc++;
+    if(tc >= 2 + (i%2)){ tc=0; Audio2.sfx('uitick'); }                   // soft UI tick every 2–3 chars (ticks stop when step() stops)
+    timer=setTimeout(step, speed);
+  }
+  if(!text || reducedMotion()){ el.textContent=text||''; done=true; onDone&&onDone(); }
+  else step();
+  return { stop:()=>{ if(timer) clearTimeout(timer); },
+    finish:()=>{ if(timer) clearTimeout(timer); if(!done){ el.textContent=text; done=true; onDone&&onDone(); } },
+    isDone:()=>done };
+}
+function playCutscenes(panels, onDone, ctx){
   panels=(panels||[]).filter(Boolean);
   if(!panels.length){ onDone&&onDone(); return; }
-  let i=0; const ov=$('cutscene');
-  const show=()=>{ if(i>=panels.length){ ov.classList.add('hidden'); ov.onclick=null; onDone&&onDone(); return; }
-    const p=panels[i]; const plate=$('cutscene-plate'); plate.innerHTML='';
-    const t=p.text||[];
-    plate.append(fh('div',{class:'cut-title'}, t[0]||''));
-    for(let k=1;k<t.length;k++) plate.append(fh('div',{class:'cut-line'}, t[k]));
-    plate.append(fh('div',{class:'cut-hint'}, i<panels.length-1?'tap to continue ›':'tap to begin ›'));
-  };
-  ov.onclick=()=>{ i++; show(); };
-  $('cutsceneskip').onclick=(e)=>{ e.stopPropagation(); i=panels.length; show(); };
-  ov.classList.remove('hidden'); ov.scrollTop=0; show();
+  const ov=$('cutscene');
+  CutState={ panels, i:-1, onDone, ctx:ctx||'intro', layers:[$('cut-panelA'),$('cut-panelB')], showLayer:0, tw:null, complete:false };
+  if(CutState.ctx==='intro') Audio2.musicDuck(true);            // duck menu music for the intro; released into the battle crossfade
+  cutResize(); cutVfxStart();
+  ov.onclick=cutTap;
+  $('cutsceneskip').onclick=(e)=>{ e.stopPropagation(); cutEnd(); };
+  ov.classList.remove('hidden');
+  cutNext();
 }
+function cutNext(){
+  const st=CutState; st.i++;
+  if(st.i>=st.panels.length){ cutEnd(); return; }
+  const p=st.panels[st.i], m=CUT_MOTION[p.id]||CUT_DEFAULT_M;
+  const next=st.layers[1-st.showLayer], cur=st.layers[st.showLayer];
+  next.style.backgroundImage=`url('${cutImgUrl(p.id)}')`;
+  applyMotion(next, m);                                            // sets from → to (Ken Burns) + fades in over .8s
+  cur.style.transition=reducedMotion()?'none':'opacity .8s ease'; cur.style.opacity='0';   // crossfade the outgoing panel
+  st.showLayer=1-st.showLayer;
+  cutVfxSet(m.vfx);
+  if(st.i>0) Audio2.sfx('swish');                               // soft air-swish on each crossfade (not the first show)
+  st.complete=false;
+  $('cut-title').textContent=p.text[0]||'';
+  $('cut-hint').textContent='';
+  if(st.tw) st.tw.stop();
+  st.tw=typewriter($('cut-body'), p.text.slice(1).join('\n'), ()=>{ st.complete=true; $('cut-hint').textContent = st.i<st.panels.length-1?'tap to continue ›':(st.ctx==='intro'?'tap to begin ›':'tap ›'); });
+}
+function cutTap(){ const st=CutState; if(!st) return; if(!st.complete){ if(st.tw) st.tw.finish(); } else cutNext(); }   // TWO-TAP: complete the line, then advance
+function cutEnd(){
+  const st=CutState; if(!st) return;
+  if(st.tw) st.tw.stop(); cutVfxStop();
+  $('cutscene').classList.add('hidden'); $('cutscene').onclick=null;
+  st.layers.forEach(l=>{ l.style.transition='none'; l.style.opacity='0'; l.style.transform='none'; l.style.backgroundImage=''; });
+  const onDone=st.onDone; CutState=null; onDone&&onDone();
+}
+/* cutscene VFX: a light ember/smoke emitter on #cut-vfx (separate from the board VFX module) */
+function cutResize(){ const c=$('cut-vfx'); if(!c) return; const dpr=Math.min(2,window.devicePixelRatio||1); c.width=Math.round(innerWidth*dpr); c.height=Math.round(innerHeight*dpr); c.style.width=innerWidth+'px'; c.style.height=innerHeight+'px'; if(CutVfx) CutVfx.dpr=dpr; }
+function cutVfxStart(){ if(CutVfx||reducedMotion()) return; const c=$('cut-vfx'), cx=c.getContext('2d');
+  CutVfx={ cx, parts:[], mode:'none', dpr:Math.min(2,window.devicePixelRatio||1), last:performance.now(), raf:0, emit:0 };
+  const loop=(now)=>{ const st=CutVfx; if(!st) return; const dt=Math.min(0.05,(now-st.last)/1000); st.last=now;
+    st.cx.setTransform(1,0,0,1,0,0); st.cx.clearRect(0,0,c.width,c.height); st.cx.setTransform(st.dpr,0,0,st.dpr,0,0);
+    st.emit-=dt; if(st.mode!=='none' && st.emit<=0){ st.emit = st.mode.indexOf('embers')===0 ? (st.mode.indexOf('sparse')>=0?0.55:0.3) : 0.6; cutSpawn(st); }
+    for(let i=st.parts.length-1;i>=0;i--){ const p=st.parts[i]; p.life-=dt; if(p.life<=0){ st.parts.splice(i,1); continue; }
+      p.vy+=p.g*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; const a=Math.min(1,p.life/p.max)*(p.fade||1);
+      if(p.kind==='ember'){ st.cx.globalCompositeOperation='lighter'; st.cx.fillStyle=`rgba(255,190,96,${a*0.85})`; }
+      else { st.cx.globalCompositeOperation='source-over'; st.cx.fillStyle=`rgba(92,88,82,${a*0.26})`; }
+      st.cx.beginPath(); st.cx.arc(p.x,p.y,p.r,0,6.283); st.cx.fill();
+    }
+    st.cx.globalCompositeOperation='source-over'; st.raf=requestAnimationFrame(loop);
+  };
+  CutVfx.raf=requestAnimationFrame(loop);
+}
+function cutSpawn(st){ const W=innerWidth,H=innerHeight;
+  if(st.mode.indexOf('embers')===0){ const n=1+Math.floor(Math.random()*2); for(let k=0;k<n;k++) st.parts.push({kind:'ember',x:Math.random()*W,y:H*0.72+Math.random()*H*0.28,vx:(Math.random()-.5)*12,vy:-14-Math.random()*22,g:-3,r:0.8+Math.random()*1.5,life:2.4+Math.random()*2,max:4.4,fade:st.mode.indexOf('fade')>=0?0.55:1}); }
+  else if(st.mode==='smoke'){ st.parts.push({kind:'smoke',x:Math.random()*W,y:H*0.74+Math.random()*H*0.26,vx:(Math.random()-.5)*9,vy:-9-Math.random()*11,g:-1,r:22+Math.random()*32,life:3+Math.random()*2,max:5}); }
+}
+function cutVfxSet(mode){ if(CutVfx) CutVfx.mode=mode||'none'; }
+function cutVfxStop(){ if(CutVfx){ cancelAnimationFrame(CutVfx.raf); const c=$('cut-vfx'); CutVfx.cx.setTransform(1,0,0,1,0,0); CutVfx.cx.clearRect(0,0,c.width,c.height); CutVfx=null; } }
 /* --- result: evaluate predicates, persist, victory cutscene / loss+retry --- */
 function showStoryResult(){
   if(Story.resultShown) return; Story.resultShown=true;   // render() re-calls showGameOver each frame while G.over
@@ -2962,7 +3051,7 @@ function showStoryResult(){
     const complete = winExtra;   // g.winner===0 already true
     const bonus = ch.bonus && STORY_PREDICATES[ch.bonus.predicateId] ? !!STORY_PREDICATES[ch.bonus.predicateId](G) : false;
     if(complete) markChapterComplete(ch.id, bonus);
-    playCutscenes(ch.cutscenes && ch.cutscenes.victory, ()=>storyResultPanel(ch, true, bonus));
+    playCutscenes(ch.cutscenes && ch.cutscenes.victory, ()=>storyResultPanel(ch, true, bonus), 'victory');   // rides the victory stinger into match-end silence — no music restart
   } else {
     Audio2.fileSfx('sfx_defeat');
     storyResultPanel(ch, false, false);
@@ -3289,6 +3378,8 @@ const Audio2 = (()=>{
     roundloss:()=>[392,294].forEach((f,i)=>osc(f,0.5,'triangle',0.5,0,i*0.18)),
     victory: ()=>[523,659,784,1047].forEach((f,i)=>osc(f,0.5,'triangle',0.55,0,i*0.15)),
     defeat:  ()=>{ osc(140,1.6,'sawtooth',0.5,88); nz(1.2,0.2,'lowpass',300,120); },
+    uitick:  ()=>{ osc(2100,0.028,'sine',0.05); },                       // typewriter tick — UI-tier, quiet, NO gameplay meaning
+    swish:   ()=>{ nz(0.22,0.12,'bandpass',380,2600); },                // panel-crossfade air-swish — new, ~−20 rel, NOT a gameplay sound
   };
   function sfx(name){ ensure(); if(sfxOn && SFX[name]) SFX[name](); }
   function playFile(name, duck){   // pre-normalized file: no gain compensation, bypasses the synth limiter
@@ -3310,10 +3401,11 @@ const Audio2 = (()=>{
   function testAll(){ ensure(); loadAudio(); if(ctx&&ctx.state==='suspended') ctx.resume();
     const names=Object.keys(SFX).concat(['sfx_astra','sfx_brahmastra','sfx_unit_clash',
       'sfx_mantra','sfx_heal','sfx_artifact','sfx_venom_apply','sfx_unit_destroy','sfx_leap',
-      'sfx_shield_apply','sfx_shield_break','sfx_chaos_surge','sfx_buff','sfx_debuff','sfx_conch','sfx_round_end','sfx_victory','sfx_defeat']);   // 14 synth + 18 files = 32
+      'sfx_shield_apply','sfx_shield_break','sfx_chaos_surge','sfx_buff','sfx_debuff','sfx_conch','sfx_round_end','sfx_victory','sfx_defeat']);   // 16 synth (incl. uitick+swish) + 18 files = 34
     names.forEach((n,i)=>setTimeout(()=>{ if(SFX[n]) SFX[n](); else playFile(n,false); }, i*650)); return names; }
+  function musicDuck(on){ if(!ctx||!musicOn) return; fadeMusicGain(on? MUSIC_LEVEL*0.708 : MUSIC_LEVEL, 0.3); }   // sustained −3 dB duck (held until released), for intro cutscenes
   return {
-    unlock, sfx, astraSfx, clashSfx, fileSfx, testAll, playTrack, stopMusic,
+    unlock, sfx, astraSfx, clashSfx, fileSfx, musicDuck, testAll, playTrack, stopMusic,
     setRound3:()=>{},
     setMusic:(on)=>{ musicOn=on; localStorage.setItem('dy_music',on?'1':'0'); if(!ctx) return;
       if(on){ fadeMusicGain(MUSIC_LEVEL,1.5); if(!curTrack) crossTo(desired,1.5); } else { fadeMusicGain(0.0001,1.5); } },
@@ -3896,7 +3988,7 @@ $('passbtn').onclick=()=>{ if(G.turn===0&&!G.players[0].passed&&!G.over && !chor
 $('loghead').onclick=()=>$('logdrawer').classList.toggle('open');
 $('inspect').onclick=e=>{ if(e.target.id==='inspect' || e.target.closest('.inspect-hint')) closeInspect(); };
 $('hand').addEventListener('scroll', ()=>{ if(focusRaf) return; focusRaf=requestAnimationFrame(()=>{ focusRaf=0; updateFocus(); }); });
-window.addEventListener('resize', ()=>{ if(G){ sizeBoard(); updateFocus(); } VFX.resize(); });
+window.addEventListener('resize', ()=>{ if(G){ sizeBoard(); updateFocus(); } VFX.resize(); if(CutState) cutResize(); });
 
 function pump(){
   if (G.over) return;

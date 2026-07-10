@@ -35,12 +35,14 @@ const CHAPTERS = {
       { highlight:{card:'Surya Dev'},      line:'They yield the field. One more — make the count beyond dispute — then rest your hand.' },
       { highlight:{action:'pass'},         line:'Rest your hand. Strength held in reserve is still strength.' },
     ],
+    // panels: { id, text:[title, ...body], ambience? } — ambience is a STUB slot (files come later, like the realm-map audio slot)
     cutscenes:{
       intro:[
-        { id:'b1c1_i1', text:['THE THRONE BESIEGED', 'Dusk on the gates of Swarga. Shukracharya’s raiders probe the walls where the light runs thin.'] },
-        { id:'b1c1_i2', text:['Brihaspati lays a hand on Indra’s shoulder.', '“The churning has not yet begun. But the first blow always comes early, and always for the gate.”'] },
+        { id:'b1c1_i1', text:['THE THRONE BESIEGED', 'Dusk on the gates of Swarga. Shukracharya’s raiders probe the walls where the light runs thin.'], ambience:null },
+        { id:'b1c1_i2', text:['On the ridge, shapes gather where the shadows run longest.', 'They come for the gate. They always come for the gate.'], ambience:null },
+        { id:'b1c1_i3', text:['Brihaspati lays a hand on Indra’s shoulder.', '“The gate holds only if someone stands at it. Wake the guard.”'], ambience:null },
       ],
-      victory:[ { id:'b1c1_v1', text:['THE GATE HOLDS', 'The raiders melt back into the dusk. Power answered power, and the greater total kept the field.'] } ],
+      victory:[ { id:'b1c1_v1', text:['THE GATE HOLDS', 'The raiders melt back into the dusk. Power answered power, and the greater total kept the field.'], ambience:null } ],
       defeat:[],
     },
     win:{ type:'matchWin' },
@@ -73,10 +75,11 @@ const CHAPTERS = {
     ],
     cutscenes:{
       intro:[
-        { id:'b1c2_i1', text:['THE ART OF YIELDING', 'The horde returns — not to probe, but to break. Their numbers darken the ridge.'] },
-        { id:'b1c2_i2', text:['Brihaspati alone stands unafraid.', '“Let them take the first field. A battle is three fields, and only two need be ours.”'] },
+        { id:'b1c2_i1', text:['THE ART OF YIELDING', 'The horde returns — not to probe, but to break. Their numbers darken the ridge.'], ambience:null },
+        { id:'b1c2_i2', text:['Brihaspati alone stands unafraid.', '“Let them take the first field. A battle is three fields, and only two need be ours.”'], ambience:null },
+        { id:'b1c2_i3', text:['An empty field, its banners planted.', '“Yield what does not matter. Keep everything for what does.”'], ambience:null },
       ],
-      victory:[ { id:'b1c2_v1', text:['THE LONGER WAR', 'They spent their fury on empty ground. When the fields that mattered came, we outnumbered them — and won the war we chose to fight.'] } ],
+      victory:[ { id:'b1c2_v1', text:['THE LONGER WAR', 'They spent their fury on empty ground. When the fields that mattered came, we outnumbered them.'], ambience:null } ],
       defeat:[],
     },
     win:{ type:'matchWin', extra:'ch2_lostR1' },
