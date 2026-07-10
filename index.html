@@ -921,6 +921,8 @@ const NAGA_DECK_DEF = [
 ];
 
 const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
+// name → card DEF (for opts.scenario deck/hand injection; instances are minted via mkCard for uid safety). Built once; touches no rng/UID.
+const CARD_BY_NAME = {}; for (const f in DECKS) for (const c of DECKS[f]) CARD_BY_NAME[c.n] = c;
 
 /* THE 7 COSMIC REALMS (GDD §10). One is assigned per match (random by default; fixable via opts.realm for tests).
    Each is an engine-level modifier consulted at the relevant chokepoint — NOTE: realm key 'patala' is the REALM
@@ -943,10 +945,18 @@ let UID = 1;
 function mkCard(def){ return { ...def, uid: UID++, power: def.p, base: def.p, ghost:false, lockedRound:0, aegis:false, revivedShield:false, asleep:false, revealPending:false, venom:0, doomed:false, disguisedAs:null, ward:false, bound:false, astraImmuneRound:0, stolenBy:-1 }; }
 function shuffle(a, rng){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
-function mkPlayer(name, rng, faction='devas'){
+function mkPlayer(name, rng, faction='devas', spec){
   const src = DECKS[faction] || DECKS.devas;
-  const deck = shuffle(src.map(mkCard), rng);
-  const hand = deck.splice(0,10);
+  let deck, hand;
+  if (spec && (spec.deck || spec.hand || spec.handSize!=null)){
+    // opts.scenario injection (read ONLY when present — opts.realm precedent). Custom decklist → ordered, NO shuffle; else the normal shuffled faction deck.
+    deck = spec.deck ? spec.deck.map(n=>CARD_BY_NAME[n]).filter(Boolean).map(mkCard) : shuffle(src.map(mkCard), rng);
+    if (spec.hand){ hand=[]; for (const n of spec.hand){ const i=deck.findIndex(c=>c.n===n); if (i>=0) hand.push(deck.splice(i,1)[0]); } }   // opening hand = named cards pulled from the deck
+    else hand = deck.splice(0, spec.handSize!=null ? spec.handSize : 10);
+  } else {
+    deck = shuffle(src.map(mkCard), rng);                              // ↓ absent/empty scenario: byte-identical to pre-scenario code
+    hand = deck.splice(0,10);
+  }
   return { name, faction, deck, hand, discard:[],
     units:[], heroes:[], artifact:null,
     passed:false, roundWins:0,
@@ -962,8 +972,9 @@ function mkPlayer(name, rng, faction='devas'){
    same count. Consumes rng (reshuffle) only when cards are actually swapped. */
 function mulligan(g, pi, uids){
   const pl=g.players[pi];
-  if (g.round!==1 || g.roundHistory.length || pl.mulliganed) return [];   // pre-Round-1, once
-  const swap=(uids||[]).slice(0,3).map(u=>pl.hand.find(c=>c.uid===u)).filter(Boolean);
+  const cap = g.mulliganCount!=null ? g.mulliganCount : 3;               // opts.scenario.mulligan (0 disables); default 3
+  if (g.round!==1 || g.roundHistory.length || pl.mulliganed || cap<=0) return [];   // pre-Round-1, once
+  const swap=(uids||[]).slice(0,cap).map(u=>pl.hand.find(c=>c.uid===u)).filter(Boolean);
   pl.mulliganed=true;
   if (!swap.length) return [];
   for (const c of swap){ pl.hand.splice(pl.hand.indexOf(c),1); pl.deck.push(c); }
@@ -993,20 +1004,26 @@ function aiMulliganPlan(g, pi){
     if (b>0 && !(c.t==='hero' && heroCount<=1)) bad.push([c,b]);      // keep your only Hero
   }
   bad.sort((a,b)=>b[1]-a[1]);
-  return bad.slice(0,3).map(([c])=>c.uid);
+  const cap = g.mulliganCount!=null ? g.mulliganCount : 3;   // opts.scenario.mulligan (0 disables); default 3
+  return bad.slice(0, cap).map(([c])=>c.uid);
 }
 
 function newGame(opts={}){
   const rng = opts.rng || Math.random;
+  const sc = opts.scenario;                              // opts.scenario: additive, read ONLY when present (opts.realm precedent). Absent/empty → identical behavior + rng sequence.
   const g = {
     rng, round:1, over:false, winner:null,
-    players:[ mkPlayer(opts.p0||'You', rng, opts.p0Faction||'devas'),
-              mkPlayer(opts.p1||'Opponent', rng, opts.p1Faction||'devas') ],
+    players:[ mkPlayer(opts.p0||'You', rng, opts.p0Faction||'devas', sc && {deck:sc.p0Deck, hand:sc.p0Hand, handSize:sc.handSize}),
+              mkPlayer(opts.p1||'Opponent', rng, opts.p1Faction||'devas', sc && {deck:sc.p1Deck, hand:sc.p1Hand, handSize:sc.handSize}) ],
     turn: rng()<0.5?0:1, lastMantra:null, log:[], events:[],
     roundHistory:[],
     lastKillThisRound:null, astraPlays:0, astraBanaCount:0, grantExtraTurn:null,
     lastCardThisRound:null,                            // Kalki Kshetra: {uid, isBody}
   };
+  // scenario knobs — each defaults to today's hardcoded value, so an absent/empty scenario is a full no-op (no rng consumed here).
+  g.winTarget     = (sc && sc.winTarget!=null) ? sc.winTarget : 2;   // rounds needed to win the match (best-of-3 default)
+  g.drawCount     = (sc && sc.draws!=null)     ? sc.draws     : 2;   // between-round draw count (realm bonus still added on top)
+  g.mulliganCount = (sc && sc.mulligan!=null)  ? sc.mulligan  : 3;   // mulligan swaps allowed; 0 disables the phase
   // Realm: fixed via opts.realm consumes NO rng (so a fixed-realm test stays byte-identical); random default draws one.
   g.realm = opts.realm || REALMS[Math.floor(rng()*REALMS.length)];
   g.firstThisRound = g.turn;
@@ -1878,7 +1895,7 @@ function endRound(g){
   else log(g, 'The round is a draw \u2014 both sides bleed.');
   g.roundHistory.push({ round:g.round, t0, t1, winner });
 
-  if (g.players[0].roundWins>=2 || g.players[1].roundWins>=2 || g.round>=3){
+  if (g.players[0].roundWins>=g.winTarget || g.players[1].roundWins>=g.winTarget || g.round>=3){   // g.winTarget default 2
     g.over=true;
     if (g.players[0].roundWins>g.players[1].roundWins) g.winner=0;
     else if (g.players[1].roundWins>g.players[0].roundWins) g.winner=1;
@@ -1901,7 +1918,7 @@ function endRound(g){
     pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
     // Gandharva Lok: both players draw 1 extra at the START of Round 2 (g.round is still 1 here, pre-increment).
     const extra = (g.realm==='gandharva' && g.round===1) ? 1 : 0;
-    const drawn = pl.deck.splice(0,2+extra); pl.hand.push(...drawn);
+    const drawn = pl.deck.splice(0, g.drawCount+extra); pl.hand.push(...drawn);   // g.drawCount default 2
     if (extra) log(g,`Gandharva Lok: ${pl.name} draws an extra card for Round 2.`);
     for (const c of pl.hand) c.lockedRound=0;
   }

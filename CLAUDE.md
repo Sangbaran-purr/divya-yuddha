@@ -14,6 +14,7 @@ Solo developer (Sangbaran, Creative Director) with Claude as the engineering tea
 ## Repo layout
 - `src/engine.js` — the rules engine. UI-agnostic. All game logic lives here.
 - `src/test.js` — simulation harness: 500 AI-vs-AI matches + rule invariants. RUN THIS AFTER EVERY ENGINE CHANGE.
+- `src/test_scenario.js` — `opts.scenario` smoke tests (47 checks): each field, the absent/empty no-op (incl. a byte-identical **g.rng draw-sequence** trace), and event observationality. Run after any setup/`newGame` change.
 - `index.html` — playable prototype (engine is inlined by a build step; keep src/engine.js canonical)
 - `docs/DESIGN_DECISIONS.md` — QA log, approved art, open rulings. Update when decisions are made.
 - `docs/GDD_DELTAS.md` — **authority for card frame text**: every gameplay divergence from GDD v2.0 in printed-card-text form (rulings R1–R9, tuned numbers). Use this, not the GDD PDF, when arting frames.
@@ -41,6 +42,7 @@ Solo developer (Sangbaran, Creative Director) with Claude as the engineering tea
 ## Game rules cheat sheet
 - 22-card decks, draw 10 at start, +2 at rounds 2 and 3, no hand limit, **mulligan up to 3 before Round 1 (implemented — GDD §2.2)**
 - **Each match is assigned one of the 7 Cosmic Realms (GDD §10) — an engine-level modifier; random by default, `opts.realm` fixes it for tests**
+- **`opts.scenario` (Story Mode setup — the first post-freeze engine change, 2026-07):** additive `newGame` option, read ONLY when present (opts.realm precedent) — `{ p0Deck?, p1Deck?, p0Hand?, p1Hand? (ordered decklists/hands by card NAME, minted via `mkCard` for uid safety, deck injection = no shuffle), winTarget? (default 2), handSize? (default 10), draws? (between-round, default 2, realm bonus still added), mulligan? (0..3, 0 disables the phase) }`. Stored as `g.winTarget`/`g.drawCount`/`g.mulliganCount`; every default equals today's hardcoded value. **Absent/empty scenario is byte-identical** (behavior AND `g.rng` draw sequence) — proven by `src/test_scenario.js` (rng-trace) and the unchanged LAUNCH BASELINE. Opponent scripting needs nothing more: the story driver calls `playCard(g,1,…)`/`pass(g,1)` and may hand off to `aiTakeTurn(g,1)` mid-match.
 - Play exactly 1 card per turn OR pass; once passed, out for the round; round ends when both pass
 - Rounds: higher Yuddha Row total wins; best of 3
 - Between rounds: Units and Artifacts CLEAR, Heroes PERSIST, unused hand carries forward, played cards never return
