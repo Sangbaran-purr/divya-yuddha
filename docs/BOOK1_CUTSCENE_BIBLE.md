@@ -117,7 +117,8 @@ smoke, low. PLATE: "They came back. All of them."
 MOTION: PUSH-IN slow on his stillness. PLATE: Brihaspati — "Fury spends
 itself fastest on an empty field. Let them have the morning."
 
-**b1c2_i3 — The Yielded Field**
+**b1c2_i3 — The Yielded Field**  (NOTE: shipped as a MID-ROUND panel, not intro —
+it fires once after round 1 resolves, so the ch2 intro is TWO panels: i1, i2)
 > an abandoned battlefield position at dawn, planted banners left standing in
 > empty ground, the army withdrawn to a far ridge in good order, painterly
 MOTION: PULL-OUT from a single banner to the empty field. PLATE: "We do not
