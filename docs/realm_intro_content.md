@@ -28,8 +28,8 @@ first card, not after.
 
 **Suffers here:**
 - Nobody directly — the blessing is even-handed
-- But Hero-removal gains value: the bigger the Heroes, the more Sudarshana-style
-  answers swing the match
+- But Hero answers gain value: Sudarshana Chakra benches an enemy Hero for a
+  round (it returns at half power), and the bigger the Hero, the more that swings it
 - Plans that bench the Hero waste the realm entirely
 
 **Tip:** The +1 is symmetric — the realm doesn't pick a winner, it raises the
