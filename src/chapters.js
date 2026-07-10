@@ -43,6 +43,13 @@ const STORY_PREDICATES = {
   ch5_no_venom_death: g => { const evs=g.events||[], s0=_side0Uids(g);
     const venomed=new Set(); evs.forEach(e=>{ if(e.type==='venom') (e.targetUids||[]).forEach(u=>venomed.add(u)); });
     return !evs.some(e=> e.type==='destroy' && e.abilityName==='reduced to 0' && (e.targetUids||[]).some(u=> s0.has(u) && venomed.has(u))); },
+  // CH6 bonus: win with your Artifact on the board at match end. VALIDATED: endRound RETURNS at match-over BEFORE the
+  // per-round board reset that clears artifacts — so the FINAL round's artifact persists into g.over. NO Asura card
+  // removes an enemy Artifact (only Deva Vishwakarma can), so this fails only by CHOICE (never playing Amrita in the
+  // deciding round). Star text must not imply protection.
+  ch6_artifact_kept: g => g.winner===0 && !!(g.players && g.players[0] && g.players[0].artifact),
+  // CH7 bonus: win the BOSS 2–0 (a round-win sweep). Trivially failable (drop any round).
+  ch7_sweep: g => g.winner===0 && !!g.players && (g.players[1].roundWins||0)===0 && (g.players[0].roundWins||0)>=(g.winTarget||2),
 };
 
 const CHAPTERS = {
@@ -256,16 +263,83 @@ const CHAPTERS = {
     rewards:{ xp:null, coins:null },
     unlocks:'b1c6',
   },
+
+  // ============================ CH.6 — THE NECTAR AND THE NET ============================
+  // FREE mode debuts (no guidance mask/glow). Teaches Artifacts (Amrita Kalasha) + RANDOM realm. First fully honest match.
+  b1c6: {
+    id:'b1c6', book:1, title:'The Nectar and the Net', order:6,
+    realm:null, playerFaction:'devas', opponentFaction:'asuras',   // realm null → RANDOM (first unforced realm in story)
+    mode:'FREE',
+    // near-real Deva deck = the ch4/5 chassis + the Amrita-Kalasha Artifact. p1 = ch4 de-fanged tier + ONE heavy (Ravana).
+    scenario:{
+      p0Deck:['Indra','Surya Dev','Yama','Vayu','Marut','Ashwini Kumars','Gandharva','Deva Soldier','Kubera','Amrita Kalasha','Gayatri Mantra','Pavamana'],
+      p1Deck:['Bana Asura','Meghnad','Narakasura','Ravana','Kali Asura','Asura Berserker','Vibhishana','Tataka','Maricha','Kalanemi','Pashupatastra','Tamasa'],
+      handSize:10, mulligan:3
+    },
+    opponentScript:[ {handoff:'ai'} ],   // FREE: the default AI plays from turn 1 — no script
+    introLine:'Some treasures do not strike. They simply refuse to stop giving.',   // Artifact line, once at match start (a pointer, not a beat)
+    artifactShimmer:'Amrita Kalasha',    // the Artifact card gets a one-time shimmer highlight in hand
+    cutscenes:{
+      intro:[
+        { id:'b1c6_i1', plate:'Last of all, carried in a vessel of gold — Amrita. The undying draught.', ambience:null },
+        { id:'b1c6_i2', plate:'Everything with a claim converged. Truces are mortal too.', ambience:null },
+      ],
+      victory:[ { id:'b1c6_v1', plate:'Some treasures do not strike. They simply refuse to stop giving.', ambience:null } ],
+      defeat:[],   // shared b1_defeat (DEFEAT_PANELS) played by the driver
+    },
+    win:{ type:'matchWin' },
+    // No Asura card removes an enemy Artifact (only Deva Vishwakarma) → this fails only by CHOICE (play Amrita in the
+    // deciding round). Star text avoids any protection claim.
+    bonus:{ predicateId:'ch6_artifact_kept', label:'The Kalasha never left the field', rewardId:'wave1-stub-b1c6' },
+    rewards:{ xp:null, coins:null },
+    unlocks:'b1c7',
+  },
+
+  // ============================ CH.7 — THE BETRAYAL (BOSS) ============================
+  // Graduation: FULL rules, real opponent, no guidance. Boss plate on the VS screen; Brihaspati silent except on loss.
+  b1c7: {
+    id:'b1c7', book:1, title:'The Betrayal', order:7,
+    realm:null, playerFaction:'devas', opponentFaction:'asuras',   // RANDOM realm
+    mode:'FREE', boss:true, bossName:'Shukracharya', bossEpithet:'Master of Mritasanjivani',
+    // p0 = the ch6 graduation deck unchanged. p1 = FULL-STRENGTH boss list (the heavies excluded since ch4) + Chandrahas
+    // + Pashupatastra/Tamasa. p1Hand GUARANTEES Chandrahas (T3) + the two scripted opener Units in the opening hand.
+    scenario:{
+      p0Deck:['Indra','Surya Dev','Yama','Vayu','Marut','Ashwini Kumars','Gandharva','Deva Soldier','Kubera','Amrita Kalasha','Gayatri Mantra','Pavamana'],
+      p1Deck:['Ravana','Bana Asura','Chandrahas','Kumbhakarna','Hiranyakashipu','Meghnad','Narakasura','Kalanemi','Pashupatastra','Tamasa','Mahabali','Maricha'],
+      p1Hand:['Ravana','Bana Asura','Chandrahas','Kumbhakarna','Hiranyakashipu','Meghnad','Narakasura','Kalanemi','Pashupatastra','Tamasa'],
+      handSize:10, mulligan:3
+    },
+    // LIVE_GAME_DESIGN boss pattern: two Units, then Chandrahas online by T3 (amplified Astra threat), then default AI.
+    opponentScript:[ {action:'play', cardName:'Ravana'}, {action:'play', cardName:'Bana Asura'}, {action:'play', cardName:'Chandrahas'}, {handoff:'ai'} ],
+    cutscenes:{
+      intro:[
+        { id:'b1c7_i1', plate:'The truce died where it stood.', ambience:null },
+        { id:'b1c7_i2', plate:'And the last battle of the churning began.', ambience:null },
+      ],
+      // MID at boss T3 (Chandrahas resolves): b1c7_i2 reused, fast PULL-OUT + THE LIGHTNING FLASH (book's single use) +
+      // dim. The BOSS speaks (his one line of the chapter), plate-style.
+      mid:[ { afterTurn:{ side:1, count:3 }, panels:[ { id:'b1c7_i2', m:{ from:'scale(1.16)', to:'scale(1.08)', origin:'50% 55%', dur:4, ease:'ease-out', vfx:'none' }, dim:true, flash:true, speaker:'Shukracharya', plate:'The moon-blade is drawn. Everything he has, at once.', ambience:null } ] } ],
+      // VICTORY: the two-phase MOHINI DRIFT (keyframed) — RISE to the vessel, hold, then a slow lateral drift toward the
+      // right-edge silhouette (the Book 2 hook, delivered by the camera).
+      victory:[ { id:'b1c7_v1', mohini:true, plate:'The Amrita came home. As for how it STAYED home — that is another book.', ambience:null } ],
+      defeat:[],
+    },
+    win:{ type:'matchWin' },
+    bonus:{ predicateId:'ch7_sweep', label:'The betrayal answered without a round lost', rewardId:'wave1-stub-b1c7' },
+    rewards:{ xp:null, coins:null },
+    unlocks:null,
+  },
 };
 
-// Chapters 6-7: locked stubs for the Book of Order select screen ("The churning continues soon").
-const LOCKED_STUBS = [
-  { id:'b1c6', order:6, title:'The Nectar and the Net' },
-  { id:'b1c7', order:7, title:'The Betrayal' },
-];
+// Shared DEFEAT cutscene (bible §3 b1_defeat) — the driver plays it on a loss for ALL seven chapters, replacing the
+// text-only defeat plate, before the retry panel. Motion: very-slow PUSH-IN on Brihaspati's face (spec §ch6–7 pack).
+const DEFEAT_PANELS = [ { id:'b1_defeat', m:{ from:'scale(1.04)', to:'scale(1.10)', origin:'50% 38%', dur:9, ease:'linear', vfx:'none' }, speaker:'Brihaspati', plate:'Defeat is a teacher with poor manners. Sit with the lesson; then stand.', ambience:null } ];
 
-const OUT = { CHAPTERS, STORY_PREDICATES, LOCKED_STUBS };
+// Book 1 has no more locked chapters (ch6–7 shipped).
+const LOCKED_STUBS = [];
+
+const OUT = { CHAPTERS, STORY_PREDICATES, LOCKED_STUBS, DEFEAT_PANELS };
 if (typeof module!=='undefined' && module.exports) module.exports = OUT;
-else { root.CHAPTERS=CHAPTERS; root.STORY_PREDICATES=STORY_PREDICATES; root.LOCKED_STUBS=LOCKED_STUBS; }
+else { root.CHAPTERS=CHAPTERS; root.STORY_PREDICATES=STORY_PREDICATES; root.LOCKED_STUBS=LOCKED_STUBS; root.DEFEAT_PANELS=DEFEAT_PANELS; }
 
 })(typeof window!=='undefined'?window:this);
