@@ -287,9 +287,41 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 /* ===== faction select ===== */
 /* menu background — subtle: cover art, desaturated + blurred, dark bottom-heavy gradient so faction panels stay the focus */
 /* menu is FRAMELESS — faction selection sits directly on the image; per-tile scrims keep text readable */
-#factionselect, #landing, #factionintro{ background:#0a0704; overflow:hidden; }
-#factionselect::before, #landing::before, #factionintro::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
-#factionselect::after, #landing::after, #factionintro::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
+#factionselect, #landing, #factionintro, #storyselect{ background:#0a0704; overflow:hidden; }
+#factionselect::before, #landing::before, #factionintro::before, #storyselect::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
+#factionselect::after, #landing::after, #factionintro::after, #storyselect::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
+
+/* ===== Story Mode (Book of Order) ===== */
+#storyselect, #cutscene{ display:block; overflow-y:auto; padding:0; }
+#story-chapters{ display:flex; flex-direction:column; gap:11px; }
+.story-ch{ display:flex; align-items:center; gap:12px; padding:13px 14px; border-radius:12px; background:rgba(0,0,0,.46); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.16); cursor:pointer; }
+.story-ch:active{ transform:scale(.99); }
+.story-ch .ch-num{ flex:0 0 auto; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-weight:700; font-size:15px; color:var(--gold); border:1.5px solid var(--gold-dim); }
+.story-ch .ch-main{ flex:1 1 auto; min-width:0; }
+.story-ch .ch-title{ font-family:Cinzel,serif; font-size:14px; color:#fff; letter-spacing:.5px; }
+.story-ch .ch-sub{ font-size:10px; color:var(--ink-dim); margin-top:3px; letter-spacing:.5px; }
+.story-ch .ch-end{ flex:0 0 auto; font-size:18px; color:var(--gold); }
+.story-ch.locked{ opacity:.5; cursor:default; }
+.story-ch.locked:active{ transform:none; }
+.story-ch.done{ border-color:var(--green-dim); }
+.story-ch.done .ch-num{ color:var(--green); border-color:var(--green-dim); }
+.story-ch .ch-check{ color:var(--green); }
+.story-ch .ch-bonus{ color:var(--gold); font-size:13px; }
+#cutscene{ background:rgba(4,3,1,.97); }
+#cutsceneskip{ position:fixed; top:14px; right:14px; z-index:3; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.2); color:var(--ink); border-radius:8px; padding:6px 12px; font-size:11px; letter-spacing:1px; cursor:pointer; }
+#cutscene-plate{ position:relative; z-index:1; min-height:100vh; box-sizing:border-box; max-width:520px; margin:0 auto; display:flex; flex-direction:column; justify-content:flex-end; padding:20px 22px 64px; }
+.cut-title{ font-family:Cinzel,serif; font-size:22px; letter-spacing:3px; color:var(--gold); margin-bottom:14px; text-shadow:0 2px 10px #000; }
+.cut-line{ font-size:15px; line-height:1.6; color:var(--ink); margin-bottom:10px; text-shadow:0 1px 6px #000; }
+.cut-hint{ margin-top:16px; font-size:10px; letter-spacing:1px; color:var(--ink-dim); }
+#brihaspati{ position:fixed; left:50%; transform:translateX(-50%); bottom:98px; z-index:60; width:min(92vw,460px); display:flex; gap:11px; align-items:center; background:rgba(10,7,3,.94); border:1px solid var(--gold-dim); border-radius:12px; padding:10px 13px; box-shadow:0 6px 24px rgba(0,0,0,.6); cursor:pointer; }
+#brihaspati.hidden{ display:none; }
+.bri-chip{ flex:0 0 auto; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; color:#1a1204; background:linear-gradient(150deg,#f0d890,#c9a84c); border:2px solid var(--gold); }
+.bri-line{ font-family:Cinzel,serif; font-size:12.5px; line-height:1.45; color:var(--hi); letter-spacing:.3px; }
+.bri-tap{ font-size:9px; color:var(--ink-dim); letter-spacing:1px; margin-top:3px; }
+.hc.story-masked{ filter:grayscale(.7) brightness(.5); pointer-events:none; }
+.hc.story-hi{ box-shadow:0 0 0 2px var(--gold), 0 0 22px rgba(232,201,90,.75) !important; animation:storyGlow 1.4s ease-in-out infinite; }
+@keyframes storyGlow{ 0%,100%{ box-shadow:0 0 0 2px var(--gold), 0 0 12px rgba(232,201,90,.5); } 50%{ box-shadow:0 0 0 2px var(--gold), 0 0 26px rgba(232,201,90,.92); } }
+#passbtn.story-hi{ box-shadow:0 0 0 2px var(--gold), 0 0 22px rgba(232,201,90,.85); animation:storyGlow 1.4s ease-in-out infinite; }
 #factionselect .modal{ position:relative; z-index:1; }
 
 /* ===== landing page (first screen, before faction-select) ===== */
@@ -733,9 +765,9 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
         <div class="mode-main"><div class="mode-title">Player vs AI</div></div>
         <span class="mode-chev">›</span>
       </button>
-      <button class="mode locked" data-soon>
-        <div class="mode-main"><div class="mode-title">Story Mode — Divya Yatra</div><div class="mode-cap">Book 1 coming soon</div></div>
-        <span class="mode-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+      <button class="mode active" id="mode-story">
+        <div class="mode-main"><div class="mode-title">Story Mode — Divya Yatra</div><div class="mode-cap">Book 1 · The Book of Order</div></div>
+        <span class="mode-chev">›</span>
       </button>
       <button class="mode active" id="mode-factions">
         <div class="mode-main"><div class="mode-title">Faction Introduction</div><div class="mode-cap">Meet the armies and the realms</div></div>
@@ -748,6 +780,33 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     </div>
   </div>
 </div>
+
+<div class="overlay hidden" id="storyselect">
+  <button class="fi-back" id="story-back" title="back">‹</button>
+  <div class="fi-col">
+    <div class="fi-idhead">
+      <div class="fi-facname" style="color:var(--gold); font-size:23px; letter-spacing:3px;">BOOK OF ORDER</div>
+      <div class="fi-tagline">The Samudra Manthan — one lesson each chapter, taught by the guru Brihaspati.</div>
+    </div>
+    <div id="story-chapters"></div>
+  </div>
+</div>
+<div class="overlay hidden" id="cutscene">
+  <button id="cutsceneskip">skip ›</button>
+  <div id="cutscene-plate"></div>
+</div>
+<div id="brihaspati" class="hidden">
+  <div class="bri-chip">ब</div>
+  <div><div class="bri-line"></div><div class="bri-tap">tap to continue ›</div></div>
+</div>
+<div class="overlay hidden" id="storyresult"><div class="modal" style="text-align:center; max-width:400px;">
+  <h2 id="sr-title"></h2><p id="sr-sub"></p>
+  <div id="sr-bonus" class="hidden"></div>
+  <div class="go-btns">
+    <button id="sr-primary"></button>
+    <button class="go-alt" id="sr-secondary"></button>
+  </div>
+</div></div>
 
 <div class="overlay hidden" id="factionintro">
   <button class="fi-back" id="fi-back" title="back">‹</button>
@@ -950,8 +1009,8 @@ function mkPlayer(name, rng, faction='devas', spec){
   let deck, hand;
   if (spec && (spec.deck || spec.hand || spec.handSize!=null)){
     // opts.scenario injection (read ONLY when present — opts.realm precedent). Custom decklist → ordered, NO shuffle; else the normal shuffled faction deck.
-    deck = spec.deck ? spec.deck.map(n=>CARD_BY_NAME[n]).filter(Boolean).map(mkCard) : shuffle(src.map(mkCard), rng);
-    if (spec.hand){ hand=[]; for (const n of spec.hand){ const i=deck.findIndex(c=>c.n===n); if (i>=0) hand.push(deck.splice(i,1)[0]); } }   // opening hand = named cards pulled from the deck
+    deck = spec.deck ? spec.deck.map(n=>{ const d=CARD_BY_NAME[n]; if (!d) throw new Error(`opts.scenario: unknown card name "${n}"`); return mkCard(d); }) : shuffle(src.map(mkCard), rng);   // hard error on a bad name (authoring safety, design ruling)
+    if (spec.hand){ hand=[]; for (const n of spec.hand){ const i=deck.findIndex(c=>c.n===n); if (i<0) throw new Error(`opts.scenario: hand card "${n}" is not in the deck`); hand.push(deck.splice(i,1)[0]); } }   // opening hand = named cards pulled from the deck
     else hand = deck.splice(0, spec.handSize!=null ? spec.handSize : 10);
   } else {
     deck = shuffle(src.map(mkCard), rng);                              // ↓ absent/empty scenario: byte-identical to pre-scenario code
@@ -2159,6 +2218,7 @@ if (typeof module!=='undefined'){
 }
 </script>
 <!-- ENGINE:END -->
+<script src="src/chapters.js"></script>
 <script>
 const $=id=>document.getElementById(id);
 const TYPE_ICON={hero:'👑',unit:'⚔',astra:'🔱',mantra:'🕉',artifact:'🧿'};
@@ -2198,6 +2258,7 @@ function sizeBoard(){
 
 let currentFactions={ p0:'devas', p1:'devas' };
 function startGame(p0Faction, p1Faction){
+  Story=null;   // a PvAI match is never a story chapter
   currentFactions={ p0: p0Faction||currentFactions.p0, p1: p1Faction||currentFactions.p1 };
   if (aiTimer) clearTimeout(aiTimer);
   G=newGame({p0:'You',p1:'Opponent',p0Faction:currentFactions.p0,p1Faction:currentFactions.p1}); seenLog=0;
@@ -2359,7 +2420,8 @@ function recordMatchResult(){
   saveProfile(P);
 }
 function showLanding(){
-  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','settings','mulligan','targeting','inspect','banner','realmpop'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
+  Story=null;   // leaving any story chapter
+  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','settings','mulligan','targeting','inspect','banner','realmpop'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
   renderProfile();
   $('landing').classList.remove('hidden');
   Audio2.playTrack('menu');   // menu music covers landing + faction-select (gesture-driven: first tap starts it)
@@ -2772,6 +2834,155 @@ $('fi-tabs').addEventListener('click', e=>{ const b=e.target.closest('.fi-tab');
 $('fi-back').onclick=()=>showLanding();
 $('mode-factions').onclick=()=>showFactionIntro();
 
+/* ===================== STORY MODE — DIVYA YATRA (driver) ===================== */
+let Story = null;                 // null = not in a story chapter; else the live driver state
+let storySeedN = 7;               // increments per chapter start → deterministic-but-varied AI handoff
+function storyRng(seed){ let s=seed>>>0; let first=true; return ()=>{ if(first){ first=false; return 0.0; } s=(s*1664525+1013904223)>>>0; return s/4294967296; }; }   // first draw forces player-first
+/* --- persistence (dy_story, a dy_profile-family key; story is separate from PvAI telemetry) --- */
+function loadStoryProg(){ try{ return JSON.parse(localStorage.getItem('dy_story'))||{}; }catch(e){ return {}; } }
+function saveStoryProg(s){ try{ localStorage.setItem('dy_story', JSON.stringify(s)); }catch(e){} }
+function markChapterComplete(id, bonus){ const s=loadStoryProg(); s[id]=s[id]||{}; s[id].done=true; if(bonus) s[id].bonus=true; saveStoryProg(s); }
+function chapterUnlocked(id){ if(id==='b1c1') return true;
+  const all=Object.values(CHAPTERS).concat(LOCKED_STUBS); const me=all.find(c=>c.id===id); if(!me) return false;
+  const before=all.find(c=>c.order===me.order-1); if(!before) return true; return !!(loadStoryProg()[before.id]||{}).done; }   // sequential gating: unlocked iff the previous chapter is done
+function chapterPlayable(id){ return !!CHAPTERS[id] && chapterUnlocked(id); }
+/* --- chapter-select (Book of Order) --- */
+function showStorySelect(){
+  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','landing','settings','mulligan','cutscene','storyresult','brihaspati'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
+  renderChapterCards();
+  $('storyselect').classList.remove('hidden'); $('storyselect').scrollTop=0;
+  Audio2.playTrack('menu');   // menu music on chapter select
+}
+function renderChapterCards(){
+  const box=$('story-chapters'); box.innerHTML='';
+  const prog=loadStoryProg();
+  const all=Object.values(CHAPTERS).concat(LOCKED_STUBS).sort((a,b)=>a.order-b.order);
+  all.forEach(ch=>{
+    const done=!!(prog[ch.id]||{}).done, bonus=!!(prog[ch.id]||{}).bonus;
+    const playable=chapterPlayable(ch.id), unlocked=chapterUnlocked(ch.id);
+    const card=fh('div',{class:'story-ch'+(playable&&unlocked?'':' locked')+(done?' done':''), onclick:()=> (playable&&unlocked) ? enterChapter(ch.id) : toastMute('The churning continues soon')});
+    card.append(fh('div',{class:'ch-num'}, done?'✓':String(ch.order)));
+    const sub = !CHAPTERS[ch.id] ? 'The churning continues soon' : !unlocked ? 'Locked — win the chapter before' : done ? (bonus?'Complete · bonus earned':'Complete') : 'Ready';
+    card.append(fh('div',{class:'ch-main'}, fh('div',{class:'ch-title'}, `${ch.order}. ${ch.title}`), fh('div',{class:'ch-sub'}, sub)));
+    card.append(fh('div',{class:'ch-end'}, done ? (bonus?'★':'✓') : (playable&&unlocked?'›':'')));
+    box.append(card);
+  });
+}
+$('mode-story').onclick=()=>showStorySelect();
+$('story-back').onclick=()=>showLanding();
+/* --- chapter entry: intro cutscene → match --- */
+function enterChapter(id){ const ch=CHAPTERS[id]; if(!ch) return;
+  playCutscenes(ch.cutscenes && ch.cutscenes.intro, ()=>startStoryChapter(id)); }
+function startStoryChapter(id){
+  const ch=CHAPTERS[id]; if(!ch) return;
+  if (aiTimer) clearTimeout(aiTimer);
+  Story = { chapter:ch, beatIdx:0, scriptIdx:0, handoff:false, lineBeat:-1 };
+  currentFactions={ p0:ch.playerFaction, p1:ch.opponentFaction };
+  G=newGame({ p0:'You', p1:'Opponent', p0Faction:ch.playerFaction, p1Faction:ch.opponentFaction, realm:ch.realm||undefined, rng:storyRng(storySeedN++), scenario:ch.scenario }); seenLog=0;
+  G.players[0].manualShield=true; matchRecorded=true;   // matchRecorded=true is belt-and-suspenders; showGameOver also early-returns for story (no PvAI telemetry)
+  knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; shieldMode=false; hideBoardTargetBar();
+  ['gameover','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','storyselect','cutscene','storyresult','mulligan','realmpop'].forEach(id=>$(id).classList.add('hidden'));
+  $('hudwrap').classList.remove('hidden');
+  $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
+  applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers();
+  Audio2.playTrack('battle'); conchPending=true;
+  showRealmIntro(); render(); VFX.init(); VFX.resize();
+  pump();   // mulligan:0 → straight into round 1 (player-first via storyRng)
+}
+/* --- opponent turn: scripted, then AI handoff (called inside runAction as the mutate) --- */
+function storyOpponentStep(){
+  const ch=Story.chapter, step=ch.opponentScript[Story.scriptIdx];
+  if(Story.handoff || !step || step.handoff){ Story.handoff=true; aiTakeTurn(G,1); return; }
+  Story.scriptIdx++;
+  if(step.action==='pass'){ pass(G,1); return; }
+  const idx=G.players[1].hand.findIndex(c=>c.n===step.cardName);
+  if(idx>=0) playCard(G,1,idx); else pass(G,1);
+}
+/* --- guidance: mask the hand to the highlighted card/action, glow it, show Brihaspati --- */
+function storyBeat(){ const g=Story.chapter.guidance; return g[Math.min(Story.beatIdx, g.length-1)]; }
+function storyBestUnitIdx(){ const pl=G.players[0]; const idxs=playableIndices(G,0).filter(i=>pl.hand[i].t==='unit'); if(!idxs.length) return -1; return idxs.reduce((a,b)=> pl.hand[a].p>=pl.hand[b].p?a:b); }
+function storyResolveHighlight(h){                                   // → {kind:'pass'} | {kind:'card', index}
+  if(h.action==='pass') return { kind:'pass' };
+  if(h.auto){ const opp=G.players[1];
+    if(h.auto==='bestOrPass' && opp.passed && totalPower(G,0)>totalPower(G,1)) return { kind:'pass' };   // ahead & foe done → hold (banks cards)
+    const bi=storyBestUnitIdx(); return bi>=0 ? { kind:'card', index:bi } : { kind:'pass' };
+  }
+  const i=G.players[0].hand.findIndex(c=>c.n===h.card); return i>=0 ? { kind:'card', index:i } : { kind:'pass' };
+}
+function applyStoryGuidance(){
+  document.querySelectorAll('#hand .hc').forEach(el=>el.classList.remove('story-hi','story-masked'));
+  $('passbtn').classList.remove('story-hi');
+  if(!Story || G.over || choreoActive || G.turn!==0 || G.players[0].passed){ hideBrihaspati(); return; }
+  const beat=storyBeat(), tgt=storyResolveHighlight(beat.highlight);
+  const cards=[...document.querySelectorAll('#hand .hc')];
+  cards.forEach((el,i)=>{ if(tgt.kind==='card' && i===tgt.index){ el.classList.add('story-hi'); el.onclick=()=>storyPlayerTap(); }
+    else { el.classList.add('story-masked'); el.onclick=null; } });
+  if(tgt.kind==='pass'){ $('passbtn').disabled=false; $('passbtn').classList.add('story-hi'); }
+  else $('passbtn').disabled=true;   // LOCKED: only the highlighted card is actionable — the mask never touches engine legality
+  // Brihaspati line — once per beat
+  const effBeat=Math.min(Story.beatIdx, Story.chapter.guidance.length-1);
+  if(Story.lineBeat!==effBeat){ showBrihaspati(beat.line); Story.lineBeat=effBeat; }
+}
+function storyPlayerTap(){                                           // fired by the highlighted card, the pass button, or the plate
+  if(!Story || G.turn!==0 || choreoActive || G.over) return;
+  const tgt=storyResolveHighlight(storyBeat().highlight);
+  hideBrihaspati(); Story.beatIdx++;
+  if(tgt.kind==='pass') runAction(()=>pass(G,0));
+  else runAction(()=>playCard(G,0,tgt.index));
+}
+function showBrihaspati(line){ const b=$('brihaspati'); b.querySelector('.bri-line').textContent=line; b.classList.remove('hidden'); }
+function hideBrihaspati(){ $('brihaspati').classList.add('hidden'); }
+$('brihaspati').onclick=()=>storyPlayerTap();
+// in a story chapter, intercept the pass button (capture phase) so the default PvAI handler never fires; route to the guided pass only when it's highlighted
+$('passbtn').addEventListener('click', (e)=>{ if(Story){ e.stopImmediatePropagation(); if($('passbtn').classList.contains('story-hi')) storyPlayerTap(); } }, true);
+/* --- cutscene player (text plates; §5 manifest shape — image drops in later) --- */
+function playCutscenes(panels, onDone){
+  panels=(panels||[]).filter(Boolean);
+  if(!panels.length){ onDone&&onDone(); return; }
+  let i=0; const ov=$('cutscene');
+  const show=()=>{ if(i>=panels.length){ ov.classList.add('hidden'); ov.onclick=null; onDone&&onDone(); return; }
+    const p=panels[i]; const plate=$('cutscene-plate'); plate.innerHTML='';
+    const t=p.text||[];
+    plate.append(fh('div',{class:'cut-title'}, t[0]||''));
+    for(let k=1;k<t.length;k++) plate.append(fh('div',{class:'cut-line'}, t[k]));
+    plate.append(fh('div',{class:'cut-hint'}, i<panels.length-1?'tap to continue ›':'tap to begin ›'));
+  };
+  ov.onclick=()=>{ i++; show(); };
+  $('cutsceneskip').onclick=(e)=>{ e.stopPropagation(); i=panels.length; show(); };
+  ov.classList.remove('hidden'); ov.scrollTop=0; show();
+}
+/* --- result: evaluate predicates, persist, victory cutscene / loss+retry --- */
+function showStoryResult(){
+  if(Story.resultShown) return; Story.resultShown=true;   // render() re-calls showGameOver each frame while G.over
+  const ch=Story.chapter, won=G.winner===0;
+  hideBrihaspati(); Audio2.setRound3(false); Audio2.stopMusic(2);
+  if(won){
+    Audio2.fileSfx('sfx_victory');
+    const winExtra = ch.win.extra ? STORY_PREDICATES[ch.win.extra](G) : true;
+    const complete = winExtra;   // g.winner===0 already true
+    const bonus = ch.bonus && STORY_PREDICATES[ch.bonus.predicateId] ? !!STORY_PREDICATES[ch.bonus.predicateId](G) : false;
+    if(complete) markChapterComplete(ch.id, bonus);
+    playCutscenes(ch.cutscenes && ch.cutscenes.victory, ()=>storyResultPanel(ch, true, bonus));
+  } else {
+    Audio2.fileSfx('sfx_defeat');
+    storyResultPanel(ch, false, false);
+  }
+}
+function storyResultPanel(ch, won, bonus){
+  $('sr-title').textContent = won ? '⚔ CHAPTER CLEARED ⚔' : 'THE LESSON';
+  $('sr-title').style.color = won ? 'var(--gold)' : 'var(--crimson)';
+  $('sr-sub').textContent = won ? `${ch.title} — complete.` : '"Defeat is a teacher with poor manners. Sit with the lesson; then stand."';
+  const bx=$('sr-bonus');
+  if(won && ch.bonus){ bx.classList.remove('hidden'); bx.textContent = (bonus?'★ Bonus earned: ':'☆ Bonus missed: ')+ch.bonus.label; bx.style.color = bonus?'var(--gold)':'var(--ink-dim)'; bx.style.cssText+=';font-size:11px;margin:8px 0;letter-spacing:.5px;'; }
+  else bx.classList.add('hidden');
+  const p=$('sr-primary'), s=$('sr-secondary');
+  if(won){ p.textContent='CONTINUE'; p.onclick=()=>{ Story=null; showStorySelect(); };
+    s.textContent='REPLAY'; s.onclick=()=>startStoryChapter(ch.id); s.classList.remove('hidden'); }
+  else { p.textContent='RETRY'; p.onclick=()=>startStoryChapter(ch.id);   // instant retry, no penalty
+    s.textContent='LEAVE'; s.onclick=()=>{ Story=null; showStorySelect(); }; s.classList.remove('hidden'); }
+  $('storyresult').classList.remove('hidden');
+}
+
 function makeEmbers(){
   const box=$('embers'); box.innerHTML=''; if (reducedMotion()) return;
   for (let i=0;i<12;i++){
@@ -2912,6 +3123,7 @@ function render(targetSet){
   $('unbindbtn').classList.toggle('hidden', !(myTurn && me.units.some(u=>u.bound && !u.ghost) && !leapMode && !placeMode && !pendingPlay));
   $('turnind').textContent = G.over?'MATCH OVER': myTurn?'YOUR TURN': me.passed&&op.passed?'—': (G.turn===1?'OPPONENT…':'…');
   $('turnind').className = myTurn?'you':'';
+  if(Story) applyStoryGuidance();   // story: mask the hand to the guided card/action + Brihaspati (after the normal hand/pass render)
 
   // log body + collapsed last line
   const lb=$('logbody');
@@ -3693,11 +3905,12 @@ function pump(){
   Audio2.setRound3(G.round>=3);                   // Round 3 brings in the tabla-like pulse
   if (G.turn===1 && !G.players[1].passed){
     showOppThinking(true);                         // humanized pause with a "thinking" indicator
-    aiTimer=setTimeout(()=>{ showOppThinking(false); runAction(()=>aiTakeTurn(G,1), {actor:1}); }, aiThinkTime());
+    aiTimer=setTimeout(()=>{ showOppThinking(false); runAction(()=> Story ? storyOpponentStep() : aiTakeTurn(G,1), {actor:1}); }, aiThinkTime());   // story: scripted opponent → AI handoff
   }
 }
 
 function showGameOver(){
+  if(Story){ showStoryResult(); return; }   // story matches: separate result screen, and NEVER touch PvAI telemetry
   recordMatchResult();   // one-shot: bump matches/wins/wins-today telemetry (guarded against re-render)
   const me=G.players[0];
   $('goh').textContent = G.winner===0?'⚔ VICTORY ⚔': G.winner===1?'DEFEAT':'STALEMATE';

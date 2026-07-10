@@ -160,8 +160,8 @@ function mkPlayer(name, rng, faction='devas', spec){
   let deck, hand;
   if (spec && (spec.deck || spec.hand || spec.handSize!=null)){
     // opts.scenario injection (read ONLY when present — opts.realm precedent). Custom decklist → ordered, NO shuffle; else the normal shuffled faction deck.
-    deck = spec.deck ? spec.deck.map(n=>CARD_BY_NAME[n]).filter(Boolean).map(mkCard) : shuffle(src.map(mkCard), rng);
-    if (spec.hand){ hand=[]; for (const n of spec.hand){ const i=deck.findIndex(c=>c.n===n); if (i>=0) hand.push(deck.splice(i,1)[0]); } }   // opening hand = named cards pulled from the deck
+    deck = spec.deck ? spec.deck.map(n=>{ const d=CARD_BY_NAME[n]; if (!d) throw new Error(`opts.scenario: unknown card name "${n}"`); return mkCard(d); }) : shuffle(src.map(mkCard), rng);   // hard error on a bad name (authoring safety, design ruling)
+    if (spec.hand){ hand=[]; for (const n of spec.hand){ const i=deck.findIndex(c=>c.n===n); if (i<0) throw new Error(`opts.scenario: hand card "${n}" is not in the deck`); hand.push(deck.splice(i,1)[0]); } }   // opening hand = named cards pulled from the deck
     else hand = deck.splice(0, spec.handSize!=null ? spec.handSize : 10);
   } else {
     deck = shuffle(src.map(mkCard), rng);                              // ↓ absent/empty scenario: byte-identical to pre-scenario code

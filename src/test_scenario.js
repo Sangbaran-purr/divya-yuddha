@@ -93,6 +93,13 @@ function decisiveRound1(scenario){ const g=E.newGame({ p0Faction:'devas', p1Fact
   const r3=E.mulligan(g3,0,[g3.players[0].hand[0].uid]);
   ok('mulligan default → swaps normally (control)', r3.length===1); }
 
+/* ============== unknown-card names throw (design ruling) ============== */
+console.log('unknown-card handling: hard error (not silent skip):');
+function throws(fn){ try{ fn(); return false; }catch(e){ return true; } }
+ok('unknown p0Deck card throws', throws(()=>E.newGame({ p0Faction:'devas', rng:seeded(1), scenario:{ p0Deck:['Indra','NOT A CARD','Vajra'] } })));
+ok('hand card not in deck throws', throws(()=>E.newGame({ p0Faction:'devas', rng:seeded(1), scenario:{ p0Deck:['Indra','Vajra'], p0Hand:['Brahmastra'] } })));
+ok('valid names still succeed (no false throw)', !throws(()=>E.newGame({ p0Faction:'devas', rng:seeded(1), scenario:{ p0Deck:['Indra','Vajra'], p0Hand:['Vajra'] } })));
+
 /* ==================== (c) EVENTS STAY OBSERVATIONAL ==================== */
 console.log('(c) event stream is observational (rule #7):');
 // draining g.events mid-game must not change the outcome; and rng-call-count must be identical whether or not events are consumed.
