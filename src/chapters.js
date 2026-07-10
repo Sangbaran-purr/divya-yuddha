@@ -153,8 +153,13 @@ const CHAPTERS = {
         { id:'b1c3_i1', plate:'Shukracharya no longer asks questions.', ambience:null },
         { id:'b1c3_i3', img:'assets/img/board_swarga.jpg', m:{ from:'scale(1.18)', to:'scale(1.06)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'none' }, plate:'Swarga itself takes the field. Read the sky before you read your hand.', ambience:null },
       ],
-      // MID: after the opponent's 3rd turn resolves, before the Astra turn — b1c3_i1 reused with a fast push + dim.
-      mid:[ { afterTurn:{ side:1, count:3 }, panels:[ { id:'b1c3_i1', m:{ from:'scale(1.05)', to:'scale(1.12)', origin:'50% 40%', dur:4, ease:'ease-out', vfx:'none' }, dim:true, plate:'The blade seeks your champion.', ambience:null } ] } ],
+      // MID: after the opponent's 3rd turn resolves, before the Astra turn (VAJRA). Two panels over the blade image
+      // (b1c3_i1): the softened telegraph, then a Brihaspati aside making the Asuras' BORROWED Vajra diegetic — both
+      // play before the strike resolves (the whole mid cutscene runs, then pump() → the player's turn → the Astra turn).
+      mid:[ { afterTurn:{ side:1, count:3 }, panels:[
+        { id:'b1c3_i1', m:{ from:'scale(1.05)', to:'scale(1.12)', origin:'50% 40%', dur:4, ease:'ease-out', vfx:'none' }, dim:true, plate:'His stolen weapon seeks your champion.', ambience:null },
+        { id:'b1c3_i1', m:{ from:'scale(1.12)', to:'scale(1.17)', origin:'50% 40%', dur:5, ease:'ease-out', vfx:'none' }, dim:true, speaker:'Brihaspati', plate:'That light is not his. He wields a stolen spark of heaven — as he will steal greater things before this ends.', ambience:null },
+      ] } ],
       victory:[ { id:'b1c3_v1', plate:'Heaven’s weapons answer only when heaven is ready.', ambience:null } ],
       defeat:[],
     },
