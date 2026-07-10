@@ -309,6 +309,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .story-ch .ch-bonus{ color:var(--gold); font-size:13px; }
 #cutscene{ display:block; overflow:hidden; background:#000; padding:0; z-index:96; }   /* above the board HUD (#hudwrap z-95) so a MID-match cutscene fully covers it */
 .cut-panel{ position:fixed; inset:0; z-index:0; background-position:center; background-size:cover; background-repeat:no-repeat; opacity:0; will-change:transform,opacity; backface-visibility:hidden; }   /* Ken Burns via transform; cover = never letterboxes (handles the 896×1284 panel too) */
+.cut-panel.cut-noart{ background:radial-gradient(circle at 50% 38%, #1c140b 0%, #0a0704 55%, #030201 100%) !important; }   /* 404 fallback: a warm vignette behind the text-only plate (no broken-image) */
 #cut-vfx{ position:fixed; inset:0; z-index:1; pointer-events:none; }                                  /* embers/smoke overlay, above panels, below scrim+plate */
 #cut-scrim{ position:fixed; inset:0; z-index:2; pointer-events:none; background:linear-gradient(to bottom, transparent 40%, rgba(0,0,0,.35) 62%, rgba(0,0,0,.88) 100%); }
 #cutsceneskip{ position:fixed; top:14px; right:14px; z-index:4; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.2); color:var(--ink); border-radius:8px; padding:6px 12px; font-size:11px; letter-spacing:1px; cursor:pointer; }
@@ -325,7 +326,10 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .hc.story-masked{ filter:grayscale(.7) brightness(.5); pointer-events:none; }
 .hc.story-hi{ box-shadow:0 0 0 2px var(--gold), 0 0 22px rgba(232,201,90,.75) !important; animation:storyGlow 1.4s ease-in-out infinite; }
 @keyframes storyGlow{ 0%,100%{ box-shadow:0 0 0 2px var(--gold), 0 0 12px rgba(232,201,90,.5); } 50%{ box-shadow:0 0 0 2px var(--gold), 0 0 26px rgba(232,201,90,.92); } }
-#passbtn.story-hi{ box-shadow:0 0 0 2px var(--gold), 0 0 22px rgba(232,201,90,.85); animation:storyGlow 1.4s ease-in-out infinite; }
+#passbtn.story-hi, #shieldbtn.story-hi{ box-shadow:0 0 0 2px var(--gold), 0 0 22px rgba(232,201,90,.85); animation:storyGlow 1.4s ease-in-out infinite; }
+.bc.story-target{ box-shadow:0 0 0 2px var(--crimson), 0 0 18px rgba(200,60,50,.8) !important; border-radius:6px; animation:storyGlow 1.4s ease-in-out infinite; }   /* SUGGESTED: the suggested Astra/target enemy Unit glows */
+.mull-story{ font-family:Cinzel,serif; font-size:13px; line-height:1.5; color:var(--gold); font-style:italic; margin:0 0 12px; text-shadow:0 1px 4px #000; }
+.mull-story.hidden{ display:none !important; }
 #factionselect .modal{ position:relative; z-index:1; }
 
 /* ===== landing page (first screen, before faction-select) ===== */
@@ -502,6 +506,10 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fsel-start:active{ transform:scale(.98); }
 .go-btns{ display:flex; flex-direction:column; gap:8px; align-items:center; }
 .go-alt{ background:none !important; border:1px solid #4a3a18 !important; color:var(--ink-dim) !important; font-size:11px !important; padding:8px 16px !important; }
+/* story-cleared dialog: a primary/secondary pair in the app's gold aesthetic (same width, stacked) */
+#storyresult .go-btns button{ font-family:Cinzel,serif; letter-spacing:1.5px; width:210px; max-width:82%; border-radius:9px; }
+#sr-primary{ background:rgba(232,200,116,.12); color:var(--gold); border:1.5px solid var(--gold); border-radius:9px; padding:12px 20px; font-size:13px; font-weight:700; cursor:pointer; text-shadow:0 1px 3px rgba(0,0,0,.6); }
+#sr-primary:active{ transform:scale(.98); }
 
 /* ===== event choreography ===== */
 #choreolayer{ position:fixed; inset:0; z-index:64; pointer-events:none; }
@@ -747,6 +755,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 </div></div>
 
 <div class="overlay hidden" id="mulligan"><div class="modal mull">
+  <div id="mull-story" class="mull-story hidden"></div>
   <h3>OPENING HAND</h3>
   <p class="mull-sub">Tap up to 3 cards to return to your deck and redraw. <span id="mullcount">0 / 3 marked</span></p>
   <div id="mullhand"></div>
@@ -2342,7 +2351,7 @@ $('realmchip').onclick=(e)=>{
 document.addEventListener('click', e=>{ if(!e.target.closest('#realmchip') && !e.target.closest('#realmpop')) $('realmpop').classList.add('hidden'); });
 
 let mullMarked=new Set();
-function beginMulligan(){ mullMarked=new Set(); renderMulligan(); $('mulligan').classList.remove('hidden'); }
+function beginMulligan(){ mullMarked=new Set(); $('mull-story').classList.add('hidden'); renderMulligan(); $('mulligan').classList.remove('hidden'); }
 function renderMulligan(){
   const box=$('mullhand'); box.innerHTML='';
   for (const c of G.players[0].hand){
@@ -2358,7 +2367,7 @@ function renderMulligan(){
 $('mullconfirm').onclick=()=>{
   const snap=snapshotBoard(); const evStart=G.events.length;
   mulligan(G, 0, [...mullMarked]);
-  mulligan(G, 1, aiMulliganPlan(G, 1));
+  if(!Story) mulligan(G, 1, aiMulliganPlan(G, 1));   // story: keep the scripted opponent's opening hand intact
   Audio2.sfx('draw');
   $('mulligan').classList.add('hidden');
   const evs=G.events.slice(evStart); render();
@@ -2904,7 +2913,8 @@ function enterChapter(id){ const ch=CHAPTERS[id]; if(!ch) return;
 function startStoryChapter(id){
   const ch=CHAPTERS[id]; if(!ch) return;
   if (aiTimer) clearTimeout(aiTimer);
-  Story = { chapter:ch, beatIdx:0, scriptIdx:0, handoff:false, lineBeat:-1 };
+  Story = { chapter:ch, mode:ch.mode||'LOCKED', beatIdx:0, scriptIdx:0, handoff:false, lineBeat:-1,
+            oppTurns:0, midFired:{}, holdLine:ch.introLine||null, round2Shown:false, asideShown:false };   // SUGGESTED (ch3–5) adds free-play beat/aside/mid state
   currentFactions={ p0:ch.playerFaction, p1:ch.opponentFaction };
   G=newGame({ p0:'You', p1:'Opponent', p0Faction:ch.playerFaction, p1Faction:ch.opponentFaction, realm:ch.realm||undefined, rng:storyRng(storySeedN++), scenario:ch.scenario }); seenLog=0;
   G.players[0].manualShield=true; matchRecorded=true;   // matchRecorded=true is belt-and-suspenders; showGameOver also early-returns for story (no PvAI telemetry)
@@ -2915,31 +2925,48 @@ function startStoryChapter(id){
   applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers();
   Audio2.musicDuck(false); Audio2.playTrack('battle'); conchPending=true;   // release the intro duck INTO the menu→battle crossfade (the crossfade + conch stay the hinge)
   showRealmIntro(); render(); VFX.init(); VFX.resize();
-  pump();   // mulligan:0 → straight into round 1 (player-first via storyRng)
+  if (G.mulliganCount>0) storyBeginMulligan();   // ch4/ch5: run the mulligan phase (teaches it) with the pre-match Brihaspati line
+  else pump();                                   // ch1–3 (mulligan:0): straight into round 1 (player-first via storyRng)
 }
+function storyBeginMulligan(){ beginMulligan(); const el=$('mull-story');
+  if(Story.chapter.mulliganLine){ el.textContent=Story.chapter.mulliganLine; el.classList.remove('hidden'); } }
 /* --- opponent turn: scripted, then AI handoff (called inside runAction as the mutate) --- */
 function storyOpponentStep(){
   const ch=Story.chapter, step=ch.opponentScript[Story.scriptIdx];
+  Story.oppTurns=(Story.oppTurns||0)+1;                             // count opponent turns (afterTurn mid-panels key on this)
   if(Story.handoff || !step || step.handoff){ Story.handoff=true; aiTakeTurn(G,1); return; }
   Story.scriptIdx++;
   if(step.action==='pass'){ pass(G,1); return; }
   const idx=G.players[1].hand.findIndex(c=>c.n===step.cardName);
-  if(idx>=0) playCard(G,1,idx); else pass(G,1);
+  if(idx>=0) playCard(G,1,idx); else pass(G,1);                     // scripted Astras (Pashupatastra/Nagastra) are untargeted → no target needed
 }
-/* --- mid-round story panel: fires once when a round the chapter marks resolves, before the next round begins --- */
-function storyMidEntry(){ const mid=Story.chapter.cutscenes && Story.chapter.cutscenes.mid; if(!mid) return null;
-  Story.midDone = Story.midDone || {};
-  return mid.find(m=> G.round===m.afterRound+1 && G.roundHistory.length>=m.afterRound && !Story.midDone[m.afterRound]) || null; }
+/* --- mid-round story panels: three trigger kinds — afterRound (ch2), afterTurn (ch3 opponent T3), afterEvent (ch5 first venom tick) --- */
+function storySide0Uids(){ const p=G.players[0]||{}; const s=new Set();
+  ['units','discard','hand','deck','heroes','removedHeroes'].forEach(k=>(p[k]||[]).forEach(c=>{ if(c) s.add(c.uid); })); return s; }
+function storyMidTriggered(m){
+  if(m.afterRound!=null) return G.round===m.afterRound+1 && G.roundHistory.length>=m.afterRound;
+  if(m.afterTurn) return (Story.oppTurns||0) >= m.afterTurn.count;
+  if(m.afterEvent){ const spec=m.afterEvent;
+    if(spec.type==='venom'){ const s0=storySide0Uids(); return (G.events||[]).some(e=>e.type==='venom' && (e.targetUids||[]).some(u=>s0.has(u))); }
+    return false; }
+  return false;
+}
+function storyMidEntry(){ const mids=Story.chapter.cutscenes && Story.chapter.cutscenes.mid; if(!mids) return null;
+  Story.midFired = Story.midFired || {};
+  for(let i=0;i<mids.length;i++){ if(!Story.midFired[i] && storyMidTriggered(mids[i])) return { m:mids[i], i }; }
+  return null; }
 function storyMidPending(){ return !!storyMidEntry(); }
-function storyShowMid(){ const m=storyMidEntry(); if(!m){ pump(); return; }
-  Story.midDone[m.afterRound]=true;                                  // once per pass through that round; a retry rebuilds Story → fires again
+function storyShowMid(){ const e=storyMidEntry(); if(!e){ pump(); return; }
+  Story.midFired[e.i]=true;                                          // once per entry per run; a retry rebuilds Story → fires again
   Audio2.musicDuck(true);
-  playCutscenes(m.panels, ()=>{ Audio2.musicDuck(false); pump(); }, 'mid');   // same player + skip rule; duck for its duration, then continue into the round
+  playCutscenes(e.m.panels, ()=>{ Audio2.musicDuck(false); pump(); }, 'mid');   // same player + skip rule; duck for its duration, then continue
 }
 /* --- guidance: mask the hand to the highlighted card/action, glow it, show Brihaspati --- */
 function storyBeat(){ const g=Story.chapter.guidance; return g[Math.min(Story.beatIdx, g.length-1)]; }
 function storyBestUnitIdx(){ const pl=G.players[0]; const idxs=playableIndices(G,0).filter(i=>pl.hand[i].t==='unit'); if(!idxs.length) return -1; return idxs.reduce((a,b)=> pl.hand[a].p>=pl.hand[b].p?a:b); }
-function storyResolveHighlight(h){                                   // → {kind:'pass'} | {kind:'card', index}
+function storyResolveHighlight(h){                                   // → {kind:'pass'|'shield'|'card', index?}
+  if(!h) return { kind:'pass' };
+  if(h.shield) return { kind:'shield' };
   if(h.action==='pass') return { kind:'pass' };
   if(h.auto){ const opp=G.players[1];
     if(h.auto==='bestOrPass' && opp.passed && totalPower(G,0)>totalPower(G,1)) return { kind:'pass' };   // ahead & foe done → hold (banks cards)
@@ -2947,32 +2974,67 @@ function storyResolveHighlight(h){                                   // → {kin
   }
   const i=G.players[0].hand.findIndex(c=>c.n===h.card); return i>=0 ? { kind:'card', index:i } : { kind:'pass' };
 }
+const STORY_ASIDE = 'Your hand, your war. But hear an old man’s thought before the next.';   // bible §6 — once per SUGGESTED chapter, on first deviation
+function storyLargestEnemyUid(){ const foes=G.players[1].units.filter(u=>!u.ghost); if(!foes.length) return null;
+  return foes.reduce((a,b)=>effPower(G,1,a)>=effPower(G,1,b)?a:b).uid; }
+function clearStoryTargetGlow(){ document.querySelectorAll('#field .bc.story-target').forEach(el=>el.classList.remove('story-target')); }
+function storySetTargetGlow(spec){ let uid=null; if(spec==='largestEnemy') uid=storyLargestEnemyUid();
+  if(uid!=null){ const el=document.querySelector(`#field .bc[data-uid="${uid}"]`); if(el) el.classList.add('story-target'); } }
+function maybeStoryAmbientLine(){ const ch=Story.chapter;   // round2Line = advice at round-2 start (holds until the next player action)
+  if(ch.round2Line && G.round>=2 && !Story.round2Shown){ Story.round2Shown=true; Story.holdLine=ch.round2Line; } }
 function applyStoryGuidance(){
   document.querySelectorAll('#hand .hc').forEach(el=>el.classList.remove('story-hi','story-masked'));
-  $('passbtn').classList.remove('story-hi');
+  $('passbtn').classList.remove('story-hi'); const sb=$('shieldbtn'); if(sb) sb.classList.remove('story-hi');
+  clearStoryTargetGlow();
   if(!Story || CutState || G.over || choreoActive || G.turn!==0 || G.players[0].passed){ hideBrihaspati(); return; }   // never guide behind a cutscene overlay
+  maybeStoryAmbientLine();
   const beat=storyBeat(), tgt=storyResolveHighlight(beat.highlight);
   const cards=[...document.querySelectorAll('#hand .hc')];
-  cards.forEach((el,i)=>{ if(tgt.kind==='card' && i===tgt.index){ el.classList.add('story-hi'); el.onclick=()=>storyPlayerTap(); }
-    else { el.classList.add('story-masked'); el.onclick=null; } });
-  if(tgt.kind==='pass'){ $('passbtn').disabled=false; $('passbtn').classList.add('story-hi'); }
-  else $('passbtn').disabled=true;   // LOCKED: only the highlighted card is actionable — the mask never touches engine legality
-  // Brihaspati line — once per beat
+  if(Story.mode==='SUGGESTED'){
+    // FREE PLAY: glow the suggestion + suggested target; mask NOTHING, override NO onclick (normal inspect→play stays live)
+    if(tgt.kind==='card' && cards[tgt.index]) cards[tgt.index].classList.add('story-hi');
+    else if(tgt.kind==='pass'){ $('passbtn').disabled=false; $('passbtn').classList.add('story-hi'); }
+    else if(tgt.kind==='shield' && sb) sb.classList.add('story-hi');
+    if(beat.highlight && beat.highlight.target) storySetTargetGlow(beat.highlight.target);
+    $('passbtn').disabled=false;   // never disable in SUGGESTED
+  } else {
+    // LOCKED: mask all but the highlight; route it through storyPlayerTap (mask never touches engine legality)
+    cards.forEach((el,i)=>{ if(tgt.kind==='card' && i===tgt.index){ el.classList.add('story-hi'); el.onclick=()=>storyPlayerTap(); }
+      else { el.classList.add('story-masked'); el.onclick=null; } });
+    if(tgt.kind==='pass'){ $('passbtn').disabled=false; $('passbtn').classList.add('story-hi'); } else $('passbtn').disabled=true;
+  }
+  // Brihaspati line: a HELD line (intro / round-2 advice / deviation aside) shows until the next action; else the beat line once per beat
+  if(Story.holdLine){ showBrihaspati(Story.holdLine); Story.lineBeat=-1; return; }
   const effBeat=Math.min(Story.beatIdx, Story.chapter.guidance.length-1);
   if(Story.lineBeat!==effBeat){ showBrihaspati(beat.line); Story.lineBeat=effBeat; }
 }
-function storyPlayerTap(){                                           // fired by the highlighted card, the pass button, or the plate
+// SUGGESTED beat progression: every player commit funnels through runAction(actor!==1) → here. Advance on a turn-ending
+// action (play/pass); free actions (shield/leap) keep the turn. First non-suggested card PLAY earns the one aside.
+function storyAfterPlayerAction(evs){
+  Story.holdLine=null;                                              // the player acted → drop any held line
+  const beat=storyBeat();
+  const playEv=(evs||[]).find(e=>e.type==='play' && storySide0Uids().has(e.sourceUid));
+  if(playEv && beat && beat.highlight && beat.highlight.card && !Story.asideShown){
+    const played=findCardByUid(playEv.sourceUid);
+    if(played && played.n!==beat.highlight.card){ Story.asideShown=true; Story.holdLine=STORY_ASIDE; }   // deviation → the one aside
+  }
+  const turnEnded = G.turn===1 || G.over || G.players[0].passed;
+  if(turnEnded && Story.beatIdx < Story.chapter.guidance.length-1) Story.beatIdx++;
+  Story.lineBeat=-1;
+}
+function storyPlayerTap(){                                           // LOCKED only: the highlighted card / pass / plate plays directly
   if(!Story || G.turn!==0 || choreoActive || G.over) return;
   const tgt=storyResolveHighlight(storyBeat().highlight);
   hideBrihaspati(); Story.beatIdx++;
   if(tgt.kind==='pass') runAction(()=>pass(G,0));
-  else runAction(()=>playCard(G,0,tgt.index));
+  else if(tgt.kind==='card') runAction(()=>playCard(G,0,tgt.index));
 }
 function showBrihaspati(line){ const b=$('brihaspati'); b.querySelector('.bri-line').textContent=line; b.classList.remove('hidden'); }
 function hideBrihaspati(){ $('brihaspati').classList.add('hidden'); }
-$('brihaspati').onclick=()=>storyPlayerTap();
-// in a story chapter, intercept the pass button (capture phase) so the default PvAI handler never fires; route to the guided pass only when it's highlighted
-$('passbtn').addEventListener('click', (e)=>{ if(Story){ e.stopImmediatePropagation(); if($('passbtn').classList.contains('story-hi')) storyPlayerTap(); } }, true);
+$('brihaspati').onclick=()=>{ if(Story && Story.mode==='SUGGESTED') hideBrihaspati(); else storyPlayerTap(); };   // SUGGESTED: tap dismisses the plate; LOCKED: tap plays the guided card
+// LOCKED: intercept pass (capture phase) so the default PvAI handler never fires; route to the guided pass only when highlighted.
+// SUGGESTED: let the normal pass handler run (free play) — the beat advances in runAction.
+$('passbtn').addEventListener('click', (e)=>{ if(Story && Story.mode!=='SUGGESTED'){ e.stopImmediatePropagation(); if($('passbtn').classList.contains('story-hi')) storyPlayerTap(); } }, true);
 /* --- cutscene player (text plates; §5 manifest shape — image drops in later) --- */
 /* ===== motion-comic cutscene player (Ken Burns + crossfade + typewriter + VFX + audio) ===== */
 const CUT_MOTION = {   // id → { from, to, origin, dur(s), ease, vfx } (BOOK1_DESIGN §5 + this task's motion manifest)
@@ -3033,9 +3095,14 @@ function playCutscenes(panels, onDone, ctx){
 function cutNext(){
   const st=CutState; st.i++;
   if(st.i>=st.panels.length){ cutEnd(); return; }
-  const p=st.panels[st.i], m=CUT_MOTION[p.id]||CUT_DEFAULT_M;
+  const p=st.panels[st.i], m=p.m||CUT_MOTION[p.id]||CUT_DEFAULT_M;   // inline p.m overrides the manifest (reuse a panel at a different motion)
   const next=st.layers[1-st.showLayer], cur=st.layers[st.showLayer];
-  next.style.backgroundImage=`url('${cutImgUrl(p.id)}')`;
+  const src=p.img||cutImgUrl(p.id);                                 // p.img = a non-story asset (e.g. the swarga board reused as b1c3_i3)
+  next.classList.remove('cut-noart');
+  next.style.backgroundImage=`url('${src}')`;
+  // PANEL 404 FALLBACK: art may not be in the repo yet — if the image fails to load, drop to a text-only plate over a
+  // subtle vignette (no broken-image icon). The plate/motion play regardless, so real art drops in later with ZERO code change.
+  const probe=new Image(); probe.onerror=()=>{ if(st===CutState && st.panels[st.i]===p){ next.style.backgroundImage='none'; next.classList.add('cut-noart'); } }; probe.src=src;
   applyMotion(next, m);                                            // sets from → to (Ken Burns) + fades in over .8s
   cur.style.transition=reducedMotion()?'none':'opacity .8s ease'; cur.style.opacity='0';   // crossfade the outgoing panel
   st.showLayer=1-st.showLayer;
@@ -3209,6 +3276,14 @@ function setArtChip(id, artifact){
   else el.classList.add('hidden');
 }
 
+// The engine interpolates the winner NAME as the sentence subject, so a 2nd-person subject ("You") reads with a
+// 3rd-person verb ("You WINS THE MATCH" / "You wins Round"). Correct the agreement at render time (engine untouched).
+// 3rd-person subjects ("Opponent WINS", "Opponent wins Round") are already correct and pass through unchanged.
+function fixLogGrammar(msg){
+  // Targeted 2nd-person fixes (the match line is prefixed with "⚔ ", the round line is not — so match the subject+verb
+  // substring, not the string start). 3rd-person "Opponent WINS/wins …" contains neither substring → passes through.
+  return msg.replace('You WINS THE MATCH ', 'You WIN THE MATCH ').replace('You wins Round ', 'You win Round ');
+}
 function render(targetSet){
   const me=G.players[0], op=G.players[1];
   $('rnum').textContent=G.round;
@@ -3263,10 +3338,10 @@ function render(targetSet){
   for (; seenLog<G.log.length; seenLog++){
     const l=G.log[seenLog]; const p=document.createElement('div');
     p.className = l.msg.startsWith('You')?'me': l.msg.startsWith('Opponent')?'foe':'sys';
-    p.textContent=l.msg; lb.appendChild(p);
+    p.textContent=fixLogGrammar(l.msg); lb.appendChild(p);
   }
   lb.scrollTop=lb.scrollHeight;
-  if (G.log.length) $('loglast').textContent=G.log[G.log.length-1].msg;
+  if (G.log.length) $('loglast').textContent=fixLogGrammar(G.log[G.log.length-1].msg);
 
   // juice: floating combat text for power changes since last render
   spawnFloaters();
@@ -3852,6 +3927,7 @@ function runAction(mutate, opts={}){
   const evStart = G.events.length;
   mutate();
   const evs = G.events.slice(evStart);
+  if (Story && Story.mode==='SUGGESTED' && opts.actor!==1) storyAfterPlayerAction(evs);   // SUGGESTED: advance the beat / arm the aside on each player commit
   resetPowerBeat();   // new event beat — power-change blips coalesce within this batch
   if (reducedMotion() || !evs.length){
     // reduced-motion keeps AUDIO (it's not motion): fire the key sounds, skip the visual choreography.
