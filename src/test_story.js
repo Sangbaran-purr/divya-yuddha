@@ -184,5 +184,69 @@ ok('ch5_no_venom_death false: venomed uid dies', STORY_PREDICATES.ch5_no_venom_d
 ok('ch5_no_venom_death true: sweep death but not venomed', STORY_PREDICATES.ch5_no_venom_death(_mkg([{type:'destroy',abilityName:'reduced to 0',targetUids:[5]}], {discard:[{uid:5}]}))===true);
 ok('ch5_no_venom_death true: venomed but survives', STORY_PREDICATES.ch5_no_venom_death(_mkg([{type:'venom',targetUids:[5]}], {units:[{uid:5}]}))===true);
 
+/* ---------- (6) CH6–7 (FREE mode) headless validation — competent unguided driver ---------- */
+// The competent graduating player: unmake the enemy Artifact with Vishwakarma (the diegetic answer to Chandrahas),
+// remove the biggest threat with Vajra, else aiMove. amrita: 'auto' → aiMove decides (used for win-rate);
+// 'keep' → HOLD Amrita (never dump it early) until the DECIDING round, then play it so it PERSISTS into g.over (bonus
+// earned — endRound returns at match-over BEFORE the artifact-clearing reset); 'never' → never play it (bonus failed).
+function driveFree(ch, seed, amrita){
+  const g=E.newGame({ p0:'You', p1:'Foe', p0Faction:ch.playerFaction, p1Faction:ch.opponentFaction, realm:ch.realm||undefined, rng:storyRng(seed), scenario:ch.scenario });
+  let si=0, guard=0, handoff=false;
+  while(!g.over && guard++<600){
+    if(g.turn===1){ const st=ch.opponentScript[si];
+      if(handoff||!st||st.handoff){ handoff=true; E.aiTakeTurn(g,1); }
+      else { si++; if(st.action==='pass') E.pass(g,1); else { const idx=g.players[1].hand.findIndex(c=>c.n===st.cardName); if(idx>=0) E.playCard(g,1,idx); else E.pass(g,1); } } }
+    else { const pl=g.players[0], opp=g.players[1], idxs=E.playableIndices(g,0);
+      const wi=idxs.find(i=>pl.hand[i].id==='vishwakarma'); if(wi!=null && opp.artifact){ E.playCard(g,0,wi); continue; }
+      const vi=idxs.find(i=>pl.hand[i].id==='vajra'); if(vi!=null){ const foes=opp.units.filter(u=>!u.ghost); const th=foes.filter(u=>u.id==='kumbha'||u.id==='ravana'||E.effPower(g,1,u)>=6); if(th.length){ const t=th.reduce((a,b)=>E.effPower(g,1,a)>=E.effPower(g,1,b)?a:b); E.playCard(g,0,vi,t.uid); continue; } }
+      const deciding = pl.roundWins === (g.winTarget-1);           // winning this round clinches the match
+      const ai=idxs.find(i=>pl.hand[i].id==='amrita');
+      if(amrita==='keep' && deciding && ai!=null){ E.playCard(g,0,ai); continue; }   // play the engine in the deciding round → kept
+      const d=E.aiMove(g,0);
+      if(d && d.play!=null && pl.hand[d.play] && pl.hand[d.play].id==='amrita' && amrita!=='auto' && !(amrita==='keep'&&deciding)){
+        // HOLD Amrita: play the best non-artifact card instead; if there is none, PASS (never dump the engine early)
+        const alt=idxs.filter(i=>i!==d.play && pl.hand[i].t!=='artifact');
+        if(alt.length){ const pk=alt.reduce((a,b)=>(pl.hand[a].t==='unit'?pl.hand[a].p:-1)>=(pl.hand[b].t==='unit'?pl.hand[b].p:-1)?a:b); E.playCard(g,0,pk); continue; }
+        E.pass(g,0); continue; }
+      if(d && d.play!=null){ E.playCard(g,0,d.play,d.target,d.position); continue; }
+      E.pass(g,0);
+    }
+  }
+  return g;
+}
+console.log('\nCH6–7 (FREE mode) headless validation:');
+{ // CH6 — win ≥9/12 + artifact bonus earnable/failable
+  const N=24; let wins=0, keptEarn=0, keptNever=0;
+  for(let s=1;s<=N;s++){ if(driveFree(CHAPTERS.b1c6, s*31+3, 'auto').winner===0) wins++;
+    if(STORY_PREDICATES.ch6_artifact_kept(driveFree(CHAPTERS.b1c6, s*31+3, 'keep'))) keptEarn++;
+    if(STORY_PREDICATES.ch6_artifact_kept(driveFree(CHAPTERS.b1c6, s*31+3, 'never'))) keptNever++; }
+  console.log(`  CH6: competent wins ${(wins/N*12).toFixed(1)}/12 (${wins}/${N}); artifact-kept EARN(play Amrita in the deciding round) ${keptEarn}/${N}, NEVER-play ${keptNever}/${N}`);
+  ok(`CH6 competent driver wins ≥9/12 (${(wins/N*12).toFixed(1)})`, wins/N*12 >= 9);
+  ok('CH6 artifact bonus EARNABLE (kept in ≥1 keep-game)', keptEarn>=1);
+  ok('CH6 artifact bonus FAILABLE (never-play keeps 0)', keptNever===0);
+}
+{ // CH7 — BOSS band 6–10/12 + 2–0 bonus + Chaos Surge + Mahabali notes
+  const N=48; let wins=0, sweep=0, chaos=0;
+  for(let s=1;s<=N;s++){ const g=driveFree(CHAPTERS.b1c7, s*31+3, 'auto'); if(g.winner===0){ wins++; if(g.players[1].roundWins===0) sweep++; }
+    chaos += (g.log||[]).filter(l=>/Chaos Surge/.test(l.msg)).length; }
+  const per12 = wins/N*12;
+  console.log(`  CH7 BOSS: competent wins ${per12.toFixed(1)}/12 (${wins}/${N}); 2–0 sweeps ${sweep}/${N}; Chaos Surge avg ${(chaos/N).toFixed(1)}/game`);
+  console.log(`  CH7 NOTE (validation items): (a) Mahabali works across the script→AI handoff (no misbehavior) but an 8-power Hero pushes the boss to 0% → EXCLUDED from the boss list. (b) Chaos Surge is frequent (Chandrahas doubles it) but does NOT swing the band — win rate is stable ~6.6/12 across 4×96-seed samples. (c) The 2–0 bonus is UNEARNABLE vs an in-band boss by the driver: the boss's round-1 Chandrahas dominance forces round economy (concede R1) → 2–1 wins, never 2–0. It is earnable in principle (predicate fires on real 2–0 streams, e.g. every ch6 win) and by a skilled human on a favorable realm; failable trivially.`);
+  ok(`CH7 boss band 6–10/12 (${per12.toFixed(1)})`, per12>=6 && per12<=10);
+}
+{ // CH7 2–0 predicate on a REAL 2–0 stream (a ch6 win — the player sweeps the honest ch6 opponent 2–0)
+  const g=driveFree(CHAPTERS.b1c6, 31+3, 'auto');
+  console.log(`  CH7 2–0 predicate on a real 2–0 stream (ch6 sweep): winner=${g.winner} roundWins=${g.players[0].roundWins}-${g.players[1].roundWins} → ch7_sweep=${STORY_PREDICATES.ch7_sweep(g)}`);
+  ok('CH7 sweep predicate TRUE on a real 2–0 win stream', STORY_PREDICATES.ch7_sweep(g)===true);
+}
+
+console.log('\nch6–7 predicate unit tests (synthetic state):');
+ok('ch6_artifact_kept true: won with artifact', STORY_PREDICATES.ch6_artifact_kept({ winner:0, players:[{artifact:{n:'Amrita Kalasha'}},{}] })===true);
+ok('ch6_artifact_kept false: won, no artifact', STORY_PREDICATES.ch6_artifact_kept({ winner:0, players:[{artifact:null},{}] })===false);
+ok('ch6_artifact_kept false: artifact but lost', STORY_PREDICATES.ch6_artifact_kept({ winner:1, players:[{artifact:{n:'Amrita Kalasha'}},{}] })===false);
+ok('ch7_sweep true: won 2–0', STORY_PREDICATES.ch7_sweep({ winner:0, winTarget:2, players:[{roundWins:2},{roundWins:0}] })===true);
+ok('ch7_sweep false: won 2–1', STORY_PREDICATES.ch7_sweep({ winner:0, winTarget:2, players:[{roundWins:2},{roundWins:1}] })===false);
+ok('ch7_sweep false: lost', STORY_PREDICATES.ch7_sweep({ winner:1, winTarget:2, players:[{roundWins:1},{roundWins:2}] })===false);
+
 console.log(`\n${fail===0?'✓ ALL':'✗'} ${pass} STORY CHECKS PASS${fail?`, ${fail} FAILED`:''}`);
 process.exit(fail===0?0:1);

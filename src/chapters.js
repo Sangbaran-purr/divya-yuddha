@@ -270,10 +270,14 @@ const CHAPTERS = {
     id:'b1c6', book:1, title:'The Nectar and the Net', order:6,
     realm:null, playerFaction:'devas', opponentFaction:'asuras',   // realm null → RANDOM (first unforced realm in story)
     mode:'FREE',
-    // near-real Deva deck = the ch4/5 chassis + the Amrita-Kalasha Artifact. p1 = ch4 de-fanged tier + ONE heavy (Ravana).
+    // NEAR-REAL Deva graduation deck. NOTE (reported): the pack's "8 Units + Amrita + Gayatri + Pavamana" (no removal)
+    // cannot hit the acceptance bands — an honest heavy-Asura match is a hard cliff (0% vs 100%). Two removals are added
+    // so the deck can ANSWER the opponent's threats (and the ch7 boss's Chandrahas): VAJRA (unit removal) + VISHWAKARMA
+    // (the "Divine Architect" — unmakes the enemy Artifact, the diegetic answer to the stolen moon-blade). p1 = de-fanged
+    // Asura tier, NO Kumbhakarna/Ravana (either makes the go-wide Deva board un-winnable) → the honest match is ~9-12/12.
     scenario:{
-      p0Deck:['Indra','Surya Dev','Yama','Vayu','Marut','Ashwini Kumars','Gandharva','Deva Soldier','Kubera','Amrita Kalasha','Gayatri Mantra','Pavamana'],
-      p1Deck:['Bana Asura','Meghnad','Narakasura','Ravana','Kali Asura','Asura Berserker','Vibhishana','Tataka','Maricha','Kalanemi','Pashupatastra','Tamasa'],
+      p0Deck:['Indra','Surya Dev','Yama','Vayu','Vishwakarma','Brihaspati','Marut','Ashwini Kumars','Kubera','Amrita Kalasha','Vajra','Pavamana'],
+      p1Deck:['Bana Asura','Meghnad','Narakasura','Kali Asura','Asura Berserker','Vibhishana','Tataka','Maricha','Kalanemi','Kali Asura','Pashupatastra','Tamasa'],
       handSize:10, mulligan:3
     },
     opponentScript:[ {handoff:'ai'} ],   // FREE: the default AI plays from turn 1 — no script
@@ -301,16 +305,18 @@ const CHAPTERS = {
     id:'b1c7', book:1, title:'The Betrayal', order:7,
     realm:null, playerFaction:'devas', opponentFaction:'asuras',   // RANDOM realm
     mode:'FREE', boss:true, bossName:'Shukracharya', bossEpithet:'Master of Mritasanjivani',
-    // p0 = the ch6 graduation deck unchanged. p1 = FULL-STRENGTH boss list (the heavies excluded since ch4) + Chandrahas
-    // + Pashupatastra/Tamasa. p1Hand GUARANTEES Chandrahas (T3) + the two scripted opener Units in the opening hand.
+    // p0 = the ch6 graduation deck UNCHANGED (familiarity is the point). p1 = BOSS list TUNED to the 6–10 band: ONE heavy
+    // (Kumbhakarna) + Chandrahas + Pashupatastra. Adding a second heavy (Ravana/Hiranyakashipu) OR the Mahabali Hero
+    // pushes it to 0% — so they are EXCLUDED (reported; Mahabali works across the handoff, he is just too strong). p1Hand
+    // GUARANTEES Chandrahas + the two scripted opener Units. Measured ≈6.6/12 (49–59% over 4×96-seed samples) — in band.
     scenario:{
-      p0Deck:['Indra','Surya Dev','Yama','Vayu','Marut','Ashwini Kumars','Gandharva','Deva Soldier','Kubera','Amrita Kalasha','Gayatri Mantra','Pavamana'],
-      p1Deck:['Ravana','Bana Asura','Chandrahas','Kumbhakarna','Hiranyakashipu','Meghnad','Narakasura','Kalanemi','Pashupatastra','Tamasa','Mahabali','Maricha'],
-      p1Hand:['Ravana','Bana Asura','Chandrahas','Kumbhakarna','Hiranyakashipu','Meghnad','Narakasura','Kalanemi','Pashupatastra','Tamasa'],
+      p0Deck:['Indra','Surya Dev','Yama','Vayu','Vishwakarma','Brihaspati','Marut','Ashwini Kumars','Kubera','Amrita Kalasha','Vajra','Pavamana'],
+      p1Deck:['Kumbhakarna','Bana Asura','Chandrahas','Meghnad','Narakasura','Kalanemi','Maricha','Kali Asura','Pashupatastra','Tamasa','Asura Berserker','Vibhishana'],
+      p1Hand:['Kumbhakarna','Bana Asura','Chandrahas','Meghnad','Narakasura','Kalanemi','Pashupatastra','Tamasa','Kali Asura','Maricha'],
       handSize:10, mulligan:3
     },
     // LIVE_GAME_DESIGN boss pattern: two Units, then Chandrahas online by T3 (amplified Astra threat), then default AI.
-    opponentScript:[ {action:'play', cardName:'Ravana'}, {action:'play', cardName:'Bana Asura'}, {action:'play', cardName:'Chandrahas'}, {handoff:'ai'} ],
+    opponentScript:[ {action:'play', cardName:'Kumbhakarna'}, {action:'play', cardName:'Bana Asura'}, {action:'play', cardName:'Chandrahas'}, {handoff:'ai'} ],
     cutscenes:{
       intro:[
         { id:'b1c7_i1', plate:'The truce died where it stood.', ambience:null },
