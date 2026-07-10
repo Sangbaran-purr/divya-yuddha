@@ -35,14 +35,14 @@ const CHAPTERS = {
       { highlight:{card:'Surya Dev'},      line:'They yield the field. One more — make the count beyond dispute — then rest your hand.' },
       { highlight:{action:'pass'},         line:'Rest your hand. Strength held in reserve is still strength.' },
     ],
-    // panels: { id, text:[title, ...body], ambience? } — ambience is a STUB slot (files come later, like the realm-map audio slot)
+    // panels: { id, speaker?, plate, ambience? } — plate/speaker VERBATIM from BOOK1_CUTSCENE_BIBLE §3; ambience is a STUB slot
     cutscenes:{
       intro:[
-        { id:'b1c1_i1', text:['THE THRONE BESIEGED', 'Dusk on the gates of Swarga. Shukracharya’s raiders probe the walls where the light runs thin.'], ambience:null },
-        { id:'b1c1_i2', text:['On the ridge, shapes gather where the shadows run longest.', 'They come for the gate. They always come for the gate.'], ambience:null },
-        { id:'b1c1_i3', text:['Brihaspati lays a hand on Indra’s shoulder.', '“The gate holds only if someone stands at it. Wake the guard.”'], ambience:null },
+        { id:'b1c1_i1', plate:'Swarga. The high seat of the gods — and tonight, a city holding its breath.', ambience:null },
+        { id:'b1c1_i2', plate:"Shukracharya's raiders test the borders. Not an army — a question.", ambience:null },
+        { id:'b1c1_i3', speaker:'Brihaspati', plate:'The gate holds only if someone stands at it, Indra. Come. I will show you how walls are made.', ambience:null },
       ],
-      victory:[ { id:'b1c1_v1', text:['THE GATE HOLDS', 'The raiders melt back into the dusk. Power answered power, and the greater total kept the field.'], ambience:null } ],
+      victory:[ { id:'b1c1_v1', plate:'The question was asked. The answer was a wall of the living.', ambience:null } ],
       defeat:[],
     },
     win:{ type:'matchWin' },
@@ -75,11 +75,12 @@ const CHAPTERS = {
     ],
     cutscenes:{
       intro:[
-        { id:'b1c2_i1', text:['THE ART OF YIELDING', 'The horde returns — not to probe, but to break. Their numbers darken the ridge.'], ambience:null },
-        { id:'b1c2_i2', text:['Brihaspati alone stands unafraid.', '“Let them take the first field. A battle is three fields, and only two need be ours.”'], ambience:null },
-        { id:'b1c2_i3', text:['An empty field, its banners planted.', '“Yield what does not matter. Keep everything for what does.”'], ambience:null },
+        { id:'b1c2_i1', plate:'They came back. All of them.', ambience:null },
+        { id:'b1c2_i2', speaker:'Brihaspati', plate:'Fury spends itself fastest on an empty field. Let them have the morning.', ambience:null },
       ],
-      victory:[ { id:'b1c2_v1', text:['THE LONGER WAR', 'They spent their fury on empty ground. When the fields that mattered came, we outnumbered them.'], ambience:null } ],
+      // mid-match: b1c2_i3 fires ONCE after round 1 resolves (the scripted loss), before round 2 — PULL-OUT per the motion manifest
+      mid:[ { afterRound:1, panels:[ { id:'b1c2_i3', plate:'We do not lose the morning. We lend it.', ambience:null } ] } ],
+      victory:[ { id:'b1c2_v1', plate:'They spent everything to win a field we never wanted. The afternoon belonged to arithmetic.', ambience:null } ],
       defeat:[],
     },
     win:{ type:'matchWin', extra:'ch2_lostR1' },

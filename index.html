@@ -307,14 +307,15 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .story-ch.done .ch-num{ color:var(--green); border-color:var(--green-dim); }
 .story-ch .ch-check{ color:var(--green); }
 .story-ch .ch-bonus{ color:var(--gold); font-size:13px; }
-#cutscene{ display:block; overflow:hidden; background:#000; padding:0; }
+#cutscene{ display:block; overflow:hidden; background:#000; padding:0; z-index:96; }   /* above the board HUD (#hudwrap z-95) so a MID-match cutscene fully covers it */
 .cut-panel{ position:fixed; inset:0; z-index:0; background-position:center; background-size:cover; background-repeat:no-repeat; opacity:0; will-change:transform,opacity; backface-visibility:hidden; }   /* Ken Burns via transform; cover = never letterboxes (handles the 896×1284 panel too) */
 #cut-vfx{ position:fixed; inset:0; z-index:1; pointer-events:none; }                                  /* embers/smoke overlay, above panels, below scrim+plate */
 #cut-scrim{ position:fixed; inset:0; z-index:2; pointer-events:none; background:linear-gradient(to bottom, transparent 40%, rgba(0,0,0,.35) 62%, rgba(0,0,0,.88) 100%); }
 #cutsceneskip{ position:fixed; top:14px; right:14px; z-index:4; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.2); color:var(--ink); border-radius:8px; padding:6px 12px; font-size:11px; letter-spacing:1px; cursor:pointer; }
 #cutscene-plate{ position:fixed; left:0; right:0; bottom:0; z-index:3; box-sizing:border-box; max-width:520px; margin:0 auto; padding:22px 22px 44px; }
-.cut-title{ font-family:Cinzel,serif; font-size:21px; letter-spacing:2.5px; color:var(--gold); margin-bottom:12px; text-shadow:0 2px 10px #000; line-height:1.2; }
-.cut-body{ font-size:15px; line-height:1.6; color:var(--ink); text-shadow:0 1px 6px #000; white-space:pre-line; min-height:1.6em; }
+.cut-speaker{ font-family:Cinzel,serif; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--gold); margin-bottom:7px; text-shadow:0 2px 8px #000; }
+.cut-speaker:empty{ display:none; }
+.cut-body{ font-family:Cinzel,serif; font-size:18px; line-height:1.5; color:#f4ead0; text-shadow:0 2px 9px #000; white-space:pre-line; min-height:1.5em; }   /* bible plates are prose, not title cards — one elegant Cinzel line */
 .cut-hint{ margin-top:16px; font-size:10px; letter-spacing:1px; color:var(--ink-dim); }
 #brihaspati{ position:fixed; left:50%; transform:translateX(-50%); bottom:98px; z-index:60; width:min(92vw,460px); display:flex; gap:11px; align-items:center; background:rgba(10,7,3,.94); border:1px solid var(--gold-dim); border-radius:12px; padding:10px 13px; box-shadow:0 6px 24px rgba(0,0,0,.6); cursor:pointer; }
 #brihaspati.hidden{ display:none; }
@@ -357,8 +358,13 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .mode .mode-main{ flex:1 1 auto; min-width:0; }
 .mode .mode-title{ font-family:Cinzel,serif; font-size:14px; letter-spacing:1px; color:#fff; text-shadow:0 1px 3px #000; }
 .mode .mode-cap{ font-size:10px; color:var(--ink-dim); margin-top:3px; letter-spacing:.5px; }
-.mode.active{ border-color:var(--gold); background:linear-gradient(rgba(60,44,12,.55),rgba(32,22,8,.5)); }
+.mode.active{ border-color:var(--gold-dim); background:linear-gradient(rgba(46,34,12,.42),rgba(26,18,8,.4)); }   /* active but one step quieter than the primary */
 .mode.active .mode-title{ color:var(--gold); }
+.mode.primary{ border-color:var(--gold); background:linear-gradient(rgba(94,68,20,.62),rgba(46,32,10,.55)); box-shadow:0 2px 16px rgba(232,201,90,.16); }   /* Story = primary gold */
+.mode.primary .mode-title{ color:var(--hi); font-size:15px; }
+.mode.primary .mode-chev{ color:var(--hi); }
+.mode.nudge{ animation:modeNudge 2.4s ease-in-out infinite; }   /* first-launch pulse — once ever, on a truly fresh profile */
+@keyframes modeNudge{ 0%,100%{ box-shadow:0 2px 16px rgba(232,201,90,.16); } 50%{ box-shadow:0 2px 16px rgba(232,201,90,.16), 0 0 0 2px var(--gold), 0 0 26px rgba(232,201,90,.5); } }
 .mode .mode-chev{ font-size:22px; color:var(--gold); line-height:1; }
 .mode.locked{ opacity:.55; cursor:default; }
 .mode.locked .mode-lock{ display:flex; align-items:center; color:var(--ink-dim); }
@@ -764,12 +770,12 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
       </div>
     </div>
     <div class="land-modes">
-      <button class="mode active" id="mode-pvai">
-        <div class="mode-main"><div class="mode-title">Player vs AI</div></div>
+      <button class="mode active primary" id="mode-story">
+        <div class="mode-main"><div class="mode-title">Story Mode — Divya Yatra</div><div class="mode-cap" id="cap-story">Begin here — learn as you play</div></div>
         <span class="mode-chev">›</span>
       </button>
-      <button class="mode active" id="mode-story">
-        <div class="mode-main"><div class="mode-title">Story Mode — Divya Yatra</div><div class="mode-cap">Book 1 · The Book of Order</div></div>
+      <button class="mode active" id="mode-pvai">
+        <div class="mode-main"><div class="mode-title">Player vs AI</div><div class="mode-cap">The full battle, no guidance</div></div>
         <span class="mode-chev">›</span>
       </button>
       <button class="mode active" id="mode-factions">
@@ -800,7 +806,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <canvas id="cut-vfx"></canvas>
   <div id="cut-scrim"></div>
   <button id="cutsceneskip">skip ›</button>
-  <div id="cutscene-plate"><div class="cut-title" id="cut-title"></div><div class="cut-body" id="cut-body"></div><div class="cut-hint" id="cut-hint"></div></div>
+  <div id="cutscene-plate"><div class="cut-speaker" id="cut-speaker"></div><div class="cut-body" id="cut-body"></div><div class="cut-hint" id="cut-hint"></div></div>
 </div>
 <div id="brihaspati" class="hidden">
   <div class="bri-chip">ब</div>
@@ -2430,8 +2436,22 @@ function showLanding(){
   Story=null;   // leaving any story chapter
   ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','settings','mulligan','targeting','inspect','banner','realmpop'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
   renderProfile();
+  updateStoryLandingCta();   // smart Story caption from dy_story
+  maybeNudgeStory();         // first-launch pulse (once ever, fresh profile only)
   $('landing').classList.remove('hidden');
   Audio2.playTrack('menu');   // menu music covers landing + faction-select (gesture-driven: first tap starts it)
+}
+function updateStoryLandingCta(){
+  const el=$('cap-story'); if(!el || typeof CHAPTERS==='undefined') return;
+  const prog=loadStoryProg(), impl=Object.values(CHAPTERS).sort((a,b)=>a.order-b.order);
+  const doneCount=impl.filter(c=>(prog[c.id]||{}).done).length, next=impl.find(c=>!(prog[c.id]||{}).done);
+  el.textContent = doneCount===0 ? 'Begin here — learn as you play' : next ? `Continue — Chapter ${next.order}` : 'The Book of Order — complete';
+}
+function maybeNudgeStory(){
+  const el=$('mode-story'); if(!el) return;
+  const anyStory=Object.values(loadStoryProg()).some(v=>v&&v.done), anyMatch=(loadProfile().matches|0)>0, nudged=localStorage.getItem('dy_nudged')==='1';
+  if(!anyStory && !anyMatch && !nudged){ el.classList.add('nudge'); try{ localStorage.setItem('dy_nudged','1'); }catch(e){} }   // once ever
+  else el.classList.remove('nudge');
 }
 function editProfileName(){
   const el=$('lpname'); if(!el || el.tagName==='INPUT') return;
@@ -2906,6 +2926,16 @@ function storyOpponentStep(){
   const idx=G.players[1].hand.findIndex(c=>c.n===step.cardName);
   if(idx>=0) playCard(G,1,idx); else pass(G,1);
 }
+/* --- mid-round story panel: fires once when a round the chapter marks resolves, before the next round begins --- */
+function storyMidEntry(){ const mid=Story.chapter.cutscenes && Story.chapter.cutscenes.mid; if(!mid) return null;
+  Story.midDone = Story.midDone || {};
+  return mid.find(m=> G.round===m.afterRound+1 && G.roundHistory.length>=m.afterRound && !Story.midDone[m.afterRound]) || null; }
+function storyMidPending(){ return !!storyMidEntry(); }
+function storyShowMid(){ const m=storyMidEntry(); if(!m){ pump(); return; }
+  Story.midDone[m.afterRound]=true;                                  // once per pass through that round; a retry rebuilds Story → fires again
+  Audio2.musicDuck(true);
+  playCutscenes(m.panels, ()=>{ Audio2.musicDuck(false); pump(); }, 'mid');   // same player + skip rule; duck for its duration, then continue into the round
+}
 /* --- guidance: mask the hand to the highlighted card/action, glow it, show Brihaspati --- */
 function storyBeat(){ const g=Story.chapter.guidance; return g[Math.min(Story.beatIdx, g.length-1)]; }
 function storyBestUnitIdx(){ const pl=G.players[0]; const idxs=playableIndices(G,0).filter(i=>pl.hand[i].t==='unit'); if(!idxs.length) return -1; return idxs.reduce((a,b)=> pl.hand[a].p>=pl.hand[b].p?a:b); }
@@ -2920,7 +2950,7 @@ function storyResolveHighlight(h){                                   // → {kin
 function applyStoryGuidance(){
   document.querySelectorAll('#hand .hc').forEach(el=>el.classList.remove('story-hi','story-masked'));
   $('passbtn').classList.remove('story-hi');
-  if(!Story || G.over || choreoActive || G.turn!==0 || G.players[0].passed){ hideBrihaspati(); return; }
+  if(!Story || CutState || G.over || choreoActive || G.turn!==0 || G.players[0].passed){ hideBrihaspati(); return; }   // never guide behind a cutscene overlay
   const beat=storyBeat(), tgt=storyResolveHighlight(beat.highlight);
   const cards=[...document.querySelectorAll('#hand .hc')];
   cards.forEach((el,i)=>{ if(tgt.kind==='card' && i===tgt.index){ el.classList.add('story-hi'); el.onclick=()=>storyPlayerTap(); }
@@ -3004,10 +3034,10 @@ function cutNext(){
   cutVfxSet(m.vfx);
   if(st.i>0) Audio2.sfx('swish');                               // soft air-swish on each crossfade (not the first show)
   st.complete=false;
-  $('cut-title').textContent=p.text[0]||'';
+  $('cut-speaker').textContent=p.speaker||'';
   $('cut-hint').textContent='';
   if(st.tw) st.tw.stop();
-  st.tw=typewriter($('cut-body'), p.text.slice(1).join('\n'), ()=>{ st.complete=true; $('cut-hint').textContent = st.i<st.panels.length-1?'tap to continue ›':(st.ctx==='intro'?'tap to begin ›':'tap ›'); });
+  st.tw=typewriter($('cut-body'), p.plate||'', ()=>{ st.complete=true; $('cut-hint').textContent = st.i<st.panels.length-1?'tap to continue ›':(st.ctx==='intro'?'tap to begin ›':(st.ctx==='mid'?'tap to fight ›':'tap ›')); });
 }
 function cutTap(){ const st=CutState; if(!st) return; if(!st.complete){ if(st.tw) st.tw.finish(); } else cutNext(); }   // TWO-TAP: complete the line, then advance
 function cutEnd(){
@@ -3994,6 +4024,7 @@ function pump(){
   if (G.over) return;
   fireConch();                                    // round-1 start = first pump of the match (mulligan resolved); guard makes it once-per-match, so rounds 2/3 are silent
   if (choreoActive) return;                       // don't schedule while a choreography is draining
+  if (Story && storyMidPending()){ storyShowMid(); return; }   // mid-round story panel (e.g. ch2 after R1) — pause, then re-pump
   Audio2.setRound3(G.round>=3);                   // Round 3 brings in the tabla-like pulse
   if (G.turn===1 && !G.players[1].passed){
     showOppThinking(true);                         // humanized pause with a "thinking" indicator
