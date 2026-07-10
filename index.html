@@ -2979,11 +2979,19 @@ const CUT_MOTION = {   // id → { from, to, origin, dur(s), ease, vfx } (BOOK1_
   b1c1_i1:{ from:'scale(1.12) translateY(0%)', to:'scale(1.12) translateY(-6%)', origin:'50% 50%', dur:8, ease:'linear',  vfx:'none' },
   b1c1_i2:{ from:'scale(1.08) translateX(0%)', to:'scale(1.08) translateX(-6%)', origin:'50% 50%', dur:7, ease:'linear',  vfx:'embers-sparse' },
   b1c1_i3:{ from:'scale(1.05)',                to:'scale(1.12)',                origin:'50% 60%', dur:7, ease:'ease-out', vfx:'none' },
-  b1c1_v1:{ from:'scale(1.16)',                to:'scale(1.06)',                origin:'45% 55%', dur:8, ease:'ease-out', vfx:'embers-fade' },
+  b1c1_v1:{ from:'scale(1.16)',                to:'scale(1.06)',                origin:'55% 72%', dur:8, ease:'ease-out', vfx:'embers-fade' },   // REPLACED image — origin moved to the new sentry position
   b1c2_i1:{ from:'scale(1.10) translateX(0%)', to:'scale(1.10) translateX(6%)', origin:'50% 50%', dur:8, ease:'linear',  vfx:'smoke' },
   b1c2_i2:{ from:'scale(1.06)',                to:'scale(1.15)',                origin:'50% 35%', dur:8, ease:'ease-out', vfx:'none' },
   b1c2_i3:{ from:'scale(1.18)',                to:'scale(1.05)',                origin:'72% 30%', dur:8, ease:'ease-out', vfx:'none' },
   b1c2_v1:{ from:'scale(1.12) translateY(5%)', to:'scale(1.12) translateY(-5%)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'embers' },
+  // --- ch3–5 pack (this task's motion manifest). b1c5_i3 has no entry (motion pending) → CUT_DEFAULT_M if ever shown. ---
+  b1c3_i1:{ from:'scale(1.05)',                to:'scale(1.14)',                origin:'50% 22%', dur:7, ease:'ease-out', vfx:'none' },   // PUSH-IN (face & blade). Mid-match reuse keeps its own fast variant (1.05→1.12, 4s + screen dim) — specced separately, wired when ch3's mid panel lands.
+  b1c4_i1:{ from:'scale(1.16)',                to:'scale(1.05)',                origin:'50% 40%', dur:8, ease:'ease-out', vfx:'none' },   // PULL-OUT (serpent's head against the moon)
+  b1c4_i2:{ from:'scale(1.12) translateY(5%)', to:'scale(1.12) translateY(-5%)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'embers-sparse' }, // RISE (amended from DRIFT-L — vertical spiral up the coiled mountain)
+  b1c4_i3:{ from:'scale(1.10) translateY(4%)', to:'scale(1.10) translateY(-4%)', origin:'50% 50%', dur:8, ease:'linear',  vfx:'none' },   // RISE (under-glow up to the moonlit horizon)
+  b1c5_i1:{ from:'scale(1.10) translateY(-5%)', to:'scale(1.10) translateY(5%)', origin:'50% 50%', dur:8, ease:'linear',  vfx:'smoke-low' },     // SINK (moon down the light-path to dark water)
+  b1c5_i2:{ from:'scale(1.12) translateY(5%)', to:'scale(1.12) translateY(-5%)', origin:'50% 50%', dur:8, ease:'linear',  vfx:'smoke-heavy-green' }, // RISE up the column; heavy poison-green smoke (rhymes with Venom teal) — same tint on any mid-match reuse (id-keyed)
+  b1c5_i3:{ from:'scale(1.06)',                to:'scale(1.16)',                origin:'50% 46%', dur:8, ease:'ease-out', vfx:'none' },   // PUSH-IN (the serpent's eye)
 };
 const CUT_DEFAULT_M={ from:'scale(1.08)', to:'scale(1.12)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'none' };
 function cutImgUrl(id){ return `assets/story/${id}.jpg`; }
@@ -3053,11 +3061,11 @@ function cutVfxStart(){ if(CutVfx||reducedMotion()) return; const c=$('cut-vfx')
   CutVfx={ cx, parts:[], mode:'none', dpr:Math.min(2,window.devicePixelRatio||1), last:performance.now(), raf:0, emit:0 };
   const loop=(now)=>{ const st=CutVfx; if(!st) return; const dt=Math.min(0.05,(now-st.last)/1000); st.last=now;
     st.cx.setTransform(1,0,0,1,0,0); st.cx.clearRect(0,0,c.width,c.height); st.cx.setTransform(st.dpr,0,0,st.dpr,0,0);
-    st.emit-=dt; if(st.mode!=='none' && st.emit<=0){ st.emit = st.mode.indexOf('embers')===0 ? (st.mode.indexOf('sparse')>=0?0.55:0.3) : 0.6; cutSpawn(st); }
+    st.emit-=dt; if(st.mode!=='none' && st.emit<=0){ st.emit = cutEmitInterval(st.mode); cutSpawn(st); }
     for(let i=st.parts.length-1;i>=0;i--){ const p=st.parts[i]; p.life-=dt; if(p.life<=0){ st.parts.splice(i,1); continue; }
       p.vy+=p.g*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; const a=Math.min(1,p.life/p.max)*(p.fade||1);
       if(p.kind==='ember'){ st.cx.globalCompositeOperation='lighter'; st.cx.fillStyle=`rgba(255,190,96,${a*0.85})`; }
-      else { st.cx.globalCompositeOperation='source-over'; st.cx.fillStyle=`rgba(92,88,82,${a*0.26})`; }
+      else { st.cx.globalCompositeOperation='source-over'; st.cx.fillStyle=`rgba(${p.col||'92,88,82'},${a*(p.op||0.26)})`; }
       st.cx.beginPath(); st.cx.arc(p.x,p.y,p.r,0,6.283); st.cx.fill();
     }
     st.cx.globalCompositeOperation='source-over'; st.raf=requestAnimationFrame(loop);
@@ -3066,7 +3074,13 @@ function cutVfxStart(){ if(CutVfx||reducedMotion()) return; const c=$('cut-vfx')
 }
 function cutSpawn(st){ const W=innerWidth,H=innerHeight;
   if(st.mode.indexOf('embers')===0){ const n=1+Math.floor(Math.random()*2); for(let k=0;k<n;k++) st.parts.push({kind:'ember',x:Math.random()*W,y:H*0.72+Math.random()*H*0.28,vx:(Math.random()-.5)*12,vy:-14-Math.random()*22,g:-3,r:0.8+Math.random()*1.5,life:2.4+Math.random()*2,max:4.4,fade:st.mode.indexOf('fade')>=0?0.55:1}); }
-  else if(st.mode==='smoke'){ st.parts.push({kind:'smoke',x:Math.random()*W,y:H*0.74+Math.random()*H*0.26,vx:(Math.random()-.5)*9,vy:-9-Math.random()*11,g:-1,r:22+Math.random()*32,life:3+Math.random()*2,max:5}); }
+  else if(st.mode.indexOf('smoke')===0){ const green=st.mode.indexOf('green')>=0, heavy=st.mode.indexOf('heavy')>=0, low=st.mode.indexOf('low')>=0; const n=heavy?2:1;
+    for(let k=0;k<n;k++) st.parts.push({kind:'smoke',x:Math.random()*W,y:H*0.74+Math.random()*H*0.26,vx:(Math.random()-.5)*9,vy:-9-Math.random()*11,g:-1,r:(heavy?28:22)+Math.random()*32,life:3+Math.random()*2,max:5, col:green?'30,58,42':'92,88,82', op:heavy?0.34:(low?0.18:0.26)}); }   // green #1e3a2a family = poison-teal rhyme; low = very sparse, heavy = 2 puffs/tick
+}
+function cutEmitInterval(mode){   // seconds between spawns per vfx mode
+  if(mode.indexOf('embers')===0) return mode.indexOf('sparse')>=0?0.55:0.3;
+  if(mode.indexOf('smoke')===0)  return mode.indexOf('heavy')>=0?0.3:(mode.indexOf('low')>=0?1.2:0.6);
+  return 0.6;
 }
 function cutVfxSet(mode){ if(CutVfx) CutVfx.mode=mode||'none'; }
 function cutVfxStop(){ if(CutVfx){ cancelAnimationFrame(CutVfx.raf); const c=$('cut-vfx'); CutVfx.cx.setTransform(1,0,0,1,0,0); CutVfx.cx.clearRect(0,0,c.width,c.height); CutVfx=null; } }
