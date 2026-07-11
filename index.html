@@ -335,6 +335,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #brihaspati.hidden{ display:none; }
 .bri-chip{ flex:0 0 auto; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; color:#1a1204; background:linear-gradient(150deg,#f0d890,#c9a84c); border:2px solid var(--gold); }
 .bri-line{ font-family:Cinzel,serif; font-size:12.5px; line-height:1.45; color:var(--hi); letter-spacing:.3px; }
+.bri-instruct{ font-family:'Crimson Pro',serif; font-size:12px; line-height:1.4; color:var(--gold-2); margin-top:5px; }   /* the plain-language instruction beneath the aphorism */
+.bri-instruct:empty{ display:none; }
 .bri-tap{ font-size:9px; color:var(--ink-dim); letter-spacing:1px; margin-top:3px; }
 .hc.story-masked{ filter:grayscale(.7) brightness(.5); pointer-events:none; }
 .hc.story-hi{ box-shadow:0 0 0 2px var(--gold), 0 0 22px rgba(232,201,90,.75) !important; animation:storyGlow 1.4s ease-in-out infinite; }
@@ -836,7 +838,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 </div>
 <div id="brihaspati" class="hidden">
   <div class="bri-chip">ब</div>
-  <div><div class="bri-line"></div><div class="bri-tap">tap to continue ›</div></div>
+  <div><div class="bri-line"></div><div class="bri-instruct"></div><div class="bri-tap">tap to continue ›</div></div>
 </div>
 <div class="overlay hidden" id="storyresult"><div class="modal" style="text-align:center; max-width:400px;">
   <h2 id="sr-title"></h2><p id="sr-sub"></p>
@@ -2399,10 +2401,10 @@ $('mullconfirm').onclick=()=>{
   $('mulligan').classList.add('hidden');
   const evs=G.events.slice(evStart); render();
   if (reducedMotion() || !evs.length){ pump(); return; }
-  choreoActive=true; choreoSkip=false;
+  choreoActive=true; choreoSkip=false; choreoStartedAt=performance.now(); choreoForce=[];
   const layer=$('choreolayer'); layer.classList.add('locked'); layer.onclick=skipChoreo;
   (async()=>{ try{ for(const ev of evs){ if(choreoSkip) break; try{ await playEvent(ev, snap); }catch(e){} } }
-    finally{ choreoActive=false; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML=''; try{ render(); }catch(e){} pump(); } })();
+    finally{ choreoActive=false; choreoStartedAt=0; choreoForce=[]; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML=''; try{ render(); }catch(e){} pump(); } })();
 };
 
 function applyFactionTheme(){
@@ -2941,7 +2943,7 @@ $('story-back').onclick=()=>showLanding();
 /* --- chapter entry: intro cutscene → match --- */
 function enterChapter(id){ const ch=CHAPTERS[id]; if(!ch) return;
   prefetchPanels(ch.cutscenes && ch.cutscenes.intro);   // lazy: only this chapter's intro panels prefetch on the tap
-  playCutscenes(ch.cutscenes && ch.cutscenes.intro, ()=> ch.boss ? showBossPlate(ch, ()=>startStoryChapter(id)) : startStoryChapter(id), 'intro'); }
+  playCutscenes(ch.cutscenes && ch.cutscenes.intro, ()=> ch.boss ? showBossPlate(ch, ()=>startStoryChapter(id)) : startStoryChapter(id), 'intro', storyIntroFallback(ch)); }
 // BOSS VS plate (ch7): a brief full-screen title card before the match. Tap or auto-advance (2.6s), then start.
 function showBossPlate(ch, done){
   const ov=$('bossvs');
@@ -3001,7 +3003,7 @@ function storyMidPending(){ return !!storyMidEntry(); }
 function storyShowMid(){ const e=storyMidEntry(); if(!e){ pump(); return; }
   Story.midFired[e.i]=true;                                          // once per entry per run; a retry rebuilds Story → fires again
   Audio2.musicDuck(true);
-  playCutscenes(e.m.panels, ()=>{ Audio2.musicDuck(false); pump(); }, 'mid');   // same player + skip rule; duck for its duration, then continue
+  playCutscenes(e.m.panels, ()=>{ Audio2.musicDuck(false); pump(); }, 'mid', storyIntroFallback(Story.chapter));   // same player + skip rule; duck for its duration, then continue
 }
 /* --- guidance: mask the hand to the highlighted card/action, glow it, show Brihaspati --- */
 function storyBeat(){ const g=Story.chapter.guidance; return g[Math.min(Story.beatIdx, g.length-1)]; }
@@ -3056,7 +3058,7 @@ function applyStoryGuidance(){
   // Brihaspati line: a HELD line (intro / round-2 advice / deviation aside) shows until the next action; else the beat line once per beat
   if(Story.holdLine){ showBrihaspati(Story.holdLine); Story.lineBeat=-1; return; }
   const effBeat=Math.min(Story.beatIdx, Story.chapter.guidance.length-1);
-  if(Story.lineBeat!==effBeat){ showBrihaspati(beat.line); Story.lineBeat=effBeat; }
+  if(Story.lineBeat!==effBeat){ showBrihaspati(beat.line, beat.instruct); Story.lineBeat=effBeat; }
 }
 // SUGGESTED beat progression: every player commit funnels through runAction(actor!==1) → here. Advance on a turn-ending
 // action (play/pass); free actions (shield/leap) keep the turn. First non-suggested card PLAY earns the one aside.
@@ -3079,7 +3081,7 @@ function storyPlayerTap(){                                           // LOCKED o
   if(tgt.kind==='pass') runAction(()=>pass(G,0));
   else if(tgt.kind==='card') runAction(()=>playCard(G,0,tgt.index));
 }
-function showBrihaspati(line){ const b=$('brihaspati'); b.querySelector('.bri-line').textContent=line; b.classList.remove('hidden'); }
+function showBrihaspati(line, instruct){ const b=$('brihaspati'); b.querySelector('.bri-line').textContent=line; b.querySelector('.bri-instruct').textContent=instruct||''; b.classList.remove('hidden'); }
 function hideBrihaspati(){ $('brihaspati').classList.add('hidden'); }
 $('brihaspati').onclick=()=>{ if(Story && Story.mode==='SUGGESTED') hideBrihaspati(); else storyPlayerTap(); };   // SUGGESTED: tap dismisses the plate; LOCKED: tap plays the guided card
 // LOCKED: intercept pass (capture phase) so the default PvAI handler never fires; route to the guided pass only when highlighted.
@@ -3113,6 +3115,15 @@ const CUT_MOTION = {   // id → { from, to, origin, dur(s), ease, vfx } (BOOK1_
 };
 const CUT_DEFAULT_M={ from:'scale(1.08)', to:'scale(1.12)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'none' };
 function cutImgUrl(id){ return `assets/story/${id}.jpg`; }
+// The chapter's first intro image — the backdrop for any text-only / 404 panel (so plates never render over plain black).
+function storyIntroFallback(ch){ const p0=ch && ch.cutscenes && ch.cutscenes.intro && ch.cutscenes.intro[0]; return p0 ? (p0.img||cutImgUrl(p0.id)) : 'assets/img/menu_bg.jpg'; }
+// Set a panel's backdrop to a fallback image darkened ~65% (over the existing scrim). Chain: fallback → menu_bg.jpg.
+function setCutBackdropFallback(el, url){ const menu='assets/img/menu_bg.jpg', dark=u=>`linear-gradient(rgba(0,0,0,.65),rgba(0,0,0,.65)), url('${u}')`;
+  el.classList.remove('cut-noart');
+  if(!url || url===menu){ el.style.backgroundImage=dark(menu); return; }
+  el.style.backgroundImage=dark(url);
+  const p=new Image(); p.onerror=()=>{ el.style.backgroundImage=dark(menu); }; p.src=url;   // fallback image itself missing → menu_bg
+}
 function prefetchPanels(panels){ (panels||[]).forEach(p=>{ const im=new Image(); im.src=cutImgUrl(p.id); }); }   // lazy: only the entered chapter's panels
 let CutState=null, CutVfx=null;
 function applyMotion(el, m){
@@ -3136,11 +3147,11 @@ function typewriter(el, text, onDone){
     finish:()=>{ if(timer) clearTimeout(timer); if(!done){ el.textContent=text; done=true; onDone&&onDone(); } },
     isDone:()=>done };
 }
-function playCutscenes(panels, onDone, ctx){
+function playCutscenes(panels, onDone, ctx, fallback){
   panels=(panels||[]).filter(Boolean);
   if(!panels.length){ onDone&&onDone(); return; }
   const ov=$('cutscene');
-  CutState={ panels, i:-1, onDone, ctx:ctx||'intro', layers:[$('cut-panelA'),$('cut-panelB')], showLayer:0, tw:null, complete:false };
+  CutState={ panels, i:-1, onDone, ctx:ctx||'intro', layers:[$('cut-panelA'),$('cut-panelB')], showLayer:0, tw:null, complete:false, fallback:fallback||null };
   if(CutState.ctx==='intro') Audio2.musicDuck(true);            // duck menu music for the intro; released into the battle crossfade
   cutResize(); cutVfxStart();
   ov.onclick=cutTap;
@@ -3156,9 +3167,9 @@ function cutNext(){
   const src=p.img||cutImgUrl(p.id);                                 // p.img = a non-story asset (e.g. the swarga board reused as b1c3_i3)
   next.classList.remove('cut-noart');
   next.style.backgroundImage=`url('${src}')`;
-  // PANEL 404 FALLBACK: art may not be in the repo yet — if the image fails to load, drop to a text-only plate over a
-  // subtle vignette (no broken-image icon). The plate/motion play regardless, so real art drops in later with ZERO code change.
-  const probe=new Image(); probe.onerror=()=>{ if(st===CutState && st.panels[st.i]===p){ next.style.backgroundImage='none'; next.classList.add('cut-noart'); } }; probe.src=src;
+  // PANEL IMAGE FALLBACK: art may be missing (the ch3/4/5 victory plates, or a 404 generally). Never render over plain
+  // black — fall back to the chapter's FIRST intro image darkened ~65%, and if that too is missing, to menu_bg.jpg.
+  const probe=new Image(); probe.onerror=()=>{ if(st===CutState && st.panels[st.i]===p) setCutBackdropFallback(next, st.fallback); }; probe.src=src;
   next.style.animation='none';
   if(p.mohini && !reducedMotion()){   // MOHINI two-phase DRIFT (b1c7_v1): RISE to the vessel, hold, then a slow lateral drift to the right-edge silhouette (Book 2 hook)
     next.style.transition='none'; next.style.transformOrigin='50% 45%'; next.style.transform='scale(1.12) translateY(4%)'; next.style.opacity='0'; void next.offsetWidth;
@@ -3223,11 +3234,11 @@ function showStoryResult(){
     const complete = winExtra;   // g.winner===0 already true
     const bonus = ch.bonus && STORY_PREDICATES[ch.bonus.predicateId] ? !!STORY_PREDICATES[ch.bonus.predicateId](G) : false;
     if(complete) markChapterComplete(ch.id, bonus);
-    playCutscenes(ch.cutscenes && ch.cutscenes.victory, ()=>storyResultPanel(ch, true, bonus), 'victory');   // rides the victory stinger into match-end silence — no music restart
+    playCutscenes(ch.cutscenes && ch.cutscenes.victory, ()=>storyResultPanel(ch, true, bonus), 'victory', storyIntroFallback(ch));   // rides the victory stinger into match-end silence — no music restart
   } else {
     Audio2.fileSfx('sfx_defeat');
     // shared b1_defeat cutscene (all 7 chapters) over the defeat stinger, THEN the retry panel — replaces the text-only plate
-    playCutscenes((typeof DEFEAT_PANELS!=='undefined'?DEFEAT_PANELS:null), ()=>storyResultPanel(ch, false, false), 'defeat');
+    playCutscenes((typeof DEFEAT_PANELS!=='undefined'?DEFEAT_PANELS:null), ()=>storyResultPanel(ch, false, false), 'defeat', storyIntroFallback(ch));
   }
 }
 function storyResultPanel(ch, won, bonus){
@@ -3341,10 +3352,18 @@ function setArtChip(id, artifact){
 // The engine interpolates the winner NAME as the sentence subject, so a 2nd-person subject ("You") reads with a
 // 3rd-person verb ("You WINS THE MATCH" / "You wins Round"). Correct the agreement at render time (engine untouched).
 // 3rd-person subjects ("Opponent WINS", "Opponent wins Round") are already correct and pass through unchanged.
+// 3rd-person-singular → base form (plays→play, raises→raise, passes→pass, wrenches→wrench, wins→win, WINS→WIN).
+function _baseVerb(v){
+  if(/(?:ss|sh|ch|x|z|o)es$/i.test(v)) return v.slice(0,-2);   // passes→pass · wrenches→wrench · goes→go
+  if(/[^aeiou]ies$/i.test(v))          return v.slice(0,-3)+'y'; // carries→carry (safety)
+  if(/s$/i.test(v))                    return v.slice(0,-1);    // plays→play · raises→raise · wins→win
+  return v;
+}
 function fixLogGrammar(msg){
-  // Targeted 2nd-person fixes (the match line is prefixed with "⚔ ", the round line is not — so match the subject+verb
-  // substring, not the string start). 3rd-person "Opponent WINS/wins …" contains neither substring → passes through.
-  return msg.replace('You WINS THE MATCH ', 'You WIN THE MATCH ').replace('You wins Round ', 'You win Round ');
+  // The subject "You" (2nd person) takes the BASE verb, but the engine interpolates the 3rd-person -s form (built for
+  // named subjects). Fix the verb right after a SUBJECT-position "You " (line start, or after the "⚔ " match prefix).
+  // 3rd-person subjects (Opponent / card names) and mid-sentence "You" (e.g. the "… — You 21 vs …" score line) are untouched.
+  return msg.replace(/(^|⚔ )You ([A-Za-z]+)/, (m, pre, verb)=> pre+'You '+_baseVerb(verb));
 }
 function render(targetSet){
   const me=G.players[0], op=G.players[1];
@@ -3759,6 +3778,7 @@ function animateTotals(){
 
 /* ---------- event choreography (sequential) ---------- */
 let choreoActive=false, choreoSkip=false, choreoTimers=[], roundCountAtActionStart=0;
+let choreoForce=[], choreoStartedAt=0;   // choreoForce: finishers for rAF-based awaits (animateTotals); choreoStartedAt: watchdog clock
 const FAC_COLOR={ 'fac-deva':'#e0b040', 'fac-asura':'#e0483c', 'fac-vanara':'#6fc257', 'fac-naga':'#3fb9a8' };
 function snapshotBoard(){
   const m={};
@@ -3777,10 +3797,31 @@ function posOf(uid, snap){
   return null;
 }
 function cDelay(ms){ return new Promise(r=>{ if(choreoSkip) return r(); const t=setTimeout(r, ms*speedMult*CHOREO_SPEED); choreoTimers.push([t,r]); }); }
-function skipChoreo(){ if(!choreoActive) return; choreoSkip=true; choreoTimers.forEach(([t,r])=>{ clearTimeout(t); r(); }); choreoTimers=[]; }
+function snapTotals(){ if(!G) return; $('ptotal').textContent=totalPower(G,0); $('ototal').textContent=totalPower(G,1); ['ptotal','ototal'].forEach(id=>{ const e=$(id); if(e) e.classList.remove('counting'); }); }
+// (a) An rAF-based choreo await (animateTotals + siblings) can HANG if rAF is starved (iOS backgrounding). Race it against
+// a 3s hard cap that snaps to the end-state, and register a "force finisher" so a tab-hide / skip / watchdog can end it NOW.
+function choreoRace(promise, snap){
+  return new Promise(res=>{ let done=false, t=0;
+    const finish=()=>{ if(done) return; done=true; clearTimeout(t); try{ snap&&snap(); }catch(e){} res(); };
+    t=setTimeout(finish, 3000); choreoForce.push(finish);
+    Promise.resolve(promise).then(finish, finish);
+  });
+}
+// Fast-forward the ACTIVE choreography to completion immediately: resolve every pending cDelay and every rAF-based await.
+function fastForwardChoreo(){ if(!choreoActive) return; choreoSkip=true;
+  choreoTimers.forEach(([t,r])=>{ try{ clearTimeout(t); }catch(e){} try{ r&&r(); }catch(e){} }); choreoTimers=[];
+  const fs=choreoForce; choreoForce=[]; fs.forEach(fn=>{ try{ fn(); }catch(e){} }); }
+function skipChoreo(){ fastForwardChoreo(); }
+// (b) iOS backgrounding pauses rAF mid-await → fast-forward the choreo the moment the tab is hidden, so it can't stick.
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState==='hidden' && choreoActive) fastForwardChoreo(); });
+// (c) belt-and-braces watchdog: if choreoActive is stuck true for >8s, force-finish, then hard-release input if still locked.
+setInterval(()=>{ if(choreoActive && choreoStartedAt && (performance.now()-choreoStartedAt)>8000){
+  fastForwardChoreo();
+  setTimeout(()=>{ if(choreoActive){ choreoActive=false; choreoStartedAt=0; const l=$('choreolayer'); if(l){ l.classList.remove('locked'); l.onclick=null; l.innerHTML=''; } try{ render(); }catch(e){} try{ pump(); }catch(e){} } }, 300);
+} }, 1500);
 // Defensive reset of ALL choreography globals — a new match must never inherit a stuck choreoActive from a prior match
 // whose choreo async was left pending (a hung rAF await) or rejected (an uncaught step exception, e.g. the drawImage race).
-function resetChoreo(){ choreoActive=false; choreoSkip=false; if(aiTimer){ try{ clearTimeout(aiTimer); }catch(e){} aiTimer=null; }
+function resetChoreo(){ choreoActive=false; choreoSkip=false; choreoStartedAt=0; choreoForce=[]; if(aiTimer){ try{ clearTimeout(aiTimer); }catch(e){} aiTimer=null; }
   choreoTimers.forEach(([t])=>{ try{ clearTimeout(t); }catch(e){} }); choreoTimers=[]; pendingPlay=null; roundCountAtActionStart=0;
   const layer=$('choreolayer'); if(layer){ layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML=''; } }
 const FTOAST_CLASS = a => a==='Chaos Surge'?'f-chaos': a==='Dharma Shield'?'f-dharma': a==='Leap'?'f-leap': a==='Venom'?'f-venom':'f-other';
@@ -4004,7 +4045,7 @@ function runAction(mutate, opts={}){
     if (evs.some(e=>e.type==='destroy')) Audio2.fileSfx('sfx_unit_destroy');
     render(); showResultSummary(evs); afterChoreo(); return;
   }
-  choreoActive=true; choreoSkip=false;
+  choreoActive=true; choreoSkip=false; choreoStartedAt=performance.now(); choreoForce=[];
   const layer=$('choreolayer'); layer.classList.add('locked'); layer.onclick=skipChoreo;
   (async()=>{
     try{
@@ -4014,10 +4055,10 @@ function runAction(mutate, opts={}){
       for (const ev of evs){ if(choreoSkip) break; try{ await playEvent(ev, snap); }catch(e){} }   // skip a broken step (e.g. a VFX drawImage race) — keep the match playable
       const roundEnded = G.roundHistory.length>roundCountAtActionStart && !G.over;
       if (roundEnded && !choreoSkip){ try{ await cDelay(500); }catch(e){} }   // theatre: pause after the poison settles
-      try{ await animateTotals(); }catch(e){}                               // totals count up to their final values
+      try{ await choreoRace(animateTotals(), snapTotals); }catch(e){}          // totals count up — but rAF starvation (iOS bg) can't hang it: 3s cap snaps to final
     } finally {
-      // GUARANTEE: no thrown/skipped step can leave the choreo locked — always release the lock and resume the match
-      choreoActive=false; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML='';
+      // GUARANTEE: no thrown/skipped/hung step can leave the choreo locked — always release the lock and resume the match
+      choreoActive=false; choreoStartedAt=0; choreoForce=[]; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML='';
       try{ render(); showResultSummary(evs); if (G.roundHistory.length>roundCountAtActionStart && !G.over) showRoundBanner(); }catch(e){}
       pump();
     }

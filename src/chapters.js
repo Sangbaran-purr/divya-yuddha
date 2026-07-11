@@ -69,11 +69,11 @@ const CHAPTERS = {
     // opponent: fully scripted, plays three weak Units then yields (BOOK1_DESIGN §3 CH1)
     opponentScript:[ {action:'play', cardName:'Vibhishana'}, {action:'play', cardName:'Kali Asura'}, {action:'play', cardName:'Asura Berserker'}, {action:'pass'} ],
     guidance:[
-      { highlight:{card:'Yama'},           line:'The gate holds only if someone stands at it. Send the guard.' },
-      { highlight:{card:'Marut'},          line:'See their number rise? Power against power — the greater total holds the field.' },
-      { highlight:{card:'Ashwini Kumars'}, line:'Again. The wall is built one warrior at a time.' },
-      { highlight:{card:'Surya Dev'},      line:'They yield the field. One more — make the count beyond dispute — then rest your hand.' },
-      { highlight:{action:'pass'},         line:'Rest your hand. Strength held in reserve is still strength.' },
+      { highlight:{card:'Yama'},           line:'The gate holds only if someone stands at it. Send the guard.', instruct:'Tap the glowing card: Yama — put a defender on the field.' },
+      { highlight:{card:'Marut'},          line:'See their number rise? Power against power — the greater total holds the field.', instruct:'Tap the glowing card: Marut — add another unit to raise your total.' },
+      { highlight:{card:'Ashwini Kumars'}, line:'Again. The wall is built one warrior at a time.', instruct:'Tap the glowing card: Ashwini Kumars — one more warrior on the wall.' },
+      { highlight:{card:'Surya Dev'},      line:'They yield the field. One more — make the count beyond dispute — then rest your hand.', instruct:'Tap the glowing card: Surya Dev — a strong unit to seal the lead.' },
+      { highlight:{action:'pass'},         line:'Rest your hand. Strength held in reserve is still strength.', instruct:'Tap PASS ROUND — you are ahead; stop here and win the round.' },
     ],
     // panels: { id, speaker?, plate, ambience? } — plate/speaker VERBATIM from BOOK1_CUTSCENE_BIBLE §3; ambience is a STUB slot
     cutscenes:{
@@ -108,10 +108,10 @@ const CHAPTERS = {
       {handoff:'ai'}
     ],
     guidance:[
-      { highlight:{card:'Deva Soldier'}, line:'The raiders return in force. Do not meet fury with fury — send one soldier, no more.' },
-      { highlight:{action:'pass'},       line:'Now yield the field. Every card they burn on an empty gate is a card they will not have when it matters.' },
+      { highlight:{card:'Deva Soldier'}, line:'The raiders return in force. Do not meet fury with fury — send one soldier, no more.', instruct:'Tap the glowing card: Deva Soldier — play just one cheap unit, then stop.' },
+      { highlight:{action:'pass'},       line:'Now yield the field. Every card they burn on an empty gate is a card they will not have when it matters.', instruct:'Tap PASS ROUND — let them win this one; you keep your cards for later.' },
       // sticky beat — rounds 2 & 3, guided by superior hand count (auto-highlight best; pass when ahead & thin)
-      { highlight:{auto:'bestOrPass'},   line:'Six against three. Now the mathematics of patience — spend your advantage, and hold the last word.' },
+      { highlight:{auto:'bestOrPass'},   line:'Six against three. Now the mathematics of patience — spend your advantage, and hold the last word.', instruct:'Tap the glowing card to play your best, or PASS ROUND when you lead — you have more cards than they do.' },
     ],
     cutscenes:{
       intro:[
@@ -151,11 +151,11 @@ const CHAPTERS = {
     // Beats steer the winning DEFENSIVE line: play the champion, SHIELD it before the strike, develop small Units
     // (hold your other great Unit back so the blade finds no second mark), survive Vajra, then answer + deploy.
     guidance:[
-      { highlight:{card:'Surya Dev'},                    line:'Send your radiance first — the champion the blade will seek.' },
-      { highlight:{shield:'strongest'},                  line:'The blade seeks your champion. Shield first; strike after.' },
-      { highlight:{card:'Marut'},                        line:'Hold your greater warriors in reserve — give the blade no second mark.' },
-      { highlight:{card:'Vajra', target:'largestEnemy'}, line:'The strike is spent. Now answer — Heaven’s weapons answer only when heaven is ready.' },
-      { highlight:{auto:'bestOrPass'},                   line:'The sky is yours. Bring your host to bear.' },
+      { highlight:{card:'Surya Dev'},                    line:'Send your radiance first — the champion the blade will seek.', instruct:'Tap the glowing card: Surya Dev — your champion, the one his blade will target.' },
+      { highlight:{shield:'strongest'},                  line:'The blade seeks your champion. Shield first; strike after.', instruct:'Tap the SHIELD button, then tap Surya Dev — protect him before the enemy Astra strikes.' },
+      { highlight:{card:'Marut'},                        line:'Hold your greater warriors in reserve — give the blade no second mark.', instruct:'Tap the glowing card: Marut — a small unit; keep your big ones in hand for now.' },
+      { highlight:{card:'Vajra', target:'largestEnemy'}, line:'The strike is spent. Now answer — Heaven’s weapons answer only when heaven is ready.', instruct:'Tap the glowing card: Vajra, then the glowing enemy unit — destroy their biggest threat.' },
+      { highlight:{auto:'bestOrPass'},                   line:'The sky is yours. Bring your host to bear.', instruct:'Tap the glowing card to play your best, or PASS ROUND when you are ahead.' },
     ],
     // b1c3_i1 exists in assets/story; b1c3_i3 REUSES the swarga board image (zero new art); b1c3_v1 art pending → text plate.
     cutscenes:{
@@ -199,10 +199,10 @@ const CHAPTERS = {
     mulliganLine:'Three of your ten may return to the deck. A wise hand is chosen twice.',
     opponentScript:[ {action:'play', cardName:'Bana Asura'}, {action:'play', cardName:'Meghnad'}, {action:'play', cardName:'Narakasura'}, {action:'play', cardName:'Pashupatastra'}, {handoff:'ai'} ],
     guidance:[
-      { highlight:{card:'Surya Dev'},   line:'The churning has begun. Build your line — the sea gives to the steady.' },
-      { highlight:{card:'Yama'},        line:'Another. What the ocean raises, it can also take.' },
-      { highlight:{card:'Gayatri Mantra'}, line:'What the churning takes, the sacred word returns.' },
-      { highlight:{auto:'bestOrPass'},  line:'Now play the tide — spend when you lead, hold when you must.' },
+      { highlight:{card:'Surya Dev'},   line:'The churning has begun. Build your line — the sea gives to the steady.', instruct:'Tap the glowing card: Surya Dev — start building your line of units.' },
+      { highlight:{card:'Yama'},        line:'Another. What the ocean raises, it can also take.', instruct:'Tap the glowing card: Yama — add another unit to the field.' },
+      { highlight:{card:'Gayatri Mantra'}, line:'What the churning takes, the sacred word returns.', instruct:'Tap the glowing card: Gayatri Mantra — it brings back your fallen unit.' },
+      { highlight:{auto:'bestOrPass'},  line:'Now play the tide — spend when you lead, hold when you must.', instruct:'Tap the glowing card to play your best, or PASS ROUND when you lead.' },
     ],
     cutscenes:{
       intro:[
@@ -244,10 +244,10 @@ const CHAPTERS = {
     // (reported): the bonus reflects power-pressure, earned by cleansing, not a routine unit-death gate.
     opponentScript:[ {action:'play', cardName:'Naga Sadhu'}, {action:'play', cardName:'Nagastra'}, {action:'play', cardName:'Naga Archer'}, {handoff:'ai'} ],
     guidance:[
-      { highlight:{card:'Surya Dev'},  line:'They open with poison, not steel. Stand your line and watch the marks.' },
-      { highlight:{card:'Yama'},       line:'Hold. Poison does not duel — it waits.' },
-      { highlight:{card:'Pavamana'},   line:'What fire cannot purify, the sacred word can.' },
-      { highlight:{auto:'bestOrPass'}, line:'End it quickly. A short battle starves a slow poison.' },
+      { highlight:{card:'Surya Dev'},  line:'They open with poison, not steel. Stand your line and watch the marks.', instruct:'Tap the glowing card: Surya Dev — hold your line against the poison.' },
+      { highlight:{card:'Yama'},       line:'Hold. Poison does not duel — it waits.', instruct:'Tap the glowing card: Yama — another defender; watch for the ☠ Venom marks.' },
+      { highlight:{card:'Pavamana'},   line:'What fire cannot purify, the sacred word can.', instruct:'Tap the glowing card: Pavamana — it cleanses the Venom from your units.' },
+      { highlight:{auto:'bestOrPass'}, line:'End it quickly. A short battle starves a slow poison.', instruct:'Tap the glowing card to play your best, or PASS ROUND to end the round fast.' },
     ],
     cutscenes:{
       intro:[
