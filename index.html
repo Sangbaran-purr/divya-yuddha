@@ -317,6 +317,31 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .q-claim:active{ transform:scale(.96); }
 .q-claimed{ font-size:16px; color:var(--gold); }
 
+/* ===== M1 slice 3: wallet + Sadhana on the profile card ===== */
+.lp-wallet{ display:flex; gap:16px; margin-top:7px; }
+.lp-cur{ font-size:12px; letter-spacing:.4px; color:var(--gold-2); display:inline-flex; align-items:center; gap:4px; }
+.lp-cur b{ color:var(--gold); font-weight:700; font-family:Cinzel,serif; font-size:13px; }
+.lp-amsha{ color:var(--hi); }   /* Amsha in the brighter gold + the ✦ glyph → visually distinct from coins */
+.lp-amsha b{ color:var(--hi); }
+.lp-sadhana{ display:block; width:100%; margin:0 0 12px; padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.42); backdrop-filter:blur(6px); border:1px solid var(--gold-dim); cursor:pointer; text-align:left; }
+.lp-sadhana:active{ transform:scale(.99); }
+.lp-sad-head{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:7px; }
+.lp-sad-title{ font-family:Cinzel,serif; font-size:12px; letter-spacing:.8px; color:var(--gold); }
+.lp-sad-note{ font-size:10px; letter-spacing:.3px; color:var(--ink-dim); white-space:nowrap; }
+.lp-sad-track{ height:5px; border-radius:3px; background:rgba(255,255,255,.13); overflow:hidden; }
+.lp-sad-track i{ display:block; height:100%; width:0; border-radius:3px; background:linear-gradient(90deg,var(--gold-2),var(--hi)); transition:width .4s ease; }
+#sadhanapick{ z-index:88; }
+.sad-pick-panel{ position:relative; z-index:1; max-width:420px; width:100%; background:radial-gradient(circle at 50% 0%, #241a0a, #0e0904); border:1px solid var(--gold-dim); border-radius:16px; padding:22px 18px; }
+.sad-pick-head{ font-family:Cinzel,serif; font-size:16px; letter-spacing:2px; color:var(--gold); text-align:center; }
+.sad-pick-sub{ font-size:11px; color:var(--ink-dim); text-align:center; margin:8px 4px 16px; line-height:1.5; }
+.sad-opt{ display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; margin-bottom:9px; padding:12px 14px; border-radius:11px; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.16); cursor:pointer; text-align:left; }
+.sad-opt:active{ transform:scale(.99); }
+.sad-opt.on{ border-color:var(--gold); background:rgba(232,200,116,.12); }
+.sad-opt-label{ font-family:Cinzel,serif; font-size:13px; color:#f2ead6; letter-spacing:.4px; }
+.sad-opt.fac-deva .sad-opt-label{ color:var(--gold); } .sad-opt.fac-asura .sad-opt-label{ color:#e88; } .sad-opt.fac-vanara .sad-opt-label{ color:#e9b36a; } .sad-opt.fac-naga .sad-opt-label{ color:#5ec8b8; }
+.sad-opt-prog{ font-size:11px; color:var(--gold-2); white-space:nowrap; }
+.sad-pick-close{ display:block; width:100%; margin-top:6px; padding:10px; border-radius:9px; background:transparent; border:1px solid var(--gold-dim); color:var(--gold); font-family:Cinzel,serif; letter-spacing:1px; font-size:12px; cursor:pointer; }
+
 /* ===== Story Mode (Book of Order) ===== */
 #storyselect, #cutscene{ display:block; overflow-y:auto; padding:0; }
 #story-chapters{ display:flex; flex-direction:column; gap:11px; }
@@ -821,8 +846,16 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
         <div class="lp-namerow"><div class="lp-name" id="lpname">Warrior</div><span class="lp-rank" id="lprank">Seeker</span></div>
         <div class="lp-level"><span id="lplevel">Level 1</span><div class="lp-bar"><i id="lpbar"></i></div></div>
         <div class="lp-stats" id="lpstats">0 wins · 0 matches · 0 today</div>
+        <div class="lp-wallet">
+          <span class="lp-cur lp-coin" title="Coins">◉ <b id="lp-coins">0</b></span>
+          <span class="lp-cur lp-amsha" title="Amsha">✦ <b id="lp-amsha">0</b></span>
+        </div>
       </div>
     </div>
+    <button class="lp-sadhana" id="lp-sadhana">
+      <div class="lp-sad-head"><span class="lp-sad-title" id="lp-sad-label">Sadhana — pin a card to chase</span><span class="lp-sad-note" id="lp-sad-note">Tap to choose</span></div>
+      <div class="lp-sad-track"><i id="lp-sad-bar"></i></div>
+    </button>
     <button class="lp-quests" id="lp-quests">
       <span class="lpq-title">Quests</span>
       <span class="lpq-sub" id="lpq-sub">Daily &amp; weekly</span>
@@ -858,6 +891,15 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     <div id="q-daily"></div>
     <div class="q-sect">WEEKLY <span class="q-reset" id="q-weekly-reset"></span></div>
     <div id="q-weekly"></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="sadhanapick">
+  <div class="sad-pick-panel">
+    <div class="sad-pick-head">CHOOSE YOUR SADHANA</div>
+    <div class="sad-pick-sub">Pin one card to chase. Every win feeds its progress. The reward arrives when the next wave ships — your progress is saved.</div>
+    <div id="sad-pick-list"></div>
+    <button class="sad-pick-close" id="sad-pick-close">CLOSE</button>
   </div>
 </div>
 
@@ -2503,7 +2545,7 @@ function profileInitials(name){ const w=name.trim().split(/\s+/); const s=(w.len
    card costs) are present so later slices read from the same source of truth. ENGINE UNTOUCHED — everything below
    reads only the match result and the story-completion hook. */
 const META_CONFIG = {
-  schemaVersion: 2,   // v1: xp/wallet/rewards/daily/story · v2 (slice 2): + quests {day,week,daily[],weekly[]}
+  schemaVersion: 3,   // v1: xp/wallet/rewards/daily/story · v2: + quests · v3 (slice 3): + sadhana{pin,banked}, story.bonusAmsha, daily.firstWinAwarded
   xp: {                                  // §1 awards (play-only, win or lose)
     matchComplete: 20, matchWin: 15,
     storyFirstClear: 60, storyBonusFirstEarn: 40,
@@ -2516,13 +2558,13 @@ const META_CONFIG = {
     { title:'Brahmarishi', wins:220 }, { title:'Avatara',  wins:300 }, { title:'Parashakti', wins:400 },
   ],
   coins: {                               // §4 (earned; spend is M4). perLevel: §1 says "coins at every level" w/o an amount —
-    perMatch: 5, perLevel: 25,           //   25 is a TUNABLE assumption. perMatch is a slice-5 income hook (config only here).
+    perMatch: 5, perLevel: 25,           //   25 is a TUNABLE assumption. perMatch = 5 coins/PvAI match (WIRED slice 3).
   },
   amsha: {                               // §5 card economy
-    perWin: 10, firstWinOfDay: 20,       //   income hooks — slice 5 (config only here)
-    milestoneEveryLevels: 5, milestoneAmount: 60,   // §1/D1 + task: 60 Amsha every 5 levels (level-up reward, WIRED this slice)
-    storyBonusRetro: 15,                 //   §5 retro-grant per earned star — slice 5 (config only here)
-    costs: { C:40, U:80, R:160, E:400, L:1000, M:1500 },   // §5 card costs (spend UI is slice 2+/wave-1-gated)
+    perWin: 10, firstWinOfDay: 20,       //   income (WIRED slice 3): 10/win + 20 on the first WIN of the day (own day-key guard)
+    milestoneEveryLevels: 5, milestoneAmount: 60,   // §1/D1: 60 Amsha every 5 levels (level-up reward, WIRED slice 1)
+    storyBonusRetro: 15,                 //   §5 retro-grant per earned star (WIRED slice 3: retro on migration + on each first-earn)
+    costs: { C:40, U:80, R:160, E:400, L:1000, M:1500 },   // §5 card costs (spend UI is M4/wave-1-gated)
   },
   quests: {                              // §3 — NOT wired in slice 1 (config only; slice 4 builds the engine)
     daily:  { coins:15, amsha:10, xp:20,  slots:3 },
@@ -2530,7 +2572,8 @@ const META_CONFIG = {
     dailyPool: ['win1','play2','winby8','play6units','faction3','herosurvives','venom3','storychapter'],
     weeklyPool: ['win7','twofactions','anystar','threerealms','destroy10'],
   },
-  sadhana: { perWin: 10 },               // §6 — NOT wired in slice 1 (config only; slice 5 builds the pin+bar)
+  sadhana: { perWin: 10, previewCost: 160 },   // §6 (WIRED slice 3): +10 progress/PvAI win. previewCost = the bar target until real
+                                               //   wave cards ship (no card identity yet → per-faction-wave pin, target = Rare cost 160; TUNABLE)
 };
 
 /* dy_meta — ONE serializable object, schema-versioned. PER §7 THIS SCHEMA IS THE FUTURE M3 SERVER PROFILE: keep it a
@@ -2547,23 +2590,57 @@ function freshMeta(){ return {
   schemaVersion: META_CONFIG.schemaVersion,
   xp: { total:0 }, wallet: { coins:0, amsha:0 },
   rewards: { lastLevelRewarded:1 },
-  daily: { day:todayKey(), firstMatchAwarded:false },
-  story: { clearXp:{}, bonusXp:{} },
+  daily: { day:todayKey(), firstMatchAwarded:false, firstWinAwarded:false },   // firstWinAwarded (v3): day-keyed +20 Amsha, distinct from the XP daily-first
+  story: { clearXp:{}, bonusXp:{}, bonusAmsha:{} },   // bonusAmsha (v3): per-chapter 15-Amsha retro ledger (idempotent, one-shot per star)
   quests: { day:'', week:'', daily:[], weekly:[] },   // slice 2 — populated by ensureQuests() on first load
+  sadhana: { pin:null, banked:{} },                   // slice 3 — pinned card id + per-id banked progress (persists on pin-switch)
 }; }
 function saveMeta(M){ try{ localStorage.setItem('dy_meta', JSON.stringify(M)); }catch(e){} }
 function loadMeta(){
   let M=null; try{ M=JSON.parse(localStorage.getItem('dy_meta')); }catch(e){ M=null; }
   let created=false;
+  const prevVer = (M && typeof M==='object') ? (M.schemaVersion|0) : META_CONFIG.schemaVersion;
   if(!M || typeof M!=='object'){                    // FIRST LOAD → create + migrate from dy_profile (no playtester resets to zero)
     M=freshMeta(); migrateFromProfile(M); created=true;
   }
-  if(M.schemaVersion!==META_CONFIG.schemaVersion) M.schemaVersion=META_CONFIG.schemaVersion;   // additive migrations: ensureQuests fills v2 quests below
-  if(!M.daily || M.daily.day!==todayKey()) M.daily={ day:todayKey(), firstMatchAwarded:false }; // day rollover → re-arm daily-first XP
-  const drew=ensureQuests(M);                         // draw/reset daily+weekly quests on day/week rollover (slice 2)
-  if(created || drew) saveMeta(M);
+  let changed=created;
+  // additive schema upgrades (older stores keep their xp/wallet/rewards; only the new fields are added)
+  if(!M.sadhana || typeof M.sadhana!=='object'){ M.sadhana={ pin:null, banked:{} }; changed=true; }   // v3
+  if(!M.story) M.story={ clearXp:{}, bonusXp:{} };
+  if(!M.story.bonusAmsha){ M.story.bonusAmsha={}; changed=true; }                                      // v3
+  if(prevVer<3 || created){ if(reconcileStoryStars(M)) changed=true; }   // one-shot retro-grant of 15 Amsha per already-earned star (idempotent by ledger)
+  if(M.schemaVersion!==META_CONFIG.schemaVersion){ M.schemaVersion=META_CONFIG.schemaVersion; changed=true; }
+  if(!M.daily || M.daily.day!==todayKey()){ M.daily={ day:todayKey(), firstMatchAwarded:false, firstWinAwarded:false }; changed=true; }   // day rollover → re-arm both daily-firsts
+  if(M.daily.firstWinAwarded===undefined) M.daily.firstWinAwarded=false;   // v3 field on a same-day pre-v3 store
+  if(ensureQuests(M)) changed=true;                  // draw/reset daily+weekly quests on day/week rollover (slice 2)
+  if(changed) saveMeta(M);
   return M;
 }
+// §5 retro: pay 15 Amsha for every already-earned story bonus star not yet in the ledger. Idempotent — returns true if it paid.
+function reconcileStoryStars(M){
+  let changed=false, prog={}; try{ prog=loadStoryProg(); }catch(e){ prog={}; }
+  for(const id in prog){ if(prog[id] && prog[id].bonus && !M.story.bonusAmsha[id]){ M.story.bonusAmsha[id]=1; M.wallet.amsha+=META_CONFIG.amsha.storyBonusRetro; changed=true; } }
+  return changed;
+}
+function grantStarAmsha(M, id){ if(!M.story.bonusAmsha) M.story.bonusAmsha={};   // future first-earn path (same ledger as the retro sweep)
+  if(!M.story.bonusAmsha[id]){ M.story.bonusAmsha[id]=1; M.wallet.amsha+=META_CONFIG.amsha.storyBonusRetro; } }
+
+/* ---------- Sadhana (§6, Option A — a PARALLEL win-fed stream toward a pinned card) ----------
+   The "revealed-but-unowned pool" is today the Faction-Intro hidden-slot teasers (FI_HIDDEN) — anonymous per faction, so the
+   pinnable granularity is per-faction-wave ("chase the next Naga card"). When real wave-1 cards ship, this pool becomes the
+   card list and `banked` (keyed by id) carries over. The grant CANNOT fire yet (no card to award) — a filled bar reads
+   "arrives with the next wave". +10 progress per PvAI win; banked progress persists per-id across pin-switches. */
+const SADHANA_POOL = [
+  { id:'wave_devas',   faction:'devas',   label:'Devas — next wave' },
+  { id:'wave_asuras',  faction:'asuras',  label:'Asuras — next wave' },
+  { id:'wave_vanaras', faction:'vanaras', label:'Vanaras — next wave' },
+  { id:'wave_nagas',   faction:'nagas',   label:'Nagas — next wave' },
+];
+function sadhanaDef(id){ return SADHANA_POOL.find(s=>s.id===id)||null; }
+function sadhanaCost(id){ return META_CONFIG.sadhana.previewCost; }   // no card identity yet → preview target; real per-card Amsha cost when the wave ships
+function sadhanaOnWin(M){ if(!M.sadhana || !M.sadhana.pin) return; const id=M.sadhana.pin;
+  M.sadhana.banked[id]=Math.min(sadhanaCost(id), (M.sadhana.banked[id]|0)+META_CONFIG.sadhana.perWin); }   // cap at cost (grant deferred to the wave)
+function setSadhanaPin(id){ const M=loadMeta(); if(!sadhanaDef(id)) return; M.sadhana.pin=id; if(M.sadhana.banked[id]==null) M.sadhana.banked[id]=0; saveMeta(M); renderProfile(); }
 /* MIGRATION FORMULA (documented in CLAUDE.md): retroXP = matches×matchComplete(20) + wins×matchWin(15) — reconstructs the
    play-XP a veteran would have earned (one-time story/daily bonuses can't be reconstructed, so they're intentionally omitted),
    then back-pays the level-up rewards those levels earned. Runs exactly once, when dy_meta is first created. */
@@ -2729,6 +2806,35 @@ function renderProfile(){
   $('lplevel').textContent='Level '+lv.level;
   $('lpbar').style.width=prog+'%';
   $('lpstats').textContent=`${P.wins} wins · ${P.matches} matches · ${P.winsToday} today`;
+  const wc=$('lp-coins'), wa=$('lp-amsha');            // slice 3: wallet (accruing since slice 1, visible now)
+  if(wc) wc.textContent=M.wallet.coins|0; if(wa) wa.textContent=M.wallet.amsha|0;
+  renderSadhana(M);
+}
+function renderSadhana(M){
+  const row=$('lp-sadhana'); if(!row) return;
+  const pin=M.sadhana && M.sadhana.pin, def=pin && sadhanaDef(pin);
+  const label=$('lp-sad-label'), bar=$('lp-sad-bar'), note=$('lp-sad-note');
+  if(def){
+    const cost=sadhanaCost(pin), b=Math.min(cost, M.sadhana.banked[pin]|0), full=b>=cost;
+    if(label) label.textContent=def.label;
+    if(bar) bar.style.width=(cost? b/cost*100:0)+'%';
+    if(note) note.textContent = full ? 'Ready — arrives with the next wave' : `${b} / ${cost} ✦`;
+  } else {
+    if(label) label.textContent='Sadhana — pin a card to chase';
+    if(bar) bar.style.width='0%';
+    if(note) note.textContent='Tap to choose';
+  }
+}
+function openSadhanaPick(){
+  const M=loadMeta(), box=$('sad-pick-list'); if(!box) return; box.innerHTML='';
+  SADHANA_POOL.forEach(s=>{
+    const b=Math.min(sadhanaCost(s.id), M.sadhana.banked[s.id]|0);
+    const btn=document.createElement('button'); btn.className='sad-opt'+(M.sadhana.pin===s.id?' on':'')+' '+facClass(s.faction);
+    btn.innerHTML=`<span class="sad-opt-label">${s.label}</span><span class="sad-opt-prog">${b} / ${sadhanaCost(s.id)} ✦</span>`;
+    btn.onclick=()=>{ setSadhanaPin(s.id); $('sadhanapick').classList.add('hidden'); };
+    box.appendChild(btn);
+  });
+  $('sadhanapick').classList.remove('hidden');
 }
 let matchRecorded=false;   // one-shot guard: showGameOver can re-run on re-render — count each match once
 let conchPending=false;    // one-shot guard: fire sfx_conch once at round-1 start (armed in startGame, consumed by fireConch in pump)
@@ -2743,7 +2849,14 @@ function recordMatchResult(){
   const M=loadMeta();
   grantXp(M, META_CONFIG.xp.matchComplete);
   if(G.winner===0) grantXp(M, META_CONFIG.xp.matchWin);
-  if(!M.daily.firstMatchAwarded){ M.daily.firstMatchAwarded=true; grantXp(M, META_CONFIG.xp.dailyFirstMatch); }   // day-keyed +25
+  if(!M.daily.firstMatchAwarded){ M.daily.firstMatchAwarded=true; grantXp(M, META_CONFIG.xp.dailyFirstMatch); }   // day-keyed +25 XP
+  // §5 match income (PvAI only — story never reaches here): 5 coins/match, 10 Amsha/win, +20 Amsha first WIN of day; Sadhana +10/win
+  M.wallet.coins += META_CONFIG.coins.perMatch;
+  if(G.winner===0){
+    M.wallet.amsha += META_CONFIG.amsha.perWin;
+    if(!M.daily.firstWinAwarded){ M.daily.firstWinAwarded=true; M.wallet.amsha += META_CONFIG.amsha.firstWinOfDay; }   // own day-key guard, distinct from the XP daily-first
+    sadhanaOnWin(M);
+  }
   saveMeta(M);
   questsOnMatchEnd(G, false, false);   // slice 2: progress PvAI-domain quests (one-shot via matchRecorded guard)
 }
@@ -2789,6 +2902,9 @@ $('landgear').onclick=()=>{ syncSettingsUI(); $('settings').classList.remove('hi
 $('mode-pvai').onclick=()=>showFactionSelect();
 $('lp-quests').onclick=()=>showQuests();
 $('quests-back').onclick=()=>$('quests').classList.add('hidden');
+$('lp-sadhana').onclick=()=>openSadhanaPick();
+$('sad-pick-close').onclick=()=>$('sadhanapick').classList.add('hidden');
+$('sadhanapick').onclick=(e)=>{ if(e.target===$('sadhanapick')) $('sadhanapick').classList.add('hidden'); };   // backdrop tap closes
 document.querySelectorAll('#landing .mode.locked').forEach(b=> b.onclick=()=>toastMute('Coming soon'));
 
 /* ===================== FACTION INTRODUCTION =====================
@@ -3192,6 +3308,7 @@ function markChapterComplete(id, bonus){
   const M=loadMeta();
   if(!M.story.clearXp[id]){ M.story.clearXp[id]=1; grantXp(M, META_CONFIG.xp.storyFirstClear); }
   if(bonus && !M.story.bonusXp[id]){ M.story.bonusXp[id]=1; grantXp(M, META_CONFIG.xp.storyBonusFirstEarn); }
+  if(bonus) grantStarAmsha(M, id);   // §5 slice 3: 15 Amsha on first-earn of a bonus star (same ledger as the retro sweep → never double-pays)
   saveMeta(M);
 }
 function chapterUnlocked(id){ if(id==='b1c1') return true;
