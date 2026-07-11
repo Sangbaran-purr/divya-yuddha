@@ -342,6 +342,24 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .sad-opt-prog{ font-size:11px; color:var(--gold-2); white-space:nowrap; }
 .sad-pick-close{ display:block; width:100%; margin-top:6px; padding:10px; border-radius:9px; background:transparent; border:1px solid var(--gold-dim); color:var(--gold); font-family:Cinzel,serif; letter-spacing:1px; font-size:12px; cursor:pointer; }
 
+/* ===== M1 slice 4: earnings stamp + flourishes (result surfaces) ===== */
+.earn-line{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px 12px; margin:6px 0 2px; }
+.earn-line:empty, .earn-extra:empty{ margin:0; }
+.earn-chip{ font-family:Cinzel,serif; font-size:13px; letter-spacing:.5px; color:var(--gold); opacity:0; animation:earnIn .45s ease forwards; }
+.earn-chip:nth-child(n+2){ position:relative; }
+.earn-chip:nth-child(n+2)::before{ content:'·'; position:absolute; left:-8px; color:var(--gold-dim); }
+.earn-extra{ display:flex; flex-direction:column; align-items:center; gap:3px; margin-top:6px; }
+.earn-level{ font-family:Cinzel,serif; font-size:18px; letter-spacing:3px; font-weight:700; color:var(--hi); text-shadow:0 0 14px rgba(240,208,128,.6); opacity:0; animation:earnPop .5s cubic-bezier(.2,1.3,.5,1) forwards; }
+.earn-rank{ font-family:Cinzel,serif; font-size:12px; letter-spacing:1.5px; color:var(--gold); opacity:0; animation:earnIn .45s ease forwards; }
+.earn-quest{ font-size:11px; letter-spacing:.4px; color:var(--gold-2); opacity:0; animation:earnIn .45s ease forwards; }
+@keyframes earnIn{ from{ opacity:0; transform:translateY(6px); } to{ opacity:1; transform:none; } }
+@keyframes earnPop{ 0%{ opacity:0; transform:scale(.6); } 60%{ opacity:1; transform:scale(1.12); } 100%{ opacity:1; transform:scale(1); } }
+/* rank-chip one-time promotion shimmer */
+.lp-rank.glint{ animation:rankGlint 1.6s ease; }
+@keyframes rankGlint{ 0%{ box-shadow:0 0 0 rgba(240,208,128,0); border-color:var(--gold-dim); }
+  30%{ box-shadow:0 0 16px rgba(240,208,128,.85); border-color:var(--hi); color:var(--hi); }
+  100%{ box-shadow:0 0 0 rgba(240,208,128,0); border-color:var(--gold-dim); } }
+
 /* ===== Story Mode (Book of Order) ===== */
 #storyselect, #cutscene{ display:block; overflow-y:auto; padding:0; }
 #story-chapters{ display:flex; flex-direction:column; gap:11px; }
@@ -818,6 +836,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 
 <div class="overlay hidden" id="gameover"><div class="modal">
   <h2 id="goh">VICTORY</h2><p id="gop"></p>
+  <div id="go-earn" class="earn-line"></div>
+  <div id="go-extra" class="earn-extra"></div>
   <div class="go-btns">
     <button onclick="startGame()">REMATCH ⚔</button>
     <button class="go-alt" onclick="showLanding()">MAIN MENU</button>
@@ -886,6 +906,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <button class="fi-back" id="quests-back" title="back">‹</button>
   <div class="q-col">
     <div class="q-head">QUESTS</div>
+    <div id="q-flourish" class="earn-extra"></div>
     <div class="q-intro">Play to earn. Dailies refresh each day; weeklies each week.</div>
     <div class="q-sect">DAILY <span class="q-reset" id="q-daily-reset"></span></div>
     <div id="q-daily"></div>
@@ -930,6 +951,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 <div class="overlay hidden" id="storyresult"><div class="modal" style="text-align:center; max-width:400px;">
   <h2 id="sr-title"></h2><p id="sr-sub"></p>
   <div id="sr-bonus" class="hidden"></div>
+  <div id="sr-earn" class="earn-line"></div>
+  <div id="sr-extra" class="earn-extra"></div>
   <div class="go-btns">
     <button id="sr-primary"></button>
     <button class="go-alt" id="sr-secondary"></button>
@@ -2402,6 +2425,7 @@ function startGame(p0Faction, p1Faction){
   G=newGame({p0:'You',p1:'Opponent',p0Faction:currentFactions.p0,p1Faction:currentFactions.p1}); seenLog=0;
   G.players[0].manualShield=true;   // the human designates Dharma Shield by hand (AI keeps auto-designate)
   matchRecorded=false;              // arm the one-shot match-result counter for this new match
+  goStampDone=false; lastEarn=null; // slice 4: re-arm the earnings-stamp one-shot for the new match
   knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; shieldMode=false; hideBoardTargetBar();
   ['gameover','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','mulligan','realmpop'].forEach(id=>$(id).classList.add('hidden'));
   $('hudwrap').classList.remove('hidden');
@@ -2545,7 +2569,7 @@ function profileInitials(name){ const w=name.trim().split(/\s+/); const s=(w.len
    card costs) are present so later slices read from the same source of truth. ENGINE UNTOUCHED — everything below
    reads only the match result and the story-completion hook. */
 const META_CONFIG = {
-  schemaVersion: 3,   // v1: xp/wallet/rewards/daily/story · v2: + quests · v3 (slice 3): + sadhana{pin,banked}, story.bonusAmsha, daily.firstWinAwarded
+  schemaVersion: 4,   // v1: xp/wallet/rewards/daily/story · v2: + quests · v3: + sadhana/bonusAmsha/firstWinAwarded · v4 (slice 4): + rewards.rankSeen/rankGlintPending (rank-promotion feel)
   xp: {                                  // §1 awards (play-only, win or lose)
     matchComplete: 20, matchWin: 15,
     storyFirstClear: 60, storyBonusFirstEarn: 40,
@@ -2589,7 +2613,7 @@ const META_CONFIG = {
 function freshMeta(){ return {
   schemaVersion: META_CONFIG.schemaVersion,
   xp: { total:0 }, wallet: { coins:0, amsha:0 },
-  rewards: { lastLevelRewarded:1 },
+  rewards: { lastLevelRewarded:1, rankSeen:'Seeker', rankGlintPending:null },   // rankSeen (v4): last rank acknowledged; rankGlintPending: rank to glint on next landing
   daily: { day:todayKey(), firstMatchAwarded:false, firstWinAwarded:false },   // firstWinAwarded (v3): day-keyed +20 Amsha, distinct from the XP daily-first
   story: { clearXp:{}, bonusXp:{}, bonusAmsha:{} },   // bonusAmsha (v3): per-chapter 15-Amsha retro ledger (idempotent, one-shot per star)
   quests: { day:'', week:'', daily:[], weekly:[] },   // slice 2 — populated by ensureQuests() on first load
@@ -2609,6 +2633,9 @@ function loadMeta(){
   if(!M.story) M.story={ clearXp:{}, bonusXp:{} };
   if(!M.story.bonusAmsha){ M.story.bonusAmsha={}; changed=true; }                                      // v3
   if(prevVer<3 || created){ if(reconcileStoryStars(M)) changed=true; }   // one-shot retro-grant of 15 Amsha per already-earned star (idempotent by ledger)
+  if(!M.rewards) M.rewards={ lastLevelRewarded:1 };
+  if(M.rewards.rankSeen===undefined){ M.rewards.rankSeen=rankForWins((loadProfile().wins)|0); changed=true; }   // v4: existing player already holds their rank
+  if(M.rewards.rankGlintPending===undefined){ M.rewards.rankGlintPending=null; changed=true; }
   if(M.schemaVersion!==META_CONFIG.schemaVersion){ M.schemaVersion=META_CONFIG.schemaVersion; changed=true; }
   if(!M.daily || M.daily.day!==todayKey()){ M.daily={ day:todayKey(), firstMatchAwarded:false, firstWinAwarded:false }; changed=true; }   // day rollover → re-arm both daily-firsts
   if(M.daily.firstWinAwarded===undefined) M.daily.firstWinAwarded=false;   // v3 field on a same-day pre-v3 store
@@ -2648,6 +2675,7 @@ function migrateFromProfile(M){
   const P=loadProfile();
   M.xp.total = (P.matches|0)*META_CONFIG.xp.matchComplete + (P.wins|0)*META_CONFIG.xp.matchWin;
   reconcileLevelRewards(M);
+  M.rewards.rankSeen = rankForWins(P.wins|0);   // v4: a migrated veteran already HOLDS their rank — no spurious promotion note
 }
 function levelCost(n){ return META_CONFIG.xp.curveBase + META_CONFIG.xp.curveStep*(n-1); }   // XP to go from level n → n+1
 function levelFromXp(totalXp){                                         // pure derivation: {level, intoLevel, toNext}
@@ -2766,8 +2794,12 @@ function claimQuest(scope, id){
   const M=loadMeta(); const q=(M.quests[scope]||[]).find(x=>x.id===id), def=QUEST_DEFS[id];
   if(!q || !def || q.claimed || (q.prog|0) < def.target) return;   // guard: no double-claim, no early claim
   q.claimed=true; const r=META_CONFIG.quests[scope];
+  const lvl0=levelFromXp(M.xp.total).level;   // slice 4: detect a claim-driven level-up
   M.wallet.coins += r.coins; M.wallet.amsha += r.amsha; grantXp(M, r.xp);   // XP via grantXp → level-up rewards reconcile
+  const lvl1=levelFromXp(M.xp.total).level;
   saveMeta(M);
+  const fl=$('q-flourish');
+  if(lvl1>lvl0 && fl){ levelRolloverPending=true; fl.innerHTML=''; const el=document.createElement('div'); el.className='earn-level'; el.textContent='LEVEL '+lvl1; fl.appendChild(el); Audio2.fileSfx('sfx_buff'); }   // flourish renders in the panel (item 3)
   renderQuests(); updateQuestBadge(); renderProfile();
 }
 /* ---------- quests panel UI ---------- */
@@ -2804,7 +2836,12 @@ function renderProfile(){
   $('lpname').textContent=P.name;
   const rk=$('lprank'); if(rk) rk.textContent=rankForWins(P.wins);   // §2 rank title beside the name
   $('lplevel').textContent='Level '+lv.level;
-  $('lpbar').style.width=prog+'%';
+  const bar=$('lpbar');
+  if(levelRolloverPending){ levelRolloverPending=false;   // slice 4: fill to 100% → snap to 0 → animate to the new level's fill (a rollover, not a backwards snap)
+    bar.style.width='100%';
+    setTimeout(()=>{ bar.style.transition='none'; bar.style.width='0%';
+      requestAnimationFrame(()=>{ bar.style.transition=''; bar.style.width=prog+'%'; }); }, 440);
+  } else bar.style.width=prog+'%';
   $('lpstats').textContent=`${P.wins} wins · ${P.matches} matches · ${P.winsToday} today`;
   const wc=$('lp-coins'), wa=$('lp-amsha');            // slice 3: wallet (accruing since slice 1, visible now)
   if(wc) wc.textContent=M.wallet.coins|0; if(wa) wa.textContent=M.wallet.amsha|0;
@@ -2839,14 +2876,22 @@ function openSadhanaPick(){
 let matchRecorded=false;   // one-shot guard: showGameOver can re-run on re-render — count each match once
 let conchPending=false;    // one-shot guard: fire sfx_conch once at round-1 start (armed in startGame, consumed by fireConch in pump)
 function fireConch(){ if(conchPending){ conchPending=false; Audio2.fileSfx('sfx_conch'); } }   // match-start announcement — first playable turn, never during mulligan or on rounds 2/3
+let lastEarn=null;             // slice 4: the ACTUAL awards of the just-finished PvAI match (read by showGameOver's earnings stamp — never recomputed)
+let lastStoryEarn=null;        // slice 4: what a chapter clear NEWLY granted this run (read by storyResultPanel)
+let levelRolloverPending=false;// slice 4: renderProfile animates the XP bar over the level boundary instead of snapping
+let goStampDone=false;         // slice 4: one-shot guard so the earnings stamp / flourish / SFX fire once (showGameOver re-runs on re-render)
 function recordMatchResult(){
   if(matchRecorded) return; matchRecorded=true;
   const P=loadProfile();                        // handles day rollover
+  const winsBefore=P.wins|0;
   P.matches=(P.matches|0)+1;
   if(G.winner===0){ P.wins=(P.wins|0)+1; P.winsToday=(P.winsToday|0)+1; }   // player is p0; win only
   saveProfile(P);
   // M1 §1 play-XP (PvAI match-result hook; story XP is granted in markChapterComplete). Engine untouched — reads G.winner only.
   const M=loadMeta();
+  // snapshot BEFORE grants → the stamp reports the exact deltas actually applied
+  const xp0=M.xp.total, coins0=M.wallet.coins, amsha0=M.wallet.amsha, lvl0=levelFromXp(M.xp.total).level;
+  const sad0=(M.sadhana&&M.sadhana.pin)?(M.sadhana.banked[M.sadhana.pin]|0):0, questsDone0=claimableCount(M);
   grantXp(M, META_CONFIG.xp.matchComplete);
   if(G.winner===0) grantXp(M, META_CONFIG.xp.matchWin);
   if(!M.daily.firstMatchAwarded){ M.daily.firstMatchAwarded=true; grantXp(M, META_CONFIG.xp.dailyFirstMatch); }   // day-keyed +25 XP
@@ -2857,18 +2902,34 @@ function recordMatchResult(){
     if(!M.daily.firstWinAwarded){ M.daily.firstWinAwarded=true; M.wallet.amsha += META_CONFIG.amsha.firstWinOfDay; }   // own day-key guard, distinct from the XP daily-first
     sadhanaOnWin(M);
   }
+  // rank promotion (persisted seen-flag → the note shows once, the landing chip glints once)
+  const rankBefore=M.rewards.rankSeen, rankAfter=rankForWins(P.wins|0);
+  let rankTo=null;
+  if(rankAfter!==rankBefore){ rankTo=rankAfter; M.rewards.rankSeen=rankAfter; M.rewards.rankGlintPending=rankAfter; }
   saveMeta(M);
   questsOnMatchEnd(G, false, false);   // slice 2: progress PvAI-domain quests (one-shot via matchRecorded guard)
+  // read the true post-state (quest progress may have flipped a quest to claimable; wallet/xp unchanged by quests)
+  const M2=loadMeta();
+  const sad1=(M2.sadhana&&M2.sadhana.pin)?(M2.sadhana.banked[M2.sadhana.pin]|0):0, lvl1=levelFromXp(M2.xp.total).level;
+  lastEarn = { xp:M2.xp.total-xp0, coins:M2.wallet.coins-coins0, amsha:M2.wallet.amsha-amsha0,
+               sadhana:sad1-sad0, leveledTo: lvl1>lvl0?lvl1:null, rankTo, questCompleted: claimableCount(M2)>questsDone0 };
+  if(lastEarn.leveledTo) levelRolloverPending=true;   // profile bar rolls over on next render
 }
 function showLanding(){
   Story=null;   // leaving any story chapter
   ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','settings','mulligan','bossvs','targeting','inspect','banner','realmpop'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
   renderProfile();
+  maybeGlintRank();          // slice 4: one-time rank-promotion chip shimmer (consumes the persisted pending flag)
   updateStoryLandingCta();   // smart Story caption from dy_story
   updateQuestBadge();        // slice 2: claimable-count badge on the Quests button
   maybeNudgeStory();         // first-launch pulse (once ever, fresh profile only)
   $('landing').classList.remove('hidden');
   Audio2.playTrack('menu');   // menu music covers landing + faction-select (gesture-driven: first tap starts it)
+}
+function maybeGlintRank(){   // slice 4: fire the rank-chip shimmer once after a promotion, then clear the persisted flag
+  const M=loadMeta(); if(!M.rewards || !M.rewards.rankGlintPending) return;
+  const chip=$('lprank'); if(chip){ chip.classList.remove('glint'); void chip.offsetWidth; chip.classList.add('glint'); setTimeout(()=>chip.classList.remove('glint'),1700); }
+  M.rewards.rankGlintPending=null; saveMeta(M);   // consumed → never repeats
 }
 function updateStoryLandingCta(){
   const el=$('cap-story'); if(!el || typeof CHAPTERS==='undefined') return;
@@ -3306,10 +3367,15 @@ function markChapterComplete(id, bonus){
   const s=loadStoryProg(); s[id]=s[id]||{}; s[id].done=true; if(bonus) s[id].bonus=true; saveStoryProg(s);
   // M1 §1 story XP — first-clear (60) + first-bonus (40), each granted exactly once via the dy_meta ledger (replays grant nothing).
   const M=loadMeta();
+  const xp0=M.xp.total, amsha0=M.wallet.amsha, lvl0=levelFromXp(M.xp.total).level;   // slice 4: snapshot for the NEWLY-granted earnings line
   if(!M.story.clearXp[id]){ M.story.clearXp[id]=1; grantXp(M, META_CONFIG.xp.storyFirstClear); }
   if(bonus && !M.story.bonusXp[id]){ M.story.bonusXp[id]=1; grantXp(M, META_CONFIG.xp.storyBonusFirstEarn); }
   if(bonus) grantStarAmsha(M, id);   // §5 slice 3: 15 Amsha on first-earn of a bonus star (same ledger as the retro sweep → never double-pays)
   saveMeta(M);
+  const lvl1=levelFromXp(M.xp.total).level;
+  // slice 4: only what was NEWLY granted this run (deltas are 0 on a replay → no line shown)
+  lastStoryEarn = { xp:M.xp.total-xp0, coins:0, amsha:M.wallet.amsha-amsha0, sadhana:0, leveledTo: lvl1>lvl0?lvl1:null, rankTo:null, questCompleted:false };
+  if(lastStoryEarn.leveledTo) levelRolloverPending=true;
 }
 function chapterUnlocked(id){ if(id==='b1c1') return true;
   const all=Object.values(CHAPTERS).concat(LOCKED_STUBS); const me=all.find(c=>c.id===id); if(!me) return false;
@@ -3630,6 +3696,7 @@ function cutVfxStop(){ if(CutVfx){ cancelAnimationFrame(CutVfx.raf); const c=$('
 /* --- result: evaluate predicates, persist, victory cutscene / loss+retry --- */
 function showStoryResult(){
   if(Story.resultShown) return; Story.resultShown=true;   // render() re-calls showGameOver each frame while G.over
+  lastStoryEarn=null;   // slice 4: cleared each result; markChapterComplete sets it only when something was newly granted
   const ch=Story.chapter, won=G.winner===0;
   hideBrihaspati(); Audio2.setRound3(false); Audio2.stopMusic(2);
   if(won){
@@ -3653,6 +3720,10 @@ function storyResultPanel(ch, won, bonus){
   const bx=$('sr-bonus');
   if(won && ch.bonus){ bx.classList.remove('hidden'); bx.textContent = (bonus?'★ Bonus earned: ':'☆ Bonus missed: ')+ch.bonus.label; bx.style.color = bonus?'var(--gold)':'var(--ink-dim)'; bx.style.cssText+=';font-size:11px;margin:8px 0;letter-spacing:.5px;'; }
   else bx.classList.add('hidden');
+  // slice 4: chapter-cleared earnings line — only what was NEWLY granted this run (replay that earned nothing → empty)
+  const se=$('sr-earn'), sx=$('sr-extra');
+  if(won && lastStoryEarn && (lastStoryEarn.xp>0 || lastStoryEarn.amsha>0)) renderEarnStamp(se, sx, lastStoryEarn);
+  else { if(se) se.innerHTML=''; if(sx) sx.innerHTML=''; }
   const p=$('sr-primary'), s=$('sr-secondary');
   if(won){ p.textContent='CONTINUE'; p.onclick=()=>{ Story=null; showStorySelect(); };
     s.textContent='REPLAY'; s.onclick=()=>startStoryChapter(ch.id); s.classList.remove('hidden'); }
@@ -4638,12 +4709,33 @@ function pump(){
   }
 }
 
+// slice 4: the wallet-delta chips of an earnings object → ['+45 XP','◉5','✦30','Sadhana +10'] (only non-zero parts)
+function earnParts(e){ const p=[];
+  if(e.xp>0) p.push('+'+e.xp+' XP');
+  if(e.coins>0) p.push('◉'+e.coins);
+  if(e.amsha>0) p.push('✦'+e.amsha);
+  if(e.sadhana>0) p.push('Sadhana +'+e.sadhana);
+  return p; }
+// render the staggered earnings stamp into lineEl (+ level/rank/quest notes into extraEl). Fires the level-up buff blip once.
+function renderEarnStamp(lineEl, extraEl, e){
+  lineEl.innerHTML=''; extraEl.innerHTML='';
+  const parts=earnParts(e);
+  parts.forEach((t,i)=>{ const s=document.createElement('span'); s.className='earn-chip'; s.textContent=t; s.style.animationDelay=(i*120)+'ms'; lineEl.appendChild(s); });
+  let d=parts.length*120;
+  if(e.leveledTo){ const el=document.createElement('div'); el.className='earn-level'; el.textContent='LEVEL '+e.leveledTo; el.style.animationDelay=(d+140)+'ms'; extraEl.appendChild(el);
+    setTimeout(()=>Audio2.fileSfx('sfx_buff'), d+140); }   // reuse the buff-blip tier (not a new sound)
+  if(e.rankTo){ const el=document.createElement('div'); el.className='earn-rank'; el.textContent='Rank attained: '+String(e.rankTo).toUpperCase(); el.style.animationDelay=(d+300)+'ms'; extraEl.appendChild(el); }
+  if(e.questCompleted){ const el=document.createElement('div'); el.className='earn-quest'; el.textContent='Quest complete — claim in Quests'; el.style.animationDelay=(d+440)+'ms'; extraEl.appendChild(el); }
+}
 function showGameOver(){
   if(Story){ showStoryResult(); return; }   // story matches: separate result screen, and NEVER touch PvAI telemetry
-  recordMatchResult();   // one-shot: bump matches/wins/wins-today telemetry (guarded against re-render)
+  recordMatchResult();   // one-shot: bump telemetry + capture lastEarn (guarded against re-render)
   const me=G.players[0];
   $('goh').textContent = G.winner===0?'⚔ VICTORY ⚔': G.winner===1?'DEFEAT':'STALEMATE';
   $('gop').textContent = `Final: ${me.roundWins}–${G.players[1].roundWins} across ${G.roundHistory.length} rounds.`;
+  if(!goStampDone){ goStampDone=true;   // slice 4: earnings stamp — the ACTUAL awards from recordMatchResult, once per match
+    if(lastEarn) renderEarnStamp($('go-earn'), $('go-extra'), lastEarn);
+  }
   $('gameover').classList.remove('hidden');
   Audio2.setRound3(false);
   Audio2.stopMusic(2);   // fade battle music to SILENCE (no crossfade to menu) — result screen plays over silence; menu resumes on return to faction-select
