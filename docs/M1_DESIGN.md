@@ -1,4 +1,11 @@
-# DIVYA YUDDHA — M1 META-FOUNDATION DESIGN v0.1
+# DIVYA YUDDHA — M1 META-FOUNDATION DESIGN v0.2 (RULED — BUILD-READY)
+# All six decisions ruled by Sangbaran 2026-07-11:
+# D1 ✓ 60 Amsha per level milestone · D2 ✓ rank shape approved, tune post-
+# telemetry · D3 ✓ quest pool approved (dailies stay partly play-based) ·
+# D4 ✓ pace approved (~2 factions/season dedicated) · D5 ✓ SHIP M1 BEFORE
+# wave-1 cards (wallet accrues, spend UI gated) · D6 ✓ OPTION A — Sadhana is
+# a PARALLEL income stream (extra progress toward the pinned card; fallback
+# to earmark model only if the economy sim breaks pace).
 # XP · Levels · Ranks · Quests · Coins · Amsha · Sadhana
 # Principles (binding, from LIVE_GAME_DESIGN): XP is play-only. Money buys
 # time, never permanence. Coins and Amsha never bridge. All constants below
@@ -19,7 +26,7 @@ Curve: level N requires 100 + 25×(N−1) XP (to next). L1→L10 ≈ 2,125 XP
 (~2 weeks daily casual); soft-infinite, no cap. Level shows on the profile
 card where the provisional number sits today — same UI, real math.
 Level rewards: coins at every level; Amsha at milestone levels (5/10/15…).
-[DECISION D1: milestone Amsha amount — proposal 60 per milestone.]
+[RULED D1: milestone Amsha amount — proposal 60 per milestone.]
 
 ## 2. RANKS (prestige, win-gated, thematic ladder)
 Nine ranks by TOTAL WINS (any mode counts; story wins count once per chapter):
@@ -27,7 +34,7 @@ Seeker 0 · Disciple 10 · Adept 30 · Rishi 60 · Maharishi 100 · Devarishi 15
 Brahmarishi 220 · Avatara 300 · Parashakti 400+.
 Rank is displayed beside the name (profile + future multiplayer). Purely
 cosmetic prestige in M1; M3 matchmaking MAY consult it later.
-[DECISION D2: thresholds above are placeholders shaped to ~1 rank/2–3 weeks
+[RULED D2: thresholds above are placeholders shaped to ~1 rank/2–3 weeks
 for a regular player — approve shape, tune after telemetry.]
 
 ## 3. QUESTS (the income lever + the re-engagement hook)
@@ -44,14 +51,14 @@ DAILY (3 slots, drawn from the pool at day-reset; each: 15 coins + 10 Amsha
 WEEKLY (2 slots; each: 60 coins + 50 Amsha + 100 XP):
 - Win 7 matches · Win with each of 2 different factions · Earn any story
   bonus star · Win a match in 3 different realms · Destroy 10 enemy Units.
-[DECISION D3: quest pool approve/edit — the daily pool must stay winnable-
+[RULED D3: quest pool approve/edit — the daily pool must stay winnable-
 by-losing where possible (play-based, not only win-based), per the XP
 philosophy.]
 Baseline+quests income model: 40 (wins) + ~30 (dailies) ≈ 70 Amsha/day
 regular; dedicated (all dailies + weeklies) ≈ 90–100/day → one faction's
 Gupta wave in ~5 weeks dedicated, ~7 casual-regular. Season length target
 ~12 weeks → dedicated players clear 2 factions + change per season.
-[DECISION D4: does that pace feel right? The knobs are quest Amsha values.]
+[RULED D4: does that pace feel right? The knobs are quest Amsha values.]
 
 ## 4. COINS (the parallel soft currency)
 Earn: levels, quests, match completion (5/match). Spend: NOTHING in M1 —
@@ -72,7 +79,7 @@ next season — the rotation IS the "time not permanence" promise kept.
 M1 SCOPE NOTE: the wallet, income, and the SPEND UI ship in M1 only if wave-1
 cards exist to buy; otherwise M1 ships wallet+income and the Faction
 Introduction's hidden slots gain a "price tag on reveal" tease. 
-[DECISION D5: ship M1 before wave-1 cards (wallet accrues, spending waits) —
+[RULED D5: ship M1 before wave-1 cards (wallet accrues, spending waits) —
 or hold M1 until the wave prototypes? My recommendation: ship first — 
 accrual creates anticipation and real telemetry.]
 
@@ -86,7 +93,7 @@ active pin at a time. Purpose: turns the abstract wallet into a NAMED desire
 Note Sadhana progress is SEPARATE from the Amsha wallet (it's a second,
 focused income stream — effectively doubles income toward exactly one card;
 the generosity is deliberate and tunable).
-[DECISION D6: approve the parallel-stream model vs the alternative (Sadhana
+[RULED D6: approve the parallel-stream model vs the alternative (Sadhana
 merely earmarks wallet Amsha — less generous, simpler).]
 
 ## 7. SURFACES (all UI-layer)

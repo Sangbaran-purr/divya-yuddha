@@ -364,6 +364,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .land-profile{ display:flex; align-items:center; gap:14px; padding:14px; border-radius:14px; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.16); }
 .lp-avatar{ flex:0 0 auto; width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-weight:700; font-size:18px; color:#1a1204; background:linear-gradient(150deg,var(--hi),var(--gold-2)); border:2px solid var(--gold); box-shadow:0 2px 10px rgba(0,0,0,.5); }
 .lp-info{ flex:1 1 auto; min-width:0; }
+.lp-namerow{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.lp-rank{ font-family:Cinzel,serif; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); border:1px solid var(--gold-dim); border-radius:10px; padding:1px 8px; white-space:nowrap; text-shadow:0 1px 3px #000; }
 .lp-name, .lp-name-edit{ font-family:Cinzel,serif; font-size:15px; color:#fff; font-weight:700; letter-spacing:.5px; text-shadow:0 1px 4px #000; cursor:pointer; }
 .lp-name::after{ content:'  ✎'; font-size:10px; color:var(--ink-dim); opacity:.7; }
 .lp-name-edit{ background:rgba(0,0,0,.5); border:1px solid var(--gold-dim); border-radius:6px; color:#fff; padding:2px 6px; width:100%; max-width:200px; outline:none; cursor:text; }
@@ -790,7 +792,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     <div class="land-profile">
       <div class="lp-avatar" id="lpavatar">WA</div>
       <div class="lp-info">
-        <div class="lp-name" id="lpname">Warrior</div>
+        <div class="lp-namerow"><div class="lp-name" id="lpname">Warrior</div><span class="lp-rank" id="lprank">Seeker</span></div>
         <div class="lp-level"><span id="lplevel">Level 1</span><div class="lp-bar"><i id="lpbar"></i></div></div>
         <div class="lp-stats" id="lpstats">0 wins · 0 matches · 0 today</div>
       </div>
@@ -2451,12 +2453,106 @@ function loadProfile(){
 }
 function saveProfile(P){ try{ localStorage.setItem('dy_profile', JSON.stringify(P)); }catch(e){} }
 function profileInitials(name){ const w=name.trim().split(/\s+/); const s=(w.length>1?(w[0][0]+w[1][0]):name.trim().slice(0,2)); return (s||'W').toUpperCase(); }
-function renderProfile(){
+
+/* ============================ M1 META-FOUNDATION (slice 1: store · XP/levels · ranks) ============================
+   ALL constants live here (M1_DESIGN §1–§6) — every value is TUNABLE from this one object; calibration waits on
+   real matches/day telemetry. Constants for systems NOT wired in slice 1 (quests, sadhana, per-match/win economy,
+   card costs) are present so later slices read from the same source of truth. ENGINE UNTOUCHED — everything below
+   reads only the match result and the story-completion hook. */
+const META_CONFIG = {
+  schemaVersion: 1,
+  xp: {                                  // §1 awards (play-only, win or lose)
+    matchComplete: 20, matchWin: 15,
+    storyFirstClear: 60, storyBonusFirstEarn: 40,
+    dailyFirstMatch: 25,
+    curveBase: 100, curveStep: 25,       // level N→N+1 costs curveBase + curveStep×(N−1); L1..L10 sum = 2,125 (doc §1)
+  },
+  ranks: [                               // §2 nine-title ladder, ascending by TOTAL WINS (any mode; story = once/chapter)
+    { title:'Seeker',      wins:0   }, { title:'Disciple', wins:10  }, { title:'Adept',    wins:30  },
+    { title:'Rishi',       wins:60  }, { title:'Maharishi', wins:100 }, { title:'Devarishi', wins:150 },
+    { title:'Brahmarishi', wins:220 }, { title:'Avatara',  wins:300 }, { title:'Parashakti', wins:400 },
+  ],
+  coins: {                               // §4 (earned; spend is M4). perLevel: §1 says "coins at every level" w/o an amount —
+    perMatch: 5, perLevel: 25,           //   25 is a TUNABLE assumption. perMatch is a slice-5 income hook (config only here).
+  },
+  amsha: {                               // §5 card economy
+    perWin: 10, firstWinOfDay: 20,       //   income hooks — slice 5 (config only here)
+    milestoneEveryLevels: 5, milestoneAmount: 60,   // §1/D1 + task: 60 Amsha every 5 levels (level-up reward, WIRED this slice)
+    storyBonusRetro: 15,                 //   §5 retro-grant per earned star — slice 5 (config only here)
+    costs: { C:40, U:80, R:160, E:400, L:1000, M:1500 },   // §5 card costs (spend UI is slice 2+/wave-1-gated)
+  },
+  quests: {                              // §3 — NOT wired in slice 1 (config only; slice 4 builds the engine)
+    daily:  { coins:15, amsha:10, xp:20,  slots:3 },
+    weekly: { coins:60, amsha:50, xp:100, slots:2 },
+    dailyPool: ['win1','play2','winby8','play6units','faction3','herosurvives','venom3','storychapter'],
+    weeklyPool: ['win7','twofactions','anystar','threerealms','destroy10'],
+  },
+  sadhana: { perWin: 10 },               // §6 — NOT wired in slice 1 (config only; slice 5 builds the pin+bar)
+};
+
+/* dy_meta — ONE serializable object, schema-versioned. PER §7 THIS SCHEMA IS THE FUTURE M3 SERVER PROFILE: keep it a
+   flat, JSON-only, additively-versioned blob (no functions/Dates/Maps). Slice 1 fields:
+     schemaVersion — bump + migrate in loadMeta when the shape changes.
+     xp.total      — lifetime XP (level + bar are PURE DERIVATIONS of this; never store level).
+     wallet.{coins,amsha} — accrue from level-ups now; spend UI is a later slice.
+     rewards.lastLevelRewarded — highest level already paid (idempotent level-up rewards; init 1 = no reward for the birth level).
+     daily.{day,firstMatchAwarded} — day-keyed guard for the +25 daily-first XP (same day-key precedent as winsToday).
+     story.{clearXp,bonusXp} — per-chapter one-shot ledgers so first-clear/first-bonus XP is granted exactly once (survives a dy_story reset).
+   Rank is derived from dy_profile.wins (the existing win source of truth); at M3, dy_profile identity+win-counts and dy_meta
+   merge into one server row — documented in CLAUDE.md. */
+function freshMeta(){ return {
+  schemaVersion: META_CONFIG.schemaVersion,
+  xp: { total:0 }, wallet: { coins:0, amsha:0 },
+  rewards: { lastLevelRewarded:1 },
+  daily: { day:todayKey(), firstMatchAwarded:false },
+  story: { clearXp:{}, bonusXp:{} },
+}; }
+function saveMeta(M){ try{ localStorage.setItem('dy_meta', JSON.stringify(M)); }catch(e){} }
+function loadMeta(){
+  let M=null; try{ M=JSON.parse(localStorage.getItem('dy_meta')); }catch(e){ M=null; }
+  if(!M || typeof M!=='object'){                    // FIRST LOAD → create + migrate from dy_profile (no playtester resets to zero)
+    M=freshMeta(); migrateFromProfile(M); saveMeta(M);
+  }
+  if(M.schemaVersion!==META_CONFIG.schemaVersion) M.schemaVersion=META_CONFIG.schemaVersion;   // (future additive migrations slot here)
+  if(!M.daily || M.daily.day!==todayKey()) M.daily={ day:todayKey(), firstMatchAwarded:false }; // day rollover → re-arm daily-first XP
+  return M;
+}
+/* MIGRATION FORMULA (documented in CLAUDE.md): retroXP = matches×matchComplete(20) + wins×matchWin(15) — reconstructs the
+   play-XP a veteran would have earned (one-time story/daily bonuses can't be reconstructed, so they're intentionally omitted),
+   then back-pays the level-up rewards those levels earned. Runs exactly once, when dy_meta is first created. */
+function migrateFromProfile(M){
   const P=loadProfile();
-  const lvl=1+Math.floor(P.wins/5), prog=(P.wins%5)/5*100;   // PROVISIONAL level/bar
+  M.xp.total = (P.matches|0)*META_CONFIG.xp.matchComplete + (P.wins|0)*META_CONFIG.xp.matchWin;
+  reconcileLevelRewards(M);
+}
+function levelCost(n){ return META_CONFIG.xp.curveBase + META_CONFIG.xp.curveStep*(n-1); }   // XP to go from level n → n+1
+function levelFromXp(totalXp){                                         // pure derivation: {level, intoLevel, toNext}
+  let lvl=1, rem=Math.max(0, totalXp|0);
+  while(rem >= levelCost(lvl)){ rem -= levelCost(lvl); lvl++; }
+  return { level:lvl, intoLevel:rem, toNext:levelCost(lvl) };
+}
+function rankForWins(wins){                                            // §2 pure derivation from total wins
+  let title=META_CONFIG.ranks[0].title;
+  for(const r of META_CONFIG.ranks) if((wins|0) >= r.wins) title=r.title;
+  return title;
+}
+function reconcileLevelRewards(M){                                     // pay coins/level + milestone Amsha for every newly-crossed level (idempotent)
+  const cur=levelFromXp(M.xp.total).level;
+  for(let L=(M.rewards.lastLevelRewarded|0)+1; L<=cur; L++){
+    M.wallet.coins += META_CONFIG.coins.perLevel;
+    if(L % META_CONFIG.amsha.milestoneEveryLevels === 0) M.wallet.amsha += META_CONFIG.amsha.milestoneAmount;
+  }
+  if(cur > (M.rewards.lastLevelRewarded|0)) M.rewards.lastLevelRewarded=cur;
+}
+function grantXp(M, amount){ M.xp.total=(M.xp.total|0)+(amount|0); reconcileLevelRewards(M); }   // single XP entry point
+function renderProfile(){
+  const P=loadProfile(), M=loadMeta();
+  const lv=levelFromXp(M.xp.total);                          // real M1 level + XP progress bar
+  const prog=lv.toNext>0 ? Math.min(100, lv.intoLevel/lv.toNext*100) : 0;
   $('lpavatar').textContent=profileInitials(P.name);
   $('lpname').textContent=P.name;
-  $('lplevel').textContent='Level '+lvl;
+  const rk=$('lprank'); if(rk) rk.textContent=rankForWins(P.wins);   // §2 rank title beside the name
+  $('lplevel').textContent='Level '+lv.level;
   $('lpbar').style.width=prog+'%';
   $('lpstats').textContent=`${P.wins} wins · ${P.matches} matches · ${P.winsToday} today`;
 }
@@ -2469,6 +2565,12 @@ function recordMatchResult(){
   P.matches=(P.matches|0)+1;
   if(G.winner===0){ P.wins=(P.wins|0)+1; P.winsToday=(P.winsToday|0)+1; }   // player is p0; win only
   saveProfile(P);
+  // M1 §1 play-XP (PvAI match-result hook; story XP is granted in markChapterComplete). Engine untouched — reads G.winner only.
+  const M=loadMeta();
+  grantXp(M, META_CONFIG.xp.matchComplete);
+  if(G.winner===0) grantXp(M, META_CONFIG.xp.matchWin);
+  if(!M.daily.firstMatchAwarded){ M.daily.firstMatchAwarded=true; grantXp(M, META_CONFIG.xp.dailyFirstMatch); }   // day-keyed +25
+  saveMeta(M);
 }
 function showLanding(){
   Story=null;   // leaving any story chapter
@@ -2906,7 +3008,14 @@ function storyRng(seed){ let s=seed>>>0; let first=true; return ()=>{ if(first){
 /* --- persistence (dy_story, a dy_profile-family key; story is separate from PvAI telemetry) --- */
 function loadStoryProg(){ try{ return JSON.parse(localStorage.getItem('dy_story'))||{}; }catch(e){ return {}; } }
 function saveStoryProg(s){ try{ localStorage.setItem('dy_story', JSON.stringify(s)); }catch(e){} }
-function markChapterComplete(id, bonus){ const s=loadStoryProg(); s[id]=s[id]||{}; s[id].done=true; if(bonus) s[id].bonus=true; saveStoryProg(s); }
+function markChapterComplete(id, bonus){
+  const s=loadStoryProg(); s[id]=s[id]||{}; s[id].done=true; if(bonus) s[id].bonus=true; saveStoryProg(s);
+  // M1 §1 story XP — first-clear (60) + first-bonus (40), each granted exactly once via the dy_meta ledger (replays grant nothing).
+  const M=loadMeta();
+  if(!M.story.clearXp[id]){ M.story.clearXp[id]=1; grantXp(M, META_CONFIG.xp.storyFirstClear); }
+  if(bonus && !M.story.bonusXp[id]){ M.story.bonusXp[id]=1; grantXp(M, META_CONFIG.xp.storyBonusFirstEarn); }
+  saveMeta(M);
+}
 function chapterUnlocked(id){ if(id==='b1c1') return true;
   const all=Object.values(CHAPTERS).concat(LOCKED_STUBS); const me=all.find(c=>c.id===id); if(!me) return false;
   const before=all.find(c=>c.order===me.order-1); if(!before) return true; return !!(loadStoryProg()[before.id]||{}).done; }   // sequential gating: unlocked iff the previous chapter is done
