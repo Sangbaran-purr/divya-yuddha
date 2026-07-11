@@ -285,6 +285,7 @@ const CHAPTERS = {
     },
     opponentScript:[ {handoff:'ai'} ],   // FREE: the default AI plays from turn 1 — no script
     introLine:'Some treasures do not strike. They simply refuse to stop giving.',   // Artifact line, once at match start (a pointer, not a beat)
+    introInstruct:'Play Amrita Kalasha (the glowing card) when you like — keep it on the board to hold the win.',   // plain-language dual-line under the aphorism
     artifactShimmer:'Amrita Kalasha',    // the Artifact card gets a one-time shimmer highlight in hand
     cutscenes:{
       intro:[

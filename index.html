@@ -407,6 +407,19 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .bri-instruct{ font-family:'Crimson Pro',serif; font-size:12px; line-height:1.4; color:var(--gold-2); margin-top:5px; }   /* the plain-language instruction beneath the aphorism */
 .bri-instruct:empty{ display:none; }
 .bri-tap{ font-size:9px; color:var(--ink-dim); letter-spacing:1px; margin-top:3px; }
+/* FREE-mode objective chip — information, not guidance (no glow); persistent, tap to expand */
+#objchip{ position:fixed; top:52px; left:8px; z-index:40; max-width:min(76vw,270px); background:rgba(10,7,3,.85); backdrop-filter:blur(5px); border:1px solid var(--gold-dim); border-radius:10px; padding:6px 11px; cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,.5); }
+#objchip.hidden{ display:none; }
+.obj-head{ display:flex; align-items:center; gap:7px; }
+.obj-tag{ font-family:Cinzel,serif; font-size:10px; letter-spacing:1.8px; color:var(--gold); }
+.obj-caret{ color:var(--gold-2); font-size:13px; line-height:1; transition:transform .2s; }
+#objchip.expanded .obj-caret{ transform:rotate(90deg); }
+.obj-body{ display:none; margin-top:6px; }
+#objchip.expanded .obj-body{ display:block; }
+.obj-win{ font-size:12px; color:#f2ead6; letter-spacing:.3px; }
+.obj-win::before{ content:'Goal: '; color:var(--gold-2); }
+.obj-bonus{ font-size:11px; color:var(--gold-2); margin-top:4px; }
+.obj-bonus.hidden{ display:none; }
 .hc.story-masked{ filter:grayscale(.7) brightness(.5); pointer-events:none; }
 .hc.story-hi{ box-shadow:0 0 0 2px var(--gold), 0 0 22px rgba(232,201,90,.75) !important; animation:storyGlow 1.4s ease-in-out infinite; }
 @keyframes storyGlow{ 0%,100%{ box-shadow:0 0 0 2px var(--gold), 0 0 12px rgba(232,201,90,.5); } 50%{ box-shadow:0 0 0 2px var(--gold), 0 0 26px rgba(232,201,90,.92); } }
@@ -943,6 +956,13 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <div id="cut-scrim"></div>
   <button id="cutsceneskip">skip ›</button>
   <div id="cutscene-plate"><div class="cut-speaker" id="cut-speaker"></div><div class="cut-body" id="cut-body"></div><div class="cut-hint" id="cut-hint"></div></div>
+</div>
+<div id="objchip" class="hidden">
+  <div class="obj-head"><span class="obj-tag">OBJECTIVE</span><span class="obj-caret">›</span></div>
+  <div class="obj-body">
+    <div class="obj-win" id="obj-win"></div>
+    <div class="obj-bonus hidden" id="obj-bonus"></div>
+  </div>
 </div>
 <div id="brihaspati" class="hidden">
   <div class="bri-chip">ब</div>
@@ -2917,7 +2937,7 @@ function recordMatchResult(){
 }
 function showLanding(){
   Story=null;   // leaving any story chapter
-  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','settings','mulligan','bossvs','targeting','inspect','banner','realmpop'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
+  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','objchip','settings','mulligan','bossvs','targeting','inspect','banner','realmpop'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
   renderProfile();
   maybeGlintRank();          // slice 4: one-time rank-promotion chip shimmer (consumes the persisted pending flag)
   updateStoryLandingCta();   // smart Story caption from dy_story
@@ -3496,21 +3516,37 @@ function storySetTargetGlow(spec){ let uid=null; if(spec==='largestEnemy') uid=s
   if(uid!=null){ const el=document.querySelector(`#field .bc[data-uid="${uid}"]`); if(el) el.classList.add('story-target'); } }
 function maybeStoryAmbientLine(){ const ch=Story.chapter;   // round2Line = advice at round-2 start (holds until the next player action)
   if(ch.round2Line && G.round>=2 && !Story.round2Shown){ Story.round2Shown=true; Story.holdLine=ch.round2Line; } }
+// FREE-mode objective chip — win condition + bonus text sourced from chapters.js (info, not guidance; no glows)
+function storyWinText(ch){ const w=(ch&&ch.win)||{}; return w.type==='matchWin' ? 'Win the match' : (w.label||'Win the match'); }
+function renderObjective(){
+  const chip=$('objchip'); if(!chip) return;
+  if(!Story || Story.mode!=='FREE'){ chip.classList.add('hidden'); return; }
+  const ch=Story.chapter;
+  $('obj-win').textContent=storyWinText(ch);
+  const bx=$('obj-bonus');
+  if(ch.bonus && ch.bonus.label){ bx.textContent='★ '+ch.bonus.label; bx.classList.remove('hidden'); } else bx.classList.add('hidden');
+  chip.classList.remove('hidden');
+}
 function applyStoryGuidance(){
+  renderObjective();   // FREE-mode objective chip (persistent; self-hides for non-FREE) — runs before any early return so it survives opponent turns/choreo
   document.querySelectorAll('#hand .hc').forEach(el=>el.classList.remove('story-hi','story-masked'));
   $('passbtn').classList.remove('story-hi'); const sb=$('shieldbtn'); if(sb) sb.classList.remove('story-hi');
   clearStoryTargetGlow();
   document.querySelectorAll('#hand .hc.story-shimmer').forEach(el=>el.classList.remove('story-shimmer'));
   if(!Story || CutState || G.over || choreoActive || G.turn!==0 || G.players[0].passed){ hideBrihaspati(); return; }   // never guide behind a cutscene overlay
-  if(Story.mode==='FREE'){   // ch6–7: NO mask, NO glow, NO beats. Only a one-time Artifact shimmer + the held intro line.
+  if(Story.mode==='FREE'){   // ch6–7: NO mask, NO glow, NO beats. Only a one-time Artifact shimmer + the held intro line (dual-line).
     const shim=Story.chapter.artifactShimmer;
     if(shim && !Story.shimmerDone){ const cards=[...document.querySelectorAll('#hand .hc')], hand=G.players[0].hand;
       const i=hand.findIndex(c=>c.n===shim); if(i>=0 && cards[i]) cards[i].classList.add('story-shimmer'); }
-    if(Story.holdLine) showBrihaspati(Story.holdLine); else hideBrihaspati();
+    if(Story.holdLine) showBrihaspati(Story.holdLine, Story.chapter.introInstruct); else hideBrihaspati();
     return;
   }
+  // beat-driven modes (LOCKED/SUGGESTED). FAIL OPEN if the beat script is missing/empty/exhausted → no mask, no lock (default = fully playable).
+  const guid=Story.chapter.guidance;
+  const beat=(Array.isArray(guid) && guid.length) ? storyBeat() : null;
+  if(!beat){ if(Story.holdLine) showBrihaspati(Story.holdLine); else hideBrihaspati(); return; }
   maybeStoryAmbientLine();
-  const beat=storyBeat(), tgt=storyResolveHighlight(beat.highlight);
+  const tgt=storyResolveHighlight(beat.highlight);
   const cards=[...document.querySelectorAll('#hand .hc')];
   if(Story.mode==='SUGGESTED'){
     // FREE PLAY: glow the suggestion + suggested target; mask NOTHING, override NO onclick (normal inspect→play stays live)
@@ -3545,7 +3581,8 @@ function storyAfterPlayerAction(evs){
   Story.lineBeat=-1;
 }
 function storyPlayerTap(){                                           // LOCKED only: the highlighted card / pass / plate plays directly
-  if(!Story || G.turn!==0 || choreoActive || G.over) return;
+  if(!Story || Story.mode!=='LOCKED' || G.turn!==0 || choreoActive || G.over) return;   // hard guard: never touch beat logic in FREE/SUGGESTED/malformed
+  if(!Array.isArray(Story.chapter.guidance) || !Story.chapter.guidance.length) return;   // no beat script → nothing to play
   const tgt=storyResolveHighlight(storyBeat().highlight);
   hideBrihaspati(); Story.beatIdx++;
   if(tgt.kind==='pass') runAction(()=>pass(G,0));
@@ -3553,10 +3590,14 @@ function storyPlayerTap(){                                           // LOCKED o
 }
 function showBrihaspati(line, instruct){ const b=$('brihaspati'); b.querySelector('.bri-line').textContent=line; b.querySelector('.bri-instruct').textContent=instruct||''; b.classList.remove('hidden'); }
 function hideBrihaspati(){ $('brihaspati').classList.add('hidden'); }
-$('brihaspati').onclick=()=>{ if(Story && Story.mode==='SUGGESTED') hideBrihaspati(); else storyPlayerTap(); };   // SUGGESTED: tap dismisses the plate; LOCKED: tap plays the guided card
-// LOCKED: intercept pass (capture phase) so the default PvAI handler never fires; route to the guided pass only when highlighted.
-// SUGGESTED: let the normal pass handler run (free play) — the beat advances in runAction.
-$('passbtn').addEventListener('click', (e)=>{ if(Story && Story.mode!=='SUGGESTED'){ e.stopImmediatePropagation(); if($('passbtn').classList.contains('story-hi')) storyPlayerTap(); } }, true);
+$('brihaspati').onclick=()=>{ if(Story && Story.mode==='LOCKED') storyPlayerTap(); else hideBrihaspati(); };   // LOCKED: tap plays the guided card; SUGGESTED/FREE (or any non-locked mode): tap just dismisses the plate
+$('objchip').onclick=(e)=>{ e.stopPropagation(); $('objchip').classList.toggle('expanded'); };   // tap to expand/collapse the objective chip
+// Pass interceptor (capture phase). FAILS OPEN by design: it engages ONLY in LOCKED mode AND only when the pass is the
+// currently-guided action (story-hi present) — routing that one tap through storyPlayerTap and stopping the default handler
+// so pass doesn't also fire twice. In EVERY other case — SUGGESTED, FREE, or a malformed/empty beat script — it does nothing,
+// so the normal PvAI pass handler runs and the button just works. (Prior bug: it swallowed ALL non-SUGGESTED clicks, which
+// silently killed PASS in FREE mode — the button looked enabled but every tap was dropped.)
+$('passbtn').addEventListener('click', (e)=>{ if(Story && Story.mode==='LOCKED' && $('passbtn').classList.contains('story-hi')){ e.stopImmediatePropagation(); storyPlayerTap(); } }, true);
 /* --- cutscene player (text plates; §5 manifest shape — image drops in later) --- */
 /* ===== motion-comic cutscene player (Ken Burns + crossfade + typewriter + VFX + audio) ===== */
 const CUT_MOTION = {   // id → { from, to, origin, dur(s), ease, vfx } (BOOK1_DESIGN §5 + this task's motion manifest)
@@ -3698,7 +3739,8 @@ function showStoryResult(){
   if(Story.resultShown) return; Story.resultShown=true;   // render() re-calls showGameOver each frame while G.over
   lastStoryEarn=null;   // slice 4: cleared each result; markChapterComplete sets it only when something was newly granted
   const ch=Story.chapter, won=G.winner===0;
-  hideBrihaspati(); Audio2.setRound3(false); Audio2.stopMusic(2);
+  hideBrihaspati(); const oc=$('objchip'); if(oc){ oc.classList.add('hidden'); oc.classList.remove('expanded'); }   // clear the FREE objective chip on the result screen
+  Audio2.setRound3(false); Audio2.stopMusic(2);
   if(won){
     Audio2.fileSfx('sfx_victory');
     const winExtra = ch.win.extra ? STORY_PREDICATES[ch.win.extra](G) : true;
