@@ -287,9 +287,35 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 /* ===== faction select ===== */
 /* menu background — subtle: cover art, desaturated + blurred, dark bottom-heavy gradient so faction panels stay the focus */
 /* menu is FRAMELESS — faction selection sits directly on the image; per-tile scrims keep text readable */
-#factionselect, #landing, #factionintro, #storyselect{ background:#0a0704; overflow:hidden; }
-#factionselect::before, #landing::before, #factionintro::before, #storyselect::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
-#factionselect::after, #landing::after, #factionintro::after, #storyselect::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
+#factionselect, #landing, #factionintro, #storyselect, #quests{ background:#0a0704; overflow:hidden; }
+#factionselect::before, #landing::before, #factionintro::before, #storyselect::before, #quests::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
+#factionselect::after, #landing::after, #factionintro::after, #storyselect::after, #quests::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
+
+/* ===== M1 slice 2: Quests (landing entry button + panel) ===== */
+.lp-quests{ position:relative; display:flex; align-items:center; gap:10px; width:100%; margin:0 0 12px; padding:11px 14px; border-radius:12px; background:rgba(0,0,0,.42); backdrop-filter:blur(6px); border:1px solid var(--gold-dim); color:#fff; cursor:pointer; text-align:left; }
+.lp-quests:active{ transform:scale(.99); }
+.lpq-title{ font-family:Cinzel,serif; font-size:13px; letter-spacing:1px; color:var(--gold); }
+.lpq-sub{ flex:1 1 auto; font-size:11px; color:var(--ink-dim); letter-spacing:.4px; }
+.lpq-badge{ flex:0 0 auto; min-width:20px; height:20px; padding:0 6px; border-radius:11px; background:var(--gold); color:#1a1204; font-family:Cinzel,serif; font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 10px rgba(232,200,116,.5); }
+#quests{ display:block; overflow-y:auto; padding:0; }
+.q-col{ position:relative; z-index:1; max-width:520px; margin:0 auto; padding:54px 16px 40px; }
+.q-head{ font-family:Cinzel,serif; font-size:20px; letter-spacing:3px; color:var(--gold); text-align:center; margin-bottom:6px; }
+.q-intro{ font-size:12px; color:var(--ink-dim); text-align:center; margin-bottom:18px; letter-spacing:.3px; }
+.q-sect{ font-family:Cinzel,serif; font-size:12px; letter-spacing:2px; color:var(--gold-2); margin:16px 2px 9px; display:flex; justify-content:space-between; align-items:baseline; }
+.q-sect .q-reset{ font-family:'Crimson Pro',serif; font-size:10px; letter-spacing:.4px; color:var(--ink-dim); text-transform:none; }
+.q-row{ display:flex; align-items:center; gap:12px; padding:11px 13px; margin-bottom:9px; border-radius:11px; background:rgba(0,0,0,.46); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.14); }
+.q-row.done{ border-color:var(--gold-dim); background:rgba(28,20,6,.5); }
+.q-row.claimed{ opacity:.55; }
+.q-row-main{ flex:1 1 auto; min-width:0; }
+.q-label{ font-size:13px; color:#f2ead6; letter-spacing:.3px; margin-bottom:6px; }
+.q-bar{ height:5px; border-radius:3px; background:rgba(255,255,255,.13); overflow:hidden; }
+.q-bar i{ display:block; height:100%; width:0; border-radius:3px; background:linear-gradient(90deg,var(--gold-2),var(--hi)); transition:width .4s ease; }
+.q-reward{ font-size:10px; color:var(--ink-dim); letter-spacing:.4px; margin-top:5px; }
+.q-right{ flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px; min-width:56px; }
+.q-prog{ font-family:Cinzel,serif; font-size:12px; color:var(--gold); }
+.q-claim{ font-family:Cinzel,serif; font-size:11px; letter-spacing:1px; color:var(--gold); background:rgba(232,200,116,.14); border:1px solid var(--gold); border-radius:8px; padding:5px 12px; cursor:pointer; }
+.q-claim:active{ transform:scale(.96); }
+.q-claimed{ font-size:16px; color:var(--gold); }
 
 /* ===== Story Mode (Book of Order) ===== */
 #storyselect, #cutscene{ display:block; overflow-y:auto; padding:0; }
@@ -797,6 +823,11 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
         <div class="lp-stats" id="lpstats">0 wins · 0 matches · 0 today</div>
       </div>
     </div>
+    <button class="lp-quests" id="lp-quests">
+      <span class="lpq-title">Quests</span>
+      <span class="lpq-sub" id="lpq-sub">Daily &amp; weekly</span>
+      <span class="lpq-badge hidden" id="lpq-badge">0</span>
+    </button>
     <div class="land-modes">
       <button class="mode active primary" id="mode-story">
         <div class="mode-main"><div class="mode-title">Story Mode — Divya Yatra</div><div class="mode-cap" id="cap-story">Begin here — learn as you play</div></div>
@@ -815,6 +846,18 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
         <span class="mode-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
       </button>
     </div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="quests">
+  <button class="fi-back" id="quests-back" title="back">‹</button>
+  <div class="q-col">
+    <div class="q-head">QUESTS</div>
+    <div class="q-intro">Play to earn. Dailies refresh each day; weeklies each week.</div>
+    <div class="q-sect">DAILY <span class="q-reset" id="q-daily-reset"></span></div>
+    <div id="q-daily"></div>
+    <div class="q-sect">WEEKLY <span class="q-reset" id="q-weekly-reset"></span></div>
+    <div id="q-weekly"></div>
   </div>
 </div>
 
@@ -2460,7 +2503,7 @@ function profileInitials(name){ const w=name.trim().split(/\s+/); const s=(w.len
    card costs) are present so later slices read from the same source of truth. ENGINE UNTOUCHED — everything below
    reads only the match result and the story-completion hook. */
 const META_CONFIG = {
-  schemaVersion: 1,
+  schemaVersion: 2,   // v1: xp/wallet/rewards/daily/story · v2 (slice 2): + quests {day,week,daily[],weekly[]}
   xp: {                                  // §1 awards (play-only, win or lose)
     matchComplete: 20, matchWin: 15,
     storyFirstClear: 60, storyBonusFirstEarn: 40,
@@ -2506,15 +2549,19 @@ function freshMeta(){ return {
   rewards: { lastLevelRewarded:1 },
   daily: { day:todayKey(), firstMatchAwarded:false },
   story: { clearXp:{}, bonusXp:{} },
+  quests: { day:'', week:'', daily:[], weekly:[] },   // slice 2 — populated by ensureQuests() on first load
 }; }
 function saveMeta(M){ try{ localStorage.setItem('dy_meta', JSON.stringify(M)); }catch(e){} }
 function loadMeta(){
   let M=null; try{ M=JSON.parse(localStorage.getItem('dy_meta')); }catch(e){ M=null; }
+  let created=false;
   if(!M || typeof M!=='object'){                    // FIRST LOAD → create + migrate from dy_profile (no playtester resets to zero)
-    M=freshMeta(); migrateFromProfile(M); saveMeta(M);
+    M=freshMeta(); migrateFromProfile(M); created=true;
   }
-  if(M.schemaVersion!==META_CONFIG.schemaVersion) M.schemaVersion=META_CONFIG.schemaVersion;   // (future additive migrations slot here)
+  if(M.schemaVersion!==META_CONFIG.schemaVersion) M.schemaVersion=META_CONFIG.schemaVersion;   // additive migrations: ensureQuests fills v2 quests below
   if(!M.daily || M.daily.day!==todayKey()) M.daily={ day:todayKey(), firstMatchAwarded:false }; // day rollover → re-arm daily-first XP
+  const drew=ensureQuests(M);                         // draw/reset daily+weekly quests on day/week rollover (slice 2)
+  if(created || drew) saveMeta(M);
   return M;
 }
 /* MIGRATION FORMULA (documented in CLAUDE.md): retroXP = matches×matchComplete(20) + wins×matchWin(15) — reconstructs the
@@ -2545,6 +2592,133 @@ function reconcileLevelRewards(M){                                     // pay co
   if(cur > (M.rewards.lastLevelRewarded|0)) M.rewards.lastLevelRewarded=cur;
 }
 function grantXp(M, amount){ M.xp.total=(M.xp.total|0)+(amount|0); reconcileLevelRewards(M); }   // single XP entry point
+
+/* ============================ M1 SLICE 2 — QUEST ENGINE (UI/data only; engine untouched) ============================
+   Conditions are PREDICATES over the final game state g (roundHistory / players / winner / events) + the match context —
+   the SAME machinery the story bonuses use (STORY_PREDICATES), reused not forked. Progress lives in dy_meta.quests
+   (schema v2). Claims are manual → coins/Amsha/XP per META_CONFIG. A quest measures per-match progress via measure(ctx):
+   'count' quests add a number; 'set' quests union distinct keys (for "N different factions/realms"). domain gates which
+   matches a quest sees: 'pvai' quests ignore story matches, 'story' quests only progress on story chapters (which count
+   REPLAYS — the sanctioned replay-income ruling from slice 1). */
+function isoWeekKey(){                                   // ISO-8601 week (week = Mon–Sun; the weekly-reset key)
+  const d=new Date(); d.setHours(0,0,0,0);
+  d.setDate(d.getDate() + 3 - ((d.getDay()+6)%7));      // shift to the Thursday of this ISO week
+  const week1=new Date(d.getFullYear(),0,4);
+  const wn=1 + Math.round(((d - week1)/86400000 - 3 + ((week1.getDay()+6)%7))/7);
+  return d.getFullYear()+'-W'+String(wn).padStart(2,'0');
+}
+// match-end context: uid→{side,card} index (built from ALL zones) + the derived flags the predicates read.
+function questCtx(g, isStory, bonusEarned){
+  const idx=new Map();
+  for(let s=0;s<2;s++){ const p=(g.players&&g.players[s])||{};
+    ['units','discard','hand','deck','heroes','removedHeroes'].forEach(k=>(p[k]||[]).forEach(c=>{ if(c) idx.set(c.uid,{side:s,card:c}); })); }
+  return { g, evs:g.events||[], won:g.winner===0, story:!!isStory, bonus:!!bonusEarned,
+           faction:(currentFactions&&currentFactions.p0)||'devas', realm:g.realm||'mrityulok', idx };
+}
+function _qSide(ctx, uid){ const e=ctx.idx.get(uid); return e?e.side:-1; }
+// "use your faction mechanic" resolves per chosen faction, counting only the PLAYER's (side-0) procs.
+function _qMechanic(ctx){
+  const f=ctx.faction; let n=0;
+  for(const e of ctx.evs){
+    if(f==='devas'){ if(e.type==='shield' && (e.targetUids||[]).some(u=>_qSide(ctx,u)===0)) n++; }                       // Dharma Shield designated on own unit
+    else if(f==='vanaras'){ if(e.type==='buff' && e.abilityName==='Leap' && _qSide(ctx,e.sourceUid)===0) n++; }          // a Leap the player performed
+    else if(f==='asuras'){ if(e.type==='buff' && e.abilityName==='Chaos Surge' && _qSide(ctx,e.sourceUid)===0) n++; }     // a Chaos Surge proc on own unit
+    else if(f==='nagas'){ if(e.type==='token'){ n += (e.targetUids||[]).filter(u=>_qSide(ctx,u)===1).length; } }         // Venom Tokens applied to the enemy
+  }
+  return n;
+}
+// "cleanse OR apply 3 Venom": Venom Tokens the player applied to enemies (token→enemy), PLUS the player's Pavamana casts
+// as cleanses. NOTE (documented in CLAUDE.md): per-token cleanse emits no event, so one Pavamana cast counts as 1 — an
+// intentional approximation the event stream supports.
+function _qVenom(ctx){
+  let n=0;
+  for(const e of ctx.evs){
+    if(e.type==='token'){ n += (e.targetUids||[]).filter(u=>_qSide(ctx,u)===1).length; }
+    if(e.type==='play' && e.abilityName==='Pavamana' && _qSide(ctx,e.sourceUid)===0) n++;
+  }
+  return n;
+}
+// The pool (§3, RULED). label + kind + target + domain + measure(ctx). Rewards come from META_CONFIG.quests[scope].
+const QUEST_DEFS = {
+  // DAILY
+  win1:        { scope:'daily', domain:'pvai',  kind:'count', target:1, label:'Win 1 match',                 measure:c=> c.won?1:0 },
+  play2:       { scope:'daily', domain:'pvai',  kind:'count', target:2, label:'Play 2 matches',              measure:c=> 1 },
+  winby8:      { scope:'daily', domain:'pvai',  kind:'count', target:1, label:'Win a round by 8+',           measure:c=> (c.g.roundHistory||[]).some(h=>h.winner===0 && (h.t0-h.t1)>=8)?1:0 },
+  play6units:  { scope:'daily', domain:'pvai',  kind:'count', target:1, label:'Play 6 Units in one match',   measure:c=>{ let n=0; for(const e of c.evs){ if(e.type==='play'){ const x=c.idx.get(e.sourceUid); if(x&&x.side===0&&x.card.t==='unit') n++; } } return n>=6?1:0; } },
+  faction3:    { scope:'daily', domain:'pvai',  kind:'count', target:3, label:'Use your faction mechanic 3 times', measure:_qMechanic },
+  herosurvives:{ scope:'daily', domain:'pvai',  kind:'count', target:1, label:'Win with your Hero surviving', measure:c=> (c.won && ((c.g.players[0].heroes||[]).length>0))?1:0 },
+  venom3:      { scope:'daily', domain:'pvai',  kind:'count', target:3, label:'Cleanse or apply 3 Venom',    measure:_qVenom },
+  storychapter:{ scope:'daily', domain:'story', kind:'count', target:1, label:'Complete a story chapter',    measure:c=> (c.story && c.won)?1:0 },
+  // WEEKLY
+  win7:        { scope:'weekly', domain:'pvai',  kind:'count', target:7,  label:'Win 7 matches',                 measure:c=> c.won?1:0 },
+  twofactions: { scope:'weekly', domain:'pvai',  kind:'set',   target:2,  label:'Win with 2 different factions',  measure:c=> c.won?[c.faction]:[] },
+  anystar:     { scope:'weekly', domain:'story', kind:'count', target:1,  label:'Earn any story bonus star',      measure:c=> (c.story && c.bonus)?1:0 },
+  threerealms: { scope:'weekly', domain:'pvai',  kind:'set',   target:3,  label:'Win a match in 3 different realms', measure:c=> c.won?[c.realm]:[] },
+  destroy10:   { scope:'weekly', domain:'pvai',  kind:'count', target:10, label:'Destroy 10 enemy Units',         measure:c=>{ let n=0; for(const e of c.evs){ if(e.type==='destroy'){ n += (e.targetUids||[]).filter(u=>_qSide(c,u)===1).length; } } return n; } },
+};
+function _qNewInstance(id){ const d=QUEST_DEFS[id]; return (d && d.kind==='set') ? {id,prog:0,seen:[],claimed:false} : {id,prog:0,claimed:false}; }
+function _qDraw(pool, n){ const p=pool.filter(id=>QUEST_DEFS[id]); const out=[];
+  for(let i=0;i<n && p.length;i++){ out.push(p.splice(Math.floor(Math.random()*p.length),1)[0]); } return out; }
+// draw/reset on day (daily) or ISO-week (weekly) rollover. Returns true if anything was (re)drawn → loadMeta persists.
+function ensureQuests(M){
+  if(!M.quests || typeof M.quests!=='object') M.quests={ day:'', week:'', daily:[], weekly:[] };
+  const dk=todayKey(), wk=isoWeekKey(); let changed=false;
+  const ds=META_CONFIG.quests.daily.slots, ws=META_CONFIG.quests.weekly.slots;
+  if(M.quests.day!==dk || !Array.isArray(M.quests.daily) || M.quests.daily.length!==ds){
+    M.quests.day=dk; M.quests.daily=_qDraw(META_CONFIG.quests.dailyPool, ds).map(_qNewInstance); changed=true; }
+  if(M.quests.week!==wk || !Array.isArray(M.quests.weekly) || M.quests.weekly.length!==ws){
+    M.quests.week=wk; M.quests.weekly=_qDraw(META_CONFIG.quests.weeklyPool, ws).map(_qNewInstance); changed=true; }
+  return changed;
+}
+function _qApply(list, ctx){
+  for(const q of list){ if(q.claimed) continue; const def=QUEST_DEFS[q.id]; if(!def) continue;
+    if(def.domain==='story' && !ctx.story) continue;      // domain gating: story quests only on story matches…
+    if(def.domain==='pvai'  &&  ctx.story) continue;      // …pvai quests only on PvAI matches (isolation, anti-farm)
+    if(def.kind==='set'){ const keys=def.measure(ctx)||[]; q.seen=q.seen||[]; for(const k of keys) if(k!=null && !q.seen.includes(k)) q.seen.push(k); q.prog=Math.min(def.target, q.seen.length); }
+    else { q.prog=Math.min(def.target, (q.prog|0) + (def.measure(ctx)||0)); }
+  }
+}
+// THE MATCH-END HOOK (both PvAI via recordMatchResult and story via showStoryResult; each caller is one-shot-guarded).
+function questsOnMatchEnd(g, isStory, bonusEarned){
+  const M=loadMeta(); const ctx=questCtx(g, isStory, bonusEarned);
+  _qApply(M.quests.daily||[], ctx); _qApply(M.quests.weekly||[], ctx); saveMeta(M);
+}
+function questIsDone(q){ const d=QUEST_DEFS[q.id]; return !!d && !q.claimed && (q.prog|0) >= d.target; }
+function claimableCount(M){ let n=0; [...(M.quests.daily||[]),...(M.quests.weekly||[])].forEach(q=>{ if(questIsDone(q)) n++; }); return n; }
+function claimQuest(scope, id){
+  const M=loadMeta(); const q=(M.quests[scope]||[]).find(x=>x.id===id), def=QUEST_DEFS[id];
+  if(!q || !def || q.claimed || (q.prog|0) < def.target) return;   // guard: no double-claim, no early claim
+  q.claimed=true; const r=META_CONFIG.quests[scope];
+  M.wallet.coins += r.coins; M.wallet.amsha += r.amsha; grantXp(M, r.xp);   // XP via grantXp → level-up rewards reconcile
+  saveMeta(M);
+  renderQuests(); updateQuestBadge(); renderProfile();
+}
+/* ---------- quests panel UI ---------- */
+function updateQuestBadge(){
+  const M=loadMeta(), n=claimableCount(M), b=$('lpq-badge'), sub=$('lpq-sub');
+  if(b){ if(n>0){ b.textContent=n; b.classList.remove('hidden'); } else b.classList.add('hidden'); }
+  if(sub) sub.textContent = n>0 ? (n+' ready to claim') : 'Daily & weekly';
+}
+function questRow(q, scope){
+  const def=QUEST_DEFS[q.id]; const done=(q.prog|0)>=def.target, r=META_CONFIG.quests[scope];
+  const row=document.createElement('div'); row.className='q-row'+(done?' done':'')+(q.claimed?' claimed':'');
+  const pct=def.target ? Math.min(100, (q.prog|0)/def.target*100) : 0;
+  const main=document.createElement('div'); main.className='q-row-main';
+  main.innerHTML=`<div class="q-label">${def.label}</div><div class="q-bar"><i style="width:${pct}%"></i></div><div class="q-reward">+${r.coins} coins · +${r.amsha} Amsha · +${r.xp} XP</div>`;
+  const right=document.createElement('div'); right.className='q-right';
+  const prog=document.createElement('div'); prog.className='q-prog'; prog.textContent=Math.min(q.prog|0,def.target)+'/'+def.target; right.appendChild(prog);
+  if(q.claimed){ const c=document.createElement('div'); c.className='q-claimed'; c.textContent='✓'; right.appendChild(c); }
+  else if(done){ const b=document.createElement('button'); b.className='q-claim'; b.textContent='CLAIM'; b.onclick=()=>claimQuest(scope,q.id); right.appendChild(b); }
+  row.appendChild(main); row.appendChild(right); return row;
+}
+function renderQuests(){
+  const M=loadMeta(), d=$('q-daily'), w=$('q-weekly'); if(!d||!w) return;
+  d.innerHTML=''; w.innerHTML='';
+  (M.quests.daily||[]).forEach(q=>d.appendChild(questRow(q,'daily')));
+  (M.quests.weekly||[]).forEach(q=>w.appendChild(questRow(q,'weekly')));
+  const dr=$('q-daily-reset'), wr=$('q-weekly-reset'); if(dr) dr.textContent='resets daily'; if(wr) wr.textContent='resets weekly';
+}
+function showQuests(){ loadMeta(); renderQuests(); $('quests').classList.remove('hidden'); }
 function renderProfile(){
   const P=loadProfile(), M=loadMeta();
   const lv=levelFromXp(M.xp.total);                          // real M1 level + XP progress bar
@@ -2571,12 +2745,14 @@ function recordMatchResult(){
   if(G.winner===0) grantXp(M, META_CONFIG.xp.matchWin);
   if(!M.daily.firstMatchAwarded){ M.daily.firstMatchAwarded=true; grantXp(M, META_CONFIG.xp.dailyFirstMatch); }   // day-keyed +25
   saveMeta(M);
+  questsOnMatchEnd(G, false, false);   // slice 2: progress PvAI-domain quests (one-shot via matchRecorded guard)
 }
 function showLanding(){
   Story=null;   // leaving any story chapter
   ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','settings','mulligan','bossvs','targeting','inspect','banner','realmpop'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
   renderProfile();
   updateStoryLandingCta();   // smart Story caption from dy_story
+  updateQuestBadge();        // slice 2: claimable-count badge on the Quests button
   maybeNudgeStory();         // first-launch pulse (once ever, fresh profile only)
   $('landing').classList.remove('hidden');
   Audio2.playTrack('menu');   // menu music covers landing + faction-select (gesture-driven: first tap starts it)
@@ -2611,6 +2787,8 @@ function editProfileName(){
 $('lpname').onclick=editProfileName;
 $('landgear').onclick=()=>{ syncSettingsUI(); $('settings').classList.remove('hidden'); };
 $('mode-pvai').onclick=()=>showFactionSelect();
+$('lp-quests').onclick=()=>showQuests();
+$('quests-back').onclick=()=>$('quests').classList.add('hidden');
 document.querySelectorAll('#landing .mode.locked').forEach(b=> b.onclick=()=>toastMute('Coming soon'));
 
 /* ===================== FACTION INTRODUCTION =====================
@@ -3343,6 +3521,7 @@ function showStoryResult(){
     const complete = winExtra;   // g.winner===0 already true
     const bonus = ch.bonus && STORY_PREDICATES[ch.bonus.predicateId] ? !!STORY_PREDICATES[ch.bonus.predicateId](G) : false;
     if(complete) markChapterComplete(ch.id, bonus);
+    questsOnMatchEnd(G, true, bonus);   // slice 2: story-domain quests (storychapter counts REPLAYS; anystar needs the bonus)
     playCutscenes(ch.cutscenes && ch.cutscenes.victory, ()=>storyResultPanel(ch, true, bonus), 'victory', storyIntroFallback(ch));   // rides the victory stinger into match-end silence — no music restart
   } else {
     Audio2.fileSfx('sfx_defeat');
