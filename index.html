@@ -259,7 +259,9 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .venombadge .vstack{ font-family:Cinzel,serif; font-size:9px; font-weight:700; color:#eafff0; margin-left:-2px; vertical-align:super; text-shadow:0 1px 1px #000; }
 .bindbadge{ position:absolute; top:2px; right:3px; font-size:12px; z-index:3; filter:drop-shadow(0 1px 1px #000); }
 .stealbadge{ position:absolute; bottom:2px; left:3px; font-size:12px; z-index:3; filter:drop-shadow(0 1px 2px #000); }
+.copybadge{ position:absolute; bottom:2px; right:3px; font-size:11px; z-index:3; color:var(--gold); filter:drop-shadow(0 1px 2px #000); }
 .shieldbadge.sleep{ left:3px; right:auto; }
+#showcaseCard .sc-copy{ position:absolute; top:40px; left:0; background:rgba(201,168,76,.92); color:#1a1204; font-family:Cinzel,serif; font-size:10px; letter-spacing:2px; padding:3px 12px; border-radius:0 6px 6px 0; z-index:4; }
 
 /* Nagas — serpent teal (#1F6B62) + venom-green accent */
 :root{ --teal:#3fb9a8; --teal-2:#1F6B62; --teal-dim:#154b45; --venom:#78e08f; }
@@ -400,7 +402,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .cut-speaker:empty{ display:none; }
 .cut-body{ font-family:Cinzel,serif; font-size:18px; line-height:1.5; color:#f4ead0; text-shadow:0 2px 9px #000; white-space:pre-line; min-height:1.5em; }   /* bible plates are prose, not title cards — one elegant Cinzel line */
 .cut-hint{ margin-top:16px; font-size:10px; letter-spacing:1px; color:var(--ink-dim); }
-#brihaspati{ position:fixed; left:50%; transform:translateX(-50%); bottom:98px; z-index:60; width:min(92vw,460px); display:flex; gap:11px; align-items:center; background:rgba(10,7,3,.94); border:1px solid var(--gold-dim); border-radius:12px; padding:10px 13px; box-shadow:0 6px 24px rgba(0,0,0,.6); cursor:pointer; }
+#brihaspati{ position:fixed; left:50%; top:44%; transform:translate(-50%,-50%); z-index:60; width:min(92vw,460px); display:flex; gap:11px; align-items:center; background:rgba(10,7,3,.94); border:1px solid var(--gold-dim); border-radius:12px; padding:10px 13px; box-shadow:0 6px 24px rgba(0,0,0,.6); cursor:pointer; }
 #brihaspati.hidden{ display:none; }
 .bri-chip{ flex:0 0 auto; width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:19px; color:#1a1204; background:linear-gradient(150deg,#f0d890,#c9a84c); border:2px solid var(--gold); }
 .bri-line{ font-family:Cinzel,serif; font-size:12.5px; line-height:1.45; color:var(--hi); letter-spacing:.3px; }
@@ -3448,7 +3450,7 @@ function startStoryChapter(id){
   const ch=CHAPTERS[id]; if(!ch) return;
   resetChoreo();   // never inherit a stuck choreoActive from a prior match (a retry after a frozen/aborted choreo)
   Story = { chapter:ch, mode:ch.mode||'LOCKED', beatIdx:0, scriptIdx:0, handoff:false, lineBeat:-1,
-            oppTurns:0, midFired:{}, holdLine:ch.introLine||null, round2Shown:false, asideShown:false };   // SUGGESTED (ch3–5) adds free-play beat/aside/mid state
+            oppTurns:0, midFired:{}, holdLine:ch.introLine||null, holdInstruct:'', round2Shown:false, asideShown:false };   // SUGGESTED (ch3–5) adds free-play beat/aside/mid state
   currentFactions={ p0:ch.playerFaction, p1:ch.opponentFaction };
   G=newGame({ p0:'You', p1:'Opponent', p0Faction:ch.playerFaction, p1Faction:ch.opponentFaction, realm:ch.realm||undefined, rng:storyRng(storySeedN++), scenario:ch.scenario }); seenLog=0;
   G.players[0].manualShield=true; matchRecorded=true;   // matchRecorded=true is belt-and-suspenders; showGameOver also early-returns for story (no PvAI telemetry)
@@ -3508,14 +3510,36 @@ function storyResolveHighlight(h){                                   // → {kin
   }
   const i=G.players[0].hand.findIndex(c=>c.n===h.card); return i>=0 ? { kind:'card', index:i } : { kind:'pass' };
 }
-const STORY_ASIDE = 'Your hand, your war. But hear an old man’s thought before the next.';   // bible §6 — once per SUGGESTED chapter, on first deviation
+const STORY_MOMENT_CHANGED = 'The moment has changed — fight with what you hold.';   // beat-availability fallback aside (once per chapter run)
+// item 2/4: scroll the highlighted hand card into view so its glow is actually VISIBLE (the slider can hold it off-screen).
+// Only scrolls when the highlighted card CHANGES (Story.scrollUid), so it doesn't fight the user's manual scroll every render.
+function storyScrollToHighlight(el){
+  if(!el || !Story) return; const uid=el.dataset.uid;
+  if(Story.scrollUid===uid) return; Story.scrollUid=uid;
+  const hand=$('hand'); if(!hand) return;
+  // center the card in the horizontal slider (manual — scrollIntoView is unreliable for horizontal-only containers)
+  const cr=hand.getBoundingClientRect(), er=el.getBoundingClientRect();
+  const target=hand.scrollLeft + (er.left - cr.left) - (hand.clientWidth - er.width)/2;
+  try{ hand.scrollTo({ left:Math.max(0,target), behavior:'smooth' }); }catch(e){ hand.scrollLeft=Math.max(0,target); }
+}
+// BEAT AVAILABILITY GUARD: if the current beat names a card that is no longer in hand (spent in SUGGESTED free-play, or
+// never drawn), don't point at a card that isn't there — resolve to the generic bestOrPass guidance instead. Returns the
+// effective highlight AND whether it fell back (so the caller can raise the one-time aside). Used by BOTH the glow render
+// and storyPlayerTap so they always agree.
+function storyEffectiveHighlight(){
+  const beat=storyBeat(), h=beat && beat.highlight;
+  if(h && h.card && G.players[0].hand.findIndex(c=>c.n===h.card)<0) return { highlight:{ auto:'bestOrPass' }, fellBack:true };
+  return { highlight:h, fellBack:false };
+}
+const STORY_ASIDE = 'Your hand, your war — I only counsel.';   // §6 aside (dual-line) — once per SUGGESTED chapter, on first deviation
+const STORY_ASIDE_INSTRUCT = "You played your own choice — that's allowed. The glowing card is my suggestion, never a command.";
 function storyLargestEnemyUid(){ const foes=G.players[1].units.filter(u=>!u.ghost); if(!foes.length) return null;
   return foes.reduce((a,b)=>effPower(G,1,a)>=effPower(G,1,b)?a:b).uid; }
 function clearStoryTargetGlow(){ document.querySelectorAll('#field .bc.story-target').forEach(el=>el.classList.remove('story-target')); }
 function storySetTargetGlow(spec){ let uid=null; if(spec==='largestEnemy') uid=storyLargestEnemyUid();
   if(uid!=null){ const el=document.querySelector(`#field .bc[data-uid="${uid}"]`); if(el) el.classList.add('story-target'); } }
 function maybeStoryAmbientLine(){ const ch=Story.chapter;   // round2Line = advice at round-2 start (holds until the next player action)
-  if(ch.round2Line && G.round>=2 && !Story.round2Shown){ Story.round2Shown=true; Story.holdLine=ch.round2Line; } }
+  if(ch.round2Line && G.round>=2 && !Story.round2Shown){ Story.round2Shown=true; Story.holdLine=ch.round2Line; Story.holdInstruct=''; } }
 // FREE-mode objective chip — win condition + bonus text sourced from chapters.js (info, not guidance; no glows)
 function storyWinText(ch){ const w=(ch&&ch.win)||{}; return w.type==='matchWin' ? 'Win the match' : (w.label||'Win the match'); }
 function renderObjective(){
@@ -3544,37 +3568,41 @@ function applyStoryGuidance(){
   // beat-driven modes (LOCKED/SUGGESTED). FAIL OPEN if the beat script is missing/empty/exhausted → no mask, no lock (default = fully playable).
   const guid=Story.chapter.guidance;
   const beat=(Array.isArray(guid) && guid.length) ? storyBeat() : null;
-  if(!beat){ if(Story.holdLine) showBrihaspati(Story.holdLine); else hideBrihaspati(); return; }
+  if(!beat){ if(Story.holdLine) showBrihaspati(Story.holdLine, Story.holdInstruct||''); else hideBrihaspati(); return; }
   maybeStoryAmbientLine();
-  const tgt=storyResolveHighlight(beat.highlight);
+  // item 3: beat-availability guard — if the named card is gone, fall back to bestOrPass + one aside (never point at a missing card)
+  const eff=storyEffectiveHighlight();
+  if(eff.fellBack && !Story.momentAsideShown){ Story.momentAsideShown=true; Story.holdLine=STORY_MOMENT_CHANGED; Story.holdInstruct=''; }
+  const tgt=storyResolveHighlight(eff.highlight);
   const cards=[...document.querySelectorAll('#hand .hc')];
+  if(tgt.kind!=='card') Story.scrollUid=null;   // no card highlighted → let the next card highlight re-scroll
   if(Story.mode==='SUGGESTED'){
     // FREE PLAY: glow the suggestion + suggested target; mask NOTHING, override NO onclick (normal inspect→play stays live)
-    if(tgt.kind==='card' && cards[tgt.index]) cards[tgt.index].classList.add('story-hi');
+    if(tgt.kind==='card' && cards[tgt.index]){ cards[tgt.index].classList.add('story-hi'); storyScrollToHighlight(cards[tgt.index]); }
     else if(tgt.kind==='pass'){ $('passbtn').disabled=false; $('passbtn').classList.add('story-hi'); }
     else if(tgt.kind==='shield' && sb) sb.classList.add('story-hi');
-    if(beat.highlight && beat.highlight.target) storySetTargetGlow(beat.highlight.target);
+    if(eff.highlight && eff.highlight.target) storySetTargetGlow(eff.highlight.target);
     $('passbtn').disabled=false;   // never disable in SUGGESTED
   } else {
     // LOCKED: mask all but the highlight; route it through storyPlayerTap (mask never touches engine legality)
-    cards.forEach((el,i)=>{ if(tgt.kind==='card' && i===tgt.index){ el.classList.add('story-hi'); el.onclick=()=>storyPlayerTap(); }
+    cards.forEach((el,i)=>{ if(tgt.kind==='card' && i===tgt.index){ el.classList.add('story-hi'); el.onclick=()=>storyPlayerTap(); storyScrollToHighlight(el); }
       else { el.classList.add('story-masked'); el.onclick=null; } });
     if(tgt.kind==='pass'){ $('passbtn').disabled=false; $('passbtn').classList.add('story-hi'); } else $('passbtn').disabled=true;
   }
   // Brihaspati line: a HELD line (intro / round-2 advice / deviation aside) shows until the next action; else the beat line once per beat
-  if(Story.holdLine){ showBrihaspati(Story.holdLine); Story.lineBeat=-1; return; }
+  if(Story.holdLine){ showBrihaspati(Story.holdLine, Story.holdInstruct||''); Story.lineBeat=-1; return; }
   const effBeat=Math.min(Story.beatIdx, Story.chapter.guidance.length-1);
   if(Story.lineBeat!==effBeat){ showBrihaspati(beat.line, beat.instruct); Story.lineBeat=effBeat; }
 }
 // SUGGESTED beat progression: every player commit funnels through runAction(actor!==1) → here. Advance on a turn-ending
 // action (play/pass); free actions (shield/leap) keep the turn. First non-suggested card PLAY earns the one aside.
 function storyAfterPlayerAction(evs){
-  Story.holdLine=null;                                              // the player acted → drop any held line
+  Story.holdLine=null; Story.holdInstruct='';                       // the player acted → drop any held line + its instruction
   const beat=storyBeat();
   const playEv=(evs||[]).find(e=>e.type==='play' && storySide0Uids().has(e.sourceUid));
   if(playEv && beat && beat.highlight && beat.highlight.card && !Story.asideShown){
     const played=findCardByUid(playEv.sourceUid);
-    if(played && played.n!==beat.highlight.card){ Story.asideShown=true; Story.holdLine=STORY_ASIDE; }   // deviation → the one aside
+    if(played && played.n!==beat.highlight.card){ Story.asideShown=true; Story.holdLine=STORY_ASIDE; Story.holdInstruct=STORY_ASIDE_INSTRUCT; }   // deviation → the one (dual-line) aside
   }
   const turnEnded = G.turn===1 || G.over || G.players[0].passed;
   if(turnEnded && Story.beatIdx < Story.chapter.guidance.length-1) Story.beatIdx++;
@@ -3583,7 +3611,7 @@ function storyAfterPlayerAction(evs){
 function storyPlayerTap(){                                           // LOCKED only: the highlighted card / pass / plate plays directly
   if(!Story || Story.mode!=='LOCKED' || G.turn!==0 || choreoActive || G.over) return;   // hard guard: never touch beat logic in FREE/SUGGESTED/malformed
   if(!Array.isArray(Story.chapter.guidance) || !Story.chapter.guidance.length) return;   // no beat script → nothing to play
-  const tgt=storyResolveHighlight(storyBeat().highlight);
+  const tgt=storyResolveHighlight(storyEffectiveHighlight().highlight);   // honor the beat-availability guard (agrees with the glow)
   hideBrihaspati(); Story.beatIdx++;
   if(tgt.kind==='pass') runAction(()=>pass(G,0));
   else if(tgt.kind==='card') runAction(()=>playCard(G,0,tgt.index));
@@ -3797,10 +3825,15 @@ function makeEmbers(){
    text-design card stays visible, so cards without art yet fall back gracefully. */
 const factionToken = f => f==='asuras' ? 'Asuras' : f==='vanaras' ? 'Vanaras' : f==='nagas' ? 'Nagas' : 'Devas';
 const facClass = f => f==='asuras' ? 'fac-asura' : f==='vanaras' ? 'fac-vanara' : f==='nagas' ? 'fac-naga' : 'fac-deva';
+// card identity → HOME faction (built once from engine DECKS). Lets art resolve to the card's ORIGIN faction, not the
+// board owner's — so a Maricha-copy (Deva unit now owned by an Asura) or a Mohini-steal loads the copied card's real art.
+const CARD_FACTION = (()=>{ const m={}; try{ for(const f in DECKS) for(const c of DECKS[f]){ m[c.id]=f; m['n:'+c.n]=f; } }catch(e){} return m; })();
+function cardHomeFaction(c){ return (c && (CARD_FACTION[c.id] || CARD_FACTION['n:'+c.n])) || null; }
 function cardArtSrc(c, faction){
+  const fac = cardHomeFaction(c) || faction;   // resolve by the card's home deck (fixes copied/stolen cards; identical to `faction` for normal cards)
   const type = c.t.charAt(0).toUpperCase()+c.t.slice(1);
   const name = c.n.replace(/[^A-Za-z0-9]/g,'');   // name segment = card name with ALL non-alphanumerics removed (spaces, apostrophes, …)
-  const stem = `assets/cards/${factionToken(faction)}_${type}_${name}`;
+  const stem = `assets/cards/${factionToken(fac)}_${type}_${name}`;
   const rar = RARITY_NAME[c.r];
   return c.base > 0
     ? `${stem}_P${c.base}_r${rar}.png`   // Units / Heroes
@@ -3826,8 +3859,11 @@ function boardCard(c, pi, targetSet){
   if(c.stolenBy===0) d.classList.add('stolen');   // shown on player-0 side after a Mohini steal
   let state='', mark='';
   if(!c.ghost){ if(ep>c.base){ state='buffed'; mark='▲'; } else if(c.power<c.base){ state='hurt'; mark='▼'; } }
+  const homeF=cardHomeFaction(c);
+  const isCopy = !c.ghost && homeF && homeF!==fac && c.stolenBy===-1;   // a copied identity (Maricha) — foreign home faction, not a Mohini steal (that has its own badge)
   d.innerHTML=
     `<div class="mini-name">${c.n}</div>`+
+    (isCopy?'<div class="copybadge" title="copied">⧉</div>':'')+
     (sh?'<div class="shieldbadge">🛡</div>':'')+
     (c.asleep?'<div class="shieldbadge sleep">💤</div>':'')+
     (c.venom>0?`<div class="venombadge">☠${c.venom>1?`<span class="vstack">${c.venom}</span>`:''}</div>`:'')+
@@ -3915,6 +3951,7 @@ function render(targetSet){
     const d=document.createElement('div');
     const ok = myTurn && play.has(i);
     d.className='hc '+facClass(me.faction)+' '+rarClass(c)+(ok?'':' dead');
+    d.dataset.uid=c.uid;   // for story auto-scroll (item 2) + stable identity across renders
     d.innerHTML=`<div class="cardtext"><div class="nm">${c.n}</div><div class="ty">${TYPE_ICON[c.t]} ${c.t} · ${RARITY_NAME[c.r]}</div><div class="fx">${c.txt}</div></div>${c.p>0?`<div class="pw">${c.p}</div>`:''}${c.lockedRound===G.round?'<div class="lockicon">🔒</div>':''}`;
     attachArt(d, c, me.faction);
     d.onclick=()=>openInspect(c, 0, ok?i:-1);
@@ -4247,8 +4284,10 @@ async function showcaseCard(uid){
   const c=findCardByUid(uid); if(!c) return;
   const isBody=c.t==='unit'||c.t==='hero';
   const el=$('showcaseCard');
+  const homeF=cardHomeFaction(c), isCopy = homeF && homeF!==G.players[1].faction && c.stolenBy===-1;   // opponent's Maricha became a foreign unit → mark it a copy
   el.innerHTML =
     (c.r==='L'||c.r==='M'?`<div class="sc-tag">${RARITY_NAME[c.r]}</div>`:'')+
+    (isCopy?'<div class="sc-copy">⧉ COPY</div>':'')+
     (isBody?`<div class="sc-pw">${c.p}</div>`:'')+
     `<div class="sc-txt"><div class="sc-nm">${c.n}</div>${c.sub?`<div class="sc-sub">${c.sub}</div>`:''}<div class="sc-ty">${TYPE_ICON[c.t]||''} ${c.t} · ${RARITY_NAME[c.r]}</div><div class="sc-fx">${c.txt||''}</div></div>`;
   const img=new Image(); img.className='sc-art'; img.onerror=()=>img.remove(); img.src=cardArtSrc(c, G.players[1].faction); el.insertBefore(img, el.firstChild);
@@ -4554,7 +4593,7 @@ function runAction(mutate, opts={}){
   mutate();
   const evs = G.events.slice(evStart);
   if (Story && Story.mode==='SUGGESTED' && opts.actor!==1) storyAfterPlayerAction(evs);   // SUGGESTED: advance the beat / arm the aside on each player commit
-  if (Story && Story.mode==='FREE' && opts.actor!==1){ Story.holdLine=null; Story.shimmerDone=true; }   // FREE: dismiss the intro line + Artifact shimmer once the player acts
+  if (Story && Story.mode==='FREE' && opts.actor!==1){ Story.holdLine=null; Story.holdInstruct=''; Story.shimmerDone=true; }   // FREE: dismiss the intro line + Artifact shimmer once the player acts
   resetPowerBeat();   // new event beat — power-change blips coalesce within this batch
   if (reducedMotion() || !evs.length){
     // reduced-motion keeps AUDIO (it's not motion): fire the key sounds, skip the visual choreography.

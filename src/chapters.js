@@ -78,11 +78,11 @@ const CHAPTERS = {
     // panels: { id, speaker?, plate, ambience? } — plate/speaker VERBATIM from BOOK1_CUTSCENE_BIBLE §3; ambience is a STUB slot
     cutscenes:{
       intro:[
-        { id:'b1c1_i1', plate:'Swarga. The high seat of the gods — and tonight, a city holding its breath.', ambience:null },
-        { id:'b1c1_i2', plate:"Shukracharya's raiders test the borders. Not an army — a question.", ambience:null },
-        { id:'b1c1_i3', speaker:'Brihaspati', plate:'The gate holds only if someone stands at it, Indra. Come. I will show you how walls are made.', ambience:null },
+        { id:'b1c1_i1', plate:"Swarga. The high seat of the gods, whose gates have not closed in a thousand years — because no one has ever dared approach them. Tonight, watch-fires burn along walls that were built as ornament. Tonight, the city is holding its breath.", ambience:null },
+        { id:'b1c1_i2', plate:"They appear at dusk on the far ridge: raiders of the Asura lord Shukracharya, banners the color of dried blood. Too few to take the city. Too many to be ignored. This is not an invasion — it is a question, asked with spears: IS ANYONE STANDING AT THE GATE?", ambience:null },
+        { id:'b1c1_i3', plate:"In the torchlit hall, the old guru Brihaspati sets a steadying hand on his king's shoulder. 'The gate holds only if someone stands at it, Indra. Come — I will show you how walls are made. Not from stone. From the living.'", ambience:null },
       ],
-      victory:[ { id:'b1c1_v1', plate:'The question was asked. The answer was a wall of the living.', ambience:null } ],
+      victory:[ { id:'b1c1_v1', plate:"By morning the ridge is empty. The raiders melt back into the dark with their question answered: the wall of Swarga is not stone — it is warriors, standing shoulder to shoulder, and it does not break. Brihaspati smiles for the first time in days. 'They asked. We answered.'", ambience:null } ],
       defeat:[],
     },
     win:{ type:'matchWin' },
@@ -115,12 +115,12 @@ const CHAPTERS = {
     ],
     cutscenes:{
       intro:[
-        { id:'b1c2_i1', plate:'They came back. All of them.', ambience:null },
-        { id:'b1c2_i2', speaker:'Brihaspati', plate:'Fury spends itself fastest on an empty field. Let them have the morning.', ambience:null },
+        { id:'b1c2_i1', plate:"Seven days later the question returns — with an army behind it. The valley fills from ridge to ridge with crimson banners; the earth itself seems to march. On the walls, young warriors count the enemy and stop counting. There are numbers beyond which courage needs a plan.", ambience:null },
+        { id:'b1c2_i2', plate:"Only the old guru is calm. He watches the horde the way a farmer watches a monsoon: something vast, arriving on schedule. 'Fury is a fire,' he says quietly. 'It burns hottest at first light — and everything it burns, it loses. Let them have the morning. We will own the afternoon.'", ambience:null },
       ],
       // mid-match: b1c2_i3 fires ONCE after round 1 resolves (the scripted loss), before round 2 — PULL-OUT per the motion manifest
-      mid:[ { afterRound:1, panels:[ { id:'b1c2_i3', plate:'We do not lose the morning. We lend it.', ambience:null } ] } ],
-      victory:[ { id:'b1c2_v1', plate:'They spent everything to win a field we never wanted. The afternoon belonged to arithmetic.', ambience:null } ],
+      mid:[ { afterRound:1, panels:[ { id:'b1c2_i3', plate:"The field lies abandoned — banners still planted, positions swept away. The young warriors burn with the shame of it. Brihaspati does not. 'Look at them spending their strength on empty ground,' he says. 'We do not lose the morning. We LEND it. And every debt is collected.'", ambience:null } ] } ],
+      victory:[ { id:'b1c2_v1', plate:"Noon. The Asura charge has spent itself against nothing, and now the Deva host sweeps down the slope with the sun behind it — fresh, whole, and owed a morning. What follows is not a battle. It is arithmetic. 'Six against three,' murmurs Brihaspati. 'Patience is also a weapon.'", ambience:null } ],
       defeat:[],
     },
     win:{ type:'matchWin', extra:'ch2_lostR1' },
@@ -151,26 +151,26 @@ const CHAPTERS = {
     // Beats steer the winning DEFENSIVE line: play the champion, SHIELD it before the strike, develop small Units
     // (hold your other great Unit back so the blade finds no second mark), survive Vajra, then answer + deploy.
     guidance:[
-      { highlight:{card:'Surya Dev'},                    line:'Send your radiance first — the champion the blade will seek.', instruct:'Tap the glowing card: Surya Dev — your champion, the one his blade will target.' },
-      { highlight:{shield:'strongest'},                  line:'The blade seeks your champion. Shield first; strike after.', instruct:'Tap the SHIELD button, then tap Surya Dev — protect him before the enemy Astra strikes.' },
-      { highlight:{card:'Marut'},                        line:'Hold your greater warriors in reserve — give the blade no second mark.', instruct:'Tap the glowing card: Marut — a small unit; keep your big ones in hand for now.' },
-      { highlight:{card:'Vajra', target:'largestEnemy'}, line:'The strike is spent. Now answer — Heaven’s weapons answer only when heaven is ready.', instruct:'Tap the glowing card: Vajra, then the glowing enemy unit — destroy their biggest threat.' },
-      { highlight:{auto:'bestOrPass'},                   line:'The sky is yours. Bring your host to bear.', instruct:'Tap the glowing card to play your best, or PASS ROUND when you are ahead.' },
+      { highlight:{card:'Surya Dev'},                    line:'Send your radiance first — the champion the blade will seek.', instruct:"Tap Surya Dev — he is your champion this battle. The enemy's blade will come for him." },
+      { highlight:{shield:'strongest'},                  line:'The blade seeks your champion. Shield first; strike after.', instruct:"Tap SHIELD, then tap Surya Dev. The shield will make the enemy's Vajra fizzle." },
+      { highlight:{card:'Marut'},                        line:'Hold your greater warriors in reserve — give the blade no second mark.', instruct:"Tap Marut — play small for now. Save your strong cards." },
+      { highlight:{card:'Vajra', target:'largestEnemy'}, line:'The strike is spent. Now answer — Heaven’s weapons answer only when heaven is ready.', instruct:"Tap Vajra, then tap the enemy's biggest unit — destroy it." },
+      { highlight:{auto:'bestOrPass'},                   line:'The sky is yours. Bring your host to bear.', instruct:"Play your best card, or tap PASS ROUND if you are ahead." },
     ],
     // b1c3_i1 exists in assets/story; b1c3_i3 REUSES the swarga board image (zero new art); b1c3_v1 art pending → text plate.
     cutscenes:{
       intro:[
-        { id:'b1c3_i1', plate:'Shukracharya no longer asks questions.', ambience:null },
-        { id:'b1c3_i3', img:'assets/img/board_swarga.jpg', m:{ from:'scale(1.18)', to:'scale(1.06)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'none' }, plate:'Swarga itself takes the field. Read the sky before you read your hand.', ambience:null },
+        { id:'b1c3_i1', plate:"Shukracharya has stopped asking questions. On a ridge above the battlefield he raises a blade that should not exist — white fire along its edge, and a light that every Deva recognizes with a chill: the light of their OWN heaven. A stolen spark of Indra's thunderbolt, in an enemy's hand. The age of raids is over. The age of weapons has begun.", ambience:null },
+        { id:'b1c3_i3', img:'assets/img/board_swarga.jpg', m:{ from:'scale(1.18)', to:'scale(1.06)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'none' }, plate:"The armies meet in Swarga itself, before the thousand-petal throne. Here even the realm takes a side — every hero stands taller on home ground. Brihaspati's counsel is one line: 'Read the sky before you read your hand.'", ambience:null },
       ],
       // MID: after the opponent's 3rd turn resolves, before the Astra turn (VAJRA). Two panels over the blade image
       // (b1c3_i1): the softened telegraph, then a Brihaspati aside making the Asuras' BORROWED Vajra diegetic — both
       // play before the strike resolves (the whole mid cutscene runs, then pump() → the player's turn → the Astra turn).
       mid:[ { afterTurn:{ side:1, count:3 }, panels:[
-        { id:'b1c3_i1', m:{ from:'scale(1.05)', to:'scale(1.12)', origin:'50% 40%', dur:4, ease:'ease-out', vfx:'none' }, dim:true, plate:'His stolen weapon seeks your champion.', ambience:null },
-        { id:'b1c3_i1', m:{ from:'scale(1.12)', to:'scale(1.17)', origin:'50% 40%', dur:5, ease:'ease-out', vfx:'none' }, dim:true, speaker:'Brihaspati', plate:'That light is not his. He wields a stolen spark of heaven — as he will steal greater things before this ends.', ambience:null },
+        { id:'b1c3_i1', m:{ from:'scale(1.05)', to:'scale(1.12)', origin:'50% 40%', dur:4, ease:'ease-out', vfx:'none' }, dim:true, plate:"The stolen blade rises. It is aimed at your champion.", ambience:null },
+        { id:'b1c3_i1', m:{ from:'scale(1.12)', to:'scale(1.17)', origin:'50% 40%', dur:5, ease:'ease-out', vfx:'none' }, dim:true, speaker:'Brihaspati', plate:"That light is not his. He carries a stolen spark of heaven — and mark me, Indra: a man who steals a weapon will steal greater things before this war ends. Shield your champion. NOW.", ambience:null },
       ] } ],
-      victory:[ { id:'b1c3_v1', plate:'Heaven’s weapons answer only when heaven is ready.', ambience:null } ],
+      victory:[ { id:'b1c3_v1', plate:"The stolen fire breaks against the Dharma Shield like a wave against the mountain — and then heaven answers with the true bolt, from the true hand. Shukracharya withdraws, studying his scorched blade with those cold eyes. He has learned what he came to learn. So have you: heaven's weapons answer only when heaven is ready.", ambience:null } ],
       defeat:[],
     },
     win:{ type:'matchWin' },
