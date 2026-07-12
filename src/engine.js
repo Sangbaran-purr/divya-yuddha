@@ -101,6 +101,9 @@ const ASURA_DECK_DEF = [
   { id:'surpanakha',n:'Surpanakha',     sub:'The Vengeful Sister',  t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: An enemy Unit loses 1 power permanently.' },
   // ---- WAVE 1 (batch 7 — the protection tier) ----
   { id:'mayaveil', n:'Maya Veil',       sub:'Shroud of Illusion',   t:'mantra', p:0, r:'E', wave:1, txt:'This round, your Units cannot be targeted by Astras. Area Astras still strike.' },
+  // ---- WAVE 1 (batch 8 — the turn-economy tier) ----
+  { id:'blueprint',n:"Mayasura's Blueprint",sub:'The Architect’s Design',t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: Once per round, playing an Astra does not consume your turn.' },
+  { id:'atikaya',  n:'Atikaya',         sub:'The Colossus',         t:'unit', p:6, r:'E', wave:1, txt:'ON PLAY: Enters with −2 power if you have not passed this match, or +2 power if you have.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -170,6 +173,8 @@ const NAGA_DECK_DEF = [
   { id:'anantacoil',n:'Ananta Coil',  sub:'The Endless Serpent',  t:'artifact', p:0, r:'R', txt:'PASSIVE: When a friendly Naga Unit is destroyed, leave a permanent Venom Coil that drains 1 from a random enemy Unit each Venom tick (persists all match).' },
   // ---- WAVE 1 (batch 1; gated by opts.wave1) — WAVE1_ROSTER_v0.2.md ----
   { id:'coilsentry',n:'Coil Sentry',  sub:'Watch of the Deep',    t:'unit', p:3, r:'C', wave:1, txt:'A silent sentinel of the serpent halls.' },
+  // ---- WAVE 1 (batch 8 — the turn-economy tier) ----
+  { id:'longpatience',n:'The Long Patience',sub:'Vigil of the Deep',t:'mantra', p:0, r:'E', wave:1, txt:'Apply a Venom Token to every enemy Unit.' },
 ];
 
 const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
@@ -224,6 +229,7 @@ function mkPlayer(name, rng, faction='devas', spec, wave1){
     boardTokens:0, surasaTrap:false, astikaPause:false, sarpaDouble:false, venomStrike:0, mustPlayUnit:false,
     deathsThisRound:0, saviturUids:[],   // WAVE 1 batch 3: per-round enemy-death signal (Mahishasura) + Savitur Verse enchant list (match-long)
     vediShieldGrants:0, artifactShieldRound:0, ratriRound:0, mayaVeilRound:0,   // WAVE 1 batch 7 (protection tier): Vedi Keeper bonus-shield counter (reset each round) + Ribhu/Ratri/Maya-Veil round stamps (auto-expire, checked ===g.round)
+    blueprintUsed:false, hasPassedThisMatch:false,   // WAVE 1 batch 8 (turn-economy): Blueprint once-per-round guard (reset each round) + Atikaya's match-long VOLUNTARY-pass flag (set only in pass(), never reset — Mahabali precedent)
     mulliganed:false, manualShield:false };
 }
 
@@ -765,6 +771,14 @@ function castMantra(g, pi, id, targetUid=null){
   } else if (id==='mayaveil'){
     pl.mayaVeilRound = g.round;   // WAVE 1 batch 7 (RATNA) — round stamp; read by astraProtected → the owner's Units drop out of every targeted Astra's targetSpec this round (AoE still strikes). Auto-expires next round.
     log(g, `Maya Veil shrouds ${pl.name}’s Units — no Astra can single them out this round.`);
+  } else if (id==='longpatience'){
+    // WAVE 1 batch 8 (RATNA) — "skip your turn" simplified to normal Mantra turn economy (v0.2 note). Effect = the Nagastra
+    // application pattern via the REAL venom pipeline: +1 Venom Token to EVERY enemy Unit. NOT Astra damage (no damageUnit):
+    // Patala does not amplify it, Ratri Hymn does not stop it; Holika's venomLoss +1 sharpens the eventual DRAIN, not this application.
+    const foes = opp.units.filter(u=>!u.ghost);
+    for (const u of foes) u.venom=(u.venom||0)+1;
+    if (foes.length){ emit(g,'token',{targetUids:foes.map(u=>u.uid),abilityName:'The Long Patience',text:'Venom Token'}); log(g, `The Long Patience settles over ${opp.name}’s ${foes.length} Unit(s) — Venom on each.`); }
+    else log(g, 'The Long Patience waits — no enemy Unit to envenom.');
   }
   // Agni trigger — any mantra, either player
   for (let s=0;s<2;s++){
@@ -827,6 +841,7 @@ function playableIndices(g, pi){
       if (c.id==='sanjivani'){ const lk=g.lastKillThisRound; if (!(lk && lk.owner===1-pi && opp.discard.includes(lk.unit))) return; }
       if (c.id==='sarpasatra' && !pl.units.some(u=>!u.ghost)) return;
       if (c.id==='bloodoath' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — needs a friendly Unit to sacrifice (illegal otherwise). Dawn's Rebirth is intentionally NOT gated: it logs a no-op on an empty discard.
+      if (c.id==='longpatience' && !opp.units.some(u=>!u.ghost)) return;   // WAVE 1 — no enemy Unit to envenom (Nagastra precedent)
       if (c.id==='mrityunjaya' && !g.players[0].discard.concat(g.players[1].discard).some(u=>u.t==='unit' && !u.ghost)) return;
     }
     res.push(i);
@@ -1103,6 +1118,9 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
           log(g,`Tataka rends the weakest — ${pick[1].n}.`); destroyUnit(g, pick[0], pick[1], 'Tataka'); }
         break; }
       case 'kali': if (pl.chaosThisRound){ c.power+=3; log(g,'Kali Asura drinks the discord: +3.'); } break;
+      case 'atikaya': { const d = pl.hasPassedThisMatch ? 2 : -2; c.power+=d;   // WAVE 1 batch 8 — entry-power modifier (power only, Aruna/Kaliya precedent; a revival restores base 6). "passed" = a VOLUNTARY match-long pass.
+        log(g, pl.hasPassedThisMatch ? `Atikaya rises patient and vast: +2 → ${c.power}.` : `Atikaya rises restless: −2 → ${c.power}.`);
+        emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:d,abilityName:'Atikaya',text:(d>0?'+2':'−2')}); break; }
       case 'berserker': if (g.astraPlays>0){ c.power+=g.astraPlays; log(g,`Asura Berserker enters raging (+${g.astraPlays}).`); } break;
       case 'bana': if (g.astraBanaCount>0){ c.power+=g.astraBanaCount; log(g,`Bana Asura enters many-armed (+${g.astraBanaCount}).`); } break;
       case 'naraka': {
@@ -1190,6 +1208,16 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
     onAstraResolved(g, pi, doubled);
     // R7: Angad — playing an Astra while the opponent has Angad forfeits your next turn (stacks with Varuna).
     if (opp.heroes.some(h=>h.id==='angad')){ pl.skipNext=true; log(g,`Angad exacts the cost — ${pl.name} forfeits their next turn.`); }
+    // WAVE 1 batch 8 — Mayasura's Blueprint (R26): once/round, the Astra does NOT consume the turn. Reuses the EXISTING
+    // grantExtraTurn mechanism (Mahabali precedent, already in the LAUNCH BASELINE → AI-safe; afterAction UNCHANGED).
+    // R26 "everything else stands": Angad's forfeit already fired above (punishes the play, not the turn — both compose:
+    // extra action now, next natural turn forfeited); Chaos Surge already fired; onAstraResolved/astrasThisRound already
+    // ran (so Varuna's per-round cap still gates a 2nd Astra in playableIndices). Placed AFTER the negation branch and
+    // NOT gated on effectNegated: a negated Astra still grants the extra turn — the cast happened (R24 logic; logged).
+    if (pl.artifact && pl.artifact.id==='blueprint' && !pl.blueprintUsed){
+      g.grantExtraTurn=pi; pl.blueprintUsed=true;
+      log(g,`Mayasura’s Blueprint — the Astra costs no turn; ${pl.name} acts again.`);
+    }
     pl.discard.push(c);
   }
   else if (c.t==='mantra'){
@@ -1220,6 +1248,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
     else if (c.id==='kishkindhacrown') log(g,'Kishkindha Crown shines \u2014 Leaps empower, and may be twice this round.');
     else if (c.id==='patala') log(g, `Patala Throne rises \u2014 Venom deepens to \u2212${1+g.round} this round.`);   // R11
     else if (c.id==='anantacoil') log(g,'Ananta Coil uncoils \u2014 every fallen Naga will leave its venom on the field.');   // R14
+    else if (c.id==='blueprint') log(g,'Mayasura\u2019s Blueprint unfurls \u2014 once each round, an Astra will cost no turn.');   // WAVE 1 batch 8
   }
   // Kalki Kshetra tracks the round's last-played card (the +2 lands at round end, only if it's a Unit/Hero).
   g.lastCardThisRound = { uid:c.uid, isBody:(c.t==='unit'||c.t==='hero') };
@@ -1233,6 +1262,7 @@ function pass(g, pi){
   log(g, `${pl.name} passes.`);
   if (firstPass) venomKarkotakaEarly(g);
   if (pl.heroes.some(h=>h.id==='mahabali')) pl.mahabaliArm=g.round;   // §9: voluntary Pass arms Mahabali
+  pl.hasPassedThisMatch=true;   // WAVE 1 batch 8 — Atikaya reads this; set ONLY here (a voluntary Pass), never by Tamasa/Angad forced skips (which never call pass()) — the Mahabali/Tamasa precedent
   afterAction(g, pi);
 }
 
@@ -1321,7 +1351,7 @@ function endRound(g){
     for (const h of pl.removedHeroes){ h.power=Math.max(1, Math.ceil(h.power/2)); pl.heroes.push(h); log(g,`${h.n} returns at ${h.power} power.`); }
     pl.removedHeroes=[];
     pl.passed=false; pl.heroPlayedThisRound=false; pl.astrasThisRound=0;
-    pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0; pl.vediShieldGrants=0;   // shields + Leaps re-designate each round (Vedi bonus-grants expire); mahabaliArm persists. artifactShieldRound/ratriRound/mayaVeilRound are ===g.round stamps → auto-expire, no reset needed
+    pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0; pl.vediShieldGrants=0; pl.blueprintUsed=false;   // shields + Leaps re-designate each round (Vedi bonus-grants expire); Blueprint re-arms each round; mahabaliArm persists. artifactShieldRound/ratriRound/mayaVeilRound are ===g.round stamps → auto-expire, no reset needed. hasPassedThisMatch is MATCH-LONG → never reset here.
     pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
     pl.deathsThisRound=0;   // WAVE 1 batch 3: per-round death count resets; saviturUids PERSIST all match (enchant)
     // Gandharva Lok: both players draw 1 extra at the START of Round 2 (g.round is still 1 here, pre-increment).
@@ -1403,6 +1433,10 @@ function aiScoreCard(g, pi, c){
     case 'airavatacalf': s += 1; break;                                   // P4 body that enters shielded (durable)
     case 'ratri': s = g.astraPlays>0 ? 2 : 1; break;     // prevent Astra damage — worth more once Astras have appeared (public info; no hand peek)
     case 'mayaveil': s = g.astraPlays>0 ? 2 : 1; break;  // untargetable by Astras — same (public astra-play count)
+    // ---- WAVE 1 batch 8 (turn-economy tier) — only reached when wave1 pool is on ----
+    case 'blueprint': s = astrasInHand>0 ? 3 : 1; break;                  // an extra Astra-turn each round — worth most with Astras in hand
+    case 'atikaya': s += pl.hasPassedThisMatch ? 2 : -2; break;           // P6 body ± the entry modifier (mirror the on-play)
+    case 'longpatience': { const foes=opp.units.filter(u=>!u.ghost); s = foes.length ? 1+foes.length : -99; break; }   // Venom to all enemies (Nagastra value)
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
