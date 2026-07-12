@@ -45,6 +45,8 @@ const DEVA_DECK_DEF = [
   // ---- WAVE 1 (batch 4 — the passive-aura tier; board-state-conditional, computed read-time in effPower) ----
   { id:'ushas',   n:'Ushas, Dawn Herald',sub:'Herald of First Light',t:'unit', p:3, r:'U', wave:1, txt:'PASSIVE: Your other Units with 2 or less power gain +1.' },
   { id:'vigilrakshak',n:'Vigil Rakshak', sub:'Warden of the Shield', t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: While shielded, +2 power.' },
+  // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
+  { id:'dawnsrebirth',n:"Dawn's Rebirth",sub:'The Undimmed Return', t:'mantra', p:0, r:'E', wave:1, txt:"Return your highest-power Unit from the discard at its printed power. It cannot be shielded for the rest of the match." },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -85,6 +87,8 @@ const ASURA_DECK_DEF = [
   { id:'shumbha', n:'Shumbha',          sub:'The Bonded Demon',     t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: +1 power while Nishumbha is on your board.' },
   { id:'nishumbha',n:'Nishumbha',       sub:'The Bonded Demon',     t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: +1 power while Shumbha is on your board.' },
   { id:'holika',  n:'Holika',           sub:'The Unburnt',          t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: Immune to Astra damage. Suffers +1 from every other power loss.' },
+  // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
+  { id:'bloodoath',n:'Blood Oath',      sub:'Pact of the Pyre',     t:'mantra', p:0, r:'U', wave:1, txt:'Destroy your lowest-power Unit: draw 2 cards.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -119,6 +123,8 @@ const VANARA_DECK_DEF = [
   { id:'kishkindhacrown',n:'Kishkindha Crown',sub:'Throne of Unity',t:'artifact', p:0, r:'M', txt:'PASSIVE: When a Vanara Unit Leaps, it and the copied Unit both gain +1. Leap limit becomes twice per round.' },
   // ---- WAVE 1 (batch 1; gated by opts.wave1) — WAVE1_ROSTER_v0.2.md ----
   { id:'kishrunner',n:'Kishkindha Runner',sub:'Swift Scout',    t:'unit', p:3, r:'C', wave:1, txt:'A fleet-footed runner of the vanara host.' },
+  // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
+  { id:'swayamprabha',n:'Swayamprabha', sub:'Keeper of the Hidden Vale',t:'unit', p:3, r:'R', wave:1, txt:'ON PLAY: Look at the top 3 cards of your deck; take one to your hand, return the rest.' },
 ];
 
 // Naga roster — docs/NAGA_ROSTER.md (GDD v2.0 §8). Mechanic: VENOM (see venomTick / drainAmount). Rulings R10–R16.
@@ -320,7 +326,7 @@ function designateShields(g, pi){
   if (pl.manualShield) return;   // human designates Dharma Shield manually (see designateShield) — no auto-assignment
   const cap = shieldCap(pl);
   while (pl.shieldUids.length < cap){
-    const cands = pl.units.filter(u=>!u.ghost && !pl.shieldUids.includes(u.uid));
+    const cands = pl.units.filter(u=>!u.ghost && !u.noShield && !pl.shieldUids.includes(u.uid));   // WAVE 1: Dawn's Rebirth's returned Unit cannot be shielded this match
     if (!cands.length) break;
     const pick = cands.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b);   // AI designates highest-power
     pl.shieldUids.push(pick.uid);
@@ -332,7 +338,7 @@ function designateShields(g, pi){
 function designateShield(g, pi, uid){
   const pl = g.players[pi];
   if (pl.faction!=='devas' || pl.shieldUids.length >= shieldCap(pl)) return false;
-  const u = pl.units.find(x=>!x.ghost && x.uid===uid && !pl.shieldUids.includes(uid));
+  const u = pl.units.find(x=>!x.ghost && x.uid===uid && !x.noShield && !pl.shieldUids.includes(uid));   // WAVE 1: Dawn's Rebirth's returned Unit cannot be shielded this match
   if (!u) return false;
   pl.shieldUids.push(uid);
   log(g, `${pl.name} raises Dharma Shield over ${u.n}.`);
@@ -346,6 +352,7 @@ function shieldedSet(g, pi){
   if (pl.faction!=='devas') return new Set();
   const set = new Set(pl.shieldUids);                         // sticky designations (dead uids harmlessly ignored)
   for (const u of pl.units) if (!u.ghost && u.revivedShield) set.add(u.uid); // Gayatri revival shield
+  for (const u of pl.units) if (u.noShield) set.delete(u.uid);  // WAVE 1: Dawn's Rebirth's returned Unit is unshieldable this match — beats any path (manual/auto/Gayatri revive)
   return set;
 }
 function isShielded(g, pi, c){ return shieldedSet(g, pi).has(c.uid); }
@@ -710,6 +717,30 @@ function castMantra(g, pi, id, targetUid=null){
       pl.saviturUids.push(t.uid);
       log(g, `Savitur Verse enchants ${t.n} — +1 at the end of every round.`);
     }
+  } else if (id==='bloodoath'){
+    // WAVE 1 batch 5 — Blood Oath. Destroy your lowest-EFFECTIVE-power Unit (tie: first-found, R31 symmetry), then draw up to 2.
+    // Gated in playableIndices (needs a friendly non-ghost Unit); the guard here is defensive.
+    const real=pl.units.filter(u=>!u.ghost);
+    if (!real.length){ log(g,'Blood Oath: no Unit to offer.'); }
+    else {
+      const sac = real.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);   // lowest effPower, tie → first-found (<=)
+      destroyUnit(g, pi, sac, 'Blood Oath');                                    // REAL destroy → increments the CASTER's deathsThisRound; composes with every death hook (Ananta Coil, Vishalakshi, etc.)
+      const drawn = pl.deck.splice(0, 2); pl.hand.push(...drawn);               // draw UP TO 2 (deck-permitting; empty → 0, no crash — Sugriva precedent)
+      log(g, `Blood Oath — ${sac.n} is offered to the pyre; ${pl.name} draws ${drawn.length}.`);
+    }
+  } else if (id==='dawnsrebirth'){
+    // WAVE 1 batch 5 — Dawn's Rebirth (the wave's first Ratna; engine treats it identically to any mantra def — Ratna is a meta/ownership layer, not an engine gate).
+    // Return the highest-PRINTED-power (base; R21 grown-is-grown) Unit from your discard at printed power; it can NEVER be shielded this match (noShield flag on the CARD object, persists through discard/revive).
+    const units = pl.discard.filter(c=>c.t==='unit' && !c.ghost);
+    if (!units.length){ log(g,'Dawn’s Rebirth: no fallen Unit to return.'); }   // empty discard → logged no-op (Gayatri/Sanjeevani precedent)
+    else {
+      const best = units.reduce((a,b)=>a.base>=b.base?a:b);   // highest printed power (base), tie → first-found (>=)
+      pl.discard.splice(pl.discard.indexOf(best),1);
+      best.power = best.base; best.revivedShield=false; best.venom=0; best.aegis=false; best.asleep=false; best.doomed=false; best.ward=false; best.bound=false; best.stolenBy=-1; best.astraImmuneRound=0;
+      best.noShield = true;                                    // cannot be shielded for the REST OF THE MATCH — never cleared
+      pl.units.push(best);
+      log(g, `Dawn’s Rebirth returns ${best.n} at its printed power — unshielded, undimmed.`);
+    }
   }
   // Agni trigger — any mantra, either player
   for (let s=0;s<2;s++){
@@ -769,6 +800,7 @@ function playableIndices(g, pi){
       if ((c.id==='ahamkara'||c.id==='kishkindhaoath'||c.id==='savitur') && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — Savitur needs a friendly Unit to enchant
       if (c.id==='sanjivani'){ const lk=g.lastKillThisRound; if (!(lk && lk.owner===1-pi && opp.discard.includes(lk.unit))) return; }
       if (c.id==='sarpasatra' && !pl.units.some(u=>!u.ghost)) return;
+      if (c.id==='bloodoath' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — needs a friendly Unit to sacrifice (illegal otherwise). Dawn's Rebirth is intentionally NOT gated: it logs a no-op on an empty discard.
       if (c.id==='mrityunjaya' && !g.players[0].discard.concat(g.players[1].discard).some(u=>u.t==='unit' && !u.ghost)) return;
     }
     res.push(i);
@@ -1022,6 +1054,8 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
       case 'kesari': { const h=pl.heroes.find(x=>x.id==='hanuman'); if (h){ c.power+=h.power; log(g,`Kesari swells with Hanuman’s might: +${h.power}.`); } break; }
       case 'tara': { const top=pl.deck.splice(0,3);
         if (top.length){ const keep=top.reduce((a,b)=>a.p>=b.p?a:b); pl.hand.push(keep); pl.deck.unshift(...top.filter(x=>x!==keep)); log(g,`Tara scouts the deck and keeps ${keep.n}.`); } break; }
+      case 'swayamprabha': { const top=pl.deck.splice(0,3);   // WAVE 1 batch 5 — "take one to hand" = the Tara pattern (engine takes the highest-printed one, tie first-found; returns the rest to the top of the deck; a <3-card deck takes what's there, empty → nothing)
+        if (top.length){ const keep=top.reduce((a,b)=>a.p>=b.p?a:b); pl.hand.push(keep); pl.deck.unshift(...top.filter(x=>x!==keep)); log(g,`Swayamprabha searches the hidden vale and takes ${keep.n}.`); } break; }
       case 'dwivida': { if (opp.hand.length){ const i=Math.floor(g.rng()*opp.hand.length); const d=opp.hand.splice(i,1)[0]; opp.discard.push(d); log(g,`Dwivida’s blade takes a card from ${opp.name}.`); } else log(g,'Dwivida: the enemy hand is empty.'); break; }
       case 'scout': { const others=pl.units.filter(u=>!u.ghost && u!==c).length; if (others) c.power+=others; pl.seesOppHand=g.round; log(g,`Vanara Scout eyes the foe (+${others}).`); break; }
       case 'dadhimukha': { const d=pl.deck.splice(0,1); pl.hand.push(...d);
@@ -1293,6 +1327,10 @@ function aiScoreCard(g, pi, c){
     case 'kamadhenu': s += pl.units.some(u=>!u.ghost)?1:0; break;         // round-end buff to the lowest
     case 'savitur': s = pl.units.some(u=>!u.ghost)?2:-99; break;          // needs a friendly Unit to enchant
     case 'mahishasura': s += 1; break;                                    // a strong P7 body
+    // ---- WAVE 1 batch 5 (draw/discard tier) — only reached when wave1 pool is on ----
+    case 'bloodoath': { const real=pl.units.filter(u=>!u.ghost); s = real.length ? 2 + Math.min(2,pl.deck.length) - Math.min(...real.map(u=>effPower(g,pi,u))) : -99; break; }   // card advantage, worth it when the lowest Unit is cheap
+    case 'dawnsrebirth': { const u=pl.discard.filter(x=>x.t==='unit' && !x.ghost); s = u.length ? 1 + Math.max(...u.map(x=>x.base)) : -99; break; }   // returns the best fallen Unit; dead with an empty discard
+    case 'swayamprabha': s += 1.5; break;                                 // deck dig (Tara value)
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
