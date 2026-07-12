@@ -52,6 +52,8 @@ const DEVA_DECK_DEF = [
   { id:'ribhu',    n:'Ribhu Craftsman',sub:'The Divine Smith',      t:'unit', p:3, r:'U', wave:1, txt:'ON PLAY: Your Artifact cannot be targeted or destroyed this round.' },
   { id:'airavatacalf',n:"Airavata's Calf",sub:'Scion of the White Elephant',t:'unit', p:4, r:'R', wave:1, txt:'Enters with a Dharma Shield (respects your shield limit).' },
   { id:'ratri',    n:'Ratri Hymn',     sub:'Song of the Night',     t:'mantra', p:0, r:'R', wave:1, txt:'This round, prevent all Astra damage to your Units.' },
+  // ---- WAVE 1 (batch 9 — the event-trigger tier) ----
+  { id:'vanguard', n:"Kartikeya's Vanguard",sub:'Shield of the War-God',t:'unit', p:5, r:'E', wave:1, txt:'PASSIVE: The first time a friendly Unit is destroyed each round, this gains +2 power.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -104,6 +106,9 @@ const ASURA_DECK_DEF = [
   // ---- WAVE 1 (batch 8 — the turn-economy tier) ----
   { id:'blueprint',n:"Mayasura's Blueprint",sub:'The Architect’s Design',t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: Once per round, playing an Astra does not consume your turn.' },
   { id:'atikaya',  n:'Atikaya',         sub:'The Colossus',         t:'unit', p:6, r:'E', wave:1, txt:'ON PLAY: Enters with −2 power if you have not passed this match, or +2 power if you have.' },
+  // ---- WAVE 1 (batch 9 — the event-trigger tier) ----
+  { id:'simhika',  n:'Simhika',          sub:'The Shadow-Grasper',   t:'unit', p:4, r:'U', wave:1, txt:'PASSIVE: When an enemy Unit is revived, this gains +2 power.' },
+  { id:'raktabija',n:"Raktabija's Curse", sub:'Blood of the Demon',   t:'mantra', p:0, r:'E', wave:1, txt:'The next friendly Unit destroyed this round spawns two 2-power Rakta tokens.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -175,6 +180,8 @@ const NAGA_DECK_DEF = [
   { id:'coilsentry',n:'Coil Sentry',  sub:'Watch of the Deep',    t:'unit', p:3, r:'C', wave:1, txt:'A silent sentinel of the serpent halls.' },
   // ---- WAVE 1 (batch 8 — the turn-economy tier) ----
   { id:'longpatience',n:'The Long Patience',sub:'Vigil of the Deep',t:'mantra', p:0, r:'E', wave:1, txt:'Apply a Venom Token to every enemy Unit.' },
+  // ---- WAVE 1 (batch 9 — the event-trigger tier) ----
+  { id:'vishalakshi',n:'Vishalakshi the Pale',sub:'Eyes of the Deep',t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: When an enemy Unit dies with Venom on it, this gains +2 power permanently.' },
 ];
 
 const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
@@ -230,6 +237,7 @@ function mkPlayer(name, rng, faction='devas', spec, wave1){
     deathsThisRound:0, saviturUids:[],   // WAVE 1 batch 3: per-round enemy-death signal (Mahishasura) + Savitur Verse enchant list (match-long)
     vediShieldGrants:0, artifactShieldRound:0, ratriRound:0, mayaVeilRound:0,   // WAVE 1 batch 7 (protection tier): Vedi Keeper bonus-shield counter (reset each round) + Ribhu/Ratri/Maya-Veil round stamps (auto-expire, checked ===g.round)
     blueprintUsed:false, hasPassedThisMatch:false,   // WAVE 1 batch 8 (turn-economy): Blueprint once-per-round guard (reset each round) + Atikaya's match-long VOLUNTARY-pass flag (set only in pass(), never reset — Mahabali precedent)
+    vanguardTriggered:false, raktabijaCurse:false,   // WAVE 1 batch 9 (event-trigger): Kartikeya's Vanguard once-per-round guard + Raktabija's Curse armed flag (both reset each round)
     mulliganed:false, manualShield:false };
 }
 
@@ -512,6 +520,32 @@ function venomRoundEnd(g){
 const ASTRA_KILL = new Set(['Vajra','Brahmastra','Pashupatastra']);
 function isAstraImmune(unit, cause){ return unit.id==='hiranya' && ASTRA_KILL.has(cause) && cause!=='Brahmastra'; }
 
+// WAVE 1 batch 9 (event-trigger tier) — PURE LISTENERS. Each is id-gated on wave-1 cards / flag-gated on new fields, so with wave1 off (none in the pool, no Curse armed) both are no-ops → destroyUnit and every revival site behave byte-identically.
+function onUnitDeath(g, ownerPi, unit, cause){
+  if (unit.ghost) return;                                       // Yama ghosts are not real Units (filtered by !u.ghost everywhere) — they don't feed these listeners; a Rakta token (ghost:false) does
+  const owner=g.players[ownerPi], foe=g.players[1-ownerPi];
+  // Kartikeya's Vanguard (Deva): the FIRST friendly (same-side) Unit destroyed each round → +2. Its own death cannot trigger it (it's already spliced off the board here, so find() won't see it — must survive to witness).
+  if (!owner.vanguardTriggered){
+    const v = owner.units.find(u=>!u.ghost && u.id==='vanguard' && u!==unit);
+    if (v){ v.power+=2; owner.vanguardTriggered=true; log(g,`Kartikeya's Vanguard steels at ${unit.n}'s fall: +2 → ${v.power}.`); emit(g,'buff',{sourceUid:v.uid,targetUids:[v.uid],amount:2,abilityName:"Kartikeya's Vanguard",text:'+2'}); }
+  }
+  // Vishalakshi the Pale (Naga): an ENEMY Unit dying WITH Venom on it → +2 PERMANENTLY (R21: base AND power). Cause-agnostic; venom read here at the death choke point, still intact (destroyUnit never strips it). Stacks per qualifying death.
+  if ((unit.venom||0) > 0){
+    for (const p of foe.units) if (!p.ghost && p.id==='vishalakshi'){ p.base+=2; p.power+=2; log(g,`Vishalakshi feeds on ${unit.n}'s venom-death: +2 (permanent) → ${p.power}.`); emit(g,'buff',{sourceUid:p.uid,targetUids:[p.uid],amount:2,abilityName:'Vishalakshi the Pale',text:'+2'}); }
+  }
+  // Raktabija's Curse (Asura): the NEXT friendly (caster-side) destruction this round → spawn two REAL 2-power Rakta tokens (ghost:false, uid-safe via mkCard), then disarm. Tokens bypass playCard so on-ENTRY auras (Hanuman) do NOT apply; read-time effPower auras do.
+  if (owner.raktabijaCurse){
+    owner.raktabijaCurse=false;
+    for (let i=0;i<2;i++){ const tok=mkCard({id:'rakta',n:'Rakta',sub:'Blood-born',t:'unit',p:2,r:'C',txt:'A blood-born token.',token:true}); owner.units.push(tok); }
+    log(g,`Raktabija's Curse — ${unit.n}'s blood rises as two Rakta tokens.`);
+    emit(g,'token',{abilityName:"Raktabija's Curse",text:'Two Rakta tokens rise'});
+  }
+}
+function onUnitRevive(g, toPi, unit){
+  // Simhika (Asura): an ENEMY Unit revived (returned to the OPPOSITE side from Simhika) → +2. Stacks (no once/round in the text). A revival to Simhika's OWN side does not trigger it.
+  const foe=g.players[1-toPi];
+  for (const s of foe.units) if (!s.ghost && s.id==='simhika'){ s.power+=2; log(g,`Simhika seizes the returning ${unit.n}: +2 → ${s.power}.`); emit(g,'buff',{sourceUid:s.uid,targetUids:[s.uid],amount:2,abilityName:'Simhika',text:'+2'}); }
+}
 function destroyUnit(g, pi, unit, cause){
   const pl = g.players[pi];
   if (isAstraImmune(unit, cause)){ log(g, `${unit.n} shrugs off the Astra \u2014 immune.`); emit(g,'block',{targetUids:[unit.uid],abilityName:cause,text:`${unit.n} immune`}); return; }
@@ -528,11 +562,13 @@ function destroyUnit(g, pi, unit, cause){
   pl.deathsThisRound = (pl.deathsThisRound||0) + 1;   // WAVE 1 batch 3: per-round death count (any cause; read only by Mahishasura when wave1 on — inert otherwise). Reset in endRound.
   log(g, `${unit.n} is destroyed (${cause}).`);
   emit(g,'destroy',{targetUids:[unit.uid],abilityName:cause,text:`${unit.n} destroyed`});
+  onUnitDeath(g, pi, unit, cause);   // WAVE 1 batch 9 — fire death-listeners at the choke point (after the death, BEFORE the aegis revive): venom still intact for Vishalakshi; consistent with deathsThisRound (which counts an aegis death too)
   if (unit.aegis && !unit.ghost){
     unit.aegis=false; unit.power=1;
     pl.units.push(unit);
     log(g, `Amrita Kalasha revives ${unit.n} at 1 power!`);
     emit(g,'revive',{targetUids:[unit.uid],abilityName:'Amrita Kalasha',text:`${unit.n} revives at 1`});
+    onUnitRevive(g, pi, unit);   // WAVE 1 batch 9 — revival choke #1 (Amrita aegis): an enemy Simhika sees this revival
     return;
   }
   if (!unit.ghost){
@@ -662,6 +698,7 @@ function castMantra(g, pi, id, targetUid=null){
     pl.discard.splice(pl.discard.indexOf(lowest),1);
     lowest.power = lowest.base; lowest.revivedShield = true;
     pl.units.push(lowest);
+    onUnitRevive(g, pi, lowest);   // WAVE 1 batch 9 — revival choke #2 (Gayatri)
     log(g, `Gayatri Mantra revives ${lowest.n} at full power, shielded.`);
   } else if (id==='pavamana'){
     // GDD fidelity: (a) remove ALL debuffs (net power loss) AND Venom Tokens from ALL friendly Units;
@@ -684,7 +721,7 @@ function castMantra(g, pi, id, targetUid=null){
     if (pool.length){ const [s,t] = targetUid!=null ? (pool.find(x=>x[1].uid===targetUid)||pool.reduce((a,b)=>a[1].base>=b[1].base?a:b)) : pool.reduce((a,b)=>a[1].base>=b[1].base?a:b);
       g.players[s].discard.splice(g.players[s].discard.indexOf(t),1);
       t.power=t.base; t.venom=1; t.bound=false; t.stolenBy=-1; t.aegis=false; t.revivedShield=false; t.ward=false; t.asleep=false; t.doomed=false; t.revealPending=false; t.astraImmuneRound=0;
-      pl.units.push(t); log(g, `Mrityunjaya wrests ${t.n} from death — it rises venom-marked (Token).`);
+      pl.units.push(t); onUnitRevive(g, pi, t);   /* WAVE 1 batch 9 — revival choke #3 (Mrityunjaya) */ log(g, `Mrityunjaya wrests ${t.n} from death — it rises venom-marked (Token).`);
     } else log(g, 'Mrityunjaya: no fallen Unit to reclaim.');
   } else if (id==='sarpasatra'){
     const real=pl.units.filter(u=>!u.ghost);
@@ -705,6 +742,7 @@ function castMantra(g, pi, id, targetUid=null){
       const u=lk.unit; opp.discard.splice(opp.discard.indexOf(u),1);
       u.power=u.base; u.aegis=false; u.revivedShield=false; u.venom=0; u.asleep=false; u.doomed=false; u.revealPending=false;
       pl.units.push(u); g.lastKillThisRound=null;
+      onUnitRevive(g, pi, u);   // WAVE 1 batch 9 — revival choke #4 (Sanjivani Corruption: the stolen enemy corpse returns to the CASTER's side → an enemy Simhika on the other side sees it)
       log(g, `Sanjivani Corruption drags ${u.n} back to fight for ${pl.name}.`);
     } else log(g, 'Sanjivani Corruption: no fallen enemy Unit to steal.');
   } else if (id==='ahamkara'){
@@ -763,6 +801,7 @@ function castMantra(g, pi, id, targetUid=null){
       best.power = best.base; best.revivedShield=false; best.venom=0; best.aegis=false; best.asleep=false; best.doomed=false; best.ward=false; best.bound=false; best.stolenBy=-1; best.astraImmuneRound=0;
       best.noShield = true;                                    // cannot be shielded for the REST OF THE MATCH — never cleared
       pl.units.push(best);
+      onUnitRevive(g, pi, best);   // WAVE 1 batch 9 — revival choke #6 (Dawn's Rebirth)
       log(g, `Dawn’s Rebirth returns ${best.n} at its printed power — unshielded, undimmed.`);
     }
   } else if (id==='ratri'){
@@ -779,6 +818,9 @@ function castMantra(g, pi, id, targetUid=null){
     for (const u of foes) u.venom=(u.venom||0)+1;
     if (foes.length){ emit(g,'token',{targetUids:foes.map(u=>u.uid),abilityName:'The Long Patience',text:'Venom Token'}); log(g, `The Long Patience settles over ${opp.name}’s ${foes.length} Unit(s) — Venom on each.`); }
     else log(g, 'The Long Patience waits — no enemy Unit to envenom.');
+  } else if (id==='raktabija'){
+    pl.raktabijaCurse=true;   // WAVE 1 batch 9 — arm the listener: the NEXT friendly (caster-side) destruction this round spawns two Rakta tokens (in onUnitDeath). Unconsumed → expires at round end.
+    log(g, `Raktabija's Curse is spoken — the next of ${pl.name}'s fallen will spill into two.`);
   }
   // Agni trigger — any mantra, either player
   for (let s=0;s<2;s++){
@@ -949,6 +991,7 @@ function resolveAstra(g, pi, c, targetUid){
         u.power=u.base; u.aegis=false; u.revivedShield=false; u.venom=0; u.asleep=false; u.doomed=false; u.ward=false;
         const hb = u.base>=4 ? hanumanEntryBonus(pl) : 0; if (hb) u.power+=hb;   // EXP-F: entry bonus only for printed ≥4
         pl.units.push(u); g.lastKillThisRound=null;
+        onUnitRevive(g, pi, u);   // WAVE 1 batch 9 — revival choke #5 (Sanjeevani Call)
         log(g,`Sanjeevani Call revives ${u.n} at full power${hb?` (+${hb} Hanuman)`:''}.`);
       } else log(g,'Sanjeevani Call: no fallen ally to revive.'); break; }
     // ---- Naga astras ----
@@ -1161,7 +1204,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
         if (units.length){ const t=units.reduce((a,b)=>a.base>=b.base?a:b);   // recall the strongest fallen Naga
           pl.discard.splice(pl.discard.indexOf(t),1);
           t.power=t.base; t.venom=0; t.bound=false; t.stolenBy=-1; t.aegis=false; t.ward=false; t.astraImmuneRound=g.round;
-          pl.units.push(t); log(g,`Ulupi calls ${t.n} back from the deep — untouchable by Astras this round.`); }
+          pl.units.push(t); onUnitRevive(g, pi, t); /* WAVE 1 batch 9 — revival choke #7 (Ulupi) */ log(g,`Ulupi calls ${t.n} back from the deep — untouchable by Astras this round.`); }
         else log(g,'Ulupi: no fallen Naga to revive.'); break; }
       case 'nagasadhu': { const foes=opp.units.filter(u=>!u.ghost); for (const f of foes) f.venom=(f.venom||0)+1;
         if (foes.length) emit(g,'token',{sourceUid:c.uid,targetUids:foes.map(u=>u.uid),abilityName:'Naga Sadhu',text:'Venom Token'});
@@ -1354,6 +1397,7 @@ function endRound(g){
     pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0; pl.vediShieldGrants=0; pl.blueprintUsed=false;   // shields + Leaps re-designate each round (Vedi bonus-grants expire); Blueprint re-arms each round; mahabaliArm persists. artifactShieldRound/ratriRound/mayaVeilRound are ===g.round stamps → auto-expire, no reset needed. hasPassedThisMatch is MATCH-LONG → never reset here.
     pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
     pl.deathsThisRound=0;   // WAVE 1 batch 3: per-round death count resets; saviturUids PERSIST all match (enchant)
+    pl.vanguardTriggered=false; pl.raktabijaCurse=false;   // WAVE 1 batch 9: Vanguard once/round re-arms; an unconsumed Raktabija's Curse expires at round end
     // Gandharva Lok: both players draw 1 extra at the START of Round 2 (g.round is still 1 here, pre-increment).
     const extra = (g.realm==='gandharva' && g.round===1) ? 1 : 0;
     const drawn = pl.deck.splice(0, g.drawCount+extra); pl.hand.push(...drawn);   // g.drawCount default 2
@@ -1382,7 +1426,7 @@ function endRound(g){
       if (units.length){ const t=units[Math.floor(g.rng()*units.length)];
         pl.discard.splice(pl.discard.indexOf(t),1);
         t.power=t.base; t.venom=0; t.bound=false; t.stolenBy=-1; t.aegis=false; t.ward=false; t.astraImmuneRound=0;
-        pl.units.push(t); log(g, `Shesha\u2019s coils stir \u2014 ${t.n} rises to fight again for ${pl.name}.`); }
+        pl.units.push(t); onUnitRevive(g, s, t); /* WAVE 1 batch 9 \u2014 revival choke #8 (Shesha, round-start) */ log(g, `Shesha\u2019s coils stir \u2014 ${t.n} rises to fight again for ${pl.name}.`); }
     }
   }
   log(g, `\u2014\u2014 Round ${g.round} begins. Each side draws 2. ${g.players[g.turn].name} leads. \u2014\u2014`);
@@ -1437,6 +1481,11 @@ function aiScoreCard(g, pi, c){
     case 'blueprint': s = astrasInHand>0 ? 3 : 1; break;                  // an extra Astra-turn each round — worth most with Astras in hand
     case 'atikaya': s += pl.hasPassedThisMatch ? 2 : -2; break;           // P6 body ± the entry modifier (mirror the on-play)
     case 'longpatience': { const foes=opp.units.filter(u=>!u.ghost); s = foes.length ? 1+foes.length : -99; break; }   // Venom to all enemies (Nagastra value)
+    // ---- WAVE 1 batch 9 (event-trigger tier) — only reached when wave1 pool is on ----
+    case 'simhika': s += 1; break;                                       // P4 body that grows on enemy revivals
+    case 'vanguard': s += 1; break;                                      // P5 body that grows on a friendly death
+    case 'vishalakshi': s += 1; break;                                   // P4 body that grows on enemy venom-deaths
+    case 'raktabija': s = pl.units.some(u=>!u.ghost) ? 1.5 : 0.5; break; // spawns 2 tokens on the next friendly death
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
