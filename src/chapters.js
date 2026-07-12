@@ -199,18 +199,18 @@ const CHAPTERS = {
     mulliganLine:'Three of your ten may return to the deck. A wise hand is chosen twice.',
     opponentScript:[ {action:'play', cardName:'Bana Asura'}, {action:'play', cardName:'Meghnad'}, {action:'play', cardName:'Narakasura'}, {action:'play', cardName:'Pashupatastra'}, {handoff:'ai'} ],
     guidance:[
-      { highlight:{card:'Surya Dev'},   line:'The churning has begun. Build your line — the sea gives to the steady.', instruct:'Tap the glowing card: Surya Dev — start building your line of units.' },
+      { highlight:{card:'Surya Dev'},   line:'The churning has begun. Build your line — the sea gives to the steady.', instruct:'Tap the glowing card: Surya Dev — start your line of units.' },
       { highlight:{card:'Yama'},        line:'Another. What the ocean raises, it can also take.', instruct:'Tap the glowing card: Yama — add another unit to the field.' },
-      { highlight:{card:'Gayatri Mantra'}, holdForCard:true, line:'What the churning takes, the sacred word returns.', instruct:'Tap the glowing card: Gayatri Mantra — it brings back your fallen unit.' },   // holdForCard: waits at this beat until a unit is in discard (the scripted Pashupatastra kill) so Gayatri is legal
+      { highlight:{card:'Gayatri Mantra'}, holdForCard:true, line:'What the churning takes, the sacred word returns.', instruct:'You lost a warrior — tap Gayatri Mantra to raise them back from the discard.' },   // holdForCard: waits at this beat until a unit is in discard (the scripted Pashupatastra kill) so Gayatri is legal
       { highlight:{auto:'bestOrPass'},  line:'Now play the tide — spend when you lead, hold when you must.', instruct:'Tap the glowing card to play your best, or PASS ROUND when you lead.' },
     ],
     cutscenes:{
       intro:[
-        { id:'b1c4_i1', plate:'A truce, of a kind. The ocean of milk holds treasures neither side can raise alone.', ambience:null },
-        { id:'b1c4_i2', plate:'Deva and Asura, hand over hand. The world holds its breath.', ambience:null },
-        { id:'b1c4_i3', plate:'And the deep began to give.', ambience:null },
+        { id:'b1c4_i1', plate:"The war stops — not for peace, but for a prize. Deep beneath the ocean of milk sleep treasures that neither heaven nor the underworld can raise alone, and so, for one impossible season, Deva and Asura share a rope. The serpent king Vasuki offers his own body as the cord; the mountain Mandara becomes the churn. A truce, of a kind.", ambience:null },
+        { id:'b1c4_i2', plate:"Hand over hand, in opposite rhythm, the two armies pull. Gods haul beside the demons they fought yesterday; demons match the pull of gods they will fight tomorrow. The ocean turns. The world holds its breath.", ambience:null },
+        { id:'b1c4_i3', plate:"And the deep begins to give. Lights rise beneath the silver water — the first treasures of the churning, older than the gods' remembering. But Brihaspati watches the glow with narrowed eyes. 'The sea gives to the steady,' he murmurs. 'And it takes from everyone.'", ambience:null },
       ],
-      victory:[ { id:'b1c4_v1', plate:'What the churning takes, the sacred word returns.', ambience:null } ],
+      victory:[ { id:'b1c4_v1', plate:"The churning's first price was paid in warriors — and answered in words. Where the sacred syllables fall, a column of golden light stands a fallen Deva back on his feet, whole, blinking at the sky. The young soldiers stare. Brihaspati only nods. 'What the churning takes, the sacred word returns.'", ambience:null } ],
       defeat:[],
     },
     win:{ type:'matchWin' },
@@ -245,20 +245,20 @@ const CHAPTERS = {
     opponentScript:[ {action:'play', cardName:'Naga Sadhu'}, {action:'play', cardName:'Nagastra'}, {action:'play', cardName:'Naga Archer'}, {handoff:'ai'} ],
     guidance:[
       { highlight:{card:'Surya Dev'},  line:'They open with poison, not steel. Stand your line and watch the marks.', instruct:'Tap the glowing card: Surya Dev — hold your line against the poison.' },
-      { highlight:{card:'Yama'},       line:'Hold. Poison does not duel — it waits.', instruct:'Tap the glowing card: Yama — another defender; watch for the ☠ Venom marks.' },
-      { highlight:{card:'Pavamana'},   line:'What fire cannot purify, the sacred word can.', instruct:'Tap the glowing card: Pavamana — it cleanses the Venom from your units.' },
-      { highlight:{auto:'bestOrPass'}, line:'End it quickly. A short battle starves a slow poison.', instruct:'Tap the glowing card to play your best, or PASS ROUND to end the round fast.' },
+      { highlight:{card:'Yama'},       line:'Poison does not duel. It waits.', instruct:'The green marks are Venom — poisoned warriors lose power when the round ends.' },
+      { highlight:{card:'Pavamana'},   line:'What the poison stains, the sacred breath washes.', instruct:'Tap Pavamana — it cleanses the Venom from your warriors.' },
+      { highlight:{auto:'bestOrPass'}, line:'A short battle starves a slow poison.', instruct:'If you are ahead, tap PASS ROUND — a quick end gives the poison no time to feed.' },
     ],
     cutscenes:{
       intro:[
-        { id:'b1c5_i1', plate:'Before the nectar — the price. The ocean’s first gift was Halahala.', ambience:null },
-        { id:'b1c5_i2', plate:'It did not attack. It simply was — and everything near it lessened.', ambience:null },
-        { id:'b1c5_i3', plate:'The Nagas drank what spilled. And remembered whose churning spilled it.', ambience:null },
+        { id:'b1c5_i1', plate:"Before the nectar — the price. The glow beneath the ocean curdles; silver water turns black-green from the churn point outward, and every living thing on both shores feels it at once, like a held note gone wrong. The ocean's first true gift is rising. Its name is Halahala.", ambience:null },
+        { id:'b1c5_i2', plate:"It does not attack. It simply IS — a column of world-poison climbing the sky, and everything near it lessens: color, breath, courage. Gods and demons alike shield their faces. One drinks it down so the worlds will not — and the churning survives its own firstborn.", ambience:null },
+        { id:'b1c5_i3', plate:"But poison remembers. What spilled ran down into the dark water, and the serpents drank deep — and turned. In the blackness beneath the waves, pairs of teal eyes are opening. The Nagas remember whose churning spilled it.", ambience:null },
       ],
       // MID: on the FIRST Venom tick against the player — b1c5_i2 reused (RISE, faster 5s). The Brihaspati venom
       // line BECOMES the plate (suppress the duplicate dialogue bubble — handled by the driver via ctx 'mid').
       mid:[ { afterEvent:{ type:'venom', side:0 }, panels:[ { id:'b1c5_i2', m:{ from:'scale(1.12) translateY(5%)', to:'scale(1.12) translateY(-5%)', origin:'50% 50%', dur:5, ease:'linear', vfx:'smoke-heavy-green' }, plate:'Poison does not duel. It waits.', ambience:null } ] } ],
-      victory:[ { id:'b1c5_v1', plate:'Poison does not duel. But it can be answered.', ambience:null } ],
+      victory:[ { id:'b1c5_v1', plate:"The black mist burns off your warriors' armor in threads of white-gold light, and breath returns to the line like dawn returning to water. The serpents sink back into the deep — patient, unbeaten, remembering. Brihaspati exhales at last. 'Poison does not duel. But it can be answered.'", ambience:null } ],
       defeat:[],
     },
     win:{ type:'matchWin' },
@@ -285,14 +285,14 @@ const CHAPTERS = {
     },
     opponentScript:[ {handoff:'ai'} ],   // FREE: the default AI plays from turn 1 — no script
     introLine:'Some treasures do not strike. They simply refuse to stop giving.',   // Artifact line, once at match start (a pointer, not a beat)
-    introInstruct:'Play Amrita Kalasha (the glowing card) when you like — keep it on the board to hold the win.',   // plain-language dual-line under the aphorism
+    introInstruct:'Play Amrita Kalasha when you choose — Artifacts add no power, but stay on the field and keep working.',   // plain-language dual-line under the aphorism
     artifactShimmer:'Amrita Kalasha',    // the Artifact card gets a one-time shimmer highlight in hand
     cutscenes:{
       intro:[
-        { id:'b1c6_i1', plate:'Last of all, carried in a vessel of gold — Amrita. The undying draught.', ambience:null },
-        { id:'b1c6_i2', plate:'Everything with a claim converged. Truces are mortal too.', ambience:null },
+        { id:'b1c6_i1', plate:"Last of all — after the poison, after every treasure the deep had tested them with — the ocean parts around a vessel of gold. Amrita. The undying draught. Water sheets off the Kalasha like the sea itself bowing out of the way, and for one heartbeat, both armies forget to breathe.", ambience:null },
+        { id:'b1c6_i2', plate:"Then the heartbeat ends. Every hand with a claim reaches at once — godly gold and demon crimson, tendons taut around one prize that cannot be shared. The rope that held the truce is fraying, strand by strand. Truces, too, are mortal.", ambience:null },
       ],
-      victory:[ { id:'b1c6_v1', plate:'Some treasures do not strike. They simply refuse to stop giving.', ambience:null } ],
+      victory:[ { id:'b1c6_v1', plate:"The Kalasha rests on a Deva altar, pouring soft light that never diminishes — a treasure that wins no battles and never stops mattering. Brihaspati stands back from your victory and says nothing at all, and that is his highest praise. Some treasures do not strike. They simply refuse to stop giving.", ambience:null } ],
       defeat:[],   // shared b1_defeat (DEFEAT_PANELS) played by the driver
     },
     win:{ type:'matchWin' },
@@ -323,15 +323,15 @@ const CHAPTERS = {
     opponentScript:[ {action:'play', cardName:'Kumbhakarna'}, {action:'play', cardName:'Bana Asura'}, {action:'play', cardName:'Chandrahas'}, {handoff:'ai'} ],
     cutscenes:{
       intro:[
-        { id:'b1c7_i1', plate:'The truce died where it stood.', ambience:null },
-        { id:'b1c7_i2', plate:'And the last battle of the churning began.', ambience:null },
+        { id:'b1c7_i1', plate:"It happens between one breath and the next. Shukracharya — one-eyed, unhurried, cold as his stolen blade — walks out of the truce with the Amrita in his hands, and the truce dies where it stands. Brihaspati's old warning walks the earth at last: a man who steals a weapon will steal greater things.", ambience:null },
+        { id:'b1c7_i2', plate:"No councils. No demands. Two armies wheel to face each other beneath a splitting sky, gold against crimson, everything the churning built balanced on the edge of one blade. And the last battle of the churning begins.", ambience:null },
       ],
       // MID at boss T3 (Chandrahas resolves): b1c7_i2 reused, fast PULL-OUT + THE LIGHTNING FLASH (book's single use) +
       // dim. The BOSS speaks (his one line of the chapter), plate-style.
-      mid:[ { afterTurn:{ side:1, count:3 }, panels:[ { id:'b1c7_i2', m:{ from:'scale(1.16)', to:'scale(1.08)', origin:'50% 55%', dur:4, ease:'ease-out', vfx:'none' }, dim:true, flash:true, speaker:'Shukracharya', plate:'The moon-blade is drawn. Everything he has, at once.', ambience:null } ] } ],
+      mid:[ { afterTurn:{ side:1, count:3 }, panels:[ { id:'b1c7_i2', m:{ from:'scale(1.16)', to:'scale(1.08)', origin:'50% 55%', dur:4, ease:'ease-out', vfx:'none' }, dim:true, flash:true, speaker:'Shukracharya', plate:"The old man taught you patience. I have been patient longer than your heaven has stood. The moon-blade is drawn — everything I have, at once. Answer it, if heaven still can.", ambience:null } ] } ],
       // VICTORY: the two-phase MOHINI DRIFT (keyframed) — RISE to the vessel, hold, then a slow lateral drift toward the
       // right-edge silhouette (the Book 2 hook, delivered by the camera).
-      victory:[ { id:'b1c7_v1', mohini:true, plate:'The Amrita came home. As for how it STAYED home — that is another book.', ambience:null } ],
+      victory:[ { id:'b1c7_v1', mohini:true, plate:"The Amrita comes home under a clearing sky, held high in Deva hands while crimson banners fall away into the distance. The churning is over; the war is not — Shukracharya escapes with his cold eye already measuring the next theft. And as for how the nectar STAYED home... that is another book.", ambience:null } ],
       defeat:[],
     },
     win:{ type:'matchWin' },
