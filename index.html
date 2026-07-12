@@ -291,8 +291,12 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 /* menu background — subtle: cover art, desaturated + blurred, dark bottom-heavy gradient so faction panels stay the focus */
 /* menu is FRAMELESS — faction selection sits directly on the image; per-tile scrims keep text readable */
 #factionselect, #landing, #factionintro, #storyselect, #quests{ background:#0a0704; overflow:hidden; }
-#factionselect::before, #landing::before, #factionintro::before, #storyselect::before, #quests::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
-#factionselect::after, #landing::after, #factionintro::after, #storyselect::after, #quests::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
+#factionselect::before, #factionintro::before, #storyselect::before, #quests::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
+#factionselect::after, #factionintro::after, #storyselect::after, #quests::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
+/* Landing has its OWN background (assets/img/landing_bg.jpg — Mount Meru), lazy-loaded into #landingbg with a slow drift; #landing::before carries the title+bottom scrims. Page color #0a0704 is the instant first-paint fallback. */
+#landingbg{ position:fixed; inset:0; z-index:0; background:center center/cover no-repeat; opacity:0; transition:opacity .6s ease; pointer-events:none; will-change:transform; animation:landDrift 28s ease-in-out infinite alternate; }
+#landing::before{ content:''; position:fixed; inset:0; z-index:1; pointer-events:none; background:linear-gradient(to bottom, #0a0704 0%, rgba(10,7,4,0) 28%, rgba(10,7,4,0) 82%, rgba(10,7,4,.66) 100%); }   /* TITLE SCRIM top (page color → transparent by 28%, under the gold Cinzel title) + lighter bottom scrim (~18%) under the menu buttons */
+@keyframes landDrift{ from{ transform:scale(1.0); } to{ transform:scale(1.06); } }   /* SLOW DRIFT (living-mountain): center scale 1.0↔1.06, ease-in-out, alternating — min scale 1.0 + cover-fit ⇒ never reveals edges */
 
 /* ===== M1 slice 2: Quests (landing entry button + panel) ===== */
 .lp-quests{ position:relative; display:flex; align-items:center; gap:10px; width:100%; margin:0 0 12px; padding:11px 14px; border-radius:12px; background:rgba(0,0,0,.42); backdrop-filter:blur(6px); border:1px solid var(--gold-dim); color:#fff; cursor:pointer; text-align:left; }
@@ -438,9 +442,9 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #landing{ display:block; overflow-y:auto; padding:0; }
 #settings{ z-index:90; }   /* settings must sit above the landing overlay */
 .mutetoast{ z-index:95; }  /* toast above landing + settings */
-#landgear{ position:absolute; top:14px; right:14px; z-index:2; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.20); color:var(--ink); border-radius:8px; width:34px; height:32px; font-size:15px; cursor:pointer; padding:0; }
+#landgear{ position:absolute; top:14px; right:14px; z-index:3; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.20); color:var(--ink); border-radius:8px; width:34px; height:32px; font-size:15px; cursor:pointer; padding:0; }
 #landgear:active{ transform:scale(.92); }
-.land-col{ position:relative; z-index:1; min-height:100vh; box-sizing:border-box; max-width:520px; margin:0 auto; padding:64px 20px 28px; display:flex; flex-direction:column; justify-content:center; gap:22px; }
+.land-col{ position:relative; z-index:2; min-height:100vh; box-sizing:border-box; max-width:520px; margin:0 auto; padding:64px 20px 28px; display:flex; flex-direction:column; justify-content:center; gap:22px; }   /* z-2: above the landing image (z-0) + scrims (z-1) */
 .land-title{ text-align:center; }
 .land-deva{ font-family:Cinzel,serif; font-size:20px; color:var(--gold); letter-spacing:2px; text-shadow:0 2px 10px rgba(0,0,0,.9); margin-bottom:6px; }
 .land-name{ font-family:Cinzel,serif; font-weight:700; font-size:34px; letter-spacing:8px; color:#fff; margin:0; text-shadow:0 2px 12px rgba(0,0,0,.95), 0 0 26px rgba(0,0,0,.5); }
@@ -748,6 +752,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   .ember{ display:none; }
   #divider::after, .hc.focus.rar-L::after, .inspect-card.rar-L::after, .hc.focus.rar-M, .inspect-card.rar-M,
   .bc.landing, .floater, .bc.targetable, #banner .txt{ animation:none !important; }
+  #landingbg{ animation:none !important; transform:none; }   /* SLOW DRIFT static fallback (scale 1.0, cover-fit still fills) */
 }
 </style>
 </head>
@@ -869,6 +874,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 </div></div>
 
 <div class="overlay hidden" id="landing">
+  <div id="landingbg"></div>
   <button id="landgear" title="settings">⚙</button>
   <div class="land-col">
     <div class="land-title">
@@ -3137,7 +3143,16 @@ function showLanding(){
   updateQuestBadge();        // slice 2: claimable-count badge on the Quests button
   maybeNudgeStory();         // first-launch pulse (once ever, fresh profile only)
   $('landing').classList.remove('hidden');
+  applyLandingBg();           // lazy-load the Mount Meru BG (page color is the instant first-paint fallback; fades in when decoded)
   Audio2.playTrack('menu');   // menu music covers landing + faction-select (gesture-driven: first tap starts it)
+}
+let landingBgLoaded=false;   // per-session cache: decode once, then instant on re-entry (boardImgLoaded precedent)
+function applyLandingBg(){
+  const el=$('landingbg'); if(!el) return;
+  if(landingBgLoaded){ el.style.opacity=1; return; }   // already decoded → no refetch, no re-fade
+  const url='assets/img/landing_bg.jpg', img=new Image();
+  img.onload=()=>{ landingBgLoaded=true; el.style.backgroundImage=`url('${url}')`; el.style.opacity=1; };   // async decode → fade in (does NOT block first paint)
+  img.src=url;
 }
 function maybeGlintRank(){   // slice 4: fire the rank-chip shimmer once after a promotion, then clear the persisted flag
   const M=loadMeta(); if(!M.rewards || !M.rewards.rankGlintPending) return;
