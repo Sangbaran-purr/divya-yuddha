@@ -42,6 +42,9 @@ const DEVA_DECK_DEF = [
   { id:'dawnsentinel',n:'Dawn Sentinel',sub:'Watcher of First Light',t:'unit', p:2, r:'C', wave:1, txt:'ROUND END: If it survived the round, gain +1 power permanently.' },
   { id:'kamadhenu',n:'Kamadhenu',     sub:'The Wish-Granting Cow', t:'unit', p:4, r:'R', wave:1, txt:'ROUND END: Your lowest-power Unit gains +1.' },
   { id:'savitur', n:'Savitur Verse',  sub:'Hymn of the Sun',       t:'mantra', p:0, r:'U', wave:1, txt:'Choose a friendly Unit: it gains +1 at the end of every round, while it lives.' },
+  // ---- WAVE 1 (batch 4 — the passive-aura tier; board-state-conditional, computed read-time in effPower) ----
+  { id:'ushas',   n:'Ushas, Dawn Herald',sub:'Herald of First Light',t:'unit', p:3, r:'U', wave:1, txt:'PASSIVE: Your other Units with 2 or less power gain +1.' },
+  { id:'vigilrakshak',n:'Vigil Rakshak', sub:'Warden of the Shield', t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: While shielded, +2 power.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -78,6 +81,10 @@ const ASURA_DECK_DEF = [
   // ---- WAVE 1 (batch 3 — the Round End tier; roundEndCardEffects) ----
   { id:'pisacha', n:'Pisacha Skirmisher',sub:'The Burning Ghoul', t:'unit', p:4, r:'C', wave:1, txt:'ROUND END: −1 power permanently.' },
   { id:'mahishasura',n:'Mahishasura', sub:'The Buffalo Demon',    t:'unit', p:7, r:'E', wave:1, txt:'ROUND END: −2 power unless an enemy Unit died this round.' },
+  // ---- WAVE 1 (batch 4 — the passive-aura tier) ----
+  { id:'shumbha', n:'Shumbha',          sub:'The Bonded Demon',     t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: +1 power while Nishumbha is on your board.' },
+  { id:'nishumbha',n:'Nishumbha',       sub:'The Bonded Demon',     t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: +1 power while Shumbha is on your board.' },
+  { id:'holika',  n:'Holika',           sub:'The Unburnt',          t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: Immune to Astra damage. Suffers +1 from every other power loss.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -291,6 +298,15 @@ function effPower(g, pi, c){
     p += Math.min(4, n);
   }
   if (!c.ghost && c.id==='nagawarrior') p += venomTokenCount(g);   // Naga Warrior: +1 per Venom Token on the board
+  // ---- WAVE 1 batch-4 passive auras (card-id-gated → these branches are unreachable unless a wave-1 card is on the board) ----
+  const pl4 = g.players[pi];
+  // Ushas, Dawn Herald: your OTHER Units at CURRENT (stored) power ≤2 gain +1. 'current' = c.power at eval (non-recursive: a mutation-buff to 3 exits the aura, a drain to ≤2 enters it). Ushas is p3, never self-buffs.
+  if (!c.ghost && c.id!=='ushas' && c.power<=2 && pl4.units.some(u=>!u.ghost && u.id==='ushas')) p += 1;
+  // Vigil Rakshak: +2 while shielded (real Dharma Shield state via isShielded).
+  if (!c.ghost && c.id==='vigilrakshak' && isShielded(g,pi,c)) p += 2;
+  // Shumbha / Nishumbha bonded pair: +1 while the partner is on your board (presence check → no feedback loop, no double-count).
+  if (!c.ghost && c.id==='shumbha'   && pl4.units.some(u=>!u.ghost && u.id==='nishumbha')) p += 1;
+  if (!c.ghost && c.id==='nishumbha' && pl4.units.some(u=>!u.ghost && u.id==='shumbha'))   p += 1;
   return p;
 }
 /* EXP-A (GDD-accurate Dharma Shield): the shield is a STICKY designation, not dynamic re-targeting.
@@ -407,6 +423,7 @@ function drainAmount(g, np){
 // grinding them down — but never below 1, never destroyed). Token negation is handled separately in venomTokens (b).
 function venomLoss(g, pi, u, amt){
   const before=u.power;
+  if (u.id==='holika') amt += 1;                             // WAVE1 R22: Holika suffers +1 from every non-Astra loss — venom included.
   if (signetActive(g.players[pi]) && u.t==='unit'){ u.power = Math.max(1, u.power - amt); emit(g,'venom',{targetUids:[u.uid],amount:u.power-before,abilityName:'Venom',text:'☠'}); return; }   // §9 Signet: floor, not immunity
   u.power -= amt;
   if (u.power<1 && u.id==='hiranya') u.power=1;                            // Hiranyakashipu endures venom
@@ -504,6 +521,14 @@ function destroyUnit(g, pi, unit, cause){
   }
 }
 function damageUnit(g, pi, unit, amt, cause){
+  if (unit.id==='holika'){                                    // WAVE1 R22: Holika — immune to Astra damage; +1 from every other reduction.
+    if (ASTRA_DMG.has(cause)){                                // dmgAstra source → 0 damage. Evaluated BEFORE the Patala +1, so immunity beats the realm sharpening.
+      log(g, `${unit.n} walks unburnt through ${cause}.`);
+      emit(g,'block',{targetUids:[unit.uid],abilityName:cause,text:`${unit.n} unburnt`});
+      return;
+    }
+    amt += 1;                                                 // any non-Astra loss sharpened +1
+  }
   if (g.realm==='patala' && ASTRA_DMG.has(cause)) amt += 1;   // Patala realm: all Astra damage +1
   unit.power -= amt;
   log(g, `${unit.n} takes ${amt} damage (${cause}) \u2192 ${Math.max(unit.power,0)}.`);
