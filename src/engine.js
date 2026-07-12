@@ -56,7 +56,7 @@ const ASURA_DECK_DEF = [
   { id:'berserker',n:'Asura Berserker',sub:'Chaos Foot Soldier',  t:'unit', p:3, r:'C', txt:'PASSIVE: Gains +1 power each time any Astra is played this round by either player.' },
   { id:'naraka',   n:'Narakasura',    sub:'Lord of Darkness',     t:'unit', p:5, r:'R', txt:'ON PLAY: Steal 1 power from every enemy Unit and add it to this Unit.' },
   // ---- ASTRAS (3) ----
-  { id:'pashupata',n:'Pashupatastra', sub:'Shiva’s Wrath',   t:'astra', p:0, r:'M', txt:'Deal damage equal to your total board power to ALL enemy Units, split evenly (min 1 each). Triggers Chaos Surge.' },
+  { id:'pashupata',n:'Pashupatastra', sub:'Shiva’s Wrath',   t:'astra', p:0, r:'M', dmgAstra:true, txt:'Deal damage equal to your total board power to ALL enemy Units, split evenly (min 1 each). Triggers Chaos Surge.' },
   { id:'nagastra', n:'Nagastra',      sub:'Serpent Weapon',       t:'astra', p:0, r:'R', txt:'Apply a Venom Token to ALL enemy Units. Venom deals -1 power at round end (0 kills). Triggers Chaos Surge.' },
   { id:'tamasa',   n:'Tamasa',        sub:'The Darkness Weapon',  t:'astra', p:0, r:'R', txt:'The opponent must skip their next turn (single-turn skip, not a round Pass). Triggers Chaos Surge.' },
   // ---- MANTRAS (2) ----
@@ -89,7 +89,7 @@ const VANARA_DECK_DEF = [
   { id:'riksha',  n:'Riksha',        sub:'Son of the Wind',      t:'unit', p:4, r:'R', txt:'ON PLAY: Move to any position on the row. Gains +3 power while Hanuman is on the board.' },
   // ---- ASTRAS (3) ----
   { id:'gandiva', n:'Gandiva Arrow', sub:'Blessed Shaft',        t:'astra', p:0, r:'R', txt:'Destroy one enemy Unit regardless of power. If a Vanara used Leap this round, destroy one more.' },
-  { id:'lankadahan',n:'Lanka Dahan', sub:'Fire of Hanuman',      t:'astra', p:0, r:'L', txt:'Deal 2 damage to ALL enemy Units. All friendly Vanara Units gain +1 power.' },
+  { id:'lankadahan',n:'Lanka Dahan', sub:'Fire of Hanuman',      t:'astra', p:0, r:'L', dmgAstra:true, txt:'Deal 2 damage to ALL enemy Units. All friendly Vanara Units gain +1 power.' },
   { id:'sanjeevani',n:'Sanjeevani Call',sub:'Mountain of Life',  t:'astra', p:0, r:'U', txt:'Revive your last destroyed Unit at full power (plus Hanuman’s entry bonus if he is on board).' },
   // ---- MANTRAS (2) ----
   { id:'ramanaam',n:'Rama Naam',     sub:'The Name Above All',   t:'mantra', p:0, r:'R', txt:'All friendly Vanara Units gain +2 power.' },
@@ -149,7 +149,9 @@ const REALM_INFO = {
   kalki:     { name:'Kalki Kshetra', fx:'The last card played each round gains +2 power (only if it is a Unit or Hero).' },
 };
 const realmIs = (g, key) => g.realm===key;
-const ASTRA_DMG = new Set(['Pashupatastra','Lanka Dahan']);   // damage-dealing Astras (Patala realm +1)
+// Damage-dealing Astras (Patala realm +1), DERIVED from the `dmgAstra:true` card tag (keyed by name — the `cause` string).
+// A permanent invariant in test.js pins the expected members so a tag typo fails loudly. (Wave-1 dmgAstra cards tag in behind the wave1 flag.)
+const ASTRA_DMG = new Set(Object.values(CARD_BY_NAME).filter(c => c.dmgAstra).map(c => c.n));
 
 let UID = 1;
 function mkCard(def){ return { ...def, uid: UID++, power: def.p, base: def.p, ghost:false, lockedRound:0, aegis:false, revivedShield:false, asleep:false, revealPending:false, venom:0, doomed:false, disguisedAs:null, ward:false, bound:false, astraImmuneRound:0, stolenBy:-1 }; }
@@ -1365,5 +1367,5 @@ if (typeof module!=='undefined'){
     canLeap, bestLeap, doLeap, adjacentUnits, leapLimit, sharabhaProtected,
     drainAmount, venomPassive, venomTokens, venomRoundEnd, venomKarkotakaEarly, sweepDeaths,
     mulligan, aiMulliganPlan, REALMS, REALM_INFO, designateShield, shieldCap,
-    DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME };
+    DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME, ASTRA_DMG };
 }

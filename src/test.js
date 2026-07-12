@@ -154,6 +154,15 @@ for (const [id,c] of Object.entries(cond)){
 { const w=wonWithM['chandrahas']||0, l=lostWithM['chandrahas']||0, t=w+l;
   console.log(`  chandrahas  [Asura mirror, no-regression]  ${t?pct(w,t):'—'} (${t} mirror plays)`); }
 
+// ---- STRUCTURAL INVARIANT: the dmgAstra-derived ASTRA_DMG set must EXACTLY equal this hardcoded launch list. Guards the
+// tag plumbing — a typo'd / missing / extra `dmgAstra:true` tag (now, or when a wave-1 damage Astra lands) fails loudly here.
+{ const EXPECTED_ASTRA_DMG = ['Lanka Dahan','Pashupatastra'];   // launch members (Patala realm +1). Change DELIBERATELY only when a ruled dmg-astra ships.
+  const derived=[...E.ASTRA_DMG].sort(), expected=[...EXPECTED_ASTRA_DMG].sort();
+  assert(JSON.stringify(derived)===JSON.stringify(expected),
+    `ASTRA_DMG derivation != expected — derived {${derived.join(', ')}} vs expected {${expected.join(', ')}} (check dmgAstra tags)`);
+  console.log(`\n✓ ASTRA_DMG (dmgAstra-derived) = {${derived.join(', ')}}  [invariant vs hardcoded launch list]`);
+}
+
 console.log('\n' + (fails ? `✖ ${fails} INVARIANT FAILURES` : '✓ ALL INVARIANTS PASS'));
 
 // ---- COSMIC REALM regression + swing: Mrityulok must equal the baseline; Swarga/Patala measure realm-induced swing ----
