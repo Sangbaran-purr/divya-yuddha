@@ -38,6 +38,10 @@ const DEVA_DECK_DEF = [
   { id:'devasainika',n:'Deva Sainika', sub:'Soldier of Heaven',  t:'unit', p:3, r:'C', wave:1, txt:'A steadfast soldier of the celestial line.' },
   { id:'aruna',   n:'Aruna Charioteer',sub:'Herald of the Dawn', t:'unit', p:4, r:'U', wave:1, txt:'ON PLAY: If it is Round 1, gain +2 power.' },
   { id:'agneyastra',n:'Agneyastra',   sub:'Weapon of Fire',      t:'astra', p:0, r:'R', wave:1, dmgAstra:true, txt:'Deal 3 damage to an enemy Unit.' },
+  // ---- WAVE 1 (batch 3 — the Round End tier; roundEndCardEffects) ----
+  { id:'dawnsentinel',n:'Dawn Sentinel',sub:'Watcher of First Light',t:'unit', p:2, r:'C', wave:1, txt:'ROUND END: If it survived the round, gain +1 power permanently.' },
+  { id:'kamadhenu',n:'Kamadhenu',     sub:'The Wish-Granting Cow', t:'unit', p:4, r:'R', wave:1, txt:'ROUND END: Your lowest-power Unit gains +1.' },
+  { id:'savitur', n:'Savitur Verse',  sub:'Hymn of the Sun',       t:'mantra', p:0, r:'U', wave:1, txt:'Choose a friendly Unit: it gains +1 at the end of every round, while it lives.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -71,6 +75,9 @@ const ASURA_DECK_DEF = [
   { id:'chandrahas',n:'Chandrahas',   sub:'Ravana’s Moon Blade',t:'artifact', p:0, r:'R', txt:'ON PLAY: trigger one Chaos Surge. PASSIVE: your first Astra each round deals double effect; Chaos Surge triggers twice while active.' },
   // ---- WAVE 1 (batch 1; gated by opts.wave1) — WAVE1_ROSTER_v0.2.md ----
   { id:'ashlegion',n:'Ash Legionnaire',sub:'Soldier of the Pyre',t:'unit', p:3, r:'C', wave:1, txt:'A rank-and-file soldier of the Asura host.' },
+  // ---- WAVE 1 (batch 3 — the Round End tier; roundEndCardEffects) ----
+  { id:'pisacha', n:'Pisacha Skirmisher',sub:'The Burning Ghoul', t:'unit', p:4, r:'C', wave:1, txt:'ROUND END: −1 power permanently.' },
+  { id:'mahishasura',n:'Mahishasura', sub:'The Buffalo Demon',    t:'unit', p:7, r:'E', wave:1, txt:'ROUND END: −2 power unless an enemy Unit died this round.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -190,6 +197,7 @@ function mkPlayer(name, rng, faction='devas', spec, wave1){
     skipNext:false, mahabaliArm:-1, chaosThisRound:false, seesOppHand:false,
     shieldUids:[], leapsUsed:0,
     boardTokens:0, surasaTrap:false, astikaPause:false, sarpaDouble:false, venomStrike:0, mustPlayUnit:false,
+    deathsThisRound:0, saviturUids:[],   // WAVE 1 batch 3: per-round enemy-death signal (Mahishasura) + Savitur Verse enchant list (match-long)
     mulliganed:false, manualShield:false };
 }
 
@@ -474,6 +482,7 @@ function destroyUnit(g, pi, unit, cause){
   }
   const ix = pl.units.indexOf(unit); if (ix<0) return;
   pl.units.splice(ix,1);
+  pl.deathsThisRound = (pl.deathsThisRound||0) + 1;   // WAVE 1 batch 3: per-round death count (any cause; read only by Mahishasura when wave1 on — inert otherwise). Reset in endRound.
   log(g, `${unit.n} is destroyed (${cause}).`);
   emit(g,'destroy',{targetUids:[unit.uid],abilityName:cause,text:`${unit.n} destroyed`});
   if (unit.aegis && !unit.ghost){
@@ -665,6 +674,17 @@ function castMantra(g, pi, id, targetUid=null){
       t.ward=true;
       log(g, `Kishkindha Oath wards ${t.n} — it will survive its next fall this round.`);
     }
+  } else if (id==='savitur'){
+    // WAVE 1 — Savitur Verse. A match-long enchant tracking ONE friendly Unit by uid (weakest reading, R21+): it buffs that
+    // exact unit at each round end while it lives; if the unit is gone at a round end, nothing happens and it does NOT retarget.
+    const real=pl.units.filter(u=>!u.ghost);
+    if (!real.length){ log(g,'Savitur Verse: no Unit to bless.'); }
+    else {
+      let t = targetUid!=null ? real.find(u=>u.uid===targetUid) : null;
+      if (!t) t = real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b);   // AI enchants the strongest
+      pl.saviturUids.push(t.uid);
+      log(g, `Savitur Verse enchants ${t.n} — +1 at the end of every round.`);
+    }
   }
   // Agni trigger — any mantra, either player
   for (let s=0;s<2;s++){
@@ -721,7 +741,7 @@ function playableIndices(g, pi){
     }
     if (c.t==='mantra'){
       if (c.id==='gayatri' && !pl.discard.some(x=>x.t==='unit')) return;
-      if ((c.id==='ahamkara'||c.id==='kishkindhaoath') && !pl.units.some(u=>!u.ghost)) return;
+      if ((c.id==='ahamkara'||c.id==='kishkindhaoath'||c.id==='savitur') && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — Savitur needs a friendly Unit to enchant
       if (c.id==='sanjivani'){ const lk=g.lastKillThisRound; if (!(lk && lk.owner===1-pi && opp.discard.includes(lk.unit))) return; }
       if (c.id==='sarpasatra' && !pl.units.some(u=>!u.ghost)) return;
       if (c.id==='mrityunjaya' && !g.players[0].discard.concat(g.players[1].discard).some(u=>u.t==='unit' && !u.ghost)) return;
@@ -742,7 +762,7 @@ function targetSpec(g, pi, card){
   if (card.id==='agneyastra') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };   // WAVE 1 — same shield/immunity respect as Gandiva
   if (card.id==='sudarshana') return { kind:'enemyHero', options:[...opp.heroes] };
   if (card.id==='saraswati' && opp.hand.length) return { kind:'oppHandCard', options:[...opp.hand] };
-  if (card.id==='ahamkara' || card.id==='kishkindhaoath' || card.id==='sarpasatra') return { kind:'friendlyUnit', options: g.players[pi].units.filter(u=>!u.ghost) };
+  if (card.id==='ahamkara' || card.id==='kishkindhaoath' || card.id==='sarpasatra' || card.id==='savitur') return { kind:'friendlyUnit', options: g.players[pi].units.filter(u=>!u.ghost) };
   // ---- Naga targeted cards ----
   if (card.id==='nagapasha'){
     let opts = opp.units.filter(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u));
@@ -1115,6 +1135,36 @@ function afterAction(g, pi){
 }
 
 /* ---------- round / match resolution ---------- */
+// WAVE 1 batch 3 — the Round End tier. Called in endRound AFTER venomRoundEnd (venom deaths are already counted) and BEFORE
+// scoring (so the power changes count toward the round — the Kalki precedent). Structurally UNREACHABLE flag-off: an explicit
+// fast-out returns immediately unless a batch-3 card is on a board or a Savitur enchant is active → no state/rng/sweep, byte-identical.
+function roundEndCardEffects(g){
+  const RE_IDS = new Set(['dawnsentinel','kamadhenu','pisacha','mahishasura']);
+  let active=false;
+  for (let s=0;s<2 && !active;s++){ const pl=g.players[s];
+    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id))) active=true; }
+  if (!active) return;   // no batch-3 subscriber on the board → no-op
+  // Snapshot "an enemy Unit died this round" BEFORE this hook's own decay-kills, so Mahishasura is independent of intra-hook order (R21+).
+  const enemyDied = [ g.players[1].deathsThisRound>0, g.players[0].deathsThisRound>0 ];
+  for (let pi=0; pi<2; pi++){
+    const pl=g.players[pi];
+    // Savitur Verse enchant: +1 to each tracked unit still on the board; if gone, nothing + no retarget.
+    for (const uid of pl.saviturUids){ const u=pl.units.find(x=>x.uid===uid && !x.ghost);
+      if (u){ u.power+=1; log(g,`Savitur Verse sustains ${u.n}: +1.`); emit(g,'buff',{sourceUid:uid,targetUids:[uid],amount:1,abilityName:'Savitur Verse',text:'+1'}); } }
+    // per-unit self effects (survivors only — "survived" = still on the board after venom)
+    for (const u of pl.units){ if (u.ghost) continue;
+      if (u.id==='dawnsentinel'){ u.base+=1; u.power+=1; log(g,`Dawn Sentinel endures the round: +1 (permanent).`); emit(g,'buff',{sourceUid:u.uid,targetUids:[u.uid],amount:1,abilityName:'Dawn Sentinel',text:'+1'}); }
+      else if (u.id==='pisacha'){ u.base-=1; u.power-=1; log(g,`Pisacha Skirmisher burns lower: −1 (permanent).`); emit(g,'damage',{targetUids:[u.uid],amount:-1,abilityName:'Pisacha Skirmisher',text:'−1'}); }
+      else if (u.id==='mahishasura' && !enemyDied[pi]){ u.power-=2; log(g,`Mahishasura’s hunger goes unfed: −2.`); emit(g,'damage',{targetUids:[u.uid],amount:-2,abilityName:'Mahishasura',text:'−2'}); }
+    }
+    // Kamadhenu: lowest-power friendly Unit +1 (one buff per Kamadhenu on board). TIE → first-found (reduce keeps the first; deterministic, no rng). R21+.
+    const kamCount = pl.units.filter(u=>!u.ghost && u.id==='kamadhenu').length;
+    for (let ki=0; ki<kamCount; ki++){ const alive=pl.units.filter(u=>!u.ghost); if (!alive.length) break;
+      const lowest=alive.reduce((a,b)=> effPower(g,pi,a)<=effPower(g,pi,b)?a:b);
+      lowest.power+=1; log(g,`Kamadhenu blesses ${lowest.n}: +1.`); emit(g,'buff',{sourceUid:lowest.uid,targetUids:[lowest.uid],amount:1,abilityName:'Kamadhenu',text:'+1'}); }
+  }
+  sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
+}
 function endRound(g){
   // Kalki Kshetra: the round's last-played card — if a Unit/Hero still on the board — gains +2 (before venom & scoring).
   if (g.realm==='kalki' && g.lastCardThisRound && g.lastCardThisRound.isBody){
@@ -1123,6 +1173,7 @@ function endRound(g){
       if (c){ c.power+=2; log(g,`Kalki Kshetra blesses the last-played ${c.n}: +2.`); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:2,abilityName:'Kalki Kshetra',text:'+2'}); break; } }
   }
   venomRoundEnd(g);                                  // Venom pipeline ticks BEFORE scoring (R1 death-at-0 via sweep)
+  roundEndCardEffects(g);                            // WAVE 1 batch 3 — Round End tier (after venom, before scoring; no-op flag-off)
   const t0=totalPower(g,0), t1=totalPower(g,1);
   log(g, `Round ${g.round} ends \u2014 ${g.players[0].name} ${t0} vs ${g.players[1].name} ${t1}.`);
   let winner=null;
@@ -1152,6 +1203,7 @@ function endRound(g){
     pl.passed=false; pl.heroPlayedThisRound=false; pl.astrasThisRound=0;
     pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0;   // shields + Leaps re-designate each round; mahabaliArm persists
     pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
+    pl.deathsThisRound=0;   // WAVE 1 batch 3: per-round death count resets; saviturUids PERSIST all match (enchant)
     // Gandharva Lok: both players draw 1 extra at the START of Round 2 (g.round is still 1 here, pre-increment).
     const extra = (g.realm==='gandharva' && g.round===1) ? 1 : 0;
     const drawn = pl.deck.splice(0, g.drawCount+extra); pl.hand.push(...drawn);   // g.drawCount default 2
@@ -1211,6 +1263,11 @@ function aiScoreCard(g, pi, c){
     case 'vajra': { const spec=targetSpec(g,pi,c); s = spec.options.length? 1+Math.max(...spec.options.map(u=>effPower(g,1-pi,u))) : -99; break; }
     case 'aruna': s += (g.round===1 ? 2 : 0); break;   // WAVE 1 — value the Round-1 bonus (only reached when wave1 pool is on)
     case 'agneyastra': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 3 : -99; break; }   // WAVE 1 — deal 3 when a legal target exists
+    // ---- WAVE 1 batch 3 (Round End tier) — only reached when wave1 pool is on ----
+    case 'dawnsentinel': s += 1; break;                                   // grows if it survives
+    case 'kamadhenu': s += pl.units.some(u=>!u.ghost)?1:0; break;         // round-end buff to the lowest
+    case 'savitur': s = pl.units.some(u=>!u.ghost)?2:-99; break;          // needs a friendly Unit to enchant
+    case 'mahishasura': s += 1; break;                                    // a strong P7 body
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
@@ -1393,5 +1450,6 @@ if (typeof module!=='undefined'){
     canLeap, bestLeap, doLeap, adjacentUnits, leapLimit, sharabhaProtected,
     drainAmount, venomPassive, venomTokens, venomRoundEnd, venomKarkotakaEarly, sweepDeaths,
     mulligan, aiMulliganPlan, REALMS, REALM_INFO, designateShield, shieldCap,
-    DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME, ASTRA_DMG };
+    DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME, ASTRA_DMG,
+    endRound, roundEndCardEffects, castMantra };
 }
