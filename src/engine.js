@@ -34,6 +34,10 @@ const DEVA_DECK_DEF = [
   // ---- ARTIFACTS (2) ----
   { id:'amrita',  n:'Amrita Kalasha', sub:'Vessel of Immortality',t:'artifact', p:0, r:'M', txt:'ON PLAY: Your lowest power Unit gains +2. If that unit is destroyed this round, it revives at 1 power (once).' },
   { id:'kavacha', n:'Dharma Kavacha', sub:'Shield of Sacred Law', t:'artifact', p:0, r:'R', txt:'PASSIVE: Dharma Shield protects TWO Units instead of one.' },
+  // ---- WAVE 1 (batch 1; gated by opts.wave1 — see mkPlayer) — WAVE1_ROSTER_v0.2.md ----
+  { id:'devasainika',n:'Deva Sainika', sub:'Soldier of Heaven',  t:'unit', p:3, r:'C', wave:1, txt:'A steadfast soldier of the celestial line.' },
+  { id:'aruna',   n:'Aruna Charioteer',sub:'Herald of the Dawn', t:'unit', p:4, r:'U', wave:1, txt:'ON PLAY: If it is Round 1, gain +2 power.' },
+  { id:'agneyastra',n:'Agneyastra',   sub:'Weapon of Fire',      t:'astra', p:0, r:'R', wave:1, dmgAstra:true, txt:'Deal 3 damage to an enemy Unit.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -65,6 +69,8 @@ const ASURA_DECK_DEF = [
   // ---- ARTIFACTS (2) ----
   { id:'tripura',  n:'Tripura',       sub:'The Three Demon Cities',t:'artifact', p:0, r:'M', txt:'PASSIVE: All your Units gain +1 power at the start of every turn. Ends the instant any Astra is played by either player.' },
   { id:'chandrahas',n:'Chandrahas',   sub:'Ravana’s Moon Blade',t:'artifact', p:0, r:'R', txt:'ON PLAY: trigger one Chaos Surge. PASSIVE: your first Astra each round deals double effect; Chaos Surge triggers twice while active.' },
+  // ---- WAVE 1 (batch 1; gated by opts.wave1) — WAVE1_ROSTER_v0.2.md ----
+  { id:'ashlegion',n:'Ash Legionnaire',sub:'Soldier of the Pyre',t:'unit', p:3, r:'C', wave:1, txt:'A rank-and-file soldier of the Asura host.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -97,6 +103,8 @@ const VANARA_DECK_DEF = [
   // ---- ARTIFACTS (2) ----
   { id:'ramasignet',n:'Rama’s Signet',sub:'Seal of Trust',       t:'artifact', p:0, r:'R', txt:'PASSIVE: Your Vanara Units cannot be reduced below 1 power by any effect; Venom on them is negated.' },
   { id:'kishkindhacrown',n:'Kishkindha Crown',sub:'Throne of Unity',t:'artifact', p:0, r:'M', txt:'PASSIVE: When a Vanara Unit Leaps, it and the copied Unit both gain +1. Leap limit becomes twice per round.' },
+  // ---- WAVE 1 (batch 1; gated by opts.wave1) — WAVE1_ROSTER_v0.2.md ----
+  { id:'kishrunner',n:'Kishkindha Runner',sub:'Swift Scout',    t:'unit', p:3, r:'C', wave:1, txt:'A fleet-footed runner of the vanara host.' },
 ];
 
 // Naga roster — docs/NAGA_ROSTER.md (GDD v2.0 §8). Mechanic: VENOM (see venomTick / drainAmount). Rulings R10–R16.
@@ -128,6 +136,8 @@ const NAGA_DECK_DEF = [
   // ---- ARTIFACTS (2) ----
   { id:'patala',  n:'Patala Throne',  sub:'Seat of Serpent Kings',t:'artifact', p:0, r:'M', txt:'PASSIVE: Your Venom drain becomes −(1 + current round number): R1 −2, R2 −3, R3 −4.' },
   { id:'anantacoil',n:'Ananta Coil',  sub:'The Endless Serpent',  t:'artifact', p:0, r:'R', txt:'PASSIVE: When a friendly Naga Unit is destroyed, leave a permanent Venom Coil that drains 1 from a random enemy Unit each Venom tick (persists all match).' },
+  // ---- WAVE 1 (batch 1; gated by opts.wave1) — WAVE1_ROSTER_v0.2.md ----
+  { id:'coilsentry',n:'Coil Sentry',  sub:'Watch of the Deep',    t:'unit', p:3, r:'C', wave:1, txt:'A silent sentinel of the serpent halls.' },
 ];
 
 const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
@@ -157,8 +167,11 @@ let UID = 1;
 function mkCard(def){ return { ...def, uid: UID++, power: def.p, base: def.p, ghost:false, lockedRound:0, aegis:false, revivedShield:false, asleep:false, revealPending:false, venom:0, doomed:false, disguisedAs:null, ward:false, bound:false, astraImmuneRound:0, stolenBy:-1 }; }
 function shuffle(a, rng){ for (let i=a.length-1;i>0;i--){ const j=Math.floor(rng()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
 
-function mkPlayer(name, rng, faction='devas', spec){
-  const src = DECKS[faction] || DECKS.devas;
+function mkPlayer(name, rng, faction='devas', spec, wave1){
+  const rawSrc = DECKS[faction] || DECKS.devas;
+  // wave1 opt (additive, read ONLY when present — opts.realm/scenario precedent): the random pool EXCLUDES wave:1 defs unless enabled.
+  // Filtered BEFORE .map(mkCard) so with the flag off the launch pool, its UID assignment, and the g.rng shuffle sequence are byte-identical to today.
+  const src = wave1 ? rawSrc : rawSrc.filter(c => !c.wave);
   let deck, hand;
   if (spec && (spec.deck || spec.hand || spec.handSize!=null)){
     // opts.scenario injection (read ONLY when present — opts.realm precedent). Custom decklist → ordered, NO shuffle; else the normal shuffled faction deck.
@@ -225,8 +238,8 @@ function newGame(opts={}){
   const sc = opts.scenario;                              // opts.scenario: additive, read ONLY when present (opts.realm precedent). Absent/empty → identical behavior + rng sequence.
   const g = {
     rng, round:1, over:false, winner:null,
-    players:[ mkPlayer(opts.p0||'You', rng, opts.p0Faction||'devas', sc && {deck:sc.p0Deck, hand:sc.p0Hand, handSize:sc.handSize}),
-              mkPlayer(opts.p1||'Opponent', rng, opts.p1Faction||'devas', sc && {deck:sc.p1Deck, hand:sc.p1Hand, handSize:sc.handSize}) ],
+    players:[ mkPlayer(opts.p0||'You', rng, opts.p0Faction||'devas', sc && {deck:sc.p0Deck, hand:sc.p0Hand, handSize:sc.handSize}, opts.wave1),
+              mkPlayer(opts.p1||'Opponent', rng, opts.p1Faction||'devas', sc && {deck:sc.p1Deck, hand:sc.p1Hand, handSize:sc.handSize}, opts.wave1) ],
     turn: rng()<0.5?0:1, lastMantra:null, log:[], events:[],
     roundHistory:[],
     lastKillThisRound:null, astraPlays:0, astraBanaCount:0, grantExtraTurn:null,
@@ -695,6 +708,7 @@ function playableIndices(g, pi){
       if (c.id==='brahmastra' && !opp.units.some(u=>!u.ghost)) return;
       if ((c.id==='pashupata'||c.id==='nagastra'||c.id==='lankadahan') && !opp.units.some(u=>!u.ghost)) return;
       if (c.id==='gandiva' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;
+      if (c.id==='agneyastra' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 — illegal with no unprotected enemy Unit
       if (c.id==='sanjeevani'){ const lk=g.lastKillThisRound; if (!(lk && lk.owner===pi && pl.discard.includes(lk.unit))) return; }
       // ---- Naga astras ----
       if (c.id==='nagapasha'){
@@ -725,6 +739,7 @@ function targetSpec(g, pi, card){
     return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u) && (indra||effPower(g,1-pi,u)>=6)) };
   }
   if (card.id==='gandiva') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };
+  if (card.id==='agneyastra') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };   // WAVE 1 — same shield/immunity respect as Gandiva
   if (card.id==='sudarshana') return { kind:'enemyHero', options:[...opp.heroes] };
   if (card.id==='saraswati' && opp.hand.length) return { kind:'oppHandCard', options:[...opp.hand] };
   if (card.id==='ahamkara' || card.id==='kishkindhaoath' || card.id==='sarpasatra') return { kind:'friendlyUnit', options: g.players[pi].units.filter(u=>!u.ghost) };
@@ -749,6 +764,13 @@ function resolveAstra(g, pi, c, targetUid){
       let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
       if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
       log(g,'Vajra falls!'); destroyUnit(g, 1-pi, t, 'Vajra'); break;
+    }
+    case 'agneyastra': {   // WAVE 1 — targeted deal-3. Respects astra targeting (shield/immunity) via targetSpec, like Gandiva.
+      const spec=targetSpec(g,pi,c);
+      if (!spec.options.length){ log(g,'Agneyastra finds no mark.'); break; }
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+      log(g,'Agneyastra erupts in fire!'); damageUnit(g, 1-pi, t, 3, 'Agneyastra'); break;   // cause='Agneyastra' → Patala +1 routes through the dmgAstra tag
     }
     case 'brahmastra':
       log(g,'BRAHMASTRA. The earth remembers, and trembles.');
@@ -869,6 +891,8 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
       case 'surya': { const tgt=pl.units.filter(u=>u!==c && !u.ghost); for (const u of tgt) u.power+=1;
         if (tgt.length) emit(g,'buff',{sourceUid:c.uid,targetUids:tgt.map(u=>u.uid),amount:1,abilityName:'Surya Dev',text:'+1'});
         log(g,'Surya Dev: all other friendly Units +1.'); break; }
+      // WAVE 1 — Aruna Charioteer. Weakest-defensible reading (R21+): "if Round 1" = the match's FIRST round (g.round===1) at play time; played R2+, no bonus.
+      case 'aruna': if (g.round===1){ c.power+=2; log(g,'Aruna Charioteer rides the dawn: +2 (Round 1).'); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:2,abilityName:'Aruna Charioteer',text:'+2'}); } break;
       case 'vayu': {
         const foes=opp.units.filter(u=>!u.ghost);
         if (foes.length){
@@ -1185,6 +1209,8 @@ function aiScoreCard(g, pi, c){
     case 'yama': s += 1.5; break;
     case 'brihaspati': s += g.lastMantra? 2:0; break;
     case 'vajra': { const spec=targetSpec(g,pi,c); s = spec.options.length? 1+Math.max(...spec.options.map(u=>effPower(g,1-pi,u))) : -99; break; }
+    case 'aruna': s += (g.round===1 ? 2 : 0); break;   // WAVE 1 — value the Round-1 bonus (only reached when wave1 pool is on)
+    case 'agneyastra': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 3 : -99; break; }   // WAVE 1 — deal 3 when a legal target exists
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }

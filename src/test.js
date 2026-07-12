@@ -156,7 +156,7 @@ for (const [id,c] of Object.entries(cond)){
 
 // ---- STRUCTURAL INVARIANT: the dmgAstra-derived ASTRA_DMG set must EXACTLY equal this hardcoded launch list. Guards the
 // tag plumbing — a typo'd / missing / extra `dmgAstra:true` tag (now, or when a wave-1 damage Astra lands) fails loudly here.
-{ const EXPECTED_ASTRA_DMG = ['Lanka Dahan','Pashupatastra'];   // launch members (Patala realm +1). Change DELIBERATELY only when a ruled dmg-astra ships.
+{ const EXPECTED_ASTRA_DMG = ['Agneyastra','Lanka Dahan','Pashupatastra'];   // Patala realm +1. Change DELIBERATELY only when a ruled dmg-astra ships (Agneyastra added in Engine Task 2, wave-1 batch 1 — inert unless opts.wave1).
   const derived=[...E.ASTRA_DMG].sort(), expected=[...EXPECTED_ASTRA_DMG].sort();
   assert(JSON.stringify(derived)===JSON.stringify(expected),
     `ASTRA_DMG derivation != expected — derived {${derived.join(', ')}} vs expected {${expected.join(', ')}} (check dmgAstra tags)`);
