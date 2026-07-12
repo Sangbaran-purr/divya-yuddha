@@ -47,6 +47,11 @@ const DEVA_DECK_DEF = [
   { id:'vigilrakshak',n:'Vigil Rakshak', sub:'Warden of the Shield', t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: While shielded, +2 power.' },
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
   { id:'dawnsrebirth',n:"Dawn's Rebirth",sub:'The Undimmed Return', t:'mantra', p:0, r:'E', wave:1, txt:"Return your highest-power Unit from the discard at its printed power. It cannot be shielded for the rest of the match." },
+  // ---- WAVE 1 (batch 7 — the protection tier) ----
+  { id:'vedikeeper',n:'Vedi Keeper',   sub:'Tender of the Altar',   t:'unit', p:3, r:'C', wave:1, txt:'ON PLAY: Your next Dharma Shield this round is applied instantly (one extra shield this round).' },
+  { id:'ribhu',    n:'Ribhu Craftsman',sub:'The Divine Smith',      t:'unit', p:3, r:'U', wave:1, txt:'ON PLAY: Your Artifact cannot be targeted or destroyed this round.' },
+  { id:'airavatacalf',n:"Airavata's Calf",sub:'Scion of the White Elephant',t:'unit', p:4, r:'R', wave:1, txt:'Enters with a Dharma Shield (respects your shield limit).' },
+  { id:'ratri',    n:'Ratri Hymn',     sub:'Song of the Night',     t:'mantra', p:0, r:'R', wave:1, txt:'This round, prevent all Astra damage to your Units.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -94,6 +99,8 @@ const ASURA_DECK_DEF = [
   { id:'dhumraksha',n:'Dhumraksha',     sub:'The Smoke-Eyed',       t:'unit', p:4, r:'U', wave:1, txt:'ON PLAY: Deal 1 damage to one of your Units.' },
   { id:'mohanastra',n:'Mohanastra',     sub:'Weapon of Beguiling',  t:'astra', p:0, r:'U', wave:1, dmgAstra:false, txt:'An enemy Unit loses 2 power this round.' },   // dmgAstra:false EXPLICIT (R22 — a debuff is not damage): stays OUT of ASTRA_DMG, so no Patala amplification and Holika sharpens (not immune)
   { id:'surpanakha',n:'Surpanakha',     sub:'The Vengeful Sister',  t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: An enemy Unit loses 1 power permanently.' },
+  // ---- WAVE 1 (batch 7 — the protection tier) ----
+  { id:'mayaveil', n:'Maya Veil',       sub:'Shroud of Illusion',   t:'mantra', p:0, r:'E', wave:1, txt:'This round, your Units cannot be targeted by Astras. Area Astras still strike.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -216,6 +223,7 @@ function mkPlayer(name, rng, faction='devas', spec, wave1){
     shieldUids:[], leapsUsed:0,
     boardTokens:0, surasaTrap:false, astikaPause:false, sarpaDouble:false, venomStrike:0, mustPlayUnit:false,
     deathsThisRound:0, saviturUids:[],   // WAVE 1 batch 3: per-round enemy-death signal (Mahishasura) + Savitur Verse enchant list (match-long)
+    vediShieldGrants:0, artifactShieldRound:0, ratriRound:0, mayaVeilRound:0,   // WAVE 1 batch 7 (protection tier): Vedi Keeper bonus-shield counter (reset each round) + Ribhu/Ratri/Maya-Veil round stamps (auto-expire, checked ===g.round)
     mulliganed:false, manualShield:false };
 }
 
@@ -324,7 +332,7 @@ function effPower(g, pi, c){
    At each shield opportunity (a Deva Unit hitting the board) an open slot latches onto the highest-power
    unshielded Unit and STAYS there for the round — even if a bigger Unit arrives later or the shielded one
    dies (the shield dies with it). Dharma Kavacha = 2 sticky slots. */
-function shieldCap(pl){ return pl.artifact && pl.artifact.id==='kavacha' ? 2 : 1; }
+function shieldCap(pl){ return (pl.artifact && pl.artifact.id==='kavacha' ? 2 : 1) + (pl.vediShieldGrants||0); }   // WAVE 1: Vedi Keeper adds +1 bonus Dharma Shield this round (R25 FALLBACK — shields are already action-free, so the grant = extra cap available/applied instantly this round; expires at round end)
 function designateShields(g, pi){
   const pl = g.players[pi];
   if (pl.faction!=='devas') return;
@@ -533,6 +541,11 @@ function destroyUnit(g, pi, unit, cause){
   }
 }
 function damageUnit(g, pi, unit, amt, cause){
+  if (ASTRA_DMG.has(cause) && g.players[pi].ratriRound===g.round){   // WAVE1 R22: Ratri Hymn — prevent ALL Astra DAMAGE (dmgAstra causes) to the caster's Units this round → 0. FIRST, so it beats Patala's +1 sharpening; only dmgAstra causes route here, so destroys/debuffs (Mohanastra)/venom/binds are untouched.
+    log(g, `Ratri Hymn shrouds ${unit.n} — ${cause} deals no damage.`);
+    emit(g,'block',{targetUids:[unit.uid],abilityName:'Ratri Hymn',text:`${unit.n} shielded from ${cause}`});
+    return;
+  }
   if (unit.id==='holika'){                                    // WAVE1 R22: Holika — immune to Astra damage; +1 from every other reduction.
     if (ASTRA_DMG.has(cause)){                                // dmgAstra source → 0 damage. Evaluated BEFORE the Patala +1, so immunity beats the realm sharpening.
       log(g, `${unit.n} walks unburnt through ${cause}.`);
@@ -746,6 +759,12 @@ function castMantra(g, pi, id, targetUid=null){
       pl.units.push(best);
       log(g, `Dawn’s Rebirth returns ${best.n} at its printed power — unshielded, undimmed.`);
     }
+  } else if (id==='ratri'){
+    pl.ratriRound = g.round;   // WAVE 1 batch 7 — round stamp; checked at the damageUnit choke point (dmgAstra causes → 0). Auto-expires next round.
+    log(g, `Ratri Hymn falls like night — Astra fire cannot burn ${pl.name}’s Units this round.`);
+  } else if (id==='mayaveil'){
+    pl.mayaVeilRound = g.round;   // WAVE 1 batch 7 (RATNA) — round stamp; read by astraProtected → the owner's Units drop out of every targeted Astra's targetSpec this round (AoE still strikes). Auto-expires next round.
+    log(g, `Maya Veil shrouds ${pl.name}’s Units — no Astra can single them out this round.`);
   }
   // Agni trigger — any mantra, either player
   for (let s=0;s<2;s++){
@@ -769,7 +788,8 @@ function sharabhaProtected(g, ownerPi, unit){
 }
 // Any reason unit (owned by ownerPi) is an illegal Astra target: Dharma Shield, Sharabha, or Ulupi's round immunity.
 function astraProtected(g, ownerPi, unit){
-  return isShielded(g,ownerPi,unit) || sharabhaProtected(g,ownerPi,unit) || unit.astraImmuneRound===g.round;
+  return isShielded(g,ownerPi,unit) || sharabhaProtected(g,ownerPi,unit) || unit.astraImmuneRound===g.round
+    || g.players[ownerPi].mayaVeilRound===g.round;   // WAVE 1: Maya Veil — the owner's Units are untargetable by Astras this round (targeting layer). AoE resolutions iterate opp.units directly (never consult targetSpec/astraProtected) so they still strike.
 }
 
 function playableIndices(g, pi){
@@ -985,6 +1005,10 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
         log(g,'Surya Dev: all other friendly Units +1.'); break; }
       // WAVE 1 — Aruna Charioteer. Weakest-defensible reading (R21+): "if Round 1" = the match's FIRST round (g.round===1) at play time; played R2+, no bonus.
       case 'aruna': if (g.round===1){ c.power+=2; log(g,'Aruna Charioteer rides the dawn: +2 (Round 1).'); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:2,abilityName:'Aruna Charioteer',text:'+2'}); } break;
+      case 'vedikeeper': pl.vediShieldGrants=(pl.vediShieldGrants||0)+1; log(g,'Vedi Keeper tends the altar — an extra Dharma Shield may be raised this round.'); break;   // WAVE 1 batch 7 (R25 fallback): +1 shield cap this round; the designateShields call at the end of this play (AI) or the human SHIELD button applies it instantly
+      case 'ribhu': pl.artifactShieldRound=g.round; log(g, pl.artifact ? `Ribhu Craftsman wards ${pl.artifact.n} — untargetable this round.` : 'Ribhu Craftsman readies a ward for your Artifact this round.'); break;   // WAVE 1 batch 7 — round-scoped Artifact protection (wired to Vishwakarma). Logs even with no Artifact yet (the ward is on the player for the round).
+      case 'airavatacalf': if (designateShield(g, pi, c.uid)) log(g,'Airavata’s Calf enters wreathed in a Dharma Shield.'); else log(g,'Airavata’s Calf enters — no Dharma Shield available.'); break;   // WAVE 1 batch 7 (RATNA) — real shield-grant mechanism; respects the cap AND the noShield flag (a Dawn's-Rebirth Calf → designateShield refuses)
+
       case 'vayu': {
         const foes=opp.units.filter(u=>!u.ghost);
         if (foes.length){
@@ -999,6 +1023,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
       case 'vishwakarma':
         // Yaksha Lok: Artifacts cannot be destroyed → Vishwakarma whiffs (no destroy, no +2 scaling all match).
         if (opp.artifact && g.realm==='yaksha'){ log(g,`Yaksha Lok shields ${opp.artifact.n} — Vishwakarma cannot unmake it.`); }
+        else if (opp.artifact && opp.artifactShieldRound===g.round){ log(g,`Ribhu Craftsman’s work shields ${opp.artifact.n} — Vishwakarma cannot unmake it.`); }   // WAVE 1: Ribhu Craftsman — Artifact untargetable this round (wired to the only artifact-destroyer in the pools)
         else if (opp.artifact){ log(g,`Vishwakarma unmakes ${opp.artifact.n}.`); opp.discard.push(opp.artifact); opp.artifact=null; pl.artifactsDestroyedByMe++; }
         if (pl.artifactsDestroyedByMe>0){ c.power += 2*pl.artifactsDestroyedByMe; log(g,`Vishwakarma stands at ${c.power}.`); }
         break;
@@ -1296,7 +1321,7 @@ function endRound(g){
     for (const h of pl.removedHeroes){ h.power=Math.max(1, Math.ceil(h.power/2)); pl.heroes.push(h); log(g,`${h.n} returns at ${h.power} power.`); }
     pl.removedHeroes=[];
     pl.passed=false; pl.heroPlayedThisRound=false; pl.astrasThisRound=0;
-    pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0;   // shields + Leaps re-designate each round; mahabaliArm persists
+    pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0; pl.vediShieldGrants=0;   // shields + Leaps re-designate each round (Vedi bonus-grants expire); mahabaliArm persists. artifactShieldRound/ratriRound/mayaVeilRound are ===g.round stamps → auto-expire, no reset needed
     pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
     pl.deathsThisRound=0;   // WAVE 1 batch 3: per-round death count resets; saviturUids PERSIST all match (enchant)
     // Gandharva Lok: both players draw 1 extra at the START of Round 2 (g.round is still 1 here, pre-increment).
@@ -1372,6 +1397,12 @@ function aiScoreCard(g, pi, c){
     case 'dhumraksha': s -= 0.5; break;                                   // P4 body; mild discount for the self-inflicted −1 price
     case 'surpanakha': s += opp.units.some(u=>!u.ghost)? 1.5 : 0; break;  // permanent enemy shrink when there is a target
     case 'mohanastra': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 2 : -99; break; }   // −2 debuff when a legal target exists
+    // ---- WAVE 1 batch 7 (protection tier) — only reached when wave1 pool is on ----
+    case 'vedikeeper': s += 1; break;                                     // P3 body + a bonus shield
+    case 'ribhu': s += pl.artifact ? 0.5 : 0; break;                      // P3 body; the ward only matters with an Artifact + an enemy Vishwakarma
+    case 'airavatacalf': s += 1; break;                                   // P4 body that enters shielded (durable)
+    case 'ratri': s = g.astraPlays>0 ? 2 : 1; break;     // prevent Astra damage — worth more once Astras have appeared (public info; no hand peek)
+    case 'mayaveil': s = g.astraPlays>0 ? 2 : 1; break;  // untargetable by Astras — same (public astra-play count)
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
