@@ -22,7 +22,7 @@
 (protection → retribution; sanctioned deviation: Ushas go-wide)
 GUPTA:
 U Dawn Sentinel      C  P2  Round End: if survived, +1 permanently.
-U Vedi Keeper        C  P3  On Play: next Dharma Shield this round free/instant. [R21+: define vs shield economy]
+U Vedi Keeper        C  P3  On Play: next Dharma Shield this round free/instant. [R21+: define vs shield economy] [SUPERSEDED BY R36: 'On Play: your Dharma Shield limit is +1 this round.']
 U Deva Sainika       C  P3  Vanilla. [RENAMED from Gana Warrior — Naga Warrior anagram]
 U Ushas, Dawn Herald U  P3  Passive: other Units ≤2 power get +1.
 U Aruna Charioteer   U  P4  On Play: +2 if Round 1.
