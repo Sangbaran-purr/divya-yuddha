@@ -1122,6 +1122,11 @@ const ASURA_DECK_DEF = [
   { id:'holika',  n:'Holika',           sub:'The Unburnt',          t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: Immune to Astra damage. Suffers +1 from every other power loss.' },
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
   { id:'bloodoath',n:'Blood Oath',      sub:'Pact of the Pyre',     t:'mantra', p:0, r:'U', wave:1, txt:'Destroy your lowest-power Unit: draw 2 cards.' },
+  // ---- WAVE 1 (batch 6 — the debuff/price tier) ----
+  { id:'mayashade',n:'Maya Shade',      sub:'The Mirror Wraith',    t:'unit', p:2, r:'C', wave:1, txt:'ON PLAY: Copy your lowest-power other Unit.' },
+  { id:'dhumraksha',n:'Dhumraksha',     sub:'The Smoke-Eyed',       t:'unit', p:4, r:'U', wave:1, txt:'ON PLAY: Deal 1 damage to one of your Units.' },
+  { id:'mohanastra',n:'Mohanastra',     sub:'Weapon of Beguiling',  t:'astra', p:0, r:'U', wave:1, dmgAstra:false, txt:'An enemy Unit loses 2 power this round.' },   // dmgAstra:false EXPLICIT (R22 — a debuff is not damage): stays OUT of ASTRA_DMG, so no Patala amplification and Holika sharpens (not immune)
+  { id:'surpanakha',n:'Surpanakha',     sub:'The Vengeful Sister',  t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: An enemy Unit loses 1 power permanently.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -1818,6 +1823,7 @@ function playableIndices(g, pi){
       if ((c.id==='pashupata'||c.id==='nagastra'||c.id==='lankadahan') && !opp.units.some(u=>!u.ghost)) return;
       if (c.id==='gandiva' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;
       if (c.id==='agneyastra' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 — illegal with no unprotected enemy Unit
+      if (c.id==='mohanastra' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 — same: illegal with no unprotected enemy Unit
       if (c.id==='sanjeevani'){ const lk=g.lastKillThisRound; if (!(lk && lk.owner===pi && pl.discard.includes(lk.unit))) return; }
       // ---- Naga astras ----
       if (c.id==='nagapasha'){
@@ -1850,6 +1856,8 @@ function targetSpec(g, pi, card){
   }
   if (card.id==='gandiva') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };
   if (card.id==='agneyastra') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };   // WAVE 1 — same shield/immunity respect as Gandiva
+  if (card.id==='mohanastra') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };   // WAVE 1 — single-target astra respects shield/immunity like Agneyastra
+  if (card.id==='dhumraksha') return { kind:'friendlyUnit', options: g.players[pi].units.filter(u=>!u.ghost) };   // WAVE 1 — deal 1 to one of YOUR Units (self-targetable)
   if (card.id==='sudarshana') return { kind:'enemyHero', options:[...opp.heroes] };
   if (card.id==='saraswati' && opp.hand.length) return { kind:'oppHandCard', options:[...opp.hand] };
   if (card.id==='ahamkara' || card.id==='kishkindhaoath' || card.id==='sarpasatra' || card.id==='savitur') return { kind:'friendlyUnit', options: g.players[pi].units.filter(u=>!u.ghost) };
@@ -1860,7 +1868,7 @@ function targetSpec(g, pi, card){
     return { kind:'enemyUnit', options:opts };
   }
   if (card.id==='mohini') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u)) };
-  if (card.id==='ashvatara' || card.id==='nagaarcher') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost) };
+  if (card.id==='ashvatara' || card.id==='nagaarcher' || card.id==='surpanakha') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost) };   // WAVE 1 — Surpanakha is a unit on-play debuff (NOT an astra) → does not respect Dharma Shield, like Ashvatara
   return null;
 }
 
@@ -1881,6 +1889,13 @@ function resolveAstra(g, pi, c, targetUid){
       let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
       if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
       log(g,'Agneyastra erupts in fire!'); damageUnit(g, 1-pi, t, 3, 'Agneyastra'); break;   // cause='Agneyastra' → Patala +1 routes through the dmgAstra tag
+    }
+    case 'mohanastra': {   // WAVE 1 — targeted enemy −2 "this round". cause='Mohanastra' is NOT in ASTRA_DMG → NO Patala amplification; Holika sharpens it (+1, not immune). Chandrahas-doubled → resolveAstra runs twice → −4.
+      const spec=targetSpec(g,pi,c);
+      if (!spec.options.length){ log(g,'Mohanastra finds no mind to cloud.'); break; }
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);   // AI: cloud the strongest
+      log(g,'Mohanastra clouds the foe’s mind.'); damageUnit(g, 1-pi, t, 2, 'Mohanastra'); break;   // current-power −2 = round-scoped (units clear at round end; a revival restores base → the dent is wiped; NO separate restore mechanism, per the STEP-0 reading)
     }
     case 'brahmastra':
       log(g,'BRAHMASTRA. The earth remembers, and trembles.');
@@ -2064,6 +2079,27 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
           c.id=t.id; c.n=t.n; c.sub=t.sub; c.r=t.r; c.txt=t.txt; c.base=t.base; c.power=t.power;
           log(g,`Maricha becomes ${t.n} (power ${t.power}).`); }
         else log(g,'Maricha finds no form to mimic.'); break; }
+      case 'mayashade': {   // WAVE 1 batch 6 — copy your lowest-effPower OTHER Unit (Maricha FULL-OVERWRITE precedent). No other Unit → stays a vanilla P2 (logged no-op). Tie → first-found.
+        const others=pl.units.filter(u=>!u.ghost && u!==c);
+        if (others.length){ const t=others.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);
+          c.id=t.id; c.n=t.n; c.sub=t.sub; c.r=t.r; c.txt=t.txt; c.base=t.base; c.power=t.power;
+          log(g,`Maya Shade takes the form of ${t.n} (power ${t.power}).`); }
+        else log(g,'Maya Shade finds no Unit to mirror.'); break; }
+      case 'dhumraksha': {   // WAVE 1 batch 6 — deal 1 to one of YOUR Units (doc: "your Units", self-targetable → always a target). Routes through damageUnit (non-astra cause 'Dhumraksha') so Holika sharpens it (+1).
+        const friends=pl.units.filter(u=>!u.ghost);
+        let t = targetUid!=null ? friends.find(u=>u.uid===targetUid) : null;
+        if (!t){ const others=friends.filter(u=>u!==c); t = (others.length?others:friends).reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b); }   // AI: lowest-effPower friendly OTHER than itself, else itself
+        if (t){ log(g,`Dhumraksha's smoke gnaws at ${t.n}.`); damageUnit(g, pi, t, 1, 'Dhumraksha'); }
+        break; }
+      case 'surpanakha': {   // WAVE 1 batch 6 (RATNA) — enemy Unit −1 PERMANENTLY (R21: base AND power; shrunk is shrunk). No enemy → logged no-op. Tie → first-found.
+        const foes=opp.units.filter(u=>!u.ghost);
+        if (foes.length){ let t = targetUid!=null ? foes.find(u=>u.uid===targetUid) : null;
+          if (!t) t = foes.reduce((a,b)=>effPower(g,1-pi,a)<=effPower(g,1-pi,b)?a:b);   // AI: lowest-effPower enemy (kill-potential via R21-down to 0)
+          t.base-=1; t.power-=1;
+          log(g,`Surpanakha's spite shrinks ${t.n} by 1 — permanently.`);
+          emit(g,'damage',{sourceUid:c.uid,targetUids:[t.uid],amount:-1,abilityName:'Surpanakha',text:'−1'});
+          sweepDeaths(g);   // R1 death-at-0: a permanent cut to ≤0 dies properly (destroyUnit → deathsThisRound++). Direct base/power mutation bypasses the damageUnit choke point → Holika sharpening does NOT apply to a base reduction (logged for rulings queue).
+        } else log(g,'Surpanakha finds no enemy to scorn.'); break; }
       case 'vibhishana': pl.seesOppHand=g.round; log(g,`Vibhishana lays bare ${opp.name}’s hand.`); break;
       case 'tataka': {
         // R5 (RESOLVED): "lowest power Unit on the board — friendly or enemy" EXCLUDES Tataka herself
@@ -2364,6 +2400,11 @@ function aiScoreCard(g, pi, c){
     case 'bloodoath': { const real=pl.units.filter(u=>!u.ghost); s = real.length ? 2 + Math.min(2,pl.deck.length) - Math.min(...real.map(u=>effPower(g,pi,u))) : -99; break; }   // card advantage, worth it when the lowest Unit is cheap
     case 'dawnsrebirth': { const u=pl.discard.filter(x=>x.t==='unit' && !x.ghost); s = u.length ? 1 + Math.max(...u.map(x=>x.base)) : -99; break; }   // returns the best fallen Unit; dead with an empty discard
     case 'swayamprabha': s += 1.5; break;                                 // deck dig (Tara value)
+    // ---- WAVE 1 batch 6 (debuff/price tier) — only reached when wave1 pool is on ----
+    case 'mayashade': s += pl.units.some(u=>!u.ghost)? 1 : 0; break;      // copies the lowest other Unit (modest; a P2 body either way)
+    case 'dhumraksha': s -= 0.5; break;                                   // P4 body; mild discount for the self-inflicted −1 price
+    case 'surpanakha': s += opp.units.some(u=>!u.ghost)? 1.5 : 0; break;  // permanent enemy shrink when there is a target
+    case 'mohanastra': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 2 : -99; break; }   // −2 debuff when a legal target exists
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
