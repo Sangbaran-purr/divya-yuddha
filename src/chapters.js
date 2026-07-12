@@ -201,7 +201,7 @@ const CHAPTERS = {
     guidance:[
       { highlight:{card:'Surya Dev'},   line:'The churning has begun. Build your line — the sea gives to the steady.', instruct:'Tap the glowing card: Surya Dev — start building your line of units.' },
       { highlight:{card:'Yama'},        line:'Another. What the ocean raises, it can also take.', instruct:'Tap the glowing card: Yama — add another unit to the field.' },
-      { highlight:{card:'Gayatri Mantra'}, line:'What the churning takes, the sacred word returns.', instruct:'Tap the glowing card: Gayatri Mantra — it brings back your fallen unit.' },
+      { highlight:{card:'Gayatri Mantra'}, holdForCard:true, line:'What the churning takes, the sacred word returns.', instruct:'Tap the glowing card: Gayatri Mantra — it brings back your fallen unit.' },   // holdForCard: waits at this beat until a unit is in discard (the scripted Pashupatastra kill) so Gayatri is legal
       { highlight:{auto:'bestOrPass'},  line:'Now play the tide — spend when you lead, hold when you must.', instruct:'Tap the glowing card to play your best, or PASS ROUND when you lead.' },
     ],
     cutscenes:{

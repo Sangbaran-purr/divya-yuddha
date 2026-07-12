@@ -262,6 +262,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .copybadge{ position:absolute; bottom:2px; right:3px; font-size:11px; z-index:3; color:var(--gold); filter:drop-shadow(0 1px 2px #000); }
 .shieldbadge.sleep{ left:3px; right:auto; }
 #showcaseCard .sc-copy{ position:absolute; top:40px; left:0; background:rgba(201,168,76,.92); color:#1a1204; font-family:Cinzel,serif; font-size:10px; letter-spacing:2px; padding:3px 12px; border-radius:0 6px 6px 0; z-index:4; }
+#showcaseCard .sc-copy.sc-deceiver{ background:rgba(150,40,50,.94); color:#f6e6c8; }   /* Maricha's pre-copy phase — deceiver crimson */
 
 /* Nagas — serpent teal (#1F6B62) + venom-green accent */
 :root{ --teal:#3fb9a8; --teal-2:#1F6B62; --teal-dim:#154b45; --venom:#78e08f; }
@@ -3500,15 +3501,16 @@ function storyShowMid(){ const e=storyMidEntry(); if(!e){ pump(); return; }
 /* --- guidance: mask the hand to the highlighted card/action, glow it, show Brihaspati --- */
 function storyBeat(){ const g=Story.chapter.guidance; return g[Math.min(Story.beatIdx, g.length-1)]; }
 function storyBestUnitIdx(){ const pl=G.players[0]; const idxs=playableIndices(G,0).filter(i=>pl.hand[i].t==='unit'); if(!idxs.length) return -1; return idxs.reduce((a,b)=> pl.hand[a].p>=pl.hand[b].p?a:b); }
-function storyResolveHighlight(h){                                   // → {kind:'pass'|'shield'|'card', index?}
+function _storyCard(i){ const c=G.players[0].hand[i]; return { kind:'card', index:i, uid:c?c.uid:null }; }   // carry the UID so glow matches by identity, not DOM position
+function storyResolveHighlight(h){                                   // → {kind:'pass'|'shield'|'card', index?, uid?}
   if(!h) return { kind:'pass' };
   if(h.shield) return { kind:'shield' };
   if(h.action==='pass') return { kind:'pass' };
   if(h.auto){ const opp=G.players[1];
     if(h.auto==='bestOrPass' && opp.passed && totalPower(G,0)>totalPower(G,1)) return { kind:'pass' };   // ahead & foe done → hold (banks cards)
-    const bi=storyBestUnitIdx(); return bi>=0 ? { kind:'card', index:bi } : { kind:'pass' };
+    const bi=storyBestUnitIdx(); return bi>=0 ? _storyCard(bi) : { kind:'pass' };
   }
-  const i=G.players[0].hand.findIndex(c=>c.n===h.card); return i>=0 ? { kind:'card', index:i } : { kind:'pass' };
+  const i=G.players[0].hand.findIndex(c=>c.n===h.card); return i>=0 ? _storyCard(i) : { kind:'pass' };
 }
 const STORY_MOMENT_CHANGED = 'The moment has changed — fight with what you hold.';   // beat-availability fallback aside (once per chapter run)
 // item 2/4: scroll the highlighted hand card into view so its glow is actually VISIBLE (the slider can hold it off-screen).
@@ -3526,11 +3528,21 @@ function storyScrollToHighlight(el){
 // never drawn), don't point at a card that isn't there — resolve to the generic bestOrPass guidance instead. Returns the
 // effective highlight AND whether it fell back (so the caller can raise the one-time aside). Used by BOTH the glow render
 // and storyPlayerTap so they always agree.
+// the named card is usable iff it is in hand AND currently LEGAL — reusing playableIndices, the SAME gate the UI uses for taps
+// (so e.g. Gayatri with an empty discard is "not usable"). No parallel legality check.
+function storyCardPlayable(name){
+  const idx=G.players[0].hand.findIndex(c=>c.n===name);
+  return idx>=0 && playableIndices(G,0).includes(idx);
+}
+// ONE resolution shared by TEXT and GLOW. A named-card beat falls back to bestOrPass when the card is absent OR illegal.
+// Returns the fully-resolved target (kind/index/UID) so glow lands on the card by IDENTITY, and text agrees via fellBack.
 function storyEffectiveHighlight(){
   const beat=storyBeat(), h=beat && beat.highlight;
-  if(h && h.card && G.players[0].hand.findIndex(c=>c.n===h.card)<0) return { highlight:{ auto:'bestOrPass' }, fellBack:true };
-  return { highlight:h, fellBack:false };
+  const fellBack = !!(h && h.card && !storyCardPlayable(h.card));
+  const highlight = fellBack ? { auto:'bestOrPass' } : h;
+  return { highlight, fellBack, tgt:storyResolveHighlight(highlight) };
 }
+function storyHiEl(uid){ return uid!=null ? document.querySelector(`#hand .hc[data-uid="${uid}"]`) : null; }   // the hand card by UID (glow anchor)
 const STORY_ASIDE = 'Your hand, your war — I only counsel.';   // §6 aside (dual-line) — once per SUGGESTED chapter, on first deviation
 const STORY_ASIDE_INSTRUCT = "You played your own choice — that's allowed. The glowing card is my suggestion, never a command.";
 function storyLargestEnemyUid(){ const foes=G.players[1].units.filter(u=>!u.ghost); if(!foes.length) return null;
@@ -3560,8 +3572,8 @@ function applyStoryGuidance(){
   if(!Story || CutState || G.over || choreoActive || G.turn!==0 || G.players[0].passed){ hideBrihaspati(); return; }   // never guide behind a cutscene overlay
   if(Story.mode==='FREE'){   // ch6–7: NO mask, NO glow, NO beats. Only a one-time Artifact shimmer + the held intro line (dual-line).
     const shim=Story.chapter.artifactShimmer;
-    if(shim && !Story.shimmerDone){ const cards=[...document.querySelectorAll('#hand .hc')], hand=G.players[0].hand;
-      const i=hand.findIndex(c=>c.n===shim); if(i>=0 && cards[i]) cards[i].classList.add('story-shimmer'); }
+    if(shim && !Story.shimmerDone){ const c=G.players[0].hand.find(x=>x.n===shim);   // point at the Artifact by UID, not position
+      const el=c && storyHiEl(c.uid); if(el) el.classList.add('story-shimmer'); }
     if(Story.holdLine) showBrihaspati(Story.holdLine, Story.chapter.introInstruct); else hideBrihaspati();
     return;
   }
@@ -3570,27 +3582,31 @@ function applyStoryGuidance(){
   const beat=(Array.isArray(guid) && guid.length) ? storyBeat() : null;
   if(!beat){ if(Story.holdLine) showBrihaspati(Story.holdLine, Story.holdInstruct||''); else hideBrihaspati(); return; }
   maybeStoryAmbientLine();
-  // item 3: beat-availability guard — if the named card is gone, fall back to bestOrPass + one aside (never point at a missing card)
-  const eff=storyEffectiveHighlight();
-  if(eff.fellBack && !Story.momentAsideShown){ Story.momentAsideShown=true; Story.holdLine=STORY_MOMENT_CHANGED; Story.holdInstruct=''; }
-  const tgt=storyResolveHighlight(eff.highlight);
+  // beat-availability guard: TEXT AND GLOW SHARE ONE RESOLUTION (eff). The plate text below reads eff.fellBack directly —
+  // no one-shot flag — so EVERY fallback render shows the moment aside and NEVER the stale beat instruct.
+  const eff=storyEffectiveHighlight(), tgt=eff.tgt;
   const cards=[...document.querySelectorAll('#hand .hc')];
+  const hiEl = tgt.kind==='card' ? storyHiEl(tgt.uid) : null;   // resolve the glow card by UID (immune to DOM/index drift)
   if(tgt.kind!=='card') Story.scrollUid=null;   // no card highlighted → let the next card highlight re-scroll
   if(Story.mode==='SUGGESTED'){
     // FREE PLAY: glow the suggestion + suggested target; mask NOTHING, override NO onclick (normal inspect→play stays live)
-    if(tgt.kind==='card' && cards[tgt.index]){ cards[tgt.index].classList.add('story-hi'); storyScrollToHighlight(cards[tgt.index]); }
+    if(hiEl){ hiEl.classList.add('story-hi'); storyScrollToHighlight(hiEl); }
     else if(tgt.kind==='pass'){ $('passbtn').disabled=false; $('passbtn').classList.add('story-hi'); }
     else if(tgt.kind==='shield' && sb) sb.classList.add('story-hi');
-    if(eff.highlight && eff.highlight.target) storySetTargetGlow(eff.highlight.target);
+    if(!eff.fellBack && eff.highlight && eff.highlight.target) storySetTargetGlow(eff.highlight.target);   // only glow the beat's target when NOT fallen back
     $('passbtn').disabled=false;   // never disable in SUGGESTED
   } else {
     // LOCKED: mask all but the highlight; route it through storyPlayerTap (mask never touches engine legality)
-    cards.forEach((el,i)=>{ if(tgt.kind==='card' && i===tgt.index){ el.classList.add('story-hi'); el.onclick=()=>storyPlayerTap(); storyScrollToHighlight(el); }
+    cards.forEach(el=>{ if(hiEl && el===hiEl){ el.classList.add('story-hi'); el.onclick=()=>storyPlayerTap(); storyScrollToHighlight(el); }
       else { el.classList.add('story-masked'); el.onclick=null; } });
     if(tgt.kind==='pass'){ $('passbtn').disabled=false; $('passbtn').classList.add('story-hi'); } else $('passbtn').disabled=true;
   }
-  // Brihaspati line: a HELD line (intro / round-2 advice / deviation aside) shows until the next action; else the beat line once per beat
+  // Brihaspati line — SHARES the glow's resolution:
+  //  1) a HELD line (intro / round-2 advice / deviation aside) shows until the next action;
+  //  2) FALLBACK (eff.fellBack) → the moment aside, NEVER the stale beat instruct (the invariant — text always agrees with the fallen-back glow);
+  //  3) otherwise the beat's own line + instruct (the card that is actually glowing).
   if(Story.holdLine){ showBrihaspati(Story.holdLine, Story.holdInstruct||''); Story.lineBeat=-1; return; }
+  if(eff.fellBack){ showBrihaspati(STORY_MOMENT_CHANGED, ''); Story.lineBeat=-1; return; }
   const effBeat=Math.min(Story.beatIdx, Story.chapter.guidance.length-1);
   if(Story.lineBeat!==effBeat){ showBrihaspati(beat.line, beat.instruct); Story.lineBeat=effBeat; }
 }
@@ -3604,14 +3620,18 @@ function storyAfterPlayerAction(evs){
     const played=findCardByUid(playEv.sourceUid);
     if(played && played.n!==beat.highlight.card){ Story.asideShown=true; Story.holdLine=STORY_ASIDE; Story.holdInstruct=STORY_ASIDE_INSTRUCT; }   // deviation → the one (dual-line) aside
   }
+  // ITEM 3: a beat flagged holdForCard does NOT advance until its named card is actually LEGAL — so the ch4 Gayatri beat
+  // waits at the "revive" moment for the scripted enemy Astra to kill a unit (engine-state-gated, not turn-indexed).
+  const cur=storyBeat();
+  const holding = cur && cur.holdForCard && cur.highlight && cur.highlight.card && !storyCardPlayable(cur.highlight.card);
   const turnEnded = G.turn===1 || G.over || G.players[0].passed;
-  if(turnEnded && Story.beatIdx < Story.chapter.guidance.length-1) Story.beatIdx++;
+  if(turnEnded && !holding && Story.beatIdx < Story.chapter.guidance.length-1) Story.beatIdx++;
   Story.lineBeat=-1;
 }
 function storyPlayerTap(){                                           // LOCKED only: the highlighted card / pass / plate plays directly
   if(!Story || Story.mode!=='LOCKED' || G.turn!==0 || choreoActive || G.over) return;   // hard guard: never touch beat logic in FREE/SUGGESTED/malformed
   if(!Array.isArray(Story.chapter.guidance) || !Story.chapter.guidance.length) return;   // no beat script → nothing to play
-  const tgt=storyResolveHighlight(storyEffectiveHighlight().highlight);   // honor the beat-availability guard (agrees with the glow)
+  const tgt=storyEffectiveHighlight().tgt;   // the SAME resolved target the glow used (honors the availability guard)
   hideBrihaspati(); Story.beatIdx++;
   if(tgt.kind==='pass') runAction(()=>pass(G,0));
   else if(tgt.kind==='card') runAction(()=>playCard(G,0,tgt.index));
@@ -4280,19 +4300,38 @@ function aiThinkTime(){
   return Math.max(1200, Math.min(3500, t));
 }
 function showOppThinking(on){ $('oppthinking').classList.toggle('hidden', !on); }
-async function showcaseCard(uid){
-  const c=findCardByUid(uid); if(!c) return;
-  const isBody=c.t==='unit'||c.t==='hero';
+// paint one card into #showcaseCard (reused by both reveal phases). opts.deceiver → Maricha's pre-copy tag; opts.copy → ⧉ COPY.
+function fillShowcase(c, opts){
+  opts=opts||{};
   const el=$('showcaseCard');
-  const homeF=cardHomeFaction(c), isCopy = homeF && homeF!==G.players[1].faction && c.stolenBy===-1;   // opponent's Maricha became a foreign unit → mark it a copy
+  const base = c.base!=null ? c.base : c.p;
+  const isBody = c.t==='unit'||c.t==='hero';
+  const tag = opts.deceiver ? '<div class="sc-copy sc-deceiver">◈ DECEIVER</div>' : (opts.copy ? '<div class="sc-copy">⧉ COPY</div>' : '');
   el.innerHTML =
-    (c.r==='L'||c.r==='M'?`<div class="sc-tag">${RARITY_NAME[c.r]}</div>`:'')+
-    (isCopy?'<div class="sc-copy">⧉ COPY</div>':'')+
-    (isBody?`<div class="sc-pw">${c.p}</div>`:'')+
+    ((c.r==='L'||c.r==='M')?`<div class="sc-tag">${RARITY_NAME[c.r]}</div>`:'')+ tag +
+    (isBody?`<div class="sc-pw">${base}</div>`:'')+
     `<div class="sc-txt"><div class="sc-nm">${c.n}</div>${c.sub?`<div class="sc-sub">${c.sub}</div>`:''}<div class="sc-ty">${TYPE_ICON[c.t]||''} ${c.t} · ${RARITY_NAME[c.r]}</div><div class="sc-fx">${c.txt||''}</div></div>`;
-  const img=new Image(); img.className='sc-art'; img.onerror=()=>img.remove(); img.src=cardArtSrc(c, G.players[1].faction); el.insertBefore(img, el.firstChild);
+  const img=new Image(); img.className='sc-art'; img.onerror=()=>img.remove(); img.src=cardArtSrc({...c, base}, G.players[1].faction); el.insertBefore(img, el.firstChild);
   el.classList.toggle('shimmer', !reducedMotion() && (c.r==='L'||c.r==='M'));   // Mythic/Legendary shimmer sweep
-  const sc=$('showcase'); sc.classList.remove('hidden','out'); void sc.offsetWidth;
+}
+// showcase an opponent play. `playedAs` = the play event's abilityName (the PRE-copy name — emitted before Maricha overwrites the
+// card at engine line ~1958). If it differs from the resolved card's name, do a TWO-PHASE reveal: Maricha first, then the copy.
+async function showcaseCard(uid, playedAs){
+  const c=findCardByUid(uid); if(!c) return;
+  const sc=$('showcase'), el=$('showcaseCard');
+  const homeF=cardHomeFaction(c), isCopy = homeF && homeF!==G.players[1].faction && c.stolenBy===-1;
+  const transformed = playedAs && playedAs!==c.n;   // engine event carries the original name → a Maricha-style transform
+  if(transformed){
+    const orig = CARD_BY_NAME[playedAs] || (function(){ for(const f in DECKS){ const d=DECKS[f].find(x=>x.n===playedAs); if(d) return d; } })();
+    if(orig){
+      fillShowcase({...orig, base:orig.p}, { deceiver:true });   // PHASE 1 — the card as it was PLAYED (e.g. Maricha)
+      sc.classList.remove('hidden','out'); void sc.offsetWidth;
+      await cDelay(1200);
+    }
+  }
+  fillShowcase(c, { copy: isCopy || transformed });              // PHASE 2 — the resolved card (the copy), with the ⧉ COPY tag
+  if(transformed && !reducedMotion()){ el.style.animation='none'; void el.offsetWidth; el.style.animation=''; }   // re-pop as the crossfade beat (reuse the existing showcasePop)
+  sc.classList.remove('hidden','out'); void sc.offsetWidth;
   await cDelay(1400);
   sc.classList.add('out'); await cDelay(300); sc.classList.add('hidden'); sc.classList.remove('out'); el.classList.remove('shimmer');
 }
@@ -4607,7 +4646,7 @@ function runAction(mutate, opts={}){
   (async()=>{
     try{
       const playEv = evs.find(e=>e.type==='play');
-      if (opts.actor===1 && playEv){ try{ await showcaseCard(playEv.sourceUid); }catch(e){} }   // SHOWCASE; a broken showcase never aborts the match
+      if (opts.actor===1 && playEv){ try{ await showcaseCard(playEv.sourceUid, playEv.abilityName); }catch(e){} }   // SHOWCASE; playEv.abilityName = pre-copy name → two-phase Maricha reveal. A broken showcase never aborts the match
       render();                              // final board; spawnFloaters + HUD totals held while choreoActive
       for (const ev of evs){ if(choreoSkip) break; try{ await playEvent(ev, snap); }catch(e){} }   // skip a broken step (e.g. a VFX drawImage race) — keep the match playable
       const roundEnded = G.roundHistory.length>roundCountAtActionStart && !G.over;
