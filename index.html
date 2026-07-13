@@ -1126,6 +1126,8 @@ const DEVA_DECK_DEF = [
   { id:'dawnbanner',n:'Dawn Banner',   sub:'Standard of the Sun',   t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: From the next round on, your Units have +1 power each round.' },
   // ---- WAVE 1 (batch 14 — the astra/utility tier) ----
   { id:'suryastra',n:'Suryastra',      sub:'The Sun Weapon',        t:'astra', p:0, r:'L', wave:1, dmgAstra:true, txt:'Deal 2 damage to ALL enemy Units.' },
+  // ---- WAVE 1 (batch 15 — the leap-utility tier) ----
+  { id:'saranyu',  n:'Saranyu, Cloud Mare',sub:'Mare of the Dawn',  t:'unit', p:5, r:'E', wave:1, txt:'ON PLAY: Two friendly Units exchange current power.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -1237,6 +1239,11 @@ const VANARA_DECK_DEF = [
   { id:'vinatastalon',n:"Vinata's Talon",sub:'Claw of the Mother',  t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: Deal 1 damage to an enemy Unit for every two friendly Vanaras (max 3).' },
   { id:'vayavyastra',n:'Vayavyastra',   sub:'The Wind Weapon',      t:'astra', p:0, r:'R', wave:1, txt:"Return an enemy Unit of 4 or less power to its owner's hand." },
   { id:'jatayu',   n:"Jatayu's Last Flight",sub:'The Final Dive',   t:'astra', p:0, r:'E', wave:1, txt:'Destroy an enemy Unit with more than 6 power.' },
+  // ---- WAVE 1 (batch 15 — the leap-utility tier; Vanara wave FULLY CLOSES here) ----
+  { id:'songcrossing',n:'Song of the Crossing',sub:'Hymn of the Bridge',t:'mantra', p:0, r:'U', wave:1, txt:'Your Units gain +1 power (+2 if you have 4 or more).' },
+  { id:'matanga', n:"Matanga's Blessing",sub:'Grace of the Sage',   t:'mantra', p:0, r:'R', wave:1, txt:'Your next Leap this round grants +2 power to BOTH Units.' },
+  { id:'gandhamadana',n:'Gandhamadana',  sub:'The Fragrant Peak',    t:'unit', p:5, r:'E', wave:1, txt:'PASSIVE: Your Leaps may target this Unit from anywhere (ignores adjacency).' },
+  { id:'anjaneyaroar',n:"Anjaneya's Roar",sub:'Cry of the Son of Wind',t:'astra', p:0, r:'L', wave:1, dmgAstra:false, txt:'This round: all enemy Units −1 power; each of your Units adjacent to a friendly Unit +1.' },
 ];
 
 // Naga roster — docs/NAGA_ROSTER.md (GDD v2.0 §8). Mechanic: VENOM (see venomTick / drainAmount). Rulings R10–R16.
@@ -1336,6 +1343,7 @@ function mkPlayer(name, rng, faction='devas', spec, wave1){
     vediShieldGrants:0, artifactShieldRound:0, ratriRound:0, mayaVeilRound:0,   // WAVE 1 batch 7 (protection tier): Vedi Keeper bonus-shield counter (reset each round) + Ribhu/Ratri/Maya-Veil round stamps (auto-expire, checked ===g.round)
     blueprintUsed:false, hasPassedThisMatch:false,   // WAVE 1 batch 8 (turn-economy): Blueprint once-per-round guard (reset each round) + Atikaya's match-long VOLUNTARY-pass flag (set only in pass(), never reset — Mahabali precedent)
     vanguardTriggered:false, raktabijaCurse:false,   // WAVE 1 batch 9 (event-trigger): Kartikeya's Vanguard once-per-round guard + Raktabija's Curse armed flag (both reset each round)
+    matangaArmed:false,   // WAVE 1 batch 15 (leap-utility): Matanga's Blessing arm — consumed by the next doLeap, reset each round (expires if unused)
     dawnBannerFrom:0,   // WAVE 1 batch 12: Dawn Banner — round # from which the +1 aura is active (set to g.round+1 on play; 0 = inactive). Match-long stamp (survives the artifact clear); the "next round start" + "compounding" reading.
     mulliganed:false, manualShield:false };
 }
@@ -1535,6 +1543,7 @@ function doLeap(g, pi, leaper, target, free){
   emit(g,'toast',{abilityName:'Leap',text:'Leap!'});
   emit(g,'buff',{sourceUid:leaper.uid,targetUids:[leaper.uid],amount:null,abilityName:'Leap',text:`copies ${target.n}`});
   if (pl.artifact && pl.artifact.id==='kishkindhacrown'){ leaper.power += 1; target.power += 1; log(g, `Kishkindha Crown: ${leaper.n} and ${target.n} both +1.`); emit(g,'buff',{targetUids:[leaper.uid,target.uid],amount:1,abilityName:'Kishkindha Crown',text:'+1'}); }   // EXP-E: +1/+1 (was +2/+2)
+  if (pl.matangaArmed){ pl.matangaArmed=false; leaper.power += 2; target.power += 2; log(g, `Matanga's Blessing empowers the Leap: ${leaper.n} and ${target.n} both +2.`); emit(g,'buff',{targetUids:[leaper.uid,target.uid],amount:2,abilityName:"Matanga's Blessing",text:'+2'}); }   // WAVE 1 batch 15 — consume the round-scoped arm; STACKS with Crown (both applied). Flag set only by Matanga → no-op flag-off.
   if (!free) pl.leapsUsed++;
   onLeap(g, pi, leaper, target);   // WAVE 1 batch 11 — leap-event listeners (Kumuda / Rambha). id-gated → no-op flag-off, so launch Leaps (Mainda/Crown/standard) are byte-identical.
 }
@@ -1549,10 +1558,14 @@ function onLeap(g, pi, leaper, target){
 // AI helper: best beneficial (leaper, adjacent target) pair by power gain.
 function bestLeap(g, pi){
   const pl = g.players[pi]; let best=null;
+  // WAVE 1 batch 15 — Gandhamadana: your Leaps may TARGET him from ANYWHERE (ignores adjacency). Leaping FROM him is unchanged (uses his own adjacentUnits). flag-off `gandh` is empty → the target set is exactly adjacentUnits, so launch leaps are byte-identical.
+  const gandh = pl.units.filter(u=>!u.ghost && u.id==='gandhamadana');
   for (const u of pl.units){
     if (u.ghost) continue;
-    for (const t of adjacentUnits(pl, u)){
-      if (t.ghost || t===u) continue;
+    const targets = gandh.length ? adjacentUnits(pl, u).concat(gandh.filter(gm=>gm!==u)) : adjacentUnits(pl, u);
+    const seen = new Set();
+    for (const t of targets){
+      if (t.ghost || t===u || seen.has(t.uid)) continue; seen.add(t.uid);   // dedup a Gandhamadana that is ALSO adjacent (no double-consider)
       const gain = effPower(g,pi,t) - effPower(g,pi,u);
       if (gain>0 && (!best || gain>best.gain)) best={ leaper:u, target:t, gain };
     }
@@ -1991,6 +2004,17 @@ function castMantra(g, pi, id, targetUid=null){
       log(g,`Rite of Shed Skin — ${t.n} sheds its skin and returns to ${pl.name}'s hand, whole and new.`);
       emit(g,'passive',{sourceUid:fresh.uid,abilityName:'Rite of Shed Skin',text:`${t.n} returns to hand`});
     }
+  } else if (id==='songcrossing'){
+    // WAVE 1 batch 15 — R27-RESOLVED reading: there is exactly ONE row per player (the ordered units array), so the GDD "Units in one row" simplifies to ALL your non-ghost Units. +1 each; +2 each if you have 4+ Units. Current-power buff (R34, round-scoped emergent). Logged as the R27 resolution.
+    const real=pl.units.filter(u=>!u.ghost);
+    const amt = real.length>=4 ? 2 : 1;
+    for (const u of real) u.power+=amt;
+    if (real.length){ emit(g,'buff',{targetUids:real.map(u=>u.uid),amount:amt,abilityName:'Song of the Crossing',text:`+${amt}`}); log(g,`Song of the Crossing lifts ${real.length} Unit(s) — +${amt} this round.`); }
+    else log(g,'Song of the Crossing echoes over an empty row.');
+  } else if (id==='matanga'){
+    // WAVE 1 batch 15 — arm a ROUND-SCOPED flag consumed by the NEXT doLeap this round: both leaper AND target +2 (STACKS with Crown's +1/+1; Kumuda/Rambha listeners fire on that same leap). Unconsumed → expires at round end (reset in the round block). The flag is set only by this card → doLeap's consume is a no-op flag-off.
+    pl.matangaArmed=true;
+    log(g,"Matanga's Blessing settles — the next Leap this round lifts both Units by +2.");
   }
   // Agni trigger — any mantra, either player
   for (let s=0;s<2;s++){
@@ -2042,6 +2066,7 @@ function playableIndices(g, pi){
       if (c.id==='jatayu' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u) && effPower(g,1-pi,u)>6)) return;   // WAVE 1 batch 14 — no enemy >6 → illegal
       if (c.id==='vidyutastra' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 batch 12 — no unprotected enemy → illegal
       if (c.id==='mohanastra' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 — same: illegal with no unprotected enemy Unit
+      if (c.id==='anjaneyaroar' && !opp.units.some(u=>!u.ghost) && !pl.units.some(u=>!u.ghost && adjacentUnits(pl,u).some(n=>!n.ghost))) return;   // WAVE 1 batch 15 — AoE −1 pierces protection (no astraProtected filter); illegal ONLY if BOTH effects whiff (no enemy Unit AND no friendly adjacent pair)
       if (c.id==='sanjeevani'){ const lk=g.lastKillThisRound; if (!(lk && lk.owner===pi && pl.discard.includes(lk.unit))) return; }
       // ---- Naga astras ----
       if (c.id==='nagapasha'){
@@ -2061,6 +2086,7 @@ function playableIndices(g, pi){
       if (c.id==='bloodoath' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — needs a friendly Unit to sacrifice (illegal otherwise). Dawn's Rebirth is intentionally NOT gated: it logs a no-op on an empty discard.
       if (c.id==='longpatience' && !opp.units.some(u=>!u.ghost)) return;   // WAVE 1 — no enemy Unit to envenom (Nagastra precedent)
       if (c.id==='vault' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — needs a friendly Unit to move/buff
+      if (c.id==='songcrossing' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 batch 15 — buff-all-Units mantra: needs a friendly Unit (Matanga stays ungated — it arms a round flag that expires if unused, raktabija/ratri precedent)
       if (c.id==='shedskin' && !pl.units.some(u=>!u.ghost && !u.token && CARD_BY_NAME[u.n])) return;   // WAVE 1 batch 13 — needs a bounce-eligible friendly Unit (non-token, has a deck def)
       if (c.id==='mrityunjaya' && !g.players[0].discard.concat(g.players[1].discard).some(u=>u.t==='unit' && !u.ghost)) return;
     }
@@ -2157,6 +2183,14 @@ function resolveAstra(g, pi, c, targetUid){
       if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);   // AI: cloud the strongest
       log(g,'Mohanastra clouds the foe’s mind.'); damageUnit(g, 1-pi, t, 2, 'Mohanastra'); break;   // current-power −2 = round-scoped (units clear at round end; a revival restores base → the dent is wiped; NO separate restore mechanism, per the STEP-0 reading)
     }
+    case 'anjaneyaroar': {   // WAVE 1 batch 15 — dmgAstra:FALSE (debuff, not damage → NOT in ASTRA_DMG, invariant unchanged): all enemy Units −1 this round + your adjacent-pair Units +1. The −1 routes through damageUnit(cause "Anjaneya's Roar") so Holika SHARPENS it (+1 → −2, R22); Patala does NOT amplify (not in ASTRA_DMG); Ratri does NOT prevent (not dmgAstra). AoE iterates opp.units directly → pierces shield/Maya Veil (AoE convention, like Suryastra).
+      log(g,"Anjaneya's Roar shakes the field — the son of the wind cries out.");
+      for (const u of [...opp.units]) if (!u.ghost) damageUnit(g, 1-pi, u, 1, "Anjaneya's Roar");
+      // "your adjacent pairs +1" — WEAKEST reading (LOGGED, pending a ratification number): each friendly Unit with AT LEAST ONE non-ghost neighbour gets +1 ONCE (NOT +1 per neighbour). R40 non-ghost-neighbour precedent; current-power (round-scoped).
+      const paired = pl.units.filter(u=>!u.ghost && adjacentUnits(pl,u).some(n=>!n.ghost));
+      for (const u of paired) u.power+=1;
+      if (paired.length){ emit(g,'buff',{targetUids:paired.map(u=>u.uid),amount:1,abilityName:"Anjaneya's Roar",text:'+1'}); log(g,`Anjaneya's Roar rallies ${paired.length} paired Unit(s): +1 this round.`); }
+      break; }
     case 'brahmastra':
       log(g,'BRAHMASTRA. The earth remembers, and trembles.');
       for (const u of [...opp.units]) destroyUnit(g, 1-pi, u, 'Brahmastra'); break;
@@ -2437,6 +2471,14 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
           for (let k=0;k<n;k++) if (opp.units.includes(t) && !t.ghost) damageUnit(g, 1-pi, t, 1, "Vinata's Talon");
           log(g,`Vinata's Talon rakes ${t.n} — ${n} strike(s).`); }
         else log(g,`Vinata's Talon finds no purchase (${n} strikes, ${foes.length} foes).`); break; }
+      case 'saranyu': {   // WAVE 1 batch 15 (Deva RATNA) — two OTHER friendly Units EXCHANGE current power (u.power↔u.power). BASES untouched → an R21-grown base does NOT move, only current values trade; Venom Tokens stay with the UNIT (only power swaps). Board-total-neutral (invariant preserved — the "positional cut"). Needs 2+ other friendly Units.
+        const others=pl.units.filter(u=>!u.ghost && u!==c);
+        if (others.length<2){ log(g,'Saranyu, Cloud Mare: not enough Units to exchange power.'); break; }
+        // AI/auto pairing: exchange the highest- and lowest-CURRENT-power OTHER Units (board-neutral, like Gavaksha's AI swap). The HUMAN two-target picker is UI-DEFERRED (targetUid carries ONE target; a two-target flow is not built — logged).
+        let hi=others[0], lo=others[0];
+        for (const u of others){ if (u.power>hi.power) hi=u; if (u.power<lo.power) lo=u; }
+        if (hi!==lo){ const hv=hi.power, lv=lo.power; hi.power=lv; lo.power=hv; log(g,`Saranyu, Cloud Mare — ${hi.n} and ${lo.n} exchange power (${hv}↔${lv}).`); emit(g,'buff',{targetUids:[hi.uid,lo.uid],abilityName:'Saranyu, Cloud Mare',text:'power exchanged'}); }
+        else log(g,'Saranyu, Cloud Mare: the Units already share equal power — nothing to trade.'); break; }
       case 'drummer': { const adj=adjacentUnits(pl, c).filter(u=>!u.ghost); for (const u of adj) u.power+=1;   // WAVE 1 batch 10 — current-power +1 to adjacent Units (R34 emergent round scope). 0 adjacent → no-op.
         if (adj.length){ emit(g,'buff',{sourceUid:c.uid,targetUids:adj.map(u=>u.uid),amount:1,abilityName:'Drummer of the Host',text:'+1'}); log(g,`Drummer of the Host rouses ${adj.length} adjacent Unit(s): +1 this round.`); }
         else log(g,'Drummer of the Host beats to an empty flank.'); break; }
@@ -2692,6 +2734,7 @@ function endRound(g){
     pl.passed=false; pl.heroPlayedThisRound=false; pl.astrasThisRound=0;
     pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0; pl.vediShieldGrants=0; pl.blueprintUsed=false;   // shields + Leaps re-designate each round (Vedi bonus-grants expire); Blueprint re-arms each round; mahabaliArm persists. artifactShieldRound/ratriRound/mayaVeilRound are ===g.round stamps → auto-expire, no reset needed. hasPassedThisMatch is MATCH-LONG → never reset here.
     pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
+    pl.matangaArmed=false;   // WAVE 1 batch 15 — an unconsumed Matanga's Blessing expires at round end
     pl.deathsThisRound=0;   // WAVE 1 batch 3: per-round death count resets; saviturUids PERSIST all match (enchant)
     pl.vanguardTriggered=false; pl.raktabijaCurse=false;   // WAVE 1 batch 9: Vanguard once/round re-arms; an unconsumed Raktabija's Curse expires at round end
     // Gandharva Lok: both players draw 1 extra at the START of Round 2 (g.round is still 1 here, pre-increment).
@@ -2812,6 +2855,12 @@ function aiScoreCard(g, pi, c){
     case 'vinatastalon': { const n=Math.min(3,Math.floor(pl.units.filter(u=>!u.ghost).length/2)); s += opp.units.some(u=>!u.ghost)? n : 0; break; }   // N chip damage
     case 'vayavyastra': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 2+Math.max(...spec.options.map(u=>effPower(g,1-pi,u))) : -99; break; }   // tempo bounce
     case 'jatayu': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 3+Math.max(...spec.options.map(u=>effPower(g,1-pi,u)))/2 : -99; break; }   // destroy a big threat
+    // ---- WAVE 1 batch 15 (leap-utility tier) — only reached when wave1 pool is on ----
+    case 'songcrossing': { const n=pl.units.filter(u=>!u.ghost).length; s = n ? n*(n>=4?2:1) : -99; break; }   // buff-all: value scales with board width (and the 4+ threshold)
+    case 'matanga': s = pl.faction==='vanaras' ? 2 : -1; break;   // arms the next Leap +2/+2 (only meaningful for a leaping faction)
+    case 'gandhamadana': s += 1; break;                          // P5 body + leap-anywhere target utility
+    case 'anjaneyaroar': { const foes=opp.units.filter(u=>!u.ghost).length; const paired=pl.units.filter(u=>!u.ghost && adjacentUnits(pl,u).some(n=>!n.ghost)).length; s = (foes||paired) ? foes+paired : -99; break; }   // −1 to each enemy + +1 to each paired friendly
+    case 'saranyu': s += 0.5; break;                             // P5 body; the power-exchange is board-total-neutral (situational upside, Gavaksha precedent)
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
