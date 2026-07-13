@@ -1336,6 +1336,7 @@ function newGame(opts={}){
   g.winTarget     = (sc && sc.winTarget!=null) ? sc.winTarget : 2;   // rounds needed to win the match (best-of-3 default)
   g.drawCount     = (sc && sc.draws!=null)     ? sc.draws     : 2;   // between-round draw count (realm bonus still added on top)
   g.mulliganCount = (sc && sc.mulligan!=null)  ? sc.mulligan  : 3;   // mulligan swaps allowed; 0 disables the phase
+  g.wave1 = !!opts.wave1;   // WAVE 1 batch 9.5 (launch-repair): mirror the pool flag onto g so the Shukracharya revive branch can gate on it — DEAD flag-off (nothing else reads g.wave1; no rng consumed → byte-identical live game)
   // Realm: fixed via opts.realm consumes NO rng (so a fixed-realm test stays byte-identical); random default draws one.
   g.realm = opts.realm || REALMS[Math.floor(rng()*REALMS.length)];
   g.firstThisRound = g.turn;
@@ -2084,6 +2085,20 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
       const foes=opp.units.filter(u=>!u.ghost);
       for (const f of [...foes]) damageUnit(g, 1-pi, f, 1, 'Vasuki');
       log(g, foes.length?`Vasuki uncoils — the enemy line recoils (−1 each).`:`Vasuki uncoils over an empty field.`);
+    }
+    if (c.id==='shukra' && g.wave1){   // WAVE 1 batch 9.5 (LAUNCH-REPAIR — DEAD flag-off via g.wave1; the launch Shukracharya stays the vanilla-5 hero testers play). ON PLAY: revive a fallen friendly Unit at half its PRINTED power. "Once per game" is structural (a Hero enters once per match, persists, is never re-drawn).
+      const units = pl.discard.filter(u=>u.t==='unit' && !u.ghost);
+      if (units.length){
+        // Hero plays are UNTARGETED in the engine (no Hero has a targetSpec case) → AI-style auto-pick the highest-base fallen friendly; targetUid honored defensively for future UI wiring. The PLAYER-CHOICE reading is DEFERRED (logged for the rulings queue).
+        let t = targetUid!=null ? units.find(u=>u.uid===targetUid) : null;
+        if (!t) t = units.reduce((a,b)=>a.base>=b.base?a:b);
+        pl.discard.splice(pl.discard.indexOf(t),1);
+        t.power = Math.max(1, Math.ceil(t.base/2));   // half PRINTED power, ceil (Nala precedent). base UNTOUCHED — a revival is not a permanence effect, so R21 does not apply to the revive amount (an R21-grown base revives at half the grown value).
+        t.venom=0; t.aegis=false; t.revivedShield=false; t.ward=false; t.bound=false; t.stolenBy=-1; t.asleep=false; t.doomed=false; t.astraImmuneRound=0;
+        pl.units.push(t);
+        onUnitRevive(g, pi, t);   // WAVE 1 batch 9 — revival choke #9 (Shukracharya): an enemy Simhika sees this revival
+        log(g, `Shukracharya's Mritasanjivani raises ${t.n} at half power (${t.power}).`);
+      } else log(g, 'Shukracharya: no fallen Unit to revive.');
     }
   }
   else if (c.t==='unit'){
