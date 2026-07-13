@@ -2719,7 +2719,7 @@ function roundEndCardEffects(g){
   const RE_IDS = new Set(['dawnsentinel','kamadhenu','pisacha','mahishasura','sushena']);   // WAVE 1 batch 11 adds sushena
   let active=false;
   for (let s=0;s<2 && !active;s++){ const pl=g.players[s];
-    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='livingbridge' || pl.artifact.id==='drownedaltar' || pl.artifact.id==='ironcrucible' || pl.artifact.id==='kalpavriksha')) || pl.heroes.some(h=>h.id==='padmavati')) active=true; }   // + Living Bridge / Drowned Altar / Iron Crucible / Kalpavriksha (batch-16) + Padmavati (batch-17 hero)
+    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='livingbridge' || pl.artifact.id==='drownedaltar' || pl.artifact.id==='ironcrucible' || pl.artifact.id==='kalpavriksha'))) active=true; }   // + Living Bridge / Drowned Altar / Iron Crucible / Kalpavriksha (batch-16). Padmavati MOVED OUT (R54: pre-drain slot, before venomRoundEnd).
   if (!active) return;   // no round-end subscriber on the board → no-op
   // Snapshot "an enemy Unit died this round" BEFORE this hook's own decay-kills, so Mahishasura is independent of intra-hook order (R21+).
   const enemyDied = [ g.players[1].deathsThisRound>0, g.players[0].deathsThisRound>0 ];
@@ -2759,10 +2759,13 @@ function roundEndCardEffects(g){
         const gap=effPower(g,pi,hi)-effPower(g,pi,lo);
         if (lo!==hi && gap>0){ lo.power+=gap; log(g,`Kalpavriksha grants the wish — ${lo.n} rises to match ${hi.n} (${effPower(g,pi,lo)}).`); emit(g,'buff',{sourceUid:lo.uid,targetUids:[lo.uid],amount:gap,abilityName:'Kalpavriksha',text:`+${gap}`}); } } }
   }
-  // TASK 17 — Padmavati (Naga hero, R42 slot: LAST — after all friendly round-end power SETTLES, so she reads the enemy's SETTLED strongest).
-  // Applies 1 Venom TOKEN to the strongest enemy Unit (effPower; tie → first-found, R31). NOT damage (Ratri doesn't stop it, Patala doesn't
-  // amplify the application); rides the real token pipeline → drains at the NEXT venom tick. STEP 0(a): heroes PERSIST, so this recurs EVERY
-  // round she is on board — a cross-round venom engine unlike any unit's round-end effect (units clear; she stays).
+  sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
+}
+// R54 — PRE-DRAIN TOKEN APPLICATIONS: round-end token appliers that must TICK THE SAME round end. Runs immediately BEFORE
+// venomRoundEnd, so the freshly-applied token drains this round (deepened in Patala, doubled under Vasuki-class, per the pipeline).
+// Padmavati (Naga hero): 1 Venom to the STRONGEST enemy Unit (effPower; tie → first-found, R31). Heroes PERSIST → recurs every round.
+// padmavati-presence-gated → structurally absent flag-off (no hero → no-op).
+function preDrainTokens(g){
   for (let pi=0; pi<2; pi++){ const pl=g.players[pi], opp=g.players[1-pi];
     if (!pl.heroes.some(h=>h.id==='padmavati')) continue;
     const foes=opp.units.filter(u=>!u.ghost);
@@ -2771,7 +2774,6 @@ function roundEndCardEffects(g){
     t.venom=(t.venom||0)+1;
     log(g,`Padmavati’s venom seeps into ${t.n} (Token).`); emit(g,'token',{targetUids:[t.uid],abilityName:'Padmavati',text:'Venom Token'});
   }
-  sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
 }
 function endRound(g){
   // Kalki Kshetra: the round's last-played card — if a Unit/Hero still on the board — gains +2 (before venom & scoring).
@@ -2780,6 +2782,7 @@ function endRound(g){
     for (let s=0;s<2;s++){ const c=[...g.players[s].units, ...g.players[s].heroes].find(u=>u.uid===uid && !u.ghost);
       if (c){ c.power+=2; log(g,`Kalki Kshetra blesses the last-played ${c.n}: +2.`); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:2,abilityName:'Kalki Kshetra',text:'+2'}); break; } }
   }
+  preDrainTokens(g);                                 // R54 — pre-drain token applications (Padmavati) land BEFORE the drain, so they tick THIS round end
   venomRoundEnd(g);                                  // Venom pipeline ticks BEFORE scoring (R1 death-at-0 via sweep)
   roundEndCardEffects(g);                            // WAVE 1 batch 3 — Round End tier (after venom, before scoring; no-op flag-off)
   const t0=totalPower(g,0), t1=totalPower(g,1);
@@ -3210,7 +3213,7 @@ if (typeof module!=='undefined'){
     drainAmount, venomPassive, venomTokens, venomRoundEnd, venomKarkotakaEarly, sweepDeaths,
     mulligan, aiMulliganPlan, REALMS, REALM_INFO, designateShield, shieldCap,
     DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME, ASTRA_DMG,
-    endRound, roundEndCardEffects, castMantra, moveUnit, swapUnits, adjacentUnits };   // moveUnit/swapUnits/adjacentUnits exported for tests (benign)
+    endRound, roundEndCardEffects, preDrainTokens, castMantra, moveUnit, swapUnits, adjacentUnits };   // moveUnit/swapUnits/adjacentUnits/preDrainTokens exported for tests (benign)
 }
 </script>
 <!-- ENGINE:END -->
