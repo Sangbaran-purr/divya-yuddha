@@ -145,6 +145,12 @@ const VANARA_DECK_DEF = [
   { id:'kishrunner',n:'Kishkindha Runner',sub:'Swift Scout',    t:'unit', p:3, r:'C', wave:1, txt:'A fleet-footed runner of the vanara host.' },
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
   { id:'swayamprabha',n:'Swayamprabha', sub:'Keeper of the Hidden Vale',t:'unit', p:3, r:'R', wave:1, txt:'ON PLAY: Look at the top 3 cards of your deck; take one to your hand, return the rest.' },
+  // ---- WAVE 1 (batch 10 — the positional tier; R27 move/place primitive) ----
+  { id:'setumason',n:'Setu Mason',     sub:'Builder of the Bridge', t:'unit', p:2, r:'C', wave:1, txt:'PASSIVE: +1 power while adjacent to another Vanara Unit.' },
+  { id:'drummer',  n:'Drummer of the Host',sub:'Beat of the March', t:'unit', p:2, r:'C', wave:1, txt:'ON PLAY: Adjacent Units gain +1 power this round.' },
+  { id:'gavaksha', n:'Gavaksha',       sub:'The Nimble',            t:'unit', p:3, r:'U', wave:1, txt:'ON PLAY: You may swap places with another friendly Unit.' },
+  { id:'setustones',n:'The Setu Stones',sub:'Bridge of the Vanaras',t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: Your Units enter adjacent to a friendly Unit you choose.' },
+  { id:'vault',    n:'Vault of the Sky',sub:'Leap of the Heavens',   t:'mantra', p:0, r:'E', wave:1, txt:'Move a friendly Unit anywhere on your row; it gains +2 power this round.' },
 ];
 
 // Naga roster — docs/NAGA_ROSTER.md (GDD v2.0 §8). Mechanic: VENOM (see venomTick / drainAmount). Rulings R10–R16.
@@ -332,6 +338,8 @@ function effPower(g, pi, c){
     p += Math.min(4, n);
   }
   if (!c.ghost && c.id==='nagawarrior') p += venomTokenCount(g);   // Naga Warrior: +1 per Venom Token on the board
+  // Setu Mason (Vanara, batch 10): +1 while adjacent to another friendly Unit (R27 adjacency = index neighbours). Read-time, non-recursive presence check; adjacentUnits already excludes self.
+  if (!c.ghost && c.id==='setumason' && adjacentUnits(g.players[pi], c).some(u=>!u.ghost)) p += 1;
   // ---- WAVE 1 batch-4 passive auras (card-id-gated → these branches are unreachable unless a wave-1 card is on the board) ----
   const pl4 = g.players[pi];
   // Ushas, Dawn Herald: your OTHER Units at CURRENT (stored) power ≤2 gain +1. 'current' = c.power at eval (non-recursive: a mutation-buff to 3 exits the aura, a drain to ≤2 enters it). Ushas is p3, never self-buffs.
@@ -397,6 +405,18 @@ function adjacentUnits(pl, unit){
   const i = pl.units.indexOf(unit); if (i<0) return [];
   return [pl.units[i-1], pl.units[i+1]].filter(Boolean);
 }
+// WAVE 1 batch 10 (positional tier) — R27 move/place primitive. "Row" = the ordered units array; position = index; adjacency = index neighbours (adjacentUnits). No new spatial model.
+function moveUnit(g, pi, unit, toIndex){        // relocate a Unit to a bounded index: splice-out + clamped splice-in. uid/power/state UNTOUCHED (same object reference). Adjacency passives re-evaluate at read-time (effPower). Ghost-safe.
+  const pl=g.players[pi]; const i=pl.units.indexOf(unit); if (i<0) return false;
+  pl.units.splice(i,1);
+  const j=Math.max(0, Math.min(toIndex, pl.units.length));   // clamp into the post-removal array (bounds-safe)
+  pl.units.splice(j,0,unit); return true;
+}
+function swapUnits(pl, a, b){                    // exchange two Units' POSITIONS only (Gavaksha) — indices move, everything else untouched.
+  const ia=pl.units.indexOf(a), ib=pl.units.indexOf(b); if (ia<0||ib<0||ia===ib) return false;
+  [pl.units[ia], pl.units[ib]] = [pl.units[ib], pl.units[ia]]; return true;
+}
+function boardEff(g, pi){ return g.players[pi].units.filter(u=>!u.ghost).reduce((s,u)=>s+effPower(g,pi,u),0); }   // total friendly board power (Gavaksha's AI swap heuristic)
 function leapLimit(pl){ return (pl.artifact && pl.artifact.id==='kishkindhacrown') ? 2 : 1; }
 // LEAP: `leaper` copies `target`'s current power (§9: power only — not the shield). Crown → both +2. free = Mainda's bonus.
 function doLeap(g, pi, leaper, target, free){
@@ -822,6 +842,20 @@ function castMantra(g, pi, id, targetUid=null){
   } else if (id==='raktabija'){
     pl.raktabijaCurse=true;   // WAVE 1 batch 9 — arm the listener: the NEXT friendly (caster-side) destruction this round spawns two Rakta tokens (in onUnitDeath). Unconsumed → expires at round end.
     log(g, `Raktabija's Curse is spoken — the next of ${pl.name}'s fallen will spill into two.`);
+  } else if (id==='vault'){
+    // WAVE 1 batch 10 (RATNA) — move a friendly Unit + it gains +2 this round (R34 current-power buff). Gated in playableIndices (needs a friendly Unit).
+    const real=pl.units.filter(u=>!u.ghost);
+    if (!real.length){ log(g,'Vault of the Sky: no Unit to lift.'); }   // defensive (gated)
+    else {
+      let t = targetUid!=null ? real.find(u=>u.uid===targetUid) : null;
+      if (!t) t = real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b);   // AI: lift the strongest
+      // AI destination heuristic: move the buffed (strong) t adjacent to the WEAKEST ally — sets up a Leap where the weak unit copies the buffed strong one. Routes through the shared moveUnit primitive. Human free-"anywhere" destination is UI-DEFERRED (logged).
+      const allies = pl.units.filter(u=>!u.ghost && u!==t);
+      if (allies.length){ const weak=allies.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b); if (!adjacentUnits(pl,t).includes(weak)) moveUnit(g, pi, t, pl.units.indexOf(weak)); }
+      t.power+=2;
+      log(g,`Vault of the Sky lifts ${t.n} — +2 this round.`);
+      emit(g,'buff',{sourceUid:t.uid,targetUids:[t.uid],amount:2,abilityName:'Vault of the Sky',text:'+2'});
+    }
   }
   // Agni trigger — any mantra, either player
   for (let s=0;s<2;s++){
@@ -885,6 +919,7 @@ function playableIndices(g, pi){
       if (c.id==='sarpasatra' && !pl.units.some(u=>!u.ghost)) return;
       if (c.id==='bloodoath' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — needs a friendly Unit to sacrifice (illegal otherwise). Dawn's Rebirth is intentionally NOT gated: it logs a no-op on an empty discard.
       if (c.id==='longpatience' && !opp.units.some(u=>!u.ghost)) return;   // WAVE 1 — no enemy Unit to envenom (Nagastra precedent)
+      if (c.id==='vault' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — needs a friendly Unit to move/buff
       if (c.id==='mrityunjaya' && !g.players[0].discard.concat(g.players[1].discard).some(u=>u.t==='unit' && !u.ghost)) return;
     }
     res.push(i);
@@ -1066,6 +1101,11 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
     // Mahabali (§9): the first Unit played the round after a VOLUNTARY Pass grants an extra turn.
     const mahaBonus = pl.mahabaliArm===g.round-1 && pl.heroes.some(h=>h.id==='mahabali');
     if (mahaBonus) pl.mahabaliArm=0;
+    // The Setu Stones (batch 10): with the artifact active, a Unit ENTERS adjacent to a chosen anchor (targetUid → right after it). Overrides the position param; the AI/default path (aiPlacement, after-strongest) already places adjacent to a friendly, so no targetUid → no change. HUMAN anchor-picker is UI-deferred (engine honors targetUid; story/AI/sim live).
+    if (pl.artifact && pl.artifact.id==='setustones' && targetUid!=null){
+      const anchor=pl.units.find(u=>!u.ghost && u.uid===targetUid);
+      if (anchor) position = pl.units.indexOf(anchor)+1;   // adjacent = right after the anchor (index-clamped by the check below)
+    }
     // Positioning: insert at the chosen slot (Vanaras leverage adjacency; others just append).
     if (position!=null && position>=0 && position<=pl.units.length) pl.units.splice(position, 0, c);
     else pl.units.push(c);
@@ -1195,6 +1235,20 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
         if (top.length){ const keep=top.reduce((a,b)=>a.p>=b.p?a:b); pl.hand.push(keep); pl.deck.unshift(...top.filter(x=>x!==keep)); log(g,`Swayamprabha searches the hidden vale and takes ${keep.n}.`); } break; }
       case 'dwivida': { if (opp.hand.length){ const i=Math.floor(g.rng()*opp.hand.length); const d=opp.hand.splice(i,1)[0]; opp.discard.push(d); log(g,`Dwivida’s blade takes a card from ${opp.name}.`); } else log(g,'Dwivida: the enemy hand is empty.'); break; }
       case 'scout': { const others=pl.units.filter(u=>!u.ghost && u!==c).length; if (others) c.power+=others; pl.seesOppHand=g.round; log(g,`Vanara Scout eyes the foe (+${others}).`); break; }
+      case 'drummer': { const adj=adjacentUnits(pl, c).filter(u=>!u.ghost); for (const u of adj) u.power+=1;   // WAVE 1 batch 10 — current-power +1 to adjacent Units (R34 emergent round scope). 0 adjacent → no-op.
+        if (adj.length){ emit(g,'buff',{sourceUid:c.uid,targetUids:adj.map(u=>u.uid),amount:1,abilityName:'Drummer of the Host',text:'+1'}); log(g,`Drummer of the Host rouses ${adj.length} adjacent Unit(s): +1 this round.`); }
+        else log(g,'Drummer of the Host beats to an empty flank.'); break; }
+      case 'gavaksha': {   // WAVE 1 batch 10 — MAY swap places with another friendly Unit. targetUid names the partner; AI swaps only if it raises total board effPower (e.g. next to a Setu Mason); else no-op.
+        const others=pl.units.filter(u=>!u.ghost && u!==c);
+        if (!others.length){ log(g,'Gavaksha finds no ally to trade places with.'); break; }
+        let partner = targetUid!=null ? others.find(u=>u.uid===targetUid) : null;
+        if (!partner && targetUid==null){   // AI heuristic (only when no explicit partner): try each swap, keep the best improvement
+          const base=boardEff(g,pi); let best=null;
+          for (const o of others){ swapUnits(pl, c, o); const e=boardEff(g,pi); if (e>base && (!best||e>best.e)) best={o,e}; swapUnits(pl, c, o); }
+          if (best) partner=best.o;
+        }
+        if (partner){ swapUnits(pl, c, partner); log(g,`Gavaksha trades places with ${partner.n}.`); emit(g,'passive',{sourceUid:c.uid,abilityName:'Gavaksha',text:`swaps with ${partner.n}`}); }
+        else log(g,'Gavaksha holds its ground.'); break; }
       case 'dadhimukha': { const d=pl.deck.splice(0,1); pl.hand.push(...d);
         if (pl.heroes.some(h=>h.id==='sugriva')){ for (const u of pl.units) if(!u.ghost) u.power+=1; log(g,'Dadhimukha draws; under Sugriva the host swells +1.'); }
         else log(g,'Dadhimukha draws a card.'); break; }
@@ -1501,6 +1555,12 @@ function aiScoreCard(g, pi, c){
     case 'vanguard': s += 1; break;                                      // P5 body that grows on a friendly death
     case 'vishalakshi': s += 1; break;                                   // P4 body that grows on enemy venom-deaths
     case 'raktabija': s = pl.units.some(u=>!u.ghost) ? 1.5 : 0.5; break; // spawns 2 tokens on the next friendly death
+    // ---- WAVE 1 batch 10 (positional tier) — only reached when wave1 pool is on ----
+    case 'setumason': s += pl.units.some(u=>!u.ghost) ? 1 : 0; break;    // +1 when it can land adjacent to an ally
+    case 'drummer': s += Math.min(2, pl.units.filter(u=>!u.ghost).length); break;   // buffs up to 2 neighbours
+    case 'gavaksha': s += 0.5; break;                                    // a P3 body; the swap is situational upside
+    case 'setustones': s += pl.faction==='vanaras' ? 1 : 0; break;       // positional artifact
+    case 'vault': s = pl.units.some(u=>!u.ghost) ? 2 : -99; break;       // move + a +2 buff when there is a Unit
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
@@ -1684,5 +1744,5 @@ if (typeof module!=='undefined'){
     drainAmount, venomPassive, venomTokens, venomRoundEnd, venomKarkotakaEarly, sweepDeaths,
     mulligan, aiMulliganPlan, REALMS, REALM_INFO, designateShield, shieldCap,
     DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME, ASTRA_DMG,
-    endRound, roundEndCardEffects, castMantra };
+    endRound, roundEndCardEffects, castMantra, moveUnit, swapUnits, adjacentUnits };   // moveUnit/swapUnits/adjacentUnits exported for tests (benign)
 }
