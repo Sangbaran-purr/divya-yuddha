@@ -1185,7 +1185,7 @@ const VANARA_DECK_DEF = [
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
   { id:'swayamprabha',n:'Swayamprabha', sub:'Keeper of the Hidden Vale',t:'unit', p:3, r:'R', wave:1, txt:'ON PLAY: Look at the top 3 cards of your deck; take one to your hand, return the rest.' },
   // ---- WAVE 1 (batch 10 — the positional tier; R27 move/place primitive) ----
-  { id:'setumason',n:'Setu Mason',     sub:'Builder of the Bridge', t:'unit', p:2, r:'C', wave:1, txt:'PASSIVE: +1 power while adjacent to another Vanara Unit.' },
+  { id:'setumason',n:'Setu Mason',     sub:'Builder of the Bridge', t:'unit', p:2, r:'C', wave:1, txt:'PASSIVE: +1 power while adjacent to Vanaras on both sides.' },
   { id:'drummer',  n:'Drummer of the Host',sub:'Beat of the March', t:'unit', p:2, r:'C', wave:1, txt:'ON PLAY: Adjacent Units gain +1 power this round.' },
   { id:'gavaksha', n:'Gavaksha',       sub:'The Nimble',            t:'unit', p:3, r:'U', wave:1, txt:'ON PLAY: You may swap places with another friendly Unit.' },
   { id:'setustones',n:'The Setu Stones',sub:'Bridge of the Vanaras',t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: Your Units enter adjacent to a friendly Unit you choose.' },
@@ -1378,7 +1378,7 @@ function effPower(g, pi, c){
   }
   if (!c.ghost && c.id==='nagawarrior') p += venomTokenCount(g);   // Naga Warrior: +1 per Venom Token on the board
   // Setu Mason (Vanara, batch 10): +1 while adjacent to another friendly Unit (R27 adjacency = index neighbours). Read-time, non-recursive presence check; adjacentUnits already excludes self.
-  if (!c.ghost && c.id==='setumason' && adjacentUnits(g.players[pi], c).some(u=>!u.ghost)) p += 1;
+  if (!c.ghost && c.id==='setumason'){ const su=g.players[pi].units, si=su.indexOf(c), sl=su[si-1], sr=su[si+1]; if (sl && sr && !sl.ghost && !sr.ghost) p += 1; }   // R40(b): +1 only while flanked by non-ghost Vanaras on BOTH sides (interior formation value; edges/lone/ghost-side → no bonus). Read-time, non-recursive.
   // ---- WAVE 1 batch-4 passive auras (card-id-gated → these branches are unreachable unless a wave-1 card is on the board) ----
   const pl4 = g.players[pi];
   // Ushas, Dawn Herald: your OTHER Units at CURRENT (stored) power ≤2 gain +1. 'current' = c.power at eval (non-recursive: a mutation-buff to 3 exits the aura, a drain to ≤2 enters it). Ushas is p3, never self-buffs.

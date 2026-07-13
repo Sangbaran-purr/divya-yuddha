@@ -75,7 +75,7 @@ AR The Iron Crucible M  —   Round End: your Units that lost power this round r
 ═══════════════ VANARAS — "THE BRIDGE" ═══════════════
 (Setu formation + allies; sanctioned deviation: Sampati information)
 GUPTA:
-U Setu Mason         C  P2  +1 while adjacent to another Vanara.
+U Setu Mason         C  P2  +1 while adjacent to another Vanara. [SUPERSEDED BY R40: '+1 while adjacent to Vanaras on both sides.']
 U Drummer of the Host C P2  On Play: adjacent Units +1 this round.
 U Kishkindha Runner  C  P3  Vanilla. [P1]
 U Gavaksha           U  P3  On Play: may swap places with a friendly Unit. [trivial]
@@ -97,7 +97,7 @@ U Rambha the Bold    E  P5  Any friendly Leap → +1 permanently.
 M Vault of the Sky   E  —   Move a friendly Unit anywhere; +2 this round. [trivial]
 A Anjaneya's Roar    L  —   All enemies −1 this round; your adjacent pairs +1. [dmgAstra:false; SIM: vs Rama Naam's crown]
 H ANJANA             L  P6  Passive: Leap limit +1 per round. [TRIMMED — adjacency-cost rider cut]
-AR The Living Bridge M  —   Round End: unbroken adjacent line of 4+ → all of them +1 permanent. [moderate — run predicate; SIM: uptime both ways]
+AR The Living Bridge M  —   Round End: unbroken adjacent line of 4+ → all of them +1 permanent. [moderate — run predicate; SIM: uptime both ways] [R40: formally SIM-FLAGGED — body-count equivalence acknowledged; haircut fallback prepared]
 
 ═══════════════ NAGAS — "THE DEEP" ═══════════════
 (corpse economy + token mastery; sanctioned deviation: Uraga self-price)
