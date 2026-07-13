@@ -62,6 +62,8 @@ const DEVA_DECK_DEF = [
   { id:'suryastra',n:'Suryastra',      sub:'The Sun Weapon',        t:'astra', p:0, r:'L', wave:1, dmgAstra:true, txt:'Deal 2 damage to ALL enemy Units.' },
   // ---- WAVE 1 (batch 15 — the leap-utility tier) ----
   { id:'saranyu',  n:'Saranyu, Cloud Mare',sub:'Mare of the Dawn',  t:'unit', p:5, r:'E', wave:1, txt:'ON PLAY: Two friendly Units exchange current power.' },
+  // ---- WAVE 1 (batch 16 — the artifact/counter tier) ----
+  { id:'kalpavriksha',n:'Kalpavriksha', sub:'The Wish-Granting Tree',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your lowest-power Unit becomes equal to your highest-power Unit.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -120,6 +122,10 @@ const ASURA_DECK_DEF = [
   // ---- WAVE 1 (batch 12 — the cleanup tier) ----
   { id:'andhaka',  n:'Andhaka',         sub:'The Blind Demon',      t:'unit', p:6, r:'R', wave:1, txt:'PASSIVE: Cannot be targeted by Astras while another friendly Unit is on the board.' },
   { id:'vidyutastra',n:'Vidyutastra',   sub:'The Lightning Weapon', t:'astra', p:0, r:'R', wave:1, dmgAstra:true, txt:'Deal 2 damage to an enemy Unit. Triggers Chaos Surge twice.' },
+  // ---- WAVE 1 (batch 16 — the artifact/counter tier) ----
+  { id:'vritra',   n:'Vritra',          sub:'The Withholder',       t:'hero', p:8, r:'L', wave:1, txt:'ON PLAY: Bind an enemy Unit (0 power contribution) while Vritra remains.' },
+  { id:'brahmadanda',n:'Brahmadanda',   sub:'Staff of Brahma',      t:'astra', p:0, r:'E', wave:1, txt:'Negate the next enemy Astra this round.' },
+  { id:'ironcrucible',n:'The Iron Crucible',sub:'Forge of the Price',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your Units that lost power this round regain 1.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -278,6 +284,7 @@ function mkPlayer(name, rng, faction='devas', spec, wave1){
     blueprintUsed:false, hasPassedThisMatch:false,   // WAVE 1 batch 8 (turn-economy): Blueprint once-per-round guard (reset each round) + Atikaya's match-long VOLUNTARY-pass flag (set only in pass(), never reset — Mahabali precedent)
     vanguardTriggered:false, raktabijaCurse:false,   // WAVE 1 batch 9 (event-trigger): Kartikeya's Vanguard once-per-round guard + Raktabija's Curse armed flag (both reset each round)
     matangaArmed:false,   // WAVE 1 batch 15 (leap-utility): Matanga's Blessing arm — consumed by the next doLeap, reset each round (expires if unused)
+    lostPowerUids:new Set(), brahmadandaArmed:0,   // WAVE 1 batch 16 (artifact/counter): per-round set of Unit uids that LOST power (Iron Crucible reads it; g.wave1-gated writes) + Brahmadanda arm round-stamp (negates the next enemy Astra's effect). Both reset each round.
     dawnBannerFrom:0,   // WAVE 1 batch 12: Dawn Banner — round # from which the +1 aura is active (set to g.round+1 on play; 0 = inactive). Match-long stamp (survives the artifact clear); the "next round start" + "compounding" reading.
     mulliganed:false, manualShield:false };
 }
@@ -546,9 +553,10 @@ function drainAmount(g, np){
 function venomLoss(g, pi, u, amt){
   const before=u.power;
   if (u.id==='holika') amt += 1;                             // WAVE1 R22: Holika suffers +1 from every non-Astra loss — venom included.
-  if (signetActive(g.players[pi]) && u.t==='unit'){ u.power = Math.max(1, u.power - amt); emit(g,'venom',{targetUids:[u.uid],amount:u.power-before,abilityName:'Venom',text:'☠'}); return; }   // §9 Signet: floor, not immunity
+  if (signetActive(g.players[pi]) && u.t==='unit'){ u.power = Math.max(1, u.power - amt); if (g.wave1 && u.power<before) g.players[pi].lostPowerUids.add(u.uid); emit(g,'venom',{targetUids:[u.uid],amount:u.power-before,abilityName:'Venom',text:'☠'}); return; }   // §9 Signet: floor, not immunity
   u.power -= amt;
   if (u.power<1 && u.id==='hiranya') u.power=1;                            // Hiranyakashipu endures venom
+  if (g.wave1 && u.power<before) g.players[pi].lostPowerUids.add(u.uid);   // WAVE 1 batch 16 — Iron Crucible: venom drain counts as a power loss (g.wave1-gated)
   emit(g,'venom',{targetUids:[u.uid],amount:u.power-before,abilityName:'Venom',text:'☠'});
   // WAVE 1 batch 13 — World-Coil Constrictor: the bind releases when the unit LOSES a Venom token (= suffers a venom drain while venomed). id-gated by the marker → no-op flag-off.
   if (u.bound && u.worldCoilBound && u.venom>0){ u.bound=false; u.worldCoilBound=false; log(g,`World-Coil's grip slips as the venom bites ${u.n} — it is freed.`); emit(g,'passive',{targetUids:[u.uid],abilityName:'World-Coil Constrictor',text:'released'}); }
@@ -644,6 +652,7 @@ function destroyUnit(g, pi, unit, cause){
   // R8: Kishkindha Oath ward \u2014 the next destruction is prevented; unit survives at 1, others rally +1.
   if (unit.ward && !unit.ghost){
     unit.ward=false; unit.power=1;
+    if (g.wave1) g.players[pi].lostPowerUids.add(unit.uid);   // WAVE 1 batch 16 \u2014 a warded survivor dropped to 1 = lost power this round (Iron Crucible regains it)
     log(g, `Kishkindha Oath \u2014 ${unit.n} refuses to fall, surviving at 1 power!`);
     emit(g,'ward',{targetUids:[unit.uid],abilityName:'Kishkindha Oath',text:`${unit.n} survives at 1`});
     for (const u of pl.units) if (!u.ghost && u!==unit) u.power+=1;
@@ -690,6 +699,7 @@ function damageUnit(g, pi, unit, amt, cause){
   }
   if (g.realm==='patala' && ASTRA_DMG.has(cause)) amt += 1;   // Patala realm: all Astra damage +1
   unit.power -= amt;
+  if (g.wave1) g.players[pi].lostPowerUids.add(unit.uid);     // WAVE 1 batch 16 \u2014 Iron Crucible: this Unit lost power this round (g.wave1-gated \u2192 hot damage path pristine flag-off)
   log(g, `${unit.n} takes ${amt} damage (${cause}) \u2192 ${Math.max(unit.power,0)}.`);
   emit(g,'damage',{targetUids:[unit.uid],amount:-amt,abilityName:cause,text:`\u2212${amt}`});
   if (unit.power<=0){
@@ -1127,6 +1137,9 @@ function resolveAstra(g, pi, c, targetUid){
       for (const u of paired) u.power+=1;
       if (paired.length){ emit(g,'buff',{targetUids:paired.map(u=>u.uid),amount:1,abilityName:"Anjaneya's Roar",text:'+1'}); log(g,`Anjaneya's Roar rallies ${paired.length} flanked Unit(s): +1 this round.`); }
       break; }
+    case 'brahmadanda':   // WAVE 1 batch 16 (RATNA) — arm a round-scoped negation on the CASTER (pi). Consumed by the opponent's NEXT Astra cast (its EFFECT is cancelled; per R37 erratum the enemy's Chaos Surge STILL procs and R37 Blueprint still acts — distinct source from Manasa, does NOT set surgeNegated). Expires unused at round end. No target; always castable (subject to Varuna/Angad like any Astra).
+      pl.brahmadandaArmed = g.round;
+      log(g,'Brahmadanda is raised — the next enemy Astra will be struck from the sky.'); break;
     case 'brahmastra':
       log(g,'BRAHMASTRA. The earth remembers, and trembles.');
       for (const u of [...opp.units]) destroyUnit(g, 1-pi, u, 'Brahmastra'); break;
@@ -1135,6 +1148,7 @@ function resolveAstra(g, pi, c, targetUid){
       let t = targetUid!=null ? opp.heroes.find(h=>h.uid===targetUid) : null;
       if (!t) t = opp.heroes.reduce((a,b)=>a.power>=b.power?a:b);
       opp.heroes.splice(opp.heroes.indexOf(t),1); opp.removedHeroes.push(t);
+      if (t.id==='vritra'){ for (const u of pl.units) if (u.vritraBound){ u.bound=false; u.vritraBound=false; log(g,`With Vritra gone, ${u.n} slips its bonds.`); emit(g,'passive',{targetUids:[u.uid],abilityName:'Vritra',text:'released'}); } }   // WAVE 1 batch 16 — "while Vritra remains": Vritra removed (the only hero-removal path, Sudarshana) → free its binds on the removing side's Units
       log(g,`Sudarshana Chakra removes ${t.n} for this round.`); break;
     }
     case 'pashupata': {
@@ -1253,6 +1267,15 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         log(g, `Shukracharya's Mritasanjivani raises ${t.n} at half power (${t.power}).`);
       } else log(g, 'Shukracharya: no fallen Unit to revive.');
     }
+    if (c.id==='vritra'){   // WAVE 1 batch 16 (THE FIRST WAVE HERO) — ON PLAY: bind an enemy Unit (0 contribution, totalPower skips bound). Uses the Nagapasha t.bound precedent + a distinct t.vritraBound marker (NOT worldCoilBound → venom-drain does NOT free it). R47: a HERO on-play is NOT an astra, so it IGNORES astraProtected (binds shielded/Andhaka/Maya-Veil units). AI: bind the strongest enemy Unit. FINDING: nothing DESTROYS a hero in current pools (only Sudarshana temporarily removes one → the bind lifts then); the bound Unit clears at round end regardless (units don't persist), so the bind is round-bound in practice. R20 manual unbind frees it (R45 flag-agnostic).
+      const foes=opp.units.filter(u=>!u.ghost && !u.bound);
+      if (foes.length){ let t = targetUid!=null ? foes.find(u=>u.uid===targetUid) : null;
+        if (!t) t = foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+        t.bound=true; t.vritraBound=true;
+        log(g,`Vritra the Withholder binds ${t.n} — it holds no power while Vritra endures.`);
+        emit(g,'passive',{sourceUid:c.uid,targetUids:[t.uid],abilityName:'Vritra',text:'bound'}); }
+      else log(g,'Vritra reaches out, but the enemy line is empty (or already bound).');
+    }
   }
   else if (c.t==='unit'){
     // Mahabali (§9): the first Unit played the round after a VOLUNTARY Pass grants an extra turn.
@@ -1363,6 +1386,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         if (foes.length){ let t = targetUid!=null ? foes.find(u=>u.uid===targetUid) : null;
           if (!t) t = foes.reduce((a,b)=>effPower(g,1-pi,a)<=effPower(g,1-pi,b)?a:b);   // AI: lowest-effPower enemy (kill-potential via R21-down to 0)
           t.base-=1; t.power-=1;
+          if (g.wave1) g.players[1-pi].lostPowerUids.add(t.uid);   // WAVE 1 batch 16 — Iron Crucible: a permanent cut is still a power loss this round (broad "lost power" reading)
           log(g,`Surpanakha's spite shrinks ${t.n} by 1 — permanently.`);
           emit(g,'damage',{sourceUid:c.uid,targetUids:[t.uid],amount:-1,abilityName:'Surpanakha',text:'−1'});
           sweepDeaths(g);   // R1 death-at-0: a permanent cut to ≤0 dies properly (destroyUnit → deathsThisRound++). Direct base/power mutation bypasses the damageUnit choke point → Holika sharpening does NOT apply to a base reduction (logged for rulings queue).
@@ -1503,6 +1527,8 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
     let effectNegated=false, surgeNegated=false;
     if (manasa){ effectNegated=true; surgeNegated=true;
       log(g, `Manasa negates ${c.n} — its Chaos Surge fizzles too (§9).`); }
+    else if (opp.brahmadandaArmed===g.round){ effectNegated=true; opp.brahmadandaArmed=0;   // WAVE 1 batch 16 (R24 + R37 erratum) — Brahmadanda cancels the EFFECT only: does NOT set surgeNegated (the caster's Chaos Surge still procs) and Blueprint below still fires. Distinct source from Manasa. Consumes the arm (one Astra). R24 sim fallback ("deals no damage" instead of full negate) is PREPARED, not implemented.
+      log(g, `Brahmadanda strikes ${c.n} from the sky — its effect is undone (the cast still echoes).`); }
     else if (surasaNegateAstra){ effectNegated=true; /* R12: Surge still churns (logged at trap spring) */ }
     const doubled = chandrahasActive && firstAstra && !effectNegated;
     if (!effectNegated){
@@ -1598,7 +1624,7 @@ function roundEndCardEffects(g){
   const RE_IDS = new Set(['dawnsentinel','kamadhenu','pisacha','mahishasura','sushena']);   // WAVE 1 batch 11 adds sushena
   let active=false;
   for (let s=0;s<2 && !active;s++){ const pl=g.players[s];
-    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='livingbridge' || pl.artifact.id==='drownedaltar'))) active=true; }   // + The Living Bridge / The Drowned Altar (artifacts)
+    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='livingbridge' || pl.artifact.id==='drownedaltar' || pl.artifact.id==='ironcrucible' || pl.artifact.id==='kalpavriksha'))) active=true; }   // + Living Bridge / Drowned Altar / Iron Crucible / Kalpavriksha (batch-16 artifacts)
   if (!active) return;   // no round-end subscriber on the board → no-op
   // Snapshot "an enemy Unit died this round" BEFORE this hook's own decay-kills, so Mahishasura is independent of intra-hook order (R21+).
   const enemyDied = [ g.players[1].deathsThisRound>0, g.players[0].deathsThisRound>0 ];
@@ -1610,8 +1636,8 @@ function roundEndCardEffects(g){
     // per-unit self effects (survivors only — "survived" = still on the board after venom)
     for (const u of pl.units){ if (u.ghost) continue;
       if (u.id==='dawnsentinel'){ u.base+=1; u.power+=1; log(g,`Dawn Sentinel endures the round: +1 (permanent).`); emit(g,'buff',{sourceUid:u.uid,targetUids:[u.uid],amount:1,abilityName:'Dawn Sentinel',text:'+1'}); }
-      else if (u.id==='pisacha'){ u.base-=1; u.power-=1; log(g,`Pisacha Skirmisher burns lower: −1 (permanent).`); emit(g,'damage',{targetUids:[u.uid],amount:-1,abilityName:'Pisacha Skirmisher',text:'−1'}); }
-      else if (u.id==='mahishasura' && !enemyDied[pi]){ u.power-=2; log(g,`Mahishasura’s hunger goes unfed: −2.`); emit(g,'damage',{targetUids:[u.uid],amount:-2,abilityName:'Mahishasura',text:'−2'}); }
+      else if (u.id==='pisacha'){ u.base-=1; u.power-=1; if (g.wave1) pl.lostPowerUids.add(u.uid); log(g,`Pisacha Skirmisher burns lower: −1 (permanent).`); emit(g,'damage',{targetUids:[u.uid],amount:-1,abilityName:'Pisacha Skirmisher',text:'−1'}); }   // batch-16: decay is a loss (Crucible, later in this hook, regains 1)
+      else if (u.id==='mahishasura' && !enemyDied[pi]){ u.power-=2; if (g.wave1) pl.lostPowerUids.add(u.uid); log(g,`Mahishasura’s hunger goes unfed: −2.`); emit(g,'damage',{targetUids:[u.uid],amount:-2,abilityName:'Mahishasura',text:'−2'}); }   // batch-16: decay is a loss
     }
     // Kamadhenu: lowest-power friendly Unit +1 (one buff per Kamadhenu on board). TIE → first-found (reduce keeps the first; deterministic, no rng). R21+.
     const kamCount = pl.units.filter(u=>!u.ghost && u.id==='kamadhenu').length;
@@ -1621,6 +1647,9 @@ function roundEndCardEffects(g){
     // WAVE 1 batch 11 — Sushena the Healer runs BEFORE The Living Bridge (deterministic hook order): restore 1 (current power, capped at base) to each ADJACENT DAMAGED (power<base) Unit. Sushena excluded (adjacency = neighbours, not self). A permanent base-cut (Surpanakha/Pisacha) leaves power==base → NOT damaged → no restore.
     for (const s of pl.units){ if (s.ghost || s.id!=='sushena') continue;
       for (const u of adjacentUnits(pl, s)) if (!u.ghost && u.power < u.base){ u.power=Math.min(u.base, u.power+1); log(g,`Sushena the Healer mends ${u.n}: +1.`); emit(g,'buff',{sourceUid:s.uid,targetUids:[u.uid],amount:1,abilityName:'Sushena the Healer',text:'+1'}); } }
+    // WAVE 1 batch 16 — The Iron Crucible (R42 slot: adjacent to Sushena, a restore): each of your Units that LOST power this round regains 1 (+1 CURRENT power, NOT capped at base — a permanent-cut/decay unit whose power==base must still regain, the anti-decay intent). Reads the per-round lostPowerUids set (populated at damageUnit/venomLoss/Surpanakha/Pisacha/Mahishasura). Runs AFTER Pisacha/Mahishasura decay (same hook, earlier) so decayed units are counted.
+    if (pl.artifact && pl.artifact.id==='ironcrucible'){ const regained=pl.units.filter(u=>!u.ghost && pl.lostPowerUids.has(u.uid)); for (const u of regained) u.power+=1;
+      if (regained.length){ log(g,`The Iron Crucible reforges ${regained.length} Unit(s) that paid the price: +1 each.`); emit(g,'buff',{targetUids:regained.map(u=>u.uid),amount:1,abilityName:'The Iron Crucible',text:'+1'}); } }
     // WAVE 1 batch 11 — The Living Bridge (R40 SIM-FLAGGED, as-written): 4+ non-ghost Units → ALL of them +1 PERMANENT (base AND power). AFTER Sushena.
     if (pl.artifact && pl.artifact.id==='livingbridge'){ const line=pl.units.filter(u=>!u.ghost); if (line.length>=4){ for (const u of line){ u.base+=1; u.power+=1; } log(g,`The Living Bridge holds — all ${line.length} Units +1 (permanent).`); emit(g,'buff',{targetUids:line.map(u=>u.uid),amount:1,abilityName:'The Living Bridge',text:'+1'}); } }
     // WAVE 1 batch 13 — The Drowned Altar runs AFTER the Living Bridge (deterministic hook order, R42): mill the top deck card → discard; if it is a Unit, all your Units +1 CURRENT power this round (counts for scoring). Empty deck → nothing.
@@ -1629,6 +1658,11 @@ function roundEndCardEffects(g){
         if (milled.t==='unit'){ const line=pl.units.filter(u=>!u.ghost); for (const u of line) u.power+=1; log(g,`The Drowned Altar drowns ${milled.n} — a Unit! ${pl.name}'s host swells +1 this round.`); if (line.length) emit(g,'buff',{targetUids:line.map(u=>u.uid),amount:1,abilityName:'The Drowned Altar',text:'+1'}); }
         else log(g,`The Drowned Altar drowns ${milled.n} — no Unit, no surge.`); }
       else log(g,'The Drowned Altar laps at an empty deck.'); }
+    // WAVE 1 batch 16 — Kalpavriksha (RATNA, R42 slot: LAST, so it equalises to the SETTLED highest after all other round-end changes): your lowest-power Unit's CURRENT power rises to equal your highest-power Unit's (effPower, so Dawn Banner's read-time +1 is already folded in → the SIM-flagged pairing composes automatically). Needs 2+ Units; no-op if lowest already equals highest.
+    if (pl.artifact && pl.artifact.id==='kalpavriksha'){ const real=pl.units.filter(u=>!u.ghost);
+      if (real.length>=2){ const hi=real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b); const lo=real.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);
+        const gap=effPower(g,pi,hi)-effPower(g,pi,lo);
+        if (lo!==hi && gap>0){ lo.power+=gap; log(g,`Kalpavriksha grants the wish — ${lo.n} rises to match ${hi.n} (${effPower(g,pi,lo)}).`); emit(g,'buff',{sourceUid:lo.uid,targetUids:[lo.uid],amount:gap,abilityName:'Kalpavriksha',text:`+${gap}`}); } } }
   }
   sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
 }
@@ -1671,6 +1705,7 @@ function endRound(g){
     pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0; pl.vediShieldGrants=0; pl.blueprintUsed=false;   // shields + Leaps re-designate each round (Vedi bonus-grants expire); Blueprint re-arms each round; mahabaliArm persists. artifactShieldRound/ratriRound/mayaVeilRound are ===g.round stamps → auto-expire, no reset needed. hasPassedThisMatch is MATCH-LONG → never reset here.
     pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
     pl.matangaArmed=false;   // WAVE 1 batch 15 — an unconsumed Matanga's Blessing expires at round end
+    pl.lostPowerUids=new Set(); pl.brahmadandaArmed=0;   // WAVE 1 batch 16 — clear the per-round lost-power set; an unconsumed Brahmadanda arm expires at round end
     pl.deathsThisRound=0;   // WAVE 1 batch 3: per-round death count resets; saviturUids PERSIST all match (enchant)
     pl.vanguardTriggered=false; pl.raktabijaCurse=false;   // WAVE 1 batch 9: Vanguard once/round re-arms; an unconsumed Raktabija's Curse expires at round end
     // Gandharva Lok: both players draw 1 extra at the START of Round 2 (g.round is still 1 here, pre-increment).
@@ -1797,6 +1832,11 @@ function aiScoreCard(g, pi, c){
     case 'gandhamadana': s += 1; break;                          // P5 body + leap-anywhere target utility
     case 'anjaneyaroar': { const foes=opp.units.filter(u=>!u.ghost).length; const paired=pl.units.filter(u=>!u.ghost && flankedBothSides(pl,u)).length; s = (foes||paired) ? foes+paired : -99; break; }   // R49(a): −1 to each enemy + +1 to each INTERIOR friendly
     case 'saranyu': s += 0.5; break;                             // P5 body; the power-exchange is board-total-neutral (situational upside, Gavaksha precedent)
+    // ---- WAVE 1 batch 16 (artifact/counter tier) — only reached when wave1 pool is on ----
+    case 'kalpavriksha': s += pl.units.filter(u=>!u.ghost).length>=2 ? 3 : 0.5; break;   // raises the lowest to the highest at round end (bigger gap = bigger swing)
+    case 'ironcrucible': s += 1; break;                          // round-end anti-decay/anti-price restore
+    case 'brahmadanda': s = 1.5; break;                          // reactive Astra counter (arms a round-scoped negate; modest fixed value)
+    case 'vritra': s += opp.units.some(u=>!u.ghost) ? 2 : 0; break;   // P8 body (base counts) + a bind when there is an enemy Unit to lock down
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
