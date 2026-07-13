@@ -64,6 +64,8 @@ const DEVA_DECK_DEF = [
   { id:'saranyu',  n:'Saranyu, Cloud Mare',sub:'Mare of the Dawn',  t:'unit', p:5, r:'E', wave:1, txt:'ON PLAY: Two friendly Units exchange current power.' },
   // ---- WAVE 1 (batch 16 — the artifact/counter tier) ----
   { id:'kalpavriksha',n:'Kalpavriksha', sub:'The Wish-Granting Tree',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your lowest-power Unit becomes equal to your highest-power Unit.' },
+  // ---- WAVE 1 (batch 17 — heroes part 1) ----
+  { id:'kartikeya',n:'Kartikeya',      sub:'Commander of the Host',t:'hero', p:8, r:'L', wave:1, txt:'PASSIVE: When an enemy Astra resolves against your side, all your Units gain +1 power permanently.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -184,6 +186,9 @@ const VANARA_DECK_DEF = [
   { id:'matanga', n:"Matanga's Blessing",sub:'Grace of the Sage',   t:'mantra', p:0, r:'R', wave:1, txt:'Your next Leap this round grants +2 power to BOTH Units.' },
   { id:'gandhamadana',n:'Gandhamadana',  sub:'The Fragrant Peak',    t:'unit', p:5, r:'E', wave:1, txt:'PASSIVE: Your Leaps may target this Unit from anywhere (ignores adjacency).' },
   { id:'anjaneyaroar',n:"Anjaneya's Roar",sub:'Cry of the Son of Wind',t:'astra', p:0, r:'L', wave:1, dmgAstra:false, txt:'All enemy Units −1 this round; your Units flanked on both sides gain +1.' },
+  // ---- WAVE 1 (batch 17 — heroes part 1) ----
+  { id:'makardhwaja',n:'Makardhwaja',  sub:'Son of Hanuman',       t:'hero', p:7, r:'L', wave:1, txt:'ON PLAY: Copy the power of Hanuman if he is on the board, otherwise of your strongest Unit.' },
+  { id:'anjana',   n:'Anjana',          sub:'Mother of the Wind',   t:'hero', p:6, r:'L', wave:1, txt:'PASSIVE: Your Leap limit is increased by 1 each round.' },
 ];
 
 // Naga roster — docs/NAGA_ROSTER.md (GDD v2.0 §8). Mechanic: VENOM (see venomTick / drainAmount). Rulings R10–R16.
@@ -227,6 +232,8 @@ const NAGA_DECK_DEF = [
   { id:'worldcoil',n:'World-Coil Constrictor',sub:'The Endless Grip',t:'astra', p:0, r:'E', wave:1, txt:'Bind an enemy Unit until it loses a Venom token.' },
   { id:'shedskin', n:'Rite of Shed Skin',sub:'The Serpent Renews',  t:'mantra', p:0, r:'U', wave:1, txt:'Return a friendly Unit to your hand; it re-enters at its printed power.' },
   { id:'drownedaltar',n:'The Drowned Altar',sub:'Shrine of the Deep',t:'artifact', p:0, r:'E', wave:1, txt:'ROUND END: Mill the top card of your deck. If it is a Unit, your Units gain +1 power this round.' },
+  // ---- WAVE 1 (batch 17 — heroes part 1) ----
+  { id:'padmavati',n:'Padmavati',      sub:'The Serpent Queen',    t:'hero', p:7, r:'L', wave:1, txt:'ROUND END: Apply 1 Venom to the strongest enemy Unit.' },
 ];
 
 const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
@@ -477,7 +484,7 @@ function swapUnits(pl, a, b){                    // exchange two Units' POSITION
   [pl.units[ia], pl.units[ib]] = [pl.units[ib], pl.units[ia]]; return true;
 }
 function boardEff(g, pi){ return g.players[pi].units.filter(u=>!u.ghost).reduce((s,u)=>s+effPower(g,pi,u),0); }   // total friendly board power (Gavaksha's AI swap heuristic)
-function leapLimit(pl){ return (pl.artifact && pl.artifact.id==='kishkindhacrown') ? 2 : 1; }
+function leapLimit(pl){ return 1 + ((pl.artifact && pl.artifact.id==='kishkindhacrown')?1:0) + (pl.heroes.some(h=>h.id==='anjana')?1:0); }   // TASK 17 — ADDITIVE composition (R-log): base 1 + Crown +1 + Anjana +1 → up to 3. Read-time (Anjana leaves → reverts same round, like Crown). Flag-off (no Anjana) = crown?2:1, byte-identical.
 // LEAP: `leaper` copies `target`'s current power (§9: power only — not the shield). Crown → both +2. free = Mainda's bonus.
 function doLeap(g, pi, leaper, target, free){
   const pl = g.players[pi];
@@ -1276,6 +1283,13 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         emit(g,'passive',{sourceUid:c.uid,targetUids:[t.uid],abilityName:'Vritra',text:'bound'}); }
       else log(g,'Vritra reaches out, but the enemy line is empty (or already bound).');
     }
+    if (c.id==='makardhwaja'){   // WAVE 1 batch 17 (STEP 0b) — ON PLAY: copy strength (§9 rule: power = source's current effPower). Implemented DIRECTLY, NOT through doLeap (heroes live outside pl.units). Source = Hanuman if on board, else the strongest friendly UNIT. effPower copy folds in read-time auras (Dawn Banner, R43). READINGS (logged): this is NOT a formal Leap action → does NOT consume the leap limit (FREE, Mainda precedent), does NOT fire onLeap (Kumuda/Rambha read "friendly UNIT Leaps"; he is a hero) and the source is NOT "Leapt to", and does NOT consume Matanga's arm nor take Crown's +1. Pure copy.
+      const hanuman = pl.heroes.find(h=>h.id==='hanuman');
+      let source = hanuman || null;
+      if (!source){ const units=pl.units.filter(u=>!u.ghost); source = units.length ? units.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b) : null; }
+      if (source){ c.power = effPower(g, pi, source); log(g,`Makardhwaja leaps in ${source.n}'s shadow — his strength becomes ${c.power}.`); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],abilityName:'Makardhwaja',text:`copies ${source.n}`}); }
+      else log(g,'Makardhwaja finds no strength to borrow — he enters at his printed power.');
+    }
   }
   else if (c.t==='unit'){
     // Mahabali (§9): the first Unit played the round after a VOLUNTARY Pass grants an extra turn.
@@ -1531,9 +1545,24 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
       log(g, `Brahmadanda strikes ${c.n} from the sky — its effect is undone (the cast still echoes).`); }
     else if (surasaNegateAstra){ effectNegated=true; /* R12: Surge still churns (logged at trap spring) */ }
     const doubled = chandrahasActive && firstAstra && !effectNegated;
+    // TASK 17 — Kartikeya (Deva hero, R23): an ENEMY Astra that RESOLVES vs the Kartikeya-owner's side → ALL their Units +1 PERMANENT.
+    // DETECTION (weakest-defensible, STATE-based — NOT the observational event stream): snapshot the owner's (opp = 1-pi) Units
+    // BEFORE resolveAstra; "resolved vs your side" = ≥1 of those Units was REMOVED (destroyed/bounced) OR lost power OR gained venom
+    // OR became bound BY this astra. Once per Astra (all surviving Units +1 once). A negated Astra skips resolveAstra → no change → NO
+    // trigger (R23 negated≠resolved); an Astra that whiffs (no targets) → no change → no trigger; your OWN Astra hits opp, not you → never triggers your Kartikeya.
+    const hasKart = opp.heroes.some(h=>h.id==='kartikeya');
+    const kSnap = hasKart ? { n:opp.units.length, u:opp.units.map(u=>({uid:u.uid,power:u.power,venom:u.venom||0,bound:!!u.bound})) } : null;
     if (!effectNegated){
       resolveAstra(g, pi, c, targetUid);
       if (doubled){ log(g,`Chandrahas doubles ${c.n}!`); resolveAstra(g, pi, c, targetUid); }
+    }
+    if (hasKart){
+      let affected = opp.units.length < kSnap.n;   // a Unit removed (destroyed OR bounced)
+      if (!affected) for (const s of kSnap.u){ const u=opp.units.find(x=>x.uid===s.uid);
+        if (!u){ affected=true; break; }                                              // this Unit is gone
+        if (u.power<s.power || (u.venom||0)>s.venom || (!!u.bound && !s.bound)){ affected=true; break; } }   // lost power / venomed / bound
+      if (affected){ const mine=opp.units.filter(u=>!u.ghost); for (const u of mine){ u.base+=1; u.power+=1; }
+        if (mine.length){ log(g,`Kartikeya answers the Astra — all ${mine.length} of ${opp.name}'s Units +1 (permanent).`); emit(g,'buff',{targetUids:mine.map(u=>u.uid),amount:1,abilityName:'Kartikeya',text:'+1'}); } }
     }
     if (pl.faction==='asuras' && !surgeNegated) chaosSurge(g, pi, (chandrahasActive?2:1) * (c.id==='vidyutastra'?2:1));   // WAVE 1 batch 12 — Vidyutastra fires Chaos Surge TWICE; with Chandrahas (already ×2) it composes to 2×2=4 surges (logged for rulings).
     onAstraResolved(g, pi, doubled);
@@ -1624,7 +1653,7 @@ function roundEndCardEffects(g){
   const RE_IDS = new Set(['dawnsentinel','kamadhenu','pisacha','mahishasura','sushena']);   // WAVE 1 batch 11 adds sushena
   let active=false;
   for (let s=0;s<2 && !active;s++){ const pl=g.players[s];
-    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='livingbridge' || pl.artifact.id==='drownedaltar' || pl.artifact.id==='ironcrucible' || pl.artifact.id==='kalpavriksha'))) active=true; }   // + Living Bridge / Drowned Altar / Iron Crucible / Kalpavriksha (batch-16 artifacts)
+    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='livingbridge' || pl.artifact.id==='drownedaltar' || pl.artifact.id==='ironcrucible' || pl.artifact.id==='kalpavriksha')) || pl.heroes.some(h=>h.id==='padmavati')) active=true; }   // + Living Bridge / Drowned Altar / Iron Crucible / Kalpavriksha (batch-16) + Padmavati (batch-17 hero)
   if (!active) return;   // no round-end subscriber on the board → no-op
   // Snapshot "an enemy Unit died this round" BEFORE this hook's own decay-kills, so Mahishasura is independent of intra-hook order (R21+).
   const enemyDied = [ g.players[1].deathsThisRound>0, g.players[0].deathsThisRound>0 ];
@@ -1663,6 +1692,18 @@ function roundEndCardEffects(g){
       if (real.length>=2){ const hi=real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b); const lo=real.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);
         const gap=effPower(g,pi,hi)-effPower(g,pi,lo);
         if (lo!==hi && gap>0){ lo.power+=gap; log(g,`Kalpavriksha grants the wish — ${lo.n} rises to match ${hi.n} (${effPower(g,pi,lo)}).`); emit(g,'buff',{sourceUid:lo.uid,targetUids:[lo.uid],amount:gap,abilityName:'Kalpavriksha',text:`+${gap}`}); } } }
+  }
+  // TASK 17 — Padmavati (Naga hero, R42 slot: LAST — after all friendly round-end power SETTLES, so she reads the enemy's SETTLED strongest).
+  // Applies 1 Venom TOKEN to the strongest enemy Unit (effPower; tie → first-found, R31). NOT damage (Ratri doesn't stop it, Patala doesn't
+  // amplify the application); rides the real token pipeline → drains at the NEXT venom tick. STEP 0(a): heroes PERSIST, so this recurs EVERY
+  // round she is on board — a cross-round venom engine unlike any unit's round-end effect (units clear; she stays).
+  for (let pi=0; pi<2; pi++){ const pl=g.players[pi], opp=g.players[1-pi];
+    if (!pl.heroes.some(h=>h.id==='padmavati')) continue;
+    const foes=opp.units.filter(u=>!u.ghost);
+    if (!foes.length){ log(g,'Padmavati’s gaze finds no enemy to poison.'); continue; }
+    const t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);   // strongest, tie first-found (>=, R31)
+    t.venom=(t.venom||0)+1;
+    log(g,`Padmavati’s venom seeps into ${t.n} (Token).`); emit(g,'token',{targetUids:[t.uid],abilityName:'Padmavati',text:'Venom Token'});
   }
   sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
 }
@@ -1839,6 +1880,11 @@ function aiScoreCard(g, pi, c){
     case 'ironcrucible': s += 1; break;                          // round-end anti-decay/anti-price restore
     case 'brahmadanda': s = 1.5; break;                          // reactive Astra counter (arms a round-scoped negate; modest fixed value)
     case 'vritra': s += opp.units.some(u=>!u.ghost) ? 2 : 0; break;   // P8 body (base counts) + a bind when there is an enemy Unit to lock down
+    // ---- WAVE 1 batch 17 (heroes part 1) — only reached when wave1 pool is on ----
+    case 'kartikeya': s += 1; break;                                 // big P8 body + a passive that punishes enemy Astras (situational upside)
+    case 'makardhwaja': { const hn=pl.heroes.some(h=>h.id==='hanuman'); const us=pl.units.filter(u=>!u.ghost); const best = hn ? Math.max(...pl.heroes.filter(h=>h.id==='hanuman').map(h=>effPower(g,pi,h))) : (us.length?Math.max(...us.map(u=>effPower(g,pi,u))):0); s = Math.max(c.p, best); break; }   // enters copying the strongest source (value = that power, floored at printed 7)
+    case 'anjana': s += pl.faction==='vanaras' ? 1.5 : 0; break;      // P6 body + an extra Leap each round (only matters for Vanaras)
+    case 'padmavati': s += opp.units.some(u=>!u.ghost) ? 1.5 : 0.5; break;   // P7 body + a recurring round-end Venom engine
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
