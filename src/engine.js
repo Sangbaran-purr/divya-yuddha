@@ -234,6 +234,17 @@ const NAGA_DECK_DEF = [
   { id:'drownedaltar',n:'The Drowned Altar',sub:'Shrine of the Deep',t:'artifact', p:0, r:'E', wave:1, txt:'ROUND END: Mill the top card of your deck. If it is a Unit, your Units gain +1 power this round.' },
   // ---- WAVE 1 (batch 17 — heroes part 1) ----
   { id:'padmavati',n:'Padmavati',      sub:'The Serpent Queen',    t:'hero', p:7, r:'L', wave:1, txt:'ROUND END: Apply 1 Venom to the strongest enemy Unit.' },
+  // ---- WAVE 1 (batch 18 — the Naga remainder, part 1) ----
+  { id:'patalahatchling',n:'Patala Hatchling',sub:'Spawn of the Deep',t:'unit', p:2, r:'C', wave:1, txt:'ON PLAY: Apply 1 Venom to a random enemy Unit.' },
+  { id:'moltingnaga',n:'Molting Naga', sub:'The Shedding',         t:'unit', p:2, r:'C', wave:1, txt:'When destroyed, apply 1 Venom to the highest-power enemy Unit.' },
+  { id:'venomharvester',n:'Venom Harvester',sub:'Reaper of Toxin', t:'unit', p:3, r:'U', wave:1, txt:"ON PLAY: Gain +1 power per Venom on the enemy's strongest Unit (max 3)." },
+  { id:'shankhapala',n:'Shankhapala',  sub:'The Coil-Warden',      t:'unit', p:4, r:'U', wave:1, txt:'ROUND END: Move 1 Venom from one enemy Unit to another.' },
+  { id:'depthcaller',n:'Depth Caller', sub:'Voice of the Abyss',   t:'unit', p:3, r:'U', wave:1, txt:'ON PLAY: Gain +2 power if a friendly Unit is in your discard.' },
+  { id:'gravetide', n:'Grave-Tide Naga',sub:'Tide of the Fallen',  t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: Gain +1 power per Unit in either discard (max 4).' },
+  { id:'kalakuta',  n:'Kalakuta Vial', sub:'The Churned Poison',   t:'astra', p:0, r:'R', wave:1, dmgAstra:false, txt:'Apply 2 Venom to one enemy Unit.' },
+  { id:'hymndepths',n:'Hymn of the Depths',sub:'Song of the Drowned',t:'mantra', p:0, r:'R', wave:1, txt:'All Venom drains trigger immediately, once.' },
+  { id:'serpentskiss',n:"Serpent's Kiss",sub:'The Final Bite',     t:'astra', p:0, r:'E', wave:1, dmgAstra:false, txt:'Destroy an enemy Unit with 2 or more Venom.' },
+  { id:'siltstrangler',n:'Silt Strangler',sub:'The Drowner',       t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: An enemy Unit loses power equal to its Venom count (the tokens remain).' },
 ];
 
 const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
@@ -636,6 +647,9 @@ function onUnitDeath(g, ownerPi, unit, cause){
     const v = owner.units.find(u=>!u.ghost && u.id==='vanguard' && u!==unit);
     if (v){ v.power+=2; owner.vanguardTriggered=true; log(g,`Kartikeya's Vanguard steels at ${unit.n}'s fall: +2 → ${v.power}.`); emit(g,'buff',{sourceUid:v.uid,targetUids:[v.uid],amount:2,abilityName:"Kartikeya's Vanguard",text:'+2'}); }
   }
+  // WAVE 1 batch 18 — Molting Naga (Naga): when THIS Unit is destroyed → 1 Venom to the highest-power ENEMY Unit (effPower; tie first-found R31). A death listener (Vishalakshi precedent); `unit` is already spliced off, so `foe` = the enemy of Molting Naga's owner. Venom application (not damage).
+  if (unit.id==='moltingnaga'){ const foes=foe.units.filter(u=>!u.ghost);
+    if (foes.length){ const t=foes.reduce((a,b)=>effPower(g,1-ownerPi,a)>=effPower(g,1-ownerPi,b)?a:b); t.venom=(t.venom||0)+1; log(g,`Molting Naga's death-throes spit venom at ${t.n}.`); emit(g,'token',{targetUids:[t.uid],abilityName:'Molting Naga',text:'Venom Token'}); } }
   // Vishalakshi the Pale (Naga): an ENEMY Unit dying WITH Venom on it → +2 PERMANENTLY (R21: base AND power). Cause-agnostic; venom read here at the death choke point, still intact (destroyUnit never strips it). Stacks per qualifying death.
   if ((unit.venom||0) > 0){
     for (const p of foe.units) if (!p.ghost && p.id==='vishalakshi'){ p.base+=2; p.power+=2; log(g,`Vishalakshi feeds on ${unit.n}'s venom-death: +2 (permanent) → ${p.power}.`); emit(g,'buff',{sourceUid:p.uid,targetUids:[p.uid],amount:2,abilityName:'Vishalakshi the Pale',text:'+2'}); }
@@ -927,6 +941,14 @@ function castMantra(g, pi, id, targetUid=null){
     for (const u of foes) u.venom=(u.venom||0)+1;
     if (foes.length){ emit(g,'token',{targetUids:foes.map(u=>u.uid),abilityName:'The Long Patience',text:'Venom Token'}); log(g, `The Long Patience settles over ${opp.name}’s ${foes.length} Unit(s) — Venom on each.`); }
     else log(g, 'The Long Patience waits — no enemy Unit to envenom.');
+  } else if (id==='hymndepths'){
+    // WAVE 1 batch 18 — "All Venom drains trigger immediately, once." Fires the DRAIN half of the venom pipeline NOW (Karkotaka timing
+    // precedent): each Naga player's passive drain (unless they run Karkotaka) + every token-bearer's token drain + a death sweep. Reuses
+    // venomPassive/venomTokens/sweepDeaths (NOT the round-end shed/reset). Respects Astika's pause. Can cause venom-deaths mid-round.
+    log(g, 'Hymn of the Depths rises — the deep drinks, and all venom bites at once.');
+    for (let np=0;np<2;np++) if (isNaga(g.players[np]) && !nagaHasUnit(g.players[np],'karkotaka')) venomPassive(g, np);
+    venomTokens(g);
+    sweepDeaths(g);
   } else if (id==='raktabija'){
     pl.raktabijaCurse=true;   // WAVE 1 batch 9 — arm the listener: the NEXT friendly (caster-side) destruction this round spawns two Rakta tokens (in onUnitDeath). Unconsumed → expires at round end.
     log(g, `Raktabija's Curse is spoken — the next of ${pl.name}'s fallen will spill into two.`);
@@ -1028,6 +1050,8 @@ function playableIndices(g, pi){
         if (!bindUnit && !bindHero) return;
       }
       if (c.id==='worldcoil' && !opp.units.some(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u))) return;   // WAVE 1 batch 13 — no bindable enemy → illegal
+      if (c.id==='kalakuta' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 batch 18 — no unprotected enemy to envenom → illegal
+      if (c.id==='serpentskiss' && !opp.units.some(u=>!u.ghost && (u.venom||0)>=2 && !astraProtected(g,1-pi,u))) return;   // WAVE 1 batch 18 — no enemy with 2+ Venom → illegal
       if (c.id==='mohini' && !opp.units.some(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u))) return;
       // venomstrike is always legal (self-buff, useful even pre-emptively)
     }
@@ -1038,6 +1062,7 @@ function playableIndices(g, pi){
       if (c.id==='sarpasatra' && !pl.units.some(u=>!u.ghost)) return;
       if (c.id==='bloodoath' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — needs a friendly Unit to sacrifice (illegal otherwise). Dawn's Rebirth is intentionally NOT gated: it logs a no-op on an empty discard.
       if (c.id==='longpatience' && !opp.units.some(u=>!u.ghost)) return;   // WAVE 1 — no enemy Unit to envenom (Nagastra precedent)
+      if (c.id==='hymndepths' && !(g.players[0].units.concat(g.players[1].units).some(u=>!u.ghost && (u.venom||0)>0) || (isNaga(pl) && opp.units.some(u=>!u.ghost)))) return;   // WAVE 1 batch 18 — legal only if a drain would land: some venomed Unit anywhere, OR a Naga caster with enemy Units (passive drain)
       if (c.id==='vault' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — needs a friendly Unit to move/buff
       if (c.id==='songcrossing' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 batch 15 — buff-all-Units mantra: needs a friendly Unit (Matanga stays ungated — it arms a round flag that expires if unused, raktabija/ratri precedent)
       if (c.id==='shedskin' && !pl.units.some(u=>!u.ghost && !u.token && CARD_BY_NAME[u.n])) return;   // WAVE 1 batch 13 — needs a bounce-eligible friendly Unit (non-token, has a deck def)
@@ -1075,6 +1100,8 @@ function targetSpec(g, pi, card){
     return { kind:'enemyUnit', options:opts };
   }
   if (card.id==='worldcoil') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u)) };   // WAVE 1 batch 13 — bind an unbound, unprotected enemy (Nagapasha pattern)
+  if (card.id==='kalakuta') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };   // WAVE 1 batch 18 — single-target venom, shield/immunity respect (Mohanastra pattern)
+  if (card.id==='serpentskiss') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && (u.venom||0)>=2 && !astraProtected(g,1-pi,u)) };   // WAVE 1 batch 18 — destroy an enemy with 2+ Venom; respects astraProtected
   if (card.id==='mohini') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u)) };
   if (card.id==='ashvatara' || card.id==='nagaarcher' || card.id==='surpanakha') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost) };   // WAVE 1 — Surpanakha is a unit on-play debuff (NOT an astra) → does not respect Dharma Shield, like Ashvatara
   return null;
@@ -1216,6 +1243,18 @@ function resolveAstra(g, pi, c, targetUid){
       if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
       t.bound=true; t.worldCoilBound=true;
       log(g, `World-Coil Constrictor coils around ${t.n} — bound until the venom bites it.`); emit(g,'passive',{targetUids:[t.uid],abilityName:'World-Coil Constrictor',text:'bound'}); break; }
+    case 'kalakuta': {   // WAVE 1 batch 18 — dmgAstra:FALSE (venom application, NOT damage): apply 2 Venom to ONE enemy. Single-target → respects astraProtected (targetSpec, like Mohanastra). Patala does NOT amplify (not ASTRA_DMG), Ratri does not stop it (not damage), Holika's venomLoss sharpen hits the eventual DRAIN not the application.
+      const spec=targetSpec(g,pi,c);
+      if (!spec.options.length){ log(g,'Kalakuta Vial finds no mark.'); break; }
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+      t.venom=(t.venom||0)+2; log(g,`Kalakuta Vial shatters over ${t.n} — 2 Venom.`); emit(g,'token',{targetUids:[t.uid],amount:2,abilityName:'Kalakuta Vial',text:'2 Venom'}); break; }
+    case 'serpentskiss': {   // WAVE 1 batch 18 — DESTROY-class (dmgAstra:FALSE, NOT damage — like Shakti Spear/Jatayu): destroy an enemy Unit with 2+ Venom. Immunity-agnostic (destroys Holika). Respects astraProtected.
+      const spec=targetSpec(g,pi,c);
+      if (!spec.options.length){ log(g,"Serpent's Kiss finds no venom-ripe prey."); break; }
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);   // AI: the strongest legal (2+ venom) target
+      log(g,"Serpent's Kiss sinks home!"); destroyUnit(g, 1-pi, t, "Serpent's Kiss"); break; }
     case 'venomstrike':
       pl.venomStrike=g.round;
       log(g, `Vasuki Venom Strike — the Venom runs ${heroOnBoard(pl,'vasuki')?'quadruple':'triple'} this round.`); break;
@@ -1519,6 +1558,20 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
       case 'nagaenchantress': opp.mustPlayUnit=true; log(g,`Naga Enchantress lures — ${opp.name}’s next card must be a Unit.`); break;
       case 'nagawarrior': break;   // PASSIVE handled in effPower (venomTokenCount)
       case 'nagahatchling': if (opp.units.some(u=>!u.ghost && u.venom>0)){ c.power+=2; log(g,'Naga Hatchling feeds on the venom in the air (+2).'); } break;
+      case 'patalahatchling': { const foes=opp.units.filter(u=>!u.ghost);   // WAVE 1 batch 18 — ON PLAY: 1 Venom to a RANDOM enemy (g.rng). Nagastra application precedent; not damage. No enemy → no-op.
+        if (foes.length){ const t=foes[Math.floor(g.rng()*foes.length)]; t.venom=(t.venom||0)+1; log(g,`Patala Hatchling spits venom at ${t.n}.`); emit(g,'token',{sourceUid:c.uid,targetUids:[t.uid],abilityName:'Patala Hatchling',text:'Venom Token'}); }
+        else log(g,'Patala Hatchling hisses at empty air.'); break; }
+      case 'venomharvester': { const foes=opp.units.filter(u=>!u.ghost);   // WAVE 1 batch 18 — ON PLAY: +1 per Venom on the enemy's STRONGEST Unit (effPower; tie first-found R31), max 3. Reads current venom (public).
+        if (foes.length){ const strong=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b); const g2=Math.min(3, strong.venom||0); if (g2){ c.power+=g2; log(g,`Venom Harvester reaps ${g2} from ${strong.n}'s corruption (+${g2}).`); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:g2,abilityName:'Venom Harvester',text:`+${g2}`}); } }
+        break; }
+      case 'depthcaller': if (pl.discard.some(u=>u.t==='unit' && !u.ghost)){ c.power+=2; log(g,'Depth Caller answers the fallen (+2).'); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:2,abilityName:'Depth Caller',text:'+2'}); } break;   // WAVE 1 batch 18 — +2 if a friendly Unit is in YOUR discard
+      case 'gravetide': { const n=Math.min(4, g.players[0].discard.concat(g.players[1].discard).filter(u=>u.t==='unit' && !u.ghost).length);   // WAVE 1 batch 18 — +1 per Unit in EITHER discard, max 4
+        if (n){ c.power+=n; log(g,`Grave-Tide Naga swells with the drowned dead (+${n}).`); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:n,abilityName:'Grave-Tide Naga',text:`+${n}`}); } break; }
+      case 'siltstrangler': { const foes=opp.units.filter(u=>!u.ghost);   // WAVE 1 batch 18 — ON PLAY: enemy loses power = its Venom count (tokens REMAIN). Routes through damageUnit (cause 'Silt Strangler', NOT dmgAstra → Holika sharpens +1, Patala does NOT amplify; counts for lostPowerUids). R47: a unit on-play ignores astraProtected. AI: the most-venomed enemy.
+        const venomed=foes.filter(u=>(u.venom||0)>0);
+        if (venomed.length){ let t = targetUid!=null ? venomed.find(u=>u.uid===targetUid) : null; if (!t) t=venomed.reduce((a,b)=>(b.venom||0)>(a.venom||0)?b:a);
+          const amt=t.venom||0; log(g,`Silt Strangler drowns ${t.n} under its own venom (−${amt}).`); damageUnit(g, 1-pi, t, amt, 'Silt Strangler'); }   // tokens remain (damageUnit never strips venom)
+        else log(g,'Silt Strangler finds no venom to turn.'); break; }
       case 'uraga': c.venom=2; log(g,'Uraga Colossus rises, wreathed in its own venom (2).'); emit(g,'token',{sourceUid:c.uid,targetUids:[c.uid],abilityName:'Uraga Colossus',text:'2 Venom'}); break;   // WAVE 1 batch 13 — self-Venom (R13 drains it at round end); sheds 1/round in venomRoundEnd
       case 'ashvatara': { const foes=opp.units.filter(u=>!u.ghost);
         if (foes.length){ let t = targetUid!=null ? foes.find(u=>u.uid===targetUid) : null; if (!t) t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
@@ -1695,18 +1748,25 @@ function roundEndCardEffects(g){
   }
   sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
 }
-// R54 — PRE-DRAIN TOKEN APPLICATIONS: round-end token appliers that must TICK THE SAME round end. Runs immediately BEFORE
-// venomRoundEnd, so the freshly-applied token drains this round (deepened in Patala, doubled under Vasuki-class, per the pipeline).
-// Padmavati (Naga hero): 1 Venom to the STRONGEST enemy Unit (effPower; tie → first-found, R31). Heroes PERSIST → recurs every round.
-// padmavati-presence-gated → structurally absent flag-off (no hero → no-op).
+// R54 — PRE-DRAIN TOKEN APPLICATIONS: round-end token appliers/movers that must TICK THE SAME round end. Runs immediately BEFORE
+// venomRoundEnd, so the fresh/moved token drains this round (deepened in Patala, doubled under Vasuki-class, per the pipeline).
+// Order per side: Padmavati APPLIES (so her fresh token is in the pool), then Shankhapala MOVES (batch-18). All presence-gated → absent flag-off.
 function preDrainTokens(g){
   for (let pi=0; pi<2; pi++){ const pl=g.players[pi], opp=g.players[1-pi];
-    if (!pl.heroes.some(h=>h.id==='padmavati')) continue;
-    const foes=opp.units.filter(u=>!u.ghost);
-    if (!foes.length){ log(g,'Padmavati’s gaze finds no enemy to poison.'); continue; }
-    const t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);   // strongest, tie first-found (>=, R31)
-    t.venom=(t.venom||0)+1;
-    log(g,`Padmavati’s venom seeps into ${t.n} (Token).`); emit(g,'token',{targetUids:[t.uid],abilityName:'Padmavati',text:'Venom Token'});
+    // Padmavati (Naga hero): 1 Venom to the STRONGEST enemy Unit (effPower; tie → first-found, R31). Heroes PERSIST → recurs every round.
+    if (pl.heroes.some(h=>h.id==='padmavati')){ const foes=opp.units.filter(u=>!u.ghost);
+      if (foes.length){ const t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b); t.venom=(t.venom||0)+1;
+        log(g,`Padmavati’s venom seeps into ${t.n} (Token).`); emit(g,'token',{targetUids:[t.uid],abilityName:'Padmavati',text:'Venom Token'}); }
+      else log(g,'Padmavati’s gaze finds no enemy to poison.'); }
+    // WAVE 1 batch 18 — Shankhapala (Naga unit, R54 pre-drain slot so the moved token drains THIS round): move 1 Venom from the MOST-venomed
+    // enemy to the highest-effPower OTHER enemy (concentrate corruption on the biggest threat — weakest-defensible; needs 2+ enemy Units and a venomed source). One move per Shankhapala.
+    const shanks=pl.units.filter(u=>!u.ghost && u.id==='shankhapala').length;
+    for (let si=0; si<shanks; si++){ const foes=opp.units.filter(u=>!u.ghost); const venomed=foes.filter(u=>(u.venom||0)>0);
+      if (!venomed.length || foes.length<2) break;
+      const src=venomed.reduce((a,b)=>(b.venom||0)>(a.venom||0)?b:a);
+      const others=foes.filter(u=>u!==src); const dst=others.reduce((a,b)=>effPower(g,1-pi,b)>=effPower(g,1-pi,a)?b:a);
+      src.venom-=1; dst.venom=(dst.venom||0)+1;
+      log(g,`Shankhapala coils the venom from ${src.n} onto ${dst.n}.`); emit(g,'token',{targetUids:[dst.uid],abilityName:'Shankhapala',text:'Venom moved'}); }
   }
 }
 function endRound(g){
@@ -1888,6 +1948,17 @@ function aiScoreCard(g, pi, c){
     case 'makardhwaja': { const hn=pl.heroes.some(h=>h.id==='hanuman'); const us=pl.units.filter(u=>!u.ghost); const best = hn ? Math.max(...pl.heroes.filter(h=>h.id==='hanuman').map(h=>effPower(g,pi,h))) : (us.length?Math.max(...us.map(u=>effPower(g,pi,u))):0); s = Math.max(c.p, best); break; }   // enters copying the strongest source (value = that power, floored at printed 7)
     case 'anjana': s += pl.faction==='vanaras' ? 1.5 : 0; break;      // P6 body + an extra Leap each round (only matters for Vanaras)
     case 'padmavati': s += opp.units.some(u=>!u.ghost) ? 1.5 : 0.5; break;   // P7 body + a recurring round-end Venom engine
+    // ---- WAVE 1 batch 18 (Naga remainder, part 1) — only reached when wave1 pool is on ----
+    case 'patalahatchling': s += opp.units.some(u=>!u.ghost) ? 0.5 : 0; break;   // small body + a venom
+    case 'moltingnaga': s += 0.5; break;                                        // small body that spits venom on death
+    case 'venomharvester': { const foes=opp.units.filter(u=>!u.ghost); s += foes.length ? Math.min(3, foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b).venom||0) : 0; break; }   // +1 per venom on the strongest enemy
+    case 'shankhapala': s += 0.5; break;                                        // P4 body + round-end venom shuffle
+    case 'depthcaller': s += pl.discard.some(u=>u.t==='unit' && !u.ghost) ? 2 : 0; break;   // +2 with a fallen ally
+    case 'gravetide': s += Math.min(4, g.players[0].discard.concat(g.players[1].discard).filter(u=>u.t==='unit' && !u.ghost).length); break;   // grows with the graveyards
+    case 'kalakuta': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 2 : -99; break; }   // 2 venom on one enemy
+    case 'hymndepths': { const venomed=opp.units.filter(u=>!u.ghost && (u.venom||0)>0); s = (venomed.length || (isNaga(pl) && opp.units.some(u=>!u.ghost))) ? 1+venomed.length : -99; break; }   // trigger all drains now
+    case 'serpentskiss': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 3 + Math.max(...spec.options.map(u=>effPower(g,1-pi,u)))/2 : -99; break; }   // destroy a venom-ripe threat
+    case 'siltstrangler': { const foes=opp.units.filter(u=>!u.ghost && (u.venom||0)>0); s += foes.length ? Math.max(...foes.map(u=>u.venom||0)) : 0; break; }   // power off the most-venomed enemy
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
@@ -2147,5 +2218,5 @@ if (typeof module!=='undefined'){
     drainAmount, venomPassive, venomTokens, venomRoundEnd, venomKarkotakaEarly, sweepDeaths,
     mulligan, aiMulliganPlan, REALMS, REALM_INFO, designateShield, shieldCap,
     DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME, ASTRA_DMG,
-    endRound, roundEndCardEffects, preDrainTokens, castMantra, moveUnit, swapUnits, adjacentUnits };   // moveUnit/swapUnits/adjacentUnits/preDrainTokens exported for tests (benign)
+    endRound, roundEndCardEffects, preDrainTokens, castMantra, moveUnit, swapUnits, adjacentUnits, destroyUnit, damageUnit };   // moveUnit/swapUnits/adjacentUnits/preDrainTokens/destroyUnit/damageUnit exported for tests (benign; venomRoundEnd already exported above)
 }
