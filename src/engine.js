@@ -294,6 +294,7 @@ function mulligan(g, pi, uids){
 // filler, keep the curve, never ditch your only Hero. Returns up to 3 uids.
 function aiMulliganPlan(g, pi){
   const pl=g.players[pi], hand=pl.hand;
+  if (pl.difficulty==='beginner') return [];   // TASK D1: beginner skips the mulligan entirely (driver-safe — even if called)
   const has=id=>hand.some(c=>c.id===id);
   const heroCount=hand.filter(c=>c.t==='hero').length;
   const bad=[];
@@ -331,8 +332,19 @@ function newGame(opts={}){
   g.drawCount     = (sc && sc.draws!=null)     ? sc.draws     : 2;   // between-round draw count (realm bonus still added on top)
   g.mulliganCount = (sc && sc.mulligan!=null)  ? sc.mulligan  : 3;   // mulligan swaps allowed; 0 disables the phase
   g.wave1 = !!opts.wave1;   // WAVE 1 batch 9.5 (launch-repair): mirror the pool flag onto g so the Shukracharya revive branch can gate on it — DEAD flag-off (nothing else reads g.wave1; no rng consumed → byte-identical live game)
+  // DIFFICULTY (TASK D1): per-player, additive. Absent/unknown → 'advanced' (the launch AI, byte-identical). No rng consumed here.
+  { const _d = x => (DIFFICULTY[x] ? x : 'advanced');
+    g.players[0].difficulty = _d(opts.p0Difficulty || opts.difficulty);
+    g.players[1].difficulty = _d(opts.p1Difficulty || opts.difficulty); }
   // Realm: fixed via opts.realm consumes NO rng (so a fixed-realm test stays byte-identical); random default draws one.
   g.realm = opts.realm || REALMS[Math.floor(rng()*REALMS.length)];
+  // DEATHMATCH setup buffs (TASK D1) — gated PER PLAYER on pl.difficulty, so absent/advanced/beginner consume NO
+  // extra rng and are byte-identical. Mulligan is GUARANTEED here (driver-independent; a later driver re-call
+  // no-ops via pl.mulliganed). The extra card is drawn AFTER the normal 10 (and after the mulligan), g.rng-ordered
+  // (the deck is already shuffled). HONEST: aiMulliganPlan reads only the AI's own hand — no opponent info.
+  for (const pi of [0,1]){ const pl=g.players[pi], d=difficultyOf(pl);
+    if (d.autoMulligan) mulligan(g, pi, aiMulliganPlan(g, pi));
+    if (d.extraCard>0)  pl.hand.push(...pl.deck.splice(0, d.extraCard)); }
   g.firstThisRound = g.turn;
   log(g, `Cosmic Realm: ${REALM_INFO[g.realm].name} — ${REALM_INFO[g.realm].fx}`);
   { const nm=g.players[g.turn].name; log(g, `Coin flip \u2014 ${nm} ${nm==='You'?'play':'plays'} first.`); }
@@ -1834,13 +1846,35 @@ function aiScoreCard(g, pi, c){
   return s;
 }
 
+/* ---------- DIFFICULTY (TASK D1) — one tuning block, adjust here ----------
+   opts.difficulty ∈ {beginner, advanced, deathmatch}; ABSENT or 'advanced' = the launch AI, byte-identical.
+   Per-player override for AI-vs-AI sims: opts.p0Difficulty / opts.p1Difficulty (default = opts.difficulty).
+   Stored as pl.difficulty; ALL difficulty randomness draws from g.rng (seed discipline preserved).
+   HONEST-AI RULE (unchanged at every tier): no difficulty path reads hidden information — the AI never inspects
+   the opponent's hand/deck order; it decides only from public board/round state, exactly as the launch AI does. */
+const DIFFICULTY = {
+  beginner:   { randomPlayP:0.5, autoMulligan:false, extraCard:0, concession:false },   // 50% uniformly-random legal play (else argmax); ALSO misaims (random legal target) + misplaces (random slot); NO mulligan; NO strategic early-pass — passes only when out of legal cards
+  advanced:   { randomPlayP:0,    autoMulligan:false, extraCard:0, concession:false },  // the launch AI — zero code-path deviation
+  deathmatch: { randomPlayP:0,    autoMulligan:true,  extraCard:1, concession:true  },  // guaranteed mulligan + an 11th setup card + a sharper round-concession heuristic (on top of the launch passes)
+};
+function difficultyOf(pl){ return DIFFICULTY[pl && pl.difficulty] || DIFFICULTY.advanced; }
+
 function aiMove(g, pi){
   const pl=g.players[pi], opp=g.players[1-pi];
+  const diff = difficultyOf(pl);
   const idxs = playableIndices(g, pi);
   const my=totalPower(g,pi), their=totalPower(g,1-pi);
   const lead = my-their;
   const mustWin = opp.roundWins===1;               // losing this round loses the match
   const wantWin = pl.roundWins===1;                // winning this round wins the match
+
+  // BEGINNER (TASK D1): no strategy at all. With p=randomPlayP (g.rng) play a uniformly-random legal card,
+  // else the argmax. NEVER strategically passes (no bluff/concede/coast) — passes ONLY when out of legal cards.
+  if (diff.randomPlayP > 0){
+    if (!idxs.length) return { pass:true };
+    if (g.rng() < diff.randomPlayP) return { play: idxs[Math.floor(g.rng()*idxs.length)] };
+    return { play: idxs.reduce((a,b)=> aiScoreCard(g,pi,pl.hand[a])>=aiScoreCard(g,pi,pl.hand[b])?a:b) };
+  }
 
   // R20: a Nagapasha-bound Unit costs the owner a whole turn to free. Unbind if freeing it is worth more
   // than the best card play this turn (and it actually matters — contested round, not already coasting ahead).
@@ -1876,6 +1910,17 @@ function aiMove(g, pi){
   const concedeAt = (mahaOnBoard && g.round<3) ? -8 : -14;
   if (!mustWin && lead<=concedeAt && g.round<3) return { pass:true };  // concede a lost round, preserve cards
 
+  // DEATHMATCH round-concession (TASK D1) — a SHARPER concede on top of the launch heuristics above.
+  // RULE (verbatim): in a non-final round we do not need to win, pass when the round deficit exceeds the AI's
+  // MAX remaining single-play swing (no one card can flip it) AND we hold ≥2 FEWER committed cards than the
+  // opponent (banking the surplus for a later round). Uses only public state (board + visible card counts).
+  if (diff.concession && !mustWin && g.round<3 && lead<0){
+    const maxSwing = Math.max(...idxs.map(i=>{ const c=pl.hand[i]; return c.t==='unit'||c.t==='hero' ? c.p + (indraOnBoard(pl)&&c.t==='unit'?1:0) : aiScoreCard(g,pi,c)-c.p; }));
+    const committed = pl.units.filter(u=>!u.ghost).length + pl.heroes.length + (pl.artifact?1:0);
+    const oppCommitted = opp.units.filter(u=>!u.ghost).length + opp.heroes.length + (opp.artifact?1:0);
+    if (-lead > maxSwing && committed <= oppCommitted-2) return { pass:true };
+  }
+
   const i = idxs.reduce((a,b)=> aiScoreCard(g,pi,pl.hand[a])>=aiScoreCard(g,pi,pl.hand[b])?a:b);
   return { play:i };
 }
@@ -1893,7 +1938,8 @@ function aiPlacement(g, pi, card){
 function aiTakeTurn(g, pi){
   const pl=g.players[pi];
   // LEAP is a FREE action (reverted from the costs-a-turn experiment): take the best beneficial Leap(s) before playing.
-  if (pl.faction==='vanaras'){
+  // BEGINNER (TASK D1): skips beneficial Leaps too — a novice doesn't exploit the free Vanara tempo (honest: forgoes a good action).
+  if (pl.faction==='vanaras' && difficultyOf(pl).randomPlayP===0){
     let guard=0;
     while (canLeap(g, pi) && guard++<4){
       const bl=bestLeap(g, pi);
@@ -1907,7 +1953,17 @@ function aiTakeTurn(g, pi){
     if (u){ u.bound=false; log(g, `${pl.name} wrenches ${u.n} free of the Nagapasha noose.`); }
     afterAction(g, pi); return;
   }
-  if (mv.pass) pass(g, pi); else playCard(g, pi, mv.play, null, aiPlacement(g, pi, pl.hand[mv.play]));
+  if (mv.pass){ pass(g, pi); return; }
+  // BEGINNER (TASK D1): also MISAIMS and MISPLACES — a random legal target + a random slot, instead of the
+  // engine's null→optimal auto-pick. Uses ONLY targetSpec's public legal options (the same surface the advanced
+  // AI reduces over) — no NEW hidden-information read. Advanced/deathmatch keep null (optimal auto-target) + aiPlacement.
+  let tgt=null, pos=aiPlacement(g, pi, pl.hand[mv.play]);
+  if (difficultyOf(pl).randomPlayP > 0){
+    const spec = targetSpec(g, pi, pl.hand[mv.play]);
+    if (spec && spec.options && spec.options.length) tgt = spec.options[Math.floor(g.rng()*spec.options.length)].uid;
+    if (pl.faction==='vanaras' && pl.hand[mv.play].t==='unit') pos = Math.floor(g.rng()*(pl.units.filter(u=>!u.ghost).length+1));
+  }
+  playCard(g, pi, mv.play, tgt, pos);
 }
 
 /* ---------- Node export & simulation harness ---------- */
