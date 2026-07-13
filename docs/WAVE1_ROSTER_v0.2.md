@@ -35,7 +35,7 @@ A Agneyastra         R  —   Deal 3 to an enemy Unit. [dmgAstra:true]
 M Ratri Hymn         R  —   Prevent all Astra DAMAGE to your Units this round. [dmg boundary — R21+]
 U Kartikeya's Vanguard E P5 Friendly Unit destroyed → +2 (once/round).
 A Shakti Spear       E  —   Destroy an enemy Unit ≤4 power. [destroy-class]
-AR Dawn Banner       E  —   Round start: all friendly +1 this round. [SIM: compounding]
+AR Dawn Banner       E  —   Round start: all friendly +1 this round. [SIM: compounding] [SUPERSEDED BY R43: 'From the next round on, your Units get +1 (outlives the Banner).' — strongest-reading exception, SIM flag hot]
 H KARTIKEYA          L  P8  Enemy Astra resolves vs your side → all your Units +1 permanent. [SIM: vs Asura wave; R21+: negated ≠ resolved]
 RATNA:
 U Airavata's Calf    R  P4  Enters shielded.
@@ -59,7 +59,7 @@ U Holika             R  P5  Immune to Astra damage; +1 extra from all else. [dmg
 U Andhaka            R  P6  Untargetable while another friendly Unit on board.
 U Shumbha            R  P4  +1 while Nishumbha on board. [P3 pair]
 U Nishumbha          R  P4  +1 while Shumbha on board. [P3 pair]
-A Vidyutastra        R  —   Deal 2; Chaos Surge triggers twice. [dmgAstra:true; SIM: + Chandrahas]
+A Vidyutastra        R  —   Deal 2; Chaos Surge triggers twice. [dmgAstra:true; SIM: + Chandrahas] [R44: ×Chandrahas composes to 4 surges — NAMED SIM FLAG, additive-cap fallback prepared]
 U Mahishasura        E  P7  Round End: −2 unless an enemy Unit died this round. [SIM: hunger real? tighten to "by YOUR effect" if trivially fed]
 M Raktabija's Curse  E  —   Next friendly Unit destroyed this round → spawn two 2-power Rakta tokens. [ENGINE+ spawn — Yama-ghost pattern]
 AR Mayasura's Blueprint E — Once/round, an Astra doesn't consume the turn. [R21+: vs 1-Astra/turn, Angad, Varuna]
