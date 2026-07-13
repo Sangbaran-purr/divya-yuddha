@@ -1243,7 +1243,7 @@ const VANARA_DECK_DEF = [
   { id:'songcrossing',n:'Song of the Crossing',sub:'Hymn of the Bridge',t:'mantra', p:0, r:'U', wave:1, txt:'Your Units gain +1 power (+2 if you have 4 or more).' },
   { id:'matanga', n:"Matanga's Blessing",sub:'Grace of the Sage',   t:'mantra', p:0, r:'R', wave:1, txt:'Your next Leap this round grants +2 power to BOTH Units.' },
   { id:'gandhamadana',n:'Gandhamadana',  sub:'The Fragrant Peak',    t:'unit', p:5, r:'E', wave:1, txt:'PASSIVE: Your Leaps may target this Unit from anywhere (ignores adjacency).' },
-  { id:'anjaneyaroar',n:"Anjaneya's Roar",sub:'Cry of the Son of Wind',t:'astra', p:0, r:'L', wave:1, dmgAstra:false, txt:'This round: all enemy Units −1 power; each of your Units adjacent to a friendly Unit +1.' },
+  { id:'anjaneyaroar',n:"Anjaneya's Roar",sub:'Cry of the Son of Wind',t:'astra', p:0, r:'L', wave:1, dmgAstra:false, txt:'All enemy Units −1 this round; your Units flanked on both sides gain +1.' },
 ];
 
 // Naga roster — docs/NAGA_ROSTER.md (GDD v2.0 §8). Mechanic: VENOM (see venomTick / drainAmount). Rulings R10–R16.
@@ -1522,6 +1522,8 @@ function adjacentUnits(pl, unit){
   const i = pl.units.indexOf(unit); if (i<0) return [];
   return [pl.units[i-1], pl.units[i+1]].filter(Boolean);
 }
+// R40/R49 INTERIOR predicate: non-ghost friendly Units on BOTH adjacent sides (the Setu Mason pattern). Edges/lone/ghost-flanked → false.
+function flankedBothSides(pl, unit){ const a=pl.units, i=a.indexOf(unit); const l=a[i-1], r=a[i+1]; return !!(l && r && !l.ghost && !r.ghost); }
 // WAVE 1 batch 10 (positional tier) — R27 move/place primitive. "Row" = the ordered units array; position = index; adjacency = index neighbours (adjacentUnits). No new spatial model.
 function moveUnit(g, pi, unit, toIndex){        // relocate a Unit to a bounded index: splice-out + clamped splice-in. uid/power/state UNTOUCHED (same object reference). Adjacency passives re-evaluate at read-time (effPower). Ghost-safe.
   const pl=g.players[pi]; const i=pl.units.indexOf(unit); if (i<0) return false;
@@ -2066,7 +2068,7 @@ function playableIndices(g, pi){
       if (c.id==='jatayu' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u) && effPower(g,1-pi,u)>6)) return;   // WAVE 1 batch 14 — no enemy >6 → illegal
       if (c.id==='vidyutastra' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 batch 12 — no unprotected enemy → illegal
       if (c.id==='mohanastra' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 — same: illegal with no unprotected enemy Unit
-      if (c.id==='anjaneyaroar' && !opp.units.some(u=>!u.ghost) && !pl.units.some(u=>!u.ghost && adjacentUnits(pl,u).some(n=>!n.ghost))) return;   // WAVE 1 batch 15 — AoE −1 pierces protection (no astraProtected filter); illegal ONLY if BOTH effects whiff (no enemy Unit AND no friendly adjacent pair)
+      if (c.id==='anjaneyaroar' && !opp.units.some(u=>!u.ghost) && !pl.units.some(u=>!u.ghost && flankedBothSides(pl,u))) return;   // WAVE 1 batch 15 / R49(a) — AoE −1 pierces protection (no astraProtected filter); illegal ONLY if BOTH effects whiff (no enemy Unit AND no INTERIOR friendly Unit)
       if (c.id==='sanjeevani'){ const lk=g.lastKillThisRound; if (!(lk && lk.owner===pi && pl.discard.includes(lk.unit))) return; }
       // ---- Naga astras ----
       if (c.id==='nagapasha'){
@@ -2183,13 +2185,13 @@ function resolveAstra(g, pi, c, targetUid){
       if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);   // AI: cloud the strongest
       log(g,'Mohanastra clouds the foe’s mind.'); damageUnit(g, 1-pi, t, 2, 'Mohanastra'); break;   // current-power −2 = round-scoped (units clear at round end; a revival restores base → the dent is wiped; NO separate restore mechanism, per the STEP-0 reading)
     }
-    case 'anjaneyaroar': {   // WAVE 1 batch 15 — dmgAstra:FALSE (debuff, not damage → NOT in ASTRA_DMG, invariant unchanged): all enemy Units −1 this round + your adjacent-pair Units +1. The −1 routes through damageUnit(cause "Anjaneya's Roar") so Holika SHARPENS it (+1 → −2, R22); Patala does NOT amplify (not in ASTRA_DMG); Ratri does NOT prevent (not dmgAstra). AoE iterates opp.units directly → pierces shield/Maya Veil (AoE convention, like Suryastra).
+    case 'anjaneyaroar': {   // WAVE 1 batch 15 / R49(a) — dmgAstra:FALSE (debuff, not damage → NOT in ASTRA_DMG, invariant unchanged): all enemy Units −1 this round + your INTERIOR Units +1. The −1 routes through damageUnit(cause "Anjaneya's Roar") so Holika SHARPENS it (+1 → −2, R22); Patala does NOT amplify (not in ASTRA_DMG); Ratri does NOT prevent (not dmgAstra). AoE iterates opp.units directly → pierces shield/Maya Veil (AoE convention, like Suryastra).
       log(g,"Anjaneya's Roar shakes the field — the son of the wind cries out.");
       for (const u of [...opp.units]) if (!u.ghost) damageUnit(g, 1-pi, u, 1, "Anjaneya's Roar");
-      // "your adjacent pairs +1" — WEAKEST reading (LOGGED, pending a ratification number): each friendly Unit with AT LEAST ONE non-ghost neighbour gets +1 ONCE (NOT +1 per neighbour). R40 non-ghost-neighbour precedent; current-power (round-scoped).
-      const paired = pl.units.filter(u=>!u.ghost && adjacentUnits(pl,u).some(n=>!n.ghost));
+      // R49(a) — "your Units flanked on both sides gain +1": INTERIOR only (R40 Mason pattern) — non-ghost friendly Units on BOTH adjacent sides. Edge/lone/ghost-flanked → nothing. Current-power (round-scoped).
+      const paired = pl.units.filter(u=>!u.ghost && flankedBothSides(pl,u));
       for (const u of paired) u.power+=1;
-      if (paired.length){ emit(g,'buff',{targetUids:paired.map(u=>u.uid),amount:1,abilityName:"Anjaneya's Roar",text:'+1'}); log(g,`Anjaneya's Roar rallies ${paired.length} paired Unit(s): +1 this round.`); }
+      if (paired.length){ emit(g,'buff',{targetUids:paired.map(u=>u.uid),amount:1,abilityName:"Anjaneya's Roar",text:'+1'}); log(g,`Anjaneya's Roar rallies ${paired.length} flanked Unit(s): +1 this round.`); }
       break; }
     case 'brahmastra':
       log(g,'BRAHMASTRA. The earth remembers, and trembles.');
@@ -2859,7 +2861,7 @@ function aiScoreCard(g, pi, c){
     case 'songcrossing': { const n=pl.units.filter(u=>!u.ghost).length; s = n ? n*(n>=4?2:1) : -99; break; }   // buff-all: value scales with board width (and the 4+ threshold)
     case 'matanga': s = pl.faction==='vanaras' ? 2 : -1; break;   // arms the next Leap +2/+2 (only meaningful for a leaping faction)
     case 'gandhamadana': s += 1; break;                          // P5 body + leap-anywhere target utility
-    case 'anjaneyaroar': { const foes=opp.units.filter(u=>!u.ghost).length; const paired=pl.units.filter(u=>!u.ghost && adjacentUnits(pl,u).some(n=>!n.ghost)).length; s = (foes||paired) ? foes+paired : -99; break; }   // −1 to each enemy + +1 to each paired friendly
+    case 'anjaneyaroar': { const foes=opp.units.filter(u=>!u.ghost).length; const paired=pl.units.filter(u=>!u.ghost && flankedBothSides(pl,u)).length; s = (foes||paired) ? foes+paired : -99; break; }   // R49(a): −1 to each enemy + +1 to each INTERIOR friendly
     case 'saranyu': s += 0.5; break;                             // P5 body; the power-exchange is board-total-neutral (situational upside, Gavaksha precedent)
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;

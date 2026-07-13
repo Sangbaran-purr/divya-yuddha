@@ -81,7 +81,7 @@ U Kishkindha Runner  C  P3  Vanilla. [P1]
 U Gavaksha           U  P3  On Play: may swap places with a friendly Unit. [trivial]
 U Gaja               U  P4  +1 while your board is wider. [RENAMED from Panasa — Manasa one-letter trap]
 U Kumuda             U  P3  Leaps or is Leapt to → +1 permanently.
-M Song of the Crossing U —  Units in one row +1; +2 if 4+ there. [R21+: define "row" vs board model]
+M Song of the Crossing U —  Units in one row +1; +2 if 4+ there. [R21+: define "row" vs board model] [SUPERSEDED BY R48: 'Your Units +1 this round; +2 instead if you have 4 or more.']
 U Sushena the Healer R  P4  Round End: restore 1 to each adjacent damaged Unit.
 U Sampati            R  P5  On Play: reveal enemy's highest-power hand card. [trivial — info category opened]
 U Vinata's Talon     R  P4  On Play: deal 1 per two friendly Vanaras (max 3).
@@ -95,7 +95,7 @@ RATNA:
 U Swayamprabha       R  P3  On Play: look at top 3, take one to hand. [trivial — Tara pattern + choice UI]
 U Rambha the Bold    E  P5  Any friendly Leap → +1 permanently.
 M Vault of the Sky   E  —   Move a friendly Unit anywhere; +2 this round. [trivial]
-A Anjaneya's Roar    L  —   All enemies −1 this round; your adjacent pairs +1. [dmgAstra:false; SIM: vs Rama Naam's crown]
+A Anjaneya's Roar    L  —   All enemies −1 this round; your adjacent pairs +1. [dmgAstra:false; SIM: vs Rama Naam's crown] [SUPERSEDED BY R49(a): 'All enemy Units −1 this round; your Units flanked on both sides gain +1.' — SIM flag stands]
 H ANJANA             L  P6  Passive: Leap limit +1 per round. [TRIMMED — adjacency-cost rider cut]
 AR The Living Bridge M  —   Round End: unbroken adjacent line of 4+ → all of them +1 permanent. [moderate — run predicate; SIM: uptime both ways] [R40: formally SIM-FLAGGED — body-count equivalence acknowledged; haircut fallback prepared]
 
