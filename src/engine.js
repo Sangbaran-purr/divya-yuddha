@@ -54,6 +54,10 @@ const DEVA_DECK_DEF = [
   { id:'ratri',    n:'Ratri Hymn',     sub:'Song of the Night',     t:'mantra', p:0, r:'R', wave:1, txt:'This round, prevent all Astra damage to your Units.' },
   // ---- WAVE 1 (batch 9 — the event-trigger tier) ----
   { id:'vanguard', n:"Kartikeya's Vanguard",sub:'Shield of the War-God',t:'unit', p:5, r:'E', wave:1, txt:'PASSIVE: The first time a friendly Unit is destroyed each round, this gains +2 power.' },
+  // ---- WAVE 1 (batch 12 — the cleanup tier) ----
+  { id:'dhanvantari',n:'Dhanvantari',  sub:'Physician of the Gods',t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: Restore one friendly Unit to its printed power.' },
+  { id:'shaktispear',n:'Shakti Spear', sub:'Lance of Kartikeya',   t:'astra', p:0, r:'E', wave:1, txt:'Destroy an enemy Unit with 4 or less power.' },
+  { id:'dawnbanner',n:'Dawn Banner',   sub:'Standard of the Sun',   t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: From the next round on, your Units have +1 power each round.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -109,6 +113,9 @@ const ASURA_DECK_DEF = [
   // ---- WAVE 1 (batch 9 — the event-trigger tier) ----
   { id:'simhika',  n:'Simhika',          sub:'The Shadow-Grasper',   t:'unit', p:4, r:'U', wave:1, txt:'PASSIVE: When an enemy Unit is revived, this gains +2 power.' },
   { id:'raktabija',n:"Raktabija's Curse", sub:'Blood of the Demon',   t:'mantra', p:0, r:'E', wave:1, txt:'The next friendly Unit destroyed this round spawns two 2-power Rakta tokens.' },
+  // ---- WAVE 1 (batch 12 — the cleanup tier) ----
+  { id:'andhaka',  n:'Andhaka',         sub:'The Blind Demon',      t:'unit', p:6, r:'R', wave:1, txt:'PASSIVE: Cannot be targeted by Astras while another friendly Unit is on the board.' },
+  { id:'vidyutastra',n:'Vidyutastra',   sub:'The Lightning Weapon', t:'astra', p:0, r:'R', wave:1, dmgAstra:true, txt:'Deal 2 damage to an enemy Unit. Triggers Chaos Surge twice.' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -250,6 +257,7 @@ function mkPlayer(name, rng, faction='devas', spec, wave1){
     vediShieldGrants:0, artifactShieldRound:0, ratriRound:0, mayaVeilRound:0,   // WAVE 1 batch 7 (protection tier): Vedi Keeper bonus-shield counter (reset each round) + Ribhu/Ratri/Maya-Veil round stamps (auto-expire, checked ===g.round)
     blueprintUsed:false, hasPassedThisMatch:false,   // WAVE 1 batch 8 (turn-economy): Blueprint once-per-round guard (reset each round) + Atikaya's match-long VOLUNTARY-pass flag (set only in pass(), never reset — Mahabali precedent)
     vanguardTriggered:false, raktabijaCurse:false,   // WAVE 1 batch 9 (event-trigger): Kartikeya's Vanguard once-per-round guard + Raktabija's Curse armed flag (both reset each round)
+    dawnBannerFrom:0,   // WAVE 1 batch 12: Dawn Banner — round # from which the +1 aura is active (set to g.round+1 on play; 0 = inactive). Match-long stamp (survives the artifact clear); the "next round start" + "compounding" reading.
     mulliganed:false, manualShield:false };
 }
 
@@ -347,6 +355,7 @@ function effPower(g, pi, c){
   // Setu Mason (Vanara, batch 10): +1 while adjacent to another friendly Unit (R27 adjacency = index neighbours). Read-time, non-recursive presence check; adjacentUnits already excludes self.
   if (!c.ghost && c.id==='setumason'){ const su=g.players[pi].units, si=su.indexOf(c), sl=su[si-1], sr=su[si+1]; if (sl && sr && !sl.ghost && !sr.ghost) p += 1; }   // R40(b): +1 only while flanked by non-ghost Vanaras on BOTH sides (interior formation value; edges/lone/ghost-side → no bonus). Read-time, non-recursive.
   if (!c.ghost && c.id==='gaja'){ const mine=g.players[pi].units.filter(u=>!u.ghost).length, theirs=g.players[1-pi].units.filter(u=>!u.ghost).length; if (mine>theirs) p += 1; }   // WAVE 1 batch 11 — +1 while your board is WIDER (strict inequality; ghosts/tokens counted per R40 non-ghost reading). Read-time, re-evaluates.
+  if (!c.ghost){ const bp=g.players[pi]; if (bp.dawnBannerFrom>0 && g.round>=bp.dawnBannerFrom) p += 1; }   // WAVE 1 batch 12 — Dawn Banner: +1 to ALL your non-ghost Units, active from the round AFTER it was played (no retroactive), every round thereafter (compounding, SIM-flagged). Read-time aura; the functional form of "round start: all friendly +1 this round" given the board is EMPTY at round start.
   // ---- WAVE 1 batch-4 passive auras (card-id-gated → these branches are unreachable unless a wave-1 card is on the board) ----
   const pl4 = g.players[pi];
   // Ushas, Dawn Herald: your OTHER Units at CURRENT (stored) power ≤2 gain +1. 'current' = c.power at eval (non-recursive: a mutation-buff to 3 exits the aura, a drain to ≤2 enters it). Ushas is p3, never self-buffs.
@@ -896,7 +905,8 @@ function sharabhaProtected(g, ownerPi, unit){
 // Any reason unit (owned by ownerPi) is an illegal Astra target: Dharma Shield, Sharabha, or Ulupi's round immunity.
 function astraProtected(g, ownerPi, unit){
   return isShielded(g,ownerPi,unit) || sharabhaProtected(g,ownerPi,unit) || unit.astraImmuneRound===g.round
-    || g.players[ownerPi].mayaVeilRound===g.round;   // WAVE 1: Maya Veil — the owner's Units are untargetable by Astras this round (targeting layer). AoE resolutions iterate opp.units directly (never consult targetSpec/astraProtected) so they still strike.
+    || g.players[ownerPi].mayaVeilRound===g.round   // WAVE 1: Maya Veil — the owner's Units are untargetable by Astras this round (targeting layer). AoE resolutions iterate opp.units directly (never consult targetSpec/astraProtected) so they still strike.
+    || (unit.id==='andhaka' && g.players[ownerPi].units.some(u=>!u.ghost && u!==unit));   // WAVE 1 batch 12: Andhaka — untargetable while ANY OTHER friendly Unit is on the board (targeting layer only; AoE pierces). Alone → targetable.
 }
 
 function playableIndices(g, pi){
@@ -917,6 +927,8 @@ function playableIndices(g, pi){
       if ((c.id==='pashupata'||c.id==='nagastra'||c.id==='lankadahan') && !opp.units.some(u=>!u.ghost)) return;
       if (c.id==='gandiva' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;
       if (c.id==='agneyastra' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 — illegal with no unprotected enemy Unit
+      if (c.id==='shaktispear' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u) && effPower(g,1-pi,u)<=4)) return;   // WAVE 1 batch 12 — no enemy ≤4 → illegal
+      if (c.id==='vidyutastra' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 batch 12 — no unprotected enemy → illegal
       if (c.id==='mohanastra' && !opp.units.some(u=>!u.ghost && !astraProtected(g,1-pi,u))) return;   // WAVE 1 — same: illegal with no unprotected enemy Unit
       if (c.id==='sanjeevani'){ const lk=g.lastKillThisRound; if (!(lk && lk.owner===pi && pl.discard.includes(lk.unit))) return; }
       // ---- Naga astras ----
@@ -952,6 +964,9 @@ function targetSpec(g, pi, card){
   }
   if (card.id==='gandiva') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };
   if (card.id==='agneyastra') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };   // WAVE 1 — same shield/immunity respect as Gandiva
+  if (card.id==='shaktispear') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u) && effPower(g,1-pi,u)<=4) };   // WAVE 1 batch 12 — destroy-class, ≤4 CURRENT effPower (R32)
+  if (card.id==='vidyutastra') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };   // WAVE 1 batch 12 — deal-2, shield/immunity respect
+  if (card.id==='dhanvantari') return { kind:'friendlyUnit', options: g.players[pi].units.filter(u=>!u.ghost && u.power<u.base) };   // WAVE 1 batch 12 — restore a damaged friendly
   if (card.id==='mohanastra') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !astraProtected(g,1-pi,u)) };   // WAVE 1 — single-target astra respects shield/immunity like Agneyastra
   if (card.id==='dhumraksha') return { kind:'friendlyUnit', options: g.players[pi].units.filter(u=>!u.ghost) };   // WAVE 1 — deal 1 to one of YOUR Units (self-targetable)
   if (card.id==='sudarshana') return { kind:'enemyHero', options:[...opp.heroes] };
@@ -985,6 +1000,20 @@ function resolveAstra(g, pi, c, targetUid){
       let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
       if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
       log(g,'Agneyastra erupts in fire!'); damageUnit(g, 1-pi, t, 3, 'Agneyastra'); break;   // cause='Agneyastra' → Patala +1 routes through the dmgAstra tag
+    }
+    case 'shaktispear': {   // WAVE 1 batch 12 — DESTROY-class (like Vajra/Gandiva, NOT dmgAstra): destroy an enemy Unit ≤4 CURRENT effPower (R32 symmetry). Respects astraProtected. Immunity-agnostic (destroys Holika, R22).
+      const spec=targetSpec(g,pi,c);
+      if (!spec.options.length){ log(g,'Shakti Spear finds no mark.'); break; }
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);   // AI: the strongest legal (≤4) target
+      log(g,'Shakti Spear flies true!'); destroyUnit(g, 1-pi, t, 'Shakti Spear'); break;
+    }
+    case 'vidyutastra': {   // WAVE 1 batch 12 — dmgAstra:true, deal 2 (cause 'Vidyutastra' → Patala +1, Holika immune-0, Ratri prevents). The DOUBLE Chaos Surge is in the astra branch (surge-count math), not here.
+      const spec=targetSpec(g,pi,c);
+      if (!spec.options.length){ log(g,'Vidyutastra finds no mark.'); break; }
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+      log(g,'Vidyutastra cracks like thunder!'); damageUnit(g, 1-pi, t, 2, 'Vidyutastra'); break;
     }
     case 'mohanastra': {   // WAVE 1 — targeted enemy −2 "this round". cause='Mohanastra' is NOT in ASTRA_DMG → NO Patala amplification; Holika sharpens it (+1, not immune). Chandrahas-doubled → resolveAstra runs twice → −4.
       const spec=targetSpec(g,pi,c);
@@ -1135,6 +1164,11 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
       // WAVE 1 — Aruna Charioteer. Weakest-defensible reading (R21+): "if Round 1" = the match's FIRST round (g.round===1) at play time; played R2+, no bonus.
       case 'aruna': if (g.round===1){ c.power+=2; log(g,'Aruna Charioteer rides the dawn: +2 (Round 1).'); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:2,abilityName:'Aruna Charioteer',text:'+2'}); } break;
       case 'vedikeeper': pl.vediShieldGrants=(pl.vediShieldGrants||0)+1; log(g,'Vedi Keeper tends the altar — an extra Dharma Shield may be raised this round.'); break;   // WAVE 1 batch 7 (R25 fallback): +1 shield cap this round; the designateShields call at the end of this play (AI) or the human SHIELD button applies it instantly
+      case 'dhanvantari': {   // WAVE 1 batch 12 — restore one friendly DAMAGED Unit to its PRINTED power (power=base; R21 grown base restores to the GROWN value). AI: most-damaged. None damaged → no-op.
+        const dmg=pl.units.filter(u=>!u.ghost && u.power<u.base);
+        if (dmg.length){ let t = targetUid!=null ? dmg.find(u=>u.uid===targetUid) : null; if (!t) t = dmg.reduce((a,b)=>(a.base-a.power)>=(b.base-b.power)?a:b);
+          t.power=t.base; log(g,`Dhanvantari restores ${t.n} to full (${t.power}).`); emit(g,'buff',{sourceUid:c.uid,targetUids:[t.uid],amount:null,abilityName:'Dhanvantari',text:'restored'}); }
+        else log(g,'Dhanvantari: no wounded Unit to mend.'); break; }
       case 'ribhu': pl.artifactShieldRound=g.round; log(g, pl.artifact ? `Ribhu Craftsman wards ${pl.artifact.n} — untargetable this round.` : 'Ribhu Craftsman readies a ward for your Artifact this round.'); break;   // WAVE 1 batch 7 — round-scoped Artifact protection (wired to Vishwakarma). Logs even with no Artifact yet (the ward is on the player for the round).
       case 'airavatacalf': if (designateShield(g, pi, c.uid)) log(g,'Airavata’s Calf enters wreathed in a Dharma Shield.'); else log(g,'Airavata’s Calf enters — no Dharma Shield available.'); break;   // WAVE 1 batch 7 (RATNA) — real shield-grant mechanism; respects the cap AND the noShield flag (a Dawn's-Rebirth Calf → designateShield refuses)
 
@@ -1344,7 +1378,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
       resolveAstra(g, pi, c, targetUid);
       if (doubled){ log(g,`Chandrahas doubles ${c.n}!`); resolveAstra(g, pi, c, targetUid); }
     }
-    if (pl.faction==='asuras' && !surgeNegated) chaosSurge(g, pi, chandrahasActive?2:1);
+    if (pl.faction==='asuras' && !surgeNegated) chaosSurge(g, pi, (chandrahasActive?2:1) * (c.id==='vidyutastra'?2:1));   // WAVE 1 batch 12 — Vidyutastra fires Chaos Surge TWICE; with Chandrahas (already ×2) it composes to 2×2=4 surges (logged for rulings).
     onAstraResolved(g, pi, doubled);
     // R7: Angad — playing an Astra while the opponent has Angad forfeits your next turn (stacks with Varuna).
     if (opp.heroes.some(h=>h.id==='angad')){ pl.skipNext=true; log(g,`Angad exacts the cost — ${pl.name} forfeits their next turn.`); }
@@ -1389,6 +1423,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
     else if (c.id==='patala') log(g, `Patala Throne rises \u2014 Venom deepens to \u2212${1+g.round} this round.`);   // R11
     else if (c.id==='anantacoil') log(g,'Ananta Coil uncoils \u2014 every fallen Naga will leave its venom on the field.');   // R14
     else if (c.id==='blueprint') log(g,'Mayasura\u2019s Blueprint unfurls \u2014 once each round, an Astra will cost no turn.');   // WAVE 1 batch 8
+    else if (c.id==='dawnbanner'){ pl.dawnBannerFrom=g.round+1; log(g,'Dawn Banner is raised \u2014 from next round, your host marches +1.'); }   // WAVE 1 batch 12 \u2014 active from the NEXT round (no retroactive buff this round); the stamp is match-long (survives the artifact clear).
   }
   // Kalki Kshetra tracks the round's last-played card (the +2 lands at round end, only if it's a Unit/Hero).
   g.lastCardThisRound = { uid:c.uid, isBody:(c.t==='unit'||c.t==='hero') };
@@ -1600,6 +1635,12 @@ function aiScoreCard(g, pi, c){
     case 'sushena': s += 1; break;                                      // round-end healer
     case 'rambha': s += 1; break;                                       // grows per friendly leap
     case 'livingbridge': s += pl.units.filter(u=>!u.ghost).length >= 3 ? 3 : 1; break;   // mythic go-wide payoff
+    // ---- WAVE 1 batch 12 (cleanup tier) — only reached when wave1 pool is on ----
+    case 'dhanvantari': s += pl.units.some(u=>!u.ghost && u.power<u.base) ? 1.5 : 0; break;   // restores a wounded ally
+    case 'shaktispear': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 2+Math.max(...spec.options.map(u=>effPower(g,1-pi,u))) : -99; break; }   // destroy ≤4 (Gandiva-style value)
+    case 'dawnbanner': s += pl.units.filter(u=>!u.ghost).length + 1; break;   // wider board = more value from the per-round +1
+    case 'andhaka': s += 1; break;                                            // durable P6, hard to remove
+    case 'vidyutastra': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 3 : -99; break; }   // deal 2 + double surge
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
