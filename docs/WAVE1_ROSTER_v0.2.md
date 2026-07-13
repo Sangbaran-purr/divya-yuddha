@@ -63,13 +63,13 @@ A Vidyutastra        R  —   Deal 2; Chaos Surge triggers twice. [dmgAstra:true
 U Mahishasura        E  P7  Round End: −2 unless an enemy Unit died this round. [SIM: hunger real? tighten to "by YOUR effect" if trivially fed]
 M Raktabija's Curse  E  —   Next friendly Unit destroyed this round → spawn two 2-power Rakta tokens. [ENGINE+ spawn — Yama-ghost pattern]
 AR Mayasura's Blueprint E — Once/round, an Astra doesn't consume the turn. [R21+: vs 1-Astra/turn, Angad, Varuna]
-H VRITRA             L  P8  On Play: bind an enemy Unit (0 contribution) while Vritra remains. [bind precedent]
+H VRITRA             L  P8  On Play: bind an enemy Unit (0 contribution) while Vritra remains. [bind precedent] [R65 (balance round 1, ARMED — Asura still +12.7 after R63+R64): P8→P7, the second above-noise Asura lifter (ablation −2.8). Ability unchanged. ART GATE: Asuras_Hero_Vritra_P7_rLegendary]
 RATNA:
 U Surpanakha         R  P4  On Play: enemy Unit −1 permanently.
 U Atikaya            E  P6  Enters −2 if you haven't passed this match; +2 if you have. [pass tracking exists]
 A Brahmadanda        E  —   Negate next enemy Astra this round. [pre-ruled: Surge still procs for caster (R12); SIM: mirror warp → soften to "deals no damage"]
 M Maya Veil          E  —   Your Units untargetable by Astras this round (AoE pierces). [ch3 shield-boundary rhyme]
-H MAHISHI            L  P7  Round End: copies strongest Unit's POWER (Hero row kept, no abilities). [RULED power-only] [CANONIZED BY R59: strongest FRIENDLY by effPower; LAST in round-end hook (after Kalpavriksha), pre-scoring; power-only, persists; no-unit = keeps power]
+H MAHISHI            L  P7  Round End: copies strongest Unit's POWER (Hero row kept, no abilities). [RULED power-only] [CANONIZED BY R59: strongest FRIENDLY by effPower; LAST in round-end hook (after Kalpavriksha), pre-scoring; power-only, persists; no-unit = keeps power] [R64 (balance round 1): P7→P6 — the one above-noise Asura lifter (ablation −3.0). Ability unchanged. ART GATE: Asuras_Hero_Mahishi_P6_rLegendary]
 AR The Iron Crucible M  —   Round End: your Units that lost power this round regain 1. [RETHEMED — price-tag system dead; SIM: anti-Naga drift]
 
 ═══════════════ VANARAS — "THE BRIDGE" ═══════════════
@@ -97,7 +97,7 @@ U Rambha the Bold    E  P5  Any friendly Leap → +1 permanently.
 M Vault of the Sky   E  —   Move a friendly Unit anywhere; +2 this round. [trivial]
 A Anjaneya's Roar    L  —   All enemies −1 this round; your adjacent pairs +1. [dmgAstra:false; SIM: vs Rama Naam's crown] [SUPERSEDED BY R49(a): 'All enemy Units −1 this round; your Units flanked on both sides gain +1.' — SIM flag stands]
 H ANJANA             L  P6  Passive: Leap limit +1 per round. [TRIMMED — adjacency-cost rider cut]
-AR The Living Bridge M  —   Round End: unbroken adjacent line of 4+ → all of them +1 permanent. [moderate — run predicate; SIM: uptime both ways] [R40: formally SIM-FLAGGED — body-count equivalence acknowledged; haircut fallback prepared]
+AR The Living Bridge M  —   Round End: unbroken adjacent line of 4+ → all of them +1 permanent. [moderate — run predicate; SIM: uptime both ways] [R40: formally SIM-FLAGGED — body-count equivalence acknowledged; haircut fallback prepared] [R63 (balance round 1): RE-TEXTED to a formation-moment trigger — "When your Units FIRST form a line of 4+ this round, that run +1 permanent, once/round." LEFT the round-end hook; fires from afterAction (checkBridgeLine). Fire-rate 29.3%→52.6%; aggregate ~0 (played 6.5%, small buff)]
 
 ═══════════════ NAGAS — "THE DEEP" ═══════════════
 (corpse economy + token mastery; sanctioned deviation: Uraga self-price)

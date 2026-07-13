@@ -127,11 +127,11 @@ const ASURA_DECK_DEF = [
   { id:'andhaka',  n:'Andhaka',         sub:'The Blind Demon',      t:'unit', p:6, r:'R', wave:1, txt:'PASSIVE: Cannot be targeted by Astras while another friendly Unit is on the board.' },
   { id:'vidyutastra',n:'Vidyutastra',   sub:'The Lightning Weapon', t:'astra', p:0, r:'R', wave:1, dmgAstra:true, txt:'Deal 2 damage to an enemy Unit. Triggers Chaos Surge twice.' },
   // ---- WAVE 1 (batch 16 — the artifact/counter tier) ----
-  { id:'vritra',   n:'Vritra',          sub:'The Withholder',       t:'hero', p:8, r:'L', wave:1, txt:'ON PLAY: Bind an enemy Unit (0 power contribution) while Vritra remains.' },
+  { id:'vritra',   n:'Vritra',          sub:'The Withholder',       t:'hero', p:7, r:'L', wave:1, txt:'ON PLAY: Bind an enemy Unit (0 power contribution) while Vritra remains.' },   // R65 (balance round 1, ARMED — Asura still +12.7 after R63+R64): P8→P7, the second above-noise Asura lifter (ablation −2.8). Ability unchanged. ART GATE: Asuras_Hero_Vritra_P7_rLegendary.
   { id:'brahmadanda',n:'Brahmadanda',   sub:'Staff of Brahma',      t:'astra', p:0, r:'E', wave:1, txt:'Negate the next enemy Astra this round.' },
   { id:'ironcrucible',n:'The Iron Crucible',sub:'Forge of the Price',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your Units that lost power this round regain 1.' },
   // ---- WAVE 1 (batch 19 — deferred heroes) ----
-  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:7, r:'L', wave:1, txt:'ROUND END: Copy the power of your strongest Unit (power only).' },
+  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:6, r:'L', wave:1, txt:'ROUND END: Copy the power of your strongest Unit (power only).' },   // R64 (balance round 1): P7→P6, the one above-noise Asura lifter (ablation −3.0). Ability unchanged (R59). ART GATE: Asuras_Hero_Mahishi_P6_rLegendary.
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -314,6 +314,7 @@ function mkPlayer(name, rng, faction='devas', spec, wave1){
     vediShieldGrants:0, artifactShieldRound:0, ratriRound:0, mayaVeilRound:0,   // WAVE 1 batch 7 (protection tier): Vedi Keeper bonus-shield counter (reset each round) + Ribhu/Ratri/Maya-Veil round stamps (auto-expire, checked ===g.round)
     blueprintUsed:false, hasPassedThisMatch:false,   // WAVE 1 batch 8 (turn-economy): Blueprint once-per-round guard (reset each round) + Atikaya's match-long VOLUNTARY-pass flag (set only in pass(), never reset — Mahabali precedent)
     vanguardTriggered:false, raktabijaCurse:false,   // WAVE 1 batch 9 (event-trigger): Kartikeya's Vanguard once-per-round guard + Raktabija's Curse armed flag (both reset each round)
+    bridgeFiredRound:0,   // R63 (balance round 1): The Living Bridge once-per-round lock (round-stamp; auto-invalidates as g.round advances). g.wave1-gated reads only — no-op flag-off.
     matangaArmed:false,   // WAVE 1 batch 15 (leap-utility): Matanga's Blessing arm — consumed by the next doLeap, reset each round (expires if unused)
     lostPowerUids:new Set(), brahmadandaArmed:0,   // WAVE 1 batch 16 (artifact/counter): per-round set of Unit uids that LOST power (Iron Crucible reads it; g.wave1-gated writes) + Brahmadanda arm round-stamp (negates the next enemy Astra's effect). Both reset each round.
     realmSuppressedRound:0,   // WAVE 1 batch 20 (R61 Nahusha): round-stamp — when === g.round, THIS side's Cosmic Realm effect is suppressed this round. Default 0 → realmActiveFor true → byte-identical flag-off.
@@ -1728,8 +1729,33 @@ function pass(g, pi){
   afterAction(g, pi);
 }
 
+// R63 (balance round 1) — The Living Bridge is a FORMATION-MOMENT trigger, not a round-end effect. Fires the FIRST time the
+// owner's row holds an unbroken adjacent run of 4+ non-ghost Units this round (ghosts BREAK the run, R63f; Rakta tokens count).
+// Every unit in that run gains +1 base+power (R63e, permanent). Once per round (round-stamp lock; auto-invalidates as g.round
+// advances → resets at round start, R63c). WAVE-GATED (livingbridge is wave:1) → structurally unreachable / no-op flag-off:
+// the two afterAction calls read pl.artifact and return before any state/rng touch. Evaluated at afterAction (after sweepDeaths)
+// so it sees the settled post-action row — subsumes every unit-add/reorder site (play, moveUnit, swapUnits, doLeap, all 9
+// revival choke sites, Rakta spawn), each of which occurs inside a turn action that ends here. Shesha's round-start revival is
+// moot (artifacts clear at round end → no Bridge is active at round start). NO rng.
+function checkBridgeLine(g, pi){
+  const pl=g.players[pi];
+  if (!(pl.artifact && pl.artifact.id==='livingbridge')) return;   // wave-gated: no-op flag-off
+  if (pl.bridgeFiredRound === g.round) return;                     // R63c: once per round
+  let run=[], qual=null;                                            // first unbroken run of 4+ non-ghost Units (R63a/f)
+  for (const u of pl.units){
+    if (u.ghost){ if (run.length>=4){ qual=run; break; } run=[]; }
+    else run.push(u);
+  }
+  if (!qual && run.length>=4) qual=run;
+  if (!qual) return;
+  pl.bridgeFiredRound = g.round;                                    // lock (R63c)
+  for (const u of qual){ u.base+=1; u.power+=1; }                   // R63d/e: the WHOLE run, +1 base+power (permanent)
+  log(g,`The Living Bridge spans — the ${qual.length}-Unit line rises +1 (permanent).`);
+  emit(g,'buff',{targetUids:qual.map(u=>u.uid),amount:1,abilityName:'The Living Bridge',text:'+1'});
+}
 function afterAction(g, pi){
   sweepDeaths(g);                                    // R1: enforce death-at-0 generically
+  checkBridgeLine(g,0); checkBridgeLine(g,1);         // R63: fire the Living Bridge the moment a 4+ line first forms (both sides; no-op without the wave artifact)
   const a=g.players[0], b=g.players[1];
   if (a.passed && b.passed){ endRound(g); return; }
   // Mahabali free-play extra turn — the acting player keeps the turn once.
@@ -1754,7 +1780,7 @@ function roundEndCardEffects(g){
   const RE_IDS = new Set(['dawnsentinel','kamadhenu','pisacha','mahishasura','sushena']);   // WAVE 1 batch 11 adds sushena
   let active=false;
   for (let s=0;s<2 && !active;s++){ const pl=g.players[s];
-    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='livingbridge' || pl.artifact.id==='drownedaltar' || pl.artifact.id==='ironcrucible' || pl.artifact.id==='kalpavriksha')) || pl.heroes.some(h=>h.id==='mahishi')) active=true; }   // + Living Bridge / Drowned Altar / Iron Crucible / Kalpavriksha (batch-16) + Mahishi (batch-19 hero). Padmavati MOVED OUT (R54: pre-drain slot, before venomRoundEnd).
+    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='drownedaltar' || pl.artifact.id==='ironcrucible' || pl.artifact.id==='kalpavriksha')) || pl.heroes.some(h=>h.id==='mahishi')) active=true; }   // + Drowned Altar / Iron Crucible / Kalpavriksha (batch-16) + Mahishi (batch-19 hero). R63: Living Bridge LEFT this hook (now a formation-moment trigger, see checkBridgeLine). Padmavati MOVED OUT (R54: pre-drain slot, before venomRoundEnd).
   if (!active) return;   // no round-end subscriber on the board → no-op
   // Snapshot "an enemy Unit died this round" BEFORE this hook's own decay-kills, so Mahishasura is independent of intra-hook order (R21+).
   const enemyDied = [ g.players[1].deathsThisRound>0, g.players[0].deathsThisRound>0 ];
@@ -1780,9 +1806,8 @@ function roundEndCardEffects(g){
     // WAVE 1 batch 16 — The Iron Crucible (R42 slot: adjacent to Sushena, a restore): each of your Units that LOST power this round regains 1 (+1 CURRENT power, NOT capped at base — a permanent-cut/decay unit whose power==base must still regain, the anti-decay intent). Reads the per-round lostPowerUids set (populated at damageUnit/venomLoss/Surpanakha/Pisacha/Mahishasura). Runs AFTER Pisacha/Mahishasura decay (same hook, earlier) so decayed units are counted.
     if (pl.artifact && pl.artifact.id==='ironcrucible'){ const regained=pl.units.filter(u=>!u.ghost && pl.lostPowerUids.has(u.uid)); for (const u of regained) u.power+=1;
       if (regained.length){ log(g,`The Iron Crucible reforges ${regained.length} Unit(s) that paid the price: +1 each.`); emit(g,'buff',{targetUids:regained.map(u=>u.uid),amount:1,abilityName:'The Iron Crucible',text:'+1'}); } }
-    // WAVE 1 batch 11 — The Living Bridge (R40 SIM-FLAGGED, as-written): 4+ non-ghost Units → ALL of them +1 PERMANENT (base AND power). AFTER Sushena.
-    if (pl.artifact && pl.artifact.id==='livingbridge'){ const line=pl.units.filter(u=>!u.ghost); if (line.length>=4){ for (const u of line){ u.base+=1; u.power+=1; } log(g,`The Living Bridge holds — all ${line.length} Units +1 (permanent).`); emit(g,'buff',{targetUids:line.map(u=>u.uid),amount:1,abilityName:'The Living Bridge',text:'+1'}); } }
-    // WAVE 1 batch 13 — The Drowned Altar runs AFTER the Living Bridge (deterministic hook order, R42): mill the top deck card → discard; if it is a Unit, all your Units +1 CURRENT power this round (counts for scoring). Empty deck → nothing.
+    // R63 (balance round 1): The Living Bridge is NO LONGER a round-end effect — it is a formation-moment trigger (see checkBridgeLine, fired from afterAction). This slot is intentionally empty.
+    // WAVE 1 batch 13 — The Drowned Altar (deterministic hook order, R42): mill the top deck card → discard; if it is a Unit, all your Units +1 CURRENT power this round (counts for scoring). Empty deck → nothing.
     if (pl.artifact && pl.artifact.id==='drownedaltar'){ const milled=pl.deck.shift();
       if (milled){ pl.discard.push(milled);
         if (milled.t==='unit'){ const line=pl.units.filter(u=>!u.ghost); for (const u of line) u.power+=1; log(g,`The Drowned Altar drowns ${milled.n} — a Unit! ${pl.name}'s host swells +1 this round.`); if (line.length) emit(g,'buff',{targetUids:line.map(u=>u.uid),amount:1,abilityName:'The Drowned Altar',text:'+1'}); }
@@ -2307,5 +2332,5 @@ if (typeof module!=='undefined'){
     mulligan, aiMulliganPlan, REALMS, REALM_INFO, designateShield, shieldCap,
     DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME, ASTRA_DMG,
     endRound, roundEndCardEffects, preDrainTokens, castMantra, moveUnit, swapUnits, adjacentUnits, destroyUnit, damageUnit,
-    aiScoreCard, stonesAnchor };   // moveUnit/swapUnits/adjacentUnits/preDrainTokens/destroyUnit/damageUnit exported for tests (benign; venomRoundEnd already exported above). TASK 22: aiScoreCard/stonesAnchor for behavioral proofs (benign, test-only).
+    aiScoreCard, stonesAnchor, checkBridgeLine };   // moveUnit/swapUnits/adjacentUnits/preDrainTokens/destroyUnit/damageUnit exported for tests (benign; venomRoundEnd already exported above). TASK 22: aiScoreCard/stonesAnchor. TASK 23 (R63): checkBridgeLine for the behavioral matrix (benign, test-only).
 }

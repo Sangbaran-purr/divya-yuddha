@@ -65,7 +65,7 @@ function scan(g, F, mkey){
   if(has('Kalpavriksha grants') && has('Dawn Banner is raised')) bump(F,'kalpa_banner',1,0);
   if(has('Kalpavriksha grants')) bump(F,'kalpavriksha',1,0);
   // 10 Living Bridge
-  const lb=all(L,'The Living Bridge holds'); bump(F,'livingbridge', lb>0?1:0, sum(L,'holds — all (\\d+)'));
+  const lb=all(L,'The Living Bridge spans'); bump(F,'livingbridge', lb>0?1:0, sum(L,'spans — the (\\d+)'));
   // 11 Suryastra (in Patala handled by the realm=patala batch)
   const sury=all(L,'Suryastra blazes'); bump(F,'suryastra', sury>0?1:0, sury);
   // 12 Kartikeya answers (astra self-punishment)
@@ -198,7 +198,7 @@ function vanaraExec(N){
       if(w>peak){ peak=w; handAtPeak=v.hand.filter(c=>c.t==='unit').length; } }
     const L=g.log.map(l=>l.msg).join('\n');
     leaps+=all(L,'Leap!'); vault+=all(L,'Vault of the Sky lifts'); stones+=all(L,'enter adjacent'); riksha+=all(L,'Riksha');
-    if(inPlaySide(g,1,'livingbridge')){ bridgeOn++; if(L.includes('The Living Bridge holds')) bridgeFire++; }
+    if(inPlaySide(g,1,'livingbridge')){ bridgeOn++; if(L.includes('The Living Bridge spans')) bridgeFire++; }
     peakSum+=peak; if(peak>=4)peakGe4++; handAtPeakSum+=handAtPeak; if(peak+handAtPeak>=4)ceilGe4++;
   }
   return { games, leapsPerGame:leaps/games, vaultPerGame:vault/games, stonesPer:stones/games, rikshaPer:riksha/games,
@@ -222,8 +222,8 @@ function probe22(N){
       if (hadStones && v.units.filter(u=>!u.ghost).length>before) stonesOpp++;   // a Unit entered while Setu Stones was active (an anchor OPPORTUNITY; post-22 sets the anchor on each — proven behaviorally)
     }
     const L=g.log.map(l=>l.msg).join('\n');
-    if (L.includes('plays The Living Bridge')){ bridgePlayed++; if (L.includes('The Living Bridge holds')) bridgeFire++; }
-    if (inPlaySide(g,1,'livingbridge')){ bridgeOnEnd++; if (L.includes('The Living Bridge holds')) bridgeFireEnd++; }   // 21b method (end-state), for apples-to-apples delta vs 29.3%
+    if (L.includes('plays The Living Bridge')){ bridgePlayed++; if (L.includes('The Living Bridge spans')) bridgeFire++; }
+    if (inPlaySide(g,1,'livingbridge')){ bridgeOnEnd++; if (L.includes('The Living Bridge spans')) bridgeFireEnd++; }   // 21b method (end-state), for apples-to-apples delta vs 29.3%
   }
   // Garuda plays/fires over Deva games
   let gPlays=0, gFires=0;
