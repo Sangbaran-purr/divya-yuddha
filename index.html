@@ -2776,7 +2776,9 @@ function endRound(g){
     pl.vanguardTriggered=false; pl.raktabijaCurse=false;   // WAVE 1 batch 9: Vanguard once/round re-arms; an unconsumed Raktabija's Curse expires at round end
     // Gandharva Lok: both players draw 1 extra at the START of Round 2 (g.round is still 1 here, pre-increment).
     const extra = (g.realm==='gandharva' && g.round===1) ? 1 : 0;
-    const drawn = pl.deck.splice(0, g.drawCount+extra); pl.hand.push(...drawn);   // g.drawCount default 2
+    const dmDraw = difficultyOf(pl).extraDraw || 0;   // TASK D3 structural edge: a DEATHMATCH AI draws +1 at the start of rounds 2 & 3 (deck-permitting; splice consumes no rng → advanced/absent byte-identical). Visible in the deck counter (self-documenting like the 11th card).
+    const drawn = pl.deck.splice(0, g.drawCount+extra+dmDraw); pl.hand.push(...drawn);   // g.drawCount default 2
+    if (dmDraw && drawn.length>g.drawCount+extra) log(g,`${pl.name} draws deeper (Death Match).`);
     if (extra) log(g,`Gandharva Lok: ${pl.name} draws an extra card for Round 2.`);
     for (const c of pl.hand) c.lockedRound=0;
   }
@@ -3000,6 +3002,18 @@ function aiScoreCard(g, pi, c){
     const mine=pl.units.filter(u=>!u.ghost).length;
     s -= 0.5 + mine*0.15;
   }
+  // ---- TASK D3: DEATHMATCH SCORING OVERLAY (id-gated on difficulty → advanced/beginner path byte-untouched) ----
+  if (pl.difficulty==='deathmatch'){
+    const O = DIFFICULTY.deathmatch.overlay;
+    const foes = opp.units.filter(u=>!u.ghost);
+    const bestEnemy = foes.length ? Math.max(...foes.map(u=>effPower(g,1-pi,u))) : 0;   // (b/c) PUBLIC best enemy threat
+    if (DM_ANSWERS.has(c.id)){
+      s += O.threatScale * bestEnemy;                       // (b) THREAT ANSWERS: scale removal/debuff with the real threat
+      if (bestEnemy < O.holdThreshold) s -= O.holdPenalty;  // (c) HOLD DISCIPLINE: no real threat → keep the answer
+    }
+    if (DM_ENABLERS.has(c.id) && astrasInHand>0) s += O.seqEnabler;   // (a) SEQUENCING: enabler before the payoff Astras
+    if (c.id==='kali' && !pl.chaosThisRound && (astrasInHand>0 || (pl.artifact && DM_ENABLERS.has(pl.artifact.id)))) s -= O.seqSurgeHold;   // (a) hold the surge-payoff one beat while enablers/Astras queue
+  }
   return s;
 }
 
@@ -3009,10 +3023,25 @@ function aiScoreCard(g, pi, c){
    Stored as pl.difficulty; ALL difficulty randomness draws from g.rng (seed discipline preserved).
    HONEST-AI RULE (unchanged at every tier): no difficulty path reads hidden information — the AI never inspects
    the opponent's hand/deck order; it decides only from public board/round state, exactly as the launch AI does. */
+// TASK D3 — the deathmatch SCORING OVERLAY (active ONLY at 'deathmatch'; every constant lives here). All levers use
+// PUBLIC board/hand-count state only — NO hidden-information read (the honest-AI rule: the AI never inspects the
+// opponent's hand contents or deck order, at any difficulty). The overlay is applied at the tail of aiScoreCard
+// under an explicit pl.difficulty==='deathmatch' gate, so the advanced/beginner scoring path is byte-untouched.
+const DM_ANSWERS  = new Set(['vajra','gandiva','agneyastra','shaktispear','jatayu','mohanastra','sudarshana','vayavyastra','surpanakha','meghnad','tataka','vayu','ashvatara','nagapasha','worldcoil','vinatastalon','anjaneyaroar','naraka','sarpasatra']);   // single-target/removal/debuff "answers" — value scales with the real threat, held when there is none
+const DM_ENABLERS = new Set(['chandrahas','blueprint']);   // engine-pieces that must land BEFORE the payoff Astras
 const DIFFICULTY = {
-  beginner:   { randomPlayP:0.5, autoMulligan:false, extraCard:0, concession:false },   // 50% uniformly-random legal play (else argmax); ALSO misaims (random legal target) + misplaces (random slot); NO mulligan; NO strategic early-pass — passes only when out of legal cards
-  advanced:   { randomPlayP:0,    autoMulligan:false, extraCard:0, concession:false },  // the launch AI — zero code-path deviation
-  deathmatch: { randomPlayP:0,    autoMulligan:true,  extraCard:1, concession:true  },  // guaranteed mulligan + an 11th setup card + a sharper round-concession heuristic (on top of the launch passes)
+  beginner:   { randomPlayP:0.5, autoMulligan:false, extraCard:0, extraDraw:0, concession:false },   // 50% uniformly-random legal play (else argmax); ALSO misaims (random legal target) + misplaces (random slot); NO mulligan; NO strategic early-pass — passes only when out of legal cards
+  advanced:   { randomPlayP:0,    autoMulligan:false, extraCard:0, extraDraw:0, concession:false },  // the launch AI — zero code-path deviation
+  deathmatch: { randomPlayP:0,    autoMulligan:true,  extraCard:1, extraDraw:1, concession:true,     // 11th setup card + extraDraw:1 at rounds 2&3 (deck-permitting) + the sharper concession + the scoring overlay
+    overlay: {
+      threatScale:   0.6,   // (b) THREAT ANSWERS: an answer's score += threatScale × best-enemy effPower (public board)
+      holdThreshold: 5,     // (c) HOLD DISCIPLINE: if NO enemy Unit's effPower reaches this, devalue answers (keep them for real threats)
+      holdPenalty:   3,     // (c) how much to devalue a held answer
+      seqEnabler:    4,     // (a) SEQUENCING: land Chandrahas/Blueprint before spending Astras (+bonus while Astras are in hand)
+      seqSurgeHold:  2,     // (a) SEQUENCING: nudge a lone surge-payoff (Kali) to wait one beat when Astras/enablers are queued
+      concedeAt:    -10,    // (d) ROUND ECONOMY: concede a lost non-final round EARLIER than launch's −14 (bank the surplus)
+      bleedLead:     8,     // (d) ROUND ECONOMY (the bleed): when comfortably ahead on BOARD and holding MORE cards, pass to bank cards
+    } },
 };
 function difficultyOf(pl){ return DIFFICULTY[pl && pl.difficulty] || DIFFICULTY.advanced; }
 
@@ -3064,8 +3093,13 @@ function aiMove(g, pi){
   if (!mustWin && !wantWin && g.round===1 && lead>=10 && pl.hand.length<=opp.hand.length-1) return { pass:true }; // card-advantage bluff
   // (d) if behind and Mahabali is on our board, concede sooner — the Pass arms a free Unit + extra turn next round.
   const mahaOnBoard = pl.faction==='asuras' && pl.heroes.some(h=>h.id==='mahabali');
-  const concedeAt = (mahaOnBoard && g.round<3) ? -8 : -14;
+  const dmO = diff.overlay;   // deathmatch-only ROUND-ECONOMY knobs (undefined for advanced/beginner → the two branches below are inert on the shared path)
+  let concedeAt = (mahaOnBoard && g.round<3) ? -8 : -14;
+  if (dmO) concedeAt = Math.max(concedeAt, dmO.concedeAt);   // (d) DEATHMATCH concedes a lost non-final round EARLIER (−10) — banks the surplus for a winnable round
   if (!mustWin && lead<=concedeAt && g.round<3) return { pass:true };  // concede a lost round, preserve cards
+  // (d) DEATHMATCH THE BLEED: comfortably ahead on BOARD and holding MORE cards in a non-final round → pass now and
+  // bank the surplus (force the opponent to over-spend to reclaim the round, or concede it cheaply). Public counts only.
+  if (dmO && !mustWin && !wantWin && g.round<3 && lead>=dmO.bleedLead && pl.hand.length>opp.hand.length) return { pass:true };
 
   // DEATHMATCH round-concession (TASK D1) — a SHARPER concede on top of the launch heuristics above.
   // RULE (verbatim): in a non-final round we do not need to win, pass when the round deficit exceeds the AI's
@@ -3311,7 +3345,7 @@ let selectedDifficulty='advanced';
 const DIFF_META = {
   beginner:   { chip:'🌱 BEGINNER',   disclose:'The AI plays loosely — a gentler fight to learn the war. Rewards ×0.8.', warn:false },
   advanced:   { chip:'⚔ ADVANCED',    disclose:'The AI plays to win — the standard battle. Rewards ×1.0.',              warn:false },
-  deathmatch: { chip:'💀 DEATH MATCH', disclose:'The AI starts with an extra card. No mercy. Rewards ×1.5.',            warn:true  },
+  deathmatch: { chip:'💀 DEATH MATCH', disclose:'The AI starts with an extra card, draws deeper every round, and shows no mercy. Rewards ×1.5.', warn:true  },
 };
 function renderDiffSelector(){
   document.querySelectorAll('#diffopts .dbtn').forEach(b=> b.classList.toggle('sel', b.dataset.d===selectedDifficulty));
