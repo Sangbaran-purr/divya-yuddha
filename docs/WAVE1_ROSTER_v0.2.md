@@ -42,7 +42,7 @@ U Airavata's Calf    R  P4  Enters shielded.
 U Saranyu, Cloud Mare E P5  On Play: two friendly Units exchange current power. [REDESIGNED — positional cut, invariant preserved]
 M Dawn's Rebirth     E  —   Return highest Unit from discard at printed power; cannot be shielded this match. [RENAMED — Ushas homophone]
 A Suryastra          L  —   Deal 2 to ALL enemies. [dmgAstra:true; SIM: Patala 3-AoE; text must carry AoE-pierces-shield truth]
-H GARUDA             L  P7  On Play: remove all friendly Venom; +1 per token. [accepted-risk name vs Varuna]
+H GARUDA             L  P7  On Play: remove all friendly Venom; +1 per token. [accepted-risk name vs Varuna] [CANONIZED BY R58: per-unit +1 POWER per token removed (power-only, base untouched); no-friendly-venom = no-op]
 AR Kalpavriksha      M  —   Round End: lowest Unit becomes equal to highest. [SIM: + Dawn Banner wide board]
 
 ═══════════════ ASURAS — "THE PRICE" ═══════════════
@@ -69,7 +69,7 @@ U Surpanakha         R  P4  On Play: enemy Unit −1 permanently.
 U Atikaya            E  P6  Enters −2 if you haven't passed this match; +2 if you have. [pass tracking exists]
 A Brahmadanda        E  —   Negate next enemy Astra this round. [pre-ruled: Surge still procs for caster (R12); SIM: mirror warp → soften to "deals no damage"]
 M Maya Veil          E  —   Your Units untargetable by Astras this round (AoE pierces). [ch3 shield-boundary rhyme]
-H MAHISHI            L  P7  Round End: copies strongest Unit's POWER (Hero row kept, no abilities). [RULED power-only]
+H MAHISHI            L  P7  Round End: copies strongest Unit's POWER (Hero row kept, no abilities). [RULED power-only] [CANONIZED BY R59: strongest FRIENDLY by effPower; LAST in round-end hook (after Kalpavriksha), pre-scoring; power-only, persists; no-unit = keeps power]
 AR The Iron Crucible M  —   Round End: your Units that lost power this round regain 1. [RETHEMED — price-tag system dead; SIM: anti-Naga drift]
 
 ═══════════════ VANARAS — "THE BRIDGE" ═══════════════
@@ -120,11 +120,11 @@ AR The Drowned Altar E  —   Round End: mill top card; your Units +1 this round
 H PADMAVATI          L  P7  Round End: 1 Venom to strongest enemy.
 RATNA:
 U Silt Strangler     R  P4  On Play: enemy loses power = its Venom count (tokens remain). [CANONIZED BY R56: routes damageUnit — Holika sharpens, Patala realm does NOT amplify, Crucible-regainable, ignores astraProtected; target=highest-venom; no-venom = no-op]
-U Nahusha, Fallen King E P6 On Play: choose the realm's effect to apply to YOUR side only this round. [RETHEMED — symmetry preserved; moderate; own feasibility look at impl]
+U Nahusha, Fallen King E P6 On Play: choose the realm's effect to apply to YOUR side only this round. [RETHEMED — symmetry preserved; moderate; own feasibility look at impl] [SPEC'D BY R61: per-side realm-enabled state; on-play SUPPRESSES the realm on the ENEMY side this round (subtraction); round-bound revert; auto on single realm (no picker); no-realm = no-op; mirror = realm dead both sides; R46 bounce re-trigger]
 A World-Coil Constrictor E — Bind an enemy until it loses a Venom token. [bind precedent]
 M The Long Patience  E  —   Apply 1 Venom to EVERY enemy Unit. [impl note: "skip your turn" = normal Mantra turn economy]
-H KULIKA             L  P8  On Play: transfer all friendly Venom to enemies (random). [voice/gallery note vs Kaliya]
-AR Throne of the Second King M — Venom drains STEAL: strongest friendly gains what Venom takes. [SIM PRIORITY: most-likely-broken card in the wave]
+H KULIKA             L  P8  On Play: transfer all friendly Venom to enemies (random). [voice/gallery note vs Kaliya] [CANONIZED BY R60: transfer needs a destination — no enemy = no-op, venom STAYS; per-token g.rng]
+AR Throne of the Second King M — Venom drains STEAL: strongest friendly gains what Venom takes. [SIM PRIORITY: most-likely-broken card in the wave] [SPEC'D BY R62: ENEMY drains only (own/Uraga self-drain NOT stolen); every drain event via venomLoss; actual-removed (overkill excluded); per-event highest-effPower recipient, heroes eligible; POWER-ONLY gains; no-recipient = lost; uncapped]
 
 ═══════════════ ENGINE-IMPACT REGISTER (post-review) ═══════════════
 ENGINE TASK 1 (first of the wave, full gate + baseline): dmgAstra card tag,

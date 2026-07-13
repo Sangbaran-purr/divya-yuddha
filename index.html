@@ -1317,6 +1317,9 @@ const NAGA_DECK_DEF = [
   { id:'siltstrangler',n:'Silt Strangler',sub:'The Drowner',       t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: An enemy Unit loses power equal to its Venom count (the tokens remain).' },
   // ---- WAVE 1 (batch 19 — deferred heroes) ----
   { id:'kulika',   n:'Kulika',           sub:'Warden of the Nether-Naga',t:'hero', p:8, r:'L', wave:1, txt:'ON PLAY: Transfer all Venom from your Units to random enemy Units.' },
+  // ---- WAVE 1 (batch 20 — the final two: closes the wave 88/88) ----
+  { id:'nahusha',  n:'Nahusha, Fallen King',sub:'The Cursed Serpent',t:'unit', p:6, r:'E', wave:1, txt:"ON PLAY: This round, the Cosmic Realm's effect applies to your side only." },
+  { id:'secondthrone',n:'Throne of the Second King',sub:'Seat of the Drowned Crown',t:'artifact', p:0, r:'M', wave:1, txt:'PASSIVE: When an enemy Unit loses power to Venom, your strongest Unit gains that much power.' },
 ];
 
 const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
@@ -1338,6 +1341,10 @@ const REALM_INFO = {
   kalki:     { name:'Kalki Kshetra', fx:'The last card played each round gains +2 power (only if it is a Unit or Hero).' },
 };
 const realmIs = (g, key) => g.realm===key;
+// WAVE 1 batch 20 — R61 Nahusha: the Cosmic Realm is per-side (default ON). realmActiveFor(side) is false only when Nahusha
+// has SUPPRESSED that side's realm THIS round (round-stamp, auto-expires). Flag-off (no Nahusha) → stamp 0 → always true → every
+// realm site behaves exactly as before (byte-identical). Six realm sites gate on realmActiveFor(<beneficiary side>) — see R61 map.
+const realmActiveFor = (g, side) => g.players[side].realmSuppressedRound !== g.round;
 // Damage-dealing Astras (Patala realm +1), DERIVED from the `dmgAstra:true` card tag (keyed by name — the `cause` string).
 // A permanent invariant in test.js pins the expected members so a tag typo fails loudly. (Wave-1 dmgAstra cards tag in behind the wave1 flag.)
 const ASTRA_DMG = new Set(Object.values(CARD_BY_NAME).filter(c => c.dmgAstra).map(c => c.n));
@@ -1375,6 +1382,7 @@ function mkPlayer(name, rng, faction='devas', spec, wave1){
     vanguardTriggered:false, raktabijaCurse:false,   // WAVE 1 batch 9 (event-trigger): Kartikeya's Vanguard once-per-round guard + Raktabija's Curse armed flag (both reset each round)
     matangaArmed:false,   // WAVE 1 batch 15 (leap-utility): Matanga's Blessing arm — consumed by the next doLeap, reset each round (expires if unused)
     lostPowerUids:new Set(), brahmadandaArmed:0,   // WAVE 1 batch 16 (artifact/counter): per-round set of Unit uids that LOST power (Iron Crucible reads it; g.wave1-gated writes) + Brahmadanda arm round-stamp (negates the next enemy Astra's effect). Both reset each round.
+    realmSuppressedRound:0,   // WAVE 1 batch 20 (R61 Nahusha): round-stamp — when === g.round, THIS side's Cosmic Realm effect is suppressed this round. Default 0 → realmActiveFor true → byte-identical flag-off.
     dawnBannerFrom:0,   // WAVE 1 batch 12: Dawn Banner — round # from which the +1 aura is active (set to g.round+1 on play; 0 = inactive). Match-long stamp (survives the artifact clear); the "next round start" + "compounding" reading.
     mulliganed:false, manualShield:false };
 }
@@ -1473,7 +1481,7 @@ function emit(g, type, o){
 /* ---------- power & shields ---------- */
 function indraOnBoard(pl){ return pl.heroes.some(h=>h.id==='indra'); }
 function effPower(g, pi, c){
-  if (c.t==='hero') return c.power + (g.realm==='swarga'?1:0);   // Swarga realm: all Heroes +1 for the match
+  if (c.t==='hero') return c.power + ((g.realm==='swarga' && realmActiveFor(g,pi))?1:0);   // Swarga realm: all Heroes +1 (R61: gated on the hero owner's realm-enabled state)
   // EXP-G (ruling revision): Kumbhakarna's power DOES count while asleep — 'asleep' now only defers his wake-sweep.
   let p = c.power;
   if (!c.ghost && indraOnBoard(g.players[pi])) p += 1;   // Indra aura (Deva)
@@ -1640,14 +1648,31 @@ function drainAmount(g, np){
 }
 // A Venom power loss to unit u (owner pi). §9: Signet FLOORS friendly Vanara Units at 1 (the drain still applies,
 // grinding them down — but never below 1, never destroyed). Token negation is handled separately in venomTokens (b).
+// WAVE 1 batch 20 (R62) — Throne of the Second King: when an ENEMY unit loses power to Venom, the Throne owner's highest-effPower
+// friendly (heroes eligible) GAINS the actual power removed. R62c overkill excluded; R62d recipient re-evaluated per event, POWER-ONLY
+// (base untouched); R62e no friendly presence → steal LOST; R62f uncapped. Own/Uraga self-drains fall out for free: for the owner's own
+// drain the victim's owner IS the Throne owner, so 1-victimPi is the other side (no Throne) → no steal.
+function secondThroneSteal(g, victimPi, before, u){
+  const own = 1-victimPi; const art = g.players[own].artifact;
+  if (!art || art.id!=='secondthrone') return;
+  const actual = before - Math.max(0, u.power);                    // R62c: what venom actually removed (overkill on a dying unit does not transfer)
+  if (actual <= 0) return;
+  const pool = g.players[own].units.filter(x=>!x.ghost).concat(g.players[own].heroes.filter(h=>!h.ghost));
+  if (!pool.length) return;                                        // R62e: no friendly presence at the event → the steal is lost, not banked
+  const r = pool.reduce((a,b)=>effPower(g,own,a)>=effPower(g,own,b)?a:b);   // R62d: highest-effPower friendly (heroes eligible), per-event
+  r.power += actual;                                               // R62d: POWER-ONLY (base untouched); R62f: uncapped
+  log(g, `Throne of the Second King — ${r.n} drinks the stolen venom (+${actual}).`);
+  emit(g,'buff',{targetUids:[r.uid],amount:actual,abilityName:'Throne of the Second King',text:`+${actual}`});
+}
 function venomLoss(g, pi, u, amt){
   const before=u.power;
   if (u.id==='holika') amt += 1;                             // WAVE1 R22: Holika suffers +1 from every non-Astra loss — venom included.
-  if (signetActive(g.players[pi]) && u.t==='unit'){ u.power = Math.max(1, u.power - amt); if (g.wave1 && u.power<before) g.players[pi].lostPowerUids.add(u.uid); emit(g,'venom',{targetUids:[u.uid],amount:u.power-before,abilityName:'Venom',text:'☠'}); return; }   // §9 Signet: floor, not immunity
+  if (signetActive(g.players[pi]) && u.t==='unit'){ u.power = Math.max(1, u.power - amt); if (g.wave1 && u.power<before) g.players[pi].lostPowerUids.add(u.uid); emit(g,'venom',{targetUids:[u.uid],amount:u.power-before,abilityName:'Venom',text:'☠'}); if (g.wave1) secondThroneSteal(g, pi, before, u); return; }   // §9 Signet: floor, not immunity
   u.power -= amt;
   if (u.power<1 && u.id==='hiranya') u.power=1;                            // Hiranyakashipu endures venom
   if (g.wave1 && u.power<before) g.players[pi].lostPowerUids.add(u.uid);   // WAVE 1 batch 16 — Iron Crucible: venom drain counts as a power loss (g.wave1-gated)
   emit(g,'venom',{targetUids:[u.uid],amount:u.power-before,abilityName:'Venom',text:'☠'});
+  if (g.wave1) secondThroneSteal(g, pi, before, u);   // WAVE 1 batch 20 (R62) — the Throne of the Second King steal (g.wave1-gated → hot path pristine flag-off)
   // WAVE 1 batch 13 — World-Coil Constrictor: the bind releases when the unit LOSES a Venom token (= suffers a venom drain while venomed). id-gated by the marker → no-op flag-off.
   if (u.bound && u.worldCoilBound && u.venom>0){ u.bound=false; u.worldCoilBound=false; log(g,`World-Coil's grip slips as the venom bites ${u.n} — it is freed.`); emit(g,'passive',{targetUids:[u.uid],abilityName:'World-Coil Constrictor',text:'released'}); }
 }
@@ -1790,7 +1815,7 @@ function damageUnit(g, pi, unit, amt, cause){
     }
     amt += 1;                                                 // any non-Astra loss sharpened +1
   }
-  if (g.realm==='patala' && ASTRA_DMG.has(cause)) amt += 1;   // Patala realm: all Astra damage +1
+  if (g.realm==='patala' && ASTRA_DMG.has(cause) && realmActiveFor(g,1-pi)) amt += 1;   // Patala realm: all Astra damage +1 (R61: gated on the astra CASTER's realm-enabled state; for every ASTRA_DMG cause the victim pi is the caster's enemy → caster = 1-pi)
   unit.power -= amt;
   if (g.wave1) g.players[pi].lostPowerUids.add(unit.uid);     // WAVE 1 batch 16 \u2014 Iron Crucible: this Unit lost power this round (g.wave1-gated \u2192 hot damage path pristine flag-off)
   log(g, `${unit.n} takes ${amt} damage (${cause}) \u2192 ${Math.max(unit.power,0)}.`);
@@ -2459,7 +2484,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         break; }
       case 'vishwakarma':
         // Yaksha Lok: Artifacts cannot be destroyed → Vishwakarma whiffs (no destroy, no +2 scaling all match).
-        if (opp.artifact && g.realm==='yaksha'){ log(g,`Yaksha Lok shields ${opp.artifact.n} — Vishwakarma cannot unmake it.`); }
+        if (opp.artifact && g.realm==='yaksha' && realmActiveFor(g,1-pi)){ log(g,`Yaksha Lok shields ${opp.artifact.n} — Vishwakarma cannot unmake it.`); }   // R61: Yaksha protection is gated on the DEFENDER's (opp = 1-pi) realm-enabled state
         else if (opp.artifact && opp.artifactShieldRound===g.round){ log(g,`Ribhu Craftsman’s work shields ${opp.artifact.n} — Vishwakarma cannot unmake it.`); }   // WAVE 1: Ribhu Craftsman — Artifact untargetable this round (wired to the only artifact-destroyer in the pools)
         else if (opp.artifact){ log(g,`Vishwakarma unmakes ${opp.artifact.n}.`); opp.discard.push(opp.artifact); opp.artifact=null; pl.artifactsDestroyedByMe++; }
         if (pl.artifactsDestroyedByMe>0){ c.power += 2*pl.artifactsDestroyedByMe; log(g,`Vishwakarma stands at ${c.power}.`); }
@@ -2644,6 +2669,9 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
       case 'nagaenchantress': opp.mustPlayUnit=true; log(g,`Naga Enchantress lures — ${opp.name}’s next card must be a Unit.`); break;
       case 'nagawarrior': break;   // PASSIVE handled in effPower (venomTokenCount)
       case 'nagahatchling': if (opp.units.some(u=>!u.ghost && u.venom>0)){ c.power+=2; log(g,'Naga Hatchling feeds on the venom in the air (+2).'); } break;
+      case 'nahusha':   // WAVE 1 batch 20 (R61) — ON PLAY: apply the Cosmic Realm to YOUR side only this round = SUPPRESS it on the ENEMY side (subtraction). Round-bound stamp (=== g.round, auto-expires next round). No active realm (Mrityulok) = no-op. Single realm → automatic, no picker. Re-entry via bounce re-triggers normally (R46 lock is the loop guard). Mirror: both Nahusha → each suppresses the other → realm dead both sides (R61e).
+        if (g.realm && g.realm!=='mrityulok'){ opp.realmSuppressedRound = g.round; log(g,`Nahusha, Fallen King bends ${REALM_INFO[g.realm].name} to his side alone — ${opp.name} loses its blessing this round.`); emit(g,'passive',{sourceUid:c.uid,abilityName:'Nahusha, Fallen King',text:'realm suppressed'}); }
+        else log(g,'Nahusha, Fallen King finds no realm-power to bend (Mrityulok).'); break;
       case 'patalahatchling': { const foes=opp.units.filter(u=>!u.ghost);   // WAVE 1 batch 18 — ON PLAY: 1 Venom to a RANDOM enemy (g.rng). Nagastra application precedent; not damage. No enemy → no-op.
         if (foes.length){ const t=foes[Math.floor(g.rng()*foes.length)]; t.venom=(t.venom||0)+1; log(g,`Patala Hatchling spits venom at ${t.n}.`); emit(g,'token',{sourceUid:c.uid,targetUids:[t.uid],abilityName:'Patala Hatchling',text:'Venom Token'}); }
         else log(g,'Patala Hatchling hisses at empty air.'); break; }
@@ -2725,7 +2753,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
     // Still spell-gated; Chandrahas's "twice while active" applies, but Bana/Berserker/Tripura (Astra-only) do not.
     if (pl.faction==='asuras'){ const chandra = pl.artifact && pl.artifact.id==='chandrahas'; chaosSurge(g, pi, chandra?2:1); }
     // Rishi Mandala: each Mantra is usable twice — after its FIRST cast it returns to hand (once) instead of the discard.
-    if (g.realm==='rishi' && !c.rishiUsed){ c.rishiUsed=true; c.lockedRound=0; pl.hand.push(c);
+    if (g.realm==='rishi' && !c.rishiUsed && realmActiveFor(g,pi)){ c.rishiUsed=true; c.lockedRound=0; pl.hand.push(c);   // R61: Rishi's mantra-echo gated on the mantra CASTER's realm-enabled state
       log(g,`Rishi Mandala returns ${c.n} to ${pl.name}'s hand — it may be cast once more.`);
       emit(g,'passive',{sourceUid:c.uid,abilityName:'Rishi Mandala',text:`${c.n} returns to hand`}); }
     else pl.discard.push(c);
@@ -2863,7 +2891,7 @@ function endRound(g){
   if (g.realm==='kalki' && g.lastCardThisRound && g.lastCardThisRound.isBody){
     const uid=g.lastCardThisRound.uid;
     for (let s=0;s<2;s++){ const c=[...g.players[s].units, ...g.players[s].heroes].find(u=>u.uid===uid && !u.ghost);
-      if (c){ c.power+=2; log(g,`Kalki Kshetra blesses the last-played ${c.n}: +2.`); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:2,abilityName:'Kalki Kshetra',text:'+2'}); break; } }
+      if (c){ if (realmActiveFor(g,s)){ c.power+=2; log(g,`Kalki Kshetra blesses the last-played ${c.n}: +2.`); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:2,abilityName:'Kalki Kshetra',text:'+2'}); } break; } }   // R61: Kalki's +2 gated on the last-card OWNER's (side s) realm-enabled state
   }
   preDrainTokens(g);                                 // R54 — pre-drain token applications (Padmavati) land BEFORE the drain, so they tick THIS round end
   venomRoundEnd(g);                                  // Venom pipeline ticks BEFORE scoring (R1 death-at-0 via sweep)
@@ -2902,7 +2930,7 @@ function endRound(g){
     pl.deathsThisRound=0;   // WAVE 1 batch 3: per-round death count resets; saviturUids PERSIST all match (enchant)
     pl.vanguardTriggered=false; pl.raktabijaCurse=false;   // WAVE 1 batch 9: Vanguard once/round re-arms; an unconsumed Raktabija's Curse expires at round end
     // Gandharva Lok: both players draw 1 extra at the START of Round 2 (g.round is still 1 here, pre-increment).
-    const extra = (g.realm==='gandharva' && g.round===1) ? 1 : 0;
+    const extra = (g.realm==='gandharva' && g.round===1 && realmActiveFor(g,s)) ? 1 : 0;   // R61: Gandharva's extra draw gated per drawing side (s)
     const dmDraw = difficultyOf(pl).extraDraw || 0;   // TASK D3 structural edge: a DEATHMATCH AI draws +1 at the start of rounds 2 & 3 (deck-permitting; splice consumes no rng → advanced/absent byte-identical). Visible in the deck counter (self-documenting like the 11th card).
     const drawn = pl.deck.splice(0, g.drawCount+extra+dmDraw); pl.hand.push(...drawn);   // g.drawCount default 2
     if (dmDraw && drawn.length>g.drawCount+extra) log(g,`${pl.name} draws deeper (Death Match).`);
@@ -3052,6 +3080,9 @@ function aiScoreCard(g, pi, c){
     case 'garuda': { const fv=pl.units.reduce((n,u)=>n+(u.ghost?0:(u.venom||0)),0); s += fv; break; }   // P7 body + a friendly-Venom cleanse/buff (anti-Naga tech)
     case 'kulika': { const fv=pl.units.reduce((n,u)=>n+(u.ghost?0:(u.venom||0)),0); s += fv*0.5; break; }   // P8 body + transfer friendly Venom to the foe
     case 'mahishi': { const real=pl.units.filter(u=>!u.ghost); s += real.length ? Math.max(0, Math.max(...real.map(u=>effPower(g,pi,u))) - c.p)/2 : 0; break; }   // P7 body that copies the strongest each round
+    // ---- WAVE 1 batch 20 (the final two) — only reached when wave1 pool is on ----
+    case 'nahusha': s += (g.realm && g.realm!=='mrityulok') ? 1.5 : 0; break;   // P6 body + one-sided realm value when a realm is active
+    case 'secondthrone': s += isNaga(pl) ? 2 : 1; break;                        // venom-payoff artifact (steals enemy drains)
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
