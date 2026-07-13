@@ -106,20 +106,20 @@ U Patala Hatchling   C  P2  On Play: 1 Venom to a random enemy.
 U Coil Sentry        C  P3  Vanilla. [P1 — the ruling's origin card]
 U Molting Naga       C  P2  Destroyed → 1 Venom to highest enemy.
 U Venom Harvester    U  P3  On Play: +1 per Venom on enemy's strongest (max 3).
-U Shankhapala        U  P4  Round End: move 1 Venom between enemy Units.
+U Shankhapala        U  P4  Round End: move 1 Venom between enemy Units. [CANONIZED BY R55: pre-drain slot; source=most-venomed, dest=highest-effPower other; no-venom/no-distinct-dest = no-op]
 U Depth Caller       U  P3  On Play: +2 if a friendly Unit is in discard.
 M Rite of Shed Skin  U  —   Return friendly Unit to hand; re-enters at printed power. [bounce ruling applies]
 U Mahapadma          R  P5  Enemies with Venom cannot receive Dharma Shield. [SIM PRIORITY: the 41/59 counter]
 U Grave-Tide Naga    R  P4  On Play: +1 per Unit in EITHER discard (max 4).
 U Vishalakshi the Pale R P4 Enemy dies with Venom on it → +2 permanent. [RENAMED from Padma the Pale — three-Padma cluster]
 A Kalakuta Vial      R  —   Apply 2 Venom to one enemy. [not damage — no flag]
-M Hymn of the Depths R  —   All Venom drains trigger immediately, once. [Karkotaka timing precedent]
+M Hymn of the Depths R  —   All Venom drains trigger immediately, once. [Karkotaka timing precedent] [CANONIZED BY R57: exactly one mid-round pipeline pass; deaths count deathsThisRound; Astika respected; round-end drain NOT consumed]
 U Uraga Colossus     E  P7  Enters with 2 Venom on ITSELF; sheds 1/round. [friendly-venom-drains precedent R13]
 A Serpent's Kiss     E  —   Destroy an enemy Unit with 2+ Venom. [destroy-class]
 AR The Drowned Altar E  —   Round End: mill top card; your Units +1 this round if a Unit. [ENGINE+ mill trivial; SIM: self-deck-out in Gandharva]
 H PADMAVATI          L  P7  Round End: 1 Venom to strongest enemy.
 RATNA:
-U Silt Strangler     R  P4  On Play: enemy loses power = its Venom count (tokens remain).
+U Silt Strangler     R  P4  On Play: enemy loses power = its Venom count (tokens remain). [CANONIZED BY R56: routes damageUnit — Holika sharpens, Patala realm does NOT amplify, Crucible-regainable, ignores astraProtected; target=highest-venom; no-venom = no-op]
 U Nahusha, Fallen King E P6 On Play: choose the realm's effect to apply to YOUR side only this round. [RETHEMED — symmetry preserved; moderate; own feasibility look at impl]
 A World-Coil Constrictor E — Bind an enemy until it loses a Venom token. [bind precedent]
 M The Long Patience  E  —   Apply 1 Venom to EVERY enemy Unit. [impl note: "skip your turn" = normal Mantra turn economy]

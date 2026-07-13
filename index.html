@@ -1132,6 +1132,8 @@ const DEVA_DECK_DEF = [
   { id:'kalpavriksha',n:'Kalpavriksha', sub:'The Wish-Granting Tree',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your lowest-power Unit becomes equal to your highest-power Unit.' },
   // ---- WAVE 1 (batch 17 — heroes part 1) ----
   { id:'kartikeya',n:'Kartikeya',      sub:'Commander of the Host',t:'hero', p:8, r:'L', wave:1, txt:'PASSIVE: When an enemy Astra resolves against your side, all your Units gain +1 power permanently.' },
+  // ---- WAVE 1 (batch 19 — deferred heroes) ----
+  { id:'garuda',   n:'Garuda',          sub:'The Serpent-Eater',    t:'hero', p:7, r:'L', wave:1, txt:'ON PLAY: Remove all Venom from your Units; each gains +1 power per token removed.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
@@ -1194,6 +1196,8 @@ const ASURA_DECK_DEF = [
   { id:'vritra',   n:'Vritra',          sub:'The Withholder',       t:'hero', p:8, r:'L', wave:1, txt:'ON PLAY: Bind an enemy Unit (0 power contribution) while Vritra remains.' },
   { id:'brahmadanda',n:'Brahmadanda',   sub:'Staff of Brahma',      t:'astra', p:0, r:'E', wave:1, txt:'Negate the next enemy Astra this round.' },
   { id:'ironcrucible',n:'The Iron Crucible',sub:'Forge of the Price',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your Units that lost power this round regain 1.' },
+  // ---- WAVE 1 (batch 19 — deferred heroes) ----
+  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:7, r:'L', wave:1, txt:'ROUND END: Copy the power of your strongest Unit (power only).' },
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -1311,6 +1315,8 @@ const NAGA_DECK_DEF = [
   { id:'hymndepths',n:'Hymn of the Depths',sub:'Song of the Drowned',t:'mantra', p:0, r:'R', wave:1, txt:'All Venom drains trigger immediately, once.' },
   { id:'serpentskiss',n:"Serpent's Kiss",sub:'The Final Bite',     t:'astra', p:0, r:'E', wave:1, dmgAstra:false, txt:'Destroy an enemy Unit with 2 or more Venom.' },
   { id:'siltstrangler',n:'Silt Strangler',sub:'The Drowner',       t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: An enemy Unit loses power equal to its Venom count (the tokens remain).' },
+  // ---- WAVE 1 (batch 19 — deferred heroes) ----
+  { id:'kulika',   n:'Kulika',           sub:'Warden of the Nether-Naga',t:'hero', p:8, r:'L', wave:1, txt:'ON PLAY: Transfer all Venom from your Units to random enemy Units.' },
 ];
 
 const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
@@ -2395,6 +2401,20 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
       if (source){ c.power = effPower(g, pi, source); log(g,`Makardhwaja leaps in ${source.n}'s shadow — his strength becomes ${c.power}.`); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],abilityName:'Makardhwaja',text:`copies ${source.n}`}); }
       else log(g,'Makardhwaja finds no strength to borrow — he enters at his printed power.');
     }
+    if (c.id==='garuda'){   // WAVE 1 batch 19 (Deva hero) — ON PLAY: remove ALL Venom from your Units; each cleansed Unit gains +1 power PER token removed FROM IT (Pavamana venom-clause precedent — restore what venom took; NOT the debuff-heal, this is venom-only). A Garuda-himself-buff reading was rejected in favour of the per-unit Pavamana model (logged). Structural once/match (a Hero enters once).
+      let removed=0;
+      for (const u of pl.units){ if (u.ghost) continue; const t=u.venom||0; if (t>0){ u.venom=0; u.power+=t; removed+=t; if (t) emit(g,'buff',{sourceUid:c.uid,targetUids:[u.uid],amount:t,abilityName:'Garuda',text:`+${t}`}); } }
+      log(g, removed ? `Garuda devours ${removed} Venom — his host rises +1 per token cleansed.` : 'Garuda spreads his wings — no venom to devour.');
+    }
+    if (c.id==='kulika'){   // WAVE 1 batch 19 (Naga hero) — ON PLAY: TRANSFER all your Units' Venom to RANDOM enemy Units (venom strip [Pavamana surface] + application [Nagastra] + g.rng). Weakest reading (logged): a "transfer" needs a destination — with NO enemy Units nothing happens (the venom stays on your side). Each transferred token → a random enemy (independent g.rng draws).
+      const total = pl.units.reduce((n,u)=>n+(u.ghost?0:(u.venom||0)), 0);
+      const foes = opp.units.filter(u=>!u.ghost);
+      if (total>0 && foes.length){
+        for (const u of pl.units) if (!u.ghost) u.venom=0;
+        for (let i=0;i<total;i++){ const t=foes[Math.floor(g.rng()*foes.length)]; t.venom=(t.venom||0)+1; }
+        log(g, `Kulika hurls ${total} Venom back upon ${opp.name}.`); emit(g,'token',{sourceUid:c.uid,targetUids:foes.map(u=>u.uid),abilityName:'Kulika',text:`${total} Venom transferred`});
+      } else log(g, total>0 ? 'Kulika gathers the venom, but there is no enemy to curse (it stays).' : 'Kulika finds no friendly Venom to transfer.');
+    }
   }
   else if (c.t==='unit'){
     // Mahabali (§9): the first Unit played the round after a VOLUNTARY Pass grants an extra turn.
@@ -2772,7 +2792,7 @@ function roundEndCardEffects(g){
   const RE_IDS = new Set(['dawnsentinel','kamadhenu','pisacha','mahishasura','sushena']);   // WAVE 1 batch 11 adds sushena
   let active=false;
   for (let s=0;s<2 && !active;s++){ const pl=g.players[s];
-    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='livingbridge' || pl.artifact.id==='drownedaltar' || pl.artifact.id==='ironcrucible' || pl.artifact.id==='kalpavriksha'))) active=true; }   // + Living Bridge / Drowned Altar / Iron Crucible / Kalpavriksha (batch-16). Padmavati MOVED OUT (R54: pre-drain slot, before venomRoundEnd).
+    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='livingbridge' || pl.artifact.id==='drownedaltar' || pl.artifact.id==='ironcrucible' || pl.artifact.id==='kalpavriksha')) || pl.heroes.some(h=>h.id==='mahishi')) active=true; }   // + Living Bridge / Drowned Altar / Iron Crucible / Kalpavriksha (batch-16) + Mahishi (batch-19 hero). Padmavati MOVED OUT (R54: pre-drain slot, before venomRoundEnd).
   if (!active) return;   // no round-end subscriber on the board → no-op
   // Snapshot "an enemy Unit died this round" BEFORE this hook's own decay-kills, so Mahishasura is independent of intra-hook order (R21+).
   const enemyDied = [ g.players[1].deathsThisRound>0, g.players[0].deathsThisRound>0 ];
@@ -2811,6 +2831,9 @@ function roundEndCardEffects(g){
       if (real.length>=2){ const hi=real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b); const lo=real.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);
         const gap=effPower(g,pi,hi)-effPower(g,pi,lo);
         if (lo!==hi && gap>0){ lo.power+=gap; log(g,`Kalpavriksha grants the wish — ${lo.n} rises to match ${hi.n} (${effPower(g,pi,lo)}).`); emit(g,'buff',{sourceUid:lo.uid,targetUids:[lo.uid],amount:gap,abilityName:'Kalpavriksha',text:`+${gap}`}); } } }
+    // WAVE 1 batch 19 — Mahishi (Asura hero, R42 slot: LAST in the per-player loop, so it reads the SETTLED strongest friendly Unit after all round-end buffs). Copies POWER ONLY (h.power = the strongest friendly Unit's effPower; no abilities); stays a hero. Heroes PERSIST → recurs every round. Strongest = own-side (Makardhwaja "your strongest" precedent; logged). No friendly Unit → keeps its current power.
+    for (const h of pl.heroes){ if (h.id!=='mahishi') continue; const real=pl.units.filter(u=>!u.ghost);
+      if (real.length){ const strong=real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b); const sp=effPower(g,pi,strong); h.power=sp; log(g,`Mahishi takes the shape of ${strong.n}'s might (${sp}).`); emit(g,'buff',{sourceUid:h.uid,targetUids:[h.uid],abilityName:'Mahishi',text:`copies ${sp}`}); } }
   }
   sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
 }
@@ -3025,6 +3048,10 @@ function aiScoreCard(g, pi, c){
     case 'hymndepths': { const venomed=opp.units.filter(u=>!u.ghost && (u.venom||0)>0); s = (venomed.length || (isNaga(pl) && opp.units.some(u=>!u.ghost))) ? 1+venomed.length : -99; break; }   // trigger all drains now
     case 'serpentskiss': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 3 + Math.max(...spec.options.map(u=>effPower(g,1-pi,u)))/2 : -99; break; }   // destroy a venom-ripe threat
     case 'siltstrangler': { const foes=opp.units.filter(u=>!u.ghost && (u.venom||0)>0); s += foes.length ? Math.max(...foes.map(u=>u.venom||0)) : 0; break; }   // power off the most-venomed enemy
+    // ---- WAVE 1 batch 19 (deferred heroes) — only reached when wave1 pool is on ----
+    case 'garuda': { const fv=pl.units.reduce((n,u)=>n+(u.ghost?0:(u.venom||0)),0); s += fv; break; }   // P7 body + a friendly-Venom cleanse/buff (anti-Naga tech)
+    case 'kulika': { const fv=pl.units.reduce((n,u)=>n+(u.ghost?0:(u.venom||0)),0); s += fv*0.5; break; }   // P8 body + transfer friendly Venom to the foe
+    case 'mahishi': { const real=pl.units.filter(u=>!u.ghost); s += real.length ? Math.max(0, Math.max(...real.map(u=>effPower(g,pi,u))) - c.p)/2 : 0; break; }   // P7 body that copies the strongest each round
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
