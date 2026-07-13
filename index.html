@@ -1240,6 +1240,12 @@ const NAGA_DECK_DEF = [
   { id:'longpatience',n:'The Long Patience',sub:'Vigil of the Deep',t:'mantra', p:0, r:'E', wave:1, txt:'Apply a Venom Token to every enemy Unit.' },
   // ---- WAVE 1 (batch 9 — the event-trigger tier) ----
   { id:'vishalakshi',n:'Vishalakshi the Pale',sub:'Eyes of the Deep',t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: When an enemy Unit dies with Venom on it, this gains +2 power permanently.' },
+  // ---- WAVE 1 (batch 13 — the venom tier: bounce + mill) ----
+  { id:'uraga',    n:'Uraga Colossus',  sub:'The Molting Titan',    t:'unit', p:7, r:'E', wave:1, txt:'ON PLAY: Enters with 2 Venom on itself. Sheds 1 Venom each round.' },
+  { id:'mahapadma',n:'Mahapadma',       sub:'Lord of the Nine',     t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: Enemy Units with Venom cannot receive Dharma Shield.' },
+  { id:'worldcoil',n:'World-Coil Constrictor',sub:'The Endless Grip',t:'astra', p:0, r:'E', wave:1, txt:'Bind an enemy Unit until it loses a Venom token.' },
+  { id:'shedskin', n:'Rite of Shed Skin',sub:'The Serpent Renews',  t:'mantra', p:0, r:'U', wave:1, txt:'Return a friendly Unit to your hand; it re-enters at its printed power.' },
+  { id:'drownedaltar',n:'The Drowned Altar',sub:'Shrine of the Deep',t:'artifact', p:0, r:'E', wave:1, txt:'ROUND END: Mill the top card of your deck. If it is a Unit, your Units gain +1 power this round.' },
 ];
 
 const DECKS = { devas: DEVA_DECK_DEF, asuras: ASURA_DECK_DEF, vanaras: VANARA_DECK_DEF, nagas: NAGA_DECK_DEF };
@@ -1417,7 +1423,8 @@ function designateShields(g, pi){
   if (pl.manualShield) return;   // human designates Dharma Shield manually (see designateShield) — no auto-assignment
   const cap = shieldCap(pl);
   while (pl.shieldUids.length < cap){
-    const cands = pl.units.filter(u=>!u.ghost && !u.noShield && !pl.shieldUids.includes(u.uid));   // WAVE 1: Dawn's Rebirth's returned Unit cannot be shielded this match
+    const oppMahapadma = g.players[1-pi].units.some(u=>!u.ghost && u.id==='mahapadma');   // WAVE 1 batch 13: Mahapadma — the enemy's venomed Units cannot receive Dharma Shield
+    const cands = pl.units.filter(u=>!u.ghost && !u.noShield && !pl.shieldUids.includes(u.uid) && !(oppMahapadma && u.venom>0));   // WAVE 1: Dawn's Rebirth noShield + Mahapadma venom-block
     if (!cands.length) break;
     const pick = cands.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b);   // AI designates highest-power
     pl.shieldUids.push(pick.uid);
@@ -1431,6 +1438,7 @@ function designateShield(g, pi, uid){
   if (pl.faction!=='devas' || pl.shieldUids.length >= shieldCap(pl)) return false;
   const u = pl.units.find(x=>!x.ghost && x.uid===uid && !x.noShield && !pl.shieldUids.includes(uid));   // WAVE 1: Dawn's Rebirth's returned Unit cannot be shielded this match
   if (!u) return false;
+  if (u.venom>0 && g.players[1-pi].units.some(m=>!m.ghost && m.id==='mahapadma')) return false;   // WAVE 1 batch 13: Mahapadma — a venomed Unit cannot receive Dharma Shield
   pl.shieldUids.push(uid);
   log(g, `${pl.name} raises Dharma Shield over ${u.n}.`);
   emit(g,'toast',{abilityName:'Dharma Shield',text:'Dharma Shield'});
@@ -1547,6 +1555,8 @@ function venomLoss(g, pi, u, amt){
   u.power -= amt;
   if (u.power<1 && u.id==='hiranya') u.power=1;                            // Hiranyakashipu endures venom
   emit(g,'venom',{targetUids:[u.uid],amount:u.power-before,abilityName:'Venom',text:'☠'});
+  // WAVE 1 batch 13 — World-Coil Constrictor: the bind releases when the unit LOSES a Venom token (= suffers a venom drain while venomed). id-gated by the marker → no-op flag-off.
+  if (u.bound && u.worldCoilBound && u.venom>0){ u.bound=false; u.worldCoilBound=false; log(g,`World-Coil's grip slips as the venom bites ${u.n} — it is freed.`); emit(g,'passive',{targetUids:[u.uid],abilityName:'World-Coil Constrictor',text:'released'}); }
 }
 // PASSIVE drain: Naga np drains its opponent's surviving Units. Skips Astika-paused / Mohini-stolen Units.
 function venomPassive(g, np, amtOverride){
@@ -1596,6 +1606,8 @@ function venomKarkotakaEarly(g){
 function venomRoundEnd(g){
   for (let np=0;np<2;np++) if (isNaga(g.players[np]) && !nagaHasUnit(g.players[np],'karkotaka')) venomPassive(g, np);
   venomTokens(g);
+  // WAVE 1 batch 13 — Uraga Colossus sheds 1 self-Venom each round (AFTER its tokens drained it; R13 self-drain already applied). id-gated → no-op flag-off.
+  for (let s=0;s<2;s++) for (const u of g.players[s].units) if (!u.ghost && u.id==='uraga' && u.venom>0){ u.venom-=1; log(g,`Uraga Colossus sheds a coil of venom (→ ${u.venom} left).`); }
   g.players[0].astikaPause=false; g.players[1].astikaPause=false;
   sweepDeaths(g);
 }
@@ -1920,6 +1932,19 @@ function castMantra(g, pi, id, targetUid=null){
       log(g,`Vault of the Sky lifts ${t.n} — +2 this round.`);
       emit(g,'buff',{sourceUid:t.uid,targetUids:[t.uid],amount:2,abilityName:'Vault of the Sky',text:'+2'});
     }
+  } else if (id==='shedskin'){
+    // WAVE 1 batch 13 — bounce a friendly Unit to hand as a FRESH mkCard (v0.2 bounce ruling): printed base, no Venom/buffs/flags, new uid. R21 growth AND cut BOTH reset to printed. Tokens (no deck def) are gated out.
+    const real=pl.units.filter(u=>!u.ghost && !u.token && CARD_BY_NAME[u.n]);
+    if (!real.length){ log(g,'Rite of Shed Skin: no Unit to return.'); }   // gated in playableIndices; defensive
+    else {
+      let t = targetUid!=null ? real.find(u=>u.uid===targetUid) : null;
+      if (!t) t = real.reduce((a,b)=>(effPower(g,pi,b)-b.p) < (effPower(g,pi,a)-a.p) ? b : a);   // AI: bounce the Unit furthest BELOW its printed power (the reset recovers the most)
+      pl.units.splice(pl.units.indexOf(t),1);
+      const fresh=mkCard(CARD_BY_NAME[t.n]);   // FRESH from the printed def
+      pl.hand.push(fresh);
+      log(g,`Rite of Shed Skin — ${t.n} sheds its skin and returns to ${pl.name}'s hand, whole and new.`);
+      emit(g,'passive',{sourceUid:fresh.uid,abilityName:'Rite of Shed Skin',text:`${t.n} returns to hand`});
+    }
   }
   // Agni trigger — any mantra, either player
   for (let s=0;s<2;s++){
@@ -1976,6 +2001,7 @@ function playableIndices(g, pi){
         const bindHero = heroOnBoard(pl,'takshaka') && opp.heroes.some(h=>!h.bound);   // §9 Takshaka
         if (!bindUnit && !bindHero) return;
       }
+      if (c.id==='worldcoil' && !opp.units.some(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u))) return;   // WAVE 1 batch 13 — no bindable enemy → illegal
       if (c.id==='mohini' && !opp.units.some(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u))) return;
       // venomstrike is always legal (self-buff, useful even pre-emptively)
     }
@@ -1987,6 +2013,7 @@ function playableIndices(g, pi){
       if (c.id==='bloodoath' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — needs a friendly Unit to sacrifice (illegal otherwise). Dawn's Rebirth is intentionally NOT gated: it logs a no-op on an empty discard.
       if (c.id==='longpatience' && !opp.units.some(u=>!u.ghost)) return;   // WAVE 1 — no enemy Unit to envenom (Nagastra precedent)
       if (c.id==='vault' && !pl.units.some(u=>!u.ghost)) return;   // WAVE 1 — needs a friendly Unit to move/buff
+      if (c.id==='shedskin' && !pl.units.some(u=>!u.ghost && !u.token && CARD_BY_NAME[u.n])) return;   // WAVE 1 batch 13 — needs a bounce-eligible friendly Unit (non-token, has a deck def)
       if (c.id==='mrityunjaya' && !g.players[0].discard.concat(g.players[1].discard).some(u=>u.t==='unit' && !u.ghost)) return;
     }
     res.push(i);
@@ -2017,6 +2044,7 @@ function targetSpec(g, pi, card){
     if (heroOnBoard(g.players[pi],'takshaka')) opts = opts.concat(opp.heroes.filter(h=>!h.bound));   // §9 Takshaka breaks Hero immunity
     return { kind:'enemyUnit', options:opts };
   }
+  if (card.id==='worldcoil') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u)) };   // WAVE 1 batch 13 — bind an unbound, unprotected enemy (Nagapasha pattern)
   if (card.id==='mohini') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost && !u.bound && !astraProtected(g,1-pi,u)) };
   if (card.id==='ashvatara' || card.id==='nagaarcher' || card.id==='surpanakha') return { kind:'enemyUnit', options: opp.units.filter(u=>!u.ghost) };   // WAVE 1 — Surpanakha is a unit on-play debuff (NOT an astra) → does not respect Dharma Shield, like Ashvatara
   return null;
@@ -2122,6 +2150,13 @@ function resolveAstra(g, pi, c, targetUid){
       if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
       t.bound=true;
       log(g, `Nagapasha nooses ${t.n} — it cannot fight until ${opp.name} spends a turn to free it.`); break; }
+    case 'worldcoil': {   // WAVE 1 batch 13 — bind an enemy Unit; releases when it LOSES a Venom token (venomLoss hook), NOT by the opponent spending a turn.
+      const spec=targetSpec(g,pi,c);
+      if (!spec.options.length){ log(g,'World-Coil finds nothing to bind.'); break; }
+      let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
+      if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
+      t.bound=true; t.worldCoilBound=true;
+      log(g, `World-Coil Constrictor coils around ${t.n} — bound until the venom bites it.`); emit(g,'passive',{targetUids:[t.uid],abilityName:'World-Coil Constrictor',text:'bound'}); break; }
     case 'venomstrike':
       pl.venomStrike=g.round;
       log(g, `Vasuki Venom Strike — the Venom runs ${heroOnBoard(pl,'vasuki')?'quadruple':'triple'} this round.`); break;
@@ -2390,6 +2425,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
       case 'nagaenchantress': opp.mustPlayUnit=true; log(g,`Naga Enchantress lures — ${opp.name}’s next card must be a Unit.`); break;
       case 'nagawarrior': break;   // PASSIVE handled in effPower (venomTokenCount)
       case 'nagahatchling': if (opp.units.some(u=>!u.ghost && u.venom>0)){ c.power+=2; log(g,'Naga Hatchling feeds on the venom in the air (+2).'); } break;
+      case 'uraga': c.venom=2; log(g,'Uraga Colossus rises, wreathed in its own venom (2).'); emit(g,'token',{sourceUid:c.uid,targetUids:[c.uid],abilityName:'Uraga Colossus',text:'2 Venom'}); break;   // WAVE 1 batch 13 — self-Venom (R13 drains it at round end); sheds 1/round in venomRoundEnd
       case 'ashvatara': { const foes=opp.units.filter(u=>!u.ghost);
         if (foes.length){ let t = targetUid!=null ? foes.find(u=>u.uid===targetUid) : null; if (!t) t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
           damageUnit(g, 1-pi, t, g.round, 'Ashvatara'); }   // R16: −current round number
@@ -2506,7 +2542,7 @@ function roundEndCardEffects(g){
   const RE_IDS = new Set(['dawnsentinel','kamadhenu','pisacha','mahishasura','sushena']);   // WAVE 1 batch 11 adds sushena
   let active=false;
   for (let s=0;s<2 && !active;s++){ const pl=g.players[s];
-    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && pl.artifact.id==='livingbridge')) active=true; }   // + The Living Bridge (artifact)
+    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && (pl.artifact.id==='livingbridge' || pl.artifact.id==='drownedaltar'))) active=true; }   // + The Living Bridge / The Drowned Altar (artifacts)
   if (!active) return;   // no round-end subscriber on the board → no-op
   // Snapshot "an enemy Unit died this round" BEFORE this hook's own decay-kills, so Mahishasura is independent of intra-hook order (R21+).
   const enemyDied = [ g.players[1].deathsThisRound>0, g.players[0].deathsThisRound>0 ];
@@ -2531,6 +2567,12 @@ function roundEndCardEffects(g){
       for (const u of adjacentUnits(pl, s)) if (!u.ghost && u.power < u.base){ u.power=Math.min(u.base, u.power+1); log(g,`Sushena the Healer mends ${u.n}: +1.`); emit(g,'buff',{sourceUid:s.uid,targetUids:[u.uid],amount:1,abilityName:'Sushena the Healer',text:'+1'}); } }
     // WAVE 1 batch 11 — The Living Bridge (R40 SIM-FLAGGED, as-written): 4+ non-ghost Units → ALL of them +1 PERMANENT (base AND power). AFTER Sushena.
     if (pl.artifact && pl.artifact.id==='livingbridge'){ const line=pl.units.filter(u=>!u.ghost); if (line.length>=4){ for (const u of line){ u.base+=1; u.power+=1; } log(g,`The Living Bridge holds — all ${line.length} Units +1 (permanent).`); emit(g,'buff',{targetUids:line.map(u=>u.uid),amount:1,abilityName:'The Living Bridge',text:'+1'}); } }
+    // WAVE 1 batch 13 — The Drowned Altar runs AFTER the Living Bridge (deterministic hook order, R42): mill the top deck card → discard; if it is a Unit, all your Units +1 CURRENT power this round (counts for scoring). Empty deck → nothing.
+    if (pl.artifact && pl.artifact.id==='drownedaltar'){ const milled=pl.deck.shift();
+      if (milled){ pl.discard.push(milled);
+        if (milled.t==='unit'){ const line=pl.units.filter(u=>!u.ghost); for (const u of line) u.power+=1; log(g,`The Drowned Altar drowns ${milled.n} — a Unit! ${pl.name}'s host swells +1 this round.`); if (line.length) emit(g,'buff',{targetUids:line.map(u=>u.uid),amount:1,abilityName:'The Drowned Altar',text:'+1'}); }
+        else log(g,`The Drowned Altar drowns ${milled.n} — no Unit, no surge.`); }
+      else log(g,'The Drowned Altar laps at an empty deck.'); }
   }
   sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
 }
@@ -2680,6 +2722,12 @@ function aiScoreCard(g, pi, c){
     case 'dawnbanner': s += pl.units.filter(u=>!u.ghost).length + 1; break;   // wider board = more value from the per-round +1
     case 'andhaka': s += 1; break;                                            // durable P6, hard to remove
     case 'vidyutastra': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 3 : -99; break; }   // deal 2 + double surge
+    // ---- WAVE 1 batch 13 (venom tier: bounce + mill) — only reached when wave1 pool is on ----
+    case 'uraga': s += 3; break;                                         // a big P7 body; the self-venom is the price
+    case 'mahapadma': s += 2; break;                                     // anti-shield tech (Deva counter)
+    case 'worldcoil': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 1+Math.max(...spec.options.map(u=>effPower(g,1-pi,u))) : -99; break; }   // bind the strongest enemy
+    case 'shedskin': s += pl.units.some(u=>!u.ghost && !u.token && CARD_BY_NAME[u.n] && effPower(g,pi,u)<u.p) ? 1 : -1; break;   // value only when a Unit is below printed
+    case 'drownedaltar': s += 1; break;                                  // mill + a conditional +1
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
