@@ -128,7 +128,85 @@ function run3patala(N){
   return F.suryastra_patala||{games:0,events:0};
 }
 
-module.exports={run1,run2,run3patala,MATCHUPS,LAUNCH_FACTION,seeded,playGame};
+// ============================================================================
+// TASK 21b — ATTRIBUTION PROBES (measurement only). Split the breaches into
+// card-intrinsic power vs AI-capability artifact.
+// ============================================================================
+function inPlaySide(g,s,id){ const p=g.players[s]; if(p.artifact&&p.artifact.id===id)return true; for(const z of[p.units,p.heroes,p.discard]) if(z.some(c=>c.id===id))return true; return false; }
+
+// STEP 0(a) — per-card win-attribution in the breach matchup (Asura-vs-Vanara)
+function attribution(N){
+  const won={0:{},1:{}}, lost={0:{},1:{}};
+  for(let k=0;k<N;k++){ const g=playGame({rng:seeded(1000+k),p0Faction:'asuras',p1Faction:'vanaras',realm:'mrityulok',wave1:true});
+    if(g.winner==null) continue;
+    for(const s of[0,1]){ const fac=g.players[s].faction; const wl=(g.winner===s)?won[s]:lost[s];
+      for(const c of E.DECKS[fac]) if(c.wave && inPlaySide(g,s,c.id)) wl[c.id]=(wl[c.id]||0)+1; }
+  }
+  function rank(s){ const ids=new Set([...Object.keys(won[s]),...Object.keys(lost[s])]);
+    return [...ids].map(id=>{ const w=won[s][id]||0,l=lost[s][id]||0,t=w+l; const nm=E.DECKS[s===0?'asuras':'vanaras'].find(c=>c.id===id).n;
+      return {id,nm,t,wr:t?100*w/t:0}; }).filter(x=>x.t>=30).sort((a,b)=>b.wr-a.wr); }
+  return {asura:rank(0), vanara:rank(1)};
+}
+
+// STEP 0(b) — Garuda plays vs fires
+function garudaVal(N){
+  let plays=0, fires=0, fireMag=0, gamesWithGaruda=0;
+  for(const [f0,f1] of [['devas','nagas'],['devas','asuras'],['devas','vanaras'],['devas','devas']]){
+    for(let k=0;k<N;k++){ const g=playGame({rng:seeded(1000+k),p0Faction:f0,p1Faction:f1,realm:'mrityulok',wave1:true});
+      const L=g.log.map(l=>l.msg).join('\n');
+      const d=all(L,'Garuda devours'), sp=all(L,'Garuda spreads his wings');
+      if(d+sp>0)gamesWithGaruda++; plays+=d+sp; fires+=d; fireMag+=sum(L,'Garuda devours (\\d+) Venom');
+    }
+  }
+  return {plays,fires,fireMag,gamesWithGaruda,totalGames:N*4};
+}
+
+// PROBE 1 — ablation ladder (scenario-injected decks, matched seeds)
+function ablation(N){
+  const aN=E.DECKS.asuras.map(c=>c.n), vN=E.DECKS.vanaras.map(c=>c.n);
+  function measure(rmA, rmV){ let w=0,dec=0;
+    for(let k=0;k<N;k++){ const a=shuffleNames(aN,seeded(6000+k*7)).filter(n=>n!==rmA); const v=shuffleNames(vN,seeded(8000+k*11)).filter(n=>n!==rmV);
+      const g=playGame({rng:seeded(1000+k),p0Faction:'asuras',p1Faction:'vanaras',realm:'mrityulok',wave1:true,scenario:{p0Deck:a,p1Deck:v}});
+      if(g.winner===0)w++; if(g.winner!=null)dec++; }
+    return 100*w/dec; }
+  const control=measure(null,null);
+  const asuraSusp=['Mahishasura','Holika','Andhaka','Atikaya','Vritra','Mahishi','The Iron Crucible'];
+  const vanaraSusp=['The Living Bridge','Setu Mason',"Anjaneya's Roar",'Rambha the Bold','Anjana'];
+  const aRes=asuraSusp.map(nm=>({nm, wr:measure(nm,null)}));            // asura(p0) win% with that Asura card removed
+  const vRes=vanaraSusp.map(nm=>({nm, wr:100-measure(null,nm)}));       // vanara(p1) win% with that Vanara card removed
+  return {control, controlVanara:100-control, aRes, vRes};
+}
+
+// PROBE 2 — AI-sensitivity split (shipped difficulty opts; Death Match excluded)
+function aisens(N){
+  function cell(d0,d1){ let w=0,dec=0;
+    for(let k=0;k<N;k++){ const g=playGame({rng:seeded(1000+k),p0Faction:'asuras',p1Faction:'vanaras',realm:'mrityulok',wave1:true,p0Difficulty:d0,p1Difficulty:d1});
+      if(g.winner===0)w++; if(g.winner!=null)dec++; }
+    return 100*w/dec; }
+  return { c1:cell('advanced','advanced'), c2:cell('beginner','advanced'), c3:cell('advanced','beginner') };
+}
+
+// PROBE 3 — Vanara execution-gap audit (turn-by-turn snapshots, Asura-vs-Vanara, Vanara=p1)
+function vanaraExec(N){
+  let leaps=0, vault=0, stones=0, riksha=0, bridgeOn=0, bridgeFire=0;
+  let peakSum=0, peakGe4=0, handAtPeakSum=0, ceilGe4=0, games=0;
+  for(let k=0;k<N;k++){ games++;
+    const g=E.newGame({rng:seeded(1000+k),p0Faction:'asuras',p1Faction:'vanaras',realm:'mrityulok',wave1:true});
+    let guard=0, peak=0, handAtPeak=0;
+    while(!g.over && guard++<800){ E.aiTakeTurn(g,g.turn);
+      const v=g.players[1]; const w=v.units.filter(u=>!u.ghost).length;
+      if(w>peak){ peak=w; handAtPeak=v.hand.filter(c=>c.t==='unit').length; } }
+    const L=g.log.map(l=>l.msg).join('\n');
+    leaps+=all(L,'Leap!'); vault+=all(L,'Vault of the Sky lifts'); stones+=all(L,'enter adjacent'); riksha+=all(L,'Riksha');
+    if(inPlaySide(g,1,'livingbridge')){ bridgeOn++; if(L.includes('The Living Bridge holds')) bridgeFire++; }
+    peakSum+=peak; if(peak>=4)peakGe4++; handAtPeakSum+=handAtPeak; if(peak+handAtPeak>=4)ceilGe4++;
+  }
+  return { games, leapsPerGame:leaps/games, vaultPerGame:vault/games, stonesPer:stones/games, rikshaPer:riksha/games,
+    bridgeOn, bridgeFire, bridgeFireRate: bridgeOn?100*bridgeFire/bridgeOn:0,
+    peakWidth:peakSum/games, peakGe4Rate:100*peakGe4/games, handAtPeak:handAtPeakSum/games, ceilGe4Rate:100*ceilGe4/games };
+}
+
+module.exports={run1,run2,run3patala,attribution,garudaVal,ablation,aisens,vanaraExec,MATCHUPS,LAUNCH_FACTION,seeded,playGame};
 
 // ---------- CLI ----------
 if(require.main===module){
@@ -150,6 +228,37 @@ if(require.main===module){
     console.log(`\n===== RUN 2 — RATNA AUDIT (${N} games/opponent x4 opp, matched seeds; target ≈0) =====`);
     const r=run2(N);
     for(const f of Object.keys(r)){ const v=r[f]; console.log(`  ${f.padEnd(7)} Ratna-incl ${pct(v.inc)}  Gupta-only ${pct(v.gup)}  advantage ${(v.delta>=0?'+':'')+pct(v.delta)}  ${Math.abs(v.delta)<=3?'≈0 (build-around)':'NON-TRIVIAL'}`); }
+  }
+  if(mode==='21b'){ const N=+process.argv[3]||500; const pct=x=>x.toFixed(1);
+    console.log(`\n===== TASK 21b — ATTRIBUTION PROBES (${N} games/cell) =====`);
+    console.log('\nSTEP 0(a) — per-card win-attribution, Asura-vs-Vanara (winrate when the card was in play):');
+    const at=attribution(N);
+    console.log('  TOP-10 ASURA winrate-LIFTERS:');
+    at.asura.slice(0,10).forEach(x=>console.log(`    ${x.nm.padEnd(24)} wr ${pct(x.wr)}% (n=${x.t})`));
+    console.log('  BOTTOM-10 VANARA (lowest winrate when present):');
+    at.vanara.slice(-10).reverse().forEach(x=>console.log(`    ${x.nm.padEnd(24)} wr ${pct(x.wr)}% (n=${x.t})`));
+    console.log('\nSTEP 0(b) — GARUDA scanner validation (log strings: FIRES="Garuda devours N Venom", PLAYED-NO-VENOM="Garuda spreads his wings"):');
+    const gv=garudaVal(N);
+    console.log(`    Garuda PLAYS=${gv.plays}  FIRES(cleansed)=${gv.fires}  fireMag=${gv.fireMag} venom  gamesTouched=${gv.gamesWithGaruda}/${gv.totalGames}`);
+    console.log(`    -> RUN-3 line keyed on "Garuda devours" = FIRES only. PLAYS is the honest play-rate; the 0.04% was FIRES, ${gv.plays>gv.fires*3?'and PLAYS is much higher (scanner under-reported FREQUENCY of play)':'and PLAYS is similar (Garuda simply rarely drafted/played)'}.`);
+    console.log('\nPROBE 1 — ABLATION LADDER (Asura-vs-Vanara, scenario-matched seeds):');
+    const ab=ablation(N);
+    console.log(`  CONTROL (full pools): Asura ${pct(ab.control)}% / Vanara ${pct(ab.controlVanara)}%`);
+    console.log('  ASURA ablations (remove 1 Asura card; Asura win% + delta vs control):');
+    ab.aRes.map(x=>({...x,d:x.wr-ab.control})).sort((a,b)=>a.d-b.d).forEach(x=>console.log(`    -${x.nm.padEnd(18)} Asura ${pct(x.wr)}%  delta ${(x.d>=0?'+':'')+pct(x.d)}`));
+    console.log('  VANARA ablations (remove 1 Vanara payoff; Vanara win% + delta vs control):');
+    ab.vRes.map(x=>({...x,d:x.wr-ab.controlVanara})).sort((a,b)=>a.d-b.d).forEach(x=>console.log(`    -${x.nm.padEnd(18)} Vanara ${pct(x.wr)}%  delta ${(x.d>=0?'+':'')+pct(x.d)}`));
+    console.log('\nPROBE 2 — AI-SENSITIVITY SPLIT (Asura=p0, Vanara=p1; Death Match excluded):');
+    const ai=aisens(N);
+    console.log(`  cell1 Asura advanced vs Vanara advanced (control): Asura ${pct(ai.c1)}%`);
+    console.log(`  cell2 Asura BEGINNER vs Vanara advanced:            Asura ${pct(ai.c2)}%  (degrading Asura AI: delta ${(ai.c2-ai.c1>=0?'+':'')+pct(ai.c2-ai.c1)})`);
+    console.log(`  cell3 Asura advanced vs Vanara BEGINNER:            Asura ${pct(ai.c3)}%  (degrading Vanara AI: delta ${(ai.c3-ai.c1>=0?'+':'')+pct(ai.c3-ai.c1)})`);
+    console.log('\nPROBE 3 — VANARA EXECUTION-GAP AUDIT (Vanara=p1, turn-by-turn):');
+    const ve=vanaraExec(N);
+    console.log(`  Leaps/game=${ve.leapsPerGame.toFixed(2)} (AI takes every gain>=3 leap greedily — near-optimal, not a skip-gap)`);
+    console.log(`  Formation peak width/game=${ve.peakWidth.toFixed(2)}  line-of-4 rate=${pct(ve.peakGe4Rate)}%  | CEILING (peak+unplayed-units-in-hand): line-of-4 reachable=${pct(ve.ceilGe4Rate)}%  unplayed-units-at-peak/game=${ve.handAtPeak.toFixed(2)}`);
+    console.log(`  Living Bridge: on-board ${ve.bridgeOn} games, fired(line-of-4) ${ve.bridgeFire} -> fire-rate ${pct(ve.bridgeFireRate)}% when on board`);
+    console.log(`  movePosition channel: Vault/game=${ve.vaultPerGame.toFixed(3)}  Stones-adjacent-entry/game=${ve.stonesPer.toFixed(3)}  Riksha/game=${ve.rikshaPer.toFixed(3)}`);
   }
   console.log(`\nTOTAL RUNTIME: ${((Date.now()-t0)/1000).toFixed(1)}s`);
 }
