@@ -3077,7 +3077,9 @@ function aiScoreCard(g, pi, c){
     case 'serpentskiss': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 3 + Math.max(...spec.options.map(u=>effPower(g,1-pi,u)))/2 : -99; break; }   // destroy a venom-ripe threat
     case 'siltstrangler': { const foes=opp.units.filter(u=>!u.ghost && (u.venom||0)>0); s += foes.length ? Math.max(...foes.map(u=>u.venom||0)) : 0; break; }   // power off the most-venomed enemy
     // ---- WAVE 1 batch 19 (deferred heroes) — only reached when wave1 pool is on ----
-    case 'garuda': { const fv=pl.units.reduce((n,u)=>n+(u.ghost?0:(u.venom||0)),0); s += fv; break; }   // P7 body + a friendly-Venom cleanse/buff (anti-Naga tech)
+    case 'garuda': { const fv=pl.units.reduce((n,u)=>n+(u.ghost?0:(u.venom||0)),0); s += fv;   // P7 body + a friendly-Venom cleanse/buff (anti-Naga tech)
+      if (fv===0 && isNaga(opp) && g.round<3) s -= 3;   // TASK 22 GARUDA HOLD — no friendly venom to cleanse + a live enemy venom source (Naga) → wait for cleanse value. BOUNDED: released in the final round (g.round>=3 → always deploys by then) and a modest penalty so a clearly-best P7 body still plays. No infinite hold.
+      break; }
     case 'kulika': { const fv=pl.units.reduce((n,u)=>n+(u.ghost?0:(u.venom||0)),0); s += fv*0.5; break; }   // P8 body + transfer friendly Venom to the foe
     case 'mahishi': { const real=pl.units.filter(u=>!u.ghost); s += real.length ? Math.max(0, Math.max(...real.map(u=>effPower(g,pi,u))) - c.p)/2 : 0; break; }   // P7 body that copies the strongest each round
     // ---- WAVE 1 batch 20 (the final two) — only reached when wave1 pool is on ----
@@ -3180,6 +3182,10 @@ function aiScoreCard(g, pi, c){
     const mine=pl.units.filter(u=>!u.ghost).length;
     s -= 0.5 + mine*0.15;
   }
+  // TASK 22 BRIDGE SEQUENCING — while our OWN Living Bridge is on board and we are below the 4-Unit line, value playing
+  // a Unit to build toward the round-end line-of-4 payoff. Bounded; play-selection weight ONLY (no pass/hold change).
+  // Gated on the wave artifact → structurally unreachable flag-off (livingbridge is wave:1, never the launch artifact).
+  if (c.t==='unit' && pl.artifact && pl.artifact.id==='livingbridge' && pl.units.filter(u=>!u.ghost).length < 4) s += 2;
   // ---- TASK D3: DEATHMATCH SCORING OVERLAY (id-gated on difficulty → advanced/beginner path byte-untouched) ----
   if (pl.difficulty==='deathmatch'){
     const O = DIFFICULTY.deathmatch.overlay;
@@ -3294,6 +3300,22 @@ function aiMove(g, pi){
   return { play:i };
 }
 
+// TASK 22 — Setu Stones AI anchor (advanced/deathmatch): pick the anchor Unit (the entering Unit is inserted right
+// AFTER it) that maximizes interior formation value — units with BOTH neighbours non-ghost, Setu Mason double-weighted
+// (the one position-dependent power in the pool, R40b). Tie-break: strongest ally, then lowest index (deterministic
+// engine order, NO rng). Returns the anchor uid, or null when there is no friendly Unit (default placement stands).
+function stonesAnchor(g, pi, card){
+  const pl=g.players[pi];
+  if (!pl.units.some(u=>!u.ghost)) return null;
+  const wt=u=>(u.id==='setumason'?2:1);
+  const interiorVal=order=>{ let v=0; for (let i=1;i<order.length-1;i++){ const u=order[i]; if(!u.ghost) v+=wt(u); } return v; };
+  let best=null, bestV=-Infinity, bestPow=-Infinity;
+  pl.units.forEach((a,idx)=>{ if (a.ghost) return;
+    const order=pl.units.slice(); order.splice(idx+1,0,card);
+    const v=interiorVal(order), pw=effPower(g,pi,a);
+    if (v>bestV || (v===bestV && pw>bestPow)){ bestV=v; bestPow=pw; best=a.uid; } });
+  return best;
+}
 // AI placement (Vanara Units only): slot the new Unit beside the strongest ally so Leap pairs form
 // and Leap-enabled Units aren't edge-isolated. Non-Vanara / non-Unit → append (position irrelevant).
 function aiPlacement(g, pi, card){
@@ -3327,6 +3349,14 @@ function aiTakeTurn(g, pi){
   // engine's null→optimal auto-pick. Uses ONLY targetSpec's public legal options (the same surface the advanced
   // AI reduces over) — no NEW hidden-information read. Advanced/deathmatch keep null (optimal auto-target) + aiPlacement.
   let tgt=null, pos=aiPlacement(g, pi, pl.hand[mv.play]);
+  // TASK 22 STONES ANCHOR (advanced/deathmatch only; beginner keeps its random misplacement). When our OWN Setu Stones
+  // is active and we play a Unit, set the anchor targetUid to the densest-cluster placement (playCard's setustones
+  // branch turns targetUid → the adjacent entry slot). Structurally unreachable flag-off: Setu Stones is wave:1 →
+  // never our artifact → block skipped, tgt stays null (byte-identical). No rng consumed.
+  if (difficultyOf(pl).randomPlayP===0 && pl.hand[mv.play].t==='unit' && pl.artifact && pl.artifact.id==='setustones'){
+    const anchor=stonesAnchor(g, pi, pl.hand[mv.play]);
+    if (anchor!=null) tgt=anchor;
+  }
   if (difficultyOf(pl).randomPlayP > 0){
     const spec = targetSpec(g, pi, pl.hand[mv.play]);
     if (spec && spec.options && spec.options.length) tgt = spec.options[Math.floor(g.rng()*spec.options.length)].uid;
@@ -3342,7 +3372,8 @@ if (typeof module!=='undefined'){
     drainAmount, venomPassive, venomTokens, venomRoundEnd, venomKarkotakaEarly, sweepDeaths,
     mulligan, aiMulliganPlan, REALMS, REALM_INFO, designateShield, shieldCap,
     DECKS, DEVA_DECK_DEF, ASURA_DECK_DEF, VANARA_DECK_DEF, NAGA_DECK_DEF, RARITY_COLOR, RARITY_NAME, ASTRA_DMG,
-    endRound, roundEndCardEffects, preDrainTokens, castMantra, moveUnit, swapUnits, adjacentUnits, destroyUnit, damageUnit };   // moveUnit/swapUnits/adjacentUnits/preDrainTokens/destroyUnit/damageUnit exported for tests (benign; venomRoundEnd already exported above)
+    endRound, roundEndCardEffects, preDrainTokens, castMantra, moveUnit, swapUnits, adjacentUnits, destroyUnit, damageUnit,
+    aiScoreCard, stonesAnchor };   // moveUnit/swapUnits/adjacentUnits/preDrainTokens/destroyUnit/damageUnit exported for tests (benign; venomRoundEnd already exported above). TASK 22: aiScoreCard/stonesAnchor for behavioral proofs (benign, test-only).
 }
 </script>
 <!-- ENGINE:END -->

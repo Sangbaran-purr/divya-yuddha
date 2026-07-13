@@ -206,7 +206,38 @@ function vanaraExec(N){
     peakWidth:peakSum/games, peakGe4Rate:100*peakGe4/games, handAtPeak:handAtPeakSum/games, ceilGe4Rate:100*ceilGe4/games };
 }
 
-module.exports={run1,run2,run3patala,attribution,garudaVal,ablation,aisens,vanaraExec,MATCHUPS,LAUNCH_FACTION,seeded,playGame};
+// ============================================================================
+// TASK 22 — pre/post capability metrics (same seeds as 21b). Run under both the
+// pre-22 (git stash) and post-22 engine to get the three deltas.
+// ============================================================================
+function probe22(N){
+  // Stones anchor + Bridge fire-rate: Asura(p0) vs Vanara(p1), turn-by-turn
+  let stonesOpp=0, bridgePlayed=0, bridgeFire=0, bridgeOnEnd=0, bridgeFireEnd=0;
+  for(let k=0;k<N;k++){ const g=E.newGame({rng:seeded(1000+k),p0Faction:'asuras',p1Faction:'vanaras',realm:'mrityulok',wave1:true});
+    let guard=0;
+    while(!g.over && guard++<800){ const pi=g.turn; const v=g.players[1];
+      const before = pi===1 ? v.units.filter(u=>!u.ghost).length : -1;
+      const hadStones = pi===1 && v.artifact && v.artifact.id==='setustones';
+      E.aiTakeTurn(g,pi);
+      if (hadStones && v.units.filter(u=>!u.ghost).length>before) stonesOpp++;   // a Unit entered while Setu Stones was active (an anchor OPPORTUNITY; post-22 sets the anchor on each — proven behaviorally)
+    }
+    const L=g.log.map(l=>l.msg).join('\n');
+    if (L.includes('plays The Living Bridge')){ bridgePlayed++; if (L.includes('The Living Bridge holds')) bridgeFire++; }
+    if (inPlaySide(g,1,'livingbridge')){ bridgeOnEnd++; if (L.includes('The Living Bridge holds')) bridgeFireEnd++; }   // 21b method (end-state), for apples-to-apples delta vs 29.3%
+  }
+  // Garuda plays/fires over Deva games
+  let gPlays=0, gFires=0;
+  for(const [f0,f1] of [['devas','nagas'],['devas','asuras'],['devas','vanaras'],['devas','devas']]){
+    for(let k=0;k<N;k++){ const g=playGame({rng:seeded(1000+k),p0Faction:f0,p1Faction:f1,realm:'mrityulok',wave1:true});
+      const L=g.log.map(l=>l.msg).join('\n'); gPlays+=all(L,'Garuda devours')+all(L,'Garuda spreads his wings'); gFires+=all(L,'Garuda devours'); }
+  }
+  return { N, stonesOpp, stonesPerGame:stonesOpp/N,
+    bridgePlayed, bridgeFire, bridgeFireRatePlayed: bridgePlayed?100*bridgeFire/bridgePlayed:0,
+    bridgeOnEnd, bridgeFireEnd, bridgeFireRateEnd: bridgeOnEnd?100*bridgeFireEnd/bridgeOnEnd:0,
+    gPlays, gFires };
+}
+
+module.exports={run1,run2,run3patala,attribution,garudaVal,ablation,aisens,vanaraExec,probe22,MATCHUPS,LAUNCH_FACTION,seeded,playGame};
 
 // ---------- CLI ----------
 if(require.main===module){
@@ -259,6 +290,13 @@ if(require.main===module){
     console.log(`  Formation peak width/game=${ve.peakWidth.toFixed(2)}  line-of-4 rate=${pct(ve.peakGe4Rate)}%  | CEILING (peak+unplayed-units-in-hand): line-of-4 reachable=${pct(ve.ceilGe4Rate)}%  unplayed-units-at-peak/game=${ve.handAtPeak.toFixed(2)}`);
     console.log(`  Living Bridge: on-board ${ve.bridgeOn} games, fired(line-of-4) ${ve.bridgeFire} -> fire-rate ${pct(ve.bridgeFireRate)}% when on board`);
     console.log(`  movePosition channel: Vault/game=${ve.vaultPerGame.toFixed(3)}  Stones-adjacent-entry/game=${ve.stonesPer.toFixed(3)}  Riksha/game=${ve.rikshaPer.toFixed(3)}`);
+  }
+  if(mode==='probe22'){ const N=+process.argv[3]||500; const p=probe22(N);
+    console.log(`PROBE22 (${N} games/cell) tag=${process.argv[4]||''}`);
+    console.log(`  STONES anchor opportunities/game = ${p.stonesPerGame.toFixed(3)} (post-22 sets the anchor on each; pre-22 sets none — anchor code absent)`);
+    console.log(`  BRIDGE fire-rate (played denom) = ${p.bridgeFireRatePlayed.toFixed(1)}%  (${p.bridgeFire}/${p.bridgePlayed})`);
+    console.log(`  BRIDGE fire-rate (21b end-state denom) = ${p.bridgeFireRateEnd.toFixed(1)}%  (${p.bridgeFireEnd}/${p.bridgeOnEnd})`);
+    console.log(`  GARUDA plays=${p.gPlays}  fires=${p.gFires}`);
   }
   console.log(`\nTOTAL RUNTIME: ${((Date.now()-t0)/1000).toFixed(1)}s`);
 }
