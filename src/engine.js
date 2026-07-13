@@ -151,6 +151,12 @@ const VANARA_DECK_DEF = [
   { id:'gavaksha', n:'Gavaksha',       sub:'The Nimble',            t:'unit', p:3, r:'U', wave:1, txt:'ON PLAY: You may swap places with another friendly Unit.' },
   { id:'setustones',n:'The Setu Stones',sub:'Bridge of the Vanaras',t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: Your Units enter adjacent to a friendly Unit you choose.' },
   { id:'vault',    n:'Vault of the Sky',sub:'Leap of the Heavens',   t:'mantra', p:0, r:'E', wave:1, txt:'Move a friendly Unit anywhere on your row; it gains +2 power this round.' },
+  // ---- WAVE 1 (batch 11 — the Leap/round-end tier; Vanara wave core CLOSES here) ----
+  { id:'gaja',     n:'Gaja',            sub:'The Mountain',          t:'unit', p:4, r:'U', wave:1, txt:'PASSIVE: +1 power while your board has more Units than the enemy.' },
+  { id:'kumuda',   n:'Kumuda',          sub:'The Bright One',        t:'unit', p:3, r:'U', wave:1, txt:'When this Leaps or is Leapt to, it gains +1 power permanently.' },
+  { id:'sushena',  n:'Sushena the Healer',sub:'Physician of the Host',t:'unit', p:4, r:'R', wave:1, txt:'ROUND END: Restore 1 power to each adjacent damaged Unit.' },
+  { id:'rambha',   n:'Rambha the Bold', sub:'Dancer of the Van',     t:'unit', p:5, r:'E', wave:1, txt:'When any friendly Unit Leaps, this gains +1 power permanently.' },
+  { id:'livingbridge',n:'The Living Bridge',sub:'Span of the Ages', t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: If you have 4+ Units, they all gain +1 power permanently.' },
 ];
 
 // Naga roster — docs/NAGA_ROSTER.md (GDD v2.0 §8). Mechanic: VENOM (see venomTick / drainAmount). Rulings R10–R16.
@@ -340,6 +346,7 @@ function effPower(g, pi, c){
   if (!c.ghost && c.id==='nagawarrior') p += venomTokenCount(g);   // Naga Warrior: +1 per Venom Token on the board
   // Setu Mason (Vanara, batch 10): +1 while adjacent to another friendly Unit (R27 adjacency = index neighbours). Read-time, non-recursive presence check; adjacentUnits already excludes self.
   if (!c.ghost && c.id==='setumason'){ const su=g.players[pi].units, si=su.indexOf(c), sl=su[si-1], sr=su[si+1]; if (sl && sr && !sl.ghost && !sr.ghost) p += 1; }   // R40(b): +1 only while flanked by non-ghost Vanaras on BOTH sides (interior formation value; edges/lone/ghost-side → no bonus). Read-time, non-recursive.
+  if (!c.ghost && c.id==='gaja'){ const mine=g.players[pi].units.filter(u=>!u.ghost).length, theirs=g.players[1-pi].units.filter(u=>!u.ghost).length; if (mine>theirs) p += 1; }   // WAVE 1 batch 11 — +1 while your board is WIDER (strict inequality; ghosts/tokens counted per R40 non-ghost reading). Read-time, re-evaluates.
   // ---- WAVE 1 batch-4 passive auras (card-id-gated → these branches are unreachable unless a wave-1 card is on the board) ----
   const pl4 = g.players[pi];
   // Ushas, Dawn Herald: your OTHER Units at CURRENT (stored) power ≤2 gain +1. 'current' = c.power at eval (non-recursive: a mutation-buff to 3 exits the aura, a drain to ≤2 enters it). Ushas is p3, never self-buffs.
@@ -427,6 +434,15 @@ function doLeap(g, pi, leaper, target, free){
   emit(g,'buff',{sourceUid:leaper.uid,targetUids:[leaper.uid],amount:null,abilityName:'Leap',text:`copies ${target.n}`});
   if (pl.artifact && pl.artifact.id==='kishkindhacrown'){ leaper.power += 1; target.power += 1; log(g, `Kishkindha Crown: ${leaper.n} and ${target.n} both +1.`); emit(g,'buff',{targetUids:[leaper.uid,target.uid],amount:1,abilityName:'Kishkindha Crown',text:'+1'}); }   // EXP-E: +1/+1 (was +2/+2)
   if (!free) pl.leapsUsed++;
+  onLeap(g, pi, leaper, target);   // WAVE 1 batch 11 — leap-event listeners (Kumuda / Rambha). id-gated → no-op flag-off, so launch Leaps (Mainda/Crown/standard) are byte-identical.
+}
+// WAVE 1 batch 11 (Leap/round-end tier) — PURE leap-event listener. Fires once per doLeap (every leap: standard, Mainda-free, and each Crown leap). id-gated → no state change unless Kumuda/Rambha is present.
+function onLeap(g, pi, leaper, target){
+  const pl=g.players[pi];
+  // Kumuda: when it Leaps OR is Leapt to → +1 PERMANENTLY (base AND power, R21). One trigger per leap (it is leaper XOR target, never both).
+  for (const u of [leaper, target]) if (u && !u.ghost && u.id==='kumuda'){ u.base+=1; u.power+=1; log(g,`Kumuda swells with the Leap: +1 (permanent) → ${u.power}.`); emit(g,'buff',{sourceUid:u.uid,targetUids:[u.uid],amount:1,abilityName:'Kumuda',text:'+1'}); }
+  // Rambha the Bold: ANY friendly (same-side) Leap → +1 PERMANENTLY. Her own leap counts (she is a friendly Unit leaping); this fires only on side pi so enemy leaps never touch her.
+  for (const r of pl.units) if (!r.ghost && r.id==='rambha'){ r.base+=1; r.power+=1; log(g,`Rambha the Bold rises with the Leap: +1 (permanent) → ${r.power}.`); emit(g,'buff',{sourceUid:r.uid,targetUids:[r.uid],amount:1,abilityName:'Rambha the Bold',text:'+1'}); }
 }
 // AI helper: best beneficial (leaper, adjacent target) pair by power gain.
 function bestLeap(g, pi){
@@ -1413,11 +1429,11 @@ function afterAction(g, pi){
 // scoring (so the power changes count toward the round — the Kalki precedent). Structurally UNREACHABLE flag-off: an explicit
 // fast-out returns immediately unless a batch-3 card is on a board or a Savitur enchant is active → no state/rng/sweep, byte-identical.
 function roundEndCardEffects(g){
-  const RE_IDS = new Set(['dawnsentinel','kamadhenu','pisacha','mahishasura']);
+  const RE_IDS = new Set(['dawnsentinel','kamadhenu','pisacha','mahishasura','sushena']);   // WAVE 1 batch 11 adds sushena
   let active=false;
   for (let s=0;s<2 && !active;s++){ const pl=g.players[s];
-    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id))) active=true; }
-  if (!active) return;   // no batch-3 subscriber on the board → no-op
+    if ((pl.saviturUids && pl.saviturUids.length) || pl.units.some(u=>!u.ghost && RE_IDS.has(u.id)) || (pl.artifact && pl.artifact.id==='livingbridge')) active=true; }   // + The Living Bridge (artifact)
+  if (!active) return;   // no round-end subscriber on the board → no-op
   // Snapshot "an enemy Unit died this round" BEFORE this hook's own decay-kills, so Mahishasura is independent of intra-hook order (R21+).
   const enemyDied = [ g.players[1].deathsThisRound>0, g.players[0].deathsThisRound>0 ];
   for (let pi=0; pi<2; pi++){
@@ -1436,6 +1452,11 @@ function roundEndCardEffects(g){
     for (let ki=0; ki<kamCount; ki++){ const alive=pl.units.filter(u=>!u.ghost); if (!alive.length) break;
       const lowest=alive.reduce((a,b)=> effPower(g,pi,a)<=effPower(g,pi,b)?a:b);
       lowest.power+=1; log(g,`Kamadhenu blesses ${lowest.n}: +1.`); emit(g,'buff',{sourceUid:lowest.uid,targetUids:[lowest.uid],amount:1,abilityName:'Kamadhenu',text:'+1'}); }
+    // WAVE 1 batch 11 — Sushena the Healer runs BEFORE The Living Bridge (deterministic hook order): restore 1 (current power, capped at base) to each ADJACENT DAMAGED (power<base) Unit. Sushena excluded (adjacency = neighbours, not self). A permanent base-cut (Surpanakha/Pisacha) leaves power==base → NOT damaged → no restore.
+    for (const s of pl.units){ if (s.ghost || s.id!=='sushena') continue;
+      for (const u of adjacentUnits(pl, s)) if (!u.ghost && u.power < u.base){ u.power=Math.min(u.base, u.power+1); log(g,`Sushena the Healer mends ${u.n}: +1.`); emit(g,'buff',{sourceUid:s.uid,targetUids:[u.uid],amount:1,abilityName:'Sushena the Healer',text:'+1'}); } }
+    // WAVE 1 batch 11 — The Living Bridge (R40 SIM-FLAGGED, as-written): 4+ non-ghost Units → ALL of them +1 PERMANENT (base AND power). AFTER Sushena.
+    if (pl.artifact && pl.artifact.id==='livingbridge'){ const line=pl.units.filter(u=>!u.ghost); if (line.length>=4){ for (const u of line){ u.base+=1; u.power+=1; } log(g,`The Living Bridge holds — all ${line.length} Units +1 (permanent).`); emit(g,'buff',{targetUids:line.map(u=>u.uid),amount:1,abilityName:'The Living Bridge',text:'+1'}); } }
   }
   sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
 }
@@ -1573,6 +1594,12 @@ function aiScoreCard(g, pi, c){
     case 'gavaksha': s += 0.5; break;                                    // a P3 body; the swap is situational upside
     case 'setustones': s += pl.faction==='vanaras' ? 1 : 0; break;       // positional artifact
     case 'vault': s = pl.units.some(u=>!u.ghost) ? 2 : -99; break;       // move + a +2 buff when there is a Unit
+    // ---- WAVE 1 batch 11 (Leap/round-end tier) — only reached when wave1 pool is on ----
+    case 'gaja': s += (pl.units.filter(u=>!u.ghost).length >= opp.units.filter(u=>!u.ghost).length) ? 1 : 0; break;   // +1 while wider
+    case 'kumuda': s += 0.5; break;                                     // grows on leaps (situational)
+    case 'sushena': s += 1; break;                                      // round-end healer
+    case 'rambha': s += 1; break;                                       // grows per friendly leap
+    case 'livingbridge': s += pl.units.filter(u=>!u.ghost).length >= 3 ? 3 : 1; break;   // mythic go-wide payoff
     case 'brahmastra': s = opp.units.filter(u=>!u.ghost).reduce((k,u)=>k+effPower(g,1-pi,u),0); break;
     case 'sudarshana': s = opp.heroes.length? 2+Math.max(...opp.heroes.map(h=>h.power))/2 : -99; break;
     case 'gayatri': { const u=pl.discard.filter(x=>x.t==='unit'); s = u.length? 1+Math.min(...u.map(x=>x.base))+2 : -99; break; }
