@@ -612,6 +612,24 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fbtn[data-f="asuras"].sel b{ color:var(--crimson); }
 .fsel-start{ margin-top:18px; width:100%; padding:13px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); color:var(--gold); border:1.5px solid var(--gold); text-shadow:0 1px 4px rgba(0,0,0,.85); }
 .fsel-start:active{ transform:scale(.98); }
+/* D2 difficulty selector */
+.diff-opts{ grid-template-columns:repeat(3,1fr); }
+@media (max-width:480px){ .diff-opts{ grid-template-columns:repeat(3,1fr); } }   /* keep 3-across on narrow — labels are short */
+.dbtn{ padding:10px 5px; border-radius:10px; cursor:pointer; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); border:1.5px solid rgba(255,255,255,.20); color:var(--ink); display:flex; flex-direction:column; gap:3px; align-items:center; transition:border-color .15s, background .15s, transform .1s; }
+.dbtn b{ font-family:Cinzel,serif; font-size:11px; letter-spacing:.5px; color:#fff; text-shadow:0 1px 3px #000; }
+.dbtn em{ font-style:normal; font-size:8.5px; letter-spacing:.5px; opacity:.9; text-shadow:0 1px 3px #000; }
+.dbtn:active{ transform:scale(.97); }
+.dbtn[data-d="beginner"].sel{ border-color:var(--green); background:linear-gradient(#12240e,#0a1806); } .dbtn[data-d="beginner"].sel b{ color:var(--green); }
+.dbtn[data-d="advanced"].sel{ border-color:var(--gold);  background:linear-gradient(#2a1e0a,#1d1507); } .dbtn[data-d="advanced"].sel b{ color:var(--gold); }
+.dbtn[data-d="deathmatch"].sel{ border-color:var(--crimson); background:linear-gradient(#2a1010,#180808); } .dbtn[data-d="deathmatch"].sel b{ color:var(--crimson); }
+.diff-disclose{ margin-top:8px; font-size:10.5px; line-height:1.4; letter-spacing:.3px; color:var(--ink); min-height:15px; text-shadow:0 1px 4px rgba(0,0,0,.95); }
+.diff-disclose.warn{ color:#f0b0a0; }
+/* in-match difficulty chip (realm-chip pattern) */
+#diffchip{ font-family:Cinzel,serif; font-size:10px; letter-spacing:1px; background:linear-gradient(#241a3a,#140f22); border:1px solid #4a3a70; border-radius:20px; padding:5px 11px; white-space:nowrap; color:#cbb9e8; }
+#diffchip.hidden{ display:none; }
+#diffchip.d-beginner{ color:#a8e08a; border-color:#3e6a34; background:linear-gradient(#12240e,#0a1806); }
+#diffchip.d-advanced{ color:var(--gold); border-color:#6a5320; background:linear-gradient(#241a0a,#140f07); }
+#diffchip.d-deathmatch{ color:#f0a090; border-color:#7a2f2a; background:linear-gradient(#241010,#140808); }
 .go-btns{ display:flex; flex-direction:column; gap:8px; align-items:center; }
 .go-alt{ background:none !important; border:1px solid #4a3a18 !important; color:var(--ink-dim) !important; font-size:11px !important; padding:8px 16px !important; }
 /* story-cleared dialog: a primary/secondary pair in the app's gold aesthetic (same width, stacked) */
@@ -762,6 +780,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     <div class="title">DIVYA YUDDHA<small id="facline">PROTOTYPE · DEVA vs DEVA</small></div>
     <div class="hdr-right">
       <button id="realmchip" class="hidden" title="tap for realm effect">🌌 <span id="realmname"></span></button>
+      <span id="diffchip" class="hidden" title="AI difficulty"></span>
       <button id="mutebtn" title="mute / unmute">🔊</button>
       <button id="gearbtn" title="settings">⚙</button>
       <div class="roundbox">ROUND <span id="rnum">1</span></div>
@@ -1032,6 +1051,14 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
       <button class="fbtn" data-f="vanaras"><b>VANARAS</b><em>🌿 green</em></button>
       <button class="fbtn" data-f="nagas"><b>NAGAS</b><em>🐍 teal</em></button>
     </div></div>
+  <div class="fsel-row"><span class="fsel-lbl">DIFFICULTY</span>
+    <div class="fsel-opts diff-opts" id="diffopts">
+      <button class="dbtn" data-d="beginner"><b>BEGINNER</b><em>Learn the war</em></button>
+      <button class="dbtn sel" data-d="advanced"><b>ADVANCED</b><em>Fight it</em></button>
+      <button class="dbtn" data-d="deathmatch"><b>DEATH MATCH</b><em>No mercy</em></button>
+    </div>
+    <div id="diffdisclose" class="diff-disclose"></div>
+  </div>
   <button id="fselstart" class="fsel-start">BEGIN ⚔</button>
 </div></div>
 
@@ -3059,8 +3086,9 @@ function startGame(p0Faction, p1Faction){
   Story=null;   // a PvAI match is never a story chapter
   currentFactions={ p0: p0Faction||currentFactions.p0, p1: p1Faction||currentFactions.p1 };
   resetChoreo();   // never inherit a stuck choreoActive from a prior match
-  G=newGame({p0:'You',p1:'Opponent',p0Faction:currentFactions.p0,p1Faction:currentFactions.p1}); seenLog=0;
+  G=newGame({p0:'You',p1:'Opponent',p0Faction:currentFactions.p0,p1Faction:currentFactions.p1, p1Difficulty:selectedDifficulty}); seenLog=0;   // D2: only the AI (p1) takes the chosen difficulty; the human (p0) stays advanced
   G.players[0].manualShield=true;   // the human designates Dharma Shield by hand (AI keeps auto-designate)
+  applyDiffChip(selectedDifficulty); $('diffchip').classList.remove('hidden');   // in-match tier chip (PvAI); story hides it
   matchRecorded=false;              // arm the one-shot match-result counter for this new match
   goStampDone=false; lastEarn=null; // slice 4: re-arm the earnings-stamp one-shot for the new match
   knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; shieldMode=false; hideBoardTargetBar();
@@ -3172,6 +3200,8 @@ function showFactionSelect(){
     const side=box.dataset.side;
     box.querySelectorAll('.fbtn').forEach(b=> b.classList.toggle('sel', b.dataset.f===fselChoice[side]));
   });
+  selectedDifficulty = (loadMeta().settings.difficulty)||'advanced';   // D2: preselect the persisted last choice
+  renderDiffSelector();
   $('hudwrap').classList.add('hidden');
   $('landing').classList.add('hidden');
   $('factionselect').classList.remove('hidden');
@@ -3184,6 +3214,29 @@ $('factionselect').addEventListener('click', e=>{
 });
 $('fselstart').onclick=()=>startGame(fselChoice.p0, fselChoice.p1);
 $('fsel-back').onclick=()=>showLanding();   // back to landing (fresh stats); showLanding→playTrack('menu') is a no-op while menu already plays, so music is uninterrupted
+
+/* ---------- D2 difficulty selector (PvAI quickplay ONLY — story never sets or reads this) ---------- */
+let selectedDifficulty='advanced';
+const DIFF_META = {
+  beginner:   { chip:'🌱 BEGINNER',   disclose:'The AI plays loosely — a gentler fight to learn the war. Rewards ×0.8.', warn:false },
+  advanced:   { chip:'⚔ ADVANCED',    disclose:'The AI plays to win — the standard battle. Rewards ×1.0.',              warn:false },
+  deathmatch: { chip:'💀 DEATH MATCH', disclose:'The AI starts with an extra card. No mercy. Rewards ×1.5.',            warn:true  },
+};
+function renderDiffSelector(){
+  document.querySelectorAll('#diffopts .dbtn').forEach(b=> b.classList.toggle('sel', b.dataset.d===selectedDifficulty));
+  const info=DIFF_META[selectedDifficulty]||DIFF_META.advanced, d=$('diffdisclose');
+  d.textContent=info.disclose; d.classList.toggle('warn', !!info.warn);
+}
+$('diffopts').addEventListener('click', e=>{
+  const b=e.target.closest('.dbtn'); if(!b || !DIFF_META[b.dataset.d]) return;
+  selectedDifficulty=b.dataset.d; renderDiffSelector();
+  const M=loadMeta(); M.settings.difficulty=selectedDifficulty; saveMeta(M);   // persist last choice → preselected next match
+});
+function applyDiffChip(diff){   // in-match header chip (realm-chip pattern), PvAI only
+  const chip=$('diffchip'); if(!chip) return;
+  const info=DIFF_META[diff]; if(!info){ chip.classList.add('hidden'); return; }
+  chip.textContent=info.chip; chip.className=''; chip.classList.add('d-'+diff);
+}
 
 /* ---------- landing page + player profile (localStorage: dy_profile) ----------
    Level formula is PROVISIONAL (1 + floor(wins/5)) — placeholder for the M1 XP system.
@@ -3206,7 +3259,8 @@ function profileInitials(name){ const w=name.trim().split(/\s+/); const s=(w.len
    card costs) are present so later slices read from the same source of truth. ENGINE UNTOUCHED — everything below
    reads only the match result and the story-completion hook. */
 const META_CONFIG = {
-  schemaVersion: 4,   // v1: xp/wallet/rewards/daily/story · v2: + quests · v3: + sadhana/bonusAmsha/firstWinAwarded · v4 (slice 4): + rewards.rankSeen/rankGlintPending (rank-promotion feel)
+  schemaVersion: 5,   // v1: xp/wallet/rewards/daily/story · v2: + quests · v3: + sadhana/bonusAmsha/firstWinAwarded · v4 (slice 4): + rewards.rankSeen/rankGlintPending · v5 (D2): + settings.difficulty (persisted PvAI difficulty)
+  DIFFICULTY_REWARD_MULT: { beginner:0.8, advanced:1.0, deathmatch:1.5 },   // D2 §2 — scales PvAI match XP/coins/Amsha/Sadhana income (ONE application point in recordMatchResult; story/PvP untouched)
   xp: {                                  // §1 awards (play-only, win or lose)
     matchComplete: 20, matchWin: 15,
     storyFirstClear: 60, storyBonusFirstEarn: 40,
@@ -3255,6 +3309,7 @@ function freshMeta(){ return {
   story: { clearXp:{}, bonusXp:{}, bonusAmsha:{} },   // bonusAmsha (v3): per-chapter 15-Amsha retro ledger (idempotent, one-shot per star)
   quests: { day:'', week:'', daily:[], weekly:[] },   // slice 2 — populated by ensureQuests() on first load
   sadhana: { pin:null, banked:{} },                   // slice 3 — pinned card id + per-id banked progress (persists on pin-switch)
+  settings: { difficulty:'advanced' },                // v5 (D2) — last chosen PvAI difficulty, preselected next match
 }; }
 function saveMeta(M){ try{ localStorage.setItem('dy_meta', JSON.stringify(M)); }catch(e){} }
 function loadMeta(){
@@ -3273,6 +3328,8 @@ function loadMeta(){
   if(!M.rewards) M.rewards={ lastLevelRewarded:1 };
   if(M.rewards.rankSeen===undefined){ M.rewards.rankSeen=rankForWins((loadProfile().wins)|0); changed=true; }   // v4: existing player already holds their rank
   if(M.rewards.rankGlintPending===undefined){ M.rewards.rankGlintPending=null; changed=true; }
+  if(!M.settings || typeof M.settings!=='object'){ M.settings={ difficulty:'advanced' }; changed=true; }   // v5 (D2): additive — older stores keep xp/wallet/quests/sadhana, gain default difficulty
+  if(!META_CONFIG.DIFFICULTY_REWARD_MULT[M.settings.difficulty]){ M.settings.difficulty='advanced'; changed=true; }   // guard a corrupt/unknown persisted value
   if(M.schemaVersion!==META_CONFIG.schemaVersion){ M.schemaVersion=META_CONFIG.schemaVersion; changed=true; }
   if(!M.daily || M.daily.day!==todayKey()){ M.daily={ day:todayKey(), firstMatchAwarded:false, firstWinAwarded:false }; changed=true; }   // day rollover → re-arm both daily-firsts
   if(M.daily.firstWinAwarded===undefined) M.daily.firstWinAwarded=false;   // v3 field on a same-day pre-v3 store
@@ -3302,8 +3359,8 @@ const SADHANA_POOL = [
 ];
 function sadhanaDef(id){ return SADHANA_POOL.find(s=>s.id===id)||null; }
 function sadhanaCost(id){ return META_CONFIG.sadhana.previewCost; }   // no card identity yet → preview target; real per-card Amsha cost when the wave ships
-function sadhanaOnWin(M){ if(!M.sadhana || !M.sadhana.pin) return; const id=M.sadhana.pin;
-  M.sadhana.banked[id]=Math.min(sadhanaCost(id), (M.sadhana.banked[id]|0)+META_CONFIG.sadhana.perWin); }   // cap at cost (grant deferred to the wave)
+function sadhanaOnWin(M, mult=1){ if(!M.sadhana || !M.sadhana.pin) return; const id=M.sadhana.pin;
+  M.sadhana.banked[id]=Math.min(sadhanaCost(id), (M.sadhana.banked[id]|0)+Math.round(META_CONFIG.sadhana.perWin*mult)); }   // cap at cost (grant deferred to the wave); D2: +10 scaled by difficulty mult
 function setSadhanaPin(id){ const M=loadMeta(); if(!sadhanaDef(id)) return; M.sadhana.pin=id; if(M.sadhana.banked[id]==null) M.sadhana.banked[id]=0; saveMeta(M); renderProfile(); }
 /* MIGRATION FORMULA (documented in CLAUDE.md): retroXP = matches×matchComplete(20) + wins×matchWin(15) — reconstructs the
    play-XP a veteran would have earned (one-time story/daily bonuses can't be reconstructed, so they're intentionally omitted),
@@ -3529,16 +3586,21 @@ function recordMatchResult(){
   // snapshot BEFORE grants → the stamp reports the exact deltas actually applied
   const xp0=M.xp.total, coins0=M.wallet.coins, amsha0=M.wallet.amsha, lvl0=levelFromXp(M.xp.total).level;
   const sad0=(M.sadhana&&M.sadhana.pin)?(M.sadhana.banked[M.sadhana.pin]|0):0, questsDone0=claimableCount(M);
-  grantXp(M, META_CONFIG.xp.matchComplete);
-  if(G.winner===0) grantXp(M, META_CONFIG.xp.matchWin);
-  if(!M.daily.firstMatchAwarded){ M.daily.firstMatchAwarded=true; grantXp(M, META_CONFIG.xp.dailyFirstMatch); }   // day-keyed +25 XP
-  // §5 match income (PvAI only — story never reaches here): 5 coins/match, 10 Amsha/win, +20 Amsha first WIN of day; Sadhana +10/win
-  M.wallet.coins += META_CONFIG.coins.perMatch;
-  if(G.winner===0){
-    M.wallet.amsha += META_CONFIG.amsha.perWin;
-    if(!M.daily.firstWinAwarded){ M.daily.firstWinAwarded=true; M.wallet.amsha += META_CONFIG.amsha.firstWinOfDay; }   // own day-key guard, distinct from the XP daily-first
-    sadhanaOnWin(M);
-  }
+  // D2 §2 — DIFFICULTY REWARD MULTIPLIER, applied at THIS ONE POINT to the match's XP/coins/Amsha/Sadhana income only.
+  // The AI side (p1) carries the chosen tier (D1 opts.p1Difficulty); a match with no difficulty falls back to 1.0.
+  // Level-up rewards (reconciled INSIDE grantXp), quest claims (panel), and story (never reaches here) are NOT scaled.
+  const matchDiff = (G.players[1] && G.players[1].difficulty) || null;
+  const mult = (matchDiff && META_CONFIG.DIFFICULTY_REWARD_MULT[matchDiff]!=null) ? META_CONFIG.DIFFICULTY_REWARD_MULT[matchDiff] : 1;
+  const won = G.winner===0;
+  const dailyFirstMatch = !M.daily.firstMatchAwarded; if(dailyFirstMatch) M.daily.firstMatchAwarded=true;   // day-keyed +25 XP
+  const firstWin = won && !M.daily.firstWinAwarded;    if(firstWin) M.daily.firstWinAwarded=true;           // own day-key guard, distinct from the XP daily-first
+  const baseXp    = META_CONFIG.xp.matchComplete + (won?META_CONFIG.xp.matchWin:0) + (dailyFirstMatch?META_CONFIG.xp.dailyFirstMatch:0);
+  const baseCoins = META_CONFIG.coins.perMatch;                                                             // §5: 5 coins/match
+  const baseAmsha = won ? (META_CONFIG.amsha.perWin + (firstWin?META_CONFIG.amsha.firstWinOfDay:0)) : 0;    // §5: 10/win + 20 first-win-of-day
+  grantXp(M, Math.round(baseXp*mult));           // XP via grantXp → level-up rewards reconcile off the (multiplied) total
+  M.wallet.coins += Math.round(baseCoins*mult);
+  M.wallet.amsha += Math.round(baseAmsha*mult);
+  if(won) sadhanaOnWin(M, mult);                 // §6: +10 progress/win, scaled
   // rank promotion (persisted seen-flag → the note shows once, the landing chip glints once)
   const rankBefore=M.rewards.rankSeen, rankAfter=rankForWins(P.wins|0);
   let rankTo=null;
@@ -3549,12 +3611,13 @@ function recordMatchResult(){
   const M2=loadMeta();
   const sad1=(M2.sadhana&&M2.sadhana.pin)?(M2.sadhana.banked[M2.sadhana.pin]|0):0, lvl1=levelFromXp(M2.xp.total).level;
   lastEarn = { xp:M2.xp.total-xp0, coins:M2.wallet.coins-coins0, amsha:M2.wallet.amsha-amsha0,
-               sadhana:sad1-sad0, leveledTo: lvl1>lvl0?lvl1:null, rankTo, questCompleted: claimableCount(M2)>questsDone0 };
+               sadhana:sad1-sad0, leveledTo: lvl1>lvl0?lvl1:null, rankTo, questCompleted: claimableCount(M2)>questsDone0,
+               difficulty: matchDiff, mult };   // D2 §5: carry the tier + applied multiplier on the stamp for future telemetry segmentation
   if(lastEarn.leveledTo) levelRolloverPending=true;   // profile bar rolls over on next render
 }
 function showLanding(){
   Story=null;   // leaving any story chapter
-  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','objchip','settings','mulligan','bossvs','targeting','inspect','banner','realmpop'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
+  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','objchip','settings','mulligan','bossvs','targeting','inspect','banner','realmpop','diffchip'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
   renderProfile();
   maybeGlintRank();          // slice 4: one-time rank-promotion chip shimmer (consumes the persisted pending flag)
   updateStoryLandingCta();   // smart Story caption from dy_story
@@ -4029,7 +4092,7 @@ function chapterUnlocked(id){ if(id==='b1c1') return true;
 function chapterPlayable(id){ return !!CHAPTERS[id] && chapterUnlocked(id); }
 /* --- chapter-select (Book of Order) --- */
 function showStorySelect(){
-  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','landing','settings','mulligan','cutscene','storyresult','brihaspati','bossvs'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
+  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','landing','settings','mulligan','cutscene','storyresult','brihaspati','bossvs','diffchip'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
   renderChapterCards();
   $('storyselect').classList.remove('hidden'); $('storyselect').scrollTop=0;
   Audio2.playTrack('menu');   // menu music on chapter select
@@ -4079,7 +4142,7 @@ function startStoryChapter(id){
   G=newGame({ p0:'You', p1:'Opponent', p0Faction:ch.playerFaction, p1Faction:ch.opponentFaction, realm:ch.realm||undefined, rng:storyRng(storySeedN++), scenario:ch.scenario }); seenLog=0;
   G.players[0].manualShield=true; matchRecorded=true;   // matchRecorded=true is belt-and-suspenders; showGameOver also early-returns for story (no PvAI telemetry)
   knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; shieldMode=false; hideBoardTargetBar();
-  ['gameover','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','storyselect','cutscene','storyresult','mulligan','bossvs','realmpop'].forEach(id=>$(id).classList.add('hidden'));
+  ['gameover','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','storyselect','cutscene','storyresult','mulligan','bossvs','realmpop','diffchip'].forEach(id=>$(id).classList.add('hidden'));   // diffchip: story never shows the PvAI difficulty chip
   $('hudwrap').classList.remove('hidden');
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers();
