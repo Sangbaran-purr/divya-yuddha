@@ -2093,7 +2093,7 @@ function resolveAstra(g, pi, c, targetUid){
 }
 
 /* ---------- play a card ---------- */
-function playCard(g, pi, handIndex, targetUid=null, position=null){
+function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=null){   // movePosition (batch 10.5): Riksha's move-destination channel — additive, defaults null (position = ENTRY slot; movePosition = post-entry MOVE index). No launch caller passes it → byte-identical flag-off.
   const pl=g.players[pi], opp=g.players[1-pi];
   const c = pl.hand[handIndex];
   if (!c) throw new Error('bad hand index');
@@ -2291,7 +2291,19 @@ function playCard(g, pi, handIndex, targetUid=null, position=null){
       case 'dadhimukha': { const d=pl.deck.splice(0,1); pl.hand.push(...d);
         if (pl.heroes.some(h=>h.id==='sugriva')){ for (const u of pl.units) if(!u.ghost) u.power+=1; log(g,'Dadhimukha draws; under Sugriva the host swells +1.'); }
         else log(g,'Dadhimukha draws a card.'); break; }
-      case 'riksha': if (pl.heroes.some(h=>h.id==='hanuman')){ c.power+=3; log(g,'Riksha fights beside Hanuman: +3.'); } break;   // ruling: +3 while Hanuman on board
+      case 'riksha': {
+        if (pl.heroes.some(h=>h.id==='hanuman')){ c.power+=3; log(g,'Riksha fights beside Hanuman: +3.'); }   // EXISTING launch behavior (entry-time +3), UNCHANGED — NOT gated on wave1.
+        if (g.wave1){   // WAVE 1 batch 10.5 (LAUNCH-REPAIR — DEAD flag-off via g.wave1): the printed "Move to any position on the row". Riksha has already entered at his played (or Stones-overridden) slot; now he relocates ONCE via the batch-10 moveUnit primitive (no parallel path).
+          const allies = pl.units.filter(u=>!u.ghost && u!==c);
+          if (allies.length){   // single Unit on board (only Riksha) → nowhere to go → structural no-op
+            let dest;
+            if (movePosition!=null) dest = movePosition;   // explicit index (its own channel: playCard's new movePosition param) — honored, moveUnit clamps it
+            else { const strong=allies.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b); dest = pl.units.indexOf(strong); }   // AI destination = batch-10 Leap-setup heuristic: relocate adjacent to the highest-effPower friendly (Riksha becomes a leaper beside a strong target). Human free-choice picker = UI-DEFERRED (logged), engine live.
+            moveUnit(g, pi, c, dest);
+            log(g,'Riksha bounds to a new position on the row.');
+          }
+        }
+        break; }
       case 'nala': {
         const inHand=pl.hand.filter(x=>x.t==='unit');
         if (inHand.length){ const low=inHand.reduce((a,b)=>a.base<=b.base?a:b);
