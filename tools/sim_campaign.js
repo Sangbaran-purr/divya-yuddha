@@ -237,7 +237,89 @@ function probe22(N){
     gPlays, gFires };
 }
 
-module.exports={run1,run2,run3patala,attribution,garudaVal,ablation,aisens,vanaraExec,probe22,MATCHUPS,LAUNCH_FACTION,seeded,playGame};
+// ============================================================================
+// TASK 24a — DESIGN-ROUND DATA PULL (measurement only). Per-card evidence table
+// for the Asura/Vanara design round. Every metric names its source.
+// ============================================================================
+// Trigger fire-log keys — VERIFIED against src/engine.js source (the Bridge-scanner lesson: a
+// renamed string silently zeroes a metric). Apostrophe-free substrings to dodge curly/straight-quote drift.
+// Cards absent here are passive/read-time (Holika/Shumbha/Nishumbha/Andhaka/Setu Mason/Gaja/Anjana/Gandhamadana)
+// or vanilla (Ash Legionnaire/Kishkindha Runner/Setu Stones — no dedicated fire log): fire count = N/A.
+const FIRE_KEYS={
+  mahishasura:'hunger goes unfed', pisacha:'Pisacha Skirmisher burns lower', ironcrucible:'Iron Crucible reforges',
+  mahishi:'Mahishi takes the shape', vritra:'Vritra the Withholder binds', simhika:'Simhika seizes',
+  raktabija:'blood rises as two Rakta', vidyutastra:'Vidyutastra cracks like thunder', brahmadanda:'Brahmadanda strikes',
+  blueprint:'the Astra costs no turn', mohanastra:'Mohanastra clouds', surpanakha:'spite shrinks',
+  mayashade:'Maya Shade takes the form', mayaveil:'Maya Veil shrouds', dhumraksha:'smoke gnaws',
+  atikaya:'Atikaya rises', bloodoath:'is offered to the pyre',
+  kumuda:'Kumuda swells with the Leap', rambha:'Rambha the Bold rises', sushena:'Sushena the Healer mends',
+  livingbridge:'The Living Bridge spans', anjaneyaroar:'Anjaneya', makardhwaja:'Makardhwaja leaps in',
+  vault:'Vault of the Sky lifts', matanga:'Blessing empowers the Leap', songcrossing:'Song of the Crossing lifts',
+  vinatastalon:'Talon rakes', vayavyastra:'Vayavyastra hurls', jatayu:'last dive strikes true',
+  swayamprabha:'Swayamprabha searches', gavaksha:'Gavaksha trades places', drummer:'Drummer of the Host rouses',
+  sampati:'sight reveals',
+};
+function drawnBy(g,s,id){ const p=g.players[s]; if(p.artifact&&p.artifact.id===id)return true; for(const z of[p.hand,p.units,p.heroes,p.discard]) if(z.some(c=>c.id===id))return true; return false; }
+function playedBy(g,s,id){ const p=g.players[s]; if(p.artifact&&p.artifact.id===id)return true; for(const z of[p.units,p.heroes,p.discard]) if(z.some(c=>c.id===id))return true; return false; }
+// crosses where a faction appears + which side it is
+const CROSSES={ asuras:[['devas','asuras',1],['asuras','vanaras',0],['asuras','nagas',0]],
+                vanaras:[['devas','vanaras',1],['asuras','vanaras',1],['vanaras','nagas',0]] };
+function cardTable(fac, matchups, N){
+  const cards=E.DECKS[fac].filter(c=>c.wave);
+  const stat={}; for(const c of cards) stat[c.id]={drawn:0,played:0,won:0,fires:0};
+  let facDecided=0, facWon=0;
+  for(const [f0,f1,side] of matchups){
+    for(let k=0;k<N;k++){ const g=playGame({rng:seeded(1000+k),p0Faction:f0,p1Faction:f1,realm:'mrityulok',wave1:true});
+      const decided=g.winner!=null; if(decided){ facDecided++; if(g.winner===side)facWon++; }
+      const L=g.log.map(l=>l.msg).join('\n');
+      for(const c of cards){ const st=stat[c.id];
+        if(drawnBy(g,side,c.id)) st.drawn++;
+        if(playedBy(g,side,c.id)){ st.played++; if(g.winner===side)st.won++; }
+        if(FIRE_KEYS[c.id]) st.fires+=all(L, FIRE_KEYS[c.id].replace(/[.*+?^${}()|[\]\\]/g,'\\$&')); }
+    }
+  }
+  const base=facDecided? 100*facWon/facDecided : 0;
+  const rows=cards.map(c=>{ const st=stat[c.id]; const wr=st.played? 100*st.won/st.played : null;
+    return { n:c.n, t:c.t, p:c.p, drawn:st.drawn, played:st.played,
+      playRate: st.drawn? 100*st.played/st.drawn : 0, wr, delta: wr!=null? wr-base : null,
+      fires: FIRE_KEYS[c.id]!=null? st.fires : null, lowN: st.played<100 }; });
+  rows.sort((a,b)=> (a.wr==null?999:a.wr) - (b.wr==null?999:b.wr));
+  return { base, rows, facDecided };
+}
+// tempo profile: turn-by-turn, avg round played + board-power delta the turn it lands (Asura side, Asura-vs-Vanara)
+function tempoProfile(ids, N){
+  const acc={}; for(const id of ids) acc[id]={n:0,roundSum:0,deltaSum:0};
+  const nameToId={}; for(const c of E.DECKS.asuras) nameToId[c.n]=c.id;
+  for(let k=0;k<N;k++){ const g=E.newGame({rng:seeded(1000+k),p0Faction:'asuras',p1Faction:'vanaras',realm:'mrityulok',wave1:true});
+    let guard=0;
+    while(!g.over && guard++<800){ const pi=g.turn;
+      if(pi!==0){ E.aiTakeTurn(g,pi); continue; }
+      const before=E.totalPower(g,0); const logLen=g.log.length; const rd=g.round;
+      E.aiTakeTurn(g,0);
+      const after=E.totalPower(g,0);
+      const newLines=g.log.slice(logLen).map(l=>l.msg);
+      const play=newLines.find(m=>/^You plays /.test(m)); if(!play) continue;
+      const nm=play.replace(/^You plays /,'').replace(/ — .*$/,'').replace(/\.$/,'');
+      const id=nameToId[nm]; if(id && acc[id]){ acc[id].n++; acc[id].roundSum+=rd; acc[id].deltaSum+=(after-before); }
+    }
+  }
+  return ids.map(id=>({ id, ...acc[id], avgRound: acc[id].n? acc[id].roundSum/acc[id].n:0, avgDelta: acc[id].n? acc[id].deltaSum/acc[id].n:0 }));
+}
+// leap profile: leaps/game overall vs leaps/game in games where the suite card was played (Vanara side, Vanara crosses)
+function leapProfile(ids, N){
+  const nameOK={}; for(const id of ids) nameOK[id]=true;
+  let totGames=0, totLeaps=0; const per={}; for(const id of ids) per[id]={games:0,leaps:0};
+  for(const [f0,f1,side] of CROSSES.vanaras){
+    for(let k=0;k<N;k++){ const g=playGame({rng:seeded(1000+k),p0Faction:f0,p1Faction:f1,realm:'mrityulok',wave1:true});
+      const L=g.log.map(l=>l.msg).join('\n'); const leaps=all(L,'Leap!');
+      totGames++; totLeaps+=leaps;
+      for(const id of ids){ if(playedBy(g,side,id)){ per[id].games++; per[id].leaps+=leaps; } }
+    }
+  }
+  return { base: totLeaps/totGames, per: ids.map(id=>({id, games:per[id].games, avg: per[id].games? per[id].leaps/per[id].games:0})) };
+}
+
+module.exports={run1,run2,run3patala,attribution,garudaVal,ablation,aisens,vanaraExec,probe22,cardTable,tempoProfile,leapProfile,CROSSES,MATCHUPS,LAUNCH_FACTION,seeded,playGame};
 
 // ---------- CLI ----------
 if(require.main===module){
@@ -297,6 +379,32 @@ if(require.main===module){
     console.log(`  BRIDGE fire-rate (played denom) = ${p.bridgeFireRatePlayed.toFixed(1)}%  (${p.bridgeFire}/${p.bridgePlayed})`);
     console.log(`  BRIDGE fire-rate (21b end-state denom) = ${p.bridgeFireRateEnd.toFixed(1)}%  (${p.bridgeFireEnd}/${p.bridgeOnEnd})`);
     console.log(`  GARUDA plays=${p.gPlays}  fires=${p.gFires}`);
+  }
+  if(mode==='24a'){ const N=+process.argv[3]||500;
+    function printTable(title, T){
+      console.log(`\n${title}  (faction base win% over this population = ${T.base.toFixed(1)}%, n=${T.facDecided} decided games)`);
+      console.log('  card'.padEnd(26)+'type'.padEnd(9)+'P'.padEnd(4)+'drawn'.padEnd(7)+'played'.padEnd(8)+'play%'.padEnd(7)+'win%pl'.padEnd(8)+'Δbase'.padEnd(8)+'fires');
+      for(const r of T.rows){ const wr=r.wr==null?'—':r.wr.toFixed(1); const d=r.delta==null?'—':(r.delta>=0?'+':'')+r.delta.toFixed(1);
+        console.log('  '+r.n.padEnd(24)+r.t.padEnd(9)+('P'+r.p).padEnd(4)+String(r.drawn).padEnd(7)+String(r.played).padEnd(8)+r.playRate.toFixed(0).padEnd(7)+(wr+(r.lowN?'*':'')).padEnd(8)+d.padEnd(8)+(r.fires==null?'—':r.fires)); }
+    }
+    console.log(`===== TASK 24a — DESIGN-ROUND PER-CARD PULL (${N} games/matchup, wave ON, post-R63/R64/R65) =====`);
+    console.log('POPULATION: each faction table pools its 3 CROSS matchups (the population that defines the faction base win%); mirror excluded so Δbase is comparable. Sorted by win%-when-played ASC (worst first). * = LOW-N (played <100 → win% unstable).');
+    printTable('ASURA WAVE (22)', cardTable('asuras', CROSSES.asuras, N));
+    printTable('VANARA WAVE (22)', cardTable('vanaras', CROSSES.vanaras, N));
+    console.log('\n----- SECONDARY CUT A: EPICENTER Asura-vs-Vanara ONLY -----');
+    printTable('ASURA wave @ Asura-vs-Vanara', cardTable('asuras', [['asuras','vanaras',0]], N));
+    printTable('VANARA wave @ Asura-vs-Vanara', cardTable('vanaras', [['asuras','vanaras',1]], N));
+    console.log('\n----- SECONDARY CUT B: ASURA TEMPO SUITE (Asura-vs-Vanara, turn-by-turn) -----');
+    console.log('  (Kalanemi is NOT a wave card — excluded. avgRound = mean round played; avgΔboard = mean Asura board-power change the turn it lands)');
+    const tempo=tempoProfile(['bloodoath','nishumbha','vidyutastra','atikaya','andhaka','mahishasura'], N);
+    console.log('  card'.padEnd(16)+'plays'.padEnd(8)+'avgRound'.padEnd(10)+'avgΔboard');
+    for(const r of tempo) console.log('  '+r.id.padEnd(16)+String(r.n).padEnd(8)+r.avgRound.toFixed(2).padEnd(10)+r.avgDelta.toFixed(2));
+    console.log('\n----- SECONDARY CUT C: VANARA LEAP SUITE (Vanara crosses) -----');
+    const lp=leapProfile(['anjana','gandhamadana','songcrossing','matanga','anjaneyaroar'], N);
+    console.log(`  base leaps/game (all Vanara-cross games) = ${lp.base.toFixed(2)}   [21b reported 1.49 @ Asura-vs-Vanara]`);
+    console.log('  NOTE: Saranyu is a DEVA card (Saranyu Cloud Mare), NOT Vanara — excluded from this Vanara suite.');
+    console.log('  card'.padEnd(16)+'games-played'.padEnd(14)+'leaps/game-when-played');
+    for(const r of lp.per) console.log('  '+r.id.padEnd(16)+String(r.games).padEnd(14)+r.avg.toFixed(2));
   }
   console.log(`\nTOTAL RUNTIME: ${((Date.now()-t0)/1000).toFixed(1)}s`);
 }
