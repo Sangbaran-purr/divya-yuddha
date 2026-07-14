@@ -1197,7 +1197,7 @@ const ASURA_DECK_DEF = [
   { id:'brahmadanda',n:'Brahmadanda',   sub:'Staff of Brahma',      t:'astra', p:0, r:'E', wave:1, txt:'Negate the next enemy Astra this round.' },
   { id:'ironcrucible',n:'The Iron Crucible',sub:'Forge of the Price',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your Units that lost power this round regain 1.' },
   // ---- WAVE 1 (batch 19 — deferred heroes) ----
-  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:6, r:'L', wave:1, txt:'ROUND END (once per game): become a copy of the strongest friendly Unit’s power.' },   // R64 P7→P6; R66 (design round 1): ONCE-PER-GAME — fires at the first round end where the copy would INCREASE her (else hold, no spend); the spend is the once-flag h.mahishiSpent. +10.0 Δbase at P6 = an ability problem. ART GATE: Asuras_Hero_Mahishi_P6_rLegendary.
+  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:6, r:'L', wave:1, txt:'ROUND END (once per game): become a copy of the strongest friendly Unit’s power THIS ROUND ONLY.' },   // R64 P7→P6; R66 once-per-game gain-only; R72 (design round 2): the copy is THIS ROUND ONLY — reverts to her pre-copy power at the board clear (the cross-round CARRY was the ability; absolute win-when-played was flat 69.6→71.2 through both prior nerfs). h.mahishiPreCopy stash. ART GATE (3rd change): Asuras_Hero_Mahishi_P6_rLegendary.
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -1231,7 +1231,7 @@ const VANARA_DECK_DEF = [
   { id:'ramasignet',n:'Rama’s Signet',sub:'Seal of Trust',       t:'artifact', p:0, r:'R', txt:'PASSIVE: Your Vanara Units cannot be reduced below 1 power by any effect; Venom on them is negated.' },
   { id:'kishkindhacrown',n:'Kishkindha Crown',sub:'Throne of Unity',t:'artifact', p:0, r:'M', txt:'PASSIVE: When a Vanara Unit Leaps, it and the copied Unit both gain +1. Leap limit becomes twice per round.' },
   // ---- WAVE 1 (batch 1; gated by opts.wave1) — WAVE1_ROSTER_v0.2.md ----
-  { id:'kishrunner',n:'Kishkindha Runner',sub:'Swift Scout',    t:'unit', p:3, r:'C', wave:1, txt:'A fleet-footed runner of the vanara host.' },
+  { id:'kishrunner',n:'Kishkindha Runner',sub:'Swift Scout',    t:'unit', p:4, r:'C', wave:1, txt:'A fleet-footed runner of the vanara host.' },   // R73 (design round 2): P3→P4 stat lift (was −10.0 Δbase, the cheapest unconditional aggregate lever). ART GATE: filename re-numbers to Vanaras_Unit_KishkindhaRunner_P4_rCommon.
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
   { id:'swayamprabha',n:'Swayamprabha', sub:'Keeper of the Hidden Vale',t:'unit', p:3, r:'R', wave:1, txt:'ON PLAY: Look at the top 3 cards of your deck; take one to your hand, return the rest.' },
   // ---- WAVE 1 (batch 10 — the positional tier; R27 move/place primitive) ----
@@ -1242,13 +1242,13 @@ const VANARA_DECK_DEF = [
   { id:'vault',    n:'Vault of the Sky',sub:'Leap of the Heavens',   t:'mantra', p:0, r:'E', wave:1, txt:'Move a friendly Unit anywhere on your row; it gains +2 power permanently.' },   // R70 (design round 1): this-round→permanent (R21 base+power; −6.9 Δbase, the payoff was vapor). ART GATE: Vanaras_Mantra_VaultoftheSky_rEpic.
   // ---- WAVE 1 (batch 11 — the Leap/round-end tier; Vanara wave core CLOSES here) ----
   { id:'gaja',     n:'Gaja',            sub:'The Mountain',          t:'unit', p:4, r:'U', wave:1, txt:'PASSIVE: +1 power while your board has more Units than the enemy.' },
-  { id:'kumuda',   n:'Kumuda',          sub:'The Bright One',        t:'unit', p:3, r:'U', wave:1, txt:'When this Leaps or is Leapt to, it gains +1 power permanently.' },
+  { id:'kumuda',   n:'Kumuda',          sub:'The Bright One',        t:'unit', p:3, r:'U', wave:1, txt:'When this Leaps or is Leapt to, it gains +2 power permanently.' },   // R75 (design round 2): +1→+2 (constant-only; the Matanga rework doubled leap volume 1.36→2.20/game, so the trigger has fuel). Permanence class unchanged (base+power). ART GATE: Vanaras_Unit_Kumuda_P3_rUncommon.
   { id:'sushena',  n:'Sushena the Healer',sub:'Physician of the Host',t:'unit', p:4, r:'R', wave:1, txt:'ROUND END: Restore 1 power to each adjacent damaged Unit.' },
   { id:'rambha',   n:'Rambha the Bold', sub:'Dancer of the Van',     t:'unit', p:5, r:'E', wave:1, txt:'When any friendly Unit Leaps, this gains +1 power permanently.' },
   { id:'livingbridge',n:'The Living Bridge',sub:'Span of the Ages', t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: If you have 4+ Units, they all gain +1 power permanently.' },
   // ---- WAVE 1 (batch 14 — the astra/utility tier) ----
   { id:'sampati',  n:'Sampati',         sub:'Vulture of the Vale',  t:'unit', p:5, r:'R', wave:1, txt:"ON PLAY: Reveal the enemy's highest-power card in hand." },
-  { id:'vinatastalon',n:"Vinata's Talon",sub:'Claw of the Mother',  t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: Deal 1 damage to an enemy Unit for every two friendly Vanaras (max 3).' },
+  { id:'vinatastalon',n:"Vinata's Talon",sub:'Claw of the Mother',  t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: Deal 1 damage to an enemy Unit for every two friendly Vanaras.' },   // R74 (design round 2): UNCAPPED (was max 3) — the width payoff for the human swarm ceiling; R50 stands otherwise (self-inclusive floor(n/2), single target, non-astra, Holika sharpens per hit). ART GATE: Vanaras_Unit_VinatasTalon_P4_rRare.
   { id:'vayavyastra',n:'Vayavyastra',   sub:'The Wind Weapon',      t:'astra', p:0, r:'R', wave:1, txt:"Return an enemy Unit of 4 or less power to its owner's hand." },
   { id:'jatayu',   n:"Jatayu's Last Flight",sub:'The Final Dive',   t:'astra', p:0, r:'E', wave:1, txt:'Destroy an enemy Unit with more than 6 power.' },
   // ---- WAVE 1 (batch 15 — the leap-utility tier; Vanara wave FULLY CLOSES here) ----
@@ -1591,7 +1591,7 @@ function doLeap(g, pi, leaper, target, free){
 function onLeap(g, pi, leaper, target){
   const pl=g.players[pi];
   // Kumuda: when it Leaps OR is Leapt to → +1 PERMANENTLY (base AND power, R21). One trigger per leap (it is leaper XOR target, never both).
-  for (const u of [leaper, target]) if (u && !u.ghost && u.id==='kumuda'){ u.base+=1; u.power+=1; log(g,`Kumuda swells with the Leap: +1 (permanent) → ${u.power}.`); emit(g,'buff',{sourceUid:u.uid,targetUids:[u.uid],amount:1,abilityName:'Kumuda',text:'+1'}); }
+  for (const u of [leaper, target]) if (u && !u.ghost && u.id==='kumuda'){ u.base+=2; u.power+=2; log(g,`Kumuda swells with the Leap: +2 (permanent) → ${u.power}.`); emit(g,'buff',{sourceUid:u.uid,targetUids:[u.uid],amount:2,abilityName:'Kumuda',text:'+2'}); }   // R75 (design round 2): +1→+2 constant-only; permanence class unchanged (base+power)
   // Rambha the Bold: ANY friendly (same-side) Leap → +1 PERMANENTLY. Her own leap counts (she is a friendly Unit leaping); this fires only on side pi so enemy leaps never touch her.
   for (const r of pl.units) if (!r.ghost && r.id==='rambha'){ r.base+=1; r.power+=1; log(g,`Rambha the Bold rises with the Leap: +1 (permanent) → ${r.power}.`); emit(g,'buff',{sourceUid:r.uid,targetUids:[r.uid],amount:1,abilityName:'Rambha the Bold',text:'+1'}); }
 }
@@ -2596,7 +2596,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         if (oh.length){ const hi=oh.reduce((a,b)=>a.p>=b.p?a:b); log(g,`Sampati's sight reveals ${opp.name}'s strongest card: ${hi.n} (power ${hi.p}).`); }
         else log(g,'Sampati peers — the enemy hand is empty.'); break; }
       case 'vinatastalon': {   // WAVE 1 batch 14 — deal N hits of 1 to ONE enemy (N = floor(non-ghost friendlies/2), capped 3; SELF-INCLUSIVE — Talon is already on the board). N separate damageUnit hits → Holika sharpens EACH (+1/hit). Cause 'Vinata's Talon' (non-astra). Does NOT respect astraProtected (a Unit's on-play damage is NOT the astra-targeting layer — R22/Maya-Veil logic).
-        const n=Math.min(3, Math.floor(pl.units.filter(u=>!u.ghost).length/2));
+        const n=Math.floor(pl.units.filter(u=>!u.ghost).length/2);   // R74 (design round 2): UNCAPPED (was min(3,…)) — self-inclusive count, floor(n/2) hits, single target; Holika sharpens EACH hit at the new widths.
         const foes=opp.units.filter(u=>!u.ghost);
         if (n>0 && foes.length){ let t = targetUid!=null ? foes.find(u=>u.uid===targetUid) : null; if (!t) t=foes.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
           for (let k=0;k<n;k++) if (opp.units.includes(t) && !t.ghost) damageUnit(g, 1-pi, t, 1, "Vinata's Talon");
@@ -2897,7 +2897,7 @@ function roundEndCardEffects(g){
     // hero row kept, persists). h.mahishiSpent is per-match state on the hero (undefined→falsy until spent; a new match mints a new hero).
     for (const h of pl.heroes){ if (h.id!=='mahishi' || h.mahishiSpent) continue; const real=pl.units.filter(u=>!u.ghost);
       if (real.length){ const strong=real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b); const sp=effPower(g,pi,strong);
-        if (sp > h.power){ h.power=sp; h.mahishiSpent=true; log(g,`Mahishi takes the shape of ${strong.n}'s might (${sp}).`); emit(g,'buff',{sourceUid:h.uid,targetUids:[h.uid],abilityName:'Mahishi',text:`copies ${sp}`}); } } }
+        if (sp > h.power){ h.mahishiPreCopy=h.power; h.power=sp; h.mahishiSpent=true; log(g,`Mahishi takes the shape of ${strong.n}'s might (${sp}).`); emit(g,'buff',{sourceUid:h.uid,targetUids:[h.uid],abilityName:'Mahishi',text:`copies ${sp}`}); } } }   // R72: stash the PRE-copy power (accrued gains included) before the spike; reverted at the board clear (this round only). mahishiSpent stays set (consumed at fire, not refunded by the revert).
   }
   sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
 }
@@ -2958,6 +2958,8 @@ function endRound(g){
     // removed heroes return at half power
     for (const h of pl.removedHeroes){ h.power=Math.max(1, Math.ceil(h.power/2)); pl.heroes.push(h); log(g,`${h.n} returns at ${h.power} power.`); }
     pl.removedHeroes=[];
+    // R72 (design round 2): Mahishi's copy is THIS ROUND ONLY — at the board clear (after scoring), she sheds the borrowed shape and returns to her PRE-copy power (any separately-accrued gains preserved; the once-flag mahishiSpent stays set). Reached only when the match continues (endRound returns before the reset at match-over → the deciding-round spike persists into g.over). Wave-gated: mahishiPreCopy is only ever set by the wave card → no-op flag-off.
+    for (const h of pl.heroes) if (h.id==='mahishi' && h.mahishiPreCopy!=null){ h.power=h.mahishiPreCopy; h.mahishiPreCopy=null; log(g,`Mahishi sheds the borrowed shape — she returns to ${h.power}.`); }
     pl.passed=false; pl.heroPlayedThisRound=false; pl.astrasThisRound=0;
     pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0; pl.vediShieldGrants=0; pl.blueprintUsed=false;   // shields + Leaps re-designate each round (Vedi bonus-grants expire); Blueprint re-arms each round; mahabaliArm persists. artifactShieldRound/ratriRound/mayaVeilRound are ===g.round stamps → auto-expire, no reset needed. hasPassedThisMatch is MATCH-LONG → never reset here.
     pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
@@ -3081,7 +3083,7 @@ function aiScoreCard(g, pi, c){
     // ---- WAVE 1 batch 14 (astra/utility tier) — only reached when wave1 pool is on ----
     case 'suryastra': { const foes=opp.units.filter(u=>!u.ghost); s = foes.length ? 2+foes.length : -99; break; }   // AoE deal-2
     case 'sampati': s += 0.5; break;                                     // info reveal
-    case 'vinatastalon': { const n=Math.min(3,Math.floor(pl.units.filter(u=>!u.ghost).length/2)); s += opp.units.some(u=>!u.ghost)? n : 0; break; }   // N chip damage
+    case 'vinatastalon': { const n=Math.floor(pl.units.filter(u=>!u.ghost).length/2); s += opp.units.some(u=>!u.ghost)? n : 0; break; }   // R74: N chip damage (uncapped, matches the mechanic)
     case 'vayavyastra': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 2+Math.max(...spec.options.map(u=>effPower(g,1-pi,u))) : -99; break; }   // tempo bounce
     case 'jatayu': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 3+Math.max(...spec.options.map(u=>effPower(g,1-pi,u)))/2 : -99; break; }   // destroy a big threat
     // ---- WAVE 1 batch 15 (leap-utility tier) — only reached when wave1 pool is on ----

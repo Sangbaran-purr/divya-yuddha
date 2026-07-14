@@ -69,7 +69,7 @@ U Surpanakha         R  P4  On Play: enemy Unit −1 permanently.
 U Atikaya            E  P6  Enters −2 if you haven't passed this match; +2 if you have. [pass tracking exists]
 A Brahmadanda        E  —   Negate next enemy Astra this round. [pre-ruled: Surge still procs for caster (R12); SIM: mirror warp → soften to "deals no damage"]
 M Maya Veil          E  —   Your Units untargetable by Astras this round (AoE pierces). [ch3 shield-boundary rhyme]
-H MAHISHI            L  P7  Round End: copies strongest Unit's POWER (Hero row kept, no abilities). [RULED power-only] [CANONIZED BY R59: strongest FRIENDLY by effPower; LAST in round-end hook (after Kalpavriksha), pre-scoring; power-only, persists; no-unit = keeps power] [R64 (balance round 1): P7→P6 — the one above-noise Asura lifter (ablation −3.0). Ability unchanged. ART GATE: Asuras_Hero_Mahishi_P6_rLegendary] [R66 (design round 1): ONCE-PER-GAME — fires at the first round end where the copy would INCREASE her (else hold); h.mahishiSpent. +10.0 Δbase at P6 = ability problem. Fires 1016→492; STILL top lifter (+14.2) → deeper rework a future round. ART GATE (text): Asuras_Hero_Mahishi_P6_rLegendary]
+H MAHISHI            L  P7  Round End: copies strongest Unit's POWER (Hero row kept, no abilities). [RULED power-only] [CANONIZED BY R59: strongest FRIENDLY by effPower; LAST in round-end hook (after Kalpavriksha), pre-scoring; power-only, persists; no-unit = keeps power] [R64 (balance round 1): P7→P6 — the one above-noise Asura lifter (ablation −3.0). Ability unchanged. ART GATE: Asuras_Hero_Mahishi_P6_rLegendary] [R66 (design round 1): ONCE-PER-GAME — fires at the first round end where the copy would INCREASE her (else hold); h.mahishiSpent. +10.0 Δbase at P6 = ability problem. Fires 1016→492; STILL top lifter (+14.2) → deeper rework a future round. ART GATE (text): Asuras_Hero_Mahishi_P6_rLegendary] [R72 (design round 2): THE PERSISTENCE KILL — copy is THIS ROUND ONLY (reverts to pre-copy power at the board clear; h.mahishiPreCopy; the cross-round CARRY was the ability). FIRST nerf to move her absolute: win-when-played 71.2→62.0, Δbase +14.2→+7.7. ART GATE (3rd change, text): Asuras_Hero_Mahishi_P6_rLegendary]
 AR The Iron Crucible M  —   Round End: your Units that lost power this round regain 1. [RETHEMED — price-tag system dead; SIM: anti-Naga drift]
 
 ═══════════════ VANARAS — "THE BRIDGE" ═══════════════
@@ -77,14 +77,14 @@ AR The Iron Crucible M  —   Round End: your Units that lost power this round r
 GUPTA:
 U Setu Mason         C  P2  +1 while adjacent to another Vanara. [SUPERSEDED BY R40: '+1 while adjacent to Vanaras on both sides.'] [R68 (design round 1): +1→+2 (interior payoff; −7.2 Δbase). ART GATE: Vanaras_Unit_SetuMason_P2_rCommon]
 U Drummer of the Host C P2  On Play: adjacent Units +1 this round. [R69 (design round 1): this-round→PERMANENT (R21 base+power; −5.0 Δbase, temp buffs evaporated). ART GATE: Vanaras_Unit_DrummeroftheHost_P2_rCommon]
-U Kishkindha Runner  C  P3  Vanilla. [P1]
+U Kishkindha Runner  C  P3  Vanilla. [P1] [R73 (design round 2): P3→P4 stat lift (was −10.0 Δbase, cheapest unconditional lever; →−6.1). ART GATE (renumber): Vanaras_Unit_KishkindhaRunner_P4_rCommon]
 U Gavaksha           U  P3  On Play: may swap places with a friendly Unit. [trivial]
 U Gaja               U  P4  +1 while your board is wider. [RENAMED from Panasa — Manasa one-letter trap]
-U Kumuda             U  P3  Leaps or is Leapt to → +1 permanently.
+U Kumuda             U  P3  Leaps or is Leapt to → +1 permanently. [R75 (design round 2): +1→+2 constant-only (permanence class unchanged, base+power; the Matanga rework gave the trigger fuel — leaps 1.36→2.20/game). Δbase −7.4→−6.5, fires 144→227. ART GATE: Vanaras_Unit_Kumuda_P3_rUncommon]
 M Song of the Crossing U —  Units in one row +1; +2 if 4+ there. [R21+: define "row" vs board model] [SUPERSEDED BY R48: 'Your Units +1 this round; +2 instead if you have 4 or more.']
 U Sushena the Healer R  P4  Round End: restore 1 to each adjacent damaged Unit.
 U Sampati            R  P5  On Play: reveal enemy's highest-power hand card. [trivial — info category opened]
-U Vinata's Talon     R  P4  On Play: deal 1 per two friendly Vanaras (max 3).
+U Vinata's Talon     R  P4  On Play: deal 1 per two friendly Vanaras (max 3). [R74 (design round 2): UNCAPPED (max 3 removed) — R50 stands otherwise (self-inclusive floor(n/2), single target, Holika sharpens per hit). PROVEN honest: 0.0% of AI casts exceed the old cap (peak width too low) → for the human swarm ceiling / design correctness, ~0 AI-aggregate effect. ART GATE: Vanaras_Unit_VinatasTalon_P4_rRare]
 A Vayavyastra        R  —   Return enemy Unit ≤4 to owner's hand. [bounce ruling: fresh mkCard, printed base]
 M Matanga's Blessing R  —   Next Leap grants +2 to both (stacks with Crown). [R71 (design round 1): REWORK — next-leap window was 92% dead (−9.4 Δbase). Now an IMMEDIATE free doLeap (Kumuda/Rambha fire, Gandhamadana widens) + both +2 this round. Effective: −9.4→−4.7, leaps/game 1.36→2.20. ART GATE: Vanaras_Mantra_MatangasBlessing_rRare]
 U Gandhamadana       E  P5  Your Leaps may target this from anywhere.
