@@ -1193,11 +1193,11 @@ const ASURA_DECK_DEF = [
   { id:'andhaka',  n:'Andhaka',         sub:'The Blind Demon',      t:'unit', p:6, r:'R', wave:1, txt:'PASSIVE: Cannot be targeted by Astras while another friendly Unit is on the board.' },
   { id:'vidyutastra',n:'Vidyutastra',   sub:'The Lightning Weapon', t:'astra', p:0, r:'R', wave:1, dmgAstra:true, txt:'Deal 2 damage to an enemy Unit. Triggers Chaos Surge twice.' },
   // ---- WAVE 1 (batch 16 — the artifact/counter tier) ----
-  { id:'vritra',   n:'Vritra',          sub:'The Withholder',       t:'hero', p:7, r:'L', wave:1, txt:'ON PLAY: Bind an enemy Unit (0 power contribution) while Vritra remains.' },   // R65 (balance round 1, ARMED — Asura still +12.7 after R63+R64): P8→P7, the second above-noise Asura lifter (ablation −2.8). Ability unchanged. ART GATE: Asuras_Hero_Vritra_P7_rLegendary.
+  { id:'vritra',   n:'Vritra',          sub:'The Withholder',       t:'hero', p:6, r:'L', wave:1, txt:'ON PLAY: Bind an enemy Unit (0 power contribution) while Vritra remains.' },   // R65 P8→P7; R80 (design round 3, CONDITIONAL — ARMED: Asura still +5.3 after rung one): P7→P6. Honestly labeled ladder insurance (he is +2.2, sub-noise). Ability unchanged. ART GATE: Asuras_Hero_Vritra_P6_rLegendary.
   { id:'brahmadanda',n:'Brahmadanda',   sub:'Staff of Brahma',      t:'astra', p:0, r:'E', wave:1, txt:'Negate the next enemy Astra this round.' },
   { id:'ironcrucible',n:'The Iron Crucible',sub:'Forge of the Price',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your Units that lost power this round regain 1.' },
   // ---- WAVE 1 (batch 19 — deferred heroes) ----
-  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:6, r:'L', wave:1, txt:'ROUND END (once per game): become a copy of the strongest friendly Unit’s power THIS ROUND ONLY.' },   // R64 P7→P6; R66 once-per-game gain-only; R72 (design round 2): the copy is THIS ROUND ONLY — reverts to her pre-copy power at the board clear (the cross-round CARRY was the ability; absolute win-when-played was flat 69.6→71.2 through both prior nerfs). h.mahishiPreCopy stash. ART GATE (3rd change): Asuras_Hero_Mahishi_P6_rLegendary.
+  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:5, r:'L', wave:1, txt:'ROUND END (once per game): become a copy of the strongest friendly Unit’s power THIS ROUND ONLY.' },   // R64 P7→P6; R66 once-per-game gain-only; R72 THIS-ROUND-ONLY revert; R76 (design round 3, the closer): P6→P5 — with the carry dead her printed power is what she scores every non-spike round; the only above-noise Asura line. Ability unchanged. ART GATE (4th/final frame): Asuras_Hero_Mahishi_P5_rLegendary.
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -1237,15 +1237,15 @@ const VANARA_DECK_DEF = [
   // ---- WAVE 1 (batch 10 — the positional tier; R27 move/place primitive) ----
   { id:'setumason',n:'Setu Mason',     sub:'Builder of the Bridge', t:'unit', p:2, r:'C', wave:1, txt:'PASSIVE: +2 power while adjacent to Vanaras on both sides.' },   // R68 (design round 1): +1→+2 (interior payoff; −7.2 Δbase). ART GATE: Vanaras_Unit_SetuMason_P2_rCommon.
   { id:'drummer',  n:'Drummer of the Host',sub:'Beat of the March', t:'unit', p:2, r:'C', wave:1, txt:'ON PLAY: Adjacent Units gain +1 power permanently.' },   // R69 (design round 1): this-round→permanent (R21 base+power; −5.0 Δbase, the temporary buffs evaporated). ART GATE: Vanaras_Unit_DrummeroftheHost_P2_rCommon.
-  { id:'gavaksha', n:'Gavaksha',       sub:'The Nimble',            t:'unit', p:3, r:'U', wave:1, txt:'ON PLAY: You may swap places with another friendly Unit.' },
+  { id:'gavaksha', n:'Gavaksha',       sub:'The Nimble',            t:'unit', p:4, r:'U', wave:1, txt:'ON PLAY: You may swap places with another friendly Unit.' },   // R79 (design round 3): P3→P4 stat lift (was −9.2, swap functionally never taken — 6 fires/~460 plays; the Runner precedent). Swap unchanged. ART GATE: Vanaras_Unit_Gavaksha_P4_rUncommon.
   { id:'setustones',n:'The Setu Stones',sub:'Bridge of the Vanaras',t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: Your Units enter adjacent to a friendly Unit you choose.' },
-  { id:'vault',    n:'Vault of the Sky',sub:'Leap of the Heavens',   t:'mantra', p:0, r:'E', wave:1, txt:'Move a friendly Unit anywhere on your row; it gains +2 power permanently.' },   // R70 (design round 1): this-round→permanent (R21 base+power; −6.9 Δbase, the payoff was vapor). ART GATE: Vanaras_Mantra_VaultoftheSky_rEpic.
+  { id:'vault',    n:'Vault of the Sky',sub:'Leap of the Heavens',   t:'mantra', p:0, r:'E', wave:1, txt:'Move a friendly Unit anywhere on your row; it and its new neighbours gain +2 power permanently.' },   // R70 permanent; R77 (design round 3): FORMATION-NATIVE rework — the moved Unit AND its non-ghost destination neighbours +2 permanent (R70's permanence alone didn't lift it, −6.9→−8.0; the move was the low-value half). ART GATE: Vanaras_Mantra_VaultoftheSky_rEpic.
   // ---- WAVE 1 (batch 11 — the Leap/round-end tier; Vanara wave core CLOSES here) ----
   { id:'gaja',     n:'Gaja',            sub:'The Mountain',          t:'unit', p:4, r:'U', wave:1, txt:'PASSIVE: +1 power while your board has more Units than the enemy.' },
   { id:'kumuda',   n:'Kumuda',          sub:'The Bright One',        t:'unit', p:3, r:'U', wave:1, txt:'When this Leaps or is Leapt to, it gains +2 power permanently.' },   // R75 (design round 2): +1→+2 (constant-only; the Matanga rework doubled leap volume 1.36→2.20/game, so the trigger has fuel). Permanence class unchanged (base+power). ART GATE: Vanaras_Unit_Kumuda_P3_rUncommon.
   { id:'sushena',  n:'Sushena the Healer',sub:'Physician of the Host',t:'unit', p:4, r:'R', wave:1, txt:'ROUND END: Restore 1 power to each adjacent damaged Unit.' },
   { id:'rambha',   n:'Rambha the Bold', sub:'Dancer of the Van',     t:'unit', p:5, r:'E', wave:1, txt:'When any friendly Unit Leaps, this gains +1 power permanently.' },
-  { id:'livingbridge',n:'The Living Bridge',sub:'Span of the Ages', t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: If you have 4+ Units, they all gain +1 power permanently.' },
+  { id:'livingbridge',n:'The Living Bridge',sub:'Span of the Ages', t:'artifact', p:0, r:'M', wave:1, txt:'When your Units first form an unbroken line of 4+ this round, that line gains +2 power permanently. Once per round.' },   // R63 re-text (formation-moment trigger) + R78 (design round 3): grant +1→+2 (mythic-grade; epicenter −16.8 at +1×4). ⚠ def txt was STALE since R63 (still read the old ROUND-END +1) — corrected here. ART GATE (NEW — missed in R63): Vanaras_Artifact_TheLivingBridge_rMythic.
   // ---- WAVE 1 (batch 14 — the astra/utility tier) ----
   { id:'sampati',  n:'Sampati',         sub:'Vulture of the Vale',  t:'unit', p:5, r:'R', wave:1, txt:"ON PLAY: Reveal the enemy's highest-power card in hand." },
   { id:'vinatastalon',n:"Vinata's Talon",sub:'Claw of the Mother',  t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: Deal 1 damage to an enemy Unit for every two friendly Vanaras.' },   // R74 (design round 2): UNCAPPED (was max 3) — the width payoff for the human swarm ceiling; R50 stands otherwise (self-inclusive floor(n/2), single target, non-astra, Holika sharpens per hit). ART GATE: Vanaras_Unit_VinatasTalon_P4_rRare.
@@ -1491,7 +1491,7 @@ function effPower(g, pi, c){
   }
   if (!c.ghost && c.id==='nagawarrior') p += venomTokenCount(g);   // Naga Warrior: +1 per Venom Token on the board
   // Setu Mason (Vanara, batch 10): +1 while adjacent to another friendly Unit (R27 adjacency = index neighbours). Read-time, non-recursive presence check; adjacentUnits already excludes self.
-  if (!c.ghost && c.id==='setumason'){ const su=g.players[pi].units, si=su.indexOf(c), sl=su[si-1], sr=su[si+1]; if (sl && sr && !sl.ghost && !sr.ghost) p += 2; }   // R40(b)+R68 (design round 1): +2 (was +1) while flanked by non-ghost Vanaras on BOTH sides (interior formation value; edges/lone/ghost-side → no bonus). Read-time, non-recursive.
+  if (!c.ghost && c.id==='setumason'){ const su=g.players[pi].units, si=su.indexOf(c), sl=su[si-1], sr=su[si+1]; if (sl && sr && !sl.ghost && !sr.ghost) p += 3; }   // R40(b)/R68/R81 (design round 3, CONDITIONAL — ARMED: Vanara still −6.5 after rung one): +3 (was +2, was +1) while flanked by non-ghost Vanaras on BOTH sides. Read-time, non-recursive.
   if (!c.ghost && c.id==='gaja'){ const mine=g.players[pi].units.filter(u=>!u.ghost).length, theirs=g.players[1-pi].units.filter(u=>!u.ghost).length; if (mine>theirs) p += 1; }   // WAVE 1 batch 11 — +1 while your board is WIDER (strict inequality; ghosts/tokens counted per R40 non-ghost reading). Read-time, re-evaluates.
   if (!c.ghost){ const bp=g.players[pi]; if (bp.dawnBannerFrom>0 && g.round>=bp.dawnBannerFrom) p += 1; }   // WAVE 1 batch 12 — Dawn Banner: +1 to ALL your non-ghost Units, active from the round AFTER it was played (no retroactive), every round thereafter (compounding, SIM-flagged). Read-time aura; the functional form of "round start: all friendly +1 this round" given the board is EMPTY at round start.
   // ---- WAVE 1 batch-4 passive auras (card-id-gated → these branches are unreachable unless a wave-1 card is on the board) ----
@@ -2058,9 +2058,12 @@ function castMantra(g, pi, id, targetUid=null){
       // AI destination heuristic: move the buffed (strong) t adjacent to the WEAKEST ally — sets up a Leap where the weak unit copies the buffed strong one. Routes through the shared moveUnit primitive. Human free-"anywhere" destination is UI-DEFERRED (logged).
       const allies = pl.units.filter(u=>!u.ghost && u!==t);
       if (allies.length){ const weak=allies.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b); if (!adjacentUnits(pl,t).includes(weak)) moveUnit(g, pi, t, pl.units.indexOf(weak)); }
-      t.base+=2; t.power+=2;   // R70 (design round 1): PERMANENT +2 (base AND power, R21) — was this-round current-power. Move mechanics unchanged.
-      log(g,`Vault of the Sky lifts ${t.n} — +2 (permanent).`);
-      emit(g,'buff',{sourceUid:t.uid,targetUids:[t.uid],amount:2,abilityName:'Vault of the Sky',text:'+2'});
+      // R77 (design round 3): AFTER the move resolves, the moved Unit AND its non-ghost DESTINATION neighbours each +2 PERMANENT (base+power, R21). Edge destination → one neighbour; lone → itself only. (adjacentUnits does NOT filter ghosts → filter here.)
+      const recips = [t, ...adjacentUnits(pl, t).filter(u=>!u.ghost)];
+      for (const u of recips){ u.base+=2; u.power+=2; }
+      log(g,`Vault of the Sky lifts ${t.n}${recips.length>1?` and ${recips.length-1} neighbour(s)`:''} — +2 (permanent).`);
+      emit(g,'buff',{sourceUid:t.uid,targetUids:recips.map(u=>u.uid),amount:2,abilityName:'Vault of the Sky',text:'+2'});
+      // R77d composition: if the move completed a line-of-4, the R63 Bridge fires via afterAction/checkBridgeLine after this play resolves (no code here — automatic).
     }
   } else if (id==='shedskin'){
     // WAVE 1 batch 13 — bounce a friendly Unit to hand as a FRESH mkCard (v0.2 bounce ruling): printed base, no Venom/buffs/flags, new uid. R21 growth AND cut BOTH reset to printed. Tokens (no deck def) are gated out.
@@ -2821,9 +2824,9 @@ function checkBridgeLine(g, pi){
   if (!qual && run.length>=4) qual=run;
   if (!qual) return;
   pl.bridgeFiredRound = g.round;                                    // lock (R63c)
-  for (const u of qual){ u.base+=1; u.power+=1; }                   // R63d/e: the WHOLE run, +1 base+power (permanent)
-  log(g,`The Living Bridge spans — the ${qual.length}-Unit line rises +1 (permanent).`);
-  emit(g,'buff',{targetUids:qual.map(u=>u.uid),amount:1,abilityName:'The Living Bridge',text:'+1'});
+  for (const u of qual){ u.base+=2; u.power+=2; }                   // R63d/e + R78 (design round 3): the WHOLE run, +2 base+power (permanent; was +1 — mythic-grade payoff)
+  log(g,`The Living Bridge spans — the ${qual.length}-Unit line rises +2 (permanent).`);
+  emit(g,'buff',{targetUids:qual.map(u=>u.uid),amount:2,abilityName:'The Living Bridge',text:'+2'});
 }
 function afterAction(g, pi){
   sweepDeaths(g);                                    // R1: enforce death-at-0 generically

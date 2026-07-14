@@ -280,7 +280,7 @@ function cardTable(fac, matchups, N){
   }
   const base=facDecided? 100*facWon/facDecided : 0;
   const rows=cards.map(c=>{ const st=stat[c.id]; const wr=st.played? 100*st.won/st.played : null;
-    return { n:c.n, t:c.t, p:c.p, drawn:st.drawn, played:st.played,
+    return { id:c.id, n:c.n, t:c.t, p:c.p, drawn:st.drawn, played:st.played,
       playRate: st.drawn? 100*st.played/st.drawn : 0, wr, delta: wr!=null? wr-base : null,
       fires: FIRE_KEYS[c.id]!=null? st.fires : null, lowN: st.played<100 }; });
   rows.sort((a,b)=> (a.wr==null?999:a.wr) - (b.wr==null?999:b.wr));
@@ -381,16 +381,23 @@ if(require.main===module){
     console.log(`  GARUDA plays=${p.gPlays}  fires=${p.gFires}`);
   }
   if(mode==='24a'){ const N=+process.argv[3]||500;
-    function printTable(title, T){
+    // Task-24a POOLED Δbase per card (id → 24a Δbase), for the "who moved" comparison column. Δbase is a faction-relative
+    // measure (win% − faction base), so an UNCHANGED card ≈ 0 movement despite the base shift; a CHANGED card (R66–R75) shows real movement.
+    const BASE_24A={ mayashade:-33.3, blueprint:-12.7, shumbha:-8.4, ashlegion:-8.1, pisacha:-7.8, raktabija:-7.2, surpanakha:-7.2, ironcrucible:-6.6, simhika:-5.7, mayaveil:-4.6, nishumbha:-4.6, brahmadanda:-4.5, dhumraksha:-3.4, andhaka:-3.3, mohanastra:-3.2, holika:-2.8, mahishasura:-2.4, atikaya:-0.9, vidyutastra:-0.0, vritra:4.1, bloodoath:4.9, mahishi:10.0,
+      setustones:-14.4, kishrunner:-10.0, livingbridge:-9.9, matanga:-9.4, vayavyastra:-7.4, kumuda:-7.4, gavaksha:-7.3, setumason:-7.2, vault:-6.9, drummer:-5.0, vinatastalon:-5.0, anjaneyaroar:-3.5, songcrossing:-1.8, sushena:-1.5, gaja:-1.5, jatayu:-0.5, sampati:1.9, rambha:2.1, gandhamadana:3.3, anjana:4.7, swayamprabha:5.1, makardhwaja:6.9 };
+    const CHANGED=new Set(['mahishi','bloodoath','setumason','drummer','vault','matanga','kishrunner','vinatastalon','kumuda']);   // cards touched by R66–R75 (flag the movers)
+    function printTable(title, T, cmp){
       console.log(`\n${title}  (faction base win% over this population = ${T.base.toFixed(1)}%, n=${T.facDecided} decided games)`);
-      console.log('  card'.padEnd(26)+'type'.padEnd(9)+'P'.padEnd(4)+'drawn'.padEnd(7)+'played'.padEnd(8)+'play%'.padEnd(7)+'win%pl'.padEnd(8)+'Δbase'.padEnd(8)+'fires');
+      console.log('  card'.padEnd(26)+'type'.padEnd(9)+'P'.padEnd(4)+'drawn'.padEnd(7)+'played'.padEnd(8)+'play%'.padEnd(7)+'win%pl'.padEnd(8)+'Δbase'.padEnd(8)+'fires'.padEnd(7)+(cmp?'vs24a':''));
       for(const r of T.rows){ const wr=r.wr==null?'—':r.wr.toFixed(1); const d=r.delta==null?'—':(r.delta>=0?'+':'')+r.delta.toFixed(1);
-        console.log('  '+r.n.padEnd(24)+r.t.padEnd(9)+('P'+r.p).padEnd(4)+String(r.drawn).padEnd(7)+String(r.played).padEnd(8)+r.playRate.toFixed(0).padEnd(7)+(wr+(r.lowN?'*':'')).padEnd(8)+d.padEnd(8)+(r.fires==null?'—':r.fires)); }
+        let mv='';
+        if(cmp && r.delta!=null && BASE_24A[r.id]!=null){ const m=r.delta-BASE_24A[r.id]; mv=(m>=0?'+':'')+m.toFixed(1)+(CHANGED.has(r.id)?'*':''); }
+        console.log('  '+r.n.padEnd(24)+r.t.padEnd(9)+('P'+r.p).padEnd(4)+String(r.drawn).padEnd(7)+String(r.played).padEnd(8)+r.playRate.toFixed(0).padEnd(7)+(wr+(r.lowN?'^':'')).padEnd(8)+d.padEnd(7)+String(r.fires==null?'—':r.fires).padEnd(7)+mv); }
     }
     console.log(`===== TASK 24a — DESIGN-ROUND PER-CARD PULL (${N} games/matchup, wave ON, post-R63/R64/R65) =====`);
-    console.log('POPULATION: each faction table pools its 3 CROSS matchups (the population that defines the faction base win%); mirror excluded so Δbase is comparable. Sorted by win%-when-played ASC (worst first). * = LOW-N (played <100 → win% unstable).');
-    printTable('ASURA WAVE (22)', cardTable('asuras', CROSSES.asuras, N));
-    printTable('VANARA WAVE (22)', cardTable('vanaras', CROSSES.vanaras, N));
+    console.log('POPULATION: each faction table pools its 3 CROSS matchups (the population that defines the faction base win%); mirror excluded so Δbase is comparable. Sorted by win%-when-played ASC (worst first). ^ = LOW-N (played <100 → win% unstable). vs24a = Δbase-now minus Δbase-at-24a (who moved; * = card CHANGED by R66–R75). Δbase is faction-relative so unchanged cards ≈ 0 ± noise.');
+    printTable('ASURA WAVE (22)', cardTable('asuras', CROSSES.asuras, N), true);
+    printTable('VANARA WAVE (22)', cardTable('vanaras', CROSSES.vanaras, N), true);
     console.log('\n----- SECONDARY CUT A: EPICENTER Asura-vs-Vanara ONLY -----');
     printTable('ASURA wave @ Asura-vs-Vanara', cardTable('asuras', [['asuras','vanaras',0]], N));
     printTable('VANARA wave @ Asura-vs-Vanara', cardTable('vanaras', [['asuras','vanaras',1]], N));
