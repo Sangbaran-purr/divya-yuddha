@@ -103,14 +103,14 @@ AR The Living Bridge M  —   Round End: unbroken adjacent line of 4+ → all of
 (corpse economy + token mastery; sanctioned deviation: Uraga self-price)
 GUPTA:
 U Patala Hatchling   C  P2  On Play: 1 Venom to a random enemy.
-U Coil Sentry        C  P3  Vanilla. [P1 — the ruling's origin card]
-U Molting Naga       C  P2  Destroyed → 1 Venom to highest enemy.
-U Venom Harvester    U  P3  On Play: +1 per Venom on enemy's strongest (max 3).
+U Coil Sentry        C  P3  Vanilla. [P1 — the ruling's origin card] [R83: renamed 'Coil Sentry' -> NAGA DWARAPALA (joins the launch Naga <role> pattern); id coilsentry unchanged]
+U Molting Naga       C  P2  Destroyed → 1 Venom to highest enemy. [R83: -> NIRMOKA; id moltingnaga unchanged]
+U Venom Harvester    U  P3  On Play: +1 per Venom on enemy's strongest (max 3). [R83: -> VISHADHARA; id venomharvester unchanged]
 U Shankhapala        U  P4  Round End: move 1 Venom between enemy Units. [CANONIZED BY R55: pre-drain slot; source=most-venomed, dest=highest-effPower other; no-venom/no-distinct-dest = no-op]
-U Depth Caller       U  P3  On Play: +2 if a friendly Unit is in discard.
+U Depth Caller       U  P3  On Play: +2 if a friendly Unit is in discard. [R83: -> AVAHANI; id depthcaller unchanged]
 M Rite of Shed Skin  U  —   Return friendly Unit to hand; re-enters at printed power. [bounce ruling applies]
 U Mahapadma          R  P5  Enemies with Venom cannot receive Dharma Shield. [SIM PRIORITY: the 41/59 counter]
-U Grave-Tide Naga    R  P4  On Play: +1 per Unit in EITHER discard (max 4).
+U Grave-Tide Naga    R  P4  On Play: +1 per Unit in EITHER discard (max 4). [R83: -> VAITARANI NAGA (Garuda-Purana corpse-river; profits from both graveyards); id gravetide unchanged]
 U Vishalakshi the Pale R P4 Enemy dies with Venom on it → +2 permanent. [RENAMED from Padma the Pale — three-Padma cluster]
 A Kalakuta Vial      R  —   Apply 2 Venom to one enemy. [not damage — no flag]
 M Hymn of the Depths R  —   All Venom drains trigger immediately, once. [Karkotaka timing precedent] [CANONIZED BY R57: exactly one mid-round pipeline pass; deaths count deathsThisRound; Astika respected; round-end drain NOT consumed]
@@ -119,10 +119,10 @@ A Serpent's Kiss     E  —   Destroy an enemy Unit with 2+ Venom. [destroy-clas
 AR The Drowned Altar E  —   Round End: mill top card; your Units +1 this round if a Unit. [ENGINE+ mill trivial; SIM: self-deck-out in Gandharva]
 H PADMAVATI          L  P7  Round End: 1 Venom to strongest enemy.
 RATNA:
-U Silt Strangler     R  P4  On Play: enemy loses power = its Venom count (tokens remain). [CANONIZED BY R56: routes damageUnit — Holika sharpens, Patala realm does NOT amplify, Crucible-regainable, ignores astraProtected; target=highest-venom; no-venom = no-op]
+U Silt Strangler     R  P4  On Play: enemy loses power = its Venom count (tokens remain). [CANONIZED BY R56: routes damageUnit — Holika sharpens, Patala realm does NOT amplify, Crucible-regainable, ignores astraProtected; target=highest-venom; no-venom = no-op] [R83: -> AJAGARA; id siltstrangler + the damageUnit cause string moved with the name (still non-dmgAstra, Holika-sharpen identical)]
 U Nahusha, Fallen King E P6 On Play: choose the realm's effect to apply to YOUR side only this round. [RETHEMED — symmetry preserved; moderate; own feasibility look at impl] [SPEC'D BY R61: per-side realm-enabled state; on-play SUPPRESSES the realm on the ENEMY side this round (subtraction); round-bound revert; auto on single realm (no picker); no-realm = no-op; mirror = realm dead both sides; R46 bounce re-trigger]
-A World-Coil Constrictor E — Bind an enemy until it loses a Venom token. [bind precedent]
-M The Long Patience  E  —   Apply 1 Venom to EVERY enemy Unit. [impl note: "skip your turn" = normal Mantra turn economy]
+A World-Coil Constrictor E — Bind an enemy until it loses a Venom token. [bind precedent] [R83: -> VISHWAPASHA (Ananta Pasha set aside for collision); id worldcoil + worldCoilBound field unchanged]
+M The Long Patience  E  —   Apply 1 Venom to EVERY enemy Unit. [impl note: "skip your turn" = normal Mantra turn economy] [R83: -> VISHA VAYU; id longpatience unchanged]
 H KULIKA             L  P8  On Play: transfer all friendly Venom to enemies (random). [voice/gallery note vs Kaliya] [CANONIZED BY R60: transfer needs a destination — no enemy = no-op, venom STAYS; per-token g.rng]
 AR Throne of the Second King M — Venom drains STEAL: strongest friendly gains what Venom takes. [SIM PRIORITY: most-likely-broken card in the wave] [SPEC'D BY R62: ENEMY drains only (own/Uraga self-drain NOT stolen); every drain event via venomLoss; actual-removed (overkill excluded); per-event highest-effPower recipient, heroes eligible; POWER-ONLY gains; no-recipient = lost; uncapped]
 
