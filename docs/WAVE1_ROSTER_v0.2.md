@@ -54,7 +54,7 @@ U Ash Legionnaire    C  P3  Vanilla. [P1]
 U Dhumraksha         U  P4  On Play: deal 1 to one of YOUR Units.
 U Simhika            U  P4  Enemy Unit revived → +2. [P2]
 A Mohanastra         U  —   Enemy Unit −2 this round. [dmgAstra:false — explicit]
-M Blood Oath         U  —   Destroy your lowest Unit: draw 2. [draw exists — flag removed]
+M Blood Oath         U  —   Destroy your lowest Unit: draw 2. [draw exists — flag removed] [R67 (design round 1): draw 2→1 — card-engine haircut (+4.9 Δbase, near-free price). Effective: +4.9→−3.0. ART GATE: Asuras_Mantra_BloodOath_rUncommon]
 U Holika             R  P5  Immune to Astra damage; +1 extra from all else. [dmg boundary]
 U Andhaka            R  P6  Untargetable while another friendly Unit on board.
 U Shumbha            R  P4  +1 while Nishumbha on board. [P3 pair]
@@ -69,14 +69,14 @@ U Surpanakha         R  P4  On Play: enemy Unit −1 permanently.
 U Atikaya            E  P6  Enters −2 if you haven't passed this match; +2 if you have. [pass tracking exists]
 A Brahmadanda        E  —   Negate next enemy Astra this round. [pre-ruled: Surge still procs for caster (R12); SIM: mirror warp → soften to "deals no damage"]
 M Maya Veil          E  —   Your Units untargetable by Astras this round (AoE pierces). [ch3 shield-boundary rhyme]
-H MAHISHI            L  P7  Round End: copies strongest Unit's POWER (Hero row kept, no abilities). [RULED power-only] [CANONIZED BY R59: strongest FRIENDLY by effPower; LAST in round-end hook (after Kalpavriksha), pre-scoring; power-only, persists; no-unit = keeps power] [R64 (balance round 1): P7→P6 — the one above-noise Asura lifter (ablation −3.0). Ability unchanged. ART GATE: Asuras_Hero_Mahishi_P6_rLegendary]
+H MAHISHI            L  P7  Round End: copies strongest Unit's POWER (Hero row kept, no abilities). [RULED power-only] [CANONIZED BY R59: strongest FRIENDLY by effPower; LAST in round-end hook (after Kalpavriksha), pre-scoring; power-only, persists; no-unit = keeps power] [R64 (balance round 1): P7→P6 — the one above-noise Asura lifter (ablation −3.0). Ability unchanged. ART GATE: Asuras_Hero_Mahishi_P6_rLegendary] [R66 (design round 1): ONCE-PER-GAME — fires at the first round end where the copy would INCREASE her (else hold); h.mahishiSpent. +10.0 Δbase at P6 = ability problem. Fires 1016→492; STILL top lifter (+14.2) → deeper rework a future round. ART GATE (text): Asuras_Hero_Mahishi_P6_rLegendary]
 AR The Iron Crucible M  —   Round End: your Units that lost power this round regain 1. [RETHEMED — price-tag system dead; SIM: anti-Naga drift]
 
 ═══════════════ VANARAS — "THE BRIDGE" ═══════════════
 (Setu formation + allies; sanctioned deviation: Sampati information)
 GUPTA:
-U Setu Mason         C  P2  +1 while adjacent to another Vanara. [SUPERSEDED BY R40: '+1 while adjacent to Vanaras on both sides.']
-U Drummer of the Host C P2  On Play: adjacent Units +1 this round.
+U Setu Mason         C  P2  +1 while adjacent to another Vanara. [SUPERSEDED BY R40: '+1 while adjacent to Vanaras on both sides.'] [R68 (design round 1): +1→+2 (interior payoff; −7.2 Δbase). ART GATE: Vanaras_Unit_SetuMason_P2_rCommon]
+U Drummer of the Host C P2  On Play: adjacent Units +1 this round. [R69 (design round 1): this-round→PERMANENT (R21 base+power; −5.0 Δbase, temp buffs evaporated). ART GATE: Vanaras_Unit_DrummeroftheHost_P2_rCommon]
 U Kishkindha Runner  C  P3  Vanilla. [P1]
 U Gavaksha           U  P3  On Play: may swap places with a friendly Unit. [trivial]
 U Gaja               U  P4  +1 while your board is wider. [RENAMED from Panasa — Manasa one-letter trap]
@@ -86,15 +86,15 @@ U Sushena the Healer R  P4  Round End: restore 1 to each adjacent damaged Unit.
 U Sampati            R  P5  On Play: reveal enemy's highest-power hand card. [trivial — info category opened]
 U Vinata's Talon     R  P4  On Play: deal 1 per two friendly Vanaras (max 3).
 A Vayavyastra        R  —   Return enemy Unit ≤4 to owner's hand. [bounce ruling: fresh mkCard, printed base]
-M Matanga's Blessing R  —   Next Leap grants +2 to both (stacks with Crown).
+M Matanga's Blessing R  —   Next Leap grants +2 to both (stacks with Crown). [R71 (design round 1): REWORK — next-leap window was 92% dead (−9.4 Δbase). Now an IMMEDIATE free doLeap (Kumuda/Rambha fire, Gandhamadana widens) + both +2 this round. Effective: −9.4→−4.7, leaps/game 1.36→2.20. ART GATE: Vanaras_Mantra_MatangasBlessing_rRare]
 U Gandhamadana       E  P5  Your Leaps may target this from anywhere.
 A Jatayu's Last Flight E —  Destroy an enemy Unit >6 power. [destroy-class]
-AR The Setu Stones   E  —   Your Units enter adjacent to any chosen friendly. [moderate — target UI]
+AR The Setu Stones   E  —   Your Units enter adjacent to any chosen friendly. [moderate — target UI] [R66–R71 NOTE (design round 1): QUEUED FOR SEASONAL REDESIGN — −14.4 Δbase with 0.002 anchor opportunities/game across two tasks; a nudge cannot save it. No delta this round; redesign candidate.]
 H MAKARDHWAJA        L  P7  On Play: Leap from Hanuman if present, else your strongest. [the hero bar: mechanic dramatizes myth]
 RATNA:
 U Swayamprabha       R  P3  On Play: look at top 3, take one to hand. [trivial — Tara pattern + choice UI]
 U Rambha the Bold    E  P5  Any friendly Leap → +1 permanently.
-M Vault of the Sky   E  —   Move a friendly Unit anywhere; +2 this round. [trivial]
+M Vault of the Sky   E  —   Move a friendly Unit anywhere; +2 this round. [trivial] [R70 (design round 1): this-round→PERMANENT +2 (R21 base+power; −6.9 Δbase, payoff was vapor). ART GATE: Vanaras_Mantra_VaultoftheSky_rEpic]
 A Anjaneya's Roar    L  —   All enemies −1 this round; your adjacent pairs +1. [dmgAstra:false; SIM: vs Rama Naam's crown] [SUPERSEDED BY R49(a): 'All enemy Units −1 this round; your Units flanked on both sides gain +1.' — SIM flag stands]
 H ANJANA             L  P6  Passive: Leap limit +1 per round. [TRIMMED — adjacency-cost rider cut]
 AR The Living Bridge M  —   Round End: unbroken adjacent line of 4+ → all of them +1 permanent. [moderate — run predicate; SIM: uptime both ways] [R40: formally SIM-FLAGGED — body-count equivalence acknowledged; haircut fallback prepared] [R63 (balance round 1): RE-TEXTED to a formation-moment trigger — "When your Units FIRST form a line of 4+ this round, that run +1 permanent, once/round." LEFT the round-end hook; fires from afterAction (checkBridgeLine). Fire-rate 29.3%→52.6%; aggregate ~0 (played 6.5%, small buff)]

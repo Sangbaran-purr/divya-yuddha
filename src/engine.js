@@ -109,7 +109,7 @@ const ASURA_DECK_DEF = [
   { id:'nishumbha',n:'Nishumbha',       sub:'The Bonded Demon',     t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: +1 power while Shumbha is on your board.' },
   { id:'holika',  n:'Holika',           sub:'The Unburnt',          t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: Immune to Astra damage. Suffers +1 from every other power loss.' },
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
-  { id:'bloodoath',n:'Blood Oath',      sub:'Pact of the Pyre',     t:'mantra', p:0, r:'U', wave:1, txt:'Destroy your lowest-power Unit: draw 2 cards.' },
+  { id:'bloodoath',n:'Blood Oath',      sub:'Pact of the Pyre',     t:'mantra', p:0, r:'U', wave:1, txt:'Destroy your lowest-power Unit: draw 1 card.' },   // R67 (design round 1): draw 2→1 (card-engine haircut; +4.9 Δbase, nearly-free price). ART GATE: Asuras_Mantra_BloodOath_rUncommon.
   // ---- WAVE 1 (batch 6 — the debuff/price tier) ----
   { id:'mayashade',n:'Maya Shade',      sub:'The Mirror Wraith',    t:'unit', p:2, r:'C', wave:1, txt:'ON PLAY: Copy your lowest-power other Unit.' },
   { id:'dhumraksha',n:'Dhumraksha',     sub:'The Smoke-Eyed',       t:'unit', p:4, r:'U', wave:1, txt:'ON PLAY: Deal 1 damage to one of your Units.' },
@@ -131,7 +131,7 @@ const ASURA_DECK_DEF = [
   { id:'brahmadanda',n:'Brahmadanda',   sub:'Staff of Brahma',      t:'astra', p:0, r:'E', wave:1, txt:'Negate the next enemy Astra this round.' },
   { id:'ironcrucible',n:'The Iron Crucible',sub:'Forge of the Price',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your Units that lost power this round regain 1.' },
   // ---- WAVE 1 (batch 19 — deferred heroes) ----
-  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:6, r:'L', wave:1, txt:'ROUND END: Copy the power of your strongest Unit (power only).' },   // R64 (balance round 1): P7→P6, the one above-noise Asura lifter (ablation −3.0). Ability unchanged (R59). ART GATE: Asuras_Hero_Mahishi_P6_rLegendary.
+  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:6, r:'L', wave:1, txt:'ROUND END (once per game): become a copy of the strongest friendly Unit’s power.' },   // R64 P7→P6; R66 (design round 1): ONCE-PER-GAME — fires at the first round end where the copy would INCREASE her (else hold, no spend); the spend is the once-flag h.mahishiSpent. +10.0 Δbase at P6 = an ability problem. ART GATE: Asuras_Hero_Mahishi_P6_rLegendary.
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
@@ -169,11 +169,11 @@ const VANARA_DECK_DEF = [
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
   { id:'swayamprabha',n:'Swayamprabha', sub:'Keeper of the Hidden Vale',t:'unit', p:3, r:'R', wave:1, txt:'ON PLAY: Look at the top 3 cards of your deck; take one to your hand, return the rest.' },
   // ---- WAVE 1 (batch 10 — the positional tier; R27 move/place primitive) ----
-  { id:'setumason',n:'Setu Mason',     sub:'Builder of the Bridge', t:'unit', p:2, r:'C', wave:1, txt:'PASSIVE: +1 power while adjacent to Vanaras on both sides.' },
-  { id:'drummer',  n:'Drummer of the Host',sub:'Beat of the March', t:'unit', p:2, r:'C', wave:1, txt:'ON PLAY: Adjacent Units gain +1 power this round.' },
+  { id:'setumason',n:'Setu Mason',     sub:'Builder of the Bridge', t:'unit', p:2, r:'C', wave:1, txt:'PASSIVE: +2 power while adjacent to Vanaras on both sides.' },   // R68 (design round 1): +1→+2 (interior payoff; −7.2 Δbase). ART GATE: Vanaras_Unit_SetuMason_P2_rCommon.
+  { id:'drummer',  n:'Drummer of the Host',sub:'Beat of the March', t:'unit', p:2, r:'C', wave:1, txt:'ON PLAY: Adjacent Units gain +1 power permanently.' },   // R69 (design round 1): this-round→permanent (R21 base+power; −5.0 Δbase, the temporary buffs evaporated). ART GATE: Vanaras_Unit_DrummeroftheHost_P2_rCommon.
   { id:'gavaksha', n:'Gavaksha',       sub:'The Nimble',            t:'unit', p:3, r:'U', wave:1, txt:'ON PLAY: You may swap places with another friendly Unit.' },
   { id:'setustones',n:'The Setu Stones',sub:'Bridge of the Vanaras',t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: Your Units enter adjacent to a friendly Unit you choose.' },
-  { id:'vault',    n:'Vault of the Sky',sub:'Leap of the Heavens',   t:'mantra', p:0, r:'E', wave:1, txt:'Move a friendly Unit anywhere on your row; it gains +2 power this round.' },
+  { id:'vault',    n:'Vault of the Sky',sub:'Leap of the Heavens',   t:'mantra', p:0, r:'E', wave:1, txt:'Move a friendly Unit anywhere on your row; it gains +2 power permanently.' },   // R70 (design round 1): this-round→permanent (R21 base+power; −6.9 Δbase, the payoff was vapor). ART GATE: Vanaras_Mantra_VaultoftheSky_rEpic.
   // ---- WAVE 1 (batch 11 — the Leap/round-end tier; Vanara wave core CLOSES here) ----
   { id:'gaja',     n:'Gaja',            sub:'The Mountain',          t:'unit', p:4, r:'U', wave:1, txt:'PASSIVE: +1 power while your board has more Units than the enemy.' },
   { id:'kumuda',   n:'Kumuda',          sub:'The Bright One',        t:'unit', p:3, r:'U', wave:1, txt:'When this Leaps or is Leapt to, it gains +1 power permanently.' },
@@ -187,7 +187,7 @@ const VANARA_DECK_DEF = [
   { id:'jatayu',   n:"Jatayu's Last Flight",sub:'The Final Dive',   t:'astra', p:0, r:'E', wave:1, txt:'Destroy an enemy Unit with more than 6 power.' },
   // ---- WAVE 1 (batch 15 — the leap-utility tier; Vanara wave FULLY CLOSES here) ----
   { id:'songcrossing',n:'Song of the Crossing',sub:'Hymn of the Bridge',t:'mantra', p:0, r:'U', wave:1, txt:'Your Units gain +1 power (+2 if you have 4 or more).' },
-  { id:'matanga', n:"Matanga's Blessing",sub:'Grace of the Sage',   t:'mantra', p:0, r:'R', wave:1, txt:'Your next Leap this round grants +2 power to BOTH Units.' },
+  { id:'matanga', n:"Matanga's Blessing",sub:'Grace of the Sage',   t:'mantra', p:0, r:'R', wave:1, txt:'Immediately Leap with one friendly Unit (does not count against the round’s Leap limit); both Units gain +2 power this round.' },   // R71 (design round 1): self-contained rework — the next-leap window was 92% dead (−9.4 Δbase). Now a REAL immediate free doLeap (Kumuda/Rambha fire, Gandhamadana widens) + both +2 this round. ART GATE: Vanaras_Mantra_MatangasBlessing_rRare.
   { id:'gandhamadana',n:'Gandhamadana',  sub:'The Fragrant Peak',    t:'unit', p:5, r:'E', wave:1, txt:'PASSIVE: Your Leaps may target this Unit from anywhere (ignores adjacency).' },
   { id:'anjaneyaroar',n:"Anjaneya's Roar",sub:'Cry of the Son of Wind',t:'astra', p:0, r:'L', wave:1, dmgAstra:false, txt:'All enemy Units −1 this round; your Units flanked on both sides gain +1.' },
   // ---- WAVE 1 (batch 17 — heroes part 1) ----
@@ -315,7 +315,6 @@ function mkPlayer(name, rng, faction='devas', spec, wave1){
     blueprintUsed:false, hasPassedThisMatch:false,   // WAVE 1 batch 8 (turn-economy): Blueprint once-per-round guard (reset each round) + Atikaya's match-long VOLUNTARY-pass flag (set only in pass(), never reset — Mahabali precedent)
     vanguardTriggered:false, raktabijaCurse:false,   // WAVE 1 batch 9 (event-trigger): Kartikeya's Vanguard once-per-round guard + Raktabija's Curse armed flag (both reset each round)
     bridgeFiredRound:0,   // R63 (balance round 1): The Living Bridge once-per-round lock (round-stamp; auto-invalidates as g.round advances). g.wave1-gated reads only — no-op flag-off.
-    matangaArmed:false,   // WAVE 1 batch 15 (leap-utility): Matanga's Blessing arm — consumed by the next doLeap, reset each round (expires if unused)
     lostPowerUids:new Set(), brahmadandaArmed:0,   // WAVE 1 batch 16 (artifact/counter): per-round set of Unit uids that LOST power (Iron Crucible reads it; g.wave1-gated writes) + Brahmadanda arm round-stamp (negates the next enemy Astra's effect). Both reset each round.
     realmSuppressedRound:0,   // WAVE 1 batch 20 (R61 Nahusha): round-stamp — when === g.round, THIS side's Cosmic Realm effect is suppressed this round. Default 0 → realmActiveFor true → byte-identical flag-off.
     dawnBannerFrom:0,   // WAVE 1 batch 12: Dawn Banner — round # from which the +1 aura is active (set to g.round+1 on play; 0 = inactive). Match-long stamp (survives the artifact clear); the "next round start" + "compounding" reading.
@@ -426,7 +425,7 @@ function effPower(g, pi, c){
   }
   if (!c.ghost && c.id==='nagawarrior') p += venomTokenCount(g);   // Naga Warrior: +1 per Venom Token on the board
   // Setu Mason (Vanara, batch 10): +1 while adjacent to another friendly Unit (R27 adjacency = index neighbours). Read-time, non-recursive presence check; adjacentUnits already excludes self.
-  if (!c.ghost && c.id==='setumason'){ const su=g.players[pi].units, si=su.indexOf(c), sl=su[si-1], sr=su[si+1]; if (sl && sr && !sl.ghost && !sr.ghost) p += 1; }   // R40(b): +1 only while flanked by non-ghost Vanaras on BOTH sides (interior formation value; edges/lone/ghost-side → no bonus). Read-time, non-recursive.
+  if (!c.ghost && c.id==='setumason'){ const su=g.players[pi].units, si=su.indexOf(c), sl=su[si-1], sr=su[si+1]; if (sl && sr && !sl.ghost && !sr.ghost) p += 2; }   // R40(b)+R68 (design round 1): +2 (was +1) while flanked by non-ghost Vanaras on BOTH sides (interior formation value; edges/lone/ghost-side → no bonus). Read-time, non-recursive.
   if (!c.ghost && c.id==='gaja'){ const mine=g.players[pi].units.filter(u=>!u.ghost).length, theirs=g.players[1-pi].units.filter(u=>!u.ghost).length; if (mine>theirs) p += 1; }   // WAVE 1 batch 11 — +1 while your board is WIDER (strict inequality; ghosts/tokens counted per R40 non-ghost reading). Read-time, re-evaluates.
   if (!c.ghost){ const bp=g.players[pi]; if (bp.dawnBannerFrom>0 && g.round>=bp.dawnBannerFrom) p += 1; }   // WAVE 1 batch 12 — Dawn Banner: +1 to ALL your non-ghost Units, active from the round AFTER it was played (no retroactive), every round thereafter (compounding, SIM-flagged). Read-time aura; the functional form of "round start: all friendly +1 this round" given the board is EMPTY at round start.
   // ---- WAVE 1 batch-4 passive auras (card-id-gated → these branches are unreachable unless a wave-1 card is on the board) ----
@@ -519,8 +518,7 @@ function doLeap(g, pi, leaper, target, free){
   emit(g,'toast',{abilityName:'Leap',text:'Leap!'});
   emit(g,'buff',{sourceUid:leaper.uid,targetUids:[leaper.uid],amount:null,abilityName:'Leap',text:`copies ${target.n}`});
   if (pl.artifact && pl.artifact.id==='kishkindhacrown'){ leaper.power += 1; target.power += 1; log(g, `Kishkindha Crown: ${leaper.n} and ${target.n} both +1.`); emit(g,'buff',{targetUids:[leaper.uid,target.uid],amount:1,abilityName:'Kishkindha Crown',text:'+1'}); }   // EXP-E: +1/+1 (was +2/+2)
-  if (pl.matangaArmed){ pl.matangaArmed=false; leaper.power += 2; target.power += 2; log(g, `Matanga's Blessing empowers the Leap: ${leaper.n} and ${target.n} both +2.`); emit(g,'buff',{targetUids:[leaper.uid,target.uid],amount:2,abilityName:"Matanga's Blessing",text:'+2'}); }   // WAVE 1 batch 15 — consume the round-scoped arm; STACKS with Crown (both applied). Flag set only by Matanga → no-op flag-off.
-  if (!free) pl.leapsUsed++;
+  if (!free) pl.leapsUsed++;   // R71 (design round 1): the Matanga next-leap arm/consume was REMOVED — Matanga now performs its own immediate free doLeap (see castMantra) and applies its +2 there. Crown still applies above on any real leap.
   onLeap(g, pi, leaper, target);   // WAVE 1 batch 11 — leap-event listeners (Kumuda / Rambha). id-gated → no-op flag-off, so launch Leaps (Mainda/Crown/standard) are byte-identical.
 }
 // WAVE 1 batch 11 (Leap/round-end tier) — PURE leap-event listener. Fires once per doLeap (every leap: standard, Mainda-free, and each Crown leap). id-gated → no state change unless Kumuda/Rambha is present.
@@ -942,7 +940,7 @@ function castMantra(g, pi, id, targetUid=null){
     else {
       const sac = real.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);   // lowest effPower, tie → first-found (<=)
       destroyUnit(g, pi, sac, 'Blood Oath');                                    // REAL destroy → increments the CASTER's deathsThisRound; composes with every death hook (Ananta Coil, Vishalakshi, etc.)
-      const drawn = pl.deck.splice(0, 2); pl.hand.push(...drawn);               // draw UP TO 2 (deck-permitting; empty → 0, no crash — Sugriva precedent)
+      const drawn = pl.deck.splice(0, 1); pl.hand.push(...drawn);               // R67 (design round 1): draw UP TO 1 (was 2 — card-engine haircut; deck-permitting, empty → 0, no crash)
       log(g, `Blood Oath — ${sac.n} is offered to the pyre; ${pl.name} draws ${drawn.length}.`);
     }
   } else if (id==='dawnsrebirth'){
@@ -994,8 +992,8 @@ function castMantra(g, pi, id, targetUid=null){
       // AI destination heuristic: move the buffed (strong) t adjacent to the WEAKEST ally — sets up a Leap where the weak unit copies the buffed strong one. Routes through the shared moveUnit primitive. Human free-"anywhere" destination is UI-DEFERRED (logged).
       const allies = pl.units.filter(u=>!u.ghost && u!==t);
       if (allies.length){ const weak=allies.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b); if (!adjacentUnits(pl,t).includes(weak)) moveUnit(g, pi, t, pl.units.indexOf(weak)); }
-      t.power+=2;
-      log(g,`Vault of the Sky lifts ${t.n} — +2 this round.`);
+      t.base+=2; t.power+=2;   // R70 (design round 1): PERMANENT +2 (base AND power, R21) — was this-round current-power. Move mechanics unchanged.
+      log(g,`Vault of the Sky lifts ${t.n} — +2 (permanent).`);
       emit(g,'buff',{sourceUid:t.uid,targetUids:[t.uid],amount:2,abilityName:'Vault of the Sky',text:'+2'});
     }
   } else if (id==='shedskin'){
@@ -1019,9 +1017,17 @@ function castMantra(g, pi, id, targetUid=null){
     if (real.length){ emit(g,'buff',{targetUids:real.map(u=>u.uid),amount:amt,abilityName:'Song of the Crossing',text:`+${amt}`}); log(g,`Song of the Crossing lifts ${real.length} Unit(s) — +${amt} this round.`); }
     else log(g,'Song of the Crossing echoes over an empty row.');
   } else if (id==='matanga'){
-    // WAVE 1 batch 15 — arm a ROUND-SCOPED flag consumed by the NEXT doLeap this round: both leaper AND target +2 (STACKS with Crown's +1/+1; Kumuda/Rambha listeners fire on that same leap). Unconsumed → expires at round end (reset in the round block). The flag is set only by this card → doLeap's consume is a no-op flag-off.
-    pl.matangaArmed=true;
-    log(g,"Matanga's Blessing settles — the next Leap this round lifts both Units by +2.");
+    // R71 (design round 1) — self-contained rework: an IMMEDIATE real doLeap (free=true → does NOT consume the round's leap limit,
+    // R71e), then the leaper AND target each +2 THIS ROUND (current power, R34 — no permanence, R71d). onLeap listeners fire on this
+    // leap (Kumuda/Rambha, R71a); Gandhamadana's anywhere-widening applies (bestLeap already includes it). Pair selection = the AI
+    // bestLeap heuristic (R71b; human picker on the R50 deferral list). No beneficial leap pair → logged no-op (weakest reading, R71c).
+    const bl = bestLeap(g, pi);
+    if (bl){
+      doLeap(g, pi, bl.leaper, bl.target, true);
+      bl.leaper.power += 2; bl.target.power += 2;
+      log(g, `Matanga's Blessing empowers the Leap — ${bl.leaper.n} and ${bl.target.n} both +2 this round.`);
+      emit(g,'buff',{targetUids:[bl.leaper.uid,bl.target.uid],amount:2,abilityName:"Matanga's Blessing",text:'+2'});
+    } else log(g,"Matanga's Blessing finds no Leap to bless.");
   }
   // Agni trigger — any mantra, either player
   for (let s=0;s<2;s++){
@@ -1538,7 +1544,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         for (const u of others){ if (u.power>hi.power) hi=u; if (u.power<lo.power) lo=u; }
         if (hi!==lo){ const hv=hi.power, lv=lo.power; hi.power=lv; lo.power=hv; log(g,`Saranyu, Cloud Mare — ${hi.n} and ${lo.n} exchange power (${hv}↔${lv}).`); emit(g,'buff',{targetUids:[hi.uid,lo.uid],abilityName:'Saranyu, Cloud Mare',text:'power exchanged'}); }
         else log(g,'Saranyu, Cloud Mare: the Units already share equal power — nothing to trade.'); break; }
-      case 'drummer': { const adj=adjacentUnits(pl, c).filter(u=>!u.ghost); for (const u of adj) u.power+=1;   // WAVE 1 batch 10 — current-power +1 to adjacent Units (R34 emergent round scope). 0 adjacent → no-op.
+      case 'drummer': { const adj=adjacentUnits(pl, c).filter(u=>!u.ghost); for (const u of adj){ u.base+=1; u.power+=1; }   // R69 (design round 1): PERMANENT +1 (base AND power, R21) to his non-ghost immediate neighbours at entry (was this-round current-power). 0 adjacent → no-op.
         if (adj.length){ emit(g,'buff',{sourceUid:c.uid,targetUids:adj.map(u=>u.uid),amount:1,abilityName:'Drummer of the Host',text:'+1'}); log(g,`Drummer of the Host rouses ${adj.length} adjacent Unit(s): +1 this round.`); }
         else log(g,'Drummer of the Host beats to an empty flank.'); break; }
       case 'gavaksha': {   // WAVE 1 batch 10 — MAY swap places with another friendly Unit. targetUid names the partner; AI swaps only if it raises total board effPower (e.g. next to a Setu Mason); else no-op.
@@ -1819,8 +1825,13 @@ function roundEndCardEffects(g){
         const gap=effPower(g,pi,hi)-effPower(g,pi,lo);
         if (lo!==hi && gap>0){ lo.power+=gap; log(g,`Kalpavriksha grants the wish — ${lo.n} rises to match ${hi.n} (${effPower(g,pi,lo)}).`); emit(g,'buff',{sourceUid:lo.uid,targetUids:[lo.uid],amount:gap,abilityName:'Kalpavriksha',text:`+${gap}`}); } } }
     // WAVE 1 batch 19 — Mahishi (Asura hero, R42 slot: LAST in the per-player loop, so it reads the SETTLED strongest friendly Unit after all round-end buffs). Copies POWER ONLY (h.power = the strongest friendly Unit's effPower; no abilities); stays a hero. Heroes PERSIST → recurs every round. Strongest = own-side (Makardhwaja "your strongest" precedent; logged). No friendly Unit → keeps its current power.
-    for (const h of pl.heroes){ if (h.id!=='mahishi') continue; const real=pl.units.filter(u=>!u.ghost);
-      if (real.length){ const strong=real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b); const sp=effPower(g,pi,strong); h.power=sp; log(g,`Mahishi takes the shape of ${strong.n}'s might (${sp}).`); emit(g,'buff',{sourceUid:h.uid,targetUids:[h.uid],abilityName:'Mahishi',text:`copies ${sp}`}); } }
+    // R66 (design round 1): ONCE PER GAME — fires at the FIRST round end where the copy would INCREASE her power (sp > h.power);
+    // a round end where it would not is a HOLD, not a spend (the charge h.mahishiSpent is consumed only on a gain). Deterministic,
+    // no picker. All R59 semantics stand (friendly-only, last in the hook so sp is settled, counts toward this round's score, power-only,
+    // hero row kept, persists). h.mahishiSpent is per-match state on the hero (undefined→falsy until spent; a new match mints a new hero).
+    for (const h of pl.heroes){ if (h.id!=='mahishi' || h.mahishiSpent) continue; const real=pl.units.filter(u=>!u.ghost);
+      if (real.length){ const strong=real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b); const sp=effPower(g,pi,strong);
+        if (sp > h.power){ h.power=sp; h.mahishiSpent=true; log(g,`Mahishi takes the shape of ${strong.n}'s might (${sp}).`); emit(g,'buff',{sourceUid:h.uid,targetUids:[h.uid],abilityName:'Mahishi',text:`copies ${sp}`}); } } }
   }
   sweepDeaths(g);   // Pisacha/Mahishasura decayed to ≤0 die here, before scoring (the death-at-0 rule)
 }
@@ -1884,7 +1895,6 @@ function endRound(g){
     pl.passed=false; pl.heroPlayedThisRound=false; pl.astrasThisRound=0;
     pl.skipNext=false; pl.chaosThisRound=false; pl.seesOppHand=false; pl.shieldUids=[]; pl.leapsUsed=0; pl.vediShieldGrants=0; pl.blueprintUsed=false;   // shields + Leaps re-designate each round (Vedi bonus-grants expire); Blueprint re-arms each round; mahabaliArm persists. artifactShieldRound/ratriRound/mayaVeilRound are ===g.round stamps → auto-expire, no reset needed. hasPassedThisMatch is MATCH-LONG → never reset here.
     pl.surasaTrap=false; pl.astikaPause=false; pl.venomStrike=0; pl.sarpaDouble=false; pl.mustPlayUnit=false;   // Naga per-round flags reset; boardTokens PERSIST all match
-    pl.matangaArmed=false;   // WAVE 1 batch 15 — an unconsumed Matanga's Blessing expires at round end
     pl.lostPowerUids=new Set(); pl.brahmadandaArmed=0;   // WAVE 1 batch 16 — clear the per-round lost-power set; an unconsumed Brahmadanda arm expires at round end
     pl.deathsThisRound=0;   // WAVE 1 batch 3: per-round death count resets; saviturUids PERSIST all match (enchant)
     pl.vanguardTriggered=false; pl.raktabijaCurse=false;   // WAVE 1 batch 9: Vanguard once/round re-arms; an unconsumed Raktabija's Curse expires at round end
@@ -2010,7 +2020,7 @@ function aiScoreCard(g, pi, c){
     case 'jatayu': { const spec=targetSpec(g,pi,c); s = spec.options.length ? 3+Math.max(...spec.options.map(u=>effPower(g,1-pi,u)))/2 : -99; break; }   // destroy a big threat
     // ---- WAVE 1 batch 15 (leap-utility tier) — only reached when wave1 pool is on ----
     case 'songcrossing': { const n=pl.units.filter(u=>!u.ghost).length; s = n ? n*(n>=4?2:1) : -99; break; }   // buff-all: value scales with board width (and the 4+ threshold)
-    case 'matanga': s = pl.faction==='vanaras' ? 2 : -1; break;   // arms the next Leap +2/+2 (only meaningful for a leaping faction)
+    case 'matanga': s = (pl.faction==='vanaras' && bestLeap(g,pi)) ? 3 : -1; break;   // R71: an immediate free leap +2/+2 — worth playing only when a beneficial leap pair exists (bestLeap side-effect-free)
     case 'gandhamadana': s += 1; break;                          // P5 body + leap-anywhere target utility
     case 'anjaneyaroar': { const foes=opp.units.filter(u=>!u.ghost).length; const paired=pl.units.filter(u=>!u.ghost && flankedBothSides(pl,u)).length; s = (foes||paired) ? foes+paired : -99; break; }   // R49(a): −1 to each enemy + +1 to each INTERIOR friendly
     case 'saranyu': s += 0.5; break;                             // P5 body; the power-exchange is board-total-neutral (situational upside, Gavaksha precedent)
