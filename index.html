@@ -772,6 +772,81 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   .bc.landing, .floater, .bc.targetable, #banner .txt{ animation:none !important; }
   #landingbg{ animation:none !important; transform:none; }   /* SLOW DRIFT static fallback (scale 1.0, cover-fit still fills) */
 }
+/* ===== TASK 30 — COLLECTION + REVEAL CEREMONY + RATNA VAULT ===== */
+#collection, #vault{ z-index:86; overflow-y:auto; }
+#collection, #vault{ background:#0a0704; }
+.col-head{ display:flex; align-items:center; gap:10px; padding:14px 12px 8px; position:sticky; top:0; background:linear-gradient(#0a0704 70%,transparent); z-index:2; }
+.col-title{ font-family:Cinzel,serif; color:var(--gold); letter-spacing:.14em; font-size:15px; }
+.col-wallet{ margin-left:auto; font-size:13px; color:var(--hi); }
+.col-tabs{ display:flex; gap:6px; padding:0 12px 10px; overflow-x:auto; }
+.col-tab{ flex:0 0 auto; padding:6px 12px; border-radius:8px; font-size:12px; letter-spacing:.08em;
+  background:rgba(0,0,0,.45); border:1px solid rgba(232,200,116,.25); color:var(--gold-2); cursor:pointer; }
+.col-tab.on{ border-color:var(--gold); color:var(--gold); background:rgba(232,200,116,.12); }
+.col-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:0 12px 24px; }
+@media(max-width:479px){ .col-grid{ grid-template-columns:repeat(3,1fr); } }
+.col-note{ padding:0 12px 10px; font-size:11px; color:var(--gold-2); opacity:.8; }
+/* the flip cell — 3D, two faces. CARD BACKS RENDER UPRIGHT ALWAYS: no rotate/mirror on .cc-back in any state. */
+.cc{ position:relative; aspect-ratio:5/7; perspective:900px; cursor:pointer; }
+.cc-in{ position:absolute; inset:0; transform-style:preserve-3d; transition:transform .5s cubic-bezier(.2,.7,.3,1); }
+.cc.flipped .cc-in{ transform:rotateY(180deg); }
+.cc-face,.cc-back{ position:absolute; inset:0; backface-visibility:hidden; border-radius:6px; overflow:hidden; }
+.cc-back{ /* universal card back — CSS placeholder (assets/img/card_back.png absent at build time) */
+  background:radial-gradient(circle at 50% 42%, #1b2b52 0%, #0e1730 62%, #070c1a 100%);
+  border:1px solid rgba(232,200,116,.42); display:flex; align-items:center; justify-content:center; }
+.cc-back.hasimg{ background:#070c1a center/cover no-repeat; border-color:rgba(232,200,116,.42); }
+.cc-back i{ width:42%; aspect-ratio:1; border-radius:50%; border:1px solid rgba(232,200,116,.55);
+  background:radial-gradient(circle,rgba(232,200,116,.16),transparent 68%); }
+.cc-face{ transform:rotateY(180deg); background:#0a0704; border:1px solid rgba(232,200,116,.2); }
+.cc.owned .cc-in{ transform:none; }                 /* owned cards are face-up permanently — never show a back */
+.cc.owned .cc-face{ transform:none; }
+.cc.owned .cc-back{ display:none; }
+.cc-art{ position:absolute; inset:0; }                 /* the ART LAYER — swapped alone on 404, so lock/pin/buy decorations survive */
+.cc-face img, .cc-art img{ width:100%; height:100%; object-fit:cover; display:block; }
+/* TASK 30b — ART-PENDING pane (the FI_HIDDEN sealed-slot treatment): fills the SAME box the image would, so real art
+   landing later causes NO layout shift. Faction-colour border/sigil, card name, type row, and a quiet caption. */
+.ap{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; padding:6px; text-align:center; border:1px solid; border-radius:6px; overflow:hidden;
+  background:radial-gradient(circle at 50% 38%, rgba(22,15,7,.94), rgba(6,4,2,.97)); }
+.ap-sigil{ position:absolute; font-family:Cinzel,serif; font-weight:700; line-height:1; pointer-events:none;
+  font-size:76px; opacity:.55; }
+.ap-name{ position:relative; font-family:Cinzel,serif; font-size:10px; color:var(--gold); line-height:1.25; }
+.ap-type{ position:relative; font-size:8px; letter-spacing:.06em; }
+.ap-cap{ position:relative; font-size:7px; color:var(--gold-2); opacity:.62; margin-top:3px; font-style:italic; }
+.vault-art{ position:relative; }                       /* anchor the .ap overlay */
+.vault-art .ap-name{ font-size:12px; } .vault-art .ap-type{ font-size:9px; } .vault-art .ap-cap{ font-size:8px; }
+.cc.sealed .cc-face img, .cc.sealed .cc-face .ph{ filter:grayscale(.85) brightness(.5); }   /* LOCKED PREVIEW: dimmed/desaturated */
+.cc-lock{ position:absolute; left:0; right:0; bottom:0; padding:3px 4px; font-size:9px; text-align:center;
+  background:rgba(4,3,1,.82); color:var(--gold); border-top:1px solid rgba(232,200,116,.3); }
+.cc-pin{ position:absolute; top:4px; right:4px; font-size:8px; padding:2px 5px; border-radius:5px;
+  background:rgba(4,3,1,.8); border:1px solid rgba(232,200,116,.5); color:var(--gold); }
+.cc-vault{ position:absolute; top:4px; left:4px; font-size:8px; padding:2px 5px; border-radius:5px;
+  background:rgba(90,30,90,.7); border:1px solid rgba(210,150,230,.6); color:#e8c8f4; }
+.cc-pinned{ outline:2px solid var(--gold); outline-offset:1px; }
+/* acquisition ceremony — fires ONCE per card (revealed flag) */
+@keyframes ccFlourish{ 0%{ box-shadow:0 0 0 0 rgba(232,200,116,0); filter:brightness(1); }
+  35%{ box-shadow:0 0 22px 6px rgba(232,200,116,.85); filter:brightness(1.5); }
+  100%{ box-shadow:0 0 0 0 rgba(232,200,116,0); filter:brightness(1); } }
+.cc.ceremony{ animation:ccFlourish 1.5s ease-out; z-index:3; }
+.cc.ceremony .cc-in{ transition:transform .8s cubic-bezier(.2,.9,.3,1); transform:none; }
+/* Ratna Vault */
+.vault-hero{ padding:4px 12px 12px; font-size:12px; color:var(--gold-2); line-height:1.5; }
+.vault-season{ color:var(--hi); font-family:Cinzel,serif; letter-spacing:.06em; font-size:11px; }
+.vault-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:0 12px 24px; }
+.vault-pane{ border:1px solid rgba(210,150,230,.35); border-radius:9px; overflow:hidden; background:rgba(20,8,24,.5); }
+.vault-art{ aspect-ratio:5/7; background:#0a0704; }
+.vault-art img{ width:100%; height:100%; object-fit:cover; display:block; }
+.vault-art .ph{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--gold-2); text-align:center; padding:6px; }
+.vault-meta{ padding:6px 7px 8px; }
+.vault-name{ font-family:Cinzel,serif; font-size:11px; color:var(--gold); }
+.vault-badge{ display:inline-block; margin-top:4px; font-size:8px; padding:2px 5px; border-radius:5px;
+  background:rgba(210,150,230,.14); border:1px solid rgba(210,150,230,.5); color:#e8c8f4; }
+.vault-crest{ margin-top:4px; font-size:8px; color:var(--gold-2); opacity:.7; }
+.vault-price{ margin-top:5px; font-size:12px; color:var(--hi); font-weight:600; }
+.vault-buy{ width:100%; margin-top:5px; padding:5px; font-size:10px; border-radius:6px; font-family:Cinzel,serif;
+  background:rgba(60,60,60,.4); border:1px solid rgba(255,255,255,.14); color:#8a8a8a; cursor:not-allowed; }
+.vault-gate{ padding:0 12px 20px; font-size:10px; color:var(--gold-2); opacity:.75; text-align:center; }
+.vault-set{ margin:0 12px 14px; padding:9px; border:1px solid rgba(210,150,230,.4); border-radius:9px;
+  background:rgba(30,10,34,.5); text-align:center; }
 </style>
 </head>
 <body>
@@ -931,6 +1006,14 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
         <div class="mode-main"><div class="mode-title">Player vs AI</div><div class="mode-cap">The full battle, no guidance</div></div>
         <span class="mode-chev">›</span>
       </button>
+      <button class="mode active" id="mode-collection">
+        <div class="mode-main"><div class="mode-title">Collection</div><div class="mode-cap" id="cap-collection">Your cards — and the ones still sealed</div></div>
+        <span class="mode-chev">›</span>
+      </button>
+      <button class="mode active" id="mode-vault">
+        <div class="mode-main"><div class="mode-title">Ratna Vault</div><div class="mode-cap">The season's rarest — a showcase</div></div>
+        <span class="mode-chev">›</span>
+      </button>
       <button class="mode active" id="mode-factions">
         <div class="mode-main"><div class="mode-title">Faction Introduction</div><div class="mode-cap">Meet the armies and the realms</div></div>
         <span class="mode-chev">›</span>
@@ -1017,6 +1100,30 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   </div>
 </div>
 
+<div class="overlay hidden" id="collection">
+  <div class="col-head">
+    <button class="backbtn" id="col-back">‹</button>
+    <div class="col-title">COLLECTION</div>
+    <div class="col-wallet" id="col-wallet">✦ 0</div>
+  </div>
+  <div class="col-tabs" id="col-tabs"></div>
+  <div class="col-note" id="col-note"></div>
+  <div class="col-grid" id="col-grid"></div>
+</div>
+<div class="overlay hidden" id="vault">
+  <div class="col-head">
+    <button class="backbtn" id="vault-back">‹</button>
+    <div class="col-title">RATNA VAULT</div>
+  </div>
+  <div class="vault-hero">
+    <div class="vault-season" id="vault-season"></div>
+    Six Ratna per faction — the season's rarest work. Each carries a unique play animation and a faction crest.
+  </div>
+  <div class="col-tabs" id="vault-tabs"></div>
+  <div class="vault-set" id="vault-set"></div>
+  <div class="vault-grid" id="vault-grid"></div>
+  <div class="vault-gate" id="vault-gate"></div>
+</div>
 <div class="overlay hidden" id="factionintro">
   <button class="fi-back" id="fi-back" title="back">‹</button>
   <div class="fi-col">
@@ -3633,7 +3740,7 @@ function profileInitials(name){ const w=name.trim().split(/\s+/); const s=(w.len
    card costs) are present so later slices read from the same source of truth. ENGINE UNTOUCHED — everything below
    reads only the match result and the story-completion hook. */
 const META_CONFIG = {
-  schemaVersion: 5,   // v1: xp/wallet/rewards/daily/story · v2: + quests · v3: + sadhana/bonusAmsha/firstWinAwarded · v4 (slice 4): + rewards.rankSeen/rankGlintPending · v5 (D2): + settings.difficulty (persisted PvAI difficulty)
+  schemaVersion: 6,   // v1: xp/wallet/rewards/daily/story · v2: + quests · v3: + sadhana/bonusAmsha/firstWinAwarded · v4 (slice 4): + rewards.rankSeen/rankGlintPending · v5 (D2): + settings.difficulty · v6 (TASK 30): + cards{id:{owned,revealed}} ownership/ceremony map. NOTE: v6 adds ONLY the cards map — wallet.amsha / daily.firstWinAwarded / sadhana.banked / story.bonusAmsha all keep their shipped v3–v5 shape (no lastFirstWinDate, no second retro path: the ledger is already idempotent).
   DIFFICULTY_REWARD_MULT: { beginner:0.8, advanced:1.0, deathmatch:1.5 },   // D2 §2 — scales PvAI match XP/coins/Amsha/Sadhana income (ONE application point in recordMatchResult; story/PvP untouched)
   xp: {                                  // §1 awards (play-only, win or lose)
     matchComplete: 20, matchWin: 15,
@@ -3661,8 +3768,13 @@ const META_CONFIG = {
     dailyPool: ['win1','play2','winby8','play6units','faction3','herosurvives','venom3','storychapter'],
     weeklyPool: ['win7','twofactions','anystar','threerealms','destroy10'],
   },
-  sadhana: { perWin: 10, previewCost: 160 },   // §6 (WIRED slice 3): +10 progress/PvAI win. previewCost = the bar target until real
-                                               //   wave cards ship (no card identity yet → per-faction-wave pin, target = Rare cost 160; TUNABLE)
+  sadhana: { perWin: 10, previewCost: 160 },   // §6 (WIRED slice 3): +10 progress/PvAI win. previewCost = the LEGACY bar target (pre-TASK-30,
+                                               //   when there was no card identity). TASK 30: the pool is now the real sealed-Gupta card list and
+                                               //   sadhanaCost(id) reads the card's own rarity cost; previewCost is retained only as a fallback.
+  // TASK 30 — RATNA VAULT: showcase pricing (₹). SHOWCASE ONLY — the purchase button is present but DISABLED behind the M4 gate.
+  // HARD LAW: no coins↔Amsha conversion path exists anywhere; Ratna are not purchasable with Amsha by ANY path this season.
+  ratna: { inr: { R:199, E:299, L:399, M:499 }, setInr: 1499,
+           season: 'Exclusive this season — earnable next', gate: 'Purchases open in M4 (store not yet live).' },
 };
 
 /* dy_meta — ONE serializable object, schema-versioned. PER §7 THIS SCHEMA IS THE FUTURE M3 SERVER PROFILE: keep it a
@@ -3684,6 +3796,7 @@ function freshMeta(){ return {
   quests: { day:'', week:'', daily:[], weekly:[] },   // slice 2 — populated by ensureQuests() on first load
   sadhana: { pin:null, banked:{} },                   // slice 3 — pinned card id + per-id banked progress (persists on pin-switch)
   settings: { difficulty:'advanced' },                // v5 (D2) — last chosen PvAI difficulty, preselected next match
+  cards: {},                                          // v6 (TASK 30) — {id:{owned,revealed}}; filled by ensureCards(): launch grandfathered, wave sealed
 }; }
 function saveMeta(M){ try{ localStorage.setItem('dy_meta', JSON.stringify(M)); }catch(e){} }
 function loadMeta(){
@@ -3704,6 +3817,8 @@ function loadMeta(){
   if(M.rewards.rankGlintPending===undefined){ M.rewards.rankGlintPending=null; changed=true; }
   if(!M.settings || typeof M.settings!=='object'){ M.settings={ difficulty:'advanced' }; changed=true; }   // v5 (D2): additive — older stores keep xp/wallet/quests/sadhana, gain default difficulty
   if(!META_CONFIG.DIFFICULTY_REWARD_MULT[M.settings.difficulty]){ M.settings.difficulty='advanced'; changed=true; }   // guard a corrupt/unknown persisted value
+  if(ensureCards(M)) changed=true;   // v6 (TASK 30): additive ownership map — ALL launch grandfathered owned+revealed, ALL wave sealed. Older stores keep xp/wallet/quests/sadhana/story untouched. NO second retro path: story.bonusAmsha (v3) is already idempotent, so a v5→v6 store is never re-credited.
+  if(M.sadhana && M.sadhana.pin && !sadhanaPinnable(M.sadhana.pin)){ M.sadhana.pin=null; changed=true; }   // v6: retire a legacy per-faction pin ('wave_devas' …) — banked is KEPT (per-id carry-over, slice-3 preserve semantics)
   if(M.schemaVersion!==META_CONFIG.schemaVersion){ M.schemaVersion=META_CONFIG.schemaVersion; changed=true; }
   if(!M.daily || M.daily.day!==todayKey()){ M.daily={ day:todayKey(), firstMatchAwarded:false, firstWinAwarded:false }; changed=true; }   // day rollover → re-arm both daily-firsts
   if(M.daily.firstWinAwarded===undefined) M.daily.firstWinAwarded=false;   // v3 field on a same-day pre-v3 store
@@ -3725,17 +3840,70 @@ function grantStarAmsha(M, id){ if(!M.story.bonusAmsha) M.story.bonusAmsha={};  
    pinnable granularity is per-faction-wave ("chase the next Naga card"). When real wave-1 cards ship, this pool becomes the
    card list and `banked` (keyed by id) carries over. The grant CANNOT fire yet (no card to award) — a filled bar reads
    "arrives with the next wave". +10 progress per PvAI win; banked progress persists per-id across pin-switches. */
-const SADHANA_POOL = [
-  { id:'wave_devas',   faction:'devas',   label:'Devas — next wave' },
-  { id:'wave_asuras',  faction:'asuras',  label:'Asuras — next wave' },
-  { id:'wave_vanaras', faction:'vanaras', label:'Vanaras — next wave' },
-  { id:'wave_nagas',   faction:'nagas',   label:'Nagas — next wave' },
-];
-function sadhanaDef(id){ return SADHANA_POOL.find(s=>s.id===id)||null; }
-function sadhanaCost(id){ return META_CONFIG.sadhana.previewCost; }   // no card identity yet → preview target; real per-card Amsha cost when the wave ships
+/* ---------- TASK 30 — CARD REGISTRY (the ownership map's source of truth) ----------
+   All 176 defs (88 launch + 88 wave) are enumerable from DECKS and every id is GLOBALLY UNIQUE (verified) → an id-keyed
+   ownership map needs no faction qualification. Collection reads OWNERSHIP ONLY — independent of the wave1 match flag, so a
+   sealed wave card is visible and pinnable before it is match-legal (the D5 sequencing: anticipation before availability). */
+const RATNA_IDS = {   // 6 per faction — Vault-only this season: never Amsha-purchasable, never Sadhana-pinnable
+  devas:['airavatacalf','saranyu','dawnsrebirth','suryastra','garuda','kalpavriksha'],
+  asuras:['surpanakha','atikaya','brahmadanda','mayaveil','mahishi','ironcrucible'],
+  vanaras:['swayamprabha','rambha','vault','anjaneyaroar','anjana','livingbridge'],
+  nagas:['siltstrangler','nahusha','worldcoil','longpatience','kulika','secondthrone'],
+};
+const RATNA_SET = new Set(Object.values(RATNA_IDS).flat());
+const CARD_INDEX = (()=>{ const m={}; for(const f in DECKS) for(const c of DECKS[f]) m[c.id]={ def:c, faction:f }; return m; })();
+function cardById(id){ const e=CARD_INDEX[id]; return e?e.def:null; }
+function cardFaction(id){ const e=CARD_INDEX[id]; return e?e.faction:null; }
+function allCardIds(){ return Object.keys(CARD_INDEX); }
+function isRatna(id){ return RATNA_SET.has(id); }
+function isSealedType(id){ const d=cardById(id); return !!(d && d.wave); }          // wave cards start sealed; launch cards are grandfathered
+function cardCost(id){ const d=cardById(id); return d ? (META_CONFIG.amsha.costs[d.r] || META_CONFIG.sadhana.previewCost) : META_CONFIG.sadhana.previewCost; }
+function ratnaInr(id){ const d=cardById(id); return d ? (META_CONFIG.ratna.inr[d.r] || META_CONFIG.ratna.inr.R) : META_CONFIG.ratna.inr.R; }
+// v6 ownership map — ALL launch grandfathered owned+revealed; ALL wave sealed. Additive: only fills ids it has not seen.
+function ensureCards(M){ if(!M.cards || typeof M.cards!=='object'){ M.cards={}; }
+  let changed=false;
+  for(const id of allCardIds()){ if(!M.cards[id]){ const seal=isSealedType(id); M.cards[id]={ owned:!seal, revealed:!seal }; changed=true; } }
+  return changed; }
+function ownsCard(M,id){ return !!(M.cards && M.cards[id] && M.cards[id].owned); }
+function cardRevealed(M,id){ return !!(M.cards && M.cards[id] && M.cards[id].revealed); }
+// ACQUIRE — the single ownership-grant point (purchase AND Sadhana auto-acquire both route here). Sets owned:true and leaves
+// revealed:false so the ACQUISITION CEREMONY fires EXACTLY ONCE (the collection flips/un-dims it, then stamps revealed:true).
+function acquireCard(M,id){ if(!M.cards[id]) M.cards[id]={owned:false,revealed:false};
+  if(M.cards[id].owned) return false;                       // already-owned guard → double-grant impossible
+  M.cards[id].owned=true; M.cards[id].revealed=false; return true; }
+function markRevealed(M,id){ if(M.cards[id] && !M.cards[id].revealed){ M.cards[id].revealed=true; return true; } return false; }
+// PURCHASE (Amsha) — Gupta only. Ratna are blocked here AND have no buy affordance anywhere (Vault's button is disabled, M4-gated).
+// NO-BRIDGE LAW: this is the only Amsha sink; there is no coins↔Amsha conversion anywhere in the app.
+function buyCard(id){ const M=loadMeta();
+  if(!cardById(id)) return {ok:false, why:'unknown card'};
+  if(isRatna(id))   return {ok:false, why:'Ratna Vault card — not purchasable with Amsha'};
+  if(ownsCard(M,id))return {ok:false, why:'already owned'};
+  const cost=cardCost(id);
+  if((M.wallet.amsha|0) < cost) return {ok:false, why:'insufficient Amsha', need:cost, have:M.wallet.amsha|0};
+  M.wallet.amsha -= cost;
+  acquireCard(M,id);
+  if(M.sadhana && M.sadhana.pin===id) M.sadhana.pin=null;   // buying the pinned card releases the pin (banked is preserved per-id)
+  saveMeta(M);
+  return {ok:true, cost};
+}
+
+/* ---------- Sadhana (§6, Option A — a PARALLEL win-fed stream toward a pinned card) ----------
+   TASK 30: the pool is now the REAL card list — every SEALED GUPTA card (wave, non-Ratna). Ratna are NOT pinnable (Vault-only
+   this season). `banked` (keyed by card id) CARRIES OVER from the legacy per-faction pins and, per the standing slice-3 design,
+   PERSISTS PER-ID ACROSS PIN-SWITCHES (verified: pin A→20, switch to B→10 while A stays 20, re-pin A resumes at 20). The UI states
+   this at pin-switch ("Progress on other pinned cards is kept."). The grant now FIRES: progress reaching the card's Amsha cost
+   auto-acquires it (ceremony) and unpins. +10 progress per PvAI win, scaled by the difficulty multiplier. */
+function sadhanaPool(){ const M=loadMeta(); return allCardIds().filter(id=> isSealedType(id) && !isRatna(id) && !ownsCard(M,id)); }
+function sadhanaPinnable(id){ return !!cardById(id) && isSealedType(id) && !isRatna(id); }   // Gupta-only, sealed-only
+function sadhanaDef(id){ return sadhanaPinnable(id) ? cardById(id) : null; }
+function sadhanaCost(id){ return cardCost(id); }   // the card's own rarity cost (was a flat previewCost before card identity existed)
+// +10/win (scaled), then AUTO-ACQUIRE at threshold: reaching the cost grants the card (ceremony fires) and unpins.
 function sadhanaOnWin(M, mult=1){ if(!M.sadhana || !M.sadhana.pin) return; const id=M.sadhana.pin;
-  M.sadhana.banked[id]=Math.min(sadhanaCost(id), (M.sadhana.banked[id]|0)+Math.round(META_CONFIG.sadhana.perWin*mult)); }   // cap at cost (grant deferred to the wave); D2: +10 scaled by difficulty mult
-function setSadhanaPin(id){ const M=loadMeta(); if(!sadhanaDef(id)) return; M.sadhana.pin=id; if(M.sadhana.banked[id]==null) M.sadhana.banked[id]=0; saveMeta(M); renderProfile(); }
+  const cost=sadhanaCost(id);
+  M.sadhana.banked[id]=Math.min(cost, (M.sadhana.banked[id]|0)+Math.round(META_CONFIG.sadhana.perWin*mult));
+  if((M.sadhana.banked[id]|0) >= cost && !ownsCard(M,id)){ acquireCard(M,id); M.sadhana.pin=null; }   // auto-acquire + unpin
+}
+function setSadhanaPin(id){ const M=loadMeta(); if(!sadhanaPinnable(id) || ownsCard(M,id)) return; M.sadhana.pin=id; if(M.sadhana.banked[id]==null) M.sadhana.banked[id]=0; saveMeta(M); renderProfile(); }
 /* MIGRATION FORMULA (documented in CLAUDE.md): retroXP = matches×matchComplete(20) + wins×matchWin(15) — reconstructs the
    play-XP a veteran would have earned (one-time story/daily bonuses can't be reconstructed, so they're intentionally omitted),
    then back-pays the level-up rewards those levels earned. Runs exactly once, when dy_meta is first created. */
@@ -3919,24 +4087,27 @@ function renderSadhana(M){
   const row=$('lp-sadhana'); if(!row) return;
   const pin=M.sadhana && M.sadhana.pin, def=pin && sadhanaDef(pin);
   const label=$('lp-sad-label'), bar=$('lp-sad-bar'), note=$('lp-sad-note');
-  if(def){
-    const cost=sadhanaCost(pin), b=Math.min(cost, M.sadhana.banked[pin]|0), full=b>=cost;
-    if(label) label.textContent=def.label;
+  if(def){   // TASK 30: def is now the REAL card def; the grant FIRES (auto-acquire at threshold), so no "arrives with the next wave" copy
+    const cost=sadhanaCost(pin), b=Math.min(cost, M.sadhana.banked[pin]|0);
+    if(label) label.textContent='Sadhana — '+def.n;
     if(bar) bar.style.width=(cost? b/cost*100:0)+'%';
-    if(note) note.textContent = full ? 'Ready — arrives with the next wave' : `${b} / ${cost} ✦`;
+    if(note) note.textContent=`${b} / ${cost} ✦`;
   } else {
     if(label) label.textContent='Sadhana — pin a card to chase';
     if(bar) bar.style.width='0%';
     if(note) note.textContent='Tap to choose';
   }
 }
+// TASK 30 — the picker is now the REAL sealed-Gupta card list (Ratna are Vault-only → never listed). banked carries over per id.
 function openSadhanaPick(){
   const M=loadMeta(), box=$('sad-pick-list'); if(!box) return; box.innerHTML='';
-  SADHANA_POOL.forEach(s=>{
-    const b=Math.min(sadhanaCost(s.id), M.sadhana.banked[s.id]|0);
-    const btn=document.createElement('button'); btn.className='sad-opt'+(M.sadhana.pin===s.id?' on':'')+' '+facClass(s.faction);
-    btn.innerHTML=`<span class="sad-opt-label">${s.label}</span><span class="sad-opt-prog">${b} / ${sadhanaCost(s.id)} ✦</span>`;
-    btn.onclick=()=>{ setSadhanaPin(s.id); $('sadhanapick').classList.add('hidden'); };
+  const pool=sadhanaPool();
+  if(!pool.length){ box.innerHTML='<div class="sad-opt-label" style="padding:10px">Every Gupta card is yours. Nothing left to chase.</div>'; }
+  pool.forEach(id=>{
+    const def=cardById(id), cost=sadhanaCost(id), b=Math.min(cost, M.sadhana.banked[id]|0);
+    const btn=document.createElement('button'); btn.className='sad-opt'+(M.sadhana.pin===id?' on':'')+' '+facClass(cardFaction(id));
+    btn.innerHTML=`<span class="sad-opt-label">${def.n}</span><span class="sad-opt-prog">${b} / ${cost} ✦</span>`;
+    btn.onclick=()=>{ setSadhanaPin(id); $('sadhanapick').classList.add('hidden'); toast('Progress on other pinned cards is kept.'); };
     box.appendChild(btn);
   });
   $('sadhanapick').classList.remove('hidden');
@@ -3991,8 +4162,9 @@ function recordMatchResult(){
 }
 function showLanding(){
   Story=null;   // leaving any story chapter
-  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','objchip','settings','mulligan','bossvs','targeting','inspect','banner','realmpop','diffchip'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
+  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','objchip','settings','mulligan','bossvs','targeting','inspect','banner','realmpop','diffchip','collection','vault'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });   // TASK 30: + collection/vault
   renderProfile();
+  updateCollectionCta();     // TASK 30: owned/total on the Collection button
   maybeGlintRank();          // slice 4: one-time rank-promotion chip shimmer (consumes the persisted pending flag)
   updateStoryLandingCta();   // smart Story caption from dy_story
   updateQuestBadge();        // slice 2: claimable-count badge on the Quests button
@@ -4428,6 +4600,124 @@ function fiSelectTab(tab){
   const body=$('fi-body'); body.innerHTML=''; body.append(fiTabNodes[tab]);
   $('factionintro').scrollTop=0;
 }
+/* ===== TASK 30 — COLLECTION (ownership-driven; independent of the wave1 match flag) =====
+   TWO FLIPS, TWO MEANINGS: (1) a repeatable PEEK — tap a sealed back → flip to the LOCKED PREVIEW (dimmed face + acquisition
+   line + PIN SADHANA), tap again → flip back. (2) the ACQUISITION CEREMONY — once per card, on gaining ownership the card flips,
+   un-dims with a gold flourish, and is face-up permanently (the `revealed` flag makes it fire exactly once).
+   CARD BACKS RENDER UPRIGHT ALWAYS — never rotated or mirrored in any grid/fan/stack. */
+function updateCollectionCta(){ const el=$('cap-collection'); if(!el) return; const M=loadMeta();
+  const own=allCardIds().filter(id=>ownsCard(M,id)).length;
+  el.textContent=`${own} of ${allCardIds().length} owned — and the ones still sealed`; }
+let colFaction='devas';
+const COL_FACTIONS=[['devas','Devas'],['asuras','Asuras'],['vanaras','Vanaras'],['nagas','Nagas']];
+let cardBackOk=false;   // assets/img/card_back.png is ABSENT at build time → CSS placeholder; probed so it lights up automatically if it lands
+(function probeBack(){ const im=new Image(); im.onload=()=>{ cardBackOk=true; }; im.onerror=()=>{ cardBackOk=false; }; im.src='assets/img/card_back.png'; })();
+function colAcqLine(id){ return isRatna(id) ? 'Ratna Vault' : `✦ ${cardCost(id)}`; }
+/* TASK 30b — ART-PENDING pane. Any card whose frame/thumb 404s renders this instead of a broken image: the FI_HIDDEN
+   sealed-slot treatment in the faction colour, carrying the card NAME + type row + a quiet caption (and, in the Vault,
+   the faction sigil large). It fills the SAME box the <img> would, so real art landing later causes NO layout shift.
+   The acquisition line in the LOCKED PREVIEW is supplied by the existing .cc-lock overlay, which sits above this art
+   layer and reads identically whether the art is real or pending — so it is not duplicated inside the pane. */
+function artPending(def, faction, opts={}){
+  const hex=(typeof FI_FAC_HEX!=='undefined' && FI_FAC_HEX[faction]) || '#e8c876';
+  const type=(def.t||'').toUpperCase(), pw=(def.p>0?` · P${def.p}`:''), rar=RARITY_NAME[def.r]||'';
+  const sigil=opts.sigil ? `<div class="ap-sigil" style="color:${hex}2e">${factionToken(faction).charAt(0)}</div>` : '';
+  return `<div class="ap" style="border-color:${hex}4d">${sigil}`+
+    `<div class="ap-name">${def.n}</div>`+
+    `<div class="ap-type" style="color:${hex}c0">${type}${pw} · ${rar}</div>`+
+    `<div class="ap-cap">art arrives with the wave</div></div>`;
+}
+const COL_HIDE=['hudwrap','gameover','factionselect','settings','mulligan','landing','fi-inspect','factionintro','collection','vault'];
+function colHideAll(){ COL_HIDE.forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); }); }
+function showCollection(){
+  colHideAll(); $('collection').classList.remove('hidden'); $('collection').scrollTop=0; Audio2.playTrack('menu'); renderCollection();
+}
+function renderCollection(){
+  const M=loadMeta();
+  $('col-wallet').textContent='✦ '+(M.wallet.amsha|0);
+  const tabs=$('col-tabs'); tabs.innerHTML='';
+  COL_FACTIONS.forEach(([f,label])=>{ const b=document.createElement('div'); b.className='col-tab'+(f===colFaction?' on':'');
+    const list=fiGalleryOrder(f).concat(DECKS[f].filter(c=>c.wave&&!fiGalleryOrder(f).includes(c)));
+    const own=DECKS[f].filter(c=>ownsCard(M,c.id)).length;
+    b.textContent=`${label} ${own}/${DECKS[f].length}`; b.onclick=()=>{ colFaction=f; renderCollection(); }; tabs.appendChild(b); });
+  const all=DECKS[colFaction].slice().sort((a,b)=>(a.wave?1:0)-(b.wave?1:0));   // owned launch first, sealed wave after
+  const owned=all.filter(c=>ownsCard(M,c.id)).length;
+  $('col-note').textContent=`${owned} of ${all.length} owned · sealed cards can be peeked and pinned before the wave is playable.`;
+  const grid=$('col-grid'); grid.innerHTML='';
+  all.forEach(def=>{
+    const id=def.id, isOwned=ownsCard(M,id), needCeremony = isOwned && !cardRevealed(M,id);
+    const cell=document.createElement('div');
+    cell.className='cc'+(isOwned?' owned':' sealed')+(M.sadhana&&M.sadhana.pin===id?' cc-pinned':'');
+    const inner=document.createElement('div'); inner.className='cc-in';
+    const back=document.createElement('div'); back.className='cc-back'+(cardBackOk?' hasimg':'');
+    if(cardBackOk) back.style.backgroundImage="url('assets/img/card_back.png')"; else back.innerHTML='<i></i>';
+    const face=document.createElement('div'); face.className='cc-face';
+    const art=document.createElement('div'); art.className='cc-art';   // 30b: the art layer is swapped ALONE on 404 → decorations survive
+    const im=document.createElement('img'); im.loading='lazy'; im.src=fiThumbSrc(def,colFaction);
+    im.onerror=()=>{ art.innerHTML=artPending(def, colFaction); };
+    art.appendChild(im); face.appendChild(art);
+    if(!isOwned) colDecorate(face,id,def);   // .cc-lock (acquisition line) + PIN/BUY sit ABOVE the art layer, real or pending
+    inner.appendChild(back); inner.appendChild(face); cell.appendChild(inner); grid.appendChild(cell);
+    if(isOwned){ if(needCeremony){ cell.classList.add('ceremony'); const M2=loadMeta(); markRevealed(M2,id); saveMeta(M2);
+        setTimeout(()=>cell.classList.remove('ceremony'),1600); }
+      cell.onclick=()=>openInspectById(id); return; }
+    cell.onclick=(e)=>{ if(e.target.closest('button')) return; cell.classList.toggle('flipped'); };   // repeatable peek
+  });
+}
+function colDecorate(face,id,def){
+  const lock=document.createElement('div'); lock.className='cc-lock'; lock.textContent=colAcqLine(id); face.appendChild(lock);
+  if(isRatna(id)){ const v=document.createElement('div'); v.className='cc-vault'; v.textContent='RATNA'; face.appendChild(v); return; }
+  const pin=document.createElement('button'); pin.className='cc-pin'; pin.textContent='PIN';
+  pin.onclick=(e)=>{ e.stopPropagation(); colPin(id); };
+  face.appendChild(pin);
+  const buy=document.createElement('button'); buy.className='cc-pin'; buy.style.top='auto'; buy.style.bottom='16px'; buy.textContent='BUY';
+  buy.onclick=(e)=>{ e.stopPropagation(); colBuy(id); };
+  face.appendChild(buy);
+}
+function colBuy(id){
+  const r=buyCard(id);
+  if(!r.ok){ toast(r.why==='insufficient Amsha' ? `Need ✦${r.need} — you have ✦${r.have}` : r.why); return; }
+  toast(`${cardById(id).n} acquired — ✦${r.cost}`); renderCollection(); renderProfile();
+}
+function colPin(id){
+  setSadhanaPin(id);
+  const M=loadMeta();
+  if(M.sadhana.pin===id) toast(`Sadhana pinned: ${cardById(id).n}. Progress on other pinned cards is kept.`);
+  renderCollection();
+}
+function openInspectById(id){ const f=cardFaction(id), d=cardById(id); if(f&&d) fiOpenInspectCard(f, d); }   // reuse the FI inspect pipeline (lazy full frame + ±1 preload + swipe/arrows)
+
+/* ===== TASK 30 — RATNA VAULT (SHOWCASE, NOT A STORE) =====
+   Purchase is PRESENT but DISABLED behind the M4 gate. HARD LAW: no coins↔Amsha conversion anywhere; Ratna are not
+   Amsha-purchasable by ANY path (buyCard rejects them) and are not Sadhana-pinnable this season. */
+let vaultFaction='devas';
+function showVault(){ colHideAll(); $('vault').classList.remove('hidden'); $('vault').scrollTop=0; Audio2.playTrack('menu'); renderVault(); }
+function renderVault(){
+  $('vault-season').textContent=META_CONFIG.ratna.season;
+  $('vault-gate').textContent=META_CONFIG.ratna.gate;
+  const tabs=$('vault-tabs'); tabs.innerHTML='';
+  COL_FACTIONS.forEach(([f,label])=>{ const b=document.createElement('div'); b.className='col-tab'+(f===vaultFaction?' on':'');
+    b.textContent=label; b.onclick=()=>{ vaultFaction=f; renderVault(); }; tabs.appendChild(b); });
+  const set=$('vault-set'); set.innerHTML=`<div class="vault-name">THE ${vaultFaction.toUpperCase()} SET — all 6</div>`+
+    `<div class="vault-price">₹${META_CONFIG.ratna.setInr}</div>`+
+    `<button class="vault-buy" disabled>PURCHASE — ${META_CONFIG.ratna.gate}</button>`;
+  const grid=$('vault-grid'); grid.innerHTML='';
+  (RATNA_IDS[vaultFaction]||[]).forEach(id=>{
+    const def=cardById(id); if(!def) return;
+    const pane=document.createElement('div'); pane.className='vault-pane';
+    const art=document.createElement('div'); art.className='vault-art';
+    const im=document.createElement('img'); im.loading='lazy'; im.src=fiThumbSrc(def,vaultFaction);
+    im.onerror=()=>{ art.innerHTML=artPending(def, vaultFaction, {sigil:true}); };   // 30b: Vault panes carry the faction sigil large
+    art.appendChild(im); pane.appendChild(art);
+    const meta=document.createElement('div'); meta.className='vault-meta';
+    meta.innerHTML=`<div class="vault-name">${def.n}</div>`+
+      `<div class="vault-badge">✦ unique play animation</div>`+
+      `<div class="vault-crest">Faction crest — preview coming</div>`+
+      `<div class="vault-price">₹${ratnaInr(id)}</div>`+
+      `<button class="vault-buy" disabled>PURCHASE</button>`;
+    pane.appendChild(meta); grid.appendChild(pane);
+  });
+}
 function showFactionIntro(){
   ['hudwrap','gameover','factionselect','settings','mulligan','landing','fi-inspect'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });
   fiSelectTab('win');
@@ -4438,6 +4728,10 @@ function showFactionIntro(){
 $('fi-tabs').addEventListener('click', e=>{ const b=e.target.closest('.fi-tab'); if(b) fiSelectTab(b.dataset.tab); });
 $('fi-back').onclick=()=>showLanding();
 $('mode-factions').onclick=()=>showFactionIntro();
+$('mode-collection').onclick=()=>showCollection();   // TASK 30
+$('mode-vault').onclick=()=>showVault();             // TASK 30
+$('col-back').onclick=()=>showLanding();
+$('vault-back').onclick=()=>showLanding();
 
 /* ===================== STORY MODE — DIVYA YATRA (driver) ===================== */
 let Story = null;                 // null = not in a story chapter; else the live driver state
