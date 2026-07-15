@@ -352,7 +352,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .sad-opt-label{ font-family:Cinzel,serif; font-size:13px; color:#f2ead6; letter-spacing:.4px; }
 .sad-opt.fac-deva .sad-opt-label{ color:var(--gold); } .sad-opt.fac-asura .sad-opt-label{ color:#e88; } .sad-opt.fac-vanara .sad-opt-label{ color:#e9b36a; } .sad-opt.fac-naga .sad-opt-label{ color:#5ec8b8; }
 .sad-opt-prog{ font-size:11px; color:var(--gold-2); white-space:nowrap; }
-.sad-pick-close{ display:block; width:100%; margin-top:6px; padding:10px; border-radius:9px; background:transparent; border:1px solid var(--gold-dim); color:var(--gold); font-family:Cinzel,serif; letter-spacing:1px; font-size:12px; cursor:pointer; }
+.sad-pick-close{ width:100%; margin-top:10px; }   /* TASK 32: layout only — the shared .metaback pill owns border/radius/fill/type */
 
 /* ===== M1 slice 4: earnings stamp + flourishes (result surfaces) ===== */
 .earn-line{ display:flex; flex-wrap:wrap; justify-content:center; gap:6px 12px; margin:6px 0 2px; }
@@ -791,6 +791,23 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 /* Mobile-first content column: full-width at 390px, capped + centred on desktop — the SAME 520px column the app already
    uses for .land-col and .fi-col, so the meta screens read as one system. A max-width cap, never a fixed width. */
 #collection > *, #vault > *{ width:100%; max-width:520px; margin-left:auto; margin-right:auto; }
+/* ===== TASK 32 — shared BACK PILL across all three meta screens =====
+   Speaks the faction-tab language (same border colour rgba(232,200,116,.25), same 8px radius, same Cinzel small-caps),
+   but transparent-filled per spec. Replaces the bare `.backbtn` chevron — which had NO css rule at all, so it rendered
+   as an unstyled UA button. 44x44 minimum hit target. */
+.metaback{ flex:0 0 auto; min-width:44px; min-height:44px; padding:6px 14px; border-radius:8px;
+  font-family:Cinzel,serif; font-size:12px; letter-spacing:.08em; font-variant:small-caps;
+  background:transparent; border:1px solid rgba(232,200,116,.25); color:var(--gold-2); cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:4px; }
+.metaback:hover{ border-color:var(--gold); color:var(--gold); }
+/* ===== TASK 32 — ZOOM LIGHTBOX (shared by Collection + Vault) =====
+   Above the metascreens (z-86) and the FI inspect (z-96). Tap anywhere dismisses; no pinch/pan. */
+#cardzoom{ position:fixed; inset:0; z-index:97; background:rgba(0,0,0,.85);
+  display:flex; align-items:center; justify-content:center; padding:16px; cursor:pointer; }
+#cardzoom img{ width:min(92vw, 420px); height:auto; display:block; border-radius:10px;
+  box-shadow:0 18px 60px rgba(0,0,0,.7); }
+#cardzoom .zoom-ph{ position:relative; width:min(92vw, 420px); aspect-ratio:5/7; }
+#zoom-close{ position:fixed; top:14px; left:12px; z-index:98; }
 /* ===== TASK 30 — COLLECTION + REVEAL CEREMONY + RATNA VAULT ===== */
 #collection, #vault{ z-index:86; overflow-y:auto; }
 #collection, #vault{ background:#0a0704; }
@@ -1063,7 +1080,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     <div class="sad-pick-head">CHOOSE YOUR SADHANA</div>
     <div class="sad-pick-sub">Pin one card to chase. Every win feeds its progress — at full, the card is yours. Progress on other pinned cards is kept.</div>
     <div id="sad-pick-list"></div>
-    <button class="sad-pick-close" id="sad-pick-close">CLOSE</button>
+    <button class="metaback sad-pick-close" id="sad-pick-close">‹ Back</button>
   </div>
 </div>
 
@@ -1119,9 +1136,13 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   </div>
 </div>
 
+<div class="hidden" id="cardzoom">
+  <button class="metaback" id="zoom-close">‹ Back</button>
+  <div id="zoom-body"></div>
+</div>
 <div class="overlay metascreen hidden" id="collection">
   <div class="col-head">
-    <button class="backbtn" id="col-back">‹</button>
+    <button class="metaback" id="col-back">‹ Back</button>
     <div class="col-title">COLLECTION</div>
     <div class="col-wallet" id="col-wallet">✦ 0</div>
   </div>
@@ -1131,7 +1152,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 </div>
 <div class="overlay metascreen hidden" id="vault">
   <div class="col-head">
-    <button class="backbtn" id="vault-back">‹</button>
+    <button class="metaback" id="vault-back">‹ Back</button>
     <div class="col-title">RATNA VAULT</div>
   </div>
   <div class="vault-hero">
@@ -4679,7 +4700,7 @@ function renderCollection(){
     inner.appendChild(back); inner.appendChild(face); cell.appendChild(inner); grid.appendChild(cell);
     if(isOwned){ if(needCeremony){ cell.classList.add('ceremony'); const M2=loadMeta(); markRevealed(M2,id); saveMeta(M2);
         setTimeout(()=>cell.classList.remove('ceremony'),1600); }
-      cell.onclick=()=>openInspectById(id); return; }
+      cell.onclick=()=>openZoom(def, colFaction); return; }   // TASK 32: an OWNED card zooms (sealed keeps the two-flip below)
     cell.onclick=(e)=>{ if(e.target.closest('button')) return; cell.classList.toggle('flipped'); };   // repeatable peek
   });
 }
@@ -4704,7 +4725,33 @@ function colPin(id){
   if(M.sadhana.pin===id) toast(`Sadhana pinned: ${cardById(id).n}. Progress on other pinned cards is kept.`);
   renderCollection();
 }
-function openInspectById(id){ const f=cardFaction(id), d=cardById(id); if(f&&d) fiOpenInspectCard(f, d); }   // reuse the FI inspect pipeline (lazy full frame + ±1 preload + swipe/arrows)
+/* ===== TASK 32 — ZOOM LIGHTBOX (one shared implementation for Collection + Vault) =====
+   Trigger: an OWNED collection card, or a Vault card face. SEALED cards keep the two-flip exactly as shipped (their
+   handler is untouched) and the flipped locked-preview does NOT zoom — PIN/BUY own that face. Dismiss: tap anywhere,
+   or the ‹ Back pill. No pinch/pan. While open, the metascreen's scroll is LOCKED and its scrollTop restored on close. */
+let zoomLock=null;   // { el, scrollTop, overflow } — the screen that was scroll-locked
+function openZoom(def, faction){
+  if(!def) return;
+  const body=$('zoom-body'); body.innerHTML='';
+  const im=document.createElement('img');
+  im.alt=def.n; im.src=fiArtStem(def, faction);                     // the FULL frame (not the thumb) for a real zoom
+  im.onerror=()=>{ body.innerHTML=`<div class="zoom-ph">${artPending(def, faction, {sigil:true})}</div>`; };
+  body.appendChild(im);
+  // scroll lock: freeze the underlying metascreen, remember where it was
+  const host = !$('collection').classList.contains('hidden') ? $('collection')
+             : !$('vault').classList.contains('hidden') ? $('vault') : null;
+  if(host){ zoomLock={ el:host, scrollTop:host.scrollTop, overflow:host.style.overflowY }; host.style.overflowY='hidden'; }
+  else zoomLock=null;
+  document.body.style.overflow='hidden';
+  $('cardzoom').classList.remove('hidden');
+}
+function closeZoom(){
+  $('cardzoom').classList.add('hidden'); $('zoom-body').innerHTML='';
+  document.body.style.overflow='';
+  if(zoomLock){ zoomLock.el.style.overflowY=zoomLock.overflow||''; zoomLock.el.scrollTop=zoomLock.scrollTop; zoomLock=null; }   // restore scroll position
+}
+$('cardzoom').onclick=()=>closeZoom();                              // tap anywhere on the overlay dismisses
+$('zoom-close').onclick=(e)=>{ e.stopPropagation(); closeZoom(); };
 
 /* ===== TASK 30 — RATNA VAULT (SHOWCASE, NOT A STORE) =====
    Purchase is PRESENT but DISABLED behind the M4 gate. HARD LAW: no coins↔Amsha conversion anywhere; Ratna are not
@@ -4735,6 +4782,7 @@ function renderVault(){
       `<div class="vault-price">₹${ratnaInr(id)}</div>`+
       `<button class="vault-buy" disabled>PURCHASE</button>`;
     pane.appendChild(meta); grid.appendChild(pane);
+    pane.onclick=(e)=>{ if(e.target.closest('button')) return; openZoom(def, vaultFaction); };   // TASK 32: the card face zooms; PURCHASE never does
   });
 }
 function showFactionIntro(){
