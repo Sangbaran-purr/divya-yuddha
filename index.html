@@ -6,7 +6,29 @@
 <title>Divya Yuddha — Prototype v0.1</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
 <style>
+/* ═══ DESIGN SYSTEM v1 — THE SINGLE TOKEN SOURCE (T34; authority: docs/DESIGN_SYSTEM_RESKIN_v1.md §1 + AMENDMENT A1) ═══
+   THE LAW: tokens are defined HERE and only here. T35–T37 may CONSUME this block, never redefine a token.
+   AMENDMENT A1 (ruled 2026-07-16) — five DS §1 names collided with shipped tokens of DIFFERENT meaning, so the DS
+   values land under non-colliding names and the shipped names stay as LEGACY ALIASES until each screen is reskinned:
+     DS name      DS value                  lands here as        collision with shipped
+     --ink        #070402 page ground   →   --ds-ink             shipped --ink is LIGHT BODY TEXT (22 uses) — inverted
+     --panel      #160d05 / #2b1c0a     →   --plaque-lo/-hi      shipped --panel is a single face color (2 uses)
+     --gold-dim   rgba(232,200,116,.25) →   --gold-dim-25        shipped --gold-dim is solid #8a7434 (33 uses)
+     --gold       #c9a84c chrome        →   (already --gold-2)   shipped --gold is #E8C874 = the DS --gold-hi VALUE
+     --gold-hi    #e8c874 emphasis      →   --gold-hi (verbatim) (same value as shipped --gold; names are INVERTED)
+   RETIREMENT: T35 (card screens) · T36 (narrative) · T37 (match-adjacent) each migrate their screen off the legacy
+   aliases (--ink → --parchment, --ink-dim → --parchment-dim, --gold → --gold-hi, --gold-2 → the DS --gold role);
+   the alias line below is deleted when its last consumer goes. NEVER migrate here — T34 is landing-only. */
 :root{
+  /* — DS §1 canonical — */
+  --ds-ink:#070402;                      /* page ground */
+  --plaque-hi:#2b1c0a; --plaque-lo:#160d05;   /* plaque face gradient ends */
+  --gold-hi:#e8c874;                     /* emphasis text, fills */
+  --gold-bright:#f4df9a;                 /* hover text */
+  --gold-dim-25:rgba(232,200,116,.25);   /* quiet borders */
+  --parchment:#d8c9a3;                   /* body text */
+  --ember:#ff8c33;                       /* fire accent — landing + quest-claim ONLY */
+  /* — LEGACY ALIASES (pre-DS; consumed by screens not yet reskinned — retire per A1 across T35–T37) — */
   --gold:#E8C874; --gold-2:#C9A84C; --gold-dim:#8a7434;
   --ink:#e8ddc0; --ink-dim:#cbbd96;
   --panel:#201808; --line:#3a2e14; --hi:#F0D080;
@@ -293,10 +315,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #factionselect, #landing, #factionintro, #storyselect, #quests{ background:#0a0704; overflow:hidden; }
 #factionselect::before, #factionintro::before, #storyselect::before, #quests::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
 #factionselect::after, #factionintro::after, #storyselect::after, #quests::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
-/* Landing has its OWN background (assets/img/landing_bg.jpg — Mount Meru), lazy-loaded into #landingbg with a slow drift; #landing::before carries the title+bottom scrims. Page color #0a0704 is the instant first-paint fallback. */
-#landingbg{ position:fixed; inset:0; z-index:0; background:center center/cover no-repeat; opacity:0; transition:opacity .6s ease; pointer-events:none; will-change:transform; animation:landDrift 28s ease-in-out infinite alternate; }
-#landing::before{ content:''; position:fixed; inset:0; z-index:1; pointer-events:none; background:linear-gradient(to bottom, #0a0704 0%, rgba(10,7,4,0) 28%, rgba(10,7,4,0) 82%, rgba(10,7,4,.66) 100%); }   /* TITLE SCRIM top (page color → transparent by 28%, under the gold Cinzel title) + lighter bottom scrim (~18%) under the menu buttons */
-@keyframes landDrift{ from{ transform:scale(1.0); } to{ transform:scale(1.06); } }   /* SLOW DRIFT (living-mountain): center scale 1.0↔1.06, ease-in-out, alternating — min scale 1.0 + cover-fit ⇒ never reveals edges */
+/* T34: the landing's Mount-Meru #landingbg + its ::before scrims are RETIRED — replaced by the sky-rotunda plate stage
+   (#landstage below). assets/img/landing_bg.jpg is now unreferenced (left on disk; not deleted by this task). */
 
 /* ===== M1 slice 2: Quests (landing entry button + panel) ===== */
 .lp-quests{ position:relative; display:flex; align-items:center; gap:10px; width:100%; margin:0 0 12px; padding:11px 14px; border-radius:12px; background:rgba(0,0,0,.42); backdrop-filter:blur(6px); border:1px solid var(--gold-dim); color:#fff; cursor:pointer; text-align:left; }
@@ -444,49 +464,185 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #factionselect .modal{ position:relative; z-index:1; }
 
 /* ===== landing page (first screen, before faction-select) ===== */
-#landing{ display:block; overflow-y:auto; padding:0; }
 #settings{ z-index:90; }   /* settings must sit above the landing overlay */
 .mutetoast{ z-index:95; }  /* toast above landing + settings */
 .mutetoast.toast-hi{ z-index:99; }   /* meta toasts must clear the zoom lightbox (97) + its Back pill (98) */
-#landgear{ position:absolute; top:14px; right:14px; z-index:3; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.20); color:var(--ink); border-radius:8px; width:34px; height:32px; font-size:15px; cursor:pointer; padding:0; }
+
+/* ═══════════ DESIGN SYSTEM v1 — §2 COMPONENTS (T34 defines; T35–T37 CONSUME, never redefine) ═══════════
+   Every shaped/measured internal is display:block — DS §2's law, written by three inline-span bugs. */
+
+/* PLAQUE-LG — the menu unit: hex clip frame (gold bevel gradient) → dark face, diamond finials, sheen + lift. */
+/* T34b — TRANSFORM IS DECOUPLED FROM THE TRANSITION. The roller writes this element's transform on every scroll
+   event; easing those writes through .25s made the curl chase the scroll a quarter-second behind. transform now
+   leaves the transition entirely (roller writes land same-frame), and the transition keeps only the properties
+   hover actually needs. OWNERSHIP: the roller owns the OUTER element's transform; hover owns the .frame CHILD's. */
+.plaque-lg{ position:relative; display:block; width:min(310px,80vw); padding:0; border:0; background:none;
+  text-align:center; cursor:pointer; font-family:inherit;
+  transition:filter .25s ease, border-color .25s ease, box-shadow .25s ease, color .25s ease; }
+.plaque-lg .frame{ display:block; clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%);
+  background:linear-gradient(180deg,#e6c47a 0%,#a5813a 45%,#6e5526 100%); padding:1.6px; box-shadow:0 8px 26px rgba(0,0,0,.6);
+  transition:transform .25s ease; }   /* the hover lift lives HERE — never on the element the roller writes */
+.plaque-lg .face{ display:block; clip-path:polygon(16px 0,calc(100% - 16px) 0,100% 50%,calc(100% - 16px) 100%,16px 100%,0 50%);
+  background:linear-gradient(180deg,var(--plaque-hi) 0%,var(--plaque-lo) 52%,#221407 100%);
+  padding:11px 30px; color:var(--gold-hi); font-family:Cinzel,serif; font-size:13px; font-weight:700;
+  letter-spacing:.3em; text-transform:uppercase; position:relative; overflow:hidden; }
+.plaque-lg .face::after{ content:''; position:absolute; inset:0;
+  background:linear-gradient(115deg,transparent 30%,rgba(255,220,140,.18) 50%,transparent 70%);
+  transform:translateX(-130%); transition:transform .65s ease; }
+.plaque-lg:hover{ filter:brightness(1.12) drop-shadow(0 0 14px rgba(255,205,120,.25)); }
+.plaque-lg:hover .frame{ transform:translateY(-2px); }
+.plaque-lg:hover .face::after{ transform:translateX(130%); }
+.plaque-lg:active .frame{ transform:translateY(0) scale(.99); }
+/* diamond finials — pseudo-elements of the OUTER, so they do not inherit the .frame lift; they carry it themselves
+   (folded into their own translateY) so the plaque still rises as ONE unit on hover, exactly as before T34b. */
+.plaque-lg::before, .plaque-lg::after{ content:''; position:absolute; top:50%; width:9px; height:9px;
+  background:linear-gradient(135deg,#e6c47a,#8a6a2c); transform:translateY(-50%) rotate(45deg); box-shadow:0 0 8px rgba(232,200,116,.4);
+  transition:transform .25s ease; }
+.plaque-lg:hover::before, .plaque-lg:hover::after{ transform:translateY(calc(-50% - 2px)) rotate(45deg); }
+.plaque-lg:active::before, .plaque-lg:active::after{ transform:translateY(-50%) rotate(45deg); }
+.plaque-lg::before{ left:-16px; } .plaque-lg::after{ right:-16px; }
+.plaque-lg .cap{ display:block; font-family:Cinzel,serif; font-size:7.5px; letter-spacing:.3em; opacity:.55;
+  margin-top:3px; font-weight:500; text-transform:uppercase; }
+.plaque-lg .track{ display:block; width:64%; height:4px; margin:4px auto 0; border-radius:3px;   /* optional block track */
+  background:rgba(0,0,0,.55); border:1px solid var(--gold-dim-25); overflow:hidden; }
+.plaque-lg .track i{ display:block; height:100%; width:0; background:linear-gradient(90deg,#8a6a2c,var(--gold-hi)); transition:width .4s ease; }
+.plaque-lg.primary{ width:min(330px,84vw); }
+.plaque-lg.primary .face{ font-size:14.5px; padding:14px 30px;
+  background:linear-gradient(180deg,#4a3210 0%,#241505 55%,#332008 100%); color:#f6e2a8; }
+.plaque-lg.locked{ pointer-events:none; filter:grayscale(.5) brightness(.7); }
+.plaque-lg.locked .face{ color:rgba(216,201,163,.55); }
+.plaque-lg .lockic{ position:absolute; right:26px; top:50%; transform:translateY(-50%); opacity:.7; display:flex; }
+
+/* PLAQUE-SM — the same language at tab scale (faction tabs, filter pills). Min 44px hit target (Task 31 law).
+   DEFINED HERE, APPLIED IN T35: wiring .metaback / .col-tab to this skin now would change #collection, which
+   this task's own regression gate requires to stay byte-identical. T35 applies it and re-proves those screens. */
+.plaque-sm{ position:relative; display:inline-flex; align-items:center; justify-content:center;
+  min-height:44px; min-width:44px; padding:0 14px; border:1px solid var(--gold-dim-25); border-radius:8px;
+  background:linear-gradient(180deg,rgba(43,28,10,.78),rgba(22,13,5,.78)); color:var(--gold-hi);
+  font-family:Cinzel,serif; font-size:12px; letter-spacing:.08em; font-variant:small-caps; cursor:pointer;
+  transition:border-color .25s ease, color .25s ease; }
+.plaque-sm:hover{ border-color:var(--gold); color:var(--gold-bright); }
+.plaque-sm.on{ border-color:var(--gold); color:var(--gold-bright); background:linear-gradient(180deg,#4a3210,#241505); }
+
+/* HEADER — screen title flanked by the diamond-line flourish from the logo's tagline rule. (T36/T37 consume.) */
+.ds-header{ display:flex; align-items:center; justify-content:center; gap:12px;
+  font-family:Cinzel,serif; font-size:15px; letter-spacing:.3em; color:var(--gold); text-transform:uppercase; }
+.ds-header::before, .ds-header::after{ content:''; flex:1 1 auto; max-width:64px; height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold-dim-25),transparent); }
+
+/* ═══════════ LANDING (#landing) — T34; reference: docs/reference/landing_reference_v11.html ═══════════ */
+#landing{ display:block; overflow:hidden; padding:0; background:var(--ds-ink); }
+
+/* — the plate stage: fixed, behind everything; the column scrolls over it — */
+#landstage{ position:fixed; inset:0; overflow:hidden; z-index:0; pointer-events:none; }
+#landplate{ position:absolute; left:50%; top:50%; transform-origin:center; will-change:transform;
+  filter:brightness(.84) saturate(1.03) contrast(1.03); }   /* DIM: plate brightness .84 so the lockup tagline reads */
+.ls-layer{ position:absolute; inset:0; pointer-events:none; }
+.ls-beam{ left:50%; top:0; width:34vmax; height:60vmax; inset:auto; transform:translateX(-50%);   /* god-light riding the painted beam */
+  background:radial-gradient(46% 60% at 50% 12%, rgba(255,225,160,.16), rgba(255,200,120,.05) 45%, transparent 70%);
+  mix-blend-mode:screen; animation:lsBeam 8s ease-in-out infinite; }
+@keyframes lsBeam{ 0%,100%{ opacity:.55; } 50%{ opacity:1; } }
+.ls-haze{ inset:-10%; mix-blend-mode:screen; opacity:.4; filter:blur(6px);
+  background:radial-gradient(42% 26% at 28% 60%, rgba(190,140,70,.10), transparent 70%),
+             radial-gradient(44% 28% at 74% 56%, rgba(190,140,70,.09), transparent 70%);
+  animation:lsHaze 36s ease-in-out infinite alternate; }
+@keyframes lsHaze{ from{ transform:translate3d(-2%,-.8%,0); } to{ transform:translate3d(2%,1%,0); } }
+#landfx{ position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+.ls-grain{ opacity:.06; mix-blend-mode:overlay; background:url('assets/img/ui_grain.png'); animation:lsGrain .5s steps(2) infinite; }
+@keyframes lsGrain{ 0%{ transform:translate(0,0); } 50%{ transform:translate(-16px,9px); } 100%{ transform:translate(11px,-13px); } }
+.ls-dim{ background:radial-gradient(62% 40% at 50% 17%, rgba(0,0,0,.46), transparent 72%),   /* logo-zone radial */
+                    radial-gradient(70% 46% at 50% 66%, rgba(0,0,0,.22), transparent 75%); }
+.ls-vig{ background:radial-gradient(125% 100% at 50% 42%, transparent 58%, rgba(0,0,0,.5) 100%); }
+
+/* — masthead: pinned; the lockup REPLACES the old land-name/land-sub text, Devanagari kept as its own element — */
+#landmast{ position:fixed; top:0; left:0; right:0; z-index:26; display:flex; flex-direction:column; align-items:center;
+  padding-top:3.6vh; pointer-events:none; opacity:0; animation:landIn 1.5s ease .4s forwards; }
+.land-deva{ font-family:Cinzel,serif; font-size:clamp(15px,2.4vw,21px); letter-spacing:.34em; color:var(--gold-2);
+  opacity:.9; margin-bottom:6px; text-shadow:0 2px 10px rgba(0,0,0,.8); }
+.land-lockup{ width:min(430px,80vw); height:auto;
+  filter:drop-shadow(0 10px 34px rgba(0,0,0,.75)) drop-shadow(0 0 26px rgba(255,205,120,.22));
+  animation:landLockBreath 6.5s ease-in-out infinite; }
+@keyframes landLockBreath{ 0%,100%{ filter:drop-shadow(0 10px 34px rgba(0,0,0,.75)) drop-shadow(0 0 18px rgba(255,205,120,.16)); }
+  50%{ filter:drop-shadow(0 10px 34px rgba(0,0,0,.75)) drop-shadow(0 0 34px rgba(255,215,130,.32)); } }
+@keyframes landIn{ to{ opacity:1; } }
+
+/* — THE ROLLER (landing-only signature) + the metascreen scroll contract —
+   The column scrolls over the fixed stage; children curl on rotateX within 64px of the masthead line. The mask
+   ramps in over 56px below the line (--mt, set by JS from the masthead's measured bottom) and fades before the
+   footer. padding-top = masthead bottom + 76px, so the REST state sits clear of the roll zone. */
+.land-col{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center;
+  padding:0 20px 84px; gap:9px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  perspective:900px; opacity:0; animation:landIn 1.5s ease .4s forwards; scrollbar-width:none;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,transparent var(--mt,180px),#000 calc(var(--mt,180px) + 56px),#000 calc(100% - 64px),transparent 100%);
+          mask-image:linear-gradient(180deg,transparent 0,transparent var(--mt,180px),#000 calc(var(--mt,180px) + 56px),#000 calc(100% - 64px),transparent 100%); }
+.land-col::-webkit-scrollbar{ width:0; height:0; }
+.land-col>*{ flex-shrink:0; transform-origin:50% 0; will-change:transform; }   /* flex-shrink:0 — the Task-31 squeeze law */
+.land-modes{ display:flex; flex-direction:column; align-items:center; gap:9px; }
+.land-modes>*{ flex-shrink:0; transform-origin:50% 0; will-change:transform; }
+
+#landgear{ position:fixed; top:14px; right:14px; z-index:30; width:44px; height:44px; border-radius:9px;
+  border:1px solid rgba(232,200,116,.3); background:linear-gradient(180deg,rgba(30,20,8,.75),rgba(10,6,3,.75));
+  color:var(--gold-2); font-size:19px; cursor:pointer; padding:0; transition:color .25s ease, border-color .25s ease; }
+#landgear:hover{ color:var(--gold-bright); border-color:rgba(232,200,116,.6); }
 #landgear:active{ transform:scale(.92); }
-.land-col{ position:relative; z-index:2; min-height:100vh; box-sizing:border-box; max-width:520px; margin:0 auto; padding:64px 20px 28px; display:flex; flex-direction:column; justify-content:center; gap:22px; }   /* z-2: above the landing image (z-0) + scrims (z-1) */
-.land-title{ text-align:center; }
-.land-deva{ font-family:Cinzel,serif; font-size:20px; color:var(--gold); letter-spacing:2px; text-shadow:0 2px 10px rgba(0,0,0,.9); margin-bottom:6px; }
-.land-name{ font-family:Cinzel,serif; font-weight:700; font-size:34px; letter-spacing:8px; color:#fff; margin:0; text-shadow:0 2px 12px rgba(0,0,0,.95), 0 0 26px rgba(0,0,0,.5); }
-.land-sub{ font-family:Cinzel,serif; font-size:10px; letter-spacing:4px; color:var(--ink-dim); margin-top:8px; text-shadow:0 1px 6px rgba(0,0,0,.95); }
-/* profile card */
-.land-profile{ display:flex; align-items:center; gap:14px; padding:14px; border-radius:14px; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.16); }
-.lp-avatar{ flex:0 0 auto; width:52px; height:52px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-weight:700; font-size:18px; color:#1a1204; background:linear-gradient(150deg,var(--hi),var(--gold-2)); border:2px solid var(--gold); box-shadow:0 2px 10px rgba(0,0,0,.5); }
-.lp-info{ flex:1 1 auto; min-width:0; }
-.lp-namerow{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
-.lp-rank{ font-family:Cinzel,serif; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); border:1px solid var(--gold-dim); border-radius:10px; padding:1px 8px; white-space:nowrap; text-shadow:0 1px 3px #000; }
-.lp-name, .lp-name-edit{ font-family:Cinzel,serif; font-size:15px; color:#fff; font-weight:700; letter-spacing:.5px; text-shadow:0 1px 4px #000; cursor:pointer; }
-.lp-name::after{ content:'  ✎'; font-size:10px; color:var(--ink-dim); opacity:.7; }
-.lp-name-edit{ background:rgba(0,0,0,.5); border:1px solid var(--gold-dim); border-radius:6px; color:#fff; padding:2px 6px; width:100%; max-width:200px; outline:none; cursor:text; }
-.lp-level{ display:flex; align-items:center; gap:8px; margin:6px 0 5px; }
-.lp-level span{ font-family:Cinzel,serif; font-size:10px; letter-spacing:1px; color:var(--gold); white-space:nowrap; }
-.lp-bar{ flex:1 1 auto; height:5px; border-radius:3px; background:rgba(255,255,255,.14); overflow:hidden; }
-.lp-bar i{ display:block; height:100%; width:0; border-radius:3px; background:linear-gradient(90deg,var(--gold-2),var(--hi)); transition:width .4s ease; }
-.lp-stats{ font-size:11px; color:var(--ink-dim); letter-spacing:.5px; text-shadow:0 1px 4px #000; }
-/* mode buttons */
-.land-modes{ display:flex; flex-direction:column; gap:10px; }
-.mode{ display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:14px 16px; border-radius:12px; cursor:pointer; background:rgba(0,0,0,.45); backdrop-filter:blur(6px); border:1.5px solid rgba(255,255,255,.18); color:var(--ink); transition:border-color .15s, background .15s, transform .1s; }
-.mode:active{ transform:scale(.985); }
-.mode .mode-main{ flex:1 1 auto; min-width:0; }
-.mode .mode-title{ font-family:Cinzel,serif; font-size:14px; letter-spacing:1px; color:#fff; text-shadow:0 1px 3px #000; }
-.mode .mode-cap{ font-size:10px; color:var(--ink-dim); margin-top:3px; letter-spacing:.5px; }
-.mode.active{ border-color:var(--gold-dim); background:linear-gradient(rgba(46,34,12,.42),rgba(26,18,8,.4)); }   /* active but one step quieter than the primary */
-.mode.active .mode-title{ color:var(--gold); }
-.mode.primary{ border-color:var(--gold); background:linear-gradient(rgba(94,68,20,.62),rgba(46,32,10,.55)); box-shadow:0 2px 16px rgba(232,201,90,.16); }   /* Story = primary gold */
-.mode.primary .mode-title{ color:var(--hi); font-size:15px; }
-.mode.primary .mode-chev{ color:var(--hi); }
-.mode.nudge{ animation:modeNudge 2.4s ease-in-out infinite; }   /* first-launch pulse — once ever, on a truly fresh profile */
-@keyframes modeNudge{ 0%,100%{ box-shadow:0 2px 16px rgba(232,201,90,.16); } 50%{ box-shadow:0 2px 16px rgba(232,201,90,.16), 0 0 0 2px var(--gold), 0 0 26px rgba(232,201,90,.5); } }
-.mode .mode-chev{ font-size:22px; color:var(--gold); line-height:1; }
-.mode.locked{ opacity:.55; cursor:default; }
-.mode.locked .mode-lock{ display:flex; align-items:center; color:var(--ink-dim); }
-.mode.locked:active{ transform:none; }
+
+/* — PROFILE PLAQUE + CHIP (DS §2; the landing is their reference implementation) — */
+.land-profile{ display:flex; gap:12px; align-items:center; width:min(330px,84vw); margin-top:0;
+  padding:10px 14px; border:1px solid rgba(232,200,116,.28); border-radius:10px;
+  background:linear-gradient(180deg,rgba(24,15,6,.78),rgba(8,5,2,.78)); backdrop-filter:blur(3px);
+  box-shadow:0 8px 24px rgba(0,0,0,.55); }
+.lp-avatar{ flex:0 0 auto; width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-family:Cinzel,serif; font-size:14px; font-weight:700; color:var(--gold-bright);
+  border:1px solid rgba(232,200,116,.5); background:radial-gradient(circle at 35% 30%,#4a3210,#1c1206); }
+.lp-info{ flex:1 1 auto; min-width:0; text-align:left; }
+.lp-namerow{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.lp-name, .lp-name-edit{ font-family:Cinzel,serif; font-size:13px; font-weight:700; letter-spacing:.14em;
+  color:#f0d998; text-transform:uppercase; cursor:pointer; }
+.lp-name::after{ content:'  ✎'; font-size:9px; color:var(--parchment); opacity:.6; }
+.lp-name-edit{ background:rgba(0,0,0,.5); border:1px solid var(--gold-dim-25); border-radius:6px; color:#f0d998;
+  padding:2px 6px; width:100%; max-width:200px; outline:none; cursor:text; text-transform:none; }
+.lp-rank{ font-family:Cinzel,serif; font-size:8.5px; letter-spacing:.22em; color:var(--gold-2);
+  border:1px solid var(--gold-dim-25); border-radius:5px; padding:2px 6px; text-transform:uppercase; white-space:nowrap; }
+.lp-level{ display:flex; align-items:center; gap:8px; margin-top:5px; }
+.lp-level span{ font-family:Cinzel,serif; font-size:9px; letter-spacing:.18em; color:var(--parchment); white-space:nowrap; }
+.lp-bar{ flex:1 1 auto; height:5px; border-radius:3px; background:rgba(0,0,0,.55); border:1px solid var(--gold-dim-25); overflow:hidden; }
+.lp-bar i{ display:block; height:100%; width:0; background:linear-gradient(90deg,#8a6a2c,var(--gold-hi));
+  box-shadow:0 0 8px rgba(232,200,116,.5); transition:width .4s ease; }
+.lp-stats{ font-size:8.5px; letter-spacing:.14em; color:rgba(216,201,163,.65); margin-top:4px; }
+.lp-wallet{ display:flex; gap:12px; margin-top:5px; font-size:10px; letter-spacing:.1em; }
+.lp-cur b{ color:#f0d998; }
+.lp-coin{ color:#d8b46a; } .lp-amsha{ color:var(--gold-hi); }
+.lp-quests{ position:relative; display:flex; align-items:center; gap:10px; width:min(330px,84vw); min-height:44px;
+  padding:9px 14px; border:1px solid rgba(232,200,116,.26); border-radius:9px; cursor:pointer;
+  background:linear-gradient(180deg,rgba(20,13,5,.74),rgba(7,4,2,.74)); color:var(--gold-2);
+  font-family:Cinzel,serif; text-transform:uppercase; transition:border-color .25s ease, color .25s ease; }
+.lp-quests:hover{ border-color:rgba(232,200,116,.55); color:var(--gold-bright); }
+.lpq-title{ font-size:11px; font-weight:700; letter-spacing:.26em; }
+.lpq-sub{ font-size:8.5px; letter-spacing:.18em; opacity:.6; }
+.lpq-badge{ margin-left:auto; min-width:20px; height:20px; border-radius:10px;
+  background:linear-gradient(180deg,var(--gold-hi),#a5813a); color:#1c1206; font-size:10px; font-weight:900;
+  display:flex; align-items:center; justify-content:center; padding:0 6px; }
+.lpq-badge.hidden{ display:none !important; }
+
+/* — the modes: plaque-lg. .mode keeps its class (the locked button binds by '#landing .mode.locked'). — */
+.mode.nudge{ animation:landNudge 2.4s ease-in-out infinite; }   /* first-launch pulse — once ever, fresh profile only */
+@keyframes landNudge{ 0%,100%{ filter:none; } 50%{ filter:drop-shadow(0 0 12px rgba(232,201,90,.65)); } }
+/* SADHANA — plaque-lg with a single-line ellipsized label + the block track. Ruling 5: the SHIPPED inner structure
+   (.lp-sad-head wrapping span.lp-sad-title + .lp-sad-note, .lp-sad-track wrapping i#lp-sad-bar) is KEPT and the CSS
+   adapts to it, so renderSadhana's writes land unchanged. */
+.mode.sadhana .face{ padding:9px 26px; }
+.mode.sadhana .lp-sad-head{ display:block; }
+.mode.sadhana .lp-sad-title{ display:block; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:12px; }
+.mode.sadhana .lp-sad-note{ display:block; font-family:Cinzel,serif; font-size:7.5px; letter-spacing:.3em; opacity:.55;
+  margin-top:1px; font-weight:500; text-transform:uppercase; }
+.mode.sadhana .lp-sad-track{ display:block; width:64%; height:4px; margin:4px auto 0; border-radius:3px;
+  background:rgba(0,0,0,.55); border:1px solid var(--gold-dim-25); overflow:hidden; }
+.mode.sadhana .lp-sad-track i{ display:block; height:100%; width:0; background:linear-gradient(90deg,#8a6a2c,var(--gold-hi)); transition:width .4s ease; }
+
+.land-foot{ position:fixed; bottom:11px; left:0; right:0; display:flex; justify-content:center; align-items:center;
+  z-index:20; font-family:Cinzel,serif; font-size:9.5px; letter-spacing:.24em; color:rgba(216,201,163,.55);
+  text-transform:uppercase; pointer-events:none; opacity:0; animation:landIn 1.5s ease .9s forwards; }
+@media (max-width:640px){ .plaque-lg .face{ padding:11px 26px; font-size:12px; } }
 
 /* ===== Faction Introduction ===== */
 #factionintro{ display:block; overflow-y:auto; padding:0; }
@@ -776,7 +932,11 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   .ember{ display:none; }
   #divider::after, .hc.focus.rar-L::after, .inspect-card.rar-L::after, .hc.focus.rar-M, .inspect-card.rar-M,
   .bc.landing, .floater, .bc.targetable, #banner .txt{ animation:none !important; }
-  #landingbg{ animation:none !important; transform:none; }   /* SLOW DRIFT static fallback (scale 1.0, cover-fit still fills) */
+  /* T34 landing: the ember canvas is killed outright (DS §2) and every ambient loop stilled; the plate stays
+     cover-fit (the JS holds Ken Burns at its rest scale and skips parallax), the roller stops curling. */
+  #landfx{ display:none !important; }
+  .ls-beam, .ls-haze, .ls-grain, .land-lockup, .mode.nudge{ animation:none !important; }
+  #landmast, .land-col, .land-foot{ animation:none !important; opacity:1 !important; }
 }
 /* ===== TASK 31 — .metascreen (RULING 1: a DEDICATED class; .overlay itself is NOT modified) =====
    .overlay is `display:flex; align-items:center; justify-content:center; padding:20px` — a flex ROW that centers ONE
@@ -1018,14 +1178,21 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 </div></div>
 
 <div class="overlay hidden" id="landing">
-  <div id="landingbg"></div>
+  <div id="landstage">
+    <img id="landplate" alt="">
+    <div class="ls-layer ls-beam"></div>
+    <div class="ls-layer ls-haze"></div>
+    <div class="ls-layer ls-dim"></div>
+    <canvas id="landfx"></canvas>
+    <div class="ls-layer ls-grain"></div>
+    <div class="ls-layer ls-vig"></div>
+  </div>
+  <div id="landmast">
+    <div class="land-deva">दिव्य युद्ध</div>
+    <img class="land-lockup" src="assets/img/logo_lockup.png" alt="Divya Yuddha — Battle of the Celestials">
+  </div>
   <button id="landgear" title="settings">⚙</button>
   <div class="land-col">
-    <div class="land-title">
-      <div class="land-deva">दिव्य युद्ध</div>
-      <h1 class="land-name">DIVYA YUDDHA</h1>
-      <div class="land-sub">BATTLE OF THE CELESTIALS</div>
-    </div>
     <div class="land-profile">
       <div class="lp-avatar" id="lpavatar">WA</div>
       <div class="lp-info">
@@ -1038,42 +1205,27 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
         </div>
       </div>
     </div>
-    <button class="lp-sadhana" id="lp-sadhana">
-      <div class="lp-sad-head"><span class="lp-sad-title" id="lp-sad-label">Sadhana — pin a card to chase</span><span class="lp-sad-note" id="lp-sad-note">Tap to choose</span></div>
-      <div class="lp-sad-track"><i id="lp-sad-bar"></i></div>
-    </button>
     <button class="lp-quests" id="lp-quests">
       <span class="lpq-title">Quests</span>
       <span class="lpq-sub" id="lpq-sub">Daily &amp; weekly</span>
       <span class="lpq-badge hidden" id="lpq-badge">0</span>
     </button>
     <div class="land-modes">
-      <button class="mode active primary" id="mode-story">
-        <div class="mode-main"><div class="mode-title">Story Mode — Divya Yatra</div><div class="mode-cap" id="cap-story">Begin here — learn as you play</div></div>
-        <span class="mode-chev">›</span>
-      </button>
-      <button class="mode active" id="mode-pvai">
-        <div class="mode-main"><div class="mode-title">Player vs AI</div><div class="mode-cap">The full battle, no guidance</div></div>
-        <span class="mode-chev">›</span>
-      </button>
-      <button class="mode active" id="mode-collection">
-        <div class="mode-main"><div class="mode-title">Collection</div><div class="mode-cap" id="cap-collection">Your cards — and the ones still sealed</div></div>
-        <span class="mode-chev">›</span>
-      </button>
-      <button class="mode active" id="mode-vault">
-        <div class="mode-main"><div class="mode-title">Ratna Vault</div><div class="mode-cap">The season's rarest — a showcase</div></div>
-        <span class="mode-chev">›</span>
-      </button>
-      <button class="mode active" id="mode-factions">
-        <div class="mode-main"><div class="mode-title">Faction Introduction</div><div class="mode-cap">Meet the armies and the realms</div></div>
-        <span class="mode-chev">›</span>
-      </button>
-      <button class="mode locked" data-soon>
-        <div class="mode-main"><div class="mode-title">Multiplayer</div><div class="mode-cap">Coming soon</div></div>
-        <span class="mode-lock"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
+      <button class="mode plaque-lg active primary" id="mode-story"><div class="frame"><div class="face">Story Mode — Divya Yatra<small class="cap" id="cap-story">Begin here — learn as you play</small></div></div></button>
+      <button class="mode plaque-lg active" id="mode-pvai"><div class="frame"><div class="face">Player vs AI<small class="cap">The full battle, no guidance</small></div></div></button>
+      <button class="mode plaque-lg active" id="mode-collection"><div class="frame"><div class="face">Collection<small class="cap" id="cap-collection">Your cards — and the ones still sealed</small></div></div></button>
+      <button class="mode plaque-lg active sadhana" id="lp-sadhana"><div class="frame"><div class="face">
+        <div class="lp-sad-head"><span class="lp-sad-title" id="lp-sad-label">Sadhana — pin a card to chase</span><span class="lp-sad-note" id="lp-sad-note">Tap to choose</span></div>
+        <div class="lp-sad-track"><i id="lp-sad-bar"></i></div>
+      </div></div></button>
+      <button class="mode plaque-lg active" id="mode-vault"><div class="frame"><div class="face">Ratna Vault<small class="cap">The season's rarest — a showcase</small></div></div></button>
+      <button class="mode plaque-lg active" id="mode-factions"><div class="frame"><div class="face">Factions &amp; Realms<small class="cap">Meet the armies and the realms</small></div></div></button>
+      <button class="mode plaque-lg locked" data-soon><div class="frame"><div class="face">Multiplayer<small class="cap">Coming soon</small></div></div>
+        <span class="lockic"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span>
       </button>
     </div>
   </div>
+  <footer class="land-foot">v0.1 · Season I</footer>
 </div>
 
 <div class="overlay hidden" id="quests">
@@ -4224,17 +4376,103 @@ function showLanding(){
   updateQuestBadge();        // slice 2: claimable-count badge on the Quests button
   maybeNudgeStory();         // first-launch pulse (once ever, fresh profile only)
   $('landing').classList.remove('hidden');
-  applyLandingBg();           // lazy-load the Mount Meru BG (page color is the instant first-paint fallback; fades in when decoded)
+  landStageStart();           // T34: plate + ember + roller (was applyLandingBg — the Mount Meru BG is retired)
   Audio2.playTrack('menu');   // menu music covers landing + faction-select (gesture-driven: first tap starts it)
 }
-let landingBgLoaded=false;   // per-session cache: decode once, then instant on re-entry (boardImgLoaded precedent)
-function applyLandingBg(){
-  const el=$('landingbg'); if(!el) return;
-  if(landingBgLoaded){ el.style.opacity=1; return; }   // already decoded → no refetch, no re-fade
-  const url='assets/img/landing_bg.jpg', img=new Image();
-  img.onload=()=>{ landingBgLoaded=true; el.style.backgroundImage=`url('${url}')`; el.style.opacity=1; };   // async decode → fade in (does NOT block first paint)
-  img.src=url;
+
+/* ═══════════ TASK 34 — THE LANDING STAGE (plate · ember · roller) ═══════════
+   Ported from docs/reference/landing_reference_v11.html; assets are real files, not base64.
+   BATTERY LAW (DS §2): ONE rAF drives all three. It SELF-TERMINATES the moment #landing is hidden — every screen
+   change already routes through classList.add('hidden'), so no caller needs to know about us; and it never starts
+   under prefers-reduced-motion. visibilitychange stops it when the tab is backgrounded (the Task-32 precedent). */
+const LAND_PLATE={ port:{src:'assets/img/landing_plate_port.jpg', w:1024, h:1536},
+                   wide:{src:'assets/img/landing_plate_wide.jpg', w:1536, h:1024} };
+function landCol(){ return document.querySelector('#landing .land-col'); }
+const LandFx={ raf:null, mode:null, mastB:180, px:0, py:0, tx:0, ty:0, parts:[], t0:0, ctx:null, density:1.0 };
+function landPickPlate(){                                   // orientation pick: portrait plate when clearly taller
+  const m=(innerHeight>innerWidth*1.05)?'port':'wide';
+  if(m===LandFx.mode) return;
+  LandFx.mode=m; const p=LAND_PLATE[m], el=$('landplate');
+  if(el) el.src=p.src;
 }
+function landFitMast(){                                     // the roller line: masthead bottom (+8), from the DOM
+  const mast=$('landmast'), col=landCol();
+  if(!mast||!col) return LandFx.mastB;
+  const mb=mast.getBoundingClientRect().bottom+8;
+  col.style.paddingTop=(mb+76)+'px';                        // REST clearance: 76px below the line → outside the roll zone
+  col.style.setProperty('--mt', mb+'px');                   // mask ramp starts at the line, opaque 56px later
+  LandFx.mastB=mb; return mb;
+}
+function landRoller(){                                      // curl within 64px of the line; rest state is untransformed
+  const col=landCol(); if(!col) return;
+  const kids=col.querySelectorAll('.land-profile,.lp-quests,.mode');
+  for(let i=0;i<kids.length;i++){
+    const r=kids[i].getBoundingClientRect();
+    const t=Math.min(Math.max((r.top-LandFx.mastB)/64,0),1);   // 0 = at the roller line, 1 = clear of it
+    kids[i].style.transform = (t>=1) ? '' : `rotateX(${(1-t)*58}deg) scale(${0.86+0.14*t})`;
+  }
+}
+function landSpawnEmber(){                                  // ambient fire follicles: pop in, drift up, flicker out
+  const big=Math.random()<0.08;
+  LandFx.parts.push({ x:Math.random()*innerWidth, y:innerHeight*(0.12+Math.random()*0.86),
+    vy:-(0.12+Math.random()*0.35), vx:(Math.random()-.5)*0.12, r:(big?1.8:0.8)+Math.random()*1.1,
+    life:0, in_:0.008+Math.random()*0.012, dec:0.0022+Math.random()*0.0035,
+    state:0, ph:Math.random()*6.28, tw:0.5+Math.random()*0.5, hue:big?1:Math.random() });
+}
+function landResizeFx(){ const c=$('landfx'); if(c){ c.width=innerWidth; c.height=innerHeight; } }
+function landStageStop(){ if(LandFx.raf!==null){ cancelAnimationFrame(LandFx.raf); LandFx.raf=null; } }
+function landStageStart(){
+  landPickPlate();
+  const col=landCol(); if(col) col.style.opacity='';
+  landFitMast();
+  const mimg=$('landmast') && $('landmast').querySelector('.land-lockup');
+  if(mimg && !mimg.complete) mimg.addEventListener('load', landFitMast, {once:true});   // the lockup sets the line
+  landResizeFx();
+  landPlateFit();                                           // cover-fit immediately, before the first frame
+  landRoller();
+  if(reducedMotion()) return;                               // DS §2: reduced motion kills the ember + the loop
+  const c=$('landfx'); if(c && !LandFx.ctx) LandFx.ctx=c.getContext('2d');
+  if(LandFx.raf===null){ LandFx.t0=performance.now(); LandFx.raf=requestAnimationFrame(landFrame); }
+}
+function landPlateFit(kb){                                  // cover-fit × Ken Burns; min scale ≥ cover ⇒ edges never show
+  const el=$('landplate'), p=LAND_PLATE[LandFx.mode]; if(!el||!p) return;
+  const k=kb||1.045, s=Math.max(innerWidth/p.w, innerHeight/p.h)*k;
+  el.style.width=(p.w*s)+'px'; el.style.height=(p.h*s)+'px';
+  el.style.transform=`translate(-50%,-50%) translate3d(${-LandFx.px*16}px,${-LandFx.py*10}px,0)`;
+}
+function landFrame(now){
+  if($('landing').classList.contains('hidden')){ LandFx.raf=null; return; }   // BATTERY LAW: self-terminate when hidden
+  const t=(now-LandFx.t0)/1000;
+  LandFx.px+=(LandFx.tx-LandFx.px)*.05; LandFx.py+=(LandFx.ty-LandFx.py)*.05;
+  landPlateFit(1.045+0.035*Math.sin(t*2*Math.PI/46));       // 46s breathe
+  const cx=LandFx.ctx, c=$('landfx');
+  if(cx){
+    cx.clearRect(0,0,c.width,c.height);
+    const target=Math.round(Math.min(innerWidth*innerHeight/34000, 42)*LandFx.density);
+    if(LandFx.parts.length<target && Math.random()<0.25) landSpawnEmber();
+    for(let i=LandFx.parts.length-1;i>=0;i--){ const p=LandFx.parts[i];
+      if(p.state===0){ p.life+=p.in_; if(p.life>=1){ p.life=1; p.state=1; } }
+      else { p.life-=p.dec; if(p.life<=0){ LandFx.parts.splice(i,1); continue; } }
+      p.x+=p.vx+Math.sin(t*1.6+p.ph)*0.22; p.y+=p.vy;
+      if(p.y<-6){ LandFx.parts.splice(i,1); continue; }
+      const a=p.life*0.7*(0.65+0.35*Math.sin(t*6*p.tw+p.ph)), g=(170+70*p.hue)|0;
+      cx.beginPath(); cx.arc(p.x,p.y,p.r*3.2,0,6.283); cx.fillStyle=`rgba(255,${(g*0.75)|0},50,${a*0.18})`; cx.fill();
+      cx.beginPath(); cx.arc(p.x,p.y,p.r,0,6.283); cx.fillStyle=`rgba(255,${g},80,${a})`; cx.fill();
+    }
+  }
+  landRoller();
+  LandFx.raf=requestAnimationFrame(landFrame);
+}
+/* The roller ALSO runs on its true trigger — the scroll event — not only from the rAF loop. The reference drives it
+   from rAF alone; that leaves the curl frozen at a stale angle whenever rAF is throttled (backgrounded tab, iOS
+   momentum, a starved frame budget — the Task-32/33 lesson) even though the column keeps scrolling. Belt-and-braces:
+   rAF keeps it smooth when it runs, this keeps it CORRECT when rAF doesn't. Idempotent — same input, same transform. */
+document.addEventListener('scroll', e=>{ if(e.target && e.target.classList && e.target.classList.contains('land-col')) landRoller(); }, {passive:true, capture:true});
+addEventListener('pointermove', e=>{ LandFx.tx=e.clientX/innerWidth-.5; LandFx.ty=e.clientY/innerHeight-.5; }, {passive:true});
+addEventListener('resize', ()=>{ if($('landing').classList.contains('hidden')) return;
+  landPickPlate(); landResizeFx(); landFitMast(); landPlateFit(); landRoller(); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden) landStageStop();
+  else if(!$('landing').classList.contains('hidden')) landStageStart(); });
 function maybeGlintRank(){   // slice 4: fire the rank-chip shimmer once after a promotion, then clear the persisted flag
   const M=loadMeta(); if(!M.rewards || !M.rewards.rankGlintPending) return;
   const chip=$('lprank'); if(chip){ chip.classList.remove('glint'); void chip.offsetWidth; chip.classList.add('glint'); setTimeout(()=>chip.classList.remove('glint'),1700); }
