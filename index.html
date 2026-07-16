@@ -572,13 +572,31 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
    footer. padding-top = masthead bottom + 76px, so the REST state sits clear of the roll zone. */
 .land-col{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center;
   padding:0 20px 84px; gap:9px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
-  perspective:900px; opacity:0; animation:landIn 1.5s ease .4s forwards; scrollbar-width:none;
+  opacity:0; animation:landIn 1.5s ease .4s forwards; scrollbar-width:none;
   -webkit-mask-image:linear-gradient(180deg,transparent 0,transparent var(--mt,180px),#000 calc(var(--mt,180px) + 56px),#000 calc(100% - 64px),transparent 100%);
           mask-image:linear-gradient(180deg,transparent 0,transparent var(--mt,180px),#000 calc(var(--mt,180px) + 56px),#000 calc(100% - 64px),transparent 100%); }
 .land-col::-webkit-scrollbar{ width:0; height:0; }
-.land-col>*{ flex-shrink:0; transform-origin:50% 0; will-change:transform; }   /* flex-shrink:0 — the Task-31 squeeze law */
+/* T34c — NO blanket will-change. Promoting every column child to its own permanent compositor layer (9 layers, one
+   of them holding a masked+blurred stacking context) tore on Android Chrome: faces intermittently lost their fill
+   mid-curl. An inline transform promotes transiently on its own for exactly as long as it is applied — which is all
+   the roller needs. flex-shrink:0 stays (the Task-31 squeeze law). */
+.land-col>*{ flex-shrink:0; transform-origin:50% 0; }
 .land-modes{ display:flex; flex-direction:column; align-items:center; gap:9px; }
-.land-modes>*{ flex-shrink:0; transform-origin:50% 0; will-change:transform; }
+.land-modes>*{ flex-shrink:0; transform-origin:50% 0; }
+/* T34c — CAPABILITY SPLIT. DESKTOP (fine pointer) keeps the 3D curl: perspective here, rotateX from the roller.
+   TOUCH gets NO perspective and no 3D — the roller writes scale only and the mask carries the dissolve. The JS
+   reads the SAME query, so CSS and JS cannot disagree about which mode is live. */
+@media (hover:hover) and (pointer:fine){ .land-col{ perspective:900px; } }
+/* TOUCH — strip backdrop-filter inside the masked scroller (a known mobile compositor trigger: a blurred backdrop
+   inside a mask-image scroll container forces a readback of the layer beneath on every scroll frame). Exactly
+   complementary to the desktop query above, so no viewport is both or neither. Desktop keeps both blurs, so the
+   T34 desktop visual is untouched. VISUAL PARITY ON TOUCH: .land-profile loses blur(3px) and .lp-quests loses
+   blur(6px); both keep their own translucent background fills (rgba .78 / .74 gradients), so the plaques stay
+   legible over the plate — the only loss is the frosting of the plate BEHIND them, which at .74–.78 opacity over a
+   brightness(.84) plate is a difference of a few percent, not a design change. */
+@media not all and (hover:hover) and (pointer:fine){
+  #landing .land-profile, #landing .lp-quests{ backdrop-filter:none; -webkit-backdrop-filter:none; }
+}
 
 #landgear{ position:fixed; top:14px; right:14px; z-index:30; width:44px; height:44px; border-radius:9px;
   border:1px solid rgba(232,200,116,.3); background:linear-gradient(180deg,rgba(30,20,8,.75),rgba(10,6,3,.75));
@@ -4388,7 +4406,7 @@ function showLanding(){
 const LAND_PLATE={ port:{src:'assets/img/landing_plate_port.jpg', w:1024, h:1536},
                    wide:{src:'assets/img/landing_plate_wide.jpg', w:1536, h:1024} };
 function landCol(){ return document.querySelector('#landing .land-col'); }
-const LandFx={ raf:null, mode:null, mastB:180, px:0, py:0, tx:0, ty:0, parts:[], t0:0, ctx:null, density:1.0 };
+const LandFx={ raf:null, mode:null, mastB:180, px:0, py:0, tx:0, ty:0, parts:[], t0:0, ctx:null, density:1.0, desktop:null };   // desktop: T34c capability-split mode, set by landRoller
 function landPickPlate(){                                   // orientation pick: portrait plate when clearly taller
   const m=(innerHeight>innerWidth*1.05)?'port':'wide';
   if(m===LandFx.mode) return;
@@ -4403,13 +4421,25 @@ function landFitMast(){                                     // the roller line: 
   col.style.setProperty('--mt', mb+'px');                   // mask ramp starts at the line, opaque 56px later
   LandFx.mastB=mb; return mb;
 }
-function landRoller(){                                      // curl within 64px of the line; rest state is untransformed
+/* T34c — the capability split. Reads the SAME media query the CSS perspective rule uses, so the two can never
+   disagree: 3D curl only where there is a fine pointer (and therefore a desktop compositor). Live-read, so a
+   tablet gaining a mouse switches mode on its next frame. */
+function landDesktopPointer(){ return !!(window.matchMedia && window.matchMedia('(hover:hover) and (pointer:fine)').matches); }
+function landRoller(){                    // curl within 64px of the line; rest state is untransformed
   const col=landCol(); if(!col) return;
   const kids=col.querySelectorAll('.land-profile,.lp-quests,.mode');
+  /* REDUCED MOTION: no transforms at all — the reference guards its roller the same way. (T34 hid the need for this
+     because the rAF loop was the only caller and never started; T34b's scroll listener made the guard load-bearing.)
+     Clear anything already written, in case the preference is toggled mid-session, then stay out. */
+  if(reducedMotion()){ for(let i=0;i<kids.length;i++) if(kids[i].style.transform) kids[i].style.transform=''; return; }
+  const fine=landDesktopPointer(); LandFx.desktop=fine;   // exposed so the mode is readable, not inferred
   for(let i=0;i<kids.length;i++){
     const r=kids[i].getBoundingClientRect();
     const t=Math.min(Math.max((r.top-LandFx.mastB)/64,0),1);   // 0 = at the roller line, 1 = clear of it
-    kids[i].style.transform = (t>=1) ? '' : `rotateX(${(1-t)*58}deg) scale(${0.86+0.14*t})`;
+    const sc=0.86+0.14*t;                                      // same zone math + idempotence in BOTH modes
+    kids[i].style.transform = (t>=1) ? ''
+      : (fine ? `rotateX(${(1-t)*58}deg) scale(${sc})`         // DESKTOP: 3D curl
+              : `scale(${sc})`);                               // TOUCH: 2D only — the mask carries the dissolve
   }
 }
 function landSpawnEmber(){                                  // ambient fire follicles: pop in, drift up, flicker out
