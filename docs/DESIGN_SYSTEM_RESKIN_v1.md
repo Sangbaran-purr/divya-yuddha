@@ -202,3 +202,60 @@ ALSO RULED IN T34 (recorded so the doc and the build agree):
   reads opts.wave1) and all four suites are engine-only (0 DOM refs),
   so flag-off byte-identical is carried by engine.js being untouched.
   No gating was implemented. The parity ceremony still runs as a gate.
+
+── A1 MIGRATION LEDGER — updated by T35 (2026-07-16) ──
+MIGRATED: #collection · #vault · #sadhanapick (+ the shared .metaback
+pill-back, which every screen consumes). These rules now read ONLY DS
+tokens: --ds-ink (ground) · --plaque-hi/--plaque-lo (faces) ·
+--gold-hi (labels/emphasis) · --gold-bright (hover/price) ·
+--gold-dim-25 (quiet borders) · --parchment (body text).
+VERIFIED: zero var(--ink|--ink-dim|--gold-dim|--panel) reads remain in
+the three screens' rules (scripted audit over each rule, card-chrome
+selectors excluded).
+
+REMAINING FILE-WIDE USE-COUNTS (was → now):
+  --ink        22 → 20     --ink-dim    53 → 47
+  --gold      105 → 91     --gold-2     21 → 20
+  --gold-dim   33 → 29     --panel       2 →  2
+  --hi         23 → 16     --line        6 →  6
+Owners of the remainder: T36 (Quests, Story select) · T37 (Faction
+intro/select, Mulligan, Settings) · and the MATCH BOARD + card chrome,
+which are out of the T34–T37 rollout entirely (§6) — .bc/.hc/HUD and
+the .cc/.cz/.ap card-chrome rules keep --panel/--line/--gold/--ink*
+until a separate ruling covers them. So --panel (2) and --line (6) will
+almost certainly OUTLIVE T37: both are match-board tokens.
+
+⚠ --gold-2 CANNOT BE RETIRED BY THE PER-SCREEN MIGRATION, and T35 hit
+this: A1 says the §1 --gold role (#c9a84c chrome/borders) "already
+exists as --gold-2", so a migrated screen that needs that role must
+read var(--gold-2) — the three migrated screens legitimately do (5
+reads: .col-tab:hover/.on, .sad-opt:hover/.on, .metaback:hover). The
+name can only be fixed at the END: once T36/T37 move the last of the
+91 var(--gold) reads onto --gold-hi, the name `--gold` is free, and a
+single closing edit renames --gold-2 → --gold (its value is already
+#C9A84C = the §1 value). Scheduled as the LAST step of T37, not before
+— renaming it earlier would leave two names for one role.
+
+ALSO RULED/REPORTED IN T35:
+- VIOLET REMOVED FROM THE VAULT (DS §1: violet is the maya GAMEPLAY
+  colour and is forbidden as chrome). Ratna panes/badges/set-panel were
+  rgba(210,150,230,…) on rgba(20,8,24,…); they now carry the gold
+  plaque bevel + plaque face. The card ART is the only colour in the
+  Vault. NOTE the .cc-vault "RATNA" badge on collection cards is CARD
+  CHROME (out of T35's bounds) and is still violet — the one surviving
+  violet in the meta layer; needs a ruling in the card-chrome lane.
+- FACTION TINT REMOVED FROM THE SADHANA ROWS (DS §1: faction colours
+  belong to cards/frames, not chrome). Rows were deva-gold/asura-red/
+  vanara-amber/naga-teal. This LOSES faction-at-a-glance in the picker;
+  the .fac-* classes are still emitted, so a ruled affordance (sigil or
+  a parchment faction word) can restore the signal without colour.
+- PLAQUE-SM is now APPLIED (defined in T34, deferred to T35 as planned):
+  faction tabs (.col-tab), sadhana rows (.sad-opt), and the .metaback
+  pill all carry the skin. The lightbox's #zoom-close is a .metaback and
+  therefore inherits it BY DESIGN (the DS names one pill for every
+  screen); no .cz/#cardzoom rule was touched.
+- EMBER MODULE generalized to (screenId, density): one implementation,
+  N instances. Landing keeps its own rAF (which also drives plate +
+  roller) and calls the same Ember.step at density 1.0 — behavior
+  unchanged; the three card screens run their own self-terminating
+  loops at 0.15.

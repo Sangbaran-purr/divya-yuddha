@@ -357,21 +357,37 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .lp-sad-note{ font-size:10px; letter-spacing:.3px; color:var(--ink-dim); white-space:nowrap; }
 .lp-sad-track{ height:5px; border-radius:3px; background:rgba(255,255,255,.13); overflow:hidden; }
 .lp-sad-track i{ display:block; height:100%; width:0; border-radius:3px; background:linear-gradient(90deg,var(--gold-2),var(--hi)); transition:width .4s ease; }
-#sadhanapick{ z-index:88; }
+#sadhanapick{ z-index:88; background:var(--ds-ink); }   /* T35 — DS §3: card screens ground on ink */
 /* TASK 31 RULING 2 — the Sadhana picker list grew 4 → 64 items (Task 30 swapped the placeholder pool for the real
    sealed-Gupta card list), but the panel had no scroll container: centred in a fixed overlay with overflow-y:visible,
    its 3523px height parked ~1361px offscreen ABOVE the viewport, unreachable. Cap it and let it scroll; #sadhanapick
    is now .metascreen (top-aligned, justify-content:flex-start) so content can never park offscreen again. */
-.sad-pick-panel{ position:relative; z-index:1; max-width:420px; width:100%; background:radial-gradient(circle at 50% 0%, #241a0a, #0e0904); border:1px solid var(--gold-dim); border-radius:16px; padding:22px 18px;
+/* T35: DS §3 ground (--ds-ink, near-black) + plaque face; the panel's SCROLL CONTRACT is byte-identical to Task 31
+   (max-height:min(80vh,720px) · overflow-y:auto · -webkit-overflow-scrolling:touch · margin:24px auto). */
+.sad-pick-panel{ position:relative; z-index:1; max-width:420px; width:100%;
+  background:linear-gradient(180deg,var(--plaque-hi),var(--plaque-lo)); border:1px solid var(--gold-dim-25); border-radius:16px; padding:22px 18px;
   max-height:min(80vh, 720px); overflow-y:auto; -webkit-overflow-scrolling:touch; margin:24px auto; }
-.sad-pick-head{ font-family:Cinzel,serif; font-size:16px; letter-spacing:2px; color:var(--gold); text-align:center; }
-.sad-pick-sub{ font-size:11px; color:var(--ink-dim); text-align:center; margin:8px 4px 16px; line-height:1.5; }
-.sad-opt{ display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; margin-bottom:9px; padding:12px 14px; border-radius:11px; background:rgba(0,0,0,.4); border:1px solid rgba(255,255,255,.16); cursor:pointer; text-align:left; }
+/* HEADER (DS §2) — same flourish as the other two screens. */
+.sad-pick-head{ display:flex; align-items:center; justify-content:center; gap:10px;
+  font-family:Cinzel,serif; font-size:14px; letter-spacing:.3em; color:var(--gold-hi); text-align:center; text-transform:uppercase; }
+.sad-pick-head::before, .sad-pick-head::after{ content:''; flex:1 1 auto; max-width:34px; height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold-dim-25),transparent); }
+.sad-pick-sub{ font-size:11px; color:var(--parchment); opacity:.85; text-align:center; margin:8px 4px 16px; line-height:1.5; }
+/* rows → PLAQUE-SM framing (min 44px, plaque face, gold-fill selected state). */
+.sad-opt{ display:flex; justify-content:space-between; align-items:center; gap:10px; width:100%; min-height:44px;
+  margin-bottom:9px; padding:12px 14px; border-radius:8px;
+  background:linear-gradient(180deg,rgba(43,28,10,.78),rgba(22,13,5,.78));
+  border:1px solid var(--gold-dim-25); color:var(--gold-hi); cursor:pointer; text-align:left;
+  transition:border-color .25s ease, color .25s ease; }
+.sad-opt:hover{ border-color:var(--gold-2); }
 .sad-opt:active{ transform:scale(.99); }
-.sad-opt.on{ border-color:var(--gold); background:rgba(232,200,116,.12); }
-.sad-opt-label{ font-family:Cinzel,serif; font-size:13px; color:#f2ead6; letter-spacing:.4px; }
-.sad-opt.fac-deva .sad-opt-label{ color:var(--gold); } .sad-opt.fac-asura .sad-opt-label{ color:#e88; } .sad-opt.fac-vanara .sad-opt-label{ color:#e9b36a; } .sad-opt.fac-naga .sad-opt-label{ color:#5ec8b8; }
-.sad-opt-prog{ font-size:11px; color:var(--gold-2); white-space:nowrap; }
+.sad-opt.on{ border-color:var(--gold-2); background:linear-gradient(180deg,#4a3210,#241505); }
+/* ⚠ THE FACTION TINT IS GONE (DS §1: faction colours are forbidden as chrome — they belong to cards/frames only).
+   These rows were tinted deva-gold / asura-red / vanara-amber / naga-teal. Reported: this loses faction-at-a-glance
+   in the picker; the .fac-* classes are still emitted by openSadhanaPick, so a ruled affordance (sigil or a
+   parchment faction word) can restore the signal without re-introducing colour as chrome. */
+.sad-opt-label{ font-family:Cinzel,serif; font-size:13px; color:var(--gold-hi); letter-spacing:.4px; }
+.sad-opt-prog{ font-size:11px; color:var(--parchment); white-space:nowrap; }
 .sad-pick-close{ width:100%; margin-top:10px; }   /* TASK 32: layout only — the shared .metaback pill owns border/radius/fill/type */
 
 /* ===== M1 slice 4: earnings stamp + flourishes (result surfaces) ===== */
@@ -974,11 +990,16 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
    Speaks the faction-tab language (same border colour rgba(232,200,116,.25), same 8px radius, same Cinzel small-caps),
    but transparent-filled per spec. Replaces the bare `.backbtn` chevron — which had NO css rule at all, so it rendered
    as an unstyled UA button. 44x44 minimum hit target. */
-.metaback{ flex:0 0 auto; min-width:44px; min-height:44px; padding:6px 14px; border-radius:8px;
+/* PILL-BACK (DS §2) — the "‹ Back" pill in the plaque-sm skin. Same class, same handlers, all screens. T35 gave it
+   the plaque face fill; the lightbox's #zoom-close is a .metaback too, so it inherits the skin BY DESIGN (the DS
+   names one pill for every screen) — no .cz/#cardzoom rule is touched, only this shared class. */
+.metaback{ flex:0 0 auto; min-width:44px; min-height:44px; padding:0 14px; border-radius:8px;
   font-family:Cinzel,serif; font-size:12px; letter-spacing:.08em; font-variant:small-caps;
-  background:transparent; border:1px solid rgba(232,200,116,.25); color:var(--gold-2); cursor:pointer;
-  display:inline-flex; align-items:center; justify-content:center; gap:4px; }
-.metaback:hover{ border-color:var(--gold); color:var(--gold); }
+  background:linear-gradient(180deg,rgba(43,28,10,.78),rgba(22,13,5,.78));
+  border:1px solid var(--gold-dim-25); color:var(--gold-hi); cursor:pointer;
+  display:inline-flex; align-items:center; justify-content:center; gap:4px;
+  transition:border-color .25s ease, color .25s ease; }
+.metaback:hover{ border-color:var(--gold-2); color:var(--gold-bright); }
 /* ===== TASK 32 — ZOOM LIGHTBOX (shared by Collection + Vault) =====
    Above the metascreens (z-86) and the FI inspect (z-96). Tap anywhere dismisses; no pinch/pan. */
 #cardzoom{ position:fixed; inset:0; z-index:97; background:rgba(0,0,0,.85);
@@ -1001,18 +1022,41 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   border-radius:8px; top:10px; right:10px; display:inline-flex; align-items:center; justify-content:center; }
 .cz.cz-flight *{ pointer-events:none; }   /* PIN/BUY are inert mid-flight — the reverse maths needs a settled rect */
 /* ===== TASK 30 — COLLECTION + REVEAL CEREMONY + RATNA VAULT ===== */
+/* ═══ T35 — CARD SCREENS. DS §3 BACKGROUND LAW: these screens ground on --ds-ink, near-black. NO plate, NO grain
+   over a card grid — a painted rotunda behind 44 thumbnails murders them. At most a whisper of vignette + ember
+   0.15. The CHROME carries the identity here; the cards are the stars. ═══ */
 #collection, #vault{ z-index:86; overflow-y:auto; }
-#collection, #vault{ background:#0a0704; }
-.col-head{ display:flex; align-items:center; gap:10px; padding:14px 12px 8px; position:sticky; top:0; background:linear-gradient(#0a0704 70%,transparent); z-index:2; }
-.col-title{ font-family:Cinzel,serif; color:var(--gold); letter-spacing:.14em; font-size:15px; }
-.col-wallet{ margin-left:auto; font-size:13px; color:var(--hi); }
-.col-tabs{ display:flex; gap:6px; padding:0 12px 10px; overflow-x:auto; }
-.col-tab{ flex:0 0 auto; padding:6px 12px; border-radius:8px; font-size:12px; letter-spacing:.08em;
-  background:rgba(0,0,0,.45); border:1px solid rgba(232,200,116,.25); color:var(--gold-2); cursor:pointer; }
-.col-tab.on{ border-color:var(--gold); color:var(--gold); background:rgba(232,200,116,.12); }
+#collection, #vault{ background:var(--ds-ink); }
+/* The ember canvas sits at z-index:-1 INSIDE each screen's stacking context (the screens are position:fixed with a
+   z-index, so they establish one). Negative-z children paint above the element's own background but BELOW in-flow
+   content — so the fire reads behind the cards without any positioning change to the content, and .col-head keeps
+   its sticky (an `#id > *{position}` rule would have out-specified and broken it). */
+#collection > .ember-fx, #vault > .ember-fx, #sadhanapick > .ember-fx{
+  position:fixed; inset:0; width:100%; max-width:none; height:100%; margin:0; z-index:-1; pointer-events:none; }
+#collection::after, #vault::after, #sadhanapick::after{ content:''; position:fixed; inset:0; z-index:-1;
+  pointer-events:none; background:radial-gradient(125% 100% at 50% 42%, transparent 62%, rgba(0,0,0,.55) 100%); }
+.col-head{ display:flex; align-items:center; gap:10px; padding:14px 12px 8px; position:sticky; top:0; background:linear-gradient(var(--ds-ink) 70%,transparent); z-index:2; }
+/* HEADER (DS §2) — Cinzel .3em, flanked by the diamond-line flourish from the logo's tagline rule. */
+.col-title{ flex:1 1 auto; display:flex; align-items:center; justify-content:center; gap:10px;
+  font-family:Cinzel,serif; color:var(--gold-hi); letter-spacing:.3em; font-size:14px; text-transform:uppercase;
+  white-space:nowrap; min-width:0; }
+.col-title::before, .col-title::after{ content:''; flex:1 1 auto; max-width:42px; height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold-dim-25),transparent); }
+.col-wallet{ flex:0 0 auto; font-size:13px; color:var(--gold-hi); font-family:Cinzel,serif; }
+.col-tabs{ display:flex; gap:6px; padding:0 12px 10px; overflow-x:auto; scrollbar-width:none; }
+.col-tabs::-webkit-scrollbar{ display:none; }
+/* faction tabs → PLAQUE-SM skin (DS §2), min 44px hit target (Task 31 law), selected state in gold fill. */
+.col-tab{ flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
+  min-height:44px; min-width:44px; padding:0 13px; border-radius:8px;
+  font-family:Cinzel,serif; font-size:12px; letter-spacing:.08em; font-variant:small-caps;
+  background:linear-gradient(180deg,rgba(43,28,10,.78),rgba(22,13,5,.78));
+  border:1px solid var(--gold-dim-25); color:var(--gold-hi); cursor:pointer; white-space:nowrap;
+  transition:border-color .25s ease, color .25s ease; }
+.col-tab:hover{ border-color:var(--gold-2); color:var(--gold-bright); }
+.col-tab.on{ border-color:var(--gold-2); color:var(--gold-bright); background:linear-gradient(180deg,#4a3210,#241505); }
 .col-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:0 12px 24px; }
 @media(max-width:479px){ .col-grid{ grid-template-columns:repeat(3,1fr); } }
-.col-note{ padding:0 12px 10px; font-size:11px; color:var(--gold-2); opacity:.8; }
+.col-note{ padding:0 12px 10px; font-size:11px; color:var(--parchment); opacity:.8; }
 /* the flip cell — 3D, two faces. CARD BACKS RENDER UPRIGHT ALWAYS: no rotate/mirror on .cc-back in any state. */
 .cc{ position:relative; aspect-ratio:5/7; perspective:900px; cursor:pointer; }
 .cc-in{ position:absolute; inset:0; transform-style:preserve-3d; transition:transform .5s cubic-bezier(.2,.7,.3,1); }
@@ -1057,24 +1101,30 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .cc.ceremony{ animation:ccFlourish 1.5s ease-out; z-index:3; }
 .cc.ceremony .cc-in{ transition:transform .8s cubic-bezier(.2,.9,.3,1); transform:none; }
 /* Ratna Vault */
-.vault-hero{ padding:4px 12px 12px; font-size:12px; color:var(--gold-2); line-height:1.5; }
-.vault-season{ color:var(--hi); font-family:Cinzel,serif; letter-spacing:.06em; font-size:11px; }
+/* VAULT — plaque language. ⚠ THE VIOLET IS GONE: DS §1 forbids violet on UI chrome (it is the maya GAMEPLAY colour,
+   and faction/rarity colours belong to card frames, not chrome). The Ratna panes/badges/set-panel were violet
+   (rgba(210,150,230,…) on rgba(20,8,24,…)); they now carry the gold plaque bevel over the plaque face, so the Vault
+   reads as the same temple as every other screen and the CARD ART supplies the only colour. */
+.vault-hero{ padding:4px 12px 12px; font-size:12px; color:var(--parchment); line-height:1.5; }
+.vault-season{ color:var(--gold-hi); font-family:Cinzel,serif; letter-spacing:.06em; font-size:11px; }
 .vault-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; padding:0 12px 24px; }
-.vault-pane{ border:1px solid rgba(210,150,230,.35); border-radius:9px; overflow:hidden; background:rgba(20,8,24,.5); }
-.vault-art{ aspect-ratio:5/7; background:#0a0704; }
+.vault-pane{ border:1px solid var(--gold-dim-25); border-radius:9px; overflow:hidden;
+  background:linear-gradient(180deg,var(--plaque-hi),var(--plaque-lo)); box-shadow:0 6px 18px rgba(0,0,0,.5); }
+.vault-art{ aspect-ratio:5/7; background:var(--ds-ink); }
 .vault-art img{ width:100%; height:100%; object-fit:cover; display:block; }
-.vault-art .ph{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--gold-2); text-align:center; padding:6px; }
+.vault-art .ph{ width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--parchment); text-align:center; padding:6px; }
 .vault-meta{ padding:6px 7px 8px; }
-.vault-name{ font-family:Cinzel,serif; font-size:11px; color:var(--gold); }
+.vault-name{ font-family:Cinzel,serif; font-size:11px; color:var(--gold-hi); letter-spacing:.06em; }
 .vault-badge{ display:inline-block; margin-top:4px; font-size:8px; padding:2px 5px; border-radius:5px;
-  background:rgba(210,150,230,.14); border:1px solid rgba(210,150,230,.5); color:#e8c8f4; }
-.vault-crest{ margin-top:4px; font-size:8px; color:var(--gold-2); opacity:.7; }
-.vault-price{ margin-top:5px; font-size:12px; color:var(--hi); font-weight:600; }
+  background:rgba(232,200,116,.12); border:1px solid var(--gold-dim-25); color:var(--gold-hi); }
+.vault-crest{ margin-top:4px; font-size:8px; color:var(--parchment); opacity:.7; }
+.vault-price{ margin-top:5px; font-size:12px; color:var(--gold-bright); font-weight:600; font-family:Cinzel,serif; }
 .vault-buy{ width:100%; margin-top:5px; padding:5px; font-size:10px; border-radius:6px; font-family:Cinzel,serif;
-  background:rgba(60,60,60,.4); border:1px solid rgba(255,255,255,.14); color:#8a8a8a; cursor:not-allowed; }
-.vault-gate{ padding:0 12px 24px; font-size:11px; line-height:1.5; color:var(--gold-2); opacity:.88; text-align:center; }   /* TASK 31: 10px/.75 measured too dim at 390px — nudged for legibility */
-.vault-set{ margin:0 12px 14px; padding:9px; border:1px solid rgba(210,150,230,.4); border-radius:9px;
-  background:rgba(30,10,34,.5); text-align:center; }
+  letter-spacing:.06em; background:rgba(0,0,0,.5); border:1px solid rgba(216,201,163,.16);
+  color:rgba(216,201,163,.5); cursor:not-allowed; }   /* STAYS DISABLED — the M4 gate; copy verbatim, style only */
+.vault-gate{ padding:0 12px 24px; font-size:11px; line-height:1.5; color:var(--parchment); opacity:.88; text-align:center; }   /* TASK 31: 10px/.75 measured too dim at 390px — nudged for legibility */
+.vault-set{ margin:0 12px 14px; padding:9px; border:1px solid var(--gold-dim-25); border-radius:9px;
+  background:linear-gradient(180deg,var(--plaque-hi),var(--plaque-lo)); text-align:center; }
 </style>
 </head>
 <body>
@@ -4335,6 +4385,7 @@ function openSadhanaPick(){
     box.appendChild(btn);
   });
   $('sadhanapick').classList.remove('hidden');
+  Ember.start('sadhanapick', EMBER_CARD_DENSITY);
 }
 let matchRecorded=false;   // one-shot guard: showGameOver can re-run on re-render — count each match once
 let conchPending=false;    // one-shot guard: fire sfx_conch once at round-1 start (armed in startGame, consumed by fireConch in pump)
@@ -4442,13 +4493,60 @@ function landRoller(){                    // curl within 64px of the line; rest 
               : `scale(${sc})`);                               // TOUCH: 2D only — the mask carries the dissolve
   }
 }
-function landSpawnEmber(){                                  // ambient fire follicles: pop in, drift up, flicker out
-  const big=Math.random()<0.08;
-  LandFx.parts.push({ x:Math.random()*innerWidth, y:innerHeight*(0.12+Math.random()*0.86),
-    vy:-(0.12+Math.random()*0.35), vx:(Math.random()-.5)*0.12, r:(big?1.8:0.8)+Math.random()*1.1,
-    life:0, in_:0.008+Math.random()*0.012, dec:0.0022+Math.random()*0.0035,
-    state:0, ph:Math.random()*6.28, tw:0.5+Math.random()*0.5, hue:big?1:Math.random() });
-}
+/* ═══════════ EMBER MODULE (DS §2) — ONE implementation, N instances ═══════════
+   density: landing 1.0 · card screens 0.15 · match screens 0 (never). T35 generalized the T34 landing ember to
+   (screenId, density); the LANDING still drives its own instance from landFrame (its rAF also runs the plate and
+   roller), so its behavior is unchanged — it calls the SAME Ember.step. Card screens get their own self-terminating
+   loop. BATTERY LAW: every loop checks its screen's .hidden on each frame and stops; none starts under
+   prefers-reduced-motion. */
+const Ember={
+  inst:{},                                    // screenId -> { cv, cx, parts, density, raf, t0 }
+  spawn(I){                                   // ambient fire follicles: pop in, drift up, flicker out
+    const big=Math.random()<0.08;
+    I.parts.push({ x:Math.random()*innerWidth, y:innerHeight*(0.12+Math.random()*0.86),
+      vy:-(0.12+Math.random()*0.35), vx:(Math.random()-.5)*0.12, r:(big?1.8:0.8)+Math.random()*1.1,
+      life:0, in_:0.008+Math.random()*0.012, dec:0.0022+Math.random()*0.0035,
+      state:0, ph:Math.random()*6.28, tw:0.5+Math.random()*0.5, hue:big?1:Math.random() });
+  },
+  step(I,t){                                  // one frame for one instance — the T34 ember block, verbatim
+    const cx=I.cx, c=I.cv; if(!cx) return;
+    cx.clearRect(0,0,c.width,c.height);
+    const target=Math.round(Math.min(innerWidth*innerHeight/34000, 42)*I.density);
+    if(I.parts.length<target && Math.random()<0.25) Ember.spawn(I);
+    for(let i=I.parts.length-1;i>=0;i--){ const p=I.parts[i];
+      if(p.state===0){ p.life+=p.in_; if(p.life>=1){ p.life=1; p.state=1; } }
+      else { p.life-=p.dec; if(p.life<=0){ I.parts.splice(i,1); continue; } }
+      p.x+=p.vx+Math.sin(t*1.6+p.ph)*0.22; p.y+=p.vy;
+      if(p.y<-6){ I.parts.splice(i,1); continue; }
+      const a=p.life*0.7*(0.65+0.35*Math.sin(t*6*p.tw+p.ph)), g=(170+70*p.hue)|0;
+      cx.beginPath(); cx.arc(p.x,p.y,p.r*3.2,0,6.283); cx.fillStyle=`rgba(255,${(g*0.75)|0},50,${a*0.18})`; cx.fill();
+      cx.beginPath(); cx.arc(p.x,p.y,p.r,0,6.283); cx.fillStyle=`rgba(255,${g},80,${a})`; cx.fill();
+    }
+  },
+  fit(I){ if(I&&I.cv){ I.cv.width=innerWidth; I.cv.height=innerHeight; } },
+  start(screenId, density){                   // idempotent: re-entering a screen reuses its instance
+    if(reducedMotion()) return null;          // DS §2: killed by prefers-reduced-motion
+    const host=$(screenId); if(!host) return null;
+    let I=Ember.inst[screenId];
+    if(!I){ const cv=document.createElement('canvas'); cv.className='ember-fx';
+      host.insertBefore(cv, host.firstChild);
+      I=Ember.inst[screenId]={ cv, cx:cv.getContext('2d'), parts:[], density, raf:null, t0:performance.now() }; }
+    I.density=density; Ember.fit(I);
+    if(I.raf===null){ I.t0=performance.now();
+      const loop=(now)=>{ if($(screenId).classList.contains('hidden')){ I.raf=null; return; }   // BATTERY LAW
+        Ember.step(I,(now-I.t0)/1000); I.raf=requestAnimationFrame(loop); };
+      I.raf=requestAnimationFrame(loop); }
+    return I;
+  },
+  stop(screenId){ const I=Ember.inst[screenId];
+    if(I&&I.raf!==null){ cancelAnimationFrame(I.raf); I.raf=null; } }
+};
+/* The canvases are viewport-sized, so a resize must refit every live instance or the bitmap stretches. (The landing
+   instance shares #landfx, which landResizeFx already refits — refitting it again here is idempotent.) */
+addEventListener('resize', ()=>{ for(const id in Ember.inst) Ember.fit(Ember.inst[id]); });
+document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ for(const id in Ember.inst) Ember.stop(id); }
+  else for(const id in Ember.inst) if(!$(id).classList.contains('hidden')) Ember.start(id, Ember.inst[id].density); });
+const EMBER_CARD_DENSITY=0.15;                // DS §2 — card screens; the chrome carries the identity, not the fire
 function landResizeFx(){ const c=$('landfx'); if(c){ c.width=innerWidth; c.height=innerHeight; } }
 function landStageStop(){ if(LandFx.raf!==null){ cancelAnimationFrame(LandFx.raf); LandFx.raf=null; } }
 function landStageStart(){
@@ -4462,6 +4560,9 @@ function landStageStart(){
   landRoller();
   if(reducedMotion()) return;                               // DS §2: reduced motion kills the ember + the loop
   const c=$('landfx'); if(c && !LandFx.ctx) LandFx.ctx=c.getContext('2d');
+  /* T35: the landing's ember is now an Ember instance over its EXISTING #landfx canvas, sharing LandFx.parts —
+     same state, same density 1.0, same code path as before; only the loop that drives it stays landing-owned. */
+  if(c && !LandFx.ember) LandFx.ember={ cv:c, cx:LandFx.ctx, parts:LandFx.parts, density:LandFx.density };
   if(LandFx.raf===null){ LandFx.t0=performance.now(); LandFx.raf=requestAnimationFrame(landFrame); }
 }
 function landPlateFit(kb){                                  // cover-fit × Ken Burns; min scale ≥ cover ⇒ edges never show
@@ -4475,21 +4576,7 @@ function landFrame(now){
   const t=(now-LandFx.t0)/1000;
   LandFx.px+=(LandFx.tx-LandFx.px)*.05; LandFx.py+=(LandFx.ty-LandFx.py)*.05;
   landPlateFit(1.045+0.035*Math.sin(t*2*Math.PI/46));       // 46s breathe
-  const cx=LandFx.ctx, c=$('landfx');
-  if(cx){
-    cx.clearRect(0,0,c.width,c.height);
-    const target=Math.round(Math.min(innerWidth*innerHeight/34000, 42)*LandFx.density);
-    if(LandFx.parts.length<target && Math.random()<0.25) landSpawnEmber();
-    for(let i=LandFx.parts.length-1;i>=0;i--){ const p=LandFx.parts[i];
-      if(p.state===0){ p.life+=p.in_; if(p.life>=1){ p.life=1; p.state=1; } }
-      else { p.life-=p.dec; if(p.life<=0){ LandFx.parts.splice(i,1); continue; } }
-      p.x+=p.vx+Math.sin(t*1.6+p.ph)*0.22; p.y+=p.vy;
-      if(p.y<-6){ LandFx.parts.splice(i,1); continue; }
-      const a=p.life*0.7*(0.65+0.35*Math.sin(t*6*p.tw+p.ph)), g=(170+70*p.hue)|0;
-      cx.beginPath(); cx.arc(p.x,p.y,p.r*3.2,0,6.283); cx.fillStyle=`rgba(255,${(g*0.75)|0},50,${a*0.18})`; cx.fill();
-      cx.beginPath(); cx.arc(p.x,p.y,p.r,0,6.283); cx.fillStyle=`rgba(255,${g},80,${a})`; cx.fill();
-    }
-  }
+  if(LandFx.ember) Ember.step(LandFx.ember, t);             // T35: the SAME module the card screens use, density 1.0
   landRoller();
   LandFx.raf=requestAnimationFrame(landFrame);
 }
@@ -4953,6 +5040,7 @@ const COL_HIDE=['hudwrap','gameover','factionselect','settings','mulligan','land
 function colHideAll(){ COL_HIDE.forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); }); }
 function showCollection(){
   colHideAll(); $('collection').classList.remove('hidden'); $('collection').scrollTop=0; Audio2.playTrack('menu'); renderCollection();
+  Ember.start('collection', EMBER_CARD_DENSITY);   // DS §2 — card screens run the fire at 0.15
 }
 function renderCollection(){
   const M=loadMeta();
@@ -5118,7 +5206,8 @@ $('zoom-close').onclick=(e)=>{ e.stopPropagation(); dismissZoom(); };
    Purchase is PRESENT but DISABLED behind the M4 gate. HARD LAW: no coins↔Amsha conversion anywhere; Ratna are not
    Amsha-purchasable by ANY path (buyCard rejects them) and are not Sadhana-pinnable this season. */
 let vaultFaction='devas';
-function showVault(){ colHideAll(); $('vault').classList.remove('hidden'); $('vault').scrollTop=0; Audio2.playTrack('menu'); renderVault(); }
+function showVault(){ colHideAll(); $('vault').classList.remove('hidden'); $('vault').scrollTop=0; Audio2.playTrack('menu'); renderVault();
+  Ember.start('vault', EMBER_CARD_DENSITY); }
 function renderVault(){
   $('vault-season').textContent=META_CONFIG.ratna.season;
   $('vault-gate').textContent=META_CONFIG.ratna.gate;
