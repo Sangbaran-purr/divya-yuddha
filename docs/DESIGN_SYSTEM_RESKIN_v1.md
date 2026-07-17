@@ -352,7 +352,61 @@ ALSO RULED/REPORTED IN T35:
     (top-right), COLLECTION roundel (bottom-left), TIP plaque
     (bottom-right, static). Visible-locked (data-soon + lock glyph +
     toast, the Multiplayer pattern): DECKS (lands M2), STORE (lands
-    M4), BEGINNER + DEATH MATCH difficulty tiers. OMITTED ENTIRELY:
+    M4). ⚠ REVERSED IN 36b — see A3(e-R) below: T36 ALSO locked the
+    BEGINNER + DEATH MATCH difficulty tiers; that was wrong.
+    OMITTED ENTIRELY:
     the mockup's JOURNAL roundel — nothing exists behind it, and
     inventing a control violates the DS. Locked controls NEVER block
     BEGIN, and locked difficulty tiers never move the selection.
+
+── A3(e-R) — DIFFICULTY TIERS: THE LOCK IS REVERSED (36b, 2026-07-17) ──
+T36 LOCKED SHIPPED FEATURES ON A MISTAKEN PREMISE; CORRECTED IN 36b.
+
+BEGINNER and DEATH MATCH were never unbuilt. They are shipped,
+measured features delivered by tasks D1/D2/D3 and recorded in
+CLAUDE.md: DIFF_META carries all three tiers' chip + caption +
+warn flag; renderDiffSelector drives the caption; selectedDifficulty
+persists to dy_meta.settings.difficulty; startGame passes
+p1Difficulty into newGame; and the engine's DIFFICULTY table
+(engine.js ~2190) gives each tier real behaviour —
+  beginner   randomPlayP:0.5 · autoMulligan:false · extraCard:0
+  advanced   randomPlayP:0   · the launch AI, zero deviation
+  deathmatch randomPlayP:0   · autoMulligan:true · extraCard:1 ·
+             extraDraw:1 · concession:true · + the scoring overlay
+T36 shipped `data-soon` locks + "Coming soon" toasts on two of the
+three, regressing live functionality to a "lands with M2 / lands
+with the boss-modifier config" premise that was simply false.
+
+36b removes the locks from the markup, the JS guard, and the CSS
+(grep-zero on the difficulty data-soon path). All three tiers are
+selectable with the T36 selected-state styling, and the caption
+under the row is renderDiffSelector's full shipped behaviour,
+Rewards multiplier included (×0.8 / ×1.0 / ×1.5) with the
+deathmatch .warn treatment.
+
+LESSON FOR FUTURE TASKS: T36's STEP 0 had the evidence in hand —
+it enumerated the live diffopts handler and all three DIFF_META
+tiers — and the task text's premise contradicted it. A task premise
+that contradicts a STEP 0 finding is a STOP-AND-REPORT, exactly like
+a ruling clause that contradicts an engine fact.
+
+── 36b ALSO FIXED (same task) ──
+- #mullconfirm INVISIBLE: T36 repurposed the SHARED .fsel-start
+  class (a text-button style) into an image-button style for BEGIN
+  BATTLE (background:none; border:0; padding:0). That silently
+  stripped THREE consumers, not one — #mullconfirm (KEEP HAND), the
+  settings DONE button, and #fselstart itself. 36b id-scopes the
+  image rule to #fselstart and returns .fsel-start to a shared DS
+  plaque TEXT button (gold bevel frame, ::before dark face at
+  z-index:-1 inside an isolated stacking context so the face sits
+  above the bevel but below the label, Cinzel tracked caps, >=44px).
+  Mulligan's one sanctioned touch (§4 match-adjacent chrome).
+- TILE SIZING: one responsive pass, base = portrait, override =
+  desktop (the T34c capability-split pattern). Sizes are CSS custom
+  properties (--ft-h/--ft-crest/--ft-name/--ft-word) declared once
+  per grid per breakpoint — no duplicated magic numbers. Portrait:
+  your-faction 175x102 (crest 62), opponent FIVE-ACROSS 67.6x78.
+  Desktop >=1024: your-faction 181x176 (crest 112), opponent
+  5-across 124.8x124. Tile grounds gain ~.85 alpha so the plate
+  reads through (the A3(c) tile-ground law is unchanged — the ground
+  still carries the faction colour, it is merely translucent).

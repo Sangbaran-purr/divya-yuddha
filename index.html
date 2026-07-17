@@ -838,7 +838,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 
 /* the scrolling column — metascreen contract; padding clears the fixed head + the bottom furniture */
 .fsel-col{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center;
-  gap:10px; padding:62px 16px 76px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  gap:7px; padding:58px 16px 74px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
   scrollbar-width:none; }
 .fsel-col::-webkit-scrollbar{ width:0; height:0; }
 .fsel-col > *{ flex-shrink:0; width:100%; max-width:520px; }
@@ -850,34 +850,33 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   background:linear-gradient(90deg,transparent,var(--gold-dim-25),transparent); }
 
 /* TILE-GROUND LAW (A3): the GROUND carries faction colour, the CREST carries identity. */
-.fsel-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:9px; }
-.fsel-grid.opp{ grid-template-columns:repeat(3,1fr); }   /* 5 opponent tiles wrap 3+2 in portrait */
-/* the desktop override MUST come last: `.fsel-grid.opp` inside and outside a media query have EQUAL specificity, so
-   source order decides — with the base rule after the query, portrait's 3-col won at every width. */
-@media(min-width:720px){ .fsel-grid{ grid-template-columns:repeat(4,1fr); } .fsel-grid.opp{ grid-template-columns:repeat(5,1fr); } }
+.fsel-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+.fsel-grid.opp{ grid-template-columns:repeat(5,1fr); gap:5px; }   /* 36b: FIVE-ACROSS in portrait too */
+/* 36b — ONE responsive sizing pass. BASE = PORTRAIT (compact); the desktop override lives in the media query at
+   the end of this block (the T34c capability-split pattern). Every size is declared once, in one of the two places. */
 .ftile{ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
-  min-height:112px; padding:8px 6px 7px; border-radius:10px; cursor:pointer; overflow:hidden;
+  min-height:var(--ft-h); padding:6px 4px 5px; border-radius:10px; cursor:pointer; overflow:hidden;
   border:1px solid var(--gold-dim-25); box-shadow:0 6px 18px rgba(0,0,0,.5);
   transition:border-color .25s ease, box-shadow .25s ease, transform .12s ease; }
-.fsel-grid.opp .ftile{ min-height:90px; padding:6px 4px 5px; }
+.fsel-grid{ --ft-h:102px; --ft-crest:62px; --ft-name:11px; --ft-word:7px; }        /* PORTRAIT: your faction */
+.fsel-grid.opp{ --ft-h:78px; --ft-crest:34px; --ft-name:7px; --ft-word:5.5px; }    /* PORTRAIT: opponent, 5-across */
 .ftile:active{ transform:scale(.985); }
 .ftile-crest{ flex:1 1 auto; width:100%; display:flex; align-items:center; justify-content:center; min-height:0; }
-.ftile-crest img{ height:52px; width:auto; max-width:86%; object-fit:contain; display:block;
+.ftile-crest img{ height:var(--ft-crest); width:auto; max-width:90%; object-fit:contain; display:block;
   filter:drop-shadow(0 3px 10px rgba(0,0,0,.7)); transition:filter .25s ease, transform .25s ease; }
-.fsel-grid.opp .ftile-crest img{ height:40px; }
-.ftile-name{ font-family:Cinzel,serif; font-size:11px; letter-spacing:.16em; color:var(--gold-hi); text-transform:uppercase;
-  text-shadow:0 1px 4px #000; }
-.fsel-grid.opp .ftile-name{ font-size:9px; }
-.ftile-word{ font-family:Cinzel,serif; font-size:7px; letter-spacing:.24em; color:var(--parchment); opacity:.72;
-  text-transform:uppercase; margin-top:2px; }
-.fsel-grid.opp .ftile-word{ font-size:6.5px; }
+.ftile-name{ font-family:Cinzel,serif; font-size:var(--ft-name); letter-spacing:.14em; color:var(--gold-hi);
+  text-transform:uppercase; text-shadow:0 1px 4px #000; white-space:nowrap; }
+.ftile-word{ font-family:Cinzel,serif; font-size:var(--ft-word); letter-spacing:.2em; color:var(--parchment); opacity:.72;
+  text-transform:uppercase; margin-top:1px; white-space:nowrap; }
 /* the four faction grounds — dark gradients, colour in the GROUND only */
-.ftile[data-f="devas"]  { background:linear-gradient(180deg,#111d3a,#060a16); }
-.ftile[data-f="asuras"] { background:linear-gradient(180deg,#2a0d0d,#140505); }
-.ftile[data-f="vanaras"]{ background:linear-gradient(180deg,#0f2413,#050e07); }
-.ftile[data-f="nagas"]  { background:linear-gradient(180deg,#0a2422,#04100f); }
-.ftile[data-f="random"] { background:linear-gradient(180deg,var(--plaque-hi),var(--plaque-lo)); }
-.ftile-mark{ font-family:Cinzel,serif; font-size:26px; color:var(--gold-hi); opacity:.9; text-shadow:0 2px 10px rgba(0,0,0,.8); }
+/* 36b: ~.85 alpha — the ground still carries the faction colour (A3(c) tile-ground law) but the plate reads through. */
+.ftile[data-f="devas"]  { background:linear-gradient(180deg,rgba(17,29,58,.85),rgba(6,10,22,.85)); }
+.ftile[data-f="asuras"] { background:linear-gradient(180deg,rgba(42,13,13,.85),rgba(20,5,5,.85)); }
+.ftile[data-f="vanaras"]{ background:linear-gradient(180deg,rgba(15,36,19,.85),rgba(5,14,7,.85)); }
+.ftile[data-f="nagas"]  { background:linear-gradient(180deg,rgba(10,36,34,.85),rgba(4,16,15,.85)); }
+.ftile[data-f="random"] { background:linear-gradient(180deg,rgba(43,28,10,.85),rgba(22,13,5,.85)); }
+.ftile-mark{ font-family:Cinzel,serif; font-size:calc(var(--ft-crest) * .46); color:var(--gold-hi); opacity:.9;
+  text-shadow:0 2px 10px rgba(0,0,0,.8); }
 /* SELECTED (mockup fidelity): gold border + outer glow + inner gradient lift */
 .ftile.sel{ border-color:var(--gold-2);
   box-shadow:0 0 0 1px rgba(232,200,116,.42), 0 0 20px rgba(232,200,116,.34), 0 6px 20px rgba(0,0,0,.55); }
@@ -891,9 +890,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .dbtn{ position:relative; flex-direction:column; gap:1px; padding:8px 4px; min-height:48px; }
 .dbtn b{ font-family:Cinzel,serif; font-size:10px; letter-spacing:.1em; }
 .dbtn em{ font-style:normal; font-family:Cinzel,serif; font-size:7px; letter-spacing:.14em; color:var(--parchment); opacity:.72; }
-.dbtn[data-soon]{ opacity:.5; cursor:default; }
-.dbtn[data-soon]:active{ transform:none; }
-.dlock{ position:absolute; top:4px; right:5px; color:var(--parchment); opacity:.8; display:flex; }
+/* 36b: the .dbtn[data-soon] / .dlock rules are GONE — all three tiers are shipped, live features. */
 .dbtn.sel{ border-color:var(--gold-2); color:var(--gold-bright); background:linear-gradient(180deg,#4a3210,#241505);
   box-shadow:0 0 14px rgba(232,200,116,.26); }
 .dbtn.sel b{ color:var(--gold-bright); }
@@ -902,16 +899,34 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   text-align:center; text-transform:uppercase; line-height:1.5; }
 .diff-disclose.warn{ color:var(--crimson); opacity:1; }   /* renderDiffSelector toggles .warn ON this node, not a child */
 
-/* BEGIN BATTLE — the game's ONE baked-text button (A3 recorded exception) */
-.fsel-start{ background:none; border:0; padding:0; margin:6px 0 0; cursor:pointer; width:100%;
+/* BEGIN BATTLE — the game's ONE baked-text button (A3 recorded exception).
+   ⚠ 36b: this rule is now ID-SCOPED. T36 repurposed the SHARED .fsel-start class (a text-button style) into this
+   image-button style — which silently stripped background/border/padding from its TWO other consumers,
+   #mullconfirm (KEEP HAND) and the settings DONE button, rendering both invisible. The image button owns its id;
+   .fsel-start goes back to being the shared TEXT button, below. */
+#fselstart{ background:none; border:0; padding:0; margin:6px 0 0; cursor:pointer; width:100%;
   display:flex; align-items:center; justify-content:center; }
-.fsel-start img{ width:min(272px,74%); height:auto; display:block;
+#fselstart img{ width:min(272px,74%); height:auto; display:block;
   filter:drop-shadow(0 6px 18px rgba(0,0,0,.65)); transition:filter .25s ease, transform .12s ease; }
-.fsel-start:hover img{ filter:brightness(1.1) drop-shadow(0 6px 18px rgba(0,0,0,.65)) drop-shadow(0 0 16px rgba(255,205,120,.4)); }
-.fsel-start:active img{ transform:scale(.97); }
-.fsel-start:disabled{ cursor:not-allowed; }
-.fsel-start:disabled img{ filter:grayscale(.85) brightness(.5); }
-.fsel-start:disabled:hover img{ filter:grayscale(.85) brightness(.5); }
+#fselstart:hover img{ filter:brightness(1.1) drop-shadow(0 6px 18px rgba(0,0,0,.65)) drop-shadow(0 0 16px rgba(255,205,120,.4)); }
+#fselstart:active img{ transform:scale(.97); }
+#fselstart:disabled{ cursor:not-allowed; }
+#fselstart:disabled img{ filter:grayscale(.85) brightness(.5); }
+#fselstart:disabled:hover img{ filter:grayscale(.85) brightness(.5); }
+/* .fsel-start — the shared DS plaque TEXT button (#mullconfirm KEEP HAND, settings DONE). Plaque-lg language at
+   button scale: a gold bevel frame (the element's background) with the dark plaque face painted by ::before.
+   The face is z-index:-1 inside an isolated stacking context, so it sits ABOVE the bevel but BELOW the label —
+   a positioned ::before at z-index:0 would paint over the text (inline content paints before positioned kids).
+   The hex clip is omitted deliberately: these sit inside modals where a clipped corner fights the panel radius. */
+.fsel-start{ position:relative; isolation:isolate; display:flex; align-items:center; justify-content:center;
+  width:100%; min-height:44px; margin-top:18px; padding:12px 16px; border:0; border-radius:10px; cursor:pointer;
+  background:linear-gradient(180deg,#e6c47a 0%,#a5813a 45%,#6e5526 100%); box-shadow:0 6px 18px rgba(0,0,0,.55);
+  font-family:Cinzel,serif; font-size:13px; font-weight:700; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--gold-hi); transition:filter .25s ease, color .25s ease; }
+.fsel-start::before{ content:''; position:absolute; inset:1.6px; z-index:-1; border-radius:8px;
+  background:linear-gradient(180deg,var(--plaque-hi) 0%,var(--plaque-lo) 52%,#221407 100%); }
+.fsel-start:hover{ filter:brightness(1.1) drop-shadow(0 0 12px rgba(255,205,120,.3)); color:var(--gold-bright); }
+.fsel-start:active{ transform:scale(.98); }
 
 /* TIP plaque */
 .fsel-tip{ position:fixed; bottom:12px; right:12px; z-index:21; display:flex; align-items:center; gap:7px;
@@ -920,6 +935,20 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .tip-lotus{ flex:0 0 auto; color:var(--gold-2); font-size:12px; }
 .tip-text{ font-size:8px; line-height:1.45; color:var(--parchment); opacity:.82; letter-spacing:.04em; }
 @media(max-width:479px){ .fsel-tip{ max-width:min(178px,50vw); } .tip-text{ font-size:7.2px; } }
+/* ═══ 36b — THE DESKTOP OVERRIDE (>=1024). The ONE place desktop sizes are declared; base above is portrait.
+   Your-faction tiles grow to the mockup's presence; the opponent row stays 5-across at a middle size. The
+   selected-state glow scales with the tile because it is a box-shadow on .ftile, not a fixed inset. ═══ */
+@media(min-width:1024px){
+  .fsel-col{ gap:11px; padding:66px 16px 84px; }
+  .fsel-grid{ grid-template-columns:repeat(4,1fr); gap:12px; max-width:760px;
+    --ft-h:176px; --ft-crest:112px; --ft-name:15px; --ft-word:9px; }
+  .fsel-grid.opp{ grid-template-columns:repeat(5,1fr); gap:9px; max-width:660px;
+    --ft-h:124px; --ft-crest:64px; --ft-name:10px; --ft-word:7px; }
+  .ftile{ padding:10px 8px 9px; }
+  .fsel-title{ font-size:19px; }
+  .fsel-sec{ font-size:11px; }
+  #fselstart img{ width:min(320px,80%); }
+}
 /* in-match difficulty chip (realm-chip pattern) */
 #diffchip{ font-family:Cinzel,serif; font-size:10px; letter-spacing:1px; background:linear-gradient(#241a3a,#140f22); border:1px solid #4a3a70; border-radius:20px; padding:5px 11px; white-space:nowrap; color:#cbb9e8; }
 #diffchip.hidden{ display:none; }
@@ -1553,13 +1582,13 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 
     <div class="fsel-sec">DIFFICULTY</div>
     <div class="fsel-diff" id="diffopts">
-      <button class="plaque-sm dbtn" data-d="beginner" data-soon><b>BEGINNER</b><em>Learn the war</em><span class="dlock"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
+      <button class="plaque-sm dbtn" data-d="beginner"><b>BEGINNER</b><em>Learn the war</em></button>
       <button class="plaque-sm dbtn sel" data-d="advanced"><b>ADVANCED</b><em>Fight it</em></button>
-      <button class="plaque-sm dbtn" data-d="deathmatch" data-soon><b>DEATH MATCH</b><em>No mercy</em><span class="dlock"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
+      <button class="plaque-sm dbtn" data-d="deathmatch"><b>DEATH MATCH</b><em>No mercy</em></button>
     </div>
     <div id="diffdisclose" class="diff-disclose"></div>
 
-    <button id="fselstart" class="fsel-start" aria-label="Begin Battle"><img src="assets/img/begin_battle_btn.png" alt="Begin Battle"></button>
+    <button id="fselstart" aria-label="Begin Battle"><img src="assets/img/begin_battle_btn.png" alt="Begin Battle"></button>
   </div>
 
   <div class="fsel-roundels fsel-bl">
@@ -4175,7 +4204,6 @@ function renderDiffSelector(){
 }
 $('diffopts').addEventListener('click', e=>{
   const b=e.target.closest('.dbtn'); if(!b || !DIFF_META[b.dataset.d]) return;
-  if(b.hasAttribute('data-soon')) return;   // T36: locked tiers toast (data-soon handler) and NEVER move the selection
   selectedDifficulty=b.dataset.d; renderDiffSelector();
   const M=loadMeta(); M.settings.difficulty=selectedDifficulty; saveMeta(M);   // persist last choice → preselected next match
 });
