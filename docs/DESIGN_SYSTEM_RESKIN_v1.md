@@ -493,3 +493,70 @@ a ruling clause that contradicts an engine fact.
     .png NAME — the make_thumbs.sh precedent, documented in CLAUDE.md
     ("browsers sniff content"). Alpha verified intact post-trim on all
     four RGBA assets (extrema 0/255, bands RGBA).
+
+═══════════════════════════════════════════════════════════
+## AMENDMENT A5 — MULLIGAN: THE DIVINE CHOICE (ruled 2026-07-17, T41)
+═══════════════════════════════════════════════════════════
+Supersedes the 36b KEEP HAND plaque. This screen sits INSIDE the match
+flow (z-index 96, above #hudwrap 95 — a full pre-round-1 TAKEOVER;
+cutscene/cardzoom are never active during the mulligan phase).
+
+(a) CANON STRINGS (ruled): eyebrow "DIVYA YUDDHA" · title "The Divine
+    Choice" · quote "The first weapon is not steel — it is choice." ·
+    confirm morphs "KEEP DESTINY" (0 marked) ↔ "REDRAW FATE (n)" (n>0).
+    All live Cinzel — the baked-text ban holds (BEGIN BATTLE remains the
+    sole exception). The story #mull-story Brihaspati line stays canon
+    where a chapter supplies mulliganLine (ch4: "Three of your ten may
+    return to the deck. A wise hand is chosen twice.").
+
+(b) ENGINE MULLIGAN FACTS (pulled in STEP 0, never assumed):
+    - CAP N = g.mulliganCount ?? 3. Pulled live, never hardcoded; the
+      grid renders G.players[0].hand.length (story hands are 5/8/9/10 —
+      the screen only shows at 10 today, but the code must not assume it).
+    - RETURN SEMANTICS = SHUFFLE-BACK-THEN-REDRAW, not discard. Marked
+      cards are pushed to the deck, the DECK IS SHUFFLED, then the same
+      count is drawn from the top — so a returned card CAN come back.
+      The confirm help states this exactly: "Marked cards are shuffled
+      back into your deck; you draw the same number." No replace/discard
+      language (ruled).
+    - Once per match, pre-Round-1 only.
+
+(c) ⚠ CORRECTED PREMISE — DEATH MATCH (the task text was the author's
+    error, caught by STEP 0). The task claimed "Death Match: 11-card
+    hand, mulligan SKIPPED, straight to match." WRONG for the human.
+    startGame passes only p1Difficulty, so ONLY the AI (p1) takes the
+    tier; startGame calls beginMulligan() UNCONDITIONALLY. The 11-card
+    hand and the autoMulligan belong to the AI; the HUMAN is always
+    advanced, 10 cards, and mulligans in ALL THREE tiers. The intact
+    "skip" is the AI's: d.autoMulligan runs mulligan() in newGame (sets
+    p1.mulliganed=true, no UI), and the driver's confirm-time
+    mulligan(G,1) NO-OPs (returns [], verified) → exactly one AI
+    mulligan per game. Ruling: build normally, human mulligans in all
+    tiers; the gate proves the AI autoMulligan skip is intact.
+
+(d) RULED DEVIATION 1 — ONE TRAY (mockup shows twin trays). A single
+    row of N lotus slots centered under the medallion; a slot fills per
+    mark. REVERSE IF: (1) N ever exceeds ~5 and one row crowds — split
+    into two rows; (2) the design wants marked-vs-kept to read as two
+    physical piles — restore twin trays (marked / keeping).
+
+(e) RULED DEVIATION 2 — ONE MORPHING CONFIRM (mockup shows twin
+    buttons). One DS plaque button: navy face "KEEP DESTINY" at 0,
+    gold face "REDRAW FATE (n)" at n>0 (CSS variants of the 36b
+    .fsel-start plaque via .mull-redraw). REVERSE IF: (1) users miss
+    that one button does both actions (no discoverability that marking
+    changes what confirm does) — split into a persistent "Keep" +
+    a "Redraw (n)" that only enables when n>0; (2) a twin-button layout
+    is wanted for symmetry with the twin trays if (d) is reversed.
+
+(f) CACHE STRATEGY (STEP 0b finding + adopted pattern). GitHub Pages
+    repo with NO _headers/netlify/vercel config, NO .github/workflows,
+    and ZERO existing ?v= busting — nothing controls asset caching, so
+    re-exported assets go stale on device (the recurring "did the new
+    frame land?" problem). ADOPTED: a ?v=N version-stamp on asset URLs,
+    bumped per asset-changing commit. Applied in T41 to the two mulligan
+    plates and the shared ring_progress ref on this screen (?v=1).
+    WIDER ADOPTION (recommended, not yet done): stamp all re-exportable
+    asset refs — card frames, board plates, the meta plates — so a frame
+    re-export (R84 Rakta, R85 Vayu, R87 heroes, the pending Asura wave)
+    busts cleanly. Smallest honest pattern; no server config needed.

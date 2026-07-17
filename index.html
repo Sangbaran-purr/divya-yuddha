@@ -476,8 +476,6 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .bc.story-target{ box-shadow:0 0 0 2px var(--crimson), 0 0 18px rgba(200,60,50,.8) !important; border-radius:6px; animation:storyGlow 1.4s ease-in-out infinite; }   /* SUGGESTED: the suggested Astra/target enemy Unit glows */
 .hc.story-shimmer{ box-shadow:0 0 0 1.5px var(--gold-dim), 0 0 16px rgba(232,201,90,.55); animation:artShimmer 2.2s ease-in-out infinite; }   /* FREE (ch6): one-time Artifact pointer — a quiet gold shimmer, not a suggestion */
 @keyframes artShimmer{ 0%,100%{ box-shadow:0 0 0 1.5px var(--gold-dim), 0 0 8px rgba(232,201,90,.35); } 50%{ box-shadow:0 0 0 1.5px var(--gold), 0 0 20px rgba(232,201,90,.7); } }
-.mull-story{ font-family:Cinzel,serif; font-size:13px; line-height:1.5; color:var(--gold); font-style:italic; margin:0 0 12px; text-shadow:0 1px 4px #000; }
-.mull-story.hidden{ display:none !important; }
 
 /* ===== landing page (first screen, before faction-select) ===== */
 #settings{ z-index:90; }   /* settings must sit above the landing overlay */
@@ -997,16 +995,89 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #banner .txt.realm{ color:#cbb9e8; border-color:#5a4a86; box-shadow:0 0 22px rgba(120,90,180,.55); }
 
 /* ===== mulligan overlay ===== */
-.modal.mull{ max-width:460px; text-align:center; }
-.mull-sub{ font-size:11px; color:var(--ink-dim); margin:6px 0 12px; }
-#mullcount{ color:var(--gold); font-weight:700; }
-#mullhand{ display:flex; flex-wrap:wrap; gap:7px; justify-content:center; margin-bottom:6px; }
-.mull-card{ width:82px; min-height:112px; border-radius:9px; border:1.5px solid #3a2e14; background:linear-gradient(#1c1710,#100c07); position:relative; cursor:pointer; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; transition:transform .1s, border-color .15s, opacity .15s; }
-.mull-card .mc-art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
-.mull-card .mc-nm{ position:relative; z-index:1; font-family:Cinzel,serif; font-size:9px; line-height:1.15; padding:3px 4px; background:linear-gradient(transparent,rgba(0,0,0,.85)); color:#f0e2c0; }
-.mull-card .mc-pw{ position:absolute; top:3px; right:4px; z-index:1; font-family:Cinzel,serif; font-weight:700; font-size:12px; color:#fff; text-shadow:0 1px 3px #000; }
-.mull-card.marked{ border-color:var(--crimson); opacity:.55; transform:scale(.94); }
-.mull-card.marked::after{ content:'↺ SWAP'; position:absolute; z-index:2; top:50%; left:0; right:0; transform:translateY(-50%); font-family:Cinzel,serif; font-size:10px; letter-spacing:1px; color:#ff9c8c; text-shadow:0 1px 3px #000; }
+/* ═══ TASK 41 — THE DIVINE CHOICE (mulligan) ═══ supersedes the 36b KEEP HAND plaque.
+   A full metascreen INSIDE the match flow: treated plate + scrim + ember 0.15, DS tokens throughout. */
+#mulligan{ display:block; overflow:hidden; padding:0; background:var(--ds-ink); z-index:96; }   /* T41: a full pre-round-1 TAKEOVER — must cover #hudwrap (z-95, score pills bled through the treated plate). Cutscene(96)/cardzoom(97) are never active during the mulligan phase, so this tier is safe. */
+#mullstage{ position:fixed; inset:0; overflow:hidden; z-index:-2; pointer-events:none; }
+#mullplate{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); transform-origin:center;
+  filter:brightness(.36) saturate(.74) contrast(1.02); }   /* treated — the HAND is the focus, not the rotunda */
+.ms-layer{ position:absolute; inset:0; pointer-events:none; }
+.ms-dim{ background:linear-gradient(180deg, rgba(7,4,2,.74), rgba(7,4,2,.5) 40%, rgba(7,4,2,.82)); }
+.ms-vig{ background:radial-gradient(125% 100% at 50% 38%, transparent 44%, rgba(0,0,0,.74) 100%); }
+#mulligan > .ember-fx{ position:fixed; inset:0; width:100%; max-width:none; height:100%; margin:0; z-index:-1; pointer-events:none; }
+
+.mull-col{ position:fixed; inset:0; z-index:1; display:flex; flex-direction:column; align-items:center;
+  gap:8px; padding:16px 14px 20px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  scrollbar-width:none; }
+.mull-col::-webkit-scrollbar{ width:0; height:0; }
+.mull-col > *{ flex-shrink:0; }
+
+.mull-header{ text-align:center; }
+.mull-eyebrow{ font-family:Cinzel,serif; font-size:9px; letter-spacing:.42em; color:var(--gold-2); opacity:.82;
+  text-transform:uppercase; text-shadow:0 1px 6px rgba(0,0,0,.9); }
+.mull-title{ font-family:Cinzel,serif; font-size:19px; letter-spacing:.22em; color:var(--gold-bright);
+  text-transform:uppercase; margin-top:3px; text-shadow:0 2px 10px rgba(0,0,0,.95); }
+.mull-quote{ font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:11px; color:var(--parchment);
+  opacity:.86; margin-top:4px; text-shadow:0 1px 6px rgba(0,0,0,.9); }
+.mull-story{ font-family:Cinzel,serif; font-size:12px; line-height:1.5; color:var(--gold-hi); font-style:italic;
+  text-align:center; max-width:440px; margin:2px 0 0; text-shadow:0 1px 6px rgba(0,0,0,.9); }
+.mull-story.hidden{ display:none !important; }
+
+/* MEDALLION — ring_progress ornament with the live n/N count inside it */
+.mull-medallion{ position:relative; width:78px; height:78px; display:flex; align-items:center; justify-content:center; margin-top:2px; }
+.mm-ring{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; pointer-events:none;
+  filter:drop-shadow(0 2px 8px rgba(0,0,0,.6)); }
+.mm-count{ position:relative; font-family:Cinzel,serif; font-size:16px; color:var(--gold-bright); line-height:1;
+  text-shadow:0 1px 5px #000; }
+/* TRAY — one row of N lotus slots, centered under the medallion; fills as marks accrue */
+.mm-tray{ display:flex; gap:8px; justify-content:center; }
+.mm-slot{ width:13px; height:13px; border-radius:50%; border:1px solid var(--gold-dim-25);
+  background:rgba(0,0,0,.4); transition:background .2s ease, box-shadow .2s ease, transform .2s ease; }
+.mm-slot.filled{ background:radial-gradient(circle at 40% 35%, var(--gold-hi), #8a6a2c);
+  border-color:var(--gold-2); box-shadow:0 0 8px rgba(232,200,116,.6); transform:scale(1.12); }
+
+/* HAND — T39 band mini-cards. Phone: wrap, 5-per-row target; desktop: 5×2. */
+#mullhand{ display:grid; grid-template-columns:repeat(5,1fr); gap:7px; width:100%; max-width:520px; margin-top:2px; }
+.mull-card{ position:relative; aspect-ratio:5/7; border-radius:8px; overflow:hidden; cursor:pointer;
+  border:1px solid var(--gold-dim-25); box-shadow:0 4px 12px rgba(0,0,0,.5);
+  transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
+.mull-card .mc-art{ position:absolute; top:0; left:0; right:0; aspect-ratio:750/683; overflow:hidden; }
+.mull-card .mc-art img{ width:100%; height:auto; object-fit:fill; display:block; }
+.mc-band{ position:absolute; left:0; right:0; top:65%; bottom:0; padding:2px 3px; text-align:center;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:linear-gradient(180deg, rgba(24,15,6,.96), rgba(4,3,1,.98)); border-top:1px solid rgba(232,200,116,.22); }
+.mc-nm{ font-family:Cinzel,serif; font-size:7px; letter-spacing:.03em; color:var(--gold-hi); line-height:1.15;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.mc-epi{ font-size:5.5px; letter-spacing:.03em; color:var(--parchment); opacity:.7; line-height:1.2; margin-top:1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; font-style:italic; }
+.mc-pow{ font-family:Cinzel,serif; font-size:5.5px; letter-spacing:.1em; color:var(--gold-2); margin-top:1px; }
+/* MARKED — gold ring + slight lift + a lotus glyph; reduced-motion drops the lift (below) */
+.mull-card.marked{ border-color:var(--gold-2); transform:translateY(-4px) scale(1.02);
+  box-shadow:0 0 0 2px var(--gold-2), 0 0 16px rgba(232,200,116,.5), 0 8px 18px rgba(0,0,0,.55); }
+.mull-card.marked::after{ content:'❁'; position:absolute; top:3px; right:4px; z-index:2; font-size:11px;
+  color:var(--gold-bright); text-shadow:0 1px 4px #000; }
+
+/* MORPHING CONFIRM — the 36b .fsel-start plaque; navy face default, GOLD face when marked (.mull-redraw). */
+.mull-confirm{ width:min(300px,86%); margin-top:12px; }
+.mull-confirm.mull-redraw{ background:linear-gradient(180deg,#f0d9a0 0%,#c9a84c 45%,#8a6a2c 100%); }
+.mull-confirm.mull-redraw::before{ background:linear-gradient(180deg,#5a4212 0%,#3a2a0c 52%,#4a3410 100%); }
+.mull-confirm.mull-redraw{ color:var(--gold-bright); }
+.mull-help{ font-family:'Crimson Pro',Georgia,serif; font-size:9.5px; line-height:1.4; color:var(--parchment);
+  opacity:.72; text-align:center; max-width:300px; margin-top:6px; text-shadow:0 1px 4px rgba(0,0,0,.85); }
+
+@media(min-width:1024px){
+  .mull-col{ gap:10px; padding:26px 16px; }
+  .mull-title{ font-size:24px; }
+  .mull-quote{ font-size:13px; }
+  .mull-medallion{ width:92px; height:92px; }
+  .mm-count{ font-size:19px; }
+  #mullhand{ max-width:720px; gap:10px; }   /* 5×2 desktop */
+  .mc-nm{ font-size:9px; } .mc-epi{ font-size:7px; } .mc-pow{ font-size:7px; }
+  .mull-help{ font-size:11px; max-width:360px; }
+}
+@media(max-width:479px){
+  #mullhand{ grid-template-columns:repeat(5,1fr); gap:4px; }
+}
 
 /* ===== settings (gear) ===== */
 #gearbtn,#mutebtn{ background:none; border:1px solid #4a3a18; color:var(--ink-dim); border-radius:8px; width:30px; height:28px; font-size:14px; cursor:pointer; padding:0; }
@@ -1100,6 +1171,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   #landfx{ display:none !important; }
   .ember-fx{ display:none !important; }   /* T39/T35: every per-screen ember instance — DS §2 kills the fire outright */
   .cp-arc{ transition:none !important; }  /* T39: the progress arc snaps to its value instead of sweeping */
+  .mull-card, .mull-card.marked, .mm-slot{ transition:none !important; }   /* T41: mark toggle instant, no lift animation */
+  .mull-card.marked{ transform:none !important; }
   .ls-beam, .ls-haze, .ls-grain, .land-lockup, .mode.nudge{ animation:none !important; }
   #landmast, .land-col, .land-foot{ animation:none !important; opacity:1 !important; }
 }
@@ -1470,13 +1543,29 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   </div>
 </div></div>
 
-<div class="overlay hidden" id="mulligan"><div class="modal mull">
-  <div id="mull-story" class="mull-story hidden"></div>
-  <h3>OPENING HAND</h3>
-  <p class="mull-sub">Tap up to 3 cards to return to your deck and redraw. <span id="mullcount">0 / 3 marked</span></p>
-  <div id="mullhand"></div>
-  <button id="mullconfirm" class="fsel-start">KEEP HAND</button>
-</div></div>
+<div class="overlay hidden" id="mulligan">
+  <div id="mullstage">
+    <img id="mullplate" alt="">
+    <div class="ms-layer ms-dim"></div>
+    <div class="ms-layer ms-vig"></div>
+  </div>
+  <div class="mull-col">
+    <div class="mull-header">
+      <div class="mull-eyebrow">DIVYA YUDDHA</div>
+      <div class="mull-title">THE DIVINE CHOICE</div>
+      <div class="mull-quote">&ldquo;The first weapon is not steel &mdash; it is choice.&rdquo;</div>
+    </div>
+    <div id="mull-story" class="mull-story hidden"></div>
+    <div class="mull-medallion">
+      <img class="mm-ring" src="assets/img/ring_progress.png?v=1" alt="">
+      <div class="mm-count" id="mullcount">0 / 3</div>
+    </div>
+    <div class="mm-tray" id="mull-tray"></div>
+    <div id="mullhand"></div>
+    <button id="mullconfirm" class="fsel-start mull-confirm">KEEP DESTINY</button>
+    <div class="mull-help">Marked cards are shuffled back into your deck; you draw the same number.</div>
+  </div>
+</div>
 
 <div class="overlay hidden" id="landing">
   <div id="landstage">
@@ -4196,19 +4285,51 @@ $('realmchip').onclick=(e)=>{
 };
 document.addEventListener('click', e=>{ if(!e.target.closest('#realmchip') && !e.target.closest('#realmpop')) $('realmpop').classList.add('hidden'); });
 
+/* ═══ TASK 41 — THE DIVINE CHOICE (mulligan full rebuild) ═══
+   Engine-true throughout. The mulligan CAP is pulled live (g.mulliganCount ?? 3), never hardcoded; the hand renders
+   hand.length cards (story hands are 5/8/9/10 — the screen only shows at 10 today, but the code must not assume it).
+   The redraw help states EXACTLY what the engine does: marked cards shuffle back, you draw the same number. */
+const MULL_PLATE={ wide:{src:'assets/img/mulligan_plate_wide.png?v=1', w:1536, h:1024},
+                   port:{src:'assets/img/mulligan_plate_port.png?v=1', w:853,  h:1844} };
+let mullPlateMode=null;
+function mullPickPlate(){ const m=(innerWidth>=1024)?'wide':'port'; if(m===mullPlateMode) return;
+  mullPlateMode=m; const el=$('mullplate'); if(el) el.src=MULL_PLATE[m].src; }
+function mullFitPlate(){ const el=$('mullplate'), p=MULL_PLATE[mullPlateMode]; if(!el||!p) return;
+  const s=Math.max(innerWidth/p.w, innerHeight/p.h); el.style.width=(p.w*s)+'px'; el.style.height=(p.h*s)+'px'; }
+function mullCap(){ return (G && G.mulliganCount!=null) ? G.mulliganCount : 3; }
 let mullMarked=new Set();
-function beginMulligan(){ mullMarked=new Set(); $('mull-story').classList.add('hidden'); renderMulligan(); $('mulligan').classList.remove('hidden'); }
+function beginMulligan(){ mullMarked=new Set(); $('mull-story').classList.add('hidden');
+  mullPickPlate(); mullFitPlate();
+  renderMulligan(); $('mulligan').classList.remove('hidden');
+  Ember.start('mulligan', EMBER_CARD_DENSITY);   // DS §2 — 0.15, self-terminates when the screen hides (startGame/confirm)
+}
+addEventListener('resize', ()=>{ if(!$('mulligan').classList.contains('hidden')){ mullPickPlate(); mullFitPlate(); } });
 function renderMulligan(){
+  const cap=mullCap(), hand=G.players[0].hand;
+  // MEDALLION count (n / N) + the tray of N slots, filled per mark
+  $('mullcount').textContent=`${mullMarked.size} / ${cap}`;
+  const tray=$('mull-tray'); tray.innerHTML='';
+  for(let i=0;i<cap;i++){ const s=document.createElement('span'); s.className='mm-slot'+(i<mullMarked.size?' filled':''); tray.appendChild(s); }
+  // HAND — T39 band component: art crop at the measured 65% line, name, epithet from def.sub, power chip (none on P0)
   const box=$('mullhand'); box.innerHTML='';
-  for (const c of G.players[0].hand){
+  for (const c of hand){
     const d=document.createElement('div'); d.className='mull-card'+(mullMarked.has(c.uid)?' marked':'');
-    d.innerHTML=`${c.p>0?`<div class="mc-pw">${c.p}</div>`:''}<div class="mc-nm">${c.n}</div>`;
-    const img=new Image(); img.className='mc-art'; img.onload=()=>d.insertBefore(img,d.firstChild); img.src=cardArtSrc(c, currentFactions.p0);
-    d.onclick=()=>{ if(mullMarked.has(c.uid)) mullMarked.delete(c.uid); else if(mullMarked.size<3) mullMarked.add(c.uid); renderMulligan(); };
+    const art=document.createElement('div'); art.className='mc-art';
+    const img=new Image(); img.alt=c.n; img.onerror=()=>{ art.innerHTML=artPending(c, currentFactions.p0); };
+    img.src=cardArtSrc(c, currentFactions.p0); art.appendChild(img); d.appendChild(art);
+    const band=document.createElement('div'); band.className='mc-band';
+    band.innerHTML=`<div class="mc-nm">${c.n}</div>`+(c.sub?`<div class="mc-epi">${c.sub}</div>`:'')+
+      `<div class="mc-pow">${c.p>0?`POWER ${c.p}`:'POWER N/A'}</div>`;
+    d.appendChild(band);
+    d.onclick=()=>{ if(mullMarked.has(c.uid)) mullMarked.delete(c.uid);
+      else if(mullMarked.size<cap) mullMarked.add(c.uid);   // mark limit: N+1 refused (no add past cap)
+      renderMulligan(); };
     box.appendChild(d);
   }
-  $('mullcount').textContent=`${mullMarked.size} / 3 marked`;
-  $('mullconfirm').textContent = mullMarked.size ? `MULLIGAN ${mullMarked.size} ⟳` : 'KEEP HAND';
+  // MORPHING CONFIRM — navy face (Keep Destiny) at 0, gold face (Redraw Fate) when marked
+  const n=mullMarked.size, btn=$('mullconfirm');
+  btn.textContent = n ? `REDRAW FATE (${n})` : 'KEEP DESTINY';
+  btn.classList.toggle('mull-redraw', n>0);
 }
 $('mullconfirm').onclick=()=>{
   const snap=snapshotBoard(); const evStart=G.events.length;
