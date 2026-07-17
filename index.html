@@ -386,8 +386,13 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
    These rows were tinted deva-gold / asura-red / vanara-amber / naga-teal. Reported: this loses faction-at-a-glance
    in the picker; the .fac-* classes are still emitted by openSadhanaPick, so a ruled affordance (sigil or a
    parchment faction word) can restore the signal without re-introducing colour as chrome. */
-.sad-opt-label{ font-family:Cinzel,serif; font-size:13px; color:var(--gold-hi); letter-spacing:.4px; }
-.sad-opt-prog{ font-size:11px; color:var(--parchment); white-space:nowrap; }
+/* flex:1 lets the card name absorb the row's free space, so the faction tag + progress cluster at the RIGHT edge. */
+.sad-opt-label{ flex:1 1 auto; min-width:0; font-family:Cinzel,serif; font-size:13px; color:var(--gold-hi); letter-spacing:.4px; }
+/* T35 AMENDMENT 2 — the faction signal restored WITHOUT colour-as-chrome (DS §1). All four factions read in the same
+   parchment; the WORD carries the identity, not a tint. The .fac-* class still lands on the row for future use. */
+.sad-opt-fac{ flex:0 0 auto; font-family:Cinzel,serif; font-size:8px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--parchment); opacity:.72; text-align:right; white-space:nowrap; }
+.sad-opt-prog{ flex:0 0 auto; font-size:11px; color:var(--parchment); white-space:nowrap; }
 .sad-pick-close{ width:100%; margin-top:10px; }   /* TASK 32: layout only — the shared .metaback pill owns border/radius/fill/type */
 
 /* ===== M1 slice 4: earnings stamp + flourishes (result surfaces) ===== */
@@ -4379,8 +4384,11 @@ function openSadhanaPick(){
   if(!pool.length){ box.innerHTML='<div class="sad-opt-label" style="padding:10px">Every Gupta card is yours. Nothing left to chase.</div>'; }
   pool.forEach(id=>{
     const def=cardById(id), cost=sadhanaCost(id), b=Math.min(cost, M.sadhana.banked[id]|0);
-    const btn=document.createElement('button'); btn.className='sad-opt'+(M.sadhana.pin===id?' on':'')+' '+facClass(cardFaction(id));
-    btn.innerHTML=`<span class="sad-opt-label">${def.n}</span><span class="sad-opt-prog">${b} / ${cost} ✦</span>`;
+    const fac=cardFaction(id);
+    const btn=document.createElement('button'); btn.className='sad-opt'+(M.sadhana.pin===id?' on':'')+' '+facClass(fac);
+    // reuses the EXISTING FAC_LABEL(fac) helper (line ~3868, already the single source of faction display names) —
+    // no second map. It returns DEVA / ASURA / VANARA / NAGA.
+    btn.innerHTML=`<span class="sad-opt-label">${def.n}</span><span class="sad-opt-fac">${FAC_LABEL(fac)}</span><span class="sad-opt-prog">${b} / ${cost} ✦</span>`;
     btn.onclick=()=>{ setSadhanaPin(id); $('sadhanapick').classList.add('hidden'); toast('Progress on other pinned cards is kept.'); };
     box.appendChild(btn);
   });
