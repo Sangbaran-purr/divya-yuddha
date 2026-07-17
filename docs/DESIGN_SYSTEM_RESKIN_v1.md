@@ -259,3 +259,100 @@ ALSO RULED/REPORTED IN T35:
   roller) and calls the same Ember.step at density 1.0 — behavior
   unchanged; the three card screens run their own self-terminating
   loops at 0.15.
+
+═══════════════════════════════════════════════════════════
+## AMENDMENT A3 — FACTION SELECT (ruled 2026-07-17, during T36)
+═══════════════════════════════════════════════════════════
+(a) SEQUENCING SWAP. §5's order was T35 card screens → T36 narrative
+    → T37 match-adjacent. Faction select builds NOW (T36); the
+    narrative screens (Quests, Story select) move to T37. Rationale:
+    faction select is the pre-battle gate every PvAI match passes
+    through — it earns its rebuild before the narrative surfaces.
+    §5's T36/T37 lines are superseded by this amendment.
+
+(b) PROMOTED: CHROME-ONLY → FULL REBUILD, WITH ITS OWN PLATES.
+    §4 filed #factionselect under "match-adjacent overlays: chrome-
+    only pass, grounds untouched". That is superseded. It is now a
+    full metascreen with factionselect_plate_port.jpg /
+    _wide.jpg (1024x1536 / 1536x1024 — the landing's dims, so the
+    plate maths ports straight), orientation-picked, cover-fit, the
+    landing's dim scrim, and an ember instance at density 0.35.
+    It LEFT the shared menu_bg group (#landing/#factionintro/
+    #storyselect/#quests) — those keep menu_bg until their own task.
+    NOTE this extends, not contradicts, DS §3: the ink law binds
+    CARD-BEARING screens (cards are the stars). Faction select bears
+    crests and chrome, not cards, so it carries a plate like the
+    landing.
+
+(c) TILE-GROUND LAW. On a faction tile the GROUND carries the faction
+    colour and the CREST carries the identity. The four grounds are
+    dark gradients, measured as shipped:
+      Deva    linear-gradient(#111d3a → #060a16)   deep navy
+      Asura   linear-gradient(#2a0d0d → #140505)   crimson-black
+      Vanara  linear-gradient(#0f2413 → #050e07)   forest-black
+      Naga    linear-gradient(#0a2422 → #04100f)   teal-black
+      Random  linear-gradient(--plaque-hi → --plaque-lo)  plain plaque
+    This is the ONE sanctioned use of faction colour outside a card
+    frame (DS §1 forbids faction colour as chrome): it is a GROUND
+    under a crest, not chrome, and it never touches text or borders —
+    the label stays --gold-hi, the border --gold-dim-25/--gold-2.
+    Selected state (mockup fidelity): gold border (--gold-2) + outer
+    glow + an inner gradient lift (::after), crest lifted 1px with a
+    warm drop-shadow, name in --gold-bright.
+
+(d) MASTHEAD RULING. NO logo lockup on this screen. DS §6 stands:
+    the name lives on the front door and the trailer; sub-screens
+    state their purpose. Faction select carries the HEADER component
+    ("CHOOSE YOUR BATTLE" + diamond-line flourish) and section
+    flourishes for YOUR FACTION / OPPONENT / DIFFICULTY. A logo
+    variant here would be a recorded one-liner override, not a
+    default.
+
+(e) BAKED-BUTTON EXCEPTION. begin_battle_btn.png is the game's ONE
+    baked-text button — a fixed label, a single use, seated over the
+    plate's floor-mandala zone. States are CSS filters ON the image:
+    disabled = grayscale(.85) brightness(.5); hover = brightness lift
+    + warm glow; active = press scale. EVERY other control in the
+    game stays live DOM text (i18n, a11y, and copy edits all die on
+    baked text). Do not generalise this exception.
+
+(f) OPPONENT PICKER — ruling (b), a deliberate small capability add.
+    STEP 0 found the shipped screen ALREADY let the player choose the
+    opponent (a second .fsel-opts[data-side="p1"], default DEVAS) —
+    it was never random or derived. T36 mirrors that (four tiles,
+    DEVAS default) and ADDS a fifth RANDOM tile. RANDOM resolves in
+    the UI at BEGIN via Math.random (the quest-draw precedent);
+    startGame() receives a CONCRETE faction, so g.rng is never
+    touched and the engine's seeded reproducibility is intact.
+    Measured uniform: 8000 samples → 24.3 / 25.9 / 25.2 / 24.6 %.
+
+(g) BEGIN GATING — a ruled deviation from shipped. The shipped screen
+    pre-selected DEVAS for the PLAYER, so BEGIN was always live. Item
+    F requires BEGIN disabled "until a player faction is selected",
+    which is only real if the player starts with none. So YOUR
+    FACTION now starts UNSELECTED on every entry and the screen earns
+    its name; the OPPONENT keeps the shipped default. Consequence:
+    a returning player re-picks their faction each match (the screen
+    no longer remembers p0). If that friction is unwanted, the fix is
+    to seed p0 from currentFactions and drop the disabled state —
+    but then gate 3 is unprovable and item F is dead code.
+
+(h) PROFILE CHIP — prefixed-id mirror. renderProfile() is refactored
+    into renderProfileChip(prefix, …) called for '' (landing) and
+    'fsel-' (faction select). Duplicating ids would make
+    getElementById return only the landing's node and the mirror
+    would silently never update. Every write is null-guarded, so a
+    prefix whose nodes are absent is a no-op. The levelRolloverPending
+    one-shot stays owned by the LANDING chip (no rollover theatre on a
+    pre-battle chip). Landing chip proven unchanged pre/post at both
+    widths (name, rank, level, bar width, stats, wallet, sadhana).
+
+(i) MOCKUP FIDELITY — what was mapped, what was omitted. Built and
+    live: profile chip (top-left), QUESTS + SETTINGS roundels
+    (top-right), COLLECTION roundel (bottom-left), TIP plaque
+    (bottom-right, static). Visible-locked (data-soon + lock glyph +
+    toast, the Multiplayer pattern): DECKS (lands M2), STORE (lands
+    M4), BEGINNER + DEATH MATCH difficulty tiers. OMITTED ENTIRELY:
+    the mockup's JOURNAL roundel — nothing exists behind it, and
+    inventing a control violates the DS. Locked controls NEVER block
+    BEGIN, and locked difficulty tiers never move the selection.

@@ -271,8 +271,6 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .inspect-card.fac-vanara .inm{ color:var(--green); }
 .hud-plaque.fac-vanara{ border-color:var(--green); }
 .hud-plaque.fac-vanara.leading{ border-color:#9be888; box-shadow:0 0 14px rgba(111,194,87,.6), 0 2px 8px rgba(0,0,0,.65); }
-.fbtn[data-f="vanaras"].sel{ border-color:var(--green); background:linear-gradient(#12240e,#0a1806); }
-.fbtn[data-f="vanaras"].sel b{ color:var(--green); }
 #leapbtn{ background:linear-gradient(#1c3a12,#12240e); color:var(--green); border:1.5px solid var(--green-dim); border-radius:10px; padding:11px 12px; font-size:12px; font-weight:700; cursor:pointer; font-family:Cinzel,serif; letter-spacing:1px; }
 #leapbtn:active{ transform:scale(.97); } #leapbtn.hidden{ display:none !important; }
 .slot-place{ flex:0 0 auto; width:14px; align-self:stretch; min-height:56px; border-radius:5px; border:2px dashed var(--green); cursor:pointer; background:rgba(111,194,87,.10); }
@@ -298,8 +296,6 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .inspect-card.fac-naga .inm{ color:var(--teal); }
 .hud-plaque.fac-naga{ border-color:var(--teal); }
 .hud-plaque.fac-naga.leading{ border-color:#6fe6d6; box-shadow:0 0 14px rgba(63,185,168,.6), 0 2px 8px rgba(0,0,0,.65); }
-.fbtn[data-f="nagas"].sel{ border-color:var(--teal); background:linear-gradient(#0c211f,#06120f); }
-.fbtn[data-f="nagas"].sel b{ color:var(--teal); }
 /* bound (Nagapasha) — greyed, chained; stolen (Mohini) — teal-glow poached unit */
 .bc.bound{ filter:grayscale(.7) brightness(.62); border-color:#555 !important; }
 .bc.bound .medallion{ background:#444 !important; color:#bbb !important; }
@@ -312,9 +308,9 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 /* ===== faction select ===== */
 /* menu background — subtle: cover art, desaturated + blurred, dark bottom-heavy gradient so faction panels stay the focus */
 /* menu is FRAMELESS — faction selection sits directly on the image; per-tile scrims keep text readable */
-#factionselect, #landing, #factionintro, #storyselect, #quests{ background:#0a0704; overflow:hidden; }
-#factionselect::before, #factionintro::before, #storyselect::before, #quests::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
-#factionselect::after, #factionintro::after, #storyselect::after, #quests::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
+#landing, #factionintro, #storyselect, #quests{ background:#0a0704; overflow:hidden; }   /* T36: #factionselect left this group — it carries its OWN plate now (A3) */
+#factionintro::before, #storyselect::before, #quests::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
+#factionintro::after, #storyselect::after, #quests::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
 /* T34: the landing's Mount-Meru #landingbg + its ::before scrims are RETIRED — replaced by the sky-rotunda plate stage
    (#landstage below). assets/img/landing_bg.jpg is now unreferenced (left on disk; not deleted by this task). */
 
@@ -482,7 +478,6 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 @keyframes artShimmer{ 0%,100%{ box-shadow:0 0 0 1.5px var(--gold-dim), 0 0 8px rgba(232,201,90,.35); } 50%{ box-shadow:0 0 0 1.5px var(--gold), 0 0 20px rgba(232,201,90,.7); } }
 .mull-story{ font-family:Cinzel,serif; font-size:13px; line-height:1.5; color:var(--gold); font-style:italic; margin:0 0 12px; text-shadow:0 1px 4px #000; }
 .mull-story.hidden{ display:none !important; }
-#factionselect .modal{ position:relative; z-index:1; }
 
 /* ===== landing page (first screen, before faction-select) ===== */
 #settings{ z-index:90; }   /* settings must sit above the landing overlay */
@@ -797,34 +792,134 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-insp-meta{ font-size:10px; letter-spacing:1px; color:var(--ink-dim); margin:4px 0 7px; }
 .fi-insp-eff{ font-size:12px; line-height:1.45; color:var(--ink); }
 .fi-insp-hint{ margin-top:12px; font-size:10px; letter-spacing:1px; color:var(--ink-dim); }
-.modal.fsel{ text-align:center; max-width:420px; background:none; border:none; box-shadow:none; backdrop-filter:none; padding:16px; }
-.modal.fsel h3{ text-align:center; text-shadow:0 2px 8px rgba(0,0,0,.92), 0 0 20px rgba(0,0,0,.5); }
-.fsel-row{ margin:14px 0; }
-.fsel-lbl{ display:block; font-family:Cinzel,serif; font-size:10px; letter-spacing:2px; color:var(--ink); margin-bottom:7px; text-shadow:0 1px 5px rgba(0,0,0,.95); }
-.fsel-opts{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-@media (max-width:480px){ .fsel-opts{ grid-template-columns:repeat(2,1fr); } }   /* 2×2 on narrow portrait — no overflow */
-.fbtn{ padding:12px 6px; border-radius:10px; cursor:pointer; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); border:1.5px solid rgba(255,255,255,.20); color:var(--ink); display:flex; flex-direction:column; gap:4px; align-items:center; transition:border-color .15s, background .15s, transform .1s; }
-.fbtn b{ font-family:Cinzel,serif; font-size:13px; letter-spacing:1px; color:#fff; text-shadow:0 1px 3px #000; }
-.fbtn em{ font-style:normal; font-size:9px; letter-spacing:1px; opacity:.92; text-shadow:0 1px 3px #000; }
-.fbtn:active{ transform:scale(.97); }
-.fbtn[data-f="devas"].sel{ border-color:var(--gold); background:linear-gradient(#2a1e0a,#1d1507); }
-.fbtn[data-f="devas"].sel b{ color:var(--gold); }
-.fbtn[data-f="asuras"].sel{ border-color:var(--crimson); background:linear-gradient(#2a1010,#180808); }
-.fbtn[data-f="asuras"].sel b{ color:var(--crimson); }
-.fsel-start{ margin-top:18px; width:100%; padding:13px; border-radius:10px; font-size:14px; font-weight:700; cursor:pointer; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); color:var(--gold); border:1.5px solid var(--gold); text-shadow:0 1px 4px rgba(0,0,0,.85); }
-.fsel-start:active{ transform:scale(.98); }
-/* D2 difficulty selector */
-.diff-opts{ grid-template-columns:repeat(3,1fr); }
-@media (max-width:480px){ .diff-opts{ grid-template-columns:repeat(3,1fr); } }   /* keep 3-across on narrow — labels are short */
-.dbtn{ padding:10px 5px; border-radius:10px; cursor:pointer; background:rgba(0,0,0,.45); backdrop-filter:blur(4px); border:1.5px solid rgba(255,255,255,.20); color:var(--ink); display:flex; flex-direction:column; gap:3px; align-items:center; transition:border-color .15s, background .15s, transform .1s; }
-.dbtn b{ font-family:Cinzel,serif; font-size:11px; letter-spacing:.5px; color:#fff; text-shadow:0 1px 3px #000; }
-.dbtn em{ font-style:normal; font-size:8.5px; letter-spacing:.5px; opacity:.9; text-shadow:0 1px 3px #000; }
-.dbtn:active{ transform:scale(.97); }
-.dbtn[data-d="beginner"].sel{ border-color:var(--green); background:linear-gradient(#12240e,#0a1806); } .dbtn[data-d="beginner"].sel b{ color:var(--green); }
-.dbtn[data-d="advanced"].sel{ border-color:var(--gold);  background:linear-gradient(#2a1e0a,#1d1507); } .dbtn[data-d="advanced"].sel b{ color:var(--gold); }
-.dbtn[data-d="deathmatch"].sel{ border-color:var(--crimson); background:linear-gradient(#2a1010,#180808); } .dbtn[data-d="deathmatch"].sel b{ color:var(--crimson); }
-.diff-disclose{ margin-top:8px; font-size:10.5px; line-height:1.4; letter-spacing:.3px; color:var(--ink); min-height:15px; text-shadow:0 1px 4px rgba(0,0,0,.95); }
-.diff-disclose.warn{ color:#f0b0a0; }
+/* ═══════════ T36 — FACTION SELECT: FULL SCREEN (DS + A3) ═══════════
+   A3: this screen is promoted from chrome-only to a full rebuild with its OWN plates. It is a PRE-BATTLE screen, not
+   a card screen, so DS §3's ink law does not apply — it carries a plate like the landing (ember 0.35, the narrative
+   density). Same id, same callers, same startGame seam. */
+#factionselect{ display:block; overflow:hidden; padding:0; background:var(--ds-ink); }
+#fselstage{ position:fixed; inset:0; overflow:hidden; z-index:0; pointer-events:none; }
+#fselplate{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); transform-origin:center;
+  filter:brightness(.84) saturate(1.03) contrast(1.03); }   /* landing DIM pattern — the bright sky zone must not fight the chrome */
+.fs-layer{ position:absolute; inset:0; pointer-events:none; }
+.fs-dim{ background:radial-gradient(66% 42% at 50% 12%, rgba(0,0,0,.52), transparent 74%),
+                    radial-gradient(70% 46% at 50% 70%, rgba(0,0,0,.28), transparent 76%); }
+.fs-vig{ background:radial-gradient(125% 100% at 50% 42%, transparent 56%, rgba(0,0,0,.55) 100%); }
+#factionselect > .ember-fx{ position:fixed; inset:0; width:100%; max-width:none; height:100%; margin:0; z-index:-1; pointer-events:none; }
+
+/* head: back pill + the profile-chip MIRROR (prefixed ids, one shared writer) */
+.fsel-head{ position:fixed; top:0; left:0; right:0; z-index:22; display:flex; align-items:center; gap:9px;
+  padding:10px 12px; pointer-events:none; }
+.fsel-head > *{ pointer-events:auto; }
+.land-profile.fsel-chip{ width:auto; max-width:min(232px,52vw); padding:6px 10px; gap:8px; border-radius:9px; }
+.fsel-chip .lp-avatar{ width:32px; height:32px; font-size:11px; }
+.fsel-chip .lp-name{ font-size:10px; }
+.fsel-chip .lp-rank{ font-size:7px; padding:1px 5px; }
+.fsel-chip .lp-level{ margin-top:3px; gap:6px; }
+.fsel-chip .lp-level span{ font-size:7.5px; }
+.fsel-chip .lp-bar{ height:4px; }
+
+/* roundels — gold-ring icon buttons (mockup furniture); locked ones use the Multiplayer data-soon pattern */
+.fsel-roundels{ position:fixed; z-index:22; display:flex; gap:8px; }
+.fsel-tr{ top:10px; right:12px; }
+.fsel-bl{ bottom:12px; left:12px; }
+.roundel{ position:relative; width:44px; height:44px; border-radius:50%; cursor:pointer; padding:0;
+  display:flex; align-items:center; justify-content:center; color:var(--gold-hi);
+  background:radial-gradient(circle at 38% 32%, rgba(43,28,10,.92), rgba(10,6,3,.92));
+  border:1px solid var(--gold-dim-25); box-shadow:0 4px 14px rgba(0,0,0,.5);
+  transition:border-color .25s ease, color .25s ease; }
+.roundel svg{ width:19px; height:19px; }
+.roundel:hover{ border-color:var(--gold-2); color:var(--gold-bright); }
+.roundel:active{ transform:scale(.94); }
+.roundel.locked{ opacity:.5; cursor:default; }
+.roundel.locked:active{ transform:none; }
+.rlock{ position:absolute; right:-1px; bottom:-1px; width:15px; height:15px; border-radius:50%;
+  background:rgba(6,4,2,.95); border:1px solid var(--gold-dim-25); display:flex; align-items:center; justify-content:center; }
+.rlock svg{ width:8px; height:8px; color:var(--parchment); }
+
+/* the scrolling column — metascreen contract; padding clears the fixed head + the bottom furniture */
+.fsel-col{ position:fixed; inset:0; z-index:20; display:flex; flex-direction:column; align-items:center;
+  gap:10px; padding:62px 16px 76px; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior:contain;
+  scrollbar-width:none; }
+.fsel-col::-webkit-scrollbar{ width:0; height:0; }
+.fsel-col > *{ flex-shrink:0; width:100%; max-width:520px; }
+.fsel-title{ font-size:15px; text-shadow:0 2px 10px rgba(0,0,0,.95), 0 0 22px rgba(0,0,0,.7); }
+.fsel-sec{ display:flex; align-items:center; justify-content:center; gap:9px; margin-top:2px;
+  font-family:Cinzel,serif; font-size:9.5px; letter-spacing:.3em; color:var(--parchment); opacity:.9; text-transform:uppercase;
+  text-shadow:0 1px 8px rgba(0,0,0,.95), 0 0 16px rgba(0,0,0,.8); }
+.fsel-sec::before, .fsel-sec::after{ content:''; flex:1 1 auto; max-width:52px; height:1px;
+  background:linear-gradient(90deg,transparent,var(--gold-dim-25),transparent); }
+
+/* TILE-GROUND LAW (A3): the GROUND carries faction colour, the CREST carries identity. */
+.fsel-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:9px; }
+.fsel-grid.opp{ grid-template-columns:repeat(3,1fr); }   /* 5 opponent tiles wrap 3+2 in portrait */
+/* the desktop override MUST come last: `.fsel-grid.opp` inside and outside a media query have EQUAL specificity, so
+   source order decides — with the base rule after the query, portrait's 3-col won at every width. */
+@media(min-width:720px){ .fsel-grid{ grid-template-columns:repeat(4,1fr); } .fsel-grid.opp{ grid-template-columns:repeat(5,1fr); } }
+.ftile{ position:relative; display:flex; flex-direction:column; align-items:center; justify-content:flex-end;
+  min-height:112px; padding:8px 6px 7px; border-radius:10px; cursor:pointer; overflow:hidden;
+  border:1px solid var(--gold-dim-25); box-shadow:0 6px 18px rgba(0,0,0,.5);
+  transition:border-color .25s ease, box-shadow .25s ease, transform .12s ease; }
+.fsel-grid.opp .ftile{ min-height:90px; padding:6px 4px 5px; }
+.ftile:active{ transform:scale(.985); }
+.ftile-crest{ flex:1 1 auto; width:100%; display:flex; align-items:center; justify-content:center; min-height:0; }
+.ftile-crest img{ height:52px; width:auto; max-width:86%; object-fit:contain; display:block;
+  filter:drop-shadow(0 3px 10px rgba(0,0,0,.7)); transition:filter .25s ease, transform .25s ease; }
+.fsel-grid.opp .ftile-crest img{ height:40px; }
+.ftile-name{ font-family:Cinzel,serif; font-size:11px; letter-spacing:.16em; color:var(--gold-hi); text-transform:uppercase;
+  text-shadow:0 1px 4px #000; }
+.fsel-grid.opp .ftile-name{ font-size:9px; }
+.ftile-word{ font-family:Cinzel,serif; font-size:7px; letter-spacing:.24em; color:var(--parchment); opacity:.72;
+  text-transform:uppercase; margin-top:2px; }
+.fsel-grid.opp .ftile-word{ font-size:6.5px; }
+/* the four faction grounds — dark gradients, colour in the GROUND only */
+.ftile[data-f="devas"]  { background:linear-gradient(180deg,#111d3a,#060a16); }
+.ftile[data-f="asuras"] { background:linear-gradient(180deg,#2a0d0d,#140505); }
+.ftile[data-f="vanaras"]{ background:linear-gradient(180deg,#0f2413,#050e07); }
+.ftile[data-f="nagas"]  { background:linear-gradient(180deg,#0a2422,#04100f); }
+.ftile[data-f="random"] { background:linear-gradient(180deg,var(--plaque-hi),var(--plaque-lo)); }
+.ftile-mark{ font-family:Cinzel,serif; font-size:26px; color:var(--gold-hi); opacity:.9; text-shadow:0 2px 10px rgba(0,0,0,.8); }
+/* SELECTED (mockup fidelity): gold border + outer glow + inner gradient lift */
+.ftile.sel{ border-color:var(--gold-2);
+  box-shadow:0 0 0 1px rgba(232,200,116,.42), 0 0 20px rgba(232,200,116,.34), 0 6px 20px rgba(0,0,0,.55); }
+.ftile.sel::after{ content:''; position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(180deg, rgba(232,200,116,.20), rgba(232,200,116,.04) 52%, transparent); }
+.ftile.sel .ftile-crest img{ transform:translateY(-1px); filter:drop-shadow(0 3px 10px rgba(0,0,0,.7)) drop-shadow(0 0 10px rgba(255,205,120,.5)); }
+.ftile.sel .ftile-name{ color:var(--gold-bright); }
+
+/* DIFFICULTY — plaque-sm tiles; locked never blocks BEGIN */
+.fsel-diff{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.dbtn{ position:relative; flex-direction:column; gap:1px; padding:8px 4px; min-height:48px; }
+.dbtn b{ font-family:Cinzel,serif; font-size:10px; letter-spacing:.1em; }
+.dbtn em{ font-style:normal; font-family:Cinzel,serif; font-size:7px; letter-spacing:.14em; color:var(--parchment); opacity:.72; }
+.dbtn[data-soon]{ opacity:.5; cursor:default; }
+.dbtn[data-soon]:active{ transform:none; }
+.dlock{ position:absolute; top:4px; right:5px; color:var(--parchment); opacity:.8; display:flex; }
+.dbtn.sel{ border-color:var(--gold-2); color:var(--gold-bright); background:linear-gradient(180deg,#4a3210,#241505);
+  box-shadow:0 0 14px rgba(232,200,116,.26); }
+.dbtn.sel b{ color:var(--gold-bright); }
+.diff-disclose{ font-family:Cinzel,serif; font-size:8.5px; letter-spacing:.16em; color:var(--parchment); opacity:.86;
+  text-shadow:0 1px 8px rgba(0,0,0,.95);
+  text-align:center; text-transform:uppercase; line-height:1.5; }
+.diff-disclose.warn{ color:var(--crimson); opacity:1; }   /* renderDiffSelector toggles .warn ON this node, not a child */
+
+/* BEGIN BATTLE — the game's ONE baked-text button (A3 recorded exception) */
+.fsel-start{ background:none; border:0; padding:0; margin:6px 0 0; cursor:pointer; width:100%;
+  display:flex; align-items:center; justify-content:center; }
+.fsel-start img{ width:min(272px,74%); height:auto; display:block;
+  filter:drop-shadow(0 6px 18px rgba(0,0,0,.65)); transition:filter .25s ease, transform .12s ease; }
+.fsel-start:hover img{ filter:brightness(1.1) drop-shadow(0 6px 18px rgba(0,0,0,.65)) drop-shadow(0 0 16px rgba(255,205,120,.4)); }
+.fsel-start:active img{ transform:scale(.97); }
+.fsel-start:disabled{ cursor:not-allowed; }
+.fsel-start:disabled img{ filter:grayscale(.85) brightness(.5); }
+.fsel-start:disabled:hover img{ filter:grayscale(.85) brightness(.5); }
+
+/* TIP plaque */
+.fsel-tip{ position:fixed; bottom:12px; right:12px; z-index:21; display:flex; align-items:center; gap:7px;
+  max-width:min(210px,46vw); padding:7px 10px; border-radius:9px; pointer-events:none;
+  background:linear-gradient(180deg,rgba(43,28,10,.8),rgba(10,6,3,.8)); border:1px solid var(--gold-dim-25); }
+.tip-lotus{ flex:0 0 auto; color:var(--gold-2); font-size:12px; }
+.tip-text{ font-size:8px; line-height:1.45; color:var(--parchment); opacity:.82; letter-spacing:.04em; }
+@media(max-width:479px){ .fsel-tip{ max-width:min(178px,50vw); } .tip-text{ font-size:7.2px; } }
 /* in-match difficulty chip (realm-chip pattern) */
 #diffchip{ font-family:Cinzel,serif; font-size:10px; letter-spacing:1px; background:linear-gradient(#241a3a,#140f22); border:1px solid #4a3a70; border-radius:20px; padding:5px 11px; white-space:nowrap; color:#cbb9e8; }
 #diffchip.hidden{ display:none; }
@@ -1419,34 +1514,60 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 </div>
 <div class="overlay hidden" id="fi-inspect"></div>
 
-<div class="overlay hidden" id="factionselect">
-  <button class="fi-back" id="fsel-back" title="back">‹</button>
-  <div class="modal fsel">
-  <h3>⚔ CHOOSE YOUR BATTLE</h3>
-  <div class="fsel-row"><span class="fsel-lbl">YOUR FACTION</span>
-    <div class="fsel-opts" data-side="p0">
-      <button class="fbtn sel" data-f="devas"><b>DEVAS</b><em>☀ gold</em></button>
-      <button class="fbtn" data-f="asuras"><b>ASURAS</b><em>🩸 crimson</em></button>
-      <button class="fbtn" data-f="vanaras"><b>VANARAS</b><em>🌿 green</em></button>
-      <button class="fbtn" data-f="nagas"><b>NAGAS</b><em>🐍 teal</em></button>
-    </div></div>
-  <div class="fsel-row"><span class="fsel-lbl">OPPONENT</span>
-    <div class="fsel-opts" data-side="p1">
-      <button class="fbtn sel" data-f="devas"><b>DEVAS</b><em>☀ gold</em></button>
-      <button class="fbtn" data-f="asuras"><b>ASURAS</b><em>🩸 crimson</em></button>
-      <button class="fbtn" data-f="vanaras"><b>VANARAS</b><em>🌿 green</em></button>
-      <button class="fbtn" data-f="nagas"><b>NAGAS</b><em>🐍 teal</em></button>
-    </div></div>
-  <div class="fsel-row"><span class="fsel-lbl">DIFFICULTY</span>
-    <div class="fsel-opts diff-opts" id="diffopts">
-      <button class="dbtn" data-d="beginner"><b>BEGINNER</b><em>Learn the war</em></button>
-      <button class="dbtn sel" data-d="advanced"><b>ADVANCED</b><em>Fight it</em></button>
-      <button class="dbtn" data-d="deathmatch"><b>DEATH MATCH</b><em>No mercy</em></button>
+<div class="overlay metascreen hidden" id="factionselect">
+  <div id="fselstage">
+    <img id="fselplate" alt="">
+    <div class="fs-layer fs-dim"></div>
+    <div class="fs-layer fs-vig"></div>
+  </div>
+
+  <div class="fsel-head">
+    <button class="metaback" id="fsel-back">‹ Back</button>
+    <div class="land-profile fsel-chip">
+      <div class="lp-avatar" id="fsel-lpavatar">WA</div>
+      <div class="lp-info">
+        <div class="lp-namerow"><div class="lp-name" id="fsel-lpname">Warrior</div><span class="lp-rank" id="fsel-lprank">Seeker</span></div>
+        <div class="lp-level"><span id="fsel-lplevel">Level 1</span><div class="lp-bar"><i id="fsel-lpbar"></i></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fsel-roundels fsel-tr">
+    <button class="roundel" id="fsel-quests" title="Quests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 5h6M9 5a2 2 0 0 0-2 2v0H5.5A1.5 1.5 0 0 0 4 8.5v10A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-10A1.5 1.5 0 0 0 18.5 7H17v0a2 2 0 0 0-2-2M8 12l2.5 2.5L16 9"/></svg></button>
+    <button class="roundel" id="fsel-settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></button>
+  </div>
+
+  <div class="fsel-col">
+    <div class="ds-header fsel-title">CHOOSE YOUR BATTLE</div>
+
+    <div class="fsel-sec">YOUR FACTION</div>
+    <div class="fsel-grid" id="fsel-p0"></div>
+
+    <div class="fsel-sec">OPPONENT</div>
+    <div class="fsel-grid opp" id="fsel-p1"></div>
+
+    <div class="fsel-sec">DIFFICULTY</div>
+    <div class="fsel-diff" id="diffopts">
+      <button class="plaque-sm dbtn" data-d="beginner" data-soon><b>BEGINNER</b><em>Learn the war</em><span class="dlock"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
+      <button class="plaque-sm dbtn sel" data-d="advanced"><b>ADVANCED</b><em>Fight it</em></button>
+      <button class="plaque-sm dbtn" data-d="deathmatch" data-soon><b>DEATH MATCH</b><em>No mercy</em><span class="dlock"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
     </div>
     <div id="diffdisclose" class="diff-disclose"></div>
+
+    <button id="fselstart" class="fsel-start" aria-label="Begin Battle"><img src="assets/img/begin_battle_btn.png" alt="Begin Battle"></button>
   </div>
-  <button id="fselstart" class="fsel-start">BEGIN ⚔</button>
-</div></div>
+
+  <div class="fsel-roundels fsel-bl">
+    <button class="roundel" id="fsel-collection" title="Collection"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="12" height="15" rx="1.6"/><path d="M8 3h9.5A1.5 1.5 0 0 1 19 4.5V18"/></svg></button>
+    <button class="roundel locked" data-soon title="Decks — coming soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7" width="11" height="14" rx="1.6"/><path d="M8 4h9a2 2 0 0 1 2 2v11"/></svg><span class="rlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
+    <button class="roundel locked" data-soon title="Store — coming soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8h16l-1.3 11.2a1.6 1.6 0 0 1-1.6 1.4H6.9a1.6 1.6 0 0 1-1.6-1.4z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg><span class="rlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
+  </div>
+
+  <div class="fsel-tip">
+    <span class="tip-lotus">❁</span>
+    <span class="tip-text">Counters, timing and synergy decide the fate of the war.</span>
+  </div>
+</div>
 
 <!-- ENGINE:START (generated from src/engine.js by `node src/build.js` — do not edit between markers) -->
 <script>
@@ -3954,25 +4075,85 @@ function applyFactionTheme(){
 
 /* ---------- faction select ---------- */
 let fselChoice={ p0:'devas', p1:'devas' };
+/* ═══ T36 — FACTION SELECT (full screen). Same id, same callers, same startGame seam. ═══
+   OPPONENT PICKER (A3, ruling b): the shipped screen ALREADY let the player choose the opponent (default DEVAS);
+   T36 mirrors that and ADDS a RANDOM tile as a UI-layer convenience. RANDOM resolves with Math.random at BEGIN —
+   the quest-draw precedent; g.rng is NEVER touched, so the engine's seeded reproducibility is untouched. */
+const FSEL_TILES=[
+  { f:'devas',   name:'DEVAS',   word:'✦ Gold'    },
+  { f:'asuras',  name:'ASURAS',  word:'✦ Crimson' },
+  { f:'vanaras', name:'VANARAS', word:'✦ Green'   },
+  { f:'nagas',   name:'NAGAS',   word:'✦ Teal'    },
+];
+const FSEL_PLATE={ port:{src:'assets/img/factionselect_plate_port.jpg', w:1024, h:1536},
+                   wide:{src:'assets/img/factionselect_plate_wide.jpg', w:1536, h:1024} };
+let fselPlateMode=null;
+function fselPickPlate(){                                   // orientation pick — the landing's rule, ported
+  const m=(innerHeight>innerWidth*1.05)?'port':'wide';
+  if(m===fselPlateMode) return;
+  fselPlateMode=m; const el=$('fselplate'); if(el) el.src=FSEL_PLATE[m].src;
+}
+function fselFitPlate(){                                    // cover-fit; min scale ≥ cover ⇒ edges never show
+  const el=$('fselplate'), p=FSEL_PLATE[fselPlateMode]; if(!el||!p) return;
+  const s=Math.max(innerWidth/p.w, innerHeight/p.h);
+  el.style.width=(p.w*s)+'px'; el.style.height=(p.h*s)+'px';
+}
+function fselTile(t, side){
+  const b=document.createElement('button');
+  b.className='ftile'+(fselChoice[side]===t.f?' sel':''); b.dataset.f=t.f; b.dataset.side=side;
+  const crest=document.createElement('div'); crest.className='ftile-crest';
+  if(t.f==='random'){ const m=document.createElement('span'); m.className='ftile-mark'; m.textContent='✦'; crest.appendChild(m); }
+  else { const im=document.createElement('img'); im.alt=t.name; im.src=`assets/img/crest_${t.f}_tile.png`; crest.appendChild(im); }
+  const n=document.createElement('div'); n.className='ftile-name'; n.textContent=t.name;
+  const w=document.createElement('div'); w.className='ftile-word'; w.textContent=t.word;
+  b.appendChild(crest); b.appendChild(n); b.appendChild(w);
+  return b;
+}
+function renderFselTiles(){
+  const p0=$('fsel-p0'), p1=$('fsel-p1'); if(!p0||!p1) return;
+  p0.innerHTML=''; FSEL_TILES.forEach(t=> p0.appendChild(fselTile(t,'p0')));
+  p1.innerHTML=''; FSEL_TILES.forEach(t=> p1.appendChild(fselTile(t,'p1')));
+  p1.appendChild(fselTile({ f:'random', name:'RANDOM', word:'✦ Fate' },'p1'));   // the 5th opponent tile (A3)
+  fselSyncStart();
+}
+function fselSyncStart(){                                   // BEGIN is gated on a PLAYER faction being chosen
+  const b=$('fselstart'); if(b) b.disabled = !fselChoice.p0;
+}
 function showFactionSelect(){
-  fselChoice={ ...currentFactions };
-  document.querySelectorAll('#factionselect .fsel-opts').forEach(box=>{
-    const side=box.dataset.side;
-    box.querySelectorAll('.fbtn').forEach(b=> b.classList.toggle('sel', b.dataset.f===fselChoice[side]));
-  });
+  /* ⚠ DEVIATION FROM SHIPPED, ruled by item F + gate 3: the shipped screen pre-selected DEVAS for the PLAYER, so
+     BEGIN was always live. Item F requires BEGIN to be disabled "until a player faction is selected", which is only
+     real if the player starts with none — so YOUR FACTION now starts unselected on every entry and the screen earns
+     its name. The OPPONENT keeps the shipped default (DEVAS, or the last one chosen) per ruling (b). */
+  fselChoice={ p0:null, p1:currentFactions.p1 };
+  renderFselTiles();
+  renderProfile();            // T36: fills the fsel-* chip mirror through the shared writer
   selectedDifficulty = (loadMeta().settings.difficulty)||'advanced';   // D2: preselect the persisted last choice
   renderDiffSelector();
   $('hudwrap').classList.add('hidden');
   $('landing').classList.add('hidden');
   $('factionselect').classList.remove('hidden');
+  fselPickPlate(); fselFitPlate();
+  Ember.start('factionselect', 0.35);   // DS §2 — narrative density; self-terminates when startGame hides the screen
   Audio2.playTrack('menu');   // menu music on the faction-select screen (crossfades back from battle)
 }
+addEventListener('resize', ()=>{ if(!$('factionselect').classList.contains('hidden')){ fselPickPlate(); fselFitPlate(); } });
 $('factionselect').addEventListener('click', e=>{
-  const b=e.target.closest('.fbtn'); if(!b) return;
-  const box=b.closest('.fsel-opts'); fselChoice[box.dataset.side]=b.dataset.f;
-  box.querySelectorAll('.fbtn').forEach(x=>x.classList.toggle('sel', x===b));
+  const b=e.target.closest('.ftile'); if(!b) return;
+  const side=b.dataset.side;
+  fselChoice[side]=b.dataset.f;
+  b.parentElement.querySelectorAll('.ftile').forEach(x=>x.classList.toggle('sel', x===b));
+  fselSyncStart();
 });
-$('fselstart').onclick=()=>startGame(fselChoice.p0, fselChoice.p1);
+$('fselstart').onclick=()=>{
+  if(!fselChoice.p0) return;                                // gated: no player faction, no match
+  // RANDOM resolves HERE, in the UI, exactly as an explicit pick would — startGame receives a concrete faction.
+  const p1 = fselChoice.p1==='random' ? FSEL_TILES[Math.floor(Math.random()*FSEL_TILES.length)].f : fselChoice.p1;
+  startGame(fselChoice.p0, p1);
+};
+$('fsel-quests').onclick=()=>showQuests();
+$('fsel-settings').onclick=()=>{ syncSettingsUI(); $('settings').classList.remove('hidden'); };
+$('fsel-collection').onclick=()=>showCollection();
+document.querySelectorAll('#factionselect [data-soon]').forEach(b=> b.onclick=()=>toastMute('Coming soon'));
 $('fsel-back').onclick=()=>showLanding();   // back to landing (fresh stats); showLanding→playTrack('menu') is a no-op while menu already plays, so music is uninterrupted
 
 /* ---------- D2 difficulty selector (PvAI quickplay ONLY — story never sets or reads this) ---------- */
@@ -3989,6 +4170,7 @@ function renderDiffSelector(){
 }
 $('diffopts').addEventListener('click', e=>{
   const b=e.target.closest('.dbtn'); if(!b || !DIFF_META[b.dataset.d]) return;
+  if(b.hasAttribute('data-soon')) return;   // T36: locked tiers toast (data-soon handler) and NEVER move the selection
   selectedDifficulty=b.dataset.d; renderDiffSelector();
   const M=loadMeta(); M.settings.difficulty=selectedDifficulty; saveMeta(M);   // persist last choice → preselected next match
 });
@@ -4343,23 +4525,36 @@ function renderQuests(){
   const dr=$('q-daily-reset'), wr=$('q-weekly-reset'); if(dr) dr.textContent='resets daily'; if(wr) wr.textContent='resets weekly';
 }
 function showQuests(){ loadMeta(); renderQuests(); $('quests').classList.remove('hidden'); }
+/* T36 — ONE writer, N chips. The landing chip's ids are unprefixed ('lpname'); the faction-select MIRROR prefixes
+   them ('fsel-lpname'), because duplicating an id would make getElementById return only the landing's node and the
+   mirror would silently never update. Every write is id-addressed and null-guarded, so a prefix whose nodes are
+   absent is a no-op. The LANDING PATH IS UNCHANGED: renderProfile() still calls this with prefix '' and does the
+   same writes in the same order (incl. the levelRolloverPending one-shot, which stays owned by the landing chip). */
+function renderProfileChip(prefix, M, P, lv, prog, rollover){
+  const q=id=>$(prefix+id);
+  const av=q('lpavatar'); if(av) av.textContent=profileInitials(P.name);
+  const nm=q('lpname');   if(nm) nm.textContent=P.name;
+  const rk=q('lprank');   if(rk) rk.textContent=rankForWins(P.wins);   // §2 rank title beside the name
+  const lvl=q('lplevel'); if(lvl) lvl.textContent='Level '+lv.level;
+  const bar=q('lpbar');
+  if(bar){
+    if(rollover){   // slice 4: fill to 100% → snap to 0 → animate to the new level's fill (a rollover, not a backwards snap)
+      bar.style.width='100%';
+      setTimeout(()=>{ bar.style.transition='none'; bar.style.width='0%';
+        requestAnimationFrame(()=>{ bar.style.transition=''; bar.style.width=prog+'%'; }); }, 440);
+    } else bar.style.width=prog+'%';
+  }
+  const st=q('lpstats'); if(st) st.textContent=`${P.wins} wins · ${P.matches} matches · ${P.winsToday} today`;
+  const wc=q('lp-coins'), wa=q('lp-amsha');            // slice 3: wallet (accruing since slice 1, visible now)
+  if(wc) wc.textContent=M.wallet.coins|0; if(wa) wa.textContent=M.wallet.amsha|0;
+}
 function renderProfile(){
   const P=loadProfile(), M=loadMeta();
   const lv=levelFromXp(M.xp.total);                          // real M1 level + XP progress bar
   const prog=lv.toNext>0 ? Math.min(100, lv.intoLevel/lv.toNext*100) : 0;
-  $('lpavatar').textContent=profileInitials(P.name);
-  $('lpname').textContent=P.name;
-  const rk=$('lprank'); if(rk) rk.textContent=rankForWins(P.wins);   // §2 rank title beside the name
-  $('lplevel').textContent='Level '+lv.level;
-  const bar=$('lpbar');
-  if(levelRolloverPending){ levelRolloverPending=false;   // slice 4: fill to 100% → snap to 0 → animate to the new level's fill (a rollover, not a backwards snap)
-    bar.style.width='100%';
-    setTimeout(()=>{ bar.style.transition='none'; bar.style.width='0%';
-      requestAnimationFrame(()=>{ bar.style.transition=''; bar.style.width=prog+'%'; }); }, 440);
-  } else bar.style.width=prog+'%';
-  $('lpstats').textContent=`${P.wins} wins · ${P.matches} matches · ${P.winsToday} today`;
-  const wc=$('lp-coins'), wa=$('lp-amsha');            // slice 3: wallet (accruing since slice 1, visible now)
-  if(wc) wc.textContent=M.wallet.coins|0; if(wa) wa.textContent=M.wallet.amsha|0;
+  const rollover=levelRolloverPending; if(rollover) levelRolloverPending=false;   // consumed ONCE, by the landing chip
+  renderProfileChip('', M, P, lv, prog, rollover);          // landing
+  renderProfileChip('fsel-', M, P, lv, prog, false);        // faction-select mirror (no rollover theatre on a pre-battle chip)
   renderSadhana(M);
 }
 function renderSadhana(M){
