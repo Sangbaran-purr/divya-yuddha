@@ -14,7 +14,7 @@ const DEVA_DECK_DEF = [
   // ---- UNITS (12) ----
   { id:'surya',   n:'Surya Dev',      sub:'Radiance of the Dawn', t:'unit', p:6, r:'E', txt:'ON PLAY: All other friendly Units gain +1 power.' },
   { id:'brihaspati',n:'Brihaspati',   sub:'Guru of the Gods',     t:'unit', p:5, r:'E', txt:'ON PLAY: Copy the effect of the last Mantra played by either player.' },
-  { id:'vayu',    n:'Vayu',           sub:'The Invisible Force',  t:'unit', p:5, r:'R', txt:'ON PLAY: The highest power enemy Unit loses 2 power. (v0.1: swap omitted)' },
+  { id:'vayu',    n:'Vayu',           sub:'The Invisible Force',  t:'unit', p:5, r:'R', txt:'ON PLAY: Hurl the highest power enemy Unit out of formation; it loses 2 power.' },
   { id:'vishwakarma',n:'Vishwakarma', sub:'Divine Architect',     t:'unit', p:4, r:'R', txt:'ON PLAY: Destroy the opponent\u2019s Artifact. Gain +2 power for each Artifact destroyed this game.' },
   { id:'kubera',  n:'Kubera',         sub:'Lord of Wealth',       t:'unit', p:3, r:'R', txt:'ON PLAY: Draw 2 cards. If both are Units they gain +1 power each.' },
   { id:'urvashi', n:'Urvashi',        sub:'The Eternal Apsara',   t:'unit', p:4, r:'R', txt:'ON PLAY: Opponent discards their highest power card from hand.' },
@@ -65,9 +65,9 @@ const DEVA_DECK_DEF = [
   // ---- WAVE 1 (batch 16 — the artifact/counter tier) ----
   { id:'kalpavriksha',n:'Kalpavriksha', sub:'The Wish-Granting Tree',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your lowest-power Unit becomes equal to your highest-power Unit.' },
   // ---- WAVE 1 (batch 17 — heroes part 1) ----
-  { id:'kartikeya',n:'Kartikeya',      sub:'Commander of the Host',t:'hero', p:8, r:'L', wave:1, txt:'PASSIVE: When an enemy Astra resolves against your side, all your Units gain +1 power permanently.' },
+  { id:'kartikeya',n:'Kartikeya',      sub:'Commander of the Deva Host',t:'hero', p:8, r:'L', wave:1, txt:'PASSIVE: When an enemy Astra resolves against your side, all your Units gain +1 power permanently.' },
   // ---- WAVE 1 (batch 19 — deferred heroes) ----
-  { id:'garuda',   n:'Garuda',          sub:'The Serpent-Eater',    t:'hero', p:7, r:'L', wave:1, txt:'ON PLAY: Remove all Venom from your Units; each gains +1 power per token removed.' },
+  { id:'garuda',   n:'Garuda',          sub:'King of All Birds',    t:'hero', p:7, r:'L', wave:1, txt:'ON PLAY: Remove all Venom from your Units; each gains +1 power per token removed.' },
 ];
 
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).

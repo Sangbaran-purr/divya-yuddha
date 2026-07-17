@@ -13,9 +13,11 @@
 # epithet map to keep in sync. (T39 ruling: a planned docs/DEVA_WAVE_EPITHETS_v1.md
 # never existed in the repo and is formally dead; all 176 cards already carry
 # their epithet in-engine.)
-# FLAG FOR RULING: Vayu's engine text ends with the dev annotation
-# "(v0.1: swap omitted)" — player-facing text carrying a dev note;
-# candidate for a cleanup delta.
+# RESOLVED (R85 v2, T40): Vayu's dev-annotated text was an INVERTED
+# annotation — it claimed the swap was omitted while the engine performs
+# it (a displace + -2). Re-texted to "ON PLAY: Hurl the highest power
+# enemy Unit out of formation; it loses 2 power." Behavior unchanged
+# (launch card, frozen); the printed text now matches the code.
 
 ═══════════════════════════════════════════
 ## LAUNCH SET (22)
@@ -71,7 +73,7 @@ Power: 5
 Type: Unit
 Rarity: Rare
 Ability:
-ON PLAY: The highest power enemy Unit loses 2 power. (v0.1: swap omitted)
+ON PLAY: Hurl the highest power enemy Unit out of formation; it loses 2 power.
 Flavor:
 "He moves unseen. His touch is the last thing you feel"
 

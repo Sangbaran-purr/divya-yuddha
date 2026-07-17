@@ -301,3 +301,64 @@ BASELINE is untouched by construction — PROVEN anyway (the entire `test.js`
 output is byte-identical pre/post) · ASTRA_DMG unchanged (neither card is a
 deal-N astra; the `'Rudhira Bali'` cause string is not a member before or
 after) · the adopted R82 WAVE BASELINE is display-name-independent and stands.
+
+### R85 v2 — VAYU TEXT: THE HONESTY DELTA (ruled 2026-07-17; implemented T40)
+Old: `ON PLAY: The highest power enemy Unit loses 2 power. (v0.1: swap omitted)`
+New: `ON PLAY: Hurl the highest power enemy Unit out of formation; it loses 2 power.`
+
+- **THIS IS NOT A CLEANUP — IT IS AN HONESTY FIX. THE ANNOTATION WAS INVERTED.**
+  R85 v1 assumed "(v0.1: swap omitted)" was inert build-note prose over a card that
+  merely deals −2. T40's STEP 0 proved the opposite: the annotation claimed the swap
+  was OMITTED while the code PERFORMS it. Vayu's on-play (engine.js ~1418) does TWO
+  things — `opp.units.splice(ti,1); opp.units.push(t)` (a DISPLACE to the end of the
+  enemy row, logged "Vayu's gale hurls it out of formation.") and then
+  `damageUnit(...,2,'Vayu')`. Measured: an enemy Nala moved index 1 → 3 and 5 → 3
+  power; its Leap neighbours changed from ["Vanara Scout","Mainda"] to ["Mainda"].
+  The displace is LOAD-BEARING — it reshapes Vanara formation/Leap adjacency.
+  CLAUDE.md:58 already recorded the restore: "Vayu: original GDD ability restored —
+  displaces the highest enemy Unit out of formation (breaks Vanara Leap adjacency)
+  and −2 power." The printed text simply never caught up.
+- **WHY R85 v1's CLEAN SENTENCE WAS REJECTED:** "the highest power enemy Unit loses
+  2 power." would have shipped a card text that HIDES a live mechanic — a Vanara
+  player would not learn their formation breaks. That is worse than a stale
+  annotation. The new line states both halves.
+- **OPTION (b) — removing the displace to match the clean sentence — IS BARRED, NOT
+  DEFERRED.** Vayu is a LAUNCH card and launch behavior is frozen by permanent law
+  (the LAUNCH BASELINE is byte-identical across every task in this project and is not
+  subject to adoption or revision). A text delta is the only lawful move here; the
+  code does not change.
+- House style: `ON PLAY:` all-caps (64/64 defs; zero use sentence-case), sentence-
+  terminated — matched.
+- ZERO BEHAVIOR: txt is a display field, never read by rules. Post-change the
+  displace still fires and −2 still applies (re-proven).
+- ART GATE: `Devas_Unit_Vayu_P5_rRare.png` needs a re-export (the frame bakes the
+  old annotated line).
+
+### R87 — TWO DEVA HERO EPITHETS (ruled 2026-07-17; implemented T40)
+- `kartikeya` sub: "Commander of the Host" → **"Commander of the Deva Host"**
+- `garuda`    sub: "The Serpent-Eater"     → **"King of All Birds"**
+
+- **GARUDA — rationale.** "The Serpent-Eater" frames him as a serpent-predator. In the
+  Collection grid the four factions sit adjacent, so a Deva hero epithet that names
+  the Naga roster as prey reads as a taunt at gallery scale — a framing the set does
+  not otherwise take. Canon supports the replacement: Garuda is **Pakshiraja**, king
+  of birds; the serpent enmity is a consequence of his mother's bondage — the
+  wronged-not-monstrous framing. "King of All Birds" supersedes the serpent-predator
+  line. (His MECHANIC still answers Venom — R58/T19 — which is where the enmity
+  belongs: in the rules, not the nameplate.)
+- **KARTIKEYA — rationale.** "Commander of the Host" is ambiguous once the Asura wave
+  ships its own hosts (Mahishasura's emptied field, Mahishi). "Commander of the Deva
+  Host" names whose army he leads.
+- ids UNCHANGED (`kartikeya`, `garuda`) — ids are save-data.
+- **ZERO string-keyed consumers** (the FIRE_KEYS lesson, re-verified): both old subs
+  appeared ONLY in the def itself (src/engine.js + its inlined copy in index.html).
+  No matcher, no map, no test expectation, no sim-scanner key — everything keys on id.
+- The T39 Collection grid reads `def.sub` LIVE, so both tiles picked up the new subs
+  with NO UI edit (A4(a) doing real work).
+- ART GATE: `Devas_Hero_Kartikeya_P8_rLegendary.png` and
+  `Devas_Hero_Garuda_P7_rLegendary.png` need re-exports (both frames bake the old sub).
+
+INVARIANTS (all three deltas): engine behavior UNCHANGED — the entire `node src/test.js`
+output is BYTE-IDENTICAL pre/post (zero changed lines; txt/sub are display fields the
+rules never read) · Deva-vs-Naga 40.9/59.1 · ASTRA_DMG unchanged · scenario 50 / venom 38
+/ story 48 · engine diff = exactly 3 insertions / 3 deletions, every line traced.
