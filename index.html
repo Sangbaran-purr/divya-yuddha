@@ -1191,8 +1191,13 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   background:rgba(4,3,1,.82); color:var(--gold); border-top:1px solid rgba(232,200,116,.3); }
 .cc-pin{ position:absolute; top:4px; right:4px; font-size:8px; padding:2px 5px; border-radius:5px;
   background:rgba(4,3,1,.8); border:1px solid rgba(232,200,116,.5); color:var(--gold); }
+/* T37 / R84 (T35 audit ruling): the RATNA badge leaves VIOLET for the gold family — DS §1 reserves violet for MAYA
+   (illusion/copies/veils), and R84.2(a) makes that absolute: "violet renders nothing real". A Ratna is the realest
+   thing in the game. T35 degilded the Vault but could not touch this badge (card chrome, out of bounds); with that
+   ruling it lands here. THE LAST VIOLET IN THE META LAYER DIES ON THIS LINE. */
 .cc-vault{ position:absolute; top:4px; left:4px; font-size:8px; padding:2px 5px; border-radius:5px;
-  background:rgba(90,30,90,.7); border:1px solid rgba(210,150,230,.6); color:#e8c8f4; }
+  background:linear-gradient(180deg,var(--plaque-hi),var(--plaque-lo)); border:1px solid var(--gold-dim-25);
+  color:var(--gold-bright); }
 .cc-pinned{ outline:2px solid var(--gold); outline-offset:1px; }
 /* acquisition ceremony — fires ONCE per card (revealed flag) */
 @keyframes ccFlourish{ 0%{ box-shadow:0 0 0 0 rgba(232,200,116,0); filter:brightness(1); }
@@ -1673,7 +1678,7 @@ const ASURA_DECK_DEF = [
   { id:'tripura',  n:'Tripura',       sub:'The Three Demon Cities',t:'artifact', p:0, r:'M', txt:'PASSIVE: All your Units gain +1 power at the start of every turn. Ends the instant any Astra is played by either player.' },
   { id:'chandrahas',n:'Chandrahas',   sub:'Ravana’s Moon Blade',t:'artifact', p:0, r:'R', txt:'ON PLAY: trigger one Chaos Surge. PASSIVE: your first Astra each round deals double effect; Chaos Surge triggers twice while active.' },
   // ---- WAVE 1 (batch 1; gated by opts.wave1) — WAVE1_ROSTER_v0.2.md ----
-  { id:'ashlegion',n:'Ash Legionnaire',sub:'Soldier of the Pyre',t:'unit', p:3, r:'C', wave:1, txt:'A rank-and-file soldier of the Asura host.' },
+  { id:'ashlegion',n:'Bhasma Sainika', sub:'Soldier of the Pyre',t:'unit', p:3, r:'C', wave:1, txt:'A rank-and-file soldier of the Asura host.' },
   // ---- WAVE 1 (batch 3 — the Round End tier; roundEndCardEffects) ----
   { id:'pisacha', n:'Pisacha Skirmisher',sub:'The Burning Ghoul', t:'unit', p:4, r:'C', wave:1, txt:'ROUND END: −1 power permanently.' },
   { id:'mahishasura',n:'Mahishasura', sub:'The Buffalo Demon',    t:'unit', p:7, r:'E', wave:1, txt:'ROUND END: −2 power unless an enemy Unit died this round.' },
@@ -1682,7 +1687,7 @@ const ASURA_DECK_DEF = [
   { id:'nishumbha',n:'Nishumbha',       sub:'The Bonded Demon',     t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: +1 power while Shumbha is on your board.' },
   { id:'holika',  n:'Holika',           sub:'The Unburnt',          t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: Immune to Astra damage. Suffers +1 from every other power loss.' },
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
-  { id:'bloodoath',n:'Blood Oath',      sub:'Pact of the Pyre',     t:'mantra', p:0, r:'U', wave:1, txt:'Destroy your lowest-power Unit: draw 1 card.' },   // R67 (design round 1): draw 2→1 (card-engine haircut; +4.9 Δbase, nearly-free price). ART GATE: Asuras_Mantra_BloodOath_rUncommon.
+  { id:'bloodoath',n:'Rudhira Bali',    sub:'Pact of the Pyre',     t:'mantra', p:0, r:'U', wave:1, txt:'Destroy your lowest-power Unit: draw 1 card.' },   // R67 (design round 1): draw 2→1 (card-engine haircut; +4.9 Δbase, nearly-free price). ART GATE: Asuras_Mantra_BloodOath_rUncommon.
   // ---- WAVE 1 (batch 6 — the debuff/price tier) ----
   { id:'mayashade',n:'Maya Shade',      sub:'The Mirror Wraith',    t:'unit', p:2, r:'C', wave:1, txt:'ON PLAY: Copy your lowest-power other Unit.' },
   { id:'dhumraksha',n:'Dhumraksha',     sub:'The Smoke-Eyed',       t:'unit', p:4, r:'U', wave:1, txt:'ON PLAY: Deal 1 damage to one of your Units.' },
@@ -2506,15 +2511,15 @@ function castMantra(g, pi, id, targetUid=null){
       log(g, `Savitur Verse enchants ${t.n} — +1 at the end of every round.`);
     }
   } else if (id==='bloodoath'){
-    // WAVE 1 batch 5 — Blood Oath. Destroy your lowest-EFFECTIVE-power Unit (tie: first-found, R31 symmetry), then draw up to 2.
+    // WAVE 1 batch 5 — Rudhira Bali (R84: was 'Blood Oath'). Destroy your lowest-EFFECTIVE-power Unit (tie: first-found, R31 symmetry), then draw up to 2.
     // Gated in playableIndices (needs a friendly non-ghost Unit); the guard here is defensive.
     const real=pl.units.filter(u=>!u.ghost);
-    if (!real.length){ log(g,'Blood Oath: no Unit to offer.'); }
+    if (!real.length){ log(g,'Rudhira Bali: no Unit to offer.'); }
     else {
       const sac = real.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);   // lowest effPower, tie → first-found (<=)
-      destroyUnit(g, pi, sac, 'Blood Oath');                                    // REAL destroy → increments the CASTER's deathsThisRound; composes with every death hook (Ananta Coil, Vishalakshi, etc.)
+      destroyUnit(g, pi, sac, 'Rudhira Bali');                                    // REAL destroy → increments the CASTER's deathsThisRound; composes with every death hook (Ananta Coil, Vishalakshi, etc.)
       const drawn = pl.deck.splice(0, 1); pl.hand.push(...drawn);               // R67 (design round 1): draw UP TO 1 (was 2 — card-engine haircut; deck-permitting, empty → 0, no crash)
-      log(g, `Blood Oath — ${sac.n} is offered to the pyre; ${pl.name} draws ${drawn.length}.`);
+      log(g, `Rudhira Bali — ${sac.n} is offered to the pyre; ${pl.name} draws ${drawn.length}.`);
     }
   } else if (id==='dawnsrebirth'){
     // WAVE 1 batch 5 — Dawn's Rebirth (the wave's first Ratna; engine treats it identically to any mantra def — Ratna is a meta/ownership layer, not an engine gate).
@@ -5925,8 +5930,14 @@ const CARD_FACTION = (()=>{ const m={}; try{ for(const f in DECKS) for(const c o
 function cardHomeFaction(c){ return (c && (CARD_FACTION[c.id] || CARD_FACTION['n:'+c.n])) || null; }
 function cardArtSrc(c, faction){
   const fac = cardHomeFaction(c) || faction;   // resolve by the card's home deck (fixes copied/stolen cards; identical to `faction` for normal cards)
-  const type = c.t.charAt(0).toUpperCase()+c.t.slice(1);
   const name = c.n.replace(/[^A-Za-z0-9]/g,'');   // name segment = card name with ALL non-alphanumerics removed (spaces, apostrophes, …)
+  /* R84.4 — TOKEN STEM. The Rakta frame reads TOKEN in both the type and rarity fields where the engine files
+     t:'unit' / r:'C' — a DELIBERATE frame-vs-engine difference, ruled and recorded. So the derived stem cannot come
+     from t/r for a token: without this branch cardArtSrc builds Asuras_Unit_Rakta_P2_rCommon.png and can never
+     resolve the accepted frame. Tokens are in no DECKS array, so cardHomeFaction() is null and `fac` falls back to
+     the OWNER's faction — which is correct: a Rakta belongs to whoever spawned it. */
+  if (c.token) return `assets/cards/${factionToken(fac)}_Token_${name}_P${c.base}_rToken.png`;
+  const type = c.t.charAt(0).toUpperCase()+c.t.slice(1);
   const stem = `assets/cards/${factionToken(fac)}_${type}_${name}`;
   const rar = RARITY_NAME[c.r];
   return c.base > 0

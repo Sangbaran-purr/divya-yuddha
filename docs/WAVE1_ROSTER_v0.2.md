@@ -50,11 +50,11 @@ AR Kalpavriksha      M  —   Round End: lowest Unit becomes equal to highest. [
 GUPTA:
 U Pisacha Skirmisher C  P4  Round End: −1 permanently.
 U Maya Shade         C  P2  On Play: copy your lowest other Unit. [Maricha precedent]
-U Ash Legionnaire    C  P3  Vanilla. [P1]
+U Ash Legionnaire    C  P3  Vanilla. [P1]   [R84: RENAMED → BHASMA SAINIKA (id ashlegion unchanged)]
 U Dhumraksha         U  P4  On Play: deal 1 to one of YOUR Units.
 U Simhika            U  P4  Enemy Unit revived → +2. [P2]
 A Mohanastra         U  —   Enemy Unit −2 this round. [dmgAstra:false — explicit]
-M Blood Oath         U  —   Destroy your lowest Unit: draw 2. [draw exists — flag removed] [R67 (design round 1): draw 2→1 — card-engine haircut (+4.9 Δbase, near-free price). Effective: +4.9→−3.0. ART GATE: Asuras_Mantra_BloodOath_rUncommon]
+M Blood Oath         U  —   [R84: RENAMED → RUDHIRA BALI (id bloodoath unchanged)] Destroy your lowest Unit: draw 2. [draw exists — flag removed] [R67 (design round 1): draw 2→1 — card-engine haircut (+4.9 Δbase, near-free price). Effective: +4.9→−3.0. ART GATE: Asuras_Mantra_BloodOath_rUncommon]
 U Holika             R  P5  Immune to Astra damage; +1 extra from all else. [dmg boundary]
 U Andhaka            R  P6  Untargetable while another friendly Unit on board.
 U Shumbha            R  P4  +1 while Nishumbha on board. [P3 pair]

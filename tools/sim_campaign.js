@@ -244,7 +244,7 @@ function probe22(N){
 // Trigger fire-log keys — VERIFIED against src/engine.js source (the Bridge-scanner lesson: a
 // renamed string silently zeroes a metric). Apostrophe-free substrings to dodge curly/straight-quote drift.
 // Cards absent here are passive/read-time (Holika/Shumbha/Nishumbha/Andhaka/Setu Mason/Gaja/Anjana/Gandhamadana)
-// or vanilla (Ash Legionnaire/Kishkindha Runner/Setu Stones — no dedicated fire log): fire count = N/A.
+// or vanilla (Bhasma Sainika/Kishkindha Runner/Setu Stones — no dedicated fire log): fire count = N/A.
 const FIRE_KEYS={
   mahishasura:'hunger goes unfed', pisacha:'Pisacha Skirmisher burns lower', ironcrucible:'Iron Crucible reforges',
   mahishi:'Mahishi takes the shape', vritra:'Vritra the Withholder binds', simhika:'Simhika seizes',

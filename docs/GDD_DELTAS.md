@@ -252,3 +252,52 @@ One realm per match (`g.realm`, random by default, `opts.realm` fixes it). Engin
 - **Rishi Mandala** — each Mantra usable twice. **Ruling:** after its FIRST cast the Mantra returns to hand (once, `rishiUsed` flag), recasting costs another turn; the second cast discards normally.
 - **Kalki Kshetra** — the round's last-played card gains +2 at round end. **Ruling:** applies ONLY if that last card is a Unit/Hero still on the board; a round ending on an Astra/Mantra grants no bonus.
 - **Balance:** Mrityulok 10-matchup table is byte-identical to the LAUNCH BASELINE. Swarga/Patala swings are modest (mirrors hold ~50; largest cross swing Swarga Deva-vs-Asura +3.7) — realm-induced, reported not tuned. Realms perturb the frozen baseline by design; the baseline is defined on Mrityulok.
+
+### R84 — ASURA WAVE CANON PACKAGE (ruled 2026-07-16; implemented T37)
+Authority: `docs/rulings_R84.md`. Supersedes conflicting lines in
+ASURA_WAVE_ART_DIRECTION_v2.md. Engine remains authority for rules text.
+
+- **R84.1 RENAMES (ids unchanged — ids are save-data):**
+  - `ashlegion` · "Ash Legionnaire" → **BHASMA SAINIKA**. "Legionnaire" is
+    Roman — the set's sole register violation. Bhasma (ash) + Sainika
+    deliberately mirrors the shipped DEVA SAINIKA: the two hosts' rank-and-file
+    rhyme.
+  - `bloodoath` · "Blood Oath" → **RUDHIRA BALI**. The mechanic IS a
+    blood-offering. Rudhira over Rakta to avoid crossing wires with the Rakta
+    tokens of Raktabija's Curse. Accepted echo: "Bali"/Mahabali (the two-word
+    form separates); retired echo: "Oath"/Kishkindha Oath.
+  - The frames are canon by acceptance; the ENGINE moved to the frames' names.
+  - ⚠ THE RULING MISSTATES ONE ID: R84.5 item 1 names `'ashlegionnaire'`. The
+    actual engine id is **`'ashlegion'`** (grep: `ashlegionnaire` = 0 hits
+    anywhere). No code consequence — ids stay unchanged either way — but the
+    ruling text should be read as `'ashlegion'`.
+- **R84.2 TWO FIRES:** (a) VIOLET = MAYA, absolute — illusion/copies/veils
+  render violet, and violet renders nothing real (peer of venom-green).
+  (b) EMBER-RED = THE PRICE, preferred — real payment renders as ember light
+  leaving a body, never liquid blood (gore law). (c) ASH-IRON WORLD demoted
+  law → preference. (d) GARMENT EXEMPTION: the law governs LIGHT, not cloth.
+- **R84.3** per-card art annotations (Surpanakha scar / Vritra water / Simhika
+  sea-canon / Shumbha-Nishumbha diptych-by-pose / Brahmadanda relic /
+  Mahishasura magnificent-hunger) — art-side, no engine effect.
+- **R84.4 RAKTA TOKEN:** engine def unchanged (`id:'rakta'`, `t:'unit'`,
+  `r:'C'`, `token:true`, `ghost:false`). Frame `Asuras_Token_Rakta_P2_rToken.png`
+  reads TOKEN where the engine files `r:'C'` — a DELIBERATE frame-vs-engine
+  difference, recorded so no audit flags it. Tokens are board-only: never in
+  the 176, never in schema v6, never sealed/revealed, invisible to Collection.
+  ⚠ CONSEQUENCE FOUND IN T37 (open, not fixed here): `cardArtSrc` derives the
+  stem from `t`/`r`, so it builds `Asuras_Unit_Rakta_P2_rCommon.png` and will
+  NOT resolve the accepted frame. See the T37 report; needs a one-line mapping.
+- **R84.7 (T35 audit ruling, folded in):** `.cc-vault` — the RATNA badge on
+  collection cards — recolors violet → gold family (`--gold-bright` on the
+  plaque ground, `--gold-dim-25` border). Follows from R84.2(a): a Ratna is the
+  realest thing in the game and must not render in the maya colour. This was
+  the last violet in the meta layer.
+- **R84.6 CANDIDATE NOTED, NOT RULED:** Vayu (Deva launch) — engine txt ends
+  with the dev annotation "(v0.1: swap omitted)", player-facing text carrying a
+  dev note. Candidate R85: engine text cleanup + frame re-export. Not executed.
+
+INVARIANTS: ids unchanged · both cards are `wave:1`, so the flag-off LAUNCH
+BASELINE is untouched by construction — PROVEN anyway (the entire `test.js`
+output is byte-identical pre/post) · ASTRA_DMG unchanged (neither card is a
+deal-N astra; the `'Rudhira Bali'` cause string is not a member before or
+after) · the adopted R82 WAVE BASELINE is display-name-independent and stands.

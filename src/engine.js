@@ -100,7 +100,7 @@ const ASURA_DECK_DEF = [
   { id:'tripura',  n:'Tripura',       sub:'The Three Demon Cities',t:'artifact', p:0, r:'M', txt:'PASSIVE: All your Units gain +1 power at the start of every turn. Ends the instant any Astra is played by either player.' },
   { id:'chandrahas',n:'Chandrahas',   sub:'Ravana’s Moon Blade',t:'artifact', p:0, r:'R', txt:'ON PLAY: trigger one Chaos Surge. PASSIVE: your first Astra each round deals double effect; Chaos Surge triggers twice while active.' },
   // ---- WAVE 1 (batch 1; gated by opts.wave1) — WAVE1_ROSTER_v0.2.md ----
-  { id:'ashlegion',n:'Ash Legionnaire',sub:'Soldier of the Pyre',t:'unit', p:3, r:'C', wave:1, txt:'A rank-and-file soldier of the Asura host.' },
+  { id:'ashlegion',n:'Bhasma Sainika', sub:'Soldier of the Pyre',t:'unit', p:3, r:'C', wave:1, txt:'A rank-and-file soldier of the Asura host.' },
   // ---- WAVE 1 (batch 3 — the Round End tier; roundEndCardEffects) ----
   { id:'pisacha', n:'Pisacha Skirmisher',sub:'The Burning Ghoul', t:'unit', p:4, r:'C', wave:1, txt:'ROUND END: −1 power permanently.' },
   { id:'mahishasura',n:'Mahishasura', sub:'The Buffalo Demon',    t:'unit', p:7, r:'E', wave:1, txt:'ROUND END: −2 power unless an enemy Unit died this round.' },
@@ -109,7 +109,7 @@ const ASURA_DECK_DEF = [
   { id:'nishumbha',n:'Nishumbha',       sub:'The Bonded Demon',     t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: +1 power while Shumbha is on your board.' },
   { id:'holika',  n:'Holika',           sub:'The Unburnt',          t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: Immune to Astra damage. Suffers +1 from every other power loss.' },
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
-  { id:'bloodoath',n:'Blood Oath',      sub:'Pact of the Pyre',     t:'mantra', p:0, r:'U', wave:1, txt:'Destroy your lowest-power Unit: draw 1 card.' },   // R67 (design round 1): draw 2→1 (card-engine haircut; +4.9 Δbase, nearly-free price). ART GATE: Asuras_Mantra_BloodOath_rUncommon.
+  { id:'bloodoath',n:'Rudhira Bali',    sub:'Pact of the Pyre',     t:'mantra', p:0, r:'U', wave:1, txt:'Destroy your lowest-power Unit: draw 1 card.' },   // R67 (design round 1): draw 2→1 (card-engine haircut; +4.9 Δbase, nearly-free price). ART GATE: Asuras_Mantra_BloodOath_rUncommon.
   // ---- WAVE 1 (batch 6 — the debuff/price tier) ----
   { id:'mayashade',n:'Maya Shade',      sub:'The Mirror Wraith',    t:'unit', p:2, r:'C', wave:1, txt:'ON PLAY: Copy your lowest-power other Unit.' },
   { id:'dhumraksha',n:'Dhumraksha',     sub:'The Smoke-Eyed',       t:'unit', p:4, r:'U', wave:1, txt:'ON PLAY: Deal 1 damage to one of your Units.' },
@@ -933,15 +933,15 @@ function castMantra(g, pi, id, targetUid=null){
       log(g, `Savitur Verse enchants ${t.n} — +1 at the end of every round.`);
     }
   } else if (id==='bloodoath'){
-    // WAVE 1 batch 5 — Blood Oath. Destroy your lowest-EFFECTIVE-power Unit (tie: first-found, R31 symmetry), then draw up to 2.
+    // WAVE 1 batch 5 — Rudhira Bali (R84: was 'Blood Oath'). Destroy your lowest-EFFECTIVE-power Unit (tie: first-found, R31 symmetry), then draw up to 2.
     // Gated in playableIndices (needs a friendly non-ghost Unit); the guard here is defensive.
     const real=pl.units.filter(u=>!u.ghost);
-    if (!real.length){ log(g,'Blood Oath: no Unit to offer.'); }
+    if (!real.length){ log(g,'Rudhira Bali: no Unit to offer.'); }
     else {
       const sac = real.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);   // lowest effPower, tie → first-found (<=)
-      destroyUnit(g, pi, sac, 'Blood Oath');                                    // REAL destroy → increments the CASTER's deathsThisRound; composes with every death hook (Ananta Coil, Vishalakshi, etc.)
+      destroyUnit(g, pi, sac, 'Rudhira Bali');                                    // REAL destroy → increments the CASTER's deathsThisRound; composes with every death hook (Ananta Coil, Vishalakshi, etc.)
       const drawn = pl.deck.splice(0, 1); pl.hand.push(...drawn);               // R67 (design round 1): draw UP TO 1 (was 2 — card-engine haircut; deck-permitting, empty → 0, no crash)
-      log(g, `Blood Oath — ${sac.n} is offered to the pyre; ${pl.name} draws ${drawn.length}.`);
+      log(g, `Rudhira Bali — ${sac.n} is offered to the pyre; ${pl.name} draws ${drawn.length}.`);
     }
   } else if (id==='dawnsrebirth'){
     // WAVE 1 batch 5 — Dawn's Rebirth (the wave's first Ratna; engine treats it identically to any mantra def — Ratna is a meta/ownership layer, not an engine gate).
