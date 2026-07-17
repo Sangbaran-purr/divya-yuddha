@@ -6,6 +6,13 @@
 # frames are final authority if any line was refined at Canva time).
 # WAVE FLAVOR: canonical, from docs/DEVA_WAVE_ART_DIRECTION.md (2026-07-16
 # grep -A1, 2026-07-16). COMPLETE — 44/44.
+# EPITHETS: each card heading's "NAME — EPITHET" mirrors the engine def's
+# `sub` field verbatim (T39 verified: Indra→"King of Devas", Agni→"Flame of
+# Sacrifice", Varuna→"Lord of Oceans", …). src/engine.js is the single source;
+# this doc renders it. The Collection grid reads def.sub live — there is no
+# epithet map to keep in sync. (T39 ruling: a planned docs/DEVA_WAVE_EPITHETS_v1.md
+# never existed in the repo and is formally dead; all 176 cards already carry
+# their epithet in-engine.)
 # FLAG FOR RULING: Vayu's engine text ends with the dev annotation
 # "(v0.1: swap omitted)" — player-facing text carrying a dev note;
 # candidate for a cleanup delta.

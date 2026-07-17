@@ -410,3 +410,86 @@ a ruling clause that contradicts an engine fact.
   5-across 124.8x124. Tile grounds gain ~.85 alpha so the plate
   reads through (the A3(c) tile-ground law is unchanged — the ground
   still carries the faction colour, it is merely translucent).
+
+═══════════════════════════════════════════════════════════
+## AMENDMENT A4 — COLLECTION (ruled 2026-07-17, during T39)
+═══════════════════════════════════════════════════════════
+(a) EPITHETS — NO MAP. THE ENGINE IS THE SOURCE. T39's STEP 0 found
+    that the planned docs/DEVA_WAVE_EPITHETS_v1.md NEVER EXISTED in
+    the repo, and that the premise "wave 66 are unauthored" was FALSE:
+    all 176 cards already carry their epithet in-engine as def.sub,
+    fully authored (Bhasma Sainika → "Soldier of the Pyre",
+    Swayamprabha → "Keeper of the Hidden Vale", Vishalakshi the Pale
+    → "Eyes of the Deep"). DEVA_FACTION_CARDS_v1.md has ZERO "EPITHET"
+    fields — its epithets live in the card headings and are verbatim
+    the engine's sub (Indra → "King of Devas", …); the doc RENDERS
+    engine data, and its own header says so.
+    RULED: the grid's epithet line reads def.sub live. There is no
+    EPITHETS map and no docs merge — a hand-transcribed map would be a
+    SECOND source of truth for a field the engine owns, guaranteed to
+    drift (the T35-A2 duplicate-FAC_LABEL lesson; the R83/R84 name-keyed
+    -data lesson). "Zero invented strings" is therefore true BY
+    CONSTRUCTION, not by grep. The epithet doc is formally dead.
+    The compendium header gained a one-line note recording this.
+
+(b) GRID WEARS THE BAND; FRAMES LIVE IN THE LIGHTBOX. Measured: the
+    shipped frames' BAKED nameplate begins at 66-70% of frame height
+    (Indra 69.6%, Surya Dev 68.3%, Vajra 65.9%). Rendering the whole
+    frame at grid size therefore duplicates name/power under a CSS
+    band and covers the art. RULED: the grid cell shows the TOP 65% of
+    the frame (pure illustration, no baked text) and a CSS band carries
+    name / epithet / POWER N (or "POWER N/A" for p:0). The art layer's
+    aspect-ratio (750/683) makes its height exactly 65.05% of the 5:7
+    cell at EVERY width — one rule, no per-breakpoint magic number —
+    and the band abuts at top:65%. The ZOOM LIGHTBOX still shows the
+    whole frame (.cz is not .cc, so the crop does not reach it).
+    Nothing new ships into assets/cards. FEEDS the frame-program §5
+    scope ruling: the grid does NOT need a second art export — the
+    existing frames crop cleanly because the art zone is consistent.
+
+(c) JOURNAL + REWARDS — VISIBLE-LOCKED (option (a) now, (b) is the
+    target). icon_journal/icon_rewards are COMPLETE roundels (ornate
+    gold ring + glyph), not glyphs — unlike T36's CSS roundels (dark
+    fill, 1px gold border, inline-SVG line art). Shipping them beside
+    the CSS roundels makes the LOCKED items richer than the live ones;
+    the .locked dim (opacity .5) closes most of that gap and is
+    accepted for now. TARGET (option b): when art exists for
+    quests/settings/collection/decks/store, ALL FIVE become image
+    roundels and the CSS roundel retires. Until then the row is mixed
+    by necessity, not by design.
+
+(d) PORTRAIT ADAPTATION (ruled; reversal conditions stated). At <1024:
+    filter rail collapses to a horizontal pill row under the tabs
+    (scrollable, 44px pills); progress panel is a compact strip (104px
+    ring + rarity rows); grid 2-across. At >=1024: 4-across grid, 132px
+    ring, roomier rail — same DOM, sizes in the media query only (the
+    T34c capability-split pattern).
+    REVERSE THIS IF: (1) the filter row's horizontal scroll is missed
+    on device (no affordance that more pills exist off-screen) — then
+    wrap to two rows instead of scrolling; (2) the 2-across grid reads
+    too sparse against 44 cards — then 3-across at 390 with a shorter
+    band; (3) the compact progress strip is judged to bury the ring —
+    then move progress below the grid as a footer panel.
+
+(e) COLLECTION GROUND — DS §3 IS HONORED, NOT BROKEN. §3 says card
+    screens ground on INK because "a painted rotunda behind 44
+    thumbnails murders them". T39 carries the collection plate, but
+    under a HEAVY treatment: brightness(.34) saturate(.72) + a
+    top-to-bottom dim + a vignette. Measured: the plate texel beside
+    the progress panel reads rgb(236,211,188) raw but composites to a
+    near-ink wash. #vault and #sadhanapick keep the PURE ink ground.
+    The law's intent (cards are the stars) holds; the plate is
+    atmosphere, not a competitor.
+
+(f) ASSET PIPELINE (T39). Tooling: ImageMagick is NOT installed;
+    Pillow (12.3.0) was pip-installed and is now the image tool of
+    record for trims/rescales — LOG THIS DEV DEPENDENCY.
+    Trim threshold: the four transparent assets carry a sub-threshold
+    alpha haze across the whole 1536x1024 MJ canvas, so a naive
+    -trim/getbbox (alpha>0) returns ~1500x1023 and does nothing. The
+    real bbox only resolves at ALPHA>4 (the dust is alpha 3-4) and is
+    stable from there to alpha>32. Trim at alpha>4 with 2px pad.
+    Opaque assets (both plates, card_back) ship as JPEG BYTES UNDER A
+    .png NAME — the make_thumbs.sh precedent, documented in CLAUDE.md
+    ("browsers sniff content"). Alpha verified intact post-trim on all
+    four RGBA assets (extrema 0/255, bands RGBA).

@@ -1098,6 +1098,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   /* T34 landing: the ember canvas is killed outright (DS §2) and every ambient loop stilled; the plate stays
      cover-fit (the JS holds Ken Burns at its rest scale and skips parallax), the roller stops curling. */
   #landfx{ display:none !important; }
+  .ember-fx{ display:none !important; }   /* T39/T35: every per-screen ember instance — DS §2 kills the fire outright */
+  .cp-arc{ transition:none !important; }  /* T39: the progress arc snaps to its value instead of sweeping */
   .ls-beam, .ls-haze, .ls-grain, .land-lockup, .mode.nudge{ animation:none !important; }
   #landmast, .land-col, .land-foot{ animation:none !important; opacity:1 !important; }
 }
@@ -1151,41 +1153,132 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   border-radius:8px; top:10px; right:10px; display:inline-flex; align-items:center; justify-content:center; }
 .cz.cz-flight *{ pointer-events:none; }   /* PIN/BUY are inert mid-flight — the reverse maths needs a settled rect */
 /* ===== TASK 30 — COLLECTION + REVEAL CEREMONY + RATNA VAULT ===== */
-/* ═══ T35 — CARD SCREENS. DS §3 BACKGROUND LAW: these screens ground on --ds-ink, near-black. NO plate, NO grain
-   over a card grid — a painted rotunda behind 44 thumbnails murders them. At most a whisper of vignette + ember
-   0.15. The CHROME carries the identity here; the cards are the stars. ═══ */
-#collection, #vault{ z-index:86; overflow-y:auto; }
-#collection, #vault{ background:var(--ds-ink); }
-/* The ember canvas sits at z-index:-1 INSIDE each screen's stacking context (the screens are position:fixed with a
-   z-index, so they establish one). Negative-z children paint above the element's own background but BELOW in-flow
-   content — so the fire reads behind the cards without any positioning change to the content, and .col-head keeps
-   its sticky (an `#id > *{position}` rule would have out-specified and broken it). */
-#collection > .ember-fx, #vault > .ember-fx, #sadhanapick > .ember-fx{
+/* ═══ T35 — CARD SCREENS. DS §3 BACKGROUND LAW: card screens ground on --ds-ink. #vault + #sadhanapick keep the
+   pure-ink ground; #collection (T39) carries a HEAVILY TREATED plate over that ink — the law is "cards are the
+   stars", and a brightness(.34) wash + dim + vignette keeps it so. Ember 0.15 on all three. ═══ */
+#vault{ z-index:86; overflow-y:auto; }
+#vault{ background:var(--ds-ink); }
+#vault > .ember-fx, #sadhanapick > .ember-fx{
   position:fixed; inset:0; width:100%; max-width:none; height:100%; margin:0; z-index:-1; pointer-events:none; }
-#collection::after, #vault::after, #sadhanapick::after{ content:''; position:fixed; inset:0; z-index:-1;
+#vault::after, #sadhanapick::after{ content:''; position:fixed; inset:0; z-index:-1;
   pointer-events:none; background:radial-gradient(125% 100% at 50% 42%, transparent 62%, rgba(0,0,0,.55) 100%); }
-.col-head{ display:flex; align-items:center; gap:10px; padding:14px 12px 8px; position:sticky; top:0; background:linear-gradient(var(--ds-ink) 70%,transparent); z-index:2; }
-/* HEADER (DS §2) — Cinzel .3em, flanked by the diamond-line flourish from the logo's tagline rule. */
-.col-title{ flex:1 1 auto; display:flex; align-items:center; justify-content:center; gap:10px;
-  font-family:Cinzel,serif; color:var(--gold-hi); letter-spacing:.3em; font-size:14px; text-transform:uppercase;
-  white-space:nowrap; min-width:0; }
-.col-title::before, .col-title::after{ content:''; flex:1 1 auto; max-width:42px; height:1px;
-  background:linear-gradient(90deg,transparent,var(--gold-dim-25),transparent); }
-.col-wallet{ flex:0 0 auto; font-size:13px; color:var(--gold-hi); font-family:Cinzel,serif; }
+/* faction tabs → PLAQUE-SM skin (DS §2), min 44px hit target (Task 31 law), selected state in gold fill. */
 .col-tabs{ display:flex; gap:6px; padding:0 12px 10px; overflow-x:auto; scrollbar-width:none; }
 .col-tabs::-webkit-scrollbar{ display:none; }
-/* faction tabs → PLAQUE-SM skin (DS §2), min 44px hit target (Task 31 law), selected state in gold fill. */
-.col-tab{ flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center;
-  min-height:44px; min-width:44px; padding:0 13px; border-radius:8px;
-  font-family:Cinzel,serif; font-size:12px; letter-spacing:.08em; font-variant:small-caps;
+.col-tab{ flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  min-height:44px; min-width:44px; padding:0 11px; border-radius:8px;
+  font-family:Cinzel,serif; font-size:11px; letter-spacing:.06em; font-variant:small-caps;
   background:linear-gradient(180deg,rgba(43,28,10,.78),rgba(22,13,5,.78));
   border:1px solid var(--gold-dim-25); color:var(--gold-hi); cursor:pointer; white-space:nowrap;
   transition:border-color .25s ease, color .25s ease; }
 .col-tab:hover{ border-color:var(--gold-2); color:var(--gold-bright); }
 .col-tab.on{ border-color:var(--gold-2); color:var(--gold-bright); background:linear-gradient(180deg,#4a3210,#241505); }
-.col-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; padding:0 12px 24px; }
-@media(max-width:479px){ .col-grid{ grid-template-columns:repeat(3,1fr); } }
-.col-note{ padding:0 12px 10px; font-size:11px; color:var(--parchment); opacity:.8; }
+/* A3 tile-ground law on the tab crests: the GROUND carries faction colour, the crest carries identity. */
+.col-tab img{ width:22px; height:22px; object-fit:contain; display:block; filter:drop-shadow(0 1px 3px rgba(0,0,0,.8)); }
+.col-tab[data-f="devas"]  { background:linear-gradient(180deg,rgba(17,29,58,.85),rgba(6,10,22,.85)); }
+.col-tab[data-f="asuras"] { background:linear-gradient(180deg,rgba(42,13,13,.85),rgba(20,5,5,.85)); }
+.col-tab[data-f="vanaras"]{ background:linear-gradient(180deg,rgba(15,36,19,.85),rgba(5,14,7,.85)); }
+.col-tab[data-f="nagas"]  { background:linear-gradient(180deg,rgba(10,36,34,.85),rgba(4,16,15,.85)); }
+.col-tab.on[data-f]{ box-shadow:0 0 0 1px rgba(232,200,116,.4), 0 0 14px rgba(232,200,116,.3); }
+.col-note{ padding:0 12px 10px; font-size:10.5px; color:var(--parchment); opacity:.8; }
+/* ═══ T39 — COLLECTION FULL REBUILD ═══
+   DS §3 is honored, not broken: the ground is the plate under a HEAVY treatment (the T35 scrim pattern) so the
+   cards still read as the stars. The plate is a bright marble rotunda — brightness(.34) + the dim/vignette layers
+   take it to a near-ink wash. Ember 0.15 (card-screen density). */
+#collection{ z-index:86; overflow-y:auto; background:var(--ds-ink); }
+#colstage{ position:fixed; inset:0; overflow:hidden; z-index:-2; pointer-events:none; }
+#colplate{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); transform-origin:center;
+  filter:brightness(.34) saturate(.72) contrast(1.02); }   /* the treated plate — cards are the stars (DS §3) */
+.cs-layer{ position:absolute; inset:0; pointer-events:none; }
+.cs-dim{ background:linear-gradient(180deg, rgba(7,4,2,.72), rgba(7,4,2,.52) 42%, rgba(7,4,2,.8)); }
+.cs-vig{ background:radial-gradient(125% 100% at 50% 40%, transparent 46%, rgba(0,0,0,.72) 100%); }
+#collection > .ember-fx{ position:fixed; inset:0; width:100%; max-width:none; height:100%; margin:0; z-index:-1; pointer-events:none; }
+
+/* MASTHEAD — the plaque is ART, the title is LIVE TEXT overlaid (BEGIN BATTLE stays the only baked-text exception). */
+.col-head{ display:flex; align-items:center; gap:10px; padding:12px 12px 6px; position:sticky; top:0;
+  background:linear-gradient(var(--ds-ink) 62%, transparent); z-index:3; }
+.col-masthead{ position:relative; flex:1 1 auto; min-width:0; display:flex; align-items:center; justify-content:center; }
+.col-plaque{ width:min(300px,60vw); height:auto; display:block; filter:drop-shadow(0 4px 14px rgba(0,0,0,.7)); }
+.col-title{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-family:Cinzel,serif; color:var(--gold-bright); letter-spacing:.24em; font-size:13px; text-transform:uppercase;
+  text-shadow:0 2px 8px rgba(0,0,0,.95); white-space:nowrap; padding-bottom:2px; }
+.col-wallet{ flex:0 0 auto; font-size:13px; color:var(--gold-hi); font-family:Cinzel,serif; }
+
+/* ROUNDEL ROW — quests/settings live (T36 CSS roundels); journal/rewards are IMAGE roundels, visible-locked. */
+.col-roundels{ display:flex; justify-content:center; gap:8px; padding:2px 12px 8px; flex-wrap:wrap; }
+.roundel-img{ background:none; border:0; box-shadow:none; overflow:visible; }
+.roundel-img img{ width:100%; height:100%; object-fit:contain; display:block;
+  filter:drop-shadow(0 3px 10px rgba(0,0,0,.65)); }
+.roundel-img:hover{ border-color:transparent; }
+
+/* PROGRESS PANEL — ring_progress is the ORNAMENT; the arc + number are SVG/CSS over live data. */
+.col-progress{ display:flex; align-items:center; gap:14px; margin:0 12px 10px; padding:10px 12px; border-radius:10px;
+  border:1px solid var(--gold-dim-25); background:linear-gradient(180deg,rgba(43,28,10,.82),rgba(10,6,3,.82)); }
+.cp-ring{ position:relative; flex:0 0 auto; width:104px; height:104px; display:flex; align-items:center; justify-content:center; }
+.cp-ring img{ position:absolute; inset:0; width:100%; height:100%; object-fit:contain; pointer-events:none; }
+.cp-ring svg{ position:absolute; inset:0; width:100%; height:100%; transform:rotate(-90deg); }
+.cp-track{ fill:none; stroke:rgba(0,0,0,.5); stroke-width:5; }
+.cp-arc{ fill:none; stroke:var(--gold-hi); stroke-width:5; stroke-linecap:round;
+  filter:drop-shadow(0 0 5px rgba(232,200,116,.6)); transition:stroke-dashoffset .6s ease; }
+.cp-num{ position:relative; font-family:Cinzel,serif; font-size:17px; color:var(--gold-bright); line-height:1; text-shadow:0 1px 5px #000; }
+.cp-num small{ display:block; font-size:7px; letter-spacing:.2em; color:var(--parchment); opacity:.75; margin-top:3px; }
+.cp-rows{ flex:1 1 auto; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.cp-row{ display:flex; align-items:center; gap:7px; font-size:8.5px; letter-spacing:.1em; font-family:Cinzel,serif; }
+.cp-rname{ flex:0 0 62px; color:var(--parchment); opacity:.85; text-transform:uppercase; }
+.cp-rbar{ flex:1 1 auto; height:4px; border-radius:3px; background:rgba(0,0,0,.55); border:1px solid var(--gold-dim-25); overflow:hidden; }
+.cp-rbar i{ display:block; height:100%; width:0; background:linear-gradient(90deg,#8a6a2c,var(--gold-hi)); }
+.cp-rct{ flex:0 0 auto; color:var(--gold-hi); font-size:8px; min-width:34px; text-align:right; }
+
+/* FILTER RAIL — portrait: a horizontal pill row (ruled adaptation). Desktop: same row, roomier. */
+.col-rail{ display:flex; flex-direction:column; gap:6px; padding:0 12px 8px; }
+.col-filters, .col-sort{ display:flex; gap:5px; overflow-x:auto; scrollbar-width:none; }
+.col-filters::-webkit-scrollbar, .col-sort::-webkit-scrollbar{ display:none; }
+.col-pill{ flex:0 0 auto; display:inline-flex; align-items:center; justify-content:center; gap:4px;
+  min-height:44px; padding:0 11px; border-radius:8px; cursor:pointer; white-space:nowrap;
+  font-family:Cinzel,serif; font-size:9.5px; letter-spacing:.1em; font-variant:small-caps;
+  background:linear-gradient(180deg,rgba(43,28,10,.78),rgba(22,13,5,.78));
+  border:1px solid var(--gold-dim-25); color:var(--gold-hi);
+  transition:border-color .25s ease, color .25s ease; }
+.col-pill:hover{ border-color:var(--gold-2); color:var(--gold-bright); }
+.col-pill.on{ border-color:var(--gold-2); color:var(--gold-bright); background:linear-gradient(180deg,#4a3210,#241505); }
+.col-pill b{ font-weight:400; opacity:.62; font-size:8px; }
+.col-sort-lbl{ flex:0 0 auto; align-self:center; font-family:Cinzel,serif; font-size:8px; letter-spacing:.2em;
+  color:var(--parchment); opacity:.7; text-transform:uppercase; padding-right:3px; }
+
+/* GRID: ART CROP + CSS BAND. "Full frames are NOT rendered at grid size" — measured, the shipped frames' baked
+   nameplate begins at 66-70% of frame height (Indra 69.6%, Surya Dev 68.3%, Vajra 65.9%), so the cell shows the
+   TOP 65% (pure illustration, no baked text) and the CSS band carries name / epithet / power. The art layer's
+   aspect (750/683) makes its height exactly 65.05% of the 5:7 cell at EVERY width — one rule, no per-breakpoint
+   magic number — and the band abuts it at top:65%. The zoom lightbox still shows the whole frame (.cz is not .cc).
+   Nothing new ships into assets/cards (frame-program §5 scope ruling still open). */
+.cc > .cc-in .cc-art{ position:absolute; top:0; left:0; right:0; bottom:auto; height:auto;
+  aspect-ratio:750/683; overflow:hidden; }
+.cc > .cc-in .cc-art img{ width:100%; height:auto; object-fit:fill; display:block; }
+.col-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:9px; padding:0 12px 26px; }
+.cc-band{ position:absolute; left:0; right:0; top:65%; bottom:0; padding:4px 5px 5px; text-align:center;
+  pointer-events:none; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:linear-gradient(180deg, rgba(24,15,6,.96), rgba(4,3,1,.98));
+  border-top:1px solid rgba(232,200,116,.22); }
+.cc-bname{ font-family:Cinzel,serif; font-size:8.5px; letter-spacing:.05em; color:var(--gold-hi); line-height:1.2;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.cc-bepi{ font-size:6.5px; letter-spacing:.04em; color:var(--parchment); opacity:.7; line-height:1.25; margin-top:1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-style:italic; }
+.cc-bpow{ font-family:Cinzel,serif; font-size:7px; letter-spacing:.14em; color:var(--gold-2); margin-top:2px; }
+.cc.sealed .cc-band{ opacity:.55; }
+
+@media(min-width:1024px){
+  #collection > *{ max-width:900px; }
+  .col-grid{ grid-template-columns:repeat(4,1fr); gap:11px; }
+  .col-plaque{ width:min(430px,46vw); }
+  .col-title{ font-size:17px; letter-spacing:.3em; }
+  .col-progress{ padding:13px 16px; gap:18px; }
+  .cp-ring{ width:132px; height:132px; }
+  .cp-num{ font-size:21px; }
+  .cp-row{ font-size:9.5px; } .cp-rname{ flex-basis:74px; }
+  .col-pill{ font-size:10.5px; padding:0 13px; }
+  .cc-bname{ font-size:10px; } .cc-bepi{ font-size:7.5px; } .cc-bpow{ font-size:8px; }
+}
+
 /* the flip cell — 3D, two faces. CARD BACKS RENDER UPRIGHT ALWAYS: no rotate/mirror on .cc-back in any state. */
 .cc{ position:relative; aspect-ratio:5/7; perspective:900px; cursor:pointer; }
 .cc-in{ position:absolute; inset:0; transform-style:preserve-3d; transition:transform .5s cubic-bezier(.2,.7,.3,1); }
@@ -1216,8 +1309,14 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .vault-art{ position:relative; }                       /* anchor the .ap overlay */
 .vault-art .ap-name{ font-size:12px; } .vault-art .ap-type{ font-size:9px; } .vault-art .ap-cap{ font-size:8px; }
 .cc.sealed .cc-face img, .cc.sealed .cc-face .ph{ filter:grayscale(.85) brightness(.5); }   /* LOCKED PREVIEW: dimmed/desaturated */
+/* T39: the acq line now nests INSIDE .cc-band on grid cells (static, no own ground — the band supplies it).
+   On the ZOOMED preview there is no band, so it keeps the original absolute slot. */
+.cc-band .cc-lock{ position:static; padding:2px 0 0; margin-top:2px; font-size:7px; letter-spacing:.1em;
+  background:none; border-top:1px solid rgba(232,200,116,.16); color:var(--gold-2); font-family:Cinzel,serif; }
 .cc-lock{ position:absolute; left:0; right:0; bottom:0; padding:3px 4px; font-size:9px; text-align:center;
   background:rgba(4,3,1,.82); color:var(--gold); border-top:1px solid rgba(232,200,116,.3); }
+.cc-lock-when{ display:block; font-size:9px; letter-spacing:.06em; color:var(--parchment); opacity:.8;
+  font-style:italic; margin-top:3px; text-transform:none; }
 .cc-pin{ position:absolute; top:4px; right:4px; font-size:8px; padding:2px 5px; border-radius:5px;
   background:rgba(4,3,1,.8); border:1px solid rgba(232,200,116,.5); color:var(--gold); }
 /* T37 / R84 (T35 audit ruling): the RATNA badge leaves VIOLET for the gold family — DS §1 reserves violet for MAYA
@@ -1509,12 +1608,39 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <div id="zoom-body"></div>
 </div>
 <div class="overlay metascreen hidden" id="collection">
+  <div id="colstage">
+    <img id="colplate" alt="">
+    <div class="cs-layer cs-dim"></div>
+    <div class="cs-layer cs-vig"></div>
+  </div>
+
   <div class="col-head">
     <button class="metaback" id="col-back">‹ Back</button>
-    <div class="col-title">COLLECTION</div>
+    <div class="col-masthead">
+      <img class="col-plaque" src="assets/img/meta_masthead_plaque.png" alt="">
+      <div class="col-title">COLLECTION</div>
+    </div>
     <div class="col-wallet" id="col-wallet">✦ 0</div>
   </div>
+
+  <div class="col-roundels" id="col-roundels">
+    <button class="roundel" id="col-r-quests" title="Quests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 5h6M9 5a2 2 0 0 0-2 2v0H5.5A1.5 1.5 0 0 0 4 8.5v10A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-10A1.5 1.5 0 0 0 18.5 7H17v0a2 2 0 0 0-2-2M8 12l2.5 2.5L16 9"/></svg></button>
+    <button class="roundel" id="col-r-settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></button>
+    <button class="roundel roundel-img locked" data-soon title="Journal — coming soon"><img src="assets/img/icon_journal.png" alt=""><span class="rlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
+    <button class="roundel roundel-img locked" data-soon title="Rewards — coming soon"><img src="assets/img/icon_rewards.png" alt=""><span class="rlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
+    <button class="roundel locked" data-soon title="Decks — coming soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7" width="11" height="14" rx="1.6"/><path d="M8 4h9a2 2 0 0 1 2 2v11"/></svg><span class="rlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
+    <button class="roundel locked" data-soon title="Store — coming soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8h16l-1.3 11.2a1.6 1.6 0 0 1-1.6 1.4H6.9a1.6 1.6 0 0 1-1.6-1.4z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg><span class="rlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
+  </div>
+
   <div class="col-tabs" id="col-tabs"></div>
+
+  <div class="col-progress" id="col-progress"></div>
+
+  <div class="col-rail" id="col-rail">
+    <div class="col-filters" id="col-filters"></div>
+    <div class="col-sort" id="col-sort"></div>
+  </div>
+
   <div class="col-note" id="col-note"></div>
   <div class="col-grid" id="col-grid"></div>
 </div>
@@ -4184,6 +4310,10 @@ $('fselstart').onclick=()=>{
   const p1 = fselChoice.p1==='random' ? FSEL_TILES[Math.floor(Math.random()*FSEL_TILES.length)].f : fselChoice.p1;
   startGame(fselChoice.p0, p1);
 };
+/* T39 — the Collection roundel row. quests/settings live; journal/rewards/decks/store visible-locked (T36 pattern). */
+$('col-r-quests').onclick=()=>showQuests();
+$('col-r-settings').onclick=()=>{ syncSettingsUI(); $('settings').classList.remove('hidden'); };
+document.querySelectorAll('#collection [data-soon]').forEach(b=> b.onclick=()=>toastMute('Coming soon'));
 $('fsel-quests').onclick=()=>showQuests();
 $('fsel-settings').onclick=()=>{ syncSettingsUI(); $('settings').classList.remove('hidden'); };
 $('fsel-collection').onclick=()=>showCollection();
@@ -5274,28 +5404,119 @@ function artPending(def, faction, opts={}){
 }
 const COL_HIDE=['hudwrap','gameover','factionselect','settings','mulligan','landing','fi-inspect','factionintro','collection','vault'];
 function colHideAll(){ COL_HIDE.forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); }); }
+/* ═══ T39 — COLLECTION: plate, filters, sort, progress ═══
+   EPITHET SOURCE (ruled): the grid's epithet line reads def.sub LIVE from the engine. There is no EPITHETS map —
+   all 176 cards already carry their epithet in-engine, and a parallel map in the UI would be a second source of
+   truth for a field the engine owns (the single-source law; the T35-A2 duplicate-FAC_LABEL lesson). */
+const COL_PLATE={ wide:{src:'assets/img/collection_plate_wide.png', w:1672, h:941},
+                  port:{src:'assets/img/collection_plate_port.png', w:941,  h:1672} };
+let colPlateMode=null;
+function colPickPlate(){                                   // wide >=1024px, port below (the task's breakpoint)
+  const m=(innerWidth>=1024)?'wide':'port';
+  if(m===colPlateMode) return;
+  colPlateMode=m; const el=$('colplate'); if(el) el.src=COL_PLATE[m].src;
+}
+function colFitPlate(){                                    // cover-fit; min scale >= cover ⇒ edges never show
+  const el=$('colplate'), p=COL_PLATE[colPlateMode]; if(!el||!p) return;
+  const s=Math.max(innerWidth/p.w, innerHeight/p.h);
+  el.style.width=(p.w*s)+'px'; el.style.height=(p.h*s)+'px';
+}
+/* TYPE is an ENGINE FACT — the filter reads def.t, never a UI list. */
+const COL_FILTERS=[['all','ALL'],['unit','UNIT'],['hero','HERO'],['astra','ASTRA'],['mantra','MANTRA'],['artifact','ARTIFACT']];
+const COL_SORTS=[['power','POWER'],['name','NAME'],['rarity','RARITY']];
+const RARITY_ORDER={M:0,L:1,E:2,R:3,U:4,C:5};              // mythic-first; matches the rarity-breakdown row order
+let colFilter='all', colSort='power';
+
+function colProgress(M, all){
+  const owned=all.filter(c=>ownsCard(M,c.id)).length, tot=all.length;
+  const pct = tot ? Math.round(owned/tot*100) : 0;
+  const box=$('col-progress'); box.innerHTML='';
+  const ring=document.createElement('div'); ring.className='cp-ring';
+  const img=document.createElement('img'); img.src='assets/img/ring_progress.png'; img.alt='';
+  // the arc is SVG over live data; the ring PNG is ornament around it
+  const r=38, circ=2*Math.PI*r;
+  ring.innerHTML=`<svg viewBox="0 0 100 100" aria-hidden="true">`+
+    `<circle class="cp-track" cx="50" cy="50" r="${r}"></circle>`+
+    `<circle class="cp-arc" cx="50" cy="50" r="${r}" stroke-dasharray="${circ.toFixed(2)}" `+
+      `stroke-dashoffset="${(circ*(1-pct/100)).toFixed(2)}"></circle></svg>`+
+    `<div class="cp-num">${pct}%<small>${owned}/${tot}</small></div>`;
+  ring.insertBefore(img, ring.firstChild);
+  box.appendChild(ring);
+  const rows=document.createElement('div'); rows.className='cp-rows';
+  ['M','L','E','R','U','C'].forEach(rk=>{
+    const inR=all.filter(c=>c.r===rk); if(!inR.length) return;
+    const ow=inR.filter(c=>ownsCard(M,c.id)).length;
+    const row=document.createElement('div'); row.className='cp-row';
+    row.innerHTML=`<span class="cp-rname">${RARITY_NAME[rk]}</span>`+
+      `<span class="cp-rbar"><i style="width:${inR.length?ow/inR.length*100:0}%"></i></span>`+
+      `<span class="cp-rct">${ow}/${inR.length}</span>`;
+    rows.appendChild(row);
+  });
+  box.appendChild(rows);
+}
+function colRenderRail(all){
+  const fbox=$('col-filters'); fbox.innerHTML='';
+  COL_FILTERS.forEach(([k,label])=>{
+    const n = k==='all' ? all.length : all.filter(c=>c.t===k).length;   // count from ENGINE defs
+    const b=document.createElement('button'); b.className='col-pill'+(k===colFilter?' on':'');
+    b.innerHTML=`${label} <b>${n}</b>`;
+    b.onclick=()=>{ colFilter=k; renderCollection(); };
+    fbox.appendChild(b);
+  });
+  const sbox=$('col-sort'); sbox.innerHTML='';
+  const lbl=document.createElement('span'); lbl.className='col-sort-lbl'; lbl.textContent='Sort by'; sbox.appendChild(lbl);
+  COL_SORTS.forEach(([k,label])=>{
+    const b=document.createElement('button'); b.className='col-pill'+(k===colSort?' on':'');
+    b.textContent=label;
+    b.onclick=()=>{ colSort=k; renderCollection(); };
+    sbox.appendChild(b);
+  });
+}
+function colSortCards(list){
+  const by=colSort;
+  return list.slice().sort((a,b)=>{
+    if(by==='power')  return (b.p|0)-(a.p|0) || a.n.localeCompare(b.n);
+    if(by==='name')   return a.n.localeCompare(b.n);
+    if(by==='rarity') return (RARITY_ORDER[a.r]-RARITY_ORDER[b.r]) || (b.p|0)-(a.p|0) || a.n.localeCompare(b.n);
+    return 0;
+  });
+}
 function showCollection(){
-  colHideAll(); $('collection').classList.remove('hidden'); $('collection').scrollTop=0; Audio2.playTrack('menu'); renderCollection();
+  colHideAll(); $('collection').classList.remove('hidden'); $('collection').scrollTop=0; Audio2.playTrack('menu');
+  colPickPlate(); colFitPlate();
+  renderCollection();
   Ember.start('collection', EMBER_CARD_DENSITY);   // DS §2 — card screens run the fire at 0.15
 }
+addEventListener('resize', ()=>{ if(!$('collection').classList.contains('hidden')){ colPickPlate(); colFitPlate(); } });
 function renderCollection(){
   const M=loadMeta();
   $('col-wallet').textContent='✦ '+(M.wallet.amsha|0);
   const tabs=$('col-tabs'); tabs.innerHTML='';
-  COL_FACTIONS.forEach(([f,label])=>{ const b=document.createElement('div'); b.className='col-tab'+(f===colFaction?' on':'');
-    const list=fiGalleryOrder(f).concat(DECKS[f].filter(c=>c.wave&&!fiGalleryOrder(f).includes(c)));
+  COL_FACTIONS.forEach(([f,label])=>{ const b=document.createElement('button'); b.className='col-tab'+(f===colFaction?' on':'');
+    b.dataset.f=f;   // A3 tile-ground law — the ground carries the faction colour, the crest carries identity
     const own=DECKS[f].filter(c=>ownsCard(M,c.id)).length;
-    b.textContent=`${label} ${own}/${DECKS[f].length}`; b.onclick=()=>{ colFaction=f; renderCollection(); }; tabs.appendChild(b); });
-  const all=DECKS[colFaction].slice().sort((a,b)=>(a.wave?1:0)-(b.wave?1:0));   // owned launch first, sealed wave after
+    const im=document.createElement('img'); im.src=`assets/img/crest_${f}_tile.png`; im.alt='';
+    const sp=document.createElement('span'); sp.textContent=`${label} ${own}/${DECKS[f].length}`;
+    b.appendChild(im); b.appendChild(sp);
+    b.onclick=()=>{ colFaction=f; renderCollection(); }; tabs.appendChild(b); });
+
+  const all=DECKS[colFaction];
+  colProgress(M, all);            // ring + rarity breakdown, live from defs + ownership
+  colRenderRail(all);             // filter counts from ENGINE defs; sort is pure UI
+
+  let list = colFilter==='all' ? all.slice() : all.filter(c=>c.t===colFilter);
+  list = colSortCards(list);
+  list.sort((a,b)=>(a.wave?1:0)-(b.wave?1:0));   // owned launch first, sealed wave after (stable — keeps the sort within each half)
+
   const owned=all.filter(c=>ownsCard(M,c.id)).length;
   $('col-note').textContent=`${owned} of ${all.length} owned · sealed cards can be peeked and pinned before the wave is playable.`;
   const grid=$('col-grid'); grid.innerHTML='';
-  all.forEach(def=>{
+  list.forEach(def=>{
     const id=def.id, isOwned=ownsCard(M,id), needCeremony = isOwned && !cardRevealed(M,id);
     const cell=document.createElement('div');
     cell.className='cc'+(isOwned?' owned':' sealed')+(M.sadhana&&M.sadhana.pin===id?' cc-pinned':'');
     const {inner, face}=buildCardFaces(def, colFaction);
-    if(!isOwned) colDecorate(face,id,def);   // .cc-lock (acquisition line) + PIN/BUY sit ABOVE the art layer, real or pending
+    if(!isOwned) colDecorate(face,id,def);   // acq line (into the band) + PIN/BUY sit ABOVE the art layer, real or pending
     cell.appendChild(inner); grid.appendChild(cell);
     if(isOwned){ if(needCeremony){ cell.classList.add('ceremony'); const M2=loadMeta(); markRevealed(M2,id); saveMeta(M2);
         setTimeout(()=>cell.classList.remove('ceremony'),1600); }
@@ -5315,11 +5536,30 @@ function buildCardFaces(def, faction, opts={}){
   if(opts.full) im.src=fiArtStem(def,faction); else { im.loading='lazy'; im.src=fiThumbSrc(def,faction); }
   im.onerror=()=>{ art.innerHTML=artPending(def, faction, opts.full?{sigil:true}:{}); };
   art.appendChild(im); face.appendChild(art);
+  /* T39 — the CSS band. name / epithet / power. The EPITHET is def.sub read LIVE from the engine: all 176 cards
+     carry one, so no conditional and no map. Full frames are NOT rendered at grid size — the zoom lightbox shows
+     the large art (frame-program §5 scope ruling still open; nothing new ships into assets/cards). */
+  if(!opts.full){
+    const band=document.createElement('div'); band.className='cc-band';
+    const nm=document.createElement('div'); nm.className='cc-bname'; nm.textContent=def.n; band.appendChild(nm);
+    if(def.sub){ const ep=document.createElement('div'); ep.className='cc-bepi'; ep.textContent=def.sub; band.appendChild(ep); }
+    const pw=document.createElement('div'); pw.className='cc-bpow';
+    pw.textContent = def.p>0 ? `POWER ${def.p}` : 'POWER N/A';
+    band.appendChild(pw);
+    face.appendChild(band);
+  }
   inner.appendChild(back); inner.appendChild(face);
   return {inner, face};
 }
 function colDecorate(face,id,def,big){
-  const lock=document.createElement('div'); lock.className='cc-lock'; lock.textContent=colAcqLine(id); face.appendChild(lock);
+  /* The acq line nests INSIDE the band when one exists (grid cells) — band and lock both wanted bottom:0. On the
+     zoomed preview (big, no band) it keeps its own absolute slot and gains the ruled honest copy. */
+  const lock=document.createElement('div'); lock.className='cc-lock';
+  lock.textContent=colAcqLine(id);
+  if(big && !isRatna(id)){ const w=document.createElement('span'); w.className='cc-lock-when';
+    w.textContent='Joins your deck when the Wave opens.'; lock.appendChild(w); }
+  const band=face.querySelector('.cc-band');
+  if(band) band.appendChild(lock); else face.appendChild(lock);
   if(isRatna(id)){ const v=document.createElement('div'); v.className='cc-vault'; v.textContent='RATNA'; face.appendChild(v); return; }
   const cls='cc-pin'+(big?' cc-big':'');
   const pin=document.createElement('button'); pin.className=cls; pin.textContent='PIN';
