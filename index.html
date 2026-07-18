@@ -1000,9 +1000,9 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #mulligan{ display:block; overflow:hidden; padding:0; background:var(--ds-ink); z-index:96; }   /* T41: a full pre-round-1 TAKEOVER — must cover #hudwrap (z-95, score pills bled through the treated plate). Cutscene(96)/cardzoom(97) are never active during the mulligan phase, so this tier is safe. */
 #mullstage{ position:fixed; inset:0; overflow:hidden; z-index:-2; pointer-events:none; }
 #mullplate{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); transform-origin:center;
-  filter:brightness(.36) saturate(.74) contrast(1.02); }   /* treated — the HAND is the focus, not the rotunda */
+  filter:brightness(.6) saturate(.9) contrast(1.02); }   /* 41b: lifted .36→.6 toward the fsel .84 reading — the plate must be VISIBLE */
 .ms-layer{ position:absolute; inset:0; pointer-events:none; }
-.ms-dim{ background:linear-gradient(180deg, rgba(7,4,2,.74), rgba(7,4,2,.5) 40%, rgba(7,4,2,.82)); }
+.ms-dim{ background:linear-gradient(180deg, rgba(7,4,2,.58) 0%, rgba(7,4,2,.4) 26%, rgba(7,4,2,.3) 52%, rgba(7,4,2,.1) 72%, rgba(7,4,2,.06) 100%); }   /* 41b: content zone (top ~62%) modestly dimmed for text; the OPEN lower floor drops to .06 so the plate reads through, like fsel */
 .ms-vig{ background:radial-gradient(125% 100% at 50% 38%, transparent 44%, rgba(0,0,0,.74) 100%); }
 #mulligan > .ember-fx{ position:fixed; inset:0; width:100%; max-width:none; height:100%; margin:0; z-index:-1; pointer-events:none; }
 
@@ -1037,7 +1037,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   border-color:var(--gold-2); box-shadow:0 0 8px rgba(232,200,116,.6); transform:scale(1.12); }
 
 /* HAND — T39 band mini-cards. Phone: wrap, 5-per-row target; desktop: 5×2. */
-#mullhand{ display:grid; grid-template-columns:repeat(5,1fr); gap:7px; width:100%; max-width:520px; margin-top:2px; }
+#mullhand{ display:grid; grid-template-columns:repeat(5,1fr); gap:10px; width:100%; max-width:520px; margin-top:2px; }
 .mull-card{ position:relative; aspect-ratio:5/7; border-radius:8px; overflow:hidden; cursor:pointer;
   border:1px solid var(--gold-dim-25); box-shadow:0 4px 12px rgba(0,0,0,.5);
   transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; }
@@ -1051,6 +1051,13 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .mc-epi{ font-size:5.5px; letter-spacing:.03em; color:var(--parchment); opacity:.7; line-height:1.2; margin-top:1px;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; font-style:italic; }
 .mc-pow{ font-family:Cinzel,serif; font-size:5.5px; letter-spacing:.1em; color:var(--gold-2); margin-top:1px; }
+/* DEFECT 2 (41b): corner power chip — DS profile-chip family (dark ground, gold ring, gold numeral), top-right over
+   the art crop, clear of the card's gold border, glanceable at decision time. pointer-events:none → never eats the tap. */
+.mc-chip{ position:absolute; top:4px; right:4px; z-index:3; min-width:26px; height:26px; padding:0 3px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; pointer-events:none;
+  font-family:Cinzel,serif; font-weight:700; font-size:16px; line-height:1; color:var(--gold-bright);
+  background:radial-gradient(circle at 38% 32%, rgba(24,15,6,.96), rgba(6,4,2,.96));
+  border:1.5px solid var(--gold-2); box-shadow:0 2px 6px rgba(0,0,0,.6), 0 0 8px rgba(232,200,116,.35); }
 /* MARKED — gold ring + slight lift + a lotus glyph; reduced-motion drops the lift (below) */
 .mull-card.marked{ border-color:var(--gold-2); transform:translateY(-4px) scale(1.02);
   box-shadow:0 0 0 2px var(--gold-2), 0 0 16px rgba(232,200,116,.5), 0 8px 18px rgba(0,0,0,.55); }
@@ -1073,10 +1080,15 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   .mm-count{ font-size:19px; }
   #mullhand{ max-width:720px; gap:10px; }   /* 5×2 desktop */
   .mc-nm{ font-size:9px; } .mc-epi{ font-size:7px; } .mc-pow{ font-size:7px; }
+  .mc-chip{ min-width:32px; height:32px; font-size:19px; top:6px; right:6px; }
   .mull-help{ font-size:11px; max-width:360px; }
 }
 @media(max-width:479px){
-  #mullhand{ grid-template-columns:repeat(5,1fr); gap:4px; }
+  #mullhand{ grid-template-columns:repeat(5,1fr); gap:7px; }   /* 41b: breathing room (was 4px) — cards shrink slightly, no h-scroll */
+  /* 41b OPTIONAL: at phone width the mini-card is ~66px — long names truncated ("Kishkindha Cr…"). Drop the epithet
+     line and let the NAME wrap to two lines instead. The band has room (name 2×8px + pow < the 35% band height). */
+  .mc-epi{ display:none; }
+  .mc-nm{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.1; }
 }
 
 /* ===== settings (gear) ===== */
@@ -4321,6 +4333,10 @@ function renderMulligan(){
     band.innerHTML=`<div class="mc-nm">${c.n}</div>`+(c.sub?`<div class="mc-epi">${c.sub}</div>`:'')+
       `<div class="mc-pow">${c.p>0?`POWER ${c.p}`:'POWER N/A'}</div>`;
     d.appendChild(band);
+    // DEFECT 2 (41b): the glanceable corner power chip — DS roundel, gold ring, gold numeral, over the art crop.
+    // P0 cards get NO chip (absence reads "not a power card"); the band's POWER N/A line carries them.
+    // pointer-events:none in CSS so the chip never eats the card tap.
+    if(c.p>0){ const chip=document.createElement('div'); chip.className='mc-chip'; chip.textContent=c.p; d.appendChild(chip); }
     d.onclick=()=>{ if(mullMarked.has(c.uid)) mullMarked.delete(c.uid);
       else if(mullMarked.size<cap) mullMarked.add(c.uid);   // mark limit: N+1 refused (no add past cap)
       renderMulligan(); };

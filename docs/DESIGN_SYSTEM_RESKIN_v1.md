@@ -560,3 +560,41 @@ cutscene/cardzoom are never active during the mulligan phase).
     asset refs — card frames, board plates, the meta plates — so a frame
     re-export (R84 Rakta, R85 Vayu, R87 heroes, the pending Asura wave)
     busts cleanly. Smallest honest pattern; no server config needed.
+
+── A5 ADDENDUM — DEVICE FIXES (T41b, both device-ruled) ──
+DEFECT 1 — SCRIM TOO HEAVY (owner: plate must read like faction select).
+  Root: TWO compounding crushers — the plate baked at brightness(.36)
+  (fsel is .84) AND .ms-dim a FLAT full-screen wash (.74/.5/.82
+  everywhere), vs fsel's .fs-dim which is a CENTER radial that leaves
+  the open field transparent. Fix: brightness .36→.6; .ms-dim → a
+  content-zone gradient (.58 top for the header, .3 mid, .06 in the
+  open lower floor). Vignette (.ms-vig) UNCHANGED per the ruling (fix
+  the flat scrim, not the edges).
+  Measured plate-contribution (raw texel × brightness × (1−dim_alpha)),
+  PRE → POST at 390:
+    title 7%      10.9% → 28.1%   (composited lum 23 → 60)
+    hand 46%      16.8% → 40.6%   (39 → 94)
+    help 55%      15.1% → 43.8%   (18 → 53)
+    open floor 82% 9.9% → 54.9%   (18 → 99)   ← the plate now reads
+  Calibration: fsel is ~12.6% through a tile / 70–84% open field; the
+  mulligan post-fix (40% behind hand, 55% open) sits in that band —
+  "reads like faction select." Text legibility: gold-bright title and
+  parchment help retain clear luminance separation over the brightest
+  plate region behind them, plus their text-shadows. FINAL LOOK VERDICT
+  RETURNS TO DEVICE (per the ruling).
+DEFECT 2 — POWER ILLEGIBLE (owner: restore the mockup corner chip).
+  Added .mc-chip — DS profile-chip family (dark radial ground, gold-2
+  ring, gold-bright numeral), top-right over the art crop, pointer-
+  events:none (never eats the card tap). Numeral 16px@390 / 19px
+  desktop (≥16 ruling met); chip 26px@390 clear of the card border.
+  P0 cards get NO chip (absence reads "not a power card"); the band's
+  POWER N/A line carries them. The band keeps its POWER line on ALL
+  cards (redundant with the chip by design; the chip is the glanceable
+  one). Grid gap 4→7px @390 (breathing room), cards ~66.8px, 5-across,
+  no h-scroll, taps ≥44.
+OPTIONAL (applied, not struck): below 480px the epithet line is dropped
+  and the name wraps to two lines (line-clamp:2) instead of truncating
+  ("Sanjeevani Call", "Kishkindha Crown" now wrap). Verified the band
+  does NOT overflow the card at the wrapped height. Reversal: if the
+  owner prefers the epithet on phone over full names, delete the
+  <480px .mc-epi/.mc-nm override — truncation returns.
