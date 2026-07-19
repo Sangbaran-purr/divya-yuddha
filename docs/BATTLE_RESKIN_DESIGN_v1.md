@@ -153,12 +153,11 @@ crop to a vertical sliver in the 520 column. Desktop today = the 520
 match column CENTERED, room plate filling the margins, deck stacks +
 score column at the column's edges. board_table_wide.png ships in
 the repo, unused, waiting.
-    REVERSAL CONDITION: a future task that widens #app on desktop
-    (the S2 "wide table + side columns" full-width battle layout —
-    out of T42's reskin fence) adopts board_table_wide.png; the only
-    change needed is battleSetTable() re-branching on innerWidth
-    (its ≥1024→wide branch is preserved in a comment at the call
-    site). Until then TALL is correct on all widths.
+    REVERSAL CONDITION → NOW THE NAMED QUEUED TASK T42c (see S11):
+    a future task widens #app on desktop and adopts board_table_wide
+    .png; the only battleSetTable() change is restoring its ≥1024→wide
+    branch (preserved in a comment at the call site). Until then TALL
+    is correct on all widths.
 (2) The dropped "POWER n" band-line (see R-A ruling above).
 
 POST-GATE ADD (item-b affordance): #hand carries a two-line
@@ -190,3 +189,69 @@ gateId change backward-compatible (default gate = screenId). G8
 reduced-motion (Ember guards reducedMotion(); plate/table/stage no
 CSS animation) + 0 console.log, 0 console errors through the flow.
 Motion/loudness/final look verdicts → owner device pass.
+
+## S10 T42b BUILD RECORD (2026-07-19 — index.html only, engine 0 lines, NOT committed)
+Four device/mockup-review defects. STEP 0 measured the real geometry:
+at 390 the tall zones separate the deck stacks (field extremes:
+deck-o y100–174, deck-p y501–575) from the divider-hugging card rows
+(y242+/y373+) → zero overlap; but a short DESKTOP zone (1280, appW
+520) closes the gap — the ME leftmost card overlapped deck-p by
+43px² (owner's "Indra buried"). The OPP zone is LATENTLY identical
+(cards hug the divider, deck-o at the top) — same fix, both zones.
+D1 FIX — .zbody + .zhead left padding = stack width + gap (54 mobile,
+64 desktop; deck is left:5 + 42/52w). Both rows are direct children
+of .zbody, and each .row is overflow-x:auto, so its left edge sits at
+the inset and a horizontally-scrolled card CLIPS there — never
+appears under the stack at any count. Right stays 70 (clears the
+score column; a partially-scrolled card clips at that edge too, the
+score column showing behind the clip, not a burial). Re-measured:
+1280 5v5 zero overlap / all tap≥44 / all resolve; 390 (settled,
+fitting board) zero overlap / tap≥44 / all resolve. (elementFromPoint
+mid-.landing-animation or on scrolled-off cards gives false negatives
+— transform offsets the visual vs the layout rect; measured after
+settling.)
+D2 FIX — .bc gets the T41b crop: art window = top 65%
+(object-position:top hides the frame's baked nameplate/rules-text;
+the art shows 61.9% of the 750×1050 frame, the ~68% nameplate is
+below the crop), the bottom ~35% is the dark card ground that houses
+the medallion. LIVE-POWER CARRIER RULING: the MEDALLION remains the
+sole live-power indicator (it already shows effPower with
+buffed-green-▲ / hurt-red-▼ state colouring — richer than a number);
+NO second corner chip is added — it would duplicate live power,
+collide with the shield/bind (top-right) and copy (bottom-right)
+badges, and risk disagreeing during buff choreography. Rendered
+CHIP-ONLY (no name band) per the ruling → owner rules the band in/out
+on the screenshots. All token badges re-proven on the new component
+(venom+vstack, shield, bind, medallion buffed/hurt, ghost) — all
+present, z3 > art z0, correctly corner-positioned. State classes
+preserved (the edit is `.bc .art` only, orthogonal to every state
+rule): board states targetable (gold outline+pulse) + story-target
+(crimson storyGlow) verified rendering on the new .bc in a real ch3
+SUGGESTED chapter; the hand-only states (focus/dead/story-hi/
+story-masked/story-shimmer) live on .hc and were untouched.
+D3 FIX — desktop hand: the mobile centering-carousel padding
+(calc(50%-…)) only ever shows ~3; desktop drops it for a LEFT-PACKED
+row (padding 8, .hc 92px, scroll-snap-align:start) → exactly FIVE
+minis visible at 1280 (measured fullyVisible=5), a 6th+ overflow-
+scrolls with the edge fade intact. 390 sizing unchanged.
+FULL DRIVE (real buttons): played a unit (landed as cropped mini +
+medallion), AI populated its zone, Dharma Shield targeted the new .bc
+(targetable outline → shield badge), pass → round transition (r2,
+hist=[opp], pips → opp 1 gold star, deck 12→10). Regression: landing
+/ collection (44 .cc) / mulligan (10) render identical (the edits are
+.bc/.zbody/.zhead/.hc-scoped). Parity: engine git-clean, test.js
+byte-identical, 40.9/59.1, scenario 50 / venom 38 / story 48, 0
+console.log/errors.
+
+## S11 QUEUED TASK — T42c DESKTOP WIDE BOARD (named; promoted from the S9(1) footnote)
+Realizes S2's desktop spec (the full-width battle layout). SCOPE:
+widen #app beyond the 520 cap at ≥1024 (own desktop match layout, a
+real layout change — was fenced out of T42) so the two-zone board
+can present WIDE with deck stacks genuinely left-of-table and the
+score column right, then adopt board_table_wide.png. ENGINE ZERO.
+ONE-LINE ENGINE-SIDE HOOK ALREADY STAGED: battleSetTable() carries
+the `innerWidth>=1024 ? wide : tall` branch in a comment at its call
+site — restore it. board_table_wide.png ships in the repo, unused,
+cool-passed, waiting. GATES: re-run the full T42/T42b board gate
+suite at the new desktop width (occlusion both zones, no baked text,
+tokens, hand). Owner schedules.

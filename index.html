@@ -85,11 +85,15 @@ header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; ali
 .half.opp{ background:radial-gradient(130% 92% at 50% -12%, rgba(138,30,24,.36), transparent 62%); }
 .half.me{  background:radial-gradient(130% 92% at 50% 112%, rgba(58,74,102,.30), transparent 62%); }
 /* thin sticky zone header */
-.zhead{ flex:0 0 auto; position:sticky; top:0; z-index:4; padding:3px 70px 3px 10px;
+/* T42b DEFECT-1: left padding clears the deck stacks (left:5 + 42w = 47 → 54 = stack + gap) so card rows + zhead text
+   never render under the stack, both zones (deck-o top / deck-p bottom sit at the field extremes; a short desktop zone
+   otherwise lets the divider-hugging row reach the stack). The .row overflow-x:auto clips at this inset, so even a
+   horizontally-scrolled card never appears under the stack. Right stays 70 (clears the score column). Desktop bumps to 64. */
+.zhead{ flex:0 0 auto; position:sticky; top:0; z-index:4; padding:3px 70px 3px 54px;
   font-family:Cinzel,serif; font-size:9px; letter-spacing:2px; color:var(--ink-dim);
   background:linear-gradient(#160f07, rgba(20,14,7,.35)); border-bottom:1px solid #241c0e; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 /* rows scroll WITHIN their half — never grow over another zone */
-.zbody{ flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:2px; padding:2px 70px 2px 8px; scrollbar-width:none; }
+.zbody{ flex:1 1 auto; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:2px; padding:2px 70px 2px 54px; scrollbar-width:none; }
 .zbody::-webkit-scrollbar{ display:none; }
 .half.opp .zbody{ justify-content:flex-end; }   /* opponent cards hug the divider */
 .half.me  .zbody{ justify-content:flex-start; }  /* my cards hug the divider */
@@ -124,7 +128,10 @@ header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; ali
 
 /* board mini — art-first, no name strip */
 .bc{ flex:0 0 auto; height:var(--mini-h,90px); width:calc(var(--mini-h,90px)*0.75); background:var(--panel); border:1px solid var(--line); border-radius:7px; position:relative; overflow:hidden; cursor:pointer; }
-.bc .art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
+/* T42b DEFECT-2: board card = T41b crop. Art window = top 65% (object-position:top hides the frame's baked nameplate/
+   rules-text); the bottom ~35% is the dark card ground that houses the medallion. The MEDALLION remains the sole
+   LIVE-power carrier (effPower + buffed/hurt state colouring) — no redundant chip is added (see report rationale). */
+.bc .art{ position:absolute; top:0; left:0; width:100%; height:65%; object-fit:cover; object-position:top center; z-index:0; }
 .bc .mini-name{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; text-align:center; padding:3px; z-index:1;
   font-family:Cinzel,serif; font-size:9px; font-weight:600; line-height:1.15; color:var(--ink); }
 .bc.has-art .mini-name{ display:none; }
@@ -257,11 +264,15 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #passbtn{ background:linear-gradient(180deg,#2a1e0a,#1a1206); border-color:var(--gold-2); color:var(--gold-bright); letter-spacing:.14em; }
 
 @media(min-width:1024px){
-  #hand{ padding:14px calc(50% - 64px) 16px; }
-  .hc{ width:128px; }
-  .hc-nm{ font-size:11px; } .hc-epi{ font-size:8px; } .hc-chip{ min-width:22px; height:22px; font-size:13px; }
+  /* T42b DEFECT-3: the match column stays 520-capped on desktop. Desktop drops the mobile centering-carousel padding
+     (calc(50%-…) shows only ~3) for a LEFT-PACKED row so FIVE minis sit in the visible row (5×92 + 4×9 gap + 2×8 pad
+     = 512 ≤ 518); a 6th+ overflow-scrolls with the edge fade. scroll-snap-align:start so packed cards don't centre-snap. */
+  #hand{ padding:14px 8px 16px; }
+  .hc{ width:92px; scroll-snap-align:start; }
+  .hc-nm{ font-size:10px; } .hc-epi{ font-size:7.5px; } .hc-chip{ min-width:20px; height:20px; font-size:12px; }
   .deckstack{ width:52px; } .deckstack img{ width:52px; } .deckcnt{ font-size:12px; }
   .score-av{ width:46px; height:46px; }
+  .zbody, .zhead{ padding-left:64px; }   /* T42b DEFECT-1: desktop deck stack is 52 wide → clear 64 */
 }
 @media(max-width:479px){
   .hc{ width:104px; }
