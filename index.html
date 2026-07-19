@@ -1443,6 +1443,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   background:radial-gradient(circle at 50% 42%, #1b2b52 0%, #0e1730 62%, #070c1a 100%);
   border:1px solid rgba(232,200,116,.42); display:flex; align-items:center; justify-content:center; }
 .cc-back.hasimg{ background:#070c1a center/cover no-repeat; border-color:rgba(232,200,116,.42); }
+/* T43 faction-back image — fills the back face UPRIGHT (no rotate/mirror); .cc-back itself is never rotated. */
+.cc-back .cc-backimg{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block; }
 .cc-back i{ width:42%; aspect-ratio:1; border-radius:50%; border:1px solid rgba(232,200,116,.55);
   background:radial-gradient(circle,rgba(232,200,116,.16),transparent 68%); }
 .cc-face{ transform:rotateY(180deg); background:#0a0704; border:1px solid rgba(232,200,116,.2); }
@@ -5789,8 +5791,15 @@ function renderCollection(){
    locked preview cannot drift between them. 30b: the art layer is swapped ALONE on 404 → decorations survive. */
 function buildCardFaces(def, faction, opts={}){
   const inner=document.createElement('div'); inner.className='cc-in';
-  const back=document.createElement('div'); back.className='cc-back'+(cardBackOk?' hasimg':'');
-  if(cardBackOk) back.style.backgroundImage="url('assets/img/card_back.png')"; else back.innerHTML='<i></i>';
+  /* T43: sealed cards wear their FACTION back via factionBackSrc (R-D lookup), with the T42 DOUBLE fallback —
+     faction back → neutral card_back.png (img.onerror) → CSS placeholder <i> (both 404). Rendered as an upright
+     <img> inside the non-rotated .cc-back (upright-always law), so the FLIP transition geometry is untouched. */
+  const back=document.createElement('div'); back.className='cc-back hasimg';
+  const bim=document.createElement('img'); bim.className='cc-backimg'; bim.alt='';
+  bim.onerror=()=>{ bim.onerror=()=>{ back.classList.remove('hasimg'); bim.remove(); back.innerHTML='<i></i>'; };
+    bim.src='assets/img/card_back.png?v=1'; };   // neutral fallback (A5(f) stamp)
+  bim.src=factionBackSrc(faction);
+  back.appendChild(bim);
   const face=document.createElement('div'); face.className='cc-face';
   const art=document.createElement('div'); art.className='cc-art';
   const im=document.createElement('img'); im.alt=def.n;
