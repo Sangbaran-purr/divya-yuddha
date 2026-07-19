@@ -111,3 +111,19 @@ Chain + wallet standard preference. P2E product name/branding.
 Rake percentage (G6 config). Persona names sign-off. Treasury
 wallet for testnet rehearsal. Each arrives via owner; logged as
 amendments to this doc.
+
+## A1 — AMENDMENT 1: IN-GAME NFT MARKETPLACE (owner-ruled)
+D10 Secondary marketplace, player-to-player, fixed-price only.
+    Escrow-listing contract (list->lock->buy->auto-split
+    seller/royalty/rake; delist anytime pre-sale). Priced in
+    the deal token (second demand source beyond staking).
+    In-game UI reuses the T39 collection grid (price chip +
+    BUY/LIST/DELIST). We author contract + UI; they deploy.
+    FENCED OUT: auctions, offers, bundles, external marketplace
+    integration, off-chain order books.
+G11 Testnet: wallet A lists a wave card, wallet B buys it in-game;
+    NFT transfers, payment auto-splits, both collections update
+    via the standard ownership map; delist path proven.
+SCHEDULE DELTA: P5 = Wk 13-14 (adapter + marketplace), P6 = Wk 15,
+    BUF = Wk 16 only. Deadline unchanged; buffer now 1 week.
+S7 ADDITION: secondary-sale royalty % and rake % (their numbers).
