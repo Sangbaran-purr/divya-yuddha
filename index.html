@@ -1869,33 +1869,33 @@ const DEVA_DECK_DEF = [
   { id:'amrita',  n:'Amrita Kalasha', sub:'Vessel of Immortality',t:'artifact', p:0, r:'M', txt:'ON PLAY: Your lowest power Unit gains +2. If that unit is destroyed this round, it revives at 1 power (once).' },
   { id:'kavacha', n:'Dharma Kavacha', sub:'Shield of Sacred Law', t:'artifact', p:0, r:'R', txt:'PASSIVE: Dharma Shield protects TWO Units instead of one.' },
   // ---- WAVE 1 (batch 1; gated by opts.wave1 — see mkPlayer) — WAVE1_ROSTER_v0.2.md ----
-  { id:'devasainika',n:'Deva Sainika', sub:'Soldier of Heaven',  t:'unit', p:3, r:'C', wave:1, txt:'A steadfast soldier of the celestial line.' },
-  { id:'aruna',   n:'Aruna Charioteer',sub:'Herald of the Dawn', t:'unit', p:4, r:'U', wave:1, txt:'ON PLAY: If it is Round 1, gain +2 power.' },
-  { id:'agneyastra',n:'Agneyastra',   sub:'Weapon of Fire',      t:'astra', p:0, r:'R', wave:1, dmgAstra:true, txt:'Deal 3 damage to an enemy Unit.' },
+  { id:'devasainika',n:'Deva Sainika', sub:'Soldier of the Vigil',  t:'unit', p:3, r:'C', wave:1, txt:'A steadfast soldier of the celestial line.' },
+  { id:'aruna',   n:'Aruna Charioteer',sub:'He Who Rides Before the Sun', t:'unit', p:4, r:'U', wave:1, txt:'ON PLAY: If it is Round 1, gain +2 power.' },
+  { id:'agneyastra',n:'Agneyastra',   sub:'Dart of the Devouring Flame',      t:'astra', p:0, r:'R', wave:1, dmgAstra:true, txt:'Deal 3 damage to an enemy Unit.' },
   // ---- WAVE 1 (batch 3 — the Round End tier; roundEndCardEffects) ----
-  { id:'dawnsentinel',n:'Dawn Sentinel',sub:'Watcher of First Light',t:'unit', p:2, r:'C', wave:1, txt:'ROUND END: If it survived the round, gain +1 power permanently.' },
-  { id:'kamadhenu',n:'Kamadhenu',     sub:'The Wish-Granting Cow', t:'unit', p:4, r:'R', wave:1, txt:'ROUND END: Your lowest-power Unit gains +1.' },
-  { id:'savitur', n:'Savitur Verse',  sub:'Hymn of the Sun',       t:'mantra', p:0, r:'U', wave:1, txt:'Choose a friendly Unit: it gains +1 at the end of every round, while it lives.' },
+  { id:'dawnsentinel',n:'Dawn Sentinel',sub:'The Watch Before Dawn',t:'unit', p:2, r:'C', wave:1, txt:'ROUND END: If it survived the round, gain +1 power permanently.' },
+  { id:'kamadhenu',n:'Kamadhenu',     sub:'Mother of All Plenty', t:'unit', p:4, r:'R', wave:1, txt:'ROUND END: Your lowest-power Unit gains +1.' },
+  { id:'savitur', n:'Savitur Verse',  sub:'The Verse That Quickens',       t:'mantra', p:0, r:'U', wave:1, txt:'Choose a friendly Unit: it gains +1 at the end of every round, while it lives.' },
   // ---- WAVE 1 (batch 4 — the passive-aura tier; board-state-conditional, computed read-time in effPower) ----
-  { id:'ushas',   n:'Ushas, Dawn Herald',sub:'Herald of First Light',t:'unit', p:3, r:'U', wave:1, txt:'PASSIVE: Your other Units with 2 or less power gain +1.' },
-  { id:'vigilrakshak',n:'Vigil Rakshak', sub:'Warden of the Shield', t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: While shielded, +2 power.' },
+  { id:'ushas',   n:'Ushas',sub:'Herald of the Dawn',t:'unit', p:3, r:'U', wave:1, txt:'PASSIVE: Your other Units with 2 or less power gain +1.' },
+  { id:'vigilrakshak',n:'Vigil Rakshak', sub:'Shield Within the Shield', t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: While shielded, +2 power.' },
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
-  { id:'dawnsrebirth',n:"Dawn's Rebirth",sub:'The Undimmed Return', t:'mantra', p:0, r:'E', wave:1, txt:"Return your highest-power Unit from the discard at its printed power. It cannot be shielded for the rest of the match." },
+  { id:'dawnsrebirth',n:"Dawn's Rebirth",sub:'The Light That Returns', t:'mantra', p:0, r:'E', wave:1, txt:"Return your highest-power Unit from the discard at its printed power. It cannot be shielded for the rest of the match." },
   // ---- WAVE 1 (batch 7 — the protection tier) ----
-  { id:'vedikeeper',n:'Vedi Keeper',   sub:'Tender of the Altar',   t:'unit', p:3, r:'C', wave:1, txt:'ON PLAY: Your next Dharma Shield this round is applied instantly (one extra shield this round).' },
-  { id:'ribhu',    n:'Ribhu Craftsman',sub:'The Divine Smith',      t:'unit', p:3, r:'U', wave:1, txt:'ON PLAY: Your Artifact cannot be targeted or destroyed this round.' },
-  { id:'airavatacalf',n:"Airavata's Calf",sub:'Scion of the White Elephant',t:'unit', p:4, r:'R', wave:1, txt:'Enters with a Dharma Shield (respects your shield limit).' },
-  { id:'ratri',    n:'Ratri Hymn',     sub:'Song of the Night',     t:'mantra', p:0, r:'R', wave:1, txt:'This round, prevent all Astra damage to your Units.' },
+  { id:'vedikeeper',n:'Vedi Keeper',   sub:'Tender of the Holy Altar',   t:'unit', p:3, r:'C', wave:1, txt:'ON PLAY: Your next Dharma Shield this round is applied instantly (one extra shield this round).' },
+  { id:'ribhu',    n:'Ribhu Craftsman',sub:'Artisan of the Immortals',      t:'unit', p:3, r:'U', wave:1, txt:'ON PLAY: Your Artifact cannot be targeted or destroyed this round.' },
+  { id:'airavatacalf',n:"Airavata's Calf",sub:'Child of the White Elephant',t:'unit', p:4, r:'R', wave:1, txt:'Enters with a Dharma Shield (respects your shield limit).' },
+  { id:'ratri',    n:'Ratri Hymn',     sub:'Song of the Sheltering Night',     t:'mantra', p:0, r:'R', wave:1, txt:'This round, prevent all Astra damage to your Units.' },
   // ---- WAVE 1 (batch 9 — the event-trigger tier) ----
-  { id:'vanguard', n:"Kartikeya's Vanguard",sub:'Shield of the War-God',t:'unit', p:5, r:'E', wave:1, txt:'PASSIVE: The first time a friendly Unit is destroyed each round, this gains +2 power.' },
+  { id:'vanguard', n:"Kartikeya's Vanguard",sub:'First Spear of the War-God',t:'unit', p:5, r:'E', wave:1, txt:'PASSIVE: The first time a friendly Unit is destroyed each round, this gains +2 power.' },
   // ---- WAVE 1 (batch 12 — the cleanup tier) ----
   { id:'dhanvantari',n:'Dhanvantari',  sub:'Physician of the Gods',t:'unit', p:4, r:'R', wave:1, txt:'ON PLAY: Restore one friendly Unit to its printed power.' },
-  { id:'shaktispear',n:'Shakti Spear', sub:'Lance of Kartikeya',   t:'astra', p:0, r:'E', wave:1, txt:'Destroy an enemy Unit with 4 or less power.' },
-  { id:'dawnbanner',n:'Dawn Banner',   sub:'Standard of the Sun',   t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: From the next round on, your Units have +1 power each round.' },
+  { id:'shaktispear',n:'Shakti Spear', sub:'The Unerring Vel',   t:'astra', p:0, r:'E', wave:1, txt:'Destroy an enemy Unit with 4 or less power.' },
+  { id:'dawnbanner',n:'Dawn Banner',   sub:'Standard of the Rising Light',   t:'artifact', p:0, r:'E', wave:1, txt:'PASSIVE: From the next round on, your Units have +1 power each round.' },
   // ---- WAVE 1 (batch 14 — the astra/utility tier) ----
-  { id:'suryastra',n:'Suryastra',      sub:'The Sun Weapon',        t:'astra', p:0, r:'L', wave:1, dmgAstra:true, txt:'Deal 2 damage to ALL enemy Units.' },
+  { id:'suryastra',n:'Suryastra',      sub:'The Sun Made Weapon',        t:'astra', p:0, r:'L', wave:1, dmgAstra:true, txt:'Deal 2 damage to ALL enemy Units.' },
   // ---- WAVE 1 (batch 15 — the leap-utility tier) ----
-  { id:'saranyu',  n:'Saranyu, Cloud Mare',sub:'Mare of the Dawn',  t:'unit', p:5, r:'E', wave:1, txt:'ON PLAY: Two friendly Units exchange current power.' },
+  { id:'saranyu',  n:'Saranyu',sub:'The Cloud Mare',  t:'unit', p:5, r:'E', wave:1, txt:'ON PLAY: Two friendly Units exchange current power.' },
   // ---- WAVE 1 (batch 16 — the artifact/counter tier) ----
   { id:'kalpavriksha',n:'Kalpavriksha', sub:'The Wish-Granting Tree',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your lowest-power Unit becomes equal to your highest-power Unit.' },
   // ---- WAVE 1 (batch 17 — heroes part 1) ----
@@ -3375,12 +3375,12 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         else log(g,`Vinata's Talon finds no purchase (${n} strikes, ${foes.length} foes).`); break; }
       case 'saranyu': {   // WAVE 1 batch 15 (Deva RATNA) — two OTHER friendly Units EXCHANGE current power (u.power↔u.power). BASES untouched → an R21-grown base does NOT move, only current values trade; Venom Tokens stay with the UNIT (only power swaps). Board-total-neutral (invariant preserved — the "positional cut"). Needs 2+ other friendly Units.
         const others=pl.units.filter(u=>!u.ghost && u!==c);
-        if (others.length<2){ log(g,'Saranyu, Cloud Mare: not enough Units to exchange power.'); break; }
+        if (others.length<2){ log(g,'Saranyu: not enough Units to exchange power.'); break; }
         // AI/auto pairing: exchange the highest- and lowest-CURRENT-power OTHER Units (board-neutral, like Gavaksha's AI swap). The HUMAN two-target picker is UI-DEFERRED (targetUid carries ONE target; a two-target flow is not built — logged).
         let hi=others[0], lo=others[0];
         for (const u of others){ if (u.power>hi.power) hi=u; if (u.power<lo.power) lo=u; }
-        if (hi!==lo){ const hv=hi.power, lv=lo.power; hi.power=lv; lo.power=hv; log(g,`Saranyu, Cloud Mare — ${hi.n} and ${lo.n} exchange power (${hv}↔${lv}).`); emit(g,'buff',{targetUids:[hi.uid,lo.uid],abilityName:'Saranyu, Cloud Mare',text:'power exchanged'}); }
-        else log(g,'Saranyu, Cloud Mare: the Units already share equal power — nothing to trade.'); break; }
+        if (hi!==lo){ const hv=hi.power, lv=lo.power; hi.power=lv; lo.power=hv; log(g,`Saranyu — ${hi.n} and ${lo.n} exchange power (${hv}↔${lv}).`); emit(g,'buff',{targetUids:[hi.uid,lo.uid],abilityName:'Saranyu',text:'power exchanged'}); }
+        else log(g,'Saranyu: the Units already share equal power — nothing to trade.'); break; }
       case 'drummer': { const adj=adjacentUnits(pl, c).filter(u=>!u.ghost); for (const u of adj){ u.base+=1; u.power+=1; }   // R69 (design round 1): PERMANENT +1 (base AND power, R21) to his non-ghost immediate neighbours at entry (was this-round current-power). 0 adjacent → no-op.
         if (adj.length){ emit(g,'buff',{sourceUid:c.uid,targetUids:adj.map(u=>u.uid),amount:1,abilityName:'Drummer of the Host',text:'+1'}); log(g,`Drummer of the Host rouses ${adj.length} adjacent Unit(s): +1 this round.`); }
         else log(g,'Drummer of the Host beats to an empty flank.'); break; }

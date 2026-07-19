@@ -362,3 +362,74 @@ INVARIANTS (all three deltas): engine behavior UNCHANGED — the entire `node sr
 output is BYTE-IDENTICAL pre/post (zero changed lines; txt/sub are display fields the
 rules never read) · Deva-vs-Naga 40.9/59.1 · ASTRA_DMG unchanged · scenario 50 / venom 38
 / story 48 · engine diff = exactly 3 insertions / 3 deletions, every line traced.
+
+### R88 — DEVA WAVE SUB ADOPTION (18 deltas; ruled 2026-07-18, T40b)
+Authority: docs/R88_DEVA_WAVE_SUBS.md. Display epithets (def `sub:`)
+only — zero mechanic/power/rarity/name/id change. The T39/T41 UI reads
+`def.sub` live, so all 18 tiles updated with NO UI edit.
+
+| id           | engine sub                  | new sub                       |
+|--------------|-----------------------------|-------------------------------|
+| devasainika  | Soldier of Heaven           | Soldier of the Vigil          |
+| aruna        | Herald of the Dawn          | He Who Rides Before the Sun   |
+| agneyastra   | Weapon of Fire              | Dart of the Devouring Flame   |
+| dawnsentinel | Watcher of First Light      | The Watch Before Dawn         |
+| kamadhenu    | The Wish-Granting Cow       | Mother of All Plenty          |
+| savitur      | Hymn of the Sun             | The Verse That Quickens       |
+| ushas        | Herald of First Light       | Herald of the Dawn            |
+| vigilrakshak | Warden of the Shield        | Shield Within the Shield      |
+| dawnsrebirth | The Undimmed Return         | The Light That Returns        |
+| vedikeeper   | Tender of the Altar         | Tender of the Holy Altar      |
+| ribhu        | The Divine Smith            | Artisan of the Immortals      |
+| airavatacalf | Scion of the White Elephant | Child of the White Elephant   |
+| ratri        | Song of the Night           | Song of the Sheltering Night  |
+| vanguard     | Shield of the War-God       | First Spear of the War-God    |
+| shaktispear  | Lance of Kartikeya          | The Unerring Vel              |
+| dawnbanner   | Standard of the Sun         | Standard of the Rising Light  |
+| suryastra    | The Sun Weapon              | The Sun Made Weapon           |
+| saranyu      | Mare of the Dawn            | The Cloud Mare                |
+
+- NO ACTION: dhanvantari, kalpavriksha (exact matches); kartikeya,
+  garuda (R87, b664711).
+- VANGUARD (0b evidence, ADOPT branch): Kartikeya's Vanguard is a
+  DEATH-TRIGGER (onUnitDeath ~676: first friendly Unit destroyed each
+  round → this gains +2; once/round; own death can't trigger it). It
+  protects nothing — the old "Shield of the War-God" was a mechanical
+  MISNOMER, so the doc line "First Spear of the War-God" is adopted
+  (18th delta). Not a protective card → the sub is not kept.
+- RATIONALE: four-precedent (launch 22 curated; R83/R84/R87 established
+  that display epithets are curated, not left at the draft `sub`) +
+  HERALD-COLLISION KILL (aruna "Herald of the Dawn" / ushas "Herald of
+  First Light" were near-duplicates one gallery row apart; aruna moves
+  to "He Who Rides Before the Sun", ushas adopts the cleaner "Herald of
+  the Dawn"; both land atomically in one commit so the transient double-
+  "Herald of the Dawn" never exists on main).
+- ART GATE: 18 Deva wave frames bake the old sub → re-export when the
+  Deva wave art is cut (whole wave is currently unexported; T30b ART-
+  PENDING pane covers it today).
+- ZERO string-keyed consumers (FIRE_KEYS re-verified): every sub appears
+  only in its def. Entire test.js output BYTE-IDENTICAL pre/post; 40.9/
+  59.1; ASTRA_DMG unchanged; scenario 50 / venom 38 / story 48.
+
+
+R88 NAME-TRIM ADDENDUM (E3 comma-split; ruled amendment 2026-07-18):
+Two def.n names lose their trailing epithet (now carried by sub):
+  ushas    n: "Ushas, Dawn Herald" → "Ushas"
+  saranyu  n: "Saranyu, Cloud Mare" → "Saranyu"
+Rationale: the epithet already lives in sub after R88, so the comma-
+appended epithet in def.n is redundant on every name surface. The batch
+is thus 20 ruled def-field strings (18 subs + 2 names).
+CONSUMER GREP (both full names, whole repo, BEFORE editing): ZERO
+string-keyed consumers. All hits were (a) the def itself, (b) code
+COMMENTS (engine.js:433 Ushas — left as-is, non-player-facing), (c) 3
+Saranyu player-facing DISPLAY strings (2 log labels + 1 log template +
+1 emit abilityName), and (d) an id-keyed RATNA list + a descriptive
+console.log NOTE in sim_campaign (neither keys on the NAME). abilityName
+IS keyed elsewhere but only on 'Leap'/'Chaos Surge'/'Pavamana' — never
+Saranyu — so the Saranyu abilityName is display-only.
+LOG/CALLOUT TRIM (traced to the saranyu name delta): the 3 Saranyu
+display strings were trimmed "Saranyu, Cloud Mare" → "Saranyu" so the
+card's own effect feedback matches its trimmed name. These fire only
+under wave1 (Saranyu is wave-gated), so test.js stays BYTE-IDENTICAL.
+Engine diff: 21 lines = 16 sub-only defs + 2 defs carrying name+sub
+(ushas/saranyu) + 3 Saranyu display strings; zero untraced.
