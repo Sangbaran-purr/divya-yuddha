@@ -127,3 +127,23 @@ G11 Testnet: wallet A lists a wave card, wallet B buys it in-game;
 SCHEDULE DELTA: P5 = Wk 13-14 (adapter + marketplace), P6 = Wk 15,
     BUF = Wk 16 only. Deadline unchanged; buffer now 1 week.
 S7 ADDITION: secondary-sale royalty % and rake % (their numbers).
+
+## A2 — AMENDMENT 2: ECONOMY SCREEN FENCE (owner-ruled)
+The Web3 client inherits the frontend MINUS the Amsha economy.
+CUT: Sadhana screen entirely (its function is play-to-earn card
+    acquisition; the Web3 economy acquires by claim, mint, and
+    marketplace only — a free emission path would undercut mint
+    revenue and dilute paid holders). Future repurpose as a
+    zero-emission quest/badge board is amendment territory, not
+    v1 scope.
+CUT: all Amsha surfaces — currency counter, price chips, BUY
+    buttons, any Amsha string or icon. No Amsha renders anywhere
+    in the Web3 build (no-bridge law, absolute).
+KEPT: Collection grid (T39), fed by the wallet ownership map
+    (D6). Ratna Vault, rewired as the Ratna MINT storefront —
+    same screen and ceremony, purchase buttons call the mint
+    contract instead of M4 IAP. Two-flip reveal ceremony,
+    retriggered by mint and claim events. Marketplace UI (A1).
+D4 CLARIFIED: "existing frontend" means the above fenced set.
+SCHEDULE DELTA: none material (removal plus button rewiring to
+    contracts already scoped in P4 and P5).
