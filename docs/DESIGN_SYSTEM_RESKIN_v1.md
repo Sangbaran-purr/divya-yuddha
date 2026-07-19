@@ -657,3 +657,69 @@ changed — codex live, rewards still locked, 6 roundels intact;
 battle has no roundel row); asset 200s curl-proven; parity — engine
 0 lines, test.js byte-identical 40.9/59.1, scenario 50 / venom 38 /
 story 48, 0 console.log / 0 console errors. NOT committed.
+
+── A6 ADDENDUM — HOW TO WIN MERGED INTO FACTIONS & REALMS (T45b, owner-ruled 2026-07-19) ──
+REVERSAL EXECUTED (A6's own reversal clause fires): the single entry
+point for How to Win is now the FACTIONS & REALMS page (#factionintro,
+reachable from the landing 'Factions & Realms' button #mode-factions)
+— its pre-existing 'How to win' tab (data-tab="win", the default). The
+T45 Journal-roundel entry point is REVERSED: the Journal roundel
+reverts to visible-locked "Coming soon" (locked + data-soon + lock
+overlay restored). The T45 standalone #howtowin overlay, its
+show/render functions, the col-r-codex wiring, and the COL_HIDE /
+showLanding registrations were all removed → EXACTLY ONE How-to-Win
+implementation exists, mounted in the tab (fiRenderWin).
+
+CONTENT — the T45 Codex content is canon and was carried over verbatim
+(objective + hero art, round-flow icon triplets, engine-true round
+economy [win line "Higher total power wins the round." + You/Opponent
+pip rows + TOTAL POWER caption + real card_back_deva/card_back_asura
+via factionBackSrc], when-to-pass + namaste with the CSS radial
+edge-fade, closing line). Built with fh() into .htw-body using the
+reused .htw-* CSS. CONTAINER ADAPTATION: the fi tab lives in .fi-col
+(max-width 520, centered, ALL widths — measured, not assumed), so the
+content is SINGLE-COLUMN at every width; the T45 overlay's ≥1024 2-col
+media and its #howtowin-scoped ground/ember/nav rules were removed.
+
+FALSE-TEACHING REMOVAL — the old 'win' tab's invented gem/point
+economy is GONE: the FI_CONTENT.win object (the ROUND-1 pip life-track
+"YOU 8 → spend 2, concede / ENEMY 8 → spends 5, wins round", the
+margin-equivalence pass rule, and the per-deck copy-limit callout —
+all engine-false) was deleted, along with fiRenderEconomy /
+fiRenderPassRules. Grep-zero proven on the two flagged strings.
+
+PER-TAB AUDIT (read-only, spot-check — the other five tabs were NOT
+edited): all five make engine-fact claims; every claim spot-checked
+VERIFIED against src/engine.js —
+  · DEVAS: Dharma Kavacha "guards two units, not one" (Kavacha = 2
+    designations ✓; this was the v1.1 fix for the fabricated
+    "Indra's Net").
+  · ASURAS: Chandrahas "first Astra each round amplified" ✓; Ahamkara
+    "double a giant, he dies at round end" ✓.
+  · VANARAS: Rama Naam "+2 to every Vanara Unit" ✓; Hanuman "every 4+
+    Vanara lands with +1 on entry" ✓; Kishkindha Crown "Leap feeds
+    both units, Leap twice per round" ✓.
+  · NAGAS: Venom "−1 at round end" ✓; Karkotaka "Venom strikes on
+    every enemy turn" (R10) ✓; Sarpa Satra "Venom doubles this round"
+    (sarpaDouble ✓); Rama's Signet "switches your faction mechanic off
+    entirely" — VERIFIED board-wide (def: "Your Vanara Units … Venom
+    on them is negated", floors at 1) ✓; "Devas vs Nagas ~40:60" =
+    the LAUNCH BASELINE 40.9/59.1 ✓.
+  · REALMS: the effect line renders REALM_INFO.fx at RUNTIME
+    (engine-derived) → engine-true by construction; thrives/suffers
+    prose is guidance (Swarga hero-answer copy already corrected).
+  NO false teaching surfaced on spot-check. CAVEAT: this was a
+  spot-check of the numeric/mechanic claims, not an exhaustive
+  line-by-line audit — the gem economy proved content can survive a
+  "corrected to engine truth" pass, so a dedicated full audit of the
+  five prose tabs remains available if the owner wants it.
+
+GATES (all green): entry from landing #mode-factions → win tab → the
+corrected content (real buttons); grep-zero on the two economy
+strings; Journal roundel toasts "Coming soon" again (no nav); the T45
+asset set (hero/namaste/icons/backs) renders in the tab both widths
+(single-column in the 520 fi-col, no h-overflow, panels fill 488px);
+the other five tabs render unchanged; collection roundel row intact (6
+roundels); landing/vault/mulligan/battle identical; parity — engine 0
+lines, test.js byte-identical 40.9/59.1, scenario 50 / venom 38 /
+story 48, 0 console.log / 0 console errors. NOT committed.
