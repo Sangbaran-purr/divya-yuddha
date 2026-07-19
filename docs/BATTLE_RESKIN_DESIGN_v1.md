@@ -109,3 +109,84 @@ T42 fires only after: (1) owner's 41b phone verdict approves the
 scrim family; (2) the asset batch (incl. tall table) is committed
 and curl-proven; (3) this doc is committed. R88 landed (ebe0790).
 T38 stays queued behind T42.
+
+## S9 T42 BUILD RECORD (2026-07-19 — index.html + docs only, engine 0 lines, NOT committed)
+STEP 1 — asset slim-downs (Pillow, alpha preserved where needed):
+24,762,414 → 1,895,300 B (92.3% smaller). Rooms JPEG-in-png
+(wide 399,696 / port 403,106); tables 256-color FASTOCTREE quantize
+(alpha survives: wide 342,916 α0-255 / tall 460,151 α0-254); four
+backs 460px JPEG-in-png (deva 58,589 / asura 69,157 / vanara 84,379
+/ naga 77,306). Backs cropped to card edge. curl/mode-verified.
+
+LAYERING (built, owner "confirmed as ruled"): bottom→top =
+#battlestage room plate (41b-calibrated scrim brightness .42 +
+bs-dim + bs-vig) + ember 0.15 gated on #hudwrap (z0, behind #app) →
+#field realm floor (board_bg/#realmboard UNCHANGED — the per-realm
+board is preserved) → #boardtable two-zone play surface (z2, above
+the #field darkening overlay so the table reads at full saturation;
+its feathered/transparent edges reveal the realm floor around it) →
+.half zones (R-B crimson-enemy / slate-you radials over the baked
+zone-cooled table) → board minis + tokens (z3) → #hudwrap score
+column (z95). R-E: all board text live Cinzel/DS.
+
+R-A HAND = MINI-CARD: art window = top 65% of the frame
+(object-position:top hides the frame's baked name/power), band fills
+65%→100% with name + def.sub epithet, corner power chip (absent on
+P0), sub-480 name-wrap. Rules text stays in the zoom (openInspect).
+The live state classes (focus/targetable/dead/story-hi) are
+preserved verbatim. RULING RESOLVED: R-A cites the T41b component
+(which carries an in-band "POWER n" line) AND lists a "corner power
+chip" — showing power twice. The explicit enumeration governs: band
+= name+epithet only, the corner chip is the sole power display.
+
+R-D FACTION BACKS: factionBackSrc(faction) → per-faction back with
+DOUBLE fallback — a map miss (unknown faction) and a 404 (missing
+file, via img.onerror) both resolve to the shipped card_back.png.
+setDeckStack drives deck stacks; setScoreAvatar drives the score
+column crest avatars (crest_<faction>_tile.png).
+
+DEVIATIONS (2, both defensible under S5):
+(1) TABLE ASSET = TALL EVERYWHERE — #field is always ≤520px
+(portrait) because #app is 520-capped on EVERY width, so #boardtable
+always uses the TALL table; the WIDE table would object-fit:cover-
+crop to a vertical sliver in the 520 column. Desktop today = the 520
+match column CENTERED, room plate filling the margins, deck stacks +
+score column at the column's edges. board_table_wide.png ships in
+the repo, unused, waiting.
+    REVERSAL CONDITION: a future task that widens #app on desktop
+    (the S2 "wide table + side columns" full-width battle layout —
+    out of T42's reskin fence) adopts board_table_wide.png; the only
+    change needed is battleSetTable() re-branching on innerWidth
+    (its ≥1024→wide branch is preserved in a comment at the call
+    site). Until then TALL is correct on all widths.
+(2) The dropped "POWER n" band-line (see R-A ruling above).
+
+POST-GATE ADD (item-b affordance): #hand carries a two-line
+horizontal edge-fade mask (linear-gradient, 26px each side) so
+off-edge hand cards are evident on top of the carousel partial-peek.
+An off-edge card the player must reach (the story-hi guided card,
+the nearest real analog to a "targetable" hand card — hand cards
+never take .targetable in engine play) is centered by the existing
+storyScrollToHighlight() (hand.scrollTo); its target math is proven
+to bring the off-edge card fully into view (the smooth animation is
+rAF-frozen in this preview → device).
+
+GATES (all green): G1 engine git-clean, test.js byte-identical,
+40.9/59.1, ASTRA_DMG {Agneyastra,Lanka Dahan,Pashupatastra,Suryastra,
+Vidyutastra}, scenario 50 / venom 38 / story 48. G2 mobile 375 +
+desktop 1280 (no overlap/h-scroll, portrait fit, crisp minis). G3
+full match ALL 3 tiers through real buttons: coin flip → mulligan →
+unit → Dharma Shield designation (real 🛡 + tap) → pass → round
+transition → pips (round-0 winner=1 → opp gold star) → deck draw
+(12→10) → match end BOTH outcomes (DEFEAT 2–0, VICTORY 2–0);
+deathmatch = 11-card AI hand + 💀 chip + deck 11/12 asymmetry +
+scoring overlay intact. G4 venom badge z3 > table z2, shield badge +
+overlay, targeting outline, zoom, STORY BEAT (Brihaspati dual-line +
+Yama story-hi glow) all over the new board. G5 counts live (deck
+decrement on draw, hand == engine, log per play). G6 all four backs
+live (deva/naga/asura/vanara) + map-miss + 404 onerror fallback.
+G7 regression: landing / faction-select / collection render, Ember
+gateId change backward-compatible (default gate = screenId). G8
+reduced-motion (Ember guards reducedMotion(); plate/table/stage no
+CSS animation) + 0 console.log, 0 console errors through the flow.
+Motion/loudness/final look verdicts → owner device pass.

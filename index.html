@@ -81,8 +81,9 @@ header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; ali
   100%{ transform:translateY(-44vh) scale(1.1); opacity:0; }
 }
 .half{ position:relative; flex:1; min-height:0; display:flex; flex-direction:column; z-index:3; overflow:hidden; }
-.half.opp{ background:radial-gradient(130% 92% at 50% -12%, rgba(122,26,22,.34), transparent 62%); }
-.half.me{  background:radial-gradient(130% 92% at 50% 112%, rgba(150,112,36,.30), transparent 62%); }
+/* T42 R-B: RED = ENEMY by convention (crimson upper), SLATE = you (cool lower) — reinforces the zone-cooled table asset, never per-matchup. */
+.half.opp{ background:radial-gradient(130% 92% at 50% -12%, rgba(138,30,24,.36), transparent 62%); }
+.half.me{  background:radial-gradient(130% 92% at 50% 112%, rgba(58,74,102,.30), transparent 62%); }
 /* thin sticky zone header */
 .zhead{ flex:0 0 auto; position:sticky; top:0; z-index:4; padding:3px 70px 3px 10px;
   font-family:Cinzel,serif; font-size:9px; letter-spacing:2px; color:var(--ink-dim);
@@ -154,22 +155,33 @@ header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; ali
 
 /* hand carousel */
 #handwrap{ position:relative; z-index:5; padding:2px 0; }
-#hand{ display:flex; gap:10px; overflow-x:auto; scroll-snap-type:x mandatory; padding:14px calc(50% - 66px) 16px; scrollbar-width:none; }
+#hand{ display:flex; gap:9px; overflow-x:auto; scroll-snap-type:x mandatory; padding:12px calc(50% - 55px) 14px; scrollbar-width:none;
+  /* T42 item-b: horizontal edge-fade — makes off-edge hand cards evident ("there is more") on top of the carousel peek */
+  -webkit-mask:linear-gradient(90deg, transparent 0, #000 26px, #000 calc(100% - 26px), transparent 100%);
+  mask:linear-gradient(90deg, transparent 0, #000 26px, #000 calc(100% - 26px), transparent 100%); }
 #hand::-webkit-scrollbar{ display:none; }
-.hc{ flex:0 0 auto; width:132px; aspect-ratio:3/4; scroll-snap-align:center; position:relative; overflow:hidden;
-  background:linear-gradient(#221a0a,#140f06); border:2px solid #4a3a18; border-radius:12px; cursor:pointer;
-  transform:scale(.9); opacity:.72; transition:transform .18s ease, opacity .18s ease, box-shadow .18s ease; }
-.hc.focus{ transform:scale(1.06); opacity:1; box-shadow:0 8px 20px rgba(0,0,0,.55); border-color:var(--gold-dim); }
-.hc:active{ transform:scale(1.02); }
-.hc.dead{ filter:grayscale(.55) brightness(.78); }
-.hc .art{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0; }
-.hc .cardtext{ position:absolute; inset:0; display:flex; flex-direction:column; padding:9px; z-index:1; }
-.hc.has-art .cardtext{ display:none; }
-.hc .nm{ font-family:Cinzel,serif; font-size:12px; font-weight:700; color:var(--gold); line-height:1.15; }
-.hc .ty{ font-size:8px; letter-spacing:1px; color:var(--ink-dim); font-family:Cinzel,serif; text-transform:uppercase; margin:4px 0; }
-.hc .fx{ font-size:9px; line-height:1.3; color:var(--ink-dim); flex:1; overflow:hidden; }
-.hc .pw{ position:absolute; bottom:5px; right:9px; font-family:Cinzel,serif; font-size:18px; font-weight:700; color:var(--hi); text-shadow:0 1px 2px #000; z-index:2; }
-.hc .lockicon{ position:absolute; top:5px; right:8px; font-size:13px; z-index:2; }
+/* T42 R-A: MINI-CARD (art crop ~65% + band[name/epithet] + corner power chip; P0 no chip). Rules text lives in the zoom.
+   The live state classes (focus/targetable/dead/story-hi) are unchanged; only the inner structure differs. */
+.hc{ flex:0 0 auto; width:110px; aspect-ratio:5/7; scroll-snap-align:center; position:relative; overflow:hidden;
+  background:linear-gradient(#1a1206,#0e0a04); border:1.5px solid var(--gold-dim-25); border-radius:10px; cursor:pointer;
+  transform:scale(.92); opacity:.78; transition:transform .18s ease, opacity .18s ease, box-shadow .18s ease; }
+.hc.focus{ transform:scale(1.05); opacity:1; box-shadow:0 8px 22px rgba(0,0,0,.6); border-color:var(--gold-2); }
+.hc:active{ transform:scale(1.0); }
+.hc.dead{ filter:grayscale(.55) brightness(.72); }
+/* art window = top 65% of the frame (object-position:top hides the frame's baked name/power); band fills 65%→100% (T41b crop). */
+.hc .art{ position:absolute; top:0; left:0; width:100%; height:65%; object-fit:cover; object-position:top center; z-index:0; }
+.hc-band{ position:absolute; left:0; right:0; top:65%; bottom:0; z-index:1; padding:3px 5px; text-align:center; pointer-events:none;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:linear-gradient(180deg, rgba(24,15,6,.96), rgba(4,3,1,.98)); border-top:1px solid rgba(232,200,116,.22); }
+.hc-nm{ font-family:Cinzel,serif; font-size:9px; letter-spacing:.03em; color:var(--gold-hi); line-height:1.15;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.hc-epi{ font-size:6.5px; letter-spacing:.03em; color:var(--parchment); opacity:.72; line-height:1.2; margin-top:1px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-style:italic; }
+.hc-chip{ position:absolute; top:4px; right:4px; z-index:2; min-width:19px; height:19px; padding:0 3px; border-radius:10px;
+  display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-size:11px; font-weight:700;
+  color:var(--gold-bright); background:radial-gradient(circle at 40% 34%, #2b2110, #0e0904); border:1px solid var(--gold-2);
+  box-shadow:0 1px 3px rgba(0,0,0,.6); }
+.hc .lockicon{ position:absolute; top:4px; left:5px; font-size:12px; z-index:2; }
 /* rarity treatments — animated only on focused hand card + inspect */
 .rar-L::after{ content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
   background:linear-gradient(115deg, transparent 42%, rgba(255,244,200,.5) 50%, transparent 58%); background-size:280% 280%; }
@@ -209,6 +221,53 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   padding:10px 26px; background:linear-gradient(90deg, transparent, rgba(40,28,10,.92), transparent);
   border-top:1px solid var(--gold-dim); border-bottom:1px solid var(--gold-dim); text-shadow:0 0 12px rgba(240,208,128,.55); }
 @keyframes bannerSweep{ 0%{ transform:translateX(-18px); opacity:0; } 18%{ opacity:1; } 82%{ opacity:1; } 100%{ transform:translateX(18px); opacity:0; } }
+
+/* ═══ TASK 42 — THE KSHETRA (battle screen reskin) ═══
+   Layering (bottom→top): #battlestage room plate + 41b-calibrated scrim + ember 0.15 (z0, behind #app) →
+   #field realm floor (board_bg/#realmboard, unchanged) → #boardtable two-zone play surface (above the field scrim,
+   feathered edges show the realm floor through) → .half zones (R-B crimson/slate) → board minis → #hudwrap score column.
+   R-E: all board text is live Cinzel/DS. Engine untouched. */
+#battlestage{ position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; background:var(--ds-ink); }
+#battleplate{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); transform-origin:center;
+  filter:brightness(.42) saturate(.8) contrast(1.02); }   /* treated — the table + cards are the focus (DS §3) */
+.bs-layer{ position:absolute; inset:0; pointer-events:none; }
+.bs-dim{ background:linear-gradient(180deg, rgba(7,4,2,.7), rgba(7,4,2,.5) 42%, rgba(7,4,2,.8)); }
+.bs-vig{ background:radial-gradient(125% 100% at 50% 40%, transparent 46%, rgba(0,0,0,.72) 100%); }
+#battlestage > .ember-fx{ position:fixed; inset:0; width:100%; max-width:none; height:100%; margin:0; pointer-events:none; }
+
+/* board table — the two-zone play surface; feathered/transparent edges reveal the realm floor around it */
+#boardtable{ position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2;
+  width:100%; height:100%; object-fit:cover; pointer-events:none; }
+
+/* deck stacks — opponent top / yours bottom, left margin of the board (portrait overlay / desktop beside the table) */
+.deckstack{ position:absolute; left:5px; z-index:4; width:42px; text-align:center; pointer-events:none; }
+#deck-o{ top:8px; } #deck-p{ bottom:8px; }
+.deckstack img{ width:42px; aspect-ratio:5/7; object-fit:cover; border-radius:5px; display:block; margin:0 auto;
+  border:1px solid var(--gold-dim-25); box-shadow:2px 2px 0 -1px rgba(0,0,0,.5), 0 3px 8px rgba(0,0,0,.6); }
+.deckcnt{ display:block; font-family:Cinzel,serif; font-size:10px; color:var(--gold-hi); margin-top:2px; text-shadow:0 1px 3px #000; }
+
+/* score column — enemy avatar / red plaque / star pips / blue plaque / your avatar (R-B) */
+.score-av{ width:38px; height:38px; border-radius:50%; background:center/cover no-repeat #140d04;
+  border:2px solid var(--gold-dim); box-shadow:0 2px 8px rgba(0,0,0,.6); }
+.score-av.enemy{ border-color:#a83a30; } .score-av.you{ border-color:#5a7099; }
+.hud-plaque.enemy{ border-color:#a83a30; background:radial-gradient(circle at 50% 32%, #2a1310, #0e0604); }
+.hud-plaque.you{ border-color:#5a7099; background:radial-gradient(circle at 50% 32%, #16222f, #060a10); }
+
+/* PASS ROUND — DS gold plaque */
+#passbtn{ background:linear-gradient(180deg,#2a1e0a,#1a1206); border-color:var(--gold-2); color:var(--gold-bright); letter-spacing:.14em; }
+
+@media(min-width:1024px){
+  #hand{ padding:14px calc(50% - 64px) 16px; }
+  .hc{ width:128px; }
+  .hc-nm{ font-size:11px; } .hc-epi{ font-size:8px; } .hc-chip{ min-width:22px; height:22px; font-size:13px; }
+  .deckstack{ width:52px; } .deckstack img{ width:52px; } .deckcnt{ font-size:12px; }
+  .score-av{ width:46px; height:46px; }
+}
+@media(max-width:479px){
+  .hc{ width:104px; }
+  .hc-nm{ white-space:normal; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; line-height:1.1; }
+  #hand{ padding:12px calc(50% - 52px) 14px; }
+}
 
 /* overlays */
 .overlay{ position:fixed; inset:0; background:rgba(6,4,1,.9); display:flex; align-items:center; justify-content:center; z-index:80; padding:20px; }
@@ -1446,6 +1505,11 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 </style>
 </head>
 <body>
+<div id="battlestage">
+  <img id="battleplate" alt="">
+  <div class="bs-layer bs-dim"></div>
+  <div class="bs-layer bs-vig"></div>
+</div>
 <div id="app">
   <header>
     <div class="title">DIVYA YUDDHA<small id="facline">PROTOTYPE · DEVA vs DEVA</small></div>
@@ -1461,6 +1525,9 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 
   <div id="field">
     <div id="realmboard"></div>
+    <img id="boardtable" alt="">
+    <div id="deck-o" class="deckstack"><img id="deckimg-o" alt=""><span class="deckcnt" id="deckcnt-o">12</span></div>
+    <div id="deck-p" class="deckstack"><img id="deckimg-p" alt=""><span class="deckcnt" id="deckcnt-p">12</span></div>
     <div id="embers"></div>
     <canvas id="vfxcanvas"></canvas>
     <div id="vfxflash"></div>
@@ -1501,9 +1568,11 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 </div>
 
 <div id="hudwrap"><div id="hudcol"><div id="hud">
-  <div class="hud-plaque" id="hud-o"><span class="hud-total" id="ototal">0</span></div>
+  <div class="score-av enemy" id="score-av-o"></div>
+  <div class="hud-plaque enemy" id="hud-o"><span class="hud-total" id="ototal">0</span></div>
   <div class="hud-pips" id="pips"></div>
-  <div class="hud-plaque" id="hud-p"><span class="hud-total" id="ptotal">0</span></div>
+  <div class="hud-plaque you" id="hud-p"><span class="hud-total" id="ptotal">0</span></div>
+  <div class="score-av you" id="score-av-p"></div>
 </div></div></div>
 
 <div id="banner" class="hidden"><span class="txt"></span></div>
@@ -4240,6 +4309,7 @@ function startGame(p0Faction, p1Faction){
   applyFactionTheme();
   applyRealmBoard(G.realm);   // swap the battle board to this match's Cosmic Realm (lazy-loaded, base board_bg until ready)
   makeEmbers();
+  battleStageStart();   // T42: plate + table + ember, gated on #hudwrap (match-active)
   Audio2.playTrack('battle');   // crossfade menu → battle music (~1.5s) — music at mulligan
   conchPending=true;            // arm the once-per-match conch; it fires at ROUND 1 START (first pump), not during the mulligan
   showRealmIntro();
@@ -5027,16 +5097,17 @@ const Ember={
     }
   },
   fit(I){ if(I&&I.cv){ I.cv.width=innerWidth; I.cv.height=innerHeight; } },
-  start(screenId, density){                   // idempotent: re-entering a screen reuses its instance
-    if(reducedMotion()) return null;          // DS §2: killed by prefers-reduced-motion
-    const host=$(screenId); if(!host) return null;
+  start(screenId, density, gateId){           // idempotent. gateId (optional, default screenId) = the element whose
+    if(reducedMotion()) return null;          // .hidden governs the BATTERY LAW; lets the battle ember live in
+    const host=$(screenId); if(!host) return null;   // #battlestage but gate on the match being active (#hudwrap).
+    const gate=gateId||screenId;
     let I=Ember.inst[screenId];
     if(!I){ const cv=document.createElement('canvas'); cv.className='ember-fx';
       host.insertBefore(cv, host.firstChild);
-      I=Ember.inst[screenId]={ cv, cx:cv.getContext('2d'), parts:[], density, raf:null, t0:performance.now() }; }
-    I.density=density; Ember.fit(I);
+      I=Ember.inst[screenId]={ cv, cx:cv.getContext('2d'), parts:[], density, raf:null, t0:performance.now(), gate }; }
+    I.density=density; I.gate=gate; Ember.fit(I);
     if(I.raf===null){ I.t0=performance.now();
-      const loop=(now)=>{ if($(screenId).classList.contains('hidden')){ I.raf=null; return; }   // BATTERY LAW
+      const loop=(now)=>{ if($(I.gate).classList.contains('hidden')){ I.raf=null; return; }   // BATTERY LAW
         Ember.step(I,(now-I.t0)/1000); I.raf=requestAnimationFrame(loop); };
       I.raf=requestAnimationFrame(loop); }
     return I;
@@ -5048,8 +5119,50 @@ const Ember={
    instance shares #landfx, which landResizeFx already refits — refitting it again here is idempotent.) */
 addEventListener('resize', ()=>{ for(const id in Ember.inst) Ember.fit(Ember.inst[id]); });
 document.addEventListener('visibilitychange', ()=>{ if(document.hidden){ for(const id in Ember.inst) Ember.stop(id); }
-  else for(const id in Ember.inst) if(!$(id).classList.contains('hidden')) Ember.start(id, Ember.inst[id].density); });
+  else for(const id in Ember.inst){ const I=Ember.inst[id]; if(!$(I.gate||id).classList.contains('hidden')) Ember.start(id, I.density, I.gate); } });
 const EMBER_CARD_DENSITY=0.15;                // DS §2 — card screens; the chrome carries the identity, not the fire
+
+/* ═══════════ T42 — THE KSHETRA (battle screen chrome) ═══════════
+   Additive: reads engine state, writes NO engine. The interaction layer (render/openInspect/targeting/leap/…) is
+   untouched. renderBattleChrome runs at the tail of render(); the plate + ember start at match start (startGame /
+   story), gated on #hudwrap (match-active). */
+const FACTION_BACK={ devas:'card_back_deva', asuras:'card_back_asura', vanaras:'card_back_vanara', nagas:'card_back_naga' };
+function factionBackSrc(faction){ return `assets/img/${FACTION_BACK[faction]||'card_back'}.png?v=1`; }   // R-D lookup
+const BATTLE_PLATE={ wide:{src:'assets/img/battle_plate_wide.png?v=1', w:1536, h:1024},
+                     port:{src:'assets/img/battle_plate_port.png?v=1', w:853,  h:1844} };
+let battlePlateMode=null;
+function battlePickPlate(){ const m=(innerWidth>=1024)?'wide':'port'; if(m===battlePlateMode) return;
+  battlePlateMode=m; const el=$('battleplate'); if(el) el.src=BATTLE_PLATE[m].src; }
+function battleFitPlate(){ const el=$('battleplate'), p=BATTLE_PLATE[battlePlateMode]; if(!el||!p) return;
+  const s=Math.max(innerWidth/p.w, innerHeight/p.h); el.style.width=(p.w*s)+'px'; el.style.height=(p.h*s)+'px'; }
+/* the board table asset per orientation (R-F cooled surface; alpha table over the scrim at full saturation) */
+function battleSetTable(){ const el=$('boardtable'); if(!el) return;
+  /* #field is always <=520px (portrait) — #app is 520-capped on every width — so the TALL table is correct on all
+     widths; object-fit:cover on the wide asset would zoom-crop it to a sliver. The wide table awaits a future
+     desktop-widening task (out of this reskin's scope fence). REVERSAL when #app widens on desktop (adopts the
+     WIDE asset) — restore this one branch:  el.src = (innerWidth>=1024) ? '...board_table_wide.png?v=1' : '...tall...'; */
+  el.src = 'assets/img/board_table_tall.png?v=1'; }
+function battleStageStart(){
+  battlePickPlate(); battleFitPlate(); battleSetTable();
+  Ember.start('battlestage', EMBER_CARD_DENSITY, 'hudwrap');   // gate on the match being active (#hudwrap)
+}
+addEventListener('resize', ()=>{ if(!$('hudwrap').classList.contains('hidden')){ battlePickPlate(); battleFitPlate(); battleSetTable(); } });
+/* deck stacks + score-column avatars — the only new live-data surfaces this task adds. Faction back with card_back
+   FALLBACK (R-D): a missing/404 back falls to the neutral shipped back. */
+function setDeckStack(imgId, cntId, faction, count){
+  const im=$(imgId); if(im){ const want=factionBackSrc(faction);
+    if(im.getAttribute('data-fac')!==faction){ im.setAttribute('data-fac',faction); im.onerror=()=>{ im.onerror=null; im.src='assets/img/card_back.png?v=1'; }; im.src=want; } }
+  const cn=$(cntId); if(cn) cn.textContent=count;
+}
+function setScoreAvatar(elId, faction){ const el=$(elId); if(!el) return;
+  if(el.getAttribute('data-fac')===faction) return; el.setAttribute('data-fac',faction);
+  el.style.backgroundImage=`url('assets/img/crest_${faction}_tile.png')`; }
+function renderBattleChrome(me, op){
+  setDeckStack('deckimg-o','deckcnt-o', op.faction, op.deck.length);
+  setDeckStack('deckimg-p','deckcnt-p', me.faction, me.deck.length);
+  setScoreAvatar('score-av-o', op.faction);
+  setScoreAvatar('score-av-p', me.faction);
+}
 function landResizeFx(){ const c=$('landfx'); if(c){ c.width=innerWidth; c.height=innerHeight; } }
 function landStageStop(){ if(LandFx.raf!==null){ cancelAnimationFrame(LandFx.raf); LandFx.raf=null; } }
 function landStageStart(){
@@ -5943,7 +6056,7 @@ function startStoryChapter(id){
   ['gameover','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','storyselect','cutscene','storyresult','mulligan','bossvs','realmpop','diffchip'].forEach(id=>$(id).classList.add('hidden'));   // diffchip: story never shows the PvAI difficulty chip
   $('hudwrap').classList.remove('hidden');
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
-  applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers();
+  applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers(); battleStageStart();   // T42
   Audio2.musicDuck(false); Audio2.playTrack('battle'); conchPending=true;   // release the intro duck INTO the menu→battle crossfade (the crossfade + conch stay the hinge)
   showRealmIntro(); render(); VFX.init(); VFX.resize();
   if (G.mulliganCount>0) storyBeginMulligan();   // ch4/ch5: run the mulligan phase (teaches it) with the pre-match Brihaspati line
@@ -6462,12 +6575,17 @@ function render(targetSet){
     const ok = myTurn && play.has(i);
     d.className='hc '+facClass(me.faction)+' '+rarClass(c)+(ok?'':' dead');
     d.dataset.uid=c.uid;   // for story auto-scroll (item 2) + stable identity across renders
-    d.innerHTML=`<div class="cardtext"><div class="nm">${c.n}</div><div class="ty">${TYPE_ICON[c.t]} ${c.t} · ${RARITY_NAME[c.r]}</div><div class="fx">${c.txt}</div></div>${c.p>0?`<div class="pw">${c.p}</div>`:''}${c.lockedRound===G.round?'<div class="lockicon">🔒</div>':''}`;
-    attachArt(d, c, me.faction);
+    /* T42 R-A: the hand is the T41b MINI-CARD (art crop ~65% + band[name/epithet/power] + corner chip; P0 no chip;
+       NO rules text — rules live in the zoom via openInspect). Root class 'hc', dataset.uid, onclick, and the live
+       state classes (focus/targetable/dead/story-hi/…) are PRESERVED verbatim; only the inner structure changed. */
+    d.innerHTML=`<div class="hc-band"><div class="hc-nm">${c.n}</div>${c.sub?`<div class="hc-epi">${c.sub}</div>`:''}</div>`+
+      `${c.p>0?`<div class="hc-chip">${c.p}</div>`:''}${c.lockedRound===G.round?'<div class="lockicon">🔒</div>':''}`;
+    attachArt(d, c, me.faction);   // inserts <img class="art"> as first child → the crop layer (CSS)
     d.onclick=()=>openInspect(c, 0, ok?i:-1);
     hand.appendChild(d);
   });
   updateFocus();
+  renderBattleChrome(me, op);   // T42: deck stacks + score-column avatars (additive; reads engine state, writes no engine)
 
   $('passbtn').disabled=!myTurn;
   $('leapbtn').classList.toggle('hidden', !(myTurn && me.faction==='vanaras' && canLeap(G,0) && !leapMode && !placeMode && !pendingPlay));
