@@ -598,3 +598,62 @@ OPTIONAL (applied, not struck): below 480px the epithet line is dropped
   does NOT overflow the card at the wrapped height. Reversal: if the
   owner prefers the epithet on phone over full names, delete the
   <480px .mc-epi/.mc-nm override — truncation returns.
+
+## AMENDMENT A6 — HOW TO WIN (Codex page 1) (ruled 2026-07-19, during T45)
+RULED ENTRY POINT — the Journal roundel becomes the Codex. The
+collection masthead's JOURNAL roundel (T39, visible-locked "Coming
+soon", book+quill icon) is now the LIVE Codex entry → opens the HOW
+TO WIN screen. Book+quill is the semantic fit for codex content, so
+the icon (icon_journal.png) is kept; the roundel loses its
+locked/data-soon/lock-overlay and gains id=col-r-codex →
+showHowToWin(). No new roundel was minted.
+  REVERSAL: if a DISTINCT Journal feature (match history / lore log)
+  ever ships, the Codex gets its OWN roundel then and the Journal
+  roundel reverts to its own destination.
+
+SCOPE (a) — this is Codex PAGE 1 only. The Codex nav is a pill tab
+row: HOW TO WIN active; DEVAS, ASURAS, VANARAS, NAGAS, REALMS are
+visible-locked (T36 data-soon "Coming soon" toast, no navigation) —
+they stand as the CODEX ROADMAP (each becomes its own page later).
+
+GROUND — .metascreen, DS §3 ds-ink ground + ember 0.15, NO room
+plate (the T35 card-screen precedent: #vault/#sadhanapick pattern —
+pure ink + vignette ::after). Masthead plaque + live Cinzel "HOW TO
+WIN"; back pill → landing. #howtowin registered in COL_HIDE + the
+showLanding hide-list; z-index 87.
+
+COPY — CONTENT-LOCKED (owner-approved v2 mockup, transcribed
+verbatim): eyebrow; THE OBJECTIVE (6 lines, last in crimson-warn);
+THE ROUND FLOW (Round 1/2/3 — subtitle, three steps, coaching, each
+an icon triplet icon_cards→icon_swords→icon_shield with → glyphs);
+THE ROUND ECONOMY (HOW YOU WIN A ROUND — the engine-true win line
+"Higher total power wins the round." + pip rows You 7 / Opponent 5
+captioned TOTAL POWER + "Lose the round. Keep your cards."; THE TRUE
+COST — two cost lines + italic resource line + the two REAL
+committed backs card_back_deva + card_back_asura via factionBackSrc
+[T42 double fallback to neutral] with a ⇄ exchange glyph); WHEN TO
+PASS (three rows PASS BEHIND?/CONCEDE?/SAVE FOR LATER?); CLOSING
+"Discipline is power. Patience is victory."
+  ⚠ ONE PHRASED LINE (not from the mockup): the ROUND-ECONOMY
+  "engine-true win line" was described, not quoted, in the task, so
+  it is phrased as "Higher total power wins the round." — a faithful
+  statement of the engine's Yuddha-Row-total round rule. Flagged for
+  the owner to lock or re-word.
+
+ASSETS — 5 files, STEP-1 optimized in place: howtowin_hero.png
+(1753×897 → 1600×819 JPEG-in-png 310KB), howtowin_namaste.png
+(1536×1024 → 1400×933 JPEG-in-png 220KB), icon_cards/swords/shield
+(512px RGBA → 160px FASTOCTREE-quantize ~11KB each, alpha 0-254/255
+preserved). ?v=1 stamps on every new reference. The namaste panel
+gets a CSS radial edge-fade mask (seam-kill in CSS, not baked).
+
+GATES (all green): both widths 390/1280 (no h-overflow; objective/
+flow/economy/pass all switch to 2-col at ≥1024; taps back 44 / tabs
+40); the Journal→Codex roundel navigates IN and back returns (real
+buttons); the 5 locked Codex tabs toast and do not navigate; the two
+committed backs load via factionBackSrc; collection/vault/mulligan/
+battle/landing regression identical (only the collection roundel row
+changed — codex live, rewards still locked, 6 roundels intact;
+battle has no roundel row); asset 200s curl-proven; parity — engine
+0 lines, test.js byte-identical 40.9/59.1, scenario 50 / venom 38 /
+story 48, 0 console.log / 0 console errors. NOT committed.

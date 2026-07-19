@@ -1434,6 +1434,113 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   .cc-bname{ font-size:10px; } .cc-bepi{ font-size:7.5px; } .cc-bpow{ font-size:8px; }
 }
 
+/* ═══ TASK 45 — HOW TO WIN (Codex page 1). ds-ink ground + ember 0.15 (T35 precedent, no room plate). ═══ */
+#howtowin{ z-index:87; overflow-y:auto; background:var(--ds-ink); padding-bottom:34px; }
+#howtowin > .ember-fx{ position:fixed; inset:0; width:100%; max-width:none; height:100%; margin:0; z-index:-1; pointer-events:none; }
+#howtowin::after{ content:''; position:fixed; inset:0; z-index:-1; pointer-events:none;
+  background:radial-gradient(125% 100% at 50% 40%, transparent 60%, rgba(0,0,0,.6) 100%); }
+#howtowin .col-head{ background:linear-gradient(var(--ds-ink) 62%, transparent); }
+.htw-headspacer{ flex:0 0 44px; }
+.htw-eyebrow{ text-align:center; font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:12.5px;
+  color:var(--parchment); opacity:.82; padding:0 16px 10px; text-shadow:0 1px 5px rgba(0,0,0,.85); }
+#howtowin > *{ max-width:760px; margin-left:auto; margin-right:auto; width:100%; }
+
+/* Codex nav — pill tab row; HOW TO WIN active, others visible-locked */
+.htw-nav{ display:flex; gap:6px; padding:0 12px 12px; overflow-x:auto; scrollbar-width:none; justify-content:flex-start; }
+.htw-nav::-webkit-scrollbar{ display:none; }
+.htw-tab{ flex:0 0 auto; min-height:40px; padding:0 13px; border-radius:8px; cursor:pointer; white-space:nowrap;
+  font-family:Cinzel,serif; font-size:10.5px; letter-spacing:.1em; font-variant:small-caps;
+  background:linear-gradient(180deg,rgba(43,28,10,.78),rgba(22,13,5,.78)); border:1px solid var(--gold-dim-25); color:var(--gold-hi);
+  transition:border-color .2s ease,color .2s ease; }
+.htw-tab.on{ border-color:var(--gold-2); color:var(--gold-bright); background:linear-gradient(180deg,#4a3210,#241505); cursor:default; }
+.htw-tab.locked{ opacity:.5; cursor:default; }
+
+/* section titles */
+.htw-sec-title{ font-family:Cinzel,serif; font-size:13px; letter-spacing:.22em; color:var(--gold-bright); text-transform:uppercase;
+  text-shadow:0 2px 8px rgba(0,0,0,.9); }
+.htw-sec-title.htw-center{ text-align:center; padding:16px 12px 10px; }
+
+/* shared plaque */
+.htw-panel{ position:relative; border:1px solid var(--gold-dim-25); border-radius:12px; margin:0 12px 12px;
+  background:linear-gradient(180deg, rgba(46,32,14,.86), rgba(12,8,4,.9)); box-shadow:0 6px 18px rgba(0,0,0,.4); overflow:hidden; }
+.htw-panel-title{ font-family:Cinzel,serif; font-size:11px; letter-spacing:.16em; color:var(--gold-hi); text-transform:uppercase; margin-bottom:8px; }
+.htw-panel p{ font-family:'Crimson Pro',Georgia,serif; font-size:13px; line-height:1.5; color:var(--parchment); margin:0 0 6px; }
+.htw-italic{ font-style:italic; color:var(--gold-hi); opacity:.92; }
+.htw-warn{ color:var(--crimson); font-weight:600; font-style:italic; }
+
+/* THE OBJECTIVE — parchment plaque, copy + hero art */
+.htw-objective{ display:flex; flex-direction:column; gap:12px; padding:16px; margin-top:2px;
+  background:linear-gradient(180deg, rgba(58,44,22,.9), rgba(20,13,6,.92)); }
+.htw-obj-copy{ flex:1 1 auto; min-width:0; }
+.htw-obj-copy .htw-sec-title{ margin-bottom:8px; display:block; }
+.htw-obj-art{ flex:0 0 auto; border-radius:10px; overflow:hidden; border:1px solid var(--gold-dim-25); }
+.htw-obj-art img{ width:100%; height:auto; display:block; }
+
+/* THE ROUND FLOW — three round panels, each an icon triplet */
+.htw-flow{ display:flex; flex-direction:column; gap:12px; }
+.htw-round{ padding:14px; }
+.htw-round-head{ display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
+.htw-round-n{ font-family:Cinzel,serif; font-size:13px; letter-spacing:.14em; color:var(--gold-bright); }
+.htw-round-sub{ font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:12px; color:var(--parchment); opacity:.85; }
+.htw-triplet{ display:flex; align-items:center; justify-content:center; gap:6px; }
+.htw-step{ flex:1 1 0; display:flex; flex-direction:column; align-items:center; gap:5px; text-align:center; min-width:0; }
+.htw-icon{ width:52px; height:52px; object-fit:contain; filter:drop-shadow(0 2px 6px rgba(0,0,0,.6)); }
+.htw-step-lbl{ font-family:Cinzel,serif; font-size:9.5px; letter-spacing:.04em; color:var(--gold-hi); line-height:1.2; }
+.htw-arrow{ flex:0 0 auto; color:var(--gold-2); font-size:15px; opacity:.8; }
+.htw-coach{ margin-top:12px; text-align:center; font-family:'Crimson Pro',Georgia,serif; font-size:12px; font-style:italic;
+  color:var(--parchment); opacity:.9; }
+
+/* THE ROUND ECONOMY */
+.htw-econ{ display:flex; flex-direction:column; gap:12px; }
+.htw-econ-win, .htw-econ-cost{ padding:14px; }
+.htw-econ-line{ color:var(--gold-hi) !important; font-size:14px !important; margin-bottom:10px !important; }
+.htw-pips{ display:flex; flex-direction:column; gap:7px; margin:6px 0 4px; }
+.htw-pip-row{ display:flex; align-items:center; gap:8px; }
+.htw-pip-lbl{ flex:0 0 66px; font-family:Cinzel,serif; font-size:9px; letter-spacing:.1em; text-transform:uppercase; color:var(--parchment); opacity:.85; }
+.htw-pip-track{ flex:1 1 auto; display:flex; gap:3px; }
+.htw-pip{ flex:1 1 0; height:12px; border-radius:3px; border:1px solid var(--gold-dim-25); background:rgba(0,0,0,.45); }
+.htw-pip.on{ background:linear-gradient(180deg,var(--gold-hi),#8a6a2c); border-color:var(--gold-2); box-shadow:0 0 6px rgba(232,200,116,.45); }
+.htw-pip-cap{ text-align:center; font-family:Cinzel,serif; font-size:8.5px; letter-spacing:.24em; text-transform:uppercase; color:var(--gold-2); margin-top:4px; }
+.htw-econ-foot{ margin-top:10px; text-align:center; font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:12px; color:var(--gold-hi); }
+/* THE TRUE COST — two real committed backs + exchange arrows */
+.htw-exchange{ display:flex; align-items:center; justify-content:center; gap:14px; margin-top:12px; }
+.htw-back{ width:64px; aspect-ratio:5/7; object-fit:cover; border-radius:6px; border:1px solid var(--gold-dim-25); box-shadow:0 4px 12px rgba(0,0,0,.55); display:block; }
+.htw-ex-arrow{ color:var(--gold-2); font-size:20px; }
+
+/* WHEN TO PASS — rows + namaste art with CSS radial edge-fade (seam-kill in CSS, not baked) */
+.htw-pass{ display:flex; flex-direction:column; gap:14px; padding:16px; }
+.htw-pass-rows{ display:flex; flex-direction:column; gap:10px; }
+.htw-pass-row{ display:grid; grid-template-columns:auto 1fr; gap:2px 10px; align-items:baseline;
+  padding-bottom:10px; border-bottom:1px solid rgba(232,200,116,.14); }
+.htw-pass-row:last-child{ border-bottom:0; padding-bottom:0; }
+.htw-pass-q{ grid-column:1; grid-row:1; font-family:Cinzel,serif; font-size:12px; letter-spacing:.06em; color:var(--gold-bright); white-space:nowrap; }
+.htw-pass-rule{ grid-column:2; grid-row:1; font-family:'Crimson Pro',Georgia,serif; font-size:12.5px; color:var(--parchment); }
+.htw-pass-arrow{ display:none; }
+.htw-pass-coach{ grid-column:2; grid-row:2; font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:11.5px; color:var(--gold-hi); opacity:.9; margin-top:2px; }
+.htw-pass-art{ align-self:center; }
+.htw-pass-art img{ width:100%; max-width:420px; height:auto; display:block; margin:0 auto;
+  -webkit-mask:radial-gradient(72% 72% at 50% 46%, #000 52%, transparent 100%);
+          mask:radial-gradient(72% 72% at 50% 46%, #000 52%, transparent 100%); }
+
+.htw-closing{ text-align:center; font-family:Cinzel,serif; font-style:italic; font-size:14px; letter-spacing:.08em;
+  color:var(--gold-bright); text-shadow:0 2px 10px rgba(0,0,0,.9); padding:18px 16px 6px; }
+
+@media(min-width:1024px){
+  #howtowin > *{ max-width:960px; }
+  .htw-eyebrow{ font-size:14px; }
+  .htw-objective{ flex-direction:row; align-items:center; }
+  .htw-obj-art{ flex:0 0 42%; }
+  .htw-flow{ flex-direction:row; }
+  .htw-round{ flex:1 1 0; }
+  .htw-econ{ flex-direction:row; }
+  .htw-econ-win, .htw-econ-cost{ flex:1 1 0; }
+  .htw-pass{ flex-direction:row; align-items:center; }
+  .htw-pass-rows{ flex:1 1 60%; }
+  .htw-pass-art{ flex:0 0 38%; }
+  .htw-icon{ width:60px; height:60px; }
+  .htw-sec-title{ font-size:15px; }
+}
+
 /* the flip cell — 3D, two faces. CARD BACKS RENDER UPRIGHT ALWAYS: no rotate/mirror on .cc-back in any state. */
 .cc{ position:relative; aspect-ratio:5/7; perspective:900px; cursor:pointer; }
 .cc-in{ position:absolute; inset:0; transform-style:preserve-3d; transition:transform .5s cubic-bezier(.2,.7,.3,1); }
@@ -1809,7 +1916,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <div class="col-roundels" id="col-roundels">
     <button class="roundel" id="col-r-quests" title="Quests"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 5h6M9 5a2 2 0 0 0-2 2v0H5.5A1.5 1.5 0 0 0 4 8.5v10A1.5 1.5 0 0 0 5.5 20h13a1.5 1.5 0 0 0 1.5-1.5v-10A1.5 1.5 0 0 0 18.5 7H17v0a2 2 0 0 0-2-2M8 12l2.5 2.5L16 9"/></svg></button>
     <button class="roundel" id="col-r-settings" title="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8"/></svg></button>
-    <button class="roundel roundel-img locked" data-soon title="Journal — coming soon"><img src="assets/img/icon_journal.png" alt=""><span class="rlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
+    <button class="roundel roundel-img" id="col-r-codex" title="How to Win — the Codex"><img src="assets/img/icon_journal.png" alt=""></button>
     <button class="roundel roundel-img locked" data-soon title="Rewards — coming soon"><img src="assets/img/icon_rewards.png" alt=""><span class="rlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
     <button class="roundel locked" data-soon title="Decks — coming soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="4" y="7" width="11" height="14" rx="1.6"/><path d="M8 4h9a2 2 0 0 1 2 2v11"/></svg><span class="rlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
     <button class="roundel locked" data-soon title="Store — coming soon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 8h16l-1.3 11.2a1.6 1.6 0 0 1-1.6 1.4H6.9a1.6 1.6 0 0 1-1.6-1.4z"/><path d="M9 8V6.5a3 3 0 0 1 6 0V8"/></svg><span class="rlock"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></span></button>
@@ -1856,6 +1963,85 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   </div>
 </div>
 <div class="overlay hidden" id="fi-inspect"></div>
+
+<!-- ═══ TASK 45 — HOW TO WIN (Codex page 1). .metascreen, ds-ink ground + ember 0.15 (T35 card-screen precedent, no room plate). ═══ -->
+<div class="overlay metascreen hidden" id="howtowin">
+  <div class="col-head">
+    <button class="metaback" id="htw-back">‹ Back</button>
+    <div class="col-masthead">
+      <img class="col-plaque" src="assets/img/meta_masthead_plaque.png" alt="">
+      <div class="col-title">HOW TO WIN</div>
+    </div>
+    <div class="htw-headspacer" aria-hidden="true"></div>
+  </div>
+  <div class="htw-eyebrow">Before you pick an army, learn the one rule every army obeys.</div>
+
+  <div class="htw-nav" id="htw-nav">
+    <button class="htw-tab on">How to Win</button>
+    <button class="htw-tab locked" data-soon>Devas</button>
+    <button class="htw-tab locked" data-soon>Asuras</button>
+    <button class="htw-tab locked" data-soon>Vanaras</button>
+    <button class="htw-tab locked" data-soon>Nagas</button>
+    <button class="htw-tab locked" data-soon>Realms</button>
+  </div>
+
+  <!-- THE OBJECTIVE -->
+  <section class="htw-panel htw-objective">
+    <div class="htw-obj-copy">
+      <div class="htw-sec-title">The Objective</div>
+      <p>Divya Yuddha is best of three rounds.</p>
+      <p>Your cards must last all three.</p>
+      <p>Every card you spend winning a round is a card you cannot spend later.</p>
+      <p>End the round with more total power than your opponent when both players pass.</p>
+      <p>The player who wins two rounds wins the match.</p>
+      <p class="htw-warn">The player who tries to win all three usually loses.</p>
+    </div>
+    <div class="htw-obj-art"><img src="assets/img/howtowin_hero.png?v=1" alt=""></div>
+  </section>
+
+  <!-- THE ROUND FLOW -->
+  <div class="htw-sec-title htw-center">The Round Flow</div>
+  <div class="htw-flow" id="htw-flow"></div>
+
+  <!-- THE ROUND ECONOMY -->
+  <div class="htw-sec-title htw-center">The Round Economy</div>
+  <div class="htw-econ">
+    <section class="htw-panel htw-econ-win">
+      <div class="htw-panel-title">How You Win a Round</div>
+      <p class="htw-econ-line">Higher total power wins the round.</p>
+      <div class="htw-pips">
+        <div class="htw-pip-row"><span class="htw-pip-lbl">You</span><span class="htw-pip-track" data-fill="7"></span></div>
+        <div class="htw-pip-row"><span class="htw-pip-lbl">Opponent</span><span class="htw-pip-track" data-fill="5"></span></div>
+      </div>
+      <div class="htw-pip-cap">Total Power</div>
+      <div class="htw-econ-foot">Lose the round. Keep your cards.</div>
+    </section>
+    <section class="htw-panel htw-econ-cost">
+      <div class="htw-panel-title">The True Cost</div>
+      <p>Winning a round costs the cards you played to win it.</p>
+      <p>Losing a round cheaply means you keep your cards for the next one.</p>
+      <p class="htw-italic">Cards are your greatest resource. Every card spent today cannot fight tomorrow.</p>
+      <div class="htw-exchange">
+        <img class="htw-back" id="htw-back-deva" alt="">
+        <span class="htw-ex-arrow">⇄</span>
+        <img class="htw-back" id="htw-back-asura" alt="">
+      </div>
+    </section>
+  </div>
+
+  <!-- WHEN TO PASS -->
+  <div class="htw-sec-title htw-center">When to Pass</div>
+  <section class="htw-panel htw-pass">
+    <div class="htw-pass-rows">
+      <div class="htw-pass-row"><span class="htw-pass-q">Pass behind?</span><span class="htw-pass-rule">Play one more card, then pass. Never two.</span><span class="htw-pass-arrow">→</span><span class="htw-pass-coach">Keep tempo. Deny overcommit. Safe, controlled progress.</span></div>
+      <div class="htw-pass-row"><span class="htw-pass-q">Concede?</span><span class="htw-pass-rule">If the round is lost by 20 or more power.</span><span class="htw-pass-arrow">→</span><span class="htw-pass-coach">Cut losses. Preserve your deck. Save for the next round.</span></div>
+      <div class="htw-pass-row"><span class="htw-pass-q">Save for later?</span><span class="htw-pass-rule">If there is no next round to save for.</span><span class="htw-pass-arrow">→</span><span class="htw-pass-coach">Commit everything. End it. Win it.</span></div>
+    </div>
+    <div class="htw-pass-art"><img src="assets/img/howtowin_namaste.png?v=1" alt=""></div>
+  </section>
+
+  <div class="htw-closing">Discipline is power. Patience is victory.</div>
+</div>
 
 <div class="overlay metascreen hidden" id="factionselect">
   <div id="fselstage">
@@ -4533,7 +4719,11 @@ $('fselstart').onclick=()=>{
 /* T39 — the Collection roundel row. quests/settings live; journal/rewards/decks/store visible-locked (T36 pattern). */
 $('col-r-quests').onclick=()=>showQuests();
 $('col-r-settings').onclick=()=>{ syncSettingsUI(); $('settings').classList.remove('hidden'); };
+$('col-r-codex').onclick=()=>showHowToWin();   // T45 — the Journal roundel is now the live Codex (RULED)
 document.querySelectorAll('#collection [data-soon]').forEach(b=> b.onclick=()=>toastMute('Coming soon'));
+/* T45 — HOW TO WIN wiring: back → landing; the visible-locked Codex tabs toast (T36 pattern). */
+$('htw-back').onclick=()=>showLanding();
+document.querySelectorAll('#howtowin [data-soon]').forEach(b=> b.onclick=()=>toastMute('Coming soon'));
 $('fsel-quests').onclick=()=>showQuests();
 $('fsel-settings').onclick=()=>{ syncSettingsUI(); $('settings').classList.remove('hidden'); };
 $('fsel-collection').onclick=()=>showCollection();
@@ -5023,7 +5213,7 @@ function recordMatchResult(){
 }
 function showLanding(){
   Story=null;   // leaving any story chapter
-  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','objchip','settings','mulligan','bossvs','targeting','inspect','banner','realmpop','diffchip','collection','vault'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });   // TASK 30: + collection/vault
+  ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','objchip','settings','mulligan','bossvs','targeting','inspect','banner','realmpop','diffchip','collection','vault','howtowin'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });   // TASK 30: + collection/vault; T45: + howtowin
   renderProfile();
   updateCollectionCta();     // TASK 30: owned/total on the Collection button
   maybeGlintRank();          // slice 4: one-time rank-promotion chip shimmer (consumes the persisted pending flag)
@@ -5665,7 +5855,7 @@ function artPending(def, faction, opts={}){
     `<div class="ap-type" style="color:${hex}c0">${type}${pw} · ${rar}</div>`+
     `<div class="ap-cap">art arrives with the wave</div></div>`;
 }
-const COL_HIDE=['hudwrap','gameover','factionselect','settings','mulligan','landing','fi-inspect','factionintro','collection','vault'];
+const COL_HIDE=['hudwrap','gameover','factionselect','settings','mulligan','landing','fi-inspect','factionintro','collection','vault','howtowin'];
 function colHideAll(){ COL_HIDE.forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); }); }
 /* ═══ T39 — COLLECTION: plate, filters, sort, progress ═══
    EPITHET SOURCE (ruled): the grid's epithet line reads def.sub LIVE from the engine. There is no EPITHETS map —
@@ -5954,6 +6144,38 @@ $('zoom-close').onclick=(e)=>{ e.stopPropagation(); dismissZoom(); };
 let vaultFaction='devas';
 function showVault(){ colHideAll(); $('vault').classList.remove('hidden'); $('vault').scrollTop=0; Audio2.playTrack('menu'); renderVault();
   Ember.start('vault', EMBER_CARD_DENSITY); }
+
+/* ═══ TASK 45 — HOW TO WIN (Codex page 1). Copy is CONTENT-LOCKED (owner-approved v2 mockup, transcribed verbatim). ═══ */
+const HTW_FLOW=[
+  { n:'Round 1', sub:'Build your foundation.', steps:['Draw & Plan','Play & Attack','Win or Lose'], coach:'Every card has a cost. Spend wisely.' },
+  { n:'Round 2', sub:'Adapt and outlast.',     steps:['Draw & Adapt','Counter & Control','Win or Lose'], coach:'Resources are tight. Decisions matter more.' },
+  { n:'Round 3', sub:'One final push.',         steps:['Draw & Commit','All-In or Outplay','Win the Match'], coach:'Two rounds win the match. Overreach and you’ll fall.' },
+];
+const HTW_ICONS=['icon_cards','icon_swords','icon_shield'];
+function renderHowToWin(){
+  // round-flow panels — icon triplet (cards → swords → shield) per panel
+  const flow=$('htw-flow'); flow.innerHTML='';
+  HTW_FLOW.forEach(r=>{
+    const panel=document.createElement('section'); panel.className='htw-panel htw-round';
+    const trip=r.steps.map((s,i)=>`<div class="htw-step"><img class="htw-icon" src="assets/img/${HTW_ICONS[i]}.png?v=1" alt=""><span class="htw-step-lbl">${s}</span></div>`).join('<span class="htw-arrow">→</span>');
+    panel.innerHTML=`<div class="htw-round-head"><span class="htw-round-n">${r.n}</span><span class="htw-round-sub">${r.sub}</span></div>`+
+      `<div class="htw-triplet">${trip}</div><div class="htw-coach">${r.coach}</div>`;
+    flow.appendChild(panel);
+  });
+  // pip tracks — fill n of 8
+  document.querySelectorAll('#howtowin .htw-pip-track').forEach(t=>{
+    const fill=+t.getAttribute('data-fill')||0; t.innerHTML='';
+    for(let i=0;i<8;i++){ const p=document.createElement('span'); p.className='htw-pip'+(i<fill?' on':''); t.appendChild(p); }
+  });
+  // THE TRUE COST — two REAL committed backs via factionBackSrc, with the T42 double fallback to neutral
+  [['htw-back-deva','devas'],['htw-back-asura','asuras']].forEach(([id,fac])=>{
+    const im=$(id); if(!im) return;
+    im.onerror=()=>{ im.onerror=null; im.src='assets/img/card_back.png?v=1'; };
+    im.src=factionBackSrc(fac);
+  });
+}
+function showHowToWin(){ colHideAll(); renderHowToWin(); $('howtowin').classList.remove('hidden'); $('howtowin').scrollTop=0;
+  Audio2.playTrack('menu'); Ember.start('howtowin', EMBER_CARD_DENSITY); }
 function renderVault(){
   $('vault-season').textContent=META_CONFIG.ratna.season;
   $('vault-gate').textContent=META_CONFIG.ratna.gate;
