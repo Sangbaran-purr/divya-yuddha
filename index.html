@@ -890,6 +890,20 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-vdivider img{ width:100%; height:auto; display:block; }
 .fi-vgal-count{ font-family:Cinzel,serif; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--green); margin:-4px 0 12px; }
 @media(min-width:640px){ .fi-vsteps{ flex-direction:row; gap:12px; } }
+/* T51 — NAGAS blue-black abyss + teal theme; venom visuals stay GREEN by faction law; reuses codex fi-d and fi-v structure, recolors accents only */
+.fi-nagas-page .fi-dhero-title, .fi-nagas-page .fi-dsec-title, .fi-nagas-page .fi-dclosing,
+.fi-nagas-page .fi-dstrat-h, .fi-nagas-page .fi-dsyn-h{ color:#45cdbf; }
+.fi-nagas-page .fi-dhero-eyebrow, .fi-nagas-page .fi-dpillar-nm,
+.fi-nagas-page .fi-dpillar-ic, .fi-nagas-page .fi-dchip b, .fi-nagas-page .fi-vchip{ color:#45cdbf; }
+.fi-nagas-page .fi-dpillar, .fi-nagas-page .fi-dchip, .fi-nagas-page .fi-dhero,
+.fi-nagas-page .fi-vchip, .fi-nagas-page .fi-dcta, .fi-nagas-page .fi-vstep, .fi-nagas-page .fi-vdivider{ border-color:var(--teal-2); }
+.fi-nagas-page .fi-dcta.primary{ background:linear-gradient(180deg,#08201f,#03100f); border-color:#45cdbf; color:#a6e9e2; }
+.fi-nagas-page .fi-vgal-count{ color:#45cdbf; }
+.fi-nagas-page .fi-vsub{ color:var(--gold-hi); }
+/* venom-green (faction law): the step markers and the venom tip accent */
+.fi-nagas-page .fi-vstep{ background:rgba(20,75,69,.28); }
+.fi-nagas-page .fi-vstep-n{ color:var(--venom); }
+.fi-nagas-page .fi-vtip{ border-left-color:var(--venom); background:rgba(20,75,69,.22); }
 .fi-tab{ flex:0 0 auto; padding:9px 13px; border-radius:9px; background:rgba(0,0,0,.45); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,.16); color:var(--ink-dim); font-family:Cinzel,serif; font-size:11px; letter-spacing:.5px; white-space:nowrap; cursor:pointer; }
 .fi-tab.sel{ border-color:var(--gold); color:var(--gold); background:rgba(60,44,12,.5); }
 .fi-idhead{ text-align:center; margin-bottom:16px; }
@@ -6016,9 +6030,9 @@ function fiRenderAsuras(){
 }
 /* ═══ TASK 49 — VANARAS CODEX PAGE (the T47/T48 shell). Authority: docs/VANARAS_CODEX_CONTENT_v1.md — copy VERBATIM.
    faction='vanaras' (jungle-green theme via .fi-vanaras-page); every card mini live-verbatim from DECKS.vanaras. ═══ */
-function fiVKey(id, chip){                        // key-card: mini + live txt + a doc chip
-  const c=fiCDef('vanaras',id);
-  return fh('div',{class:'fic-card'}, fiCM('vanaras',id),
+function fiVKey(id, chip, faction='vanaras'){      // key-card: mini + live txt + a doc chip (faction default keeps T49 Vanaras call sites byte-identical)
+  const c=fiCDef(faction,id);
+  return fh('div',{class:'fic-card'}, fiCM(faction,id),
     fh('div',{class:'fic-txt'}, fh('div',{class:'fic-txt-nm'}, c.n), fh('div',{class:'fi-vchip'}, chip), fh('p',null, c.txt)));
 }
 function fiRenderVanaras(){
@@ -6116,6 +6130,104 @@ function fiRenderVanaras(){
     fh('button',{class:'fi-dcta primary', onclick:()=>fiSelectTab('nagas')}, 'Continue to Nagas ›')));
   return node;
 }
+/* ═══ T51 — NAGAS CODEX PAGE (the T47/T48/T49 shell; faction='nagas', teal theme via .fi-nagas-page, venom visuals GREEN;
+   every card mini live-verbatim from DECKS.nagas). Authority: docs/NAGAS_CODEX_CONTENT_v1.md. ═══ */
+function fiRenderNagas(){
+  const F='nagas', node=fh('div',{class:'fi-codex-page fi-nagas-page'});
+  // §1 HERO
+  const hero=fh('div',{class:'fi-dhero'}); hero.style.backgroundImage="url('assets/img/nagas_codex_hero.png?v=1')";
+  hero.append(fh('div',{class:'fi-dhero-scrim'}),
+    fh('div',{class:'fi-dhero-in'},
+      fh('div',{class:'fi-dhero-eyebrow'}, 'THE SERPENT KINGS'),
+      fh('div',{class:'fi-dhero-title'}, 'NAGAS'),
+      fh('p',{class:'fi-dhero-intro'}, 'The serpent kings of Patala. They do not rush. They do not need to.'),
+      fh('div',{class:'fi-dchips'},
+        fh('div',{class:'fi-dchip'}, fh('b',null,'Difficulty'),' Advanced'),
+        fh('div',{class:'fi-dchip'}, fh('b',null,'Playstyle'),' Attrition and Inevitability'))));
+  node.append(hero);
+  node.append(fh('div',{class:'fi-dpillars'},
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic', style:'color:var(--venom)'}, '☠'), fh('div',{class:'fi-dpillar-nm'}, 'Venom')),
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic'}, '⧗'), fh('div',{class:'fi-dpillar-nm'}, 'Attrition')),
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic'}, '≋'), fh('div',{class:'fi-dpillar-nm'}, 'Depth'))));
+  // §2 SIGNATURE MECHANIC — VENOM
+  node.append(fiSecTitle('Signature Mechanic — Venom'));
+  const ven=fh('section',{class:'fi-dpanel fi-dshield'});
+  ven.append(fh('div',{class:'fi-dshield-art'}, fh('img',{src:'assets/img/nagas_codex_mechanic.png?v=1', alt:''})));
+  ven.append(fh('div',{class:'fi-dshield-body'},
+    fh('p',{class:'fi-dlead'}, 'The Nagas do not race. Every round’s end, the deep itself drains the enemy — and every Venom Token your cards plant bites for more. No single tick matters. All of them together decide the match.'),
+    fh('p',{class:'fi-vsub'}, 'Patala Throne and Vasuki deepen the drain as rounds pass. Karkotaka moves it: your Venom fires once, the moment either player first passes each round, instead of at round end.')));
+  node.append(ven);
+  const steps=fh('div',{class:'fi-vsteps'});
+  [['Step 1','Being Nagas is the weapon: at round’s end, EVERY enemy Unit loses 1 power. Automatic.'],
+   ['Step 2','Your cards stack Venom Tokens; each token drains an extra −1 at the tick. Tokens have no cap.'],
+   ['Step 3','Nothing shields against it: Dharma Shield does not stop Venom.'],
+   ['Step 4','At 0 power, the Unit dies. Venom kills.']
+  ].forEach(([n,t])=>steps.append(fh('div',{class:'fi-vstep'}, fh('div',{class:'fi-vstep-n'}, n), fh('div',{class:'fi-vstep-t'}, t))));
+  node.append(steps);
+  // §3 KEY CARDS TRIO + TIP
+  node.append(fiSecTitle('Key Cards'));
+  node.append(fh('div',{class:'fic-cards'}, fiVKey('vasuki','The Deep Clock',F), fiVKey('manasa','The Silencer',F), fiVKey('patala','Drain Engine',F)));
+  node.append(fh('div',{class:'fi-vtip'}, 'Sarpa Satra doubles what your Tokens bite — stack Venom first, then make the sacrifice.'));
+  // §4 STRENGTHS / WEAKNESSES
+  node.append(fiSecTitle('Strengths & Weaknesses'));
+  const sw=fh('div',{class:'fi-dsw'});
+  const mk=(cls,title,items)=>{ const col=fh('div',{class:'fi-dpanel '+cls}, fh('div',{class:'fi-dsw-h'}, title));
+    const l=fh('ul',{class:'fi-dlist'}); items.forEach(t=>l.append(fh('li',null,t))); col.append(l); return col; };
+  sw.append(mk('fi-dstr','Strengths',[
+    'The passive tide: chip damage that ignores unit quality.',
+    'Scaling clocks: the drain deepens by round (Vasuki, Patala Throne, Kaliya, Ashvatara).',
+    'The designed Deva counter: shields never stop attrition.',
+    'Corrupted revival: even the dead serve the poison (Mrityunjaya, Ulupi, Shesha).',
+    'Denial: Manasa, Surasa, Nagapasha, Naga Enchantress.']));
+  sw.append(mk('fi-dwk','Weaknesses',[
+    'Slow starts: short rounds starve the Venom clock.',
+    'Rama’s Signet blunts the poison against Vanaras — Tokens on their Units are negated and the passive cannot drop them below 1 (the drain is dulled, not switched off).',
+    'Demands planning rounds ahead; mistakes compound quietly.',
+    'Low bodies: the clock must survive long enough to matter.']));
+  node.append(sw);
+  // §5 DIVIDER (twin-serpent altar, ~4.6:1)
+  node.append(fh('div',{class:'fi-vdivider'}, fh('img',{src:'assets/img/nagas_codex_divider.png?v=1', alt:''})));
+  // §6 CORE STRATEGY
+  node.append(fiSecTitle('Core Strategy — How Nagas Win'));
+  const strat=fh('div',{class:'fi-dstrats'});
+  [['Poison Early','Plant Tokens from the opening turns; start the clock.', null],
+   ['Control the Depths','Cancel, bind, trap, revive; let the drain work while the enemy stalls.', ['manasa','nagapasha','surasa']],
+   ['Outlast','Their board sinks a little every round; in Round 3 the deep bites hardest.', null]
+  ].forEach(([t,cap,ids],i)=>{
+    const p=fh('section',{class:'fi-dpanel fi-dstrat'}, fh('div',{class:'fi-dstrat-n'}, String(i+1)),
+      fh('div',{class:'fi-dstrat-h'}, t), fh('p',{class:'fi-dstrat-cap'}, cap));
+    if (ids) p.append(fiCMtrio(F, ids));
+    strat.append(p);
+  });
+  node.append(strat);
+  // §7 GALLERY — THE SERPENT KINGDOM (T49b redirect pattern: curated launch six + CTA, NO bulk grid, no sealed slots)
+  node.append(fiSecTitle('The Serpent Kingdom'));
+  node.append(fh('div',{class:'fi-vgal-count'}, DECKS[F].length+' Cards'));   // doc-ruled "44 Cards"; no "of 66", no reveal count, no sealed slots
+  node.append(fh('div',{class:'fic-cards fic-host'}, ...['vasuki','nagawarrior','kaliya','nagasadhu','venomstrike','anantacoil'].map(id=>fiCMtxt(F,id))));   // all LAUNCH — no sealed wave art in the host strip
+  node.append(fh('button',{class:'fi-dcta', onclick:()=>{ colFaction='nagas'; showCollection(); }}, 'View Full Collection ›'));
+  // §8 SIGNATURE SYNERGIES (4)
+  node.append(fiSecTitle('Signature Synergies'));
+  const syn=fh('div',{class:'fi-dsyn'});
+  [['The Deep Clock',['patala','vasuki'],'By Round 3 the drain alone is −4/−2 stacking across every enemy.'],
+   ['The Harvest',['vishalakshi'],'Every venomed death feeds her +2 permanently.'],
+   ['The Second King',['secondthrone'],'Every point Venom takes, your strongest Unit gains.'],
+   ['Death Serves Us',['mrityunjaya'],'Steal any corpse, either discard; it returns venomed, and it fights for you.']
+  ].forEach(([t,ids,res])=>{
+    const p=fh('section',{class:'fi-dpanel fi-dsyn-p'}, fh('div',{class:'fi-dsyn-h'}, t));
+    const row=fh('div',{class:'fi-dsyn-row'});
+    ids.forEach((id,i)=>{ if(i>0) row.append(fh('span',{class:'fi-dplus'}, '+')); row.append(fiCM(F,id)); });
+    row.append(fh('span',{class:'fi-darrow'}, '→'), fh('div',{class:'fi-dsyn-res'}, res));
+    p.append(row); syn.append(p);
+  });
+  node.append(syn);
+  // §9 FOOTER + CTAs
+  node.append(fh('div',{class:'fi-dclosing'}, 'The Nagas do not seek glory. They outlast.'));
+  node.append(fh('div',{class:'fi-dctas'},
+    fh('button',{class:'fi-dcta', onclick:()=>{ colFaction='nagas'; showCollection(); }}, 'View Collection'),
+    fh('button',{class:'fi-dcta locked', onclick:()=>toastMute('Coming with the Wave')}, 'Build a Deck'),
+    fh('button',{class:'fi-dcta primary', onclick:()=>fiSelectTab('realms')}, 'Continue to Realms ›')));
+  return node;
+}
 function fiRenderFaction(faction){
   const C=FI_CONTENT[faction], hex=FI_FAC_HEX[faction], node=fh('div',null);
   node.append(fh('div',{class:'fi-idhead'},
@@ -6205,7 +6317,7 @@ function fiRenderRealms(){
 const fiTabNodes = {};
 function fiSelectTab(tab){
   document.querySelectorAll('#fi-tabs .fi-tab').forEach(b=> b.classList.toggle('sel', b.dataset.tab===tab));
-  if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : tab==='devas' ? fiRenderDevas() : tab==='asuras' ? fiRenderAsuras() : tab==='vanaras' ? fiRenderVanaras() : fiRenderFaction(tab);   // T47 Devas / T48 Asuras / T49 Vanaras codex pages
+  if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : tab==='devas' ? fiRenderDevas() : tab==='asuras' ? fiRenderAsuras() : tab==='vanaras' ? fiRenderVanaras() : tab==='nagas' ? fiRenderNagas() : fiRenderFaction(tab);   // T47 Devas / T48 Asuras / T49 Vanaras / T51 Nagas codex pages
   const body=$('fi-body'); body.innerHTML=''; body.append(fiTabNodes[tab]);
   $('factionintro').scrollTop=0;
 }
