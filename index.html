@@ -904,6 +904,45 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-nagas-page .fi-vstep{ background:rgba(20,75,69,.28); }
 .fi-nagas-page .fi-vstep-n{ color:var(--venom); }
 .fi-nagas-page .fi-vtip{ border-left-color:var(--venom); background:rgba(20,75,69,.22); }
+/* T52 — REALMS cosmic violet-gold theme; reuses codex fi-d and fi-v structure, recolors accents; adds the seven-realms grid */
+.fi-realms-page .fi-dhero-title, .fi-realms-page .fi-dsec-title, .fi-realms-page .fi-dclosing,
+.fi-realms-page .fi-dstrat-h{ color:#e6c46a; }
+.fi-realms-page .fi-dhero-eyebrow, .fi-realms-page .fi-dchip b, .fi-realms-page .fi-vsub{ color:#b49be0; }
+.fi-realms-page .fi-dchip, .fi-realms-page .fi-dhero, .fi-realms-page .fi-dcta,
+.fi-realms-page .fi-vstep, .fi-realms-page .fi-vdivider{ border-color:#5a4a80; }
+.fi-realms-page .fi-vstep-n{ color:#b49be0; }
+.fi-realms-page .fi-vsteps{ flex-direction:column; gap:8px; }
+.fi-realms-page .fi-dcta.primary{ background:linear-gradient(180deg,#1e1638,#0f0a1e); border-color:#b49be0; color:#e7d8ff; }
+/* KEY REALM EXAMPLES trio */
+.fi-rex-row{ display:flex; flex-direction:column; gap:10px; }
+.fi-rex{ border:1px solid #5a4a80; border-left:3px solid var(--rac,#b49be0); border-radius:8px; padding:10px 12px; background:rgba(24,18,44,.34); }
+.fi-rex-nm{ font-family:Cinzel,serif; font-size:12px; letter-spacing:.12em; color:var(--rac,#e6c46a); margin-bottom:3px; }
+.fi-rex-fx{ font-family:'Crimson Pro',Georgia,serif; font-size:12.5px; color:var(--parchment); line-height:1.35; }
+/* THE SEVEN REALMS grid */
+.fi-rgrid-hint{ font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:12px; color:var(--gold-hi); margin:2px 0 12px; }
+.fi-rgrid{ display:grid; grid-template-columns:1fr; gap:12px; }
+.fi-rcard{ border:1px solid #4a3a70; border-top:3px solid var(--rac,#b49be0); border-radius:10px; overflow:hidden; background:rgba(18,14,32,.42); cursor:pointer; }
+.fi-rcard-art{ position:relative; aspect-ratio:16/9; background:#0c0a18 center/cover no-repeat; }
+.fi-rcard-art img{ width:100%; height:100%; object-fit:cover; opacity:0; transition:opacity .35s; }
+.fi-rcard-art img.on{ opacity:1; }
+.fi-rcard-art::after{ content:''; position:absolute; inset:0; background:linear-gradient(180deg,rgba(8,6,18,.15),rgba(8,6,18,.72)); }
+.fi-rcard-body{ padding:10px 12px; }
+.fi-rcard-nm{ font-family:Cinzel,serif; font-size:14px; letter-spacing:.06em; color:var(--rac,#e6c46a); }
+.fi-rcard-ep{ font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:12px; color:var(--ink-dim); margin-bottom:6px; }
+.fi-rcard-fx{ font-family:'Crimson Pro',Georgia,serif; font-size:12.5px; color:var(--parchment); line-height:1.35; border-left:2px solid var(--rac,#b49be0); padding-left:8px; margin-bottom:6px; }
+.fi-rcard-mood{ font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:12px; color:var(--gold-hi); }
+.fi-rcard-detail{ display:none; margin-top:8px; padding-top:8px; border-top:1px solid #33284f; }
+.fi-rcard.open .fi-rcard-detail{ display:block; }
+.fi-rcard-sw{ display:flex; flex-direction:column; gap:6px; margin-bottom:6px; }
+.fi-rcard-detail .rh{ font-family:Cinzel,serif; font-size:10px; letter-spacing:.1em; margin-bottom:3px; }
+.fi-rcard-detail .rh.t{ color:var(--green); } .fi-rcard-detail .rh.s{ color:var(--crimson); }
+.fi-rcard-detail ul{ margin:0; padding-left:16px; } .fi-rcard-detail li{ font-family:'Crimson Pro',Georgia,serif; font-size:12px; color:var(--parchment); line-height:1.4; }
+.fi-rcard-detail .rtip{ font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:12px; color:var(--gold-hi); }
+.fi-rlore{ font-family:'Crimson Pro',Georgia,serif; font-size:13px; color:var(--parchment); line-height:1.6; border:1px solid #4a3a70; border-radius:10px; padding:14px 15px; background:rgba(18,14,32,.42); }
+.fi-rlore b{ font-family:Cinzel,serif; font-weight:600; font-size:11px; letter-spacing:.06em; color:#b49be0; }
+.fi-rlore-close{ display:block; margin-top:10px; font-family:Cinzel,serif; font-size:12px; letter-spacing:.12em; color:#e6c46a; }
+@media(min-width:640px){ .fi-rgrid{ grid-template-columns:1fr 1fr; } .fi-rex-row{ flex-direction:row; } }
+@media(min-width:1024px){ .fi-realms-page .fi-vsteps{ flex-direction:column; } }
 .fi-tab{ flex:0 0 auto; padding:9px 13px; border-radius:9px; background:rgba(0,0,0,.45); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,.16); color:var(--ink-dim); font-family:Cinzel,serif; font-size:11px; letter-spacing:.5px; white-space:nowrap; cursor:pointer; }
 .fi-tab.sel{ border-color:var(--gold); color:var(--gold); background:rgba(60,44,12,.5); }
 .fi-idhead{ text-align:center; margin-bottom:16px; }
@@ -6286,31 +6325,98 @@ const FI_REALM_CONTENT = {
     tip:`This realm turns every pass into a bid. The question each turn is no longer "should I pass?" but "can I afford to let them have the last word?"` },
 };
 function fiBoardThumb(id){ return fiBoardImg(id).replace('assets/img/','assets/thumbs/'); }
+/* T52 — Realm palette CANON (from the intaken asset trio): swarga gold · yaksha green · gandharva violet ·
+   mrityulok white · patala teal · rishi blue · kalki ember. Separate from REALM_ACCENT (still used by the board inspector). */
+const FI_REALM_CANON = { swarga:'#e8c95a', yaksha:'#4fae8a', gandharva:'#a78bda', mrityulok:'#dfe3ea', patala:'#2dd4b8', rishi:'#6d8fe0', kalki:'#e8894a' };
+const FI_REALM_EPITHET = { swarga:'Realm of Gods', yaksha:'Vault of Treasures', gandharva:'Plane of Music', mrityulok:'The Mortal Plane', patala:'Serpent Kingdom', rishi:'Realm of Wisdom', kalki:'Field of Reckoning' };
+const FI_REALM_ORDER = ['swarga','yaksha','gandharva','mrityulok','patala','rishi','kalki'];   // doc grid order (P10 R6)
+function fiRealmArt(id, box){   // graceful board-thumb crop: onerror → accent-tinted placeholder, never a broken image
+  const img=new Image(); img.alt=REALM_INFO[id].name;
+  img.onload=()=>img.classList.add('on');
+  img.onerror=()=>{ img.remove(); box.style.background=`linear-gradient(160deg, ${FI_REALM_CANON[id]}33, rgba(8,6,18,.6))`; };
+  img.src=fiBoardThumb(id); box.append(img);
+}
 function fiRenderRealms(){
-  const node=fh('div',null);
-  node.append(fh('div',{class:'fi-idhead'},
-    fh('div',{class:'fi-facname', style:'color:var(--gold); font-size:24px; letter-spacing:3px;'}, 'REALMS'),
-    fh('div',{class:'fi-tagline'}, FI_REALM_INTRO)
-  ));
-  REALMS.forEach((id,i)=>{
-    const info=REALM_INFO[id], C=FI_REALM_CONTENT[id], hex=REALM_ACCENT[id];
-    const banner=fh('div',{class:'fi-realm-banner', style:`--ra:${hex}`, onclick:()=>fiOpenBoardInspect(i)});   // tap → full board in the inspect view; --ra drives the double-rule frame + corner ticks
-    const inner=fh('div',{class:'fi-realm-inner'});
-    const bimg=new Image(); bimg.alt=info.name; bimg.onload=()=>bimg.classList.add('on'); bimg.src=fiBoardThumb(id);
-    inner.append(bimg); banner.append(inner); node.append(banner);
-    node.append(fh('div',{class:'fi-realm-head'},
-      fh('span',{class:'fi-realm-nm', style:`color:${hex}`}, info.name),
-      fh('span',{class:'fi-realm-ep'}, ` — ${C.epithet}`)));
-    node.append(fh('div',{class:'fi-realm-mood'}, C.mood));
-    node.append(fh('div',{class:'fi-panel'}, fh('div',{class:'fi-panel-h', style:`color:${hex}`}, 'REALM EFFECT'), fh('p',null, info.fx)));   // runtime engine fx
+  const node=fh('div',{class:'fi-codex-page fi-realms-page'});
+  // §1 HERO
+  const hero=fh('div',{class:'fi-dhero'}); hero.style.backgroundImage="url('assets/img/realms_codex_hero.png?v=1')";
+  hero.append(fh('div',{class:'fi-dhero-scrim'}),
+    fh('div',{class:'fi-dhero-in'},
+      fh('div',{class:'fi-dhero-eyebrow'}, 'THE COSMIC WHEEL'),
+      fh('div',{class:'fi-dhero-title'}, 'REALMS'),
+      fh('p',{class:'fi-dhero-intro'}, 'Every battle is fought in a different world. Learn the world before you fight the war.'),
+      fh('div',{class:'fi-dchips'}, fh('div',{class:'fi-dchip'}, fh('b',null,'Strategic Layer')))));
+  node.append(hero);
+  // §2 HOW REALMS WORK — 4 steps beside the mechanic art
+  node.append(fiSecTitle('How Realms Work'));
+  const panel=fh('section',{class:'fi-dpanel fi-dshield'});
+  panel.append(fh('div',{class:'fi-dshield-art'}, fh('img',{src:'assets/img/realms_codex_mechanic.png?v=1', alt:''})));
+  const body=fh('div',{class:'fi-dshield-body'}), steps=fh('div',{class:'fi-vsteps'});
+  [['The Wheel Turns','As the match begins, one of seven Cosmic Realms is drawn at random.'],
+   ['The World Bends','The Realm’s law applies to both sides alike.'],
+   ['It Holds All Match','The Realm never changes mid-battle.'],
+   ['One King Bends It','Only Nahusha, Fallen King can steal a Realm’s blessing for his side alone — one round.']
+  ].forEach(([n,t])=>steps.append(fh('div',{class:'fi-vstep'}, fh('div',{class:'fi-vstep-n'}, n), fh('div',{class:'fi-vstep-t'}, t))));
+  body.append(steps); panel.append(body); node.append(panel);
+  // §3 KEY REALM EXAMPLES (trio — live fx)
+  node.append(fiSecTitle('Key Realm Examples'));
+  const exRow=fh('div',{class:'fi-rex-row'});
+  ['swarga','patala','mrityulok'].forEach(id=> exRow.append(
+    fh('div',{class:'fi-rex', style:`--rac:${FI_REALM_CANON[id]}`},
+      fh('div',{class:'fi-rex-nm'}, REALM_INFO[id].name),
+      fh('div',{class:'fi-rex-fx'}, REALM_INFO[id].fx))));   // LIVE REALM_INFO fx
+  node.append(exRow);
+  // §4 THE SEVEN REALMS — grid (doc order; live fx; canon accent; tap → inline expand)
+  node.append(fiSecTitle('The Seven Realms'));
+  node.append(fh('div',{class:'fi-rgrid-hint'}, 'Tap a Realm to learn more.'));
+  const grid=fh('div',{class:'fi-rgrid'});
+  FI_REALM_ORDER.forEach(id=>{
+    const info=REALM_INFO[id], C=FI_REALM_CONTENT[id], hex=FI_REALM_CANON[id];
+    const card=fh('div',{class:'fi-rcard', style:`--rac:${hex}`});
+    const artBox=fh('div',{class:'fi-rcard-art'}); fiRealmArt(id, artBox);
+    const detail=fh('div',{class:'fi-rcard-detail'});
     const tUL=fh('ul'); C.thrives.forEach(s=>tUL.append(fh('li',null,s)));
     const sUL=fh('ul'); C.suffers.forEach(s=>sUL.append(fh('li',null,s)));
-    node.append(fh('div',{class:'fi-sw'},
-      fh('div',{class:'fi-strength'}, fh('div',{class:'fi-panel-h'},'THRIVES HERE'), tUL),
-      fh('div',{class:'fi-weak'}, fh('div',{class:'fi-panel-h'},'SUFFERS HERE'), sUL)));
-    node.append(fh('div',{class:'fi-realm-tip'}, fh('b',null,'TIP'), C.tip));
-    if(i<REALMS.length-1) node.append(fh('div',{class:'fi-realm-sep'}));
+    detail.append(fh('div',{class:'fi-rcard-sw'},
+      fh('div',null, fh('div',{class:'rh t'},'THRIVES HERE'), tUL),
+      fh('div',null, fh('div',{class:'rh s'},'SUFFERS HERE'), sUL)),
+      fh('div',{class:'rtip'}, C.tip));
+    card.append(artBox, fh('div',{class:'fi-rcard-body'},
+      fh('div',{class:'fi-rcard-nm'}, info.name),
+      fh('div',{class:'fi-rcard-ep'}, FI_REALM_EPITHET[id]),
+      fh('div',{class:'fi-rcard-fx'}, info.fx),   // LIVE REALM_INFO fx
+      fh('div',{class:'fi-rcard-mood'}, C.mood),   // one carried prose line
+      detail));
+    card.onclick=()=> card.classList.toggle('open');
+    grid.append(card);
   });
+  node.append(grid);
+  // §5 DIVIDER
+  node.append(fh('div',{class:'fi-vdivider'}, fh('img',{src:'assets/img/realms_codex_divider.png?v=1', alt:''})));
+  // §6 WINNING WITH REALMS (4)
+  node.append(fiSecTitle('Winning With Realms'));
+  const strat=fh('div',{class:'fi-dstrats'});
+  [['Read the Realm','Who benefits, who struggles.'],
+   ['Change Your Plan','Adjust your mulligan to the world.'],
+   ['Play the Long Game','Don’t force the combo the Realm punishes.'],
+   ['Master Adaptation','Winners don’t fight the Realm. They use it.']
+  ].forEach(([t,cap],i)=> strat.append(
+    fh('section',{class:'fi-dpanel fi-dstrat'}, fh('div',{class:'fi-dstrat-n'}, String(i+1)),
+      fh('div',{class:'fi-dstrat-h'}, t), fh('p',{class:'fi-dstrat-cap'}, cap))));
+  node.append(strat);
+  // §7 REALM LORE + closing
+  node.append(fiSecTitle('The Wheel of Realms'));
+  node.append(fh('div',{class:'fi-rlore'},
+    'At the peak lies ', fh('b',null,'SWARGA'), ', seat of the gods. Below it shines ', fh('b',null,'YAKSHA LOK'),
+    ', keeper of wealth. Where songs never end is ', fh('b',null,'GANDHARVA LOK'), '. At the heart of the wheel — ',
+    fh('b',null,'MRITYULOK'), '. Beneath the earth coils ', fh('b',null,'PATALA'), ', ancient and deep. In hidden places exists ',
+    fh('b',null,'RISHI MANDALA'), '. At the edge of time awaits ', fh('b',null,'KALKI KSHETRA'), '.',
+    fh('span',{class:'fi-rlore-close'}, 'Seven realms. One wheel. Infinite battles.')));
+  // §8 FOOTER + CTAs
+  node.append(fh('div',{class:'fi-dclosing'}, 'The battlefield chooses no side. Wisdom chooses the victor.'));
+  node.append(fh('div',{class:'fi-dctas'},
+    fh('button',{class:'fi-dcta primary', onclick:()=>fiSelectTab('win')}, '‹ Back to How to Win'),
+    fh('button',{class:'fi-dcta locked', onclick:()=>toastMute('Coming with the Wave')}, 'Build a Deck')));
   return node;
 }
 /* --- tab controller: build a tab's DOM only on first open (lazy thumbnails), cache thereafter --- */
