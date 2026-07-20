@@ -381,6 +381,10 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #landing, #factionintro, #storyselect, #quests{ background:#0a0704; overflow:hidden; }   /* T36: #factionselect left this group — it carries its OWN plate now (A3) */
 #factionintro::before, #storyselect::before, #quests::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
 #factionintro::after, #storyselect::after, #quests::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
+/* T53 — HOW TO WIN background art. Win tab ONLY, via the .tab-win class (toggled in fiSelectTab). Overrides the shared #factionintro backdrop pseudos, which sit fixed BEHIND .fi-col — so zero overlap with the tab bar, zero bleed to other tabs (class removed on tab switch), zero effect on battle screens. Reversible: this block + the one class-toggle line. The menu_bg is layered under the art as the 404 fallback (a missing art file → menu_bg shows, no broken state). */
+#factionintro.tab-win::before{ background-image:url('assets/img/win_codex_bg_portrait.png?v=1'), url('assets/img/menu_bg.jpg'); }   /* portrait <1024; size/position/repeat (center/cover/no-repeat) inherited from the base rule and repeated across both layers */
+@media(min-width:1024px){ #factionintro.tab-win::before{ background-image:url('assets/img/win_codex_bg_landscape.png?v=1'), url('assets/img/menu_bg.jpg'); } }   /* landscape 1024+ */
+#factionintro.tab-win::after{ background:linear-gradient(to bottom, rgba(6,4,1,.66) 0%, rgba(6,4,1,.72) 48%, rgba(6,4,1,.82) 100%); }   /* legibility scrim over the art (stronger + fuller than the base soft gradient) */
 /* T34: the landing's Mount-Meru #landingbg + its ::before scrims are RETIRED — replaced by the sky-rotunda plate stage
    (#landstage below). assets/img/landing_bg.jpg is now unreferenced (left on disk; not deleted by this task). */
 
@@ -6423,6 +6427,7 @@ function fiRenderRealms(){
 const fiTabNodes = {};
 function fiSelectTab(tab){
   document.querySelectorAll('#fi-tabs .fi-tab').forEach(b=> b.classList.toggle('sel', b.dataset.tab===tab));
+  $('factionintro').classList.toggle('tab-win', tab==='win');   // T53: win-tab background art (scoped; removed on any other tab)
   if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : tab==='devas' ? fiRenderDevas() : tab==='asuras' ? fiRenderAsuras() : tab==='vanaras' ? fiRenderVanaras() : tab==='nagas' ? fiRenderNagas() : fiRenderFaction(tab);   // T47 Devas / T48 Asuras / T49 Vanaras / T51 Nagas codex pages
   const body=$('fi-body'); body.innerHTML=''; body.append(fiTabNodes[tab]);
   $('factionintro').scrollTop=0;
