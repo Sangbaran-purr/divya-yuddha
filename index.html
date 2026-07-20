@@ -870,6 +870,26 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-asuras-page .fi-dpillar, .fi-asuras-page .fi-dchip, .fi-asuras-page .fi-dhero{ border-color:var(--crimson-dim); }
 .fi-asuras-page .fi-dcta{ border-color:var(--crimson-dim); }
 .fi-asuras-page .fi-dcta.primary{ background:linear-gradient(180deg,#3a1410,#1c0805); border-color:var(--crimson); color:#f4b8a8; }
+/* T49 — VANARAS jungle-green theme (reuses the codex fi-d and fic structure; recolors accents only) */
+.fi-vanaras-page .fi-dhero-title, .fi-vanaras-page .fi-dsec-title, .fi-vanaras-page .fi-dclosing,
+.fi-vanaras-page .fi-dstrat-h, .fi-vanaras-page .fi-dsyn-h{ color:#7cc86a; }
+.fi-vanaras-page .fi-dhero-eyebrow, .fi-vanaras-page .fi-dpillar-nm,
+.fi-vanaras-page .fi-dpillar-ic, .fi-vanaras-page .fi-dchip b{ color:var(--green); }
+.fi-vanaras-page .fi-dpillar, .fi-vanaras-page .fi-dchip, .fi-vanaras-page .fi-dhero{ border-color:var(--green-dim); }
+.fi-vanaras-page .fi-dcta{ border-color:var(--green-dim); }
+.fi-vanaras-page .fi-dcta.primary{ background:linear-gradient(180deg,#123016,#08160a); border-color:var(--green); color:#bfe8b0; }
+/* new vanaras-only components (leap steps, chip, tip, wide divider, gallery count) */
+.fi-vchip{ display:inline-block; font-family:Cinzel,serif; font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:#7cc86a; border:1px solid var(--green-dim); border-radius:3px; padding:2px 6px; margin:3px 0 5px; }
+.fi-vsub{ font-family:'Crimson Pro',Georgia,serif; font-size:12.5px; color:var(--gold-hi); margin-top:8px; line-height:1.4; }
+.fi-vsteps{ display:flex; flex-direction:column; gap:10px; margin-top:12px; }
+.fi-vstep{ flex:1 1 0; background:rgba(18,48,22,.32); border:1px solid var(--green-dim); border-radius:8px; padding:10px 11px; }
+.fi-vstep-n{ font-family:Cinzel,serif; font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:#7cc86a; margin-bottom:5px; }
+.fi-vstep-t{ font-family:'Crimson Pro',Georgia,serif; font-size:12.5px; color:var(--parchment); line-height:1.35; }
+.fi-vtip{ font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:12.5px; color:var(--gold-hi); border-left:2px solid var(--green); padding:8px 12px; margin-top:12px; background:rgba(18,48,22,.22); border-radius:0 6px 6px 0; }
+.fi-vdivider{ margin:20px 0 4px; border-radius:10px; overflow:hidden; border:1px solid var(--green-dim); }
+.fi-vdivider img{ width:100%; height:auto; display:block; }
+.fi-vgal-count{ font-family:Cinzel,serif; font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--green); margin:-4px 0 12px; }
+@media(min-width:640px){ .fi-vsteps{ flex-direction:row; gap:12px; } }
 .fi-tab{ flex:0 0 auto; padding:9px 13px; border-radius:9px; background:rgba(0,0,0,.45); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,.16); color:var(--ink-dim); font-family:Cinzel,serif; font-size:11px; letter-spacing:.5px; white-space:nowrap; cursor:pointer; }
 .fi-tab.sel{ border-color:var(--gold); color:var(--gold); background:rgba(60,44,12,.5); }
 .fi-idhead{ text-align:center; margin-bottom:16px; }
@@ -5994,6 +6014,110 @@ function fiRenderAsuras(){
     fh('button',{class:'fi-dcta primary', onclick:()=>fiSelectTab('vanaras')}, 'Continue to Vanaras ›')));
   return node;
 }
+/* ═══ TASK 49 — VANARAS CODEX PAGE (the T47/T48 shell). Authority: docs/VANARAS_CODEX_CONTENT_v1.md — copy VERBATIM.
+   faction='vanaras' (jungle-green theme via .fi-vanaras-page); every card mini live-verbatim from DECKS.vanaras. ═══ */
+function fiVKey(id, chip){                        // key-card: mini + live txt + a doc chip
+  const c=fiCDef('vanaras',id);
+  return fh('div',{class:'fic-card'}, fiCM('vanaras',id),
+    fh('div',{class:'fic-txt'}, fh('div',{class:'fic-txt-nm'}, c.n), fh('div',{class:'fi-vchip'}, chip), fh('p',null, c.txt)));
+}
+function fiRenderVanaras(){
+  const F='vanaras', node=fh('div',{class:'fi-codex-page fi-vanaras-page'});
+  // §1 HERO
+  const hero=fh('div',{class:'fi-dhero'}); hero.style.backgroundImage="url('assets/img/vanaras_codex_hero.png?v=1')";
+  hero.append(fh('div',{class:'fi-dhero-scrim'}),
+    fh('div',{class:'fi-dhero-in'},
+      fh('div',{class:'fi-dhero-eyebrow'}, 'THE DEVOTED'),
+      fh('div',{class:'fi-dhero-title'}, 'VANARAS'),
+      fh('p',{class:'fi-dhero-intro'}, 'The devoted. One is weak. Ten thousand, moving as one, are not.'),
+      fh('div',{class:'fi-dchips'},
+        fh('div',{class:'fi-dchip'}, fh('b',null,'Difficulty'),' Easy to Learn, Deep to Master'),
+        fh('div',{class:'fi-dchip'}, fh('b',null,'Playstyle'),' Momentum and Swarm'))));
+  node.append(hero);
+  node.append(fh('div',{class:'fi-dpillars'},
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic'}, '✿'), fh('div',{class:'fi-dpillar-nm'}, 'Loyalty')),
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic'}, '➶'), fh('div',{class:'fi-dpillar-nm'}, 'Agility')),
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic'}, '❋'), fh('div',{class:'fi-dpillar-nm'}, 'Unity'))));
+  // §2 SIGNATURE MECHANIC — LEAP
+  node.append(fiSecTitle('Signature Mechanic — Leap'));
+  const leap=fh('section',{class:'fi-dpanel fi-dshield'});
+  leap.append(fh('div',{class:'fi-dshield-art'}, fh('img',{src:'assets/img/vanaras_codex_mechanic.png?v=1', alt:''})));
+  leap.append(fh('div',{class:'fi-dshield-body'},
+    fh('p',{class:'fi-dlead'}, 'Once per round, one of your Vanara Units may LEAP — its power becomes equal to an adjacent ally’s current power. A free action: it costs no card and no turn. Go wide first; then leap your line into a wall.'),
+    fh('p',{class:'fi-vsub'}, 'Kishkindha Crown raises the limit to twice per round and feeds both — leaper and copied ally each gain +1. Anjana grants a third leap.')));
+  node.append(leap);
+  const steps=fh('div',{class:'fi-vsteps'});
+  [['Step 1','Choose a Vanara on your row'],
+   ['Step 2','Pick an ADJACENT ally (Gandhamadana may be copied from anywhere)'],
+   ['Step 3','Its power becomes that ally’s. Free, once per round.']
+  ].forEach(([n,t])=>steps.append(fh('div',{class:'fi-vstep'}, fh('div',{class:'fi-vstep-n'}, n), fh('div',{class:'fi-vstep-t'}, t))));
+  node.append(steps);
+  // §3 KEY CARDS TRIO + TIP
+  node.append(fiSecTitle('Key Cards'));
+  node.append(fh('div',{class:'fic-cards'}, fiVKey('ramanaam','Army Buff'), fiVKey('kishkindhacrown','Leap Engine'), fiVKey('hanuman','Momentum Engine')));
+  node.append(fh('div',{class:'fi-vtip'}, 'Leap before you fire Gandiva Arrow — if a Vanara Leapt this round, the Arrow destroys a second Unit.'));
+  // §4 STRENGTHS / WEAKNESSES
+  node.append(fiSecTitle('Strengths & Weaknesses'));
+  const sw=fh('div',{class:'fi-dsw'});
+  const mk=(cls,title,items)=>{ const col=fh('div',{class:'fi-dpanel '+cls}, fh('div',{class:'fi-dsw-h'}, title));
+    const l=fh('ul',{class:'fi-dlist'}); items.forEach(t=>l.append(fh('li',null,t))); col.append(l); return col; };
+  sw.append(mk('fi-dstr','Strengths',[
+    'Swarm scaling: Units that grow with every ally (Vanara Warrior, Neela, Song of the Crossing).',
+    'Free tempo: Leap adds power without spending a card or a turn.',
+    'Formation payoffs: adjacency rewards (Setu Mason, Drummer, The Living Bridge).',
+    'Card advantage: Sugriva, Dadhimukha, Tara.',
+    'The ward: Kishkindha Oath keeps a key Unit alive at 1.']));
+  sw.append(mk('fi-dwk','Weaknesses',[
+    'Small bodies alone — the army IS the unit.',
+    'Formations break when removal snipes the middle of a line.',
+    'A Leap moves power sideways; without the Crown it adds nothing net.',
+    'Venom pressures wide boards — Rama’s Signet is the answer, and only one artifact slot exists.']));
+  node.append(sw);
+  // §5 DIVIDER (wide strip ~4.9:1)
+  node.append(fh('div',{class:'fi-vdivider'}, fh('img',{src:'assets/img/vanaras_codex_divider.png?v=1', alt:''})));
+  // §6 CORE STRATEGY
+  node.append(fiSecTitle('Core Strategy — How Vanaras Win'));
+  const strat=fh('div',{class:'fi-dstrats'});
+  [['Go Wide','Cheap bodies early; every Vanara makes the next better.', null],
+   ['Leap and Amplify','Leap into your tallest ally; Kumuda and Rambha grow permanently with every leap.', ['kumuda','rambha']],
+   ['Strike as One','Rama Naam, Lanka Dahan, Anjaneya’s Roar: the whole line rises at once.', ['ramanaam','lankadahan','anjaneyaroar']]
+  ].forEach(([t,cap,ids],i)=>{
+    const p=fh('section',{class:'fi-dpanel fi-dstrat'}, fh('div',{class:'fi-dstrat-n'}, String(i+1)),
+      fh('div',{class:'fi-dstrat-h'}, t), fh('p',{class:'fi-dstrat-cap'}, cap));
+    if (ids) p.append(fiCMtrio(F, ids));
+    strat.append(p);
+  });
+  node.append(strat);
+  // §7 GALLERY — THE DEVOTED HOST, 44 CARDS (no hidden slots, no "of 66", live card.txt on inspect)
+  node.append(fiSecTitle('The Devoted Host'));
+  const order=fiGalleryOrder(F);
+  node.append(fh('div',{class:'fi-vgal-count'}, order.length+' Cards'));
+  const grid=fh('div',{class:'fi-gallery'});
+  order.forEach(c=> grid.append(fiThumb(c, F, 'fi-thumb')));
+  node.append(grid);
+  // §8 SIGNATURE SYNERGIES (4)
+  node.append(fiSecTitle('Signature Synergies'));
+  const syn=fh('div',{class:'fi-dsyn'});
+  [['The Crown Engine',['kishkindhacrown','kumuda'],'Two leaps, both fed, Kumuda +2 permanent each time it leaps or is leapt-to.'],
+   ['The Bridge',['setustones','drummer','livingbridge'],'Enter in formation, buff the line, the unbroken four gains +2 permanent.'],
+   ['The Second Shaft',['gandiva'],'Leap first, then Gandiva Arrow destroys two.'],
+   ['The Bold Rise',['rambha','matanga','mainda'],'Free leaps stack permanent power outside the round limit.']
+  ].forEach(([t,ids,res])=>{
+    const p=fh('section',{class:'fi-dpanel fi-dsyn-p'}, fh('div',{class:'fi-dsyn-h'}, t));
+    const row=fh('div',{class:'fi-dsyn-row'});
+    ids.forEach((id,i)=>{ if(i>0) row.append(fh('span',{class:'fi-dplus'}, '+')); row.append(fiCM(F,id)); });
+    row.append(fh('span',{class:'fi-darrow'}, '→'), fh('div',{class:'fi-dsyn-res'}, res));
+    p.append(row); syn.append(p);
+  });
+  node.append(syn);
+  // §9 FOOTER + CTAs
+  node.append(fh('div',{class:'fi-dclosing'}, 'The Vanaras do not seek glory. They seek victory.'));
+  node.append(fh('div',{class:'fi-dctas'},
+    fh('button',{class:'fi-dcta', onclick:()=>{ colFaction='vanaras'; showCollection(); }}, 'View Collection'),
+    fh('button',{class:'fi-dcta locked', onclick:()=>toastMute('Coming with the Wave')}, 'Build a Deck'),
+    fh('button',{class:'fi-dcta primary', onclick:()=>fiSelectTab('nagas')}, 'Continue to Nagas ›')));
+  return node;
+}
 function fiRenderFaction(faction){
   const C=FI_CONTENT[faction], hex=FI_FAC_HEX[faction], node=fh('div',null);
   node.append(fh('div',{class:'fi-idhead'},
@@ -6083,7 +6207,7 @@ function fiRenderRealms(){
 const fiTabNodes = {};
 function fiSelectTab(tab){
   document.querySelectorAll('#fi-tabs .fi-tab').forEach(b=> b.classList.toggle('sel', b.dataset.tab===tab));
-  if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : tab==='devas' ? fiRenderDevas() : tab==='asuras' ? fiRenderAsuras() : fiRenderFaction(tab);   // T47 Devas / T48 Asuras codex pages
+  if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : tab==='devas' ? fiRenderDevas() : tab==='asuras' ? fiRenderAsuras() : tab==='vanaras' ? fiRenderVanaras() : fiRenderFaction(tab);   // T47 Devas / T48 Asuras / T49 Vanaras codex pages
   const body=$('fi-body'); body.innerHTML=''; body.append(fiTabNodes[tab]);
   $('factionintro').scrollTop=0;
 }
@@ -7879,7 +8003,10 @@ function cancelShield(){ shieldMode=false; hideBoardTargetBar(); render(); }
 function shieldClick(c){ shieldMode=false; hideBoardTargetBar(); runAction(()=>designateShield(G, 0, c.uid)); }
 function leapClick(c){
   if (leapMode==='leaper'){
-    const adj=new Set(adjacentUnits(G.players[0], c).filter(u=>!u.ghost).map(u=>u.uid));
+    // T49 (0b, Option B): widen the human target set to include non-ghost Gandhamadana units from ANYWHERE (excluding the
+    // leaper itself) — mirrors the engine bestLeap pattern so the human path matches the AI. UI-only; doLeap/bestLeap untouched.
+    const P=G.players[0], gandh=P.units.filter(u=>!u.ghost && u.id==='gandhamadana' && u!==c);
+    const adj=new Set(adjacentUnits(P, c).filter(u=>!u.ghost).concat(gandh).map(u=>u.uid));
     if (!adj.size){ showActionBar(`${c.n} has no adjacent ally — pick another`, cancelLeap); return; }
     leapMode={ leaper:c, adj }; render(); showActionBar(`${c.n} leaps onto which neighbour?`, cancelLeap);
   } else if (leapMode && leapMode.leaper && leapMode.adj.has(c.uid)){
