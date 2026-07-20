@@ -880,3 +880,21 @@ to .fi-asuras-page); regression landing/collection(44)/vault/mulligan/
 battle identical; parity — engine 0 lines, test.js byte-identical
 40.9/59.1, scenario 50 / venom 38 / story 48, 0 console.log / 0 console
 errors. NOT committed.
+
+── A8 MICRO (2026-07-20) — CACHE-STAMP DISCIPLINE + THRONE DIVIDER ──
+CACHE STAMP: all six codex asset refs (devas_codex_hero/shield/altar,
+asuras_codex_hero/surge/throne) bumped ?v=1 → ?v=2. RULE: an in-place
+asset BYTE-SWAP must bump the ?v= stamp in the SAME commit — otherwise
+browsers (and the preview) serve the STALE cached bytes under the old
+stamp. This exact bug produced the throne complaint: the owner swapped
+asuras_codex_throne.png in place (disk 1600×921, the empty-throne art)
+but the ref stayed ?v=1, so the page kept serving the OLD cached
+1200×555 image (the standing lord, beheaded by that crop). The v=2 bump
+loads the correct fresh image.
+THRONE DIVIDER: resolved by the stamp bump — no CSS change. The fresh
+empty-throne image is symmetric and self-framing (horns intact at top,
+dais + banners), and .fi-daltar img (width:100%; height:auto) shows it
+FULLY at both widths with no crop (desktop: img height 129 < container
+304 → no clip). No object-position was added — a cover-crop would only
+damage the now-correct full composition. (Had the fresh image still
+cropped badly, a square regen was the fallback; it did not.)
