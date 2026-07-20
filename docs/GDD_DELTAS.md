@@ -485,3 +485,24 @@ now catches up to that canon. There is NO consolidated Asura card-text
 compendium doc to re-export against (unlike the Deva wave's dedicated
 sub pull), so nothing else re-exports; the ASURA_ROSTER.md design doc
 is unaffected (it is a roster, not printed-txt authority).
+
+### R92 — KARKOTAKA ERRATUM (txt-only honesty delta; ruled 2026-07-20, T50)
+Supersedes the R10 entry's TIMING WORDING (line 24 above) per EXP-L2
+(the R10 revision, engine.js venomKarkotakaEarly): the printed "ticks
+at the start of each opponent turn" was always stale against the
+shipped single-tick behavior — the drain fires ONCE, the moment either
+player first passes the round, not once per opponent turn. Behavior is
+unchanged (settled law); only the printed text and the play-log line
+catch up to the code. The R10 historical entry is left intact per the
+append-only convention.
+  R92.1 karkotaka (card txt)  "PASSIVE: Your Venom drain ticks at the
+    start of each opponent turn instead of once at round end." →
+    "PASSIVE: Your Venom drain fires once, the moment either player
+    first passes each round, instead of at round end."
+  R92.2 karkotaka (play log)  "Karkotaka takes the field — Venom now
+    bites at the start of each enemy turn." → "Karkotaka takes the
+    field — Venom bites the moment the first pass falls."
+
+R92 FRAME NOTE: no re-export debt — Karkotaka's wave frame is not yet
+rolled. DOWNSTREAM: the Nagas codex venom panel teaches the R92 text
+when it is built.

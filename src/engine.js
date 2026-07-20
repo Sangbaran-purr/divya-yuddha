@@ -203,7 +203,7 @@ const NAGA_DECK_DEF = [
   { id:'shesha',  n:'Shesha',         sub:'The Infinite Serpent', t:'hero', p:7, r:'L', txt:'PASSIVE: If you lose a round, at the start of the next round a random friendly Unit returns from your discard at full power.' },
   // ---- UNITS (12) ----
   { id:'manasa',  n:'Manasa',         sub:'Goddess of Serpents',  t:'unit', p:5, r:'E', txt:'PASSIVE: The opponent’s Astras are cancelled (effect and Chaos Surge). ON PLAY: gain +1 power for each Naga Unit on the board.' },
-  { id:'karkotaka',n:'Karkotaka',     sub:'The Venomous King',    t:'unit', p:6, r:'E', txt:'PASSIVE: Your Venom drain ticks at the start of each opponent turn instead of once at round end.' },
+  { id:'karkotaka',n:'Karkotaka',     sub:'The Venomous King',    t:'unit', p:6, r:'E', txt:'PASSIVE: Your Venom drain fires once, the moment either player first passes each round, instead of at round end.' },
   { id:'surasa',  n:'Surasa',         sub:'Mother of Nagas',      t:'unit', p:5, r:'E', txt:'ON PLAY: Trap the opponent’s next card — a Unit enters with −2 power and Surasa gains +2; an Astra is negated (its Chaos Surge still fires).' },
   { id:'ulupi',   n:'Ulupi',          sub:'The River Naga Princess', t:'unit', p:4, r:'R', txt:'ON PLAY: Revive a destroyed friendly Naga Unit from your discard at full power; it can’t be targeted by Astras this round.' },
   { id:'nagasadhu',n:'Naga Sadhu',    sub:'The Poison Ascetic',   t:'unit', p:3, r:'R', txt:'ON PLAY: Apply a Venom Token to ALL enemy Units.' },
@@ -1590,7 +1590,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         else log(g,'Mainda finds no adjacent ally.'); break; }
       // ---- Naga units ----
       case 'manasa': { const n=pl.units.filter(u=>!u.ghost).length; if (n){ c.power+=n; } log(g,`Manasa coils forth (+${n} for the serpent host); the opponent’s Astras now fizzle.`); break; }   // PASSIVE negation handled in astra branch
-      case 'karkotaka': log(g,'Karkotaka takes the field — Venom now bites at the start of each enemy turn.'); break;   // R10 timing handled in venomKarkotakaTick
+      case 'karkotaka': log(g,'Karkotaka takes the field — Venom bites the moment the first pass falls.'); break;   // R10 timing handled in venomKarkotakaTick
       case 'surasa': pl.surasaTrap=c.uid; log(g,`Surasa coils to strike — the opponent’s next card is trapped.`); break;   // R12
       case 'ulupi': {
         const units=pl.discard.filter(x=>x.t==='unit' && !x.ghost);
