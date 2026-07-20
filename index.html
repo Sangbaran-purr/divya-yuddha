@@ -752,10 +752,10 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-back:active{ transform:scale(.92); }
 .fi-col{ position:relative; z-index:1; max-width:520px; margin:0 auto; padding:54px 16px 40px; }
 /* T47 THE WIDEN: at >=1024 the fi column widens to 960 for the Devas codex page. The 5 untouched tabs (built for 520)
-   keep their 520 layout centered inside the wide column — only .fi-devas-page uses the full width. Phone unchanged. */
+   keep their 520 layout centered inside the wide column — only the codex pages (.fi-codex-page) use the full width. Phone unchanged. */
 @media(min-width:1024px){
   .fi-col{ max-width:960px; }
-  #fi-body > *:not(.fi-devas-page){ max-width:520px; margin-left:auto; margin-right:auto; }
+  #fi-body > *:not(.fi-codex-page){ max-width:520px; margin-left:auto; margin-right:auto; }
 }
 .fi-tabs{ display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px; margin-bottom:16px; scrollbar-width:none; }
 .fi-tabs::-webkit-scrollbar{ display:none; }
@@ -861,6 +861,15 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   .fi-dstrats{ flex-direction:row; } .fi-dstrat{ flex:1 1 0; }
   .fi-dctas{ display:flex; gap:12px; } .fi-dctas .fi-dcta{ flex:1 1 0; }
 }
+/* T48 — ASURAS crimson theme (reuses the codex fi-d and fic structure; recolors the faction-identity accents only.
+   Strength-green / weakness-crimson semantic colors are left intact). */
+.fi-asuras-page .fi-dhero-title, .fi-asuras-page .fi-dsec-title, .fi-asuras-page .fi-dclosing,
+.fi-asuras-page .fi-dstrat-h, .fi-asuras-page .fi-dsyn-h{ color:#f0705a; }
+.fi-asuras-page .fi-dhero-eyebrow, .fi-asuras-page .fi-dsub, .fi-asuras-page .fi-dpillar-nm,
+.fi-asuras-page .fi-dpillar-ic, .fi-asuras-page .fi-dchip b, .fi-asuras-page .fi-dmatch-k{ color:var(--crimson); }
+.fi-asuras-page .fi-dpillar, .fi-asuras-page .fi-dchip, .fi-asuras-page .fi-dhero{ border-color:var(--crimson-dim); }
+.fi-asuras-page .fi-dcta{ border-color:var(--crimson-dim); }
+.fi-asuras-page .fi-dcta.primary{ background:linear-gradient(180deg,#3a1410,#1c0805); border-color:var(--crimson); color:#f4b8a8; }
 .fi-tab{ flex:0 0 auto; padding:9px 13px; border-radius:9px; background:rgba(0,0,0,.45); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,.16); color:var(--ink-dim); font-family:Cinzel,serif; font-size:11px; letter-spacing:.5px; white-space:nowrap; cursor:pointer; }
 .fi-tab.sel{ border-color:var(--gold); color:var(--gold); background:rgba(60,44,12,.5); }
 .fi-idhead{ text-align:center; margin-bottom:16px; }
@@ -5759,27 +5768,28 @@ function fiRenderWin(){
 /* ═══ TASK 47 — DEVAS CODEX PAGE. Authority: docs/DEVAS_CODEX_CONTENT_v1.md. Claim tags: [PULLED]=engine-verbatim,
    [VERIFY]=STEP-0-confirmed engine truth, [ED]=editorial. Every card mini is the T41b component (art crop + band);
    every txt shown is the LIVE engine txt (verbatim by construction, pulled from DECKS.devas). ═══ */
-function fiDDef(id){ return DECKS.devas.find(c=>c.id===id); }
-function fiCM(id){                               // T41b codex mini: art crop + name band + power chip, tappable → inspect
-  const c=fiDDef(id); if(!c) return fh('div',null);
-  const m=fh('div',{class:'fic-mini', onclick:()=>fiOpenInspectCard('devas', c)});
+/* T47/T48 — codex mini helpers, faction-parameterized (shared by the Devas + Asuras codex pages). */
+function fiCDef(faction,id){ return DECKS[faction].find(c=>c.id===id); }
+function fiCM(faction,id){                       // T41b codex mini: art crop + name band + power chip, tappable → inspect
+  const c=fiCDef(faction,id); if(!c) return fh('div',null);
+  const m=fh('div',{class:'fic-mini', onclick:()=>fiOpenInspectCard(faction, c)});
   const art=fh('div',{class:'fic-art'});
   const img=new Image(); img.alt=c.n; img.loading='lazy';
   img.onload=()=>img.classList.add('on'); img.onerror=()=>{ art.classList.add('fic-pending'); art.textContent=c.n; };
-  img.src=fiThumbSrc(c,'devas'); art.append(img); m.append(art);
+  img.src=fiThumbSrc(c,faction); art.append(img); m.append(art);
   m.append(fh('div',{class:'fic-band'}, fh('div',{class:'fic-nm'}, c.n), c.sub?fh('div',{class:'fic-epi'}, c.sub):null));
   if(c.p>0) m.append(fh('div',{class:'fic-chip'}, String(c.p)));
   return m;
 }
-function fiCMtrio(ids){ return fh('div',{class:'fic-trio'}, ...ids.map(fiCM)); }
-function fiCMtxt(id){                            // mini + LIVE verbatim engine txt (§2 key cards, §5 host)
-  const c=fiDDef(id);
-  return fh('div',{class:'fic-card'}, fiCM(id),
+function fiCMtrio(faction,ids){ return fh('div',{class:'fic-trio'}, ...ids.map(id=>fiCM(faction,id))); }
+function fiCMtxt(faction,id){                     // mini + LIVE verbatim engine txt (§2 key cards, §5 host)
+  const c=fiCDef(faction,id);
+  return fh('div',{class:'fic-card'}, fiCM(faction,id),
     fh('div',{class:'fic-txt'}, fh('div',{class:'fic-txt-nm'}, c.n), fh('p',null, c.txt)));
 }
 function fiSecTitle(t){ return fh('div',{class:'fi-dsec-title'}, t); }
 function fiRenderDevas(){
-  const GOLD='#E8C874', node=fh('div',{class:'fi-devas-page'});
+  const node=fh('div',{class:'fi-codex-page fi-devas-page'});
   // ── §1 HERO BANNER ──
   const hero=fh('div',{class:'fi-dhero'});
   hero.style.backgroundImage="url('assets/img/devas_codex_hero.png?v=1')";
@@ -5812,7 +5822,7 @@ function fiRenderDevas(){
   ].forEach(t=>ul.append(fh('li',null,t)));
   sbody.append(ul); shield.append(sbody); node.append(shield);
   node.append(fiSecTitle('Key Cards'));
-  node.append(fh('div',{class:'fic-cards'}, fiCMtxt('kavacha'), fiCMtxt('vedikeeper'), fiCMtxt('airavatacalf')));
+  node.append(fh('div',{class:'fic-cards'}, fiCMtxt('devas','kavacha'), fiCMtxt('devas','vedikeeper'), fiCMtxt('devas','airavatacalf')));
   // ── §3 STRENGTHS / WEAKNESSES (altar divider) ──
   node.append(fiSecTitle('Strengths & Weaknesses'));
   const sw=fh('div',{class:'fi-dsw'});
@@ -5841,12 +5851,12 @@ function fiRenderDevas(){
   ].forEach(([t,cap,ids],i)=>{
     strat.append(fh('section',{class:'fi-dpanel fi-dstrat'},
       fh('div',{class:'fi-dstrat-n'}, String(i+1)),
-      fh('div',{class:'fi-dstrat-h'}, t), fh('p',{class:'fi-dstrat-cap'}, cap), fiCMtrio(ids)));
+      fh('div',{class:'fi-dstrat-h'}, t), fh('p',{class:'fi-dstrat-cap'}, cap), fiCMtrio('devas',ids)));
   });
   node.append(strat);
   // ── §5 THE CELESTIAL HOST ──
   node.append(fiSecTitle('The Celestial Host'));
-  node.append(fh('div',{class:'fic-cards fic-host'}, ...['indra','surya','brihaspati','vayu','vajra','gayatri'].map(fiCMtxt)));
+  node.append(fh('div',{class:'fic-cards fic-host'}, ...['indra','surya','brihaspati','vayu','vajra','gayatri'].map(id=>fiCMtxt('devas',id))));
   node.append(fh('button',{class:'fi-dcta', onclick:()=>{ colFaction='devas'; showCollection(); }}, 'View Full Collection ›'));
   // ── §6 SIGNATURE SYNERGIES ──
   node.append(fiSecTitle('Signature Synergies'));
@@ -5858,7 +5868,7 @@ function fiRenderDevas(){
   ].forEach(([t,ids,res])=>{
     const p=fh('section',{class:'fi-dpanel fi-dsyn-p'}, fh('div',{class:'fi-dsyn-h'}, t));
     const row=fh('div',{class:'fi-dsyn-row'});
-    ids.forEach((id,i)=>{ if(i>0) row.append(fh('span',{class:'fi-dplus'}, '+')); row.append(fiCM(id)); });
+    ids.forEach((id,i)=>{ if(i>0) row.append(fh('span',{class:'fi-dplus'}, '+')); row.append(fiCM('devas',id)); });
     row.append(fh('span',{class:'fi-darrow'}, '→'), fh('div',{class:'fi-dsyn-res'}, res));
     p.append(row); syn.append(p);
   });
@@ -5879,6 +5889,109 @@ function fiRenderDevas(){
     fh('button',{class:'fi-dcta', onclick:()=>{ colFaction='devas'; showCollection(); }}, 'View Deva Collection'),
     fh('button',{class:'fi-dcta locked', onclick:()=>toastMute('Coming with the Wave')}, 'Build a Deva Deck'),
     fh('button',{class:'fi-dcta primary', onclick:()=>fiSelectTab('asuras')}, 'Continue to Asuras ›')));
+  return node;
+}
+/* ═══ TASK 48 — ASURAS CODEX PAGE (the T47 shell). Authority: docs/ASURAS_CODEX_CONTENT_v1.md. Same structure + classes
+   as the Devas page; faction='asuras' (crimson theme via .fi-asuras-page); every card mini live-verbatim from DECKS.asuras. ═══ */
+function fiRenderAsuras(){
+  const F='asuras', node=fh('div',{class:'fi-codex-page fi-asuras-page'});
+  // §1 HERO
+  const hero=fh('div',{class:'fi-dhero'}); hero.style.backgroundImage="url('assets/img/asuras_codex_hero.png?v=1')";
+  hero.append(fh('div',{class:'fi-dhero-scrim'}),
+    fh('div',{class:'fi-dhero-in'},
+      fh('div',{class:'fi-dhero-eyebrow'}, 'THE BREAKERS OF RULES'),
+      fh('div',{class:'fi-dhero-title'}, 'ASURAS'),
+      fh('p',{class:'fi-dhero-intro'}, 'Born of ambition and forged in void-fire, the Asuras seize power without apology. Every gift they take has a price, and they pay it gladly. In chaos they find freedom. In destruction, opportunity.'),
+      fh('div',{class:'fi-dchips'},
+        fh('div',{class:'fi-dchip'}, fh('b',null,'Difficulty'),' Intermediate'),
+        fh('div',{class:'fi-dchip'}, fh('b',null,'Playstyle'),' Aggression and Calculated Risk'))));
+  node.append(hero);
+  node.append(fh('div',{class:'fi-dpillars'},
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic'}, '⚔'), fh('div',{class:'fi-dpillar-nm'}, 'Power')),
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic'}, '♛'), fh('div',{class:'fi-dpillar-nm'}, 'Ambition')),
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic'}, '✷'), fh('div',{class:'fi-dpillar-nm'}, 'Chaos'))));
+  // §2 CHAOS SURGE
+  node.append(fiSecTitle('Signature Mechanic — Chaos Surge'));
+  const surge=fh('section',{class:'fi-dpanel fi-dshield'});
+  surge.append(fh('div',{class:'fi-dshield-art'}, fh('img',{src:'assets/img/asuras_codex_surge.png?v=1', alt:''})));
+  const body=fh('div',{class:'fi-dshield-body'},
+    fh('p',{class:'fi-dlead'}, 'Chaos Surge is the storm the Asura weapons carry — every Astra they loose feeds it.'),
+    fh('div',{class:'fi-dsub'}, 'How Chaos Surge works'));
+  const ul=fh('ul',{class:'fi-dlist'});
+  [ 'When you play an Asura Astra, Chaos Surge fires: a random friendly Unit gains +3 power. Even an Asura play that triggers nothing sparks a smaller +1 Surge — chaos always finds a way.',
+    'Nearly every Asura Astra reads “Triggers Chaos Surge” — and some trigger it twice.',
+    'Kali Asura feeds on it: “If Chaos Surge triggered this round, gain +3 power.”',
+    'Chandrahas doubles your first Astra each round — and its Surges with it.'
+  ].forEach(t=>ul.append(fh('li',null,t)));
+  body.append(ul); surge.append(body); node.append(surge);
+  node.append(fiSecTitle('Key Cards'));
+  node.append(fh('div',{class:'fic-cards'}, fiCMtxt(F,'kali'), fiCMtxt(F,'chandrahas'), fiCMtxt(F,'vidyutastra')));
+  // §3 STRENGTHS / WEAKNESSES (throne divider)
+  node.append(fiSecTitle('Strengths & Weaknesses'));
+  const sw=fh('div',{class:'fi-dsw'});
+  const mk=(cls,title,items)=>{ const col=fh('div',{class:'fi-dpanel '+cls}, fh('div',{class:'fi-dsw-h'}, title));
+    const l=fh('ul',{class:'fi-dlist'}); items.forEach(t=>l.append(fh('li',null,t))); col.append(l); return col; };
+  sw.append(mk('fi-dstr','Strengths',[
+    'Explosive burst — Kumbhakarna wakes for 3 to all; Pashupatastra converts your whole board into damage.',
+    'Board-wide Astras pierce Dharma Shields.',
+    'Disruption from every angle — discard (Rahu), stolen turns (Tamasa), negation (Brahmadanda).',
+    'Sacrifice converts bodies into cards and tokens (Rudhira Bali, Raktabija’s Curse).',
+    'Relentless tempo — free Astra turns (Mayasura’s Blueprint).']));
+  sw.append(fh('div',{class:'fi-daltar'}, fh('img',{src:'assets/img/asuras_codex_throne.png?v=1', alt:''})));
+  sw.append(mk('fi-dwk','Weaknesses',[
+    'The price is real — your own cards cost you units, power, and turns (Ahamkara, Dhumraksha, Pisacha’s decay, Mahishasura’s hunger).',
+    'Single-target removal is blanked by a Dharma Shield.',
+    'Almost no healing — the Iron Crucible returns 1, and only to the already-wounded.',
+    'Tripura’s glory ends the instant any Astra is played — including yours.',
+    'Overextension invites ruin — spend the board, and a long round buries you.']));
+  node.append(sw);
+  // §4 CORE STRATEGY
+  node.append(fiSecTitle('Core Strategy'));
+  const strat=fh('div',{class:'fi-dstrats'});
+  [['Strike Before They Settle','Your curve is a weapon. Spend it while their engines are still warming.',['berserker','kali','meghnad']],
+   ['Make Every Astra Count','Sequence Chandrahas and the Blueprint so each weapon does double work.',['chandrahas','blueprint','vidyutastra']],
+   ['Pay the Price on Purpose','Sacrifice on your schedule, not theirs — a unit spent is a card drawn, a token raised.',['bloodoath','raktabija','ahamkara']]
+  ].forEach(([t,cap,ids],i)=>{
+    strat.append(fh('section',{class:'fi-dpanel fi-dstrat'},
+      fh('div',{class:'fi-dstrat-n'}, String(i+1)),
+      fh('div',{class:'fi-dstrat-h'}, t), fh('p',{class:'fi-dstrat-cap'}, cap), fiCMtrio(F,ids)));
+  });
+  node.append(strat);
+  // §5 THE INFERNAL HOST
+  node.append(fiSecTitle('The Infernal Host'));
+  node.append(fh('div',{class:'fic-cards fic-host'}, ...['mahabali','ravana','kumbha','pashupata','ahamkara','chandrahas'].map(id=>fiCMtxt(F,id))));
+  node.append(fh('button',{class:'fi-dcta', onclick:()=>{ colFaction='asuras'; showCollection(); }}, 'View Full Collection ›'));
+  // §6 SIGNATURE SYNERGIES
+  node.append(fiSecTitle('Signature Synergies'));
+  const syn=fh('div',{class:'fi-dsyn'});
+  [['The Chaos Engine',['chandrahas','kali'],'Every weapon you loose pays twice.'],
+   ['The Astra Storm',['bana','berserker','blueprint'],'The storm feeds the army that rides it.'],
+   ['The Price Paid Forward',['bloodoath','raktabija'],'Spend one soldier. Collect a card and two more.'],
+   ['Death is Negotiable',['shukra','sanjivani'],'Your dead return. So do theirs — on your side.']
+  ].forEach(([t,ids,res])=>{
+    const p=fh('section',{class:'fi-dpanel fi-dsyn-p'}, fh('div',{class:'fi-dsyn-h'}, t));
+    const row=fh('div',{class:'fi-dsyn-row'});
+    ids.forEach((id,i)=>{ if(i>0) row.append(fh('span',{class:'fi-dplus'}, '+')); row.append(fiCM(F,id)); });
+    row.append(fh('span',{class:'fi-darrow'}, '→'), fh('div',{class:'fi-dsyn-res'}, res));
+    p.append(row); syn.append(p);
+  });
+  node.append(syn);
+  // §7 MATCHUP GUIDANCE
+  node.append(fiSecTitle('Matchup Guidance'));
+  const mg=fh('section',{class:'fi-dpanel fi-dmatch'});
+  [['Strong into','Slow engines and greedy value plans — you end the game before their accumulation matters.'],
+   ['Difficult against','Deva protection — a Dharma Shield blanks your single-target removal; lean on board-wide Astras, which pierce.'],
+   ['Protect','Your Surge payoffs and engines — Kali Asura, Bana, Chandrahas.'],
+   ['Remove first','Healers and shields — everything that lets them survive your best turn.'],
+   ['Intermediate tip','Count the price before you pay it. Every sacrifice should buy tempo you actually use this round.']
+  ].forEach(([k,v])=>mg.append(fh('div',{class:'fi-dmatch-row'}, fh('span',{class:'fi-dmatch-k'}, k), fh('span',{class:'fi-dmatch-v'}, v))));
+  node.append(mg);
+  // §8 CLOSING + CTAs
+  node.append(fh('div',{class:'fi-dclosing'}, 'The Asuras do not ask for power. They take it.'));
+  node.append(fh('div',{class:'fi-dctas'},
+    fh('button',{class:'fi-dcta', onclick:()=>{ colFaction='asuras'; showCollection(); }}, 'View Asura Collection'),
+    fh('button',{class:'fi-dcta locked', onclick:()=>toastMute('Coming with the Wave')}, 'Build an Asura Deck'),
+    fh('button',{class:'fi-dcta primary', onclick:()=>fiSelectTab('vanaras')}, 'Continue to Vanaras ›')));
   return node;
 }
 function fiRenderFaction(faction){
@@ -5970,7 +6083,7 @@ function fiRenderRealms(){
 const fiTabNodes = {};
 function fiSelectTab(tab){
   document.querySelectorAll('#fi-tabs .fi-tab').forEach(b=> b.classList.toggle('sel', b.dataset.tab===tab));
-  if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : tab==='devas' ? fiRenderDevas() : fiRenderFaction(tab);   // T47: Devas gets the dedicated codex page
+  if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : tab==='devas' ? fiRenderDevas() : tab==='asuras' ? fiRenderAsuras() : fiRenderFaction(tab);   // T47 Devas / T48 Asuras codex pages
   const body=$('fi-body'); body.innerHTML=''; body.append(fiTabNodes[tab]);
   $('factionintro').scrollTop=0;
 }

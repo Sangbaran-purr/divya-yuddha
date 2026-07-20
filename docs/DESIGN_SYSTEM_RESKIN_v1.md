@@ -789,3 +789,94 @@ phone and 960; regression landing/collection(44)/vault/mulligan/battle
 identical; parity — engine 0 lines, test.js byte-identical 40.9/59.1,
 scenario 50 / venom 38 / story 48, 0 console.log / 0 console errors.
 NOT committed.
+
+## AMENDMENT A8 — ASURAS CODEX PAGE (ruled 2026-07-20, T48)
+Authority: docs/ASURAS_CODEX_CONTENT_v1.md. The Asuras tab of the
+Factions & Realms page (data-tab="asuras") now renders the Asuras
+codex (fiRenderAsuras) via the T47 shell — the same §1–§8 structure
+and .fi-d*/.fic-* classes as the Devas page, faction='asuras', crimson
+theme (.fi-asuras-page recolors the faction-identity accents only;
+the strength-green / weakness-crimson semantics are left intact). The
+codex mini helpers were parameterized by faction (fiCM/fiCMtxt/fiCMtrio
+now take faction); the widen selector became `#fi-body >
+*:not(.fi-codex-page)` so BOTH codex pages use 960 at >=1024 (measured:
+asuras 928, devas 928, the other 4 tabs 520, no h-overflow). Every card
+mini renders LIVE verbatim txt from DECKS.asuras (post-R90). The old
+fiRenderFaction('asuras') content is replaced; all other tabs untouched.
+⚠ BUILD NOTE: a comment `/* … .fi-d*/.fic-* … */` closed early on the
+`*/` inside `.fi-d*/`, silently eating the crimson rules — caught by a
+CSSOM check (rule absent), reworded; the lesson: no `*/` glob-strings
+inside CSS comments.
+
+CHAOS SURGE — the STEP 0 pull: chaosSurge(g,pi,times,amount=3) is
+Asura-only; per `times` it picks a RANDOM friendly non-ghost Unit
+(g.rng) and adds `amount` power, then sets chaosThisRound (for Kali).
+CALL-SITE AMOUNT TABLE (the complete set, T48 pre-commit reconcile):
+line 1642 floor surge = +1; line 1678 Asura Astra = +3 (default); line
+1698 Asura Mantra (EXP-H) = +3 (default); line 1717 Chandrahas ON PLAY
+= +3 (default). So the only REACHABLE amounts are +3 and +1. NO call
+site passes +2 — the `// EXP-I: +2 from Unit plays` comment on line 818
+is VESTIGIAL (that experiment was never wired; a unit/hero play that
+doesn't otherwise surge falls through to the +1 floor at 1642), so +2
+is UNREACHABLE and the shipped S2 line's two amounts are complete.
+Triggered immediately by Asura Astras (nearly all read "Triggers Chaos
+Surge") AND Asura Mantras (EXP-H); a +1 floor surge fires on any Asura
+play that didn't otherwise surge (engine.js ~1642). Chandrahas doubles
+`times`; Vidyutastra fires twice. R37
+negation-source: Manasa cancels effect AND surge (surgeNegated);
+Brahmadanda cancels effect only → the caster's Surge still fires.
+FINAL S2 [VERIFY] core line shipped: "When you play an Asura Astra,
+Chaos Surge fires: a random friendly Unit gains +3 power. Even an Asura
+play that triggers nothing sparks a smaller +1 Surge — chaos always
+finds a way." — states the pulled behavior exactly (random beneficiary,
++3 Astra / +1 floor). The R37 negation nuance was OMITTED as advanced
+(the doc's one-sentence allowance): an accurate single sentence would
+have to introduce Manasa/Brahmadanda with no context and confuse the
+codex reader.
+
+CLAIM TABLE (rendered === engine):
+  [VERIFY] Surge core — the written line (above) quoted against the
+    chaosSurge pull ✓ (no contradiction with the doc's [ED] lead; a
+    rewrite-to-truth within protocol, not a STOP).
+  [PULLED] "…and some trigger it twice" — Vidyutastra "Triggers Chaos
+    Surge twice" ✓; Kali "If Chaos Surge triggered this round, gain +3
+    power." = kali def verbatim ✓; Chandrahas double-first-Astra + surge
+    twice = chandrahas def ✓. All three rendered mini txts === engine.
+  [PULLED] S3 "Board-wide Astras pierce Dharma Shields." + "Single-
+    target removal is blanked by a Dharma Shield." = the T47 shield pull
+    (AoE iterates opp.units, ignores astraProtected; single-target astras
+    filter !astraProtected) ✓.
+  [PULLED] Iron Crucible "returns 1, and only to the already-wounded" =
+    "your Units that lost power this round regain 1." ✓; Tripura "ends
+    the instant any Astra is played — including yours" = "Ends the
+    instant any Astra is played by either player." ✓.
+  [PULLED] S5 six host txts (mahabali/ravana/kumbha/pashupata/ahamkara/
+    chandrahas) = live DECKS.asuras post-R90, verbatim ✓ (spot: pashupata
+    rendered === engine).
+  [ED] intro / chips / strengths-weaknesses phrasing / strategy / synergy
+    results / closing — editorial voice. The mockup's invented mechanics
+    (Chaos-spend economy, BHAIRAVA/KAAL ASTRA/ANDHAKAR MANTRA, "44 of 66")
+    are VOID and were not built.
+
+CTA WIRING (real-button proven): §5/§8 [View …Collection] →
+colFaction='asuras'; showCollection() (lands on the Asuras collection
+tab; BACK → landing). §8 [Build an Asura Deck] → visible-locked, toasts
+"Coming with the Wave" (no nav). §8 [Continue to Vanaras] →
+fiSelectTab('vanaras'). Every mini → fiOpenInspectCard('asuras', c).
+
+ASSETS — 3 files optimized in place: asuras_codex_hero (1653×952 →
+1600×921 JPEG-in-png 256KB), asuras_codex_surge (1254² 315KB),
+asuras_codex_throne (1844×853 → 1200×555 144KB). ?v=1 stamps. (Note:
+hero = the lord, throne = the empty throne — filenames match content
+per c8ef995.)
+
+GATES (all green): claim table verified (rendered === engine, Surge line
+quoted against the pull); both widths — 390 stacked, 1280 the asuras
+page at 960 with 2-col shield/key-cards/host + 3-col strengths/strategy,
+the 4 other tabs 520, no overlap/h-scroll, minis tappable; 3 CTAs real-
+button proven; the other 5 tabs + the win(45b) + the Devas codex(T47)
+render unchanged at both widths (Devas title stays gold — crimson scoped
+to .fi-asuras-page); regression landing/collection(44)/vault/mulligan/
+battle identical; parity — engine 0 lines, test.js byte-identical
+40.9/59.1, scenario 50 / venom 38 / story 48, 0 console.log / 0 console
+errors. NOT committed.
