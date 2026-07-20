@@ -433,3 +433,55 @@ card's own effect feedback matches its trimmed name. These fire only
 under wave1 (Saranyu is wave-gated), so test.js stays BYTE-IDENTICAL.
 Engine diff: 21 lines = 16 sub-only defs + 2 defs carrying name+sub
 (ushas/saranyu) + 3 Saranyu display strings; zero untraced.
+
+### R90 — ASURA TXT HONESTY CLEANUP (11 deltas; ruled 2026-07-19, T46)
+The parenthetical-purge / dev-annotation-removal pass applied to the
+Asura roster's printed card text — same rationale and house style as
+R85 v2 (Vanaras) and the Deva-wave text passes: player-facing txt
+carries NO parenthetical asides, rules-disambiguation dev notes, or
+ALL-CAPS emphasis; each mechanic reads as a plain sentence. ENGINE
+BEHAVIOR UNCHANGED — txt is display-only (T46 STEP 0 grepped all 11
+old strings: each appears only in its def, the lone second "THIS ROUND
+ONLY" hit is a code comment; zero test/logic consumers). test.js
+output BYTE-IDENTICAL pre/post; ASTRA_DMG + invariants + 40.9/59.1 +
+50/38/48 unchanged. The 11 (old → new):
+  R90.1  tamasa    "(single-turn skip, not a round Pass)" purged →
+    "The opponent skips their next turn. They may still Pass the round.
+     Triggers Chaos Surge."
+  R90.2  mahishi   "(once per game)" + "THIS ROUND ONLY" caps purged →
+    "ROUND END, once per game: copy the power of your strongest Unit
+     until round end."
+  R90.3  meghnad   "(bypasses Hero immunity)" → a plain sentence:
+    "…deal 2 damage to it directly. Hero immunity does not protect
+     against this."
+  R90.4  vritra    "(0 power contribution)" → clause:
+    "Bind an enemy Unit while Vritra remains: it contributes 0 power."
+  R90.5  ravana    "(max +5)" → ", up to +5." (curly apostrophe kept)
+  R90.6  bana      "(a Chandrahas-doubled Astra counts twice)" →
+    "; a doubled Astra counts twice."
+  R90.7  pashupata "(min 1 each)" → ", at least 1 each."
+  R90.8  nagastra  "(0 kills)" → "; at 0 power the Unit dies."
+  R90.9  mahabali  tail "Forced Pass (Tamasa) does not count." →
+    "A forced Pass does not count." (the card-name paren dropped)
+  R90.10 hiranya   "(Brahmastra overrides)" →
+    "Cannot be destroyed by any Astra except Brahmastra."
+  R90.11 holika    "Suffers +1 from every other power loss." →
+    "Every other power loss costs it 1 more." (PASSIVE: kept per the
+    def's existing keyword)
+
+### R91 — ASURA "ORIGINAL POWER" → "PRINTED POWER" NORMALIZATION (2 deltas; ruled 2026-07-19, T46)
+Normalizes the revive-at-a-fraction wording to the house term
+"printed power" (the Deva-wave precedent — R21/Dawn's Rebirth and the
+Shukracharya launch-repair already speak of "printed" power; the
+engine reads `base`, the printed value). Ruled by artifact via the
+Asura master. Display-only; behavior unchanged.
+  R91.1 shukra    "…at half its original power." → "…at half its
+    printed power."
+  R91.2 sanjivani  "…at its original power." → "…at its printed power."
+
+R90/R91 FRAME NOTE: three Asura frames already bake the ruled lines
+(Shukracharya, Mahabali, and the Rahu-adjacent set) — the engine text
+now catches up to that canon. There is NO consolidated Asura card-text
+compendium doc to re-export against (unlike the Deva wave's dedicated
+sub pull), so nothing else re-exports; the ASURA_ROSTER.md design doc
+is unaffected (it is a roster, not printed-txt authority).

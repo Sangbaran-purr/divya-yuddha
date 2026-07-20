@@ -2070,16 +2070,16 @@ const DEVA_DECK_DEF = [
 // Asura roster — docs/ASURA_ROSTER.md (GDD v2.0 §6). Mechanic: Chaos Surge (see chaosSurge()).
 const ASURA_DECK_DEF = [
   // ---- HEROES (3) ----
-  { id:'mahabali', n:'Mahabali',      sub:'The Eternal Emperor',  t:'hero', p:8, r:'L', txt:'PASSIVE: After you Pass voluntarily, the first Unit you play next round grants an immediate extra turn. Forced Pass (Tamasa) does not count.' },
-  { id:'shukra',   n:'Shukracharya',  sub:'Master of Mritasanjivani', t:'hero', p:5, r:'E', txt:'ON PLAY: Once per game, revive a fallen friendly Unit from your discard at half its original power.' },
+  { id:'mahabali', n:'Mahabali',      sub:'The Eternal Emperor',  t:'hero', p:8, r:'L', txt:'PASSIVE: After you Pass voluntarily, the first Unit you play next round grants an immediate extra turn. A forced Pass does not count.' },
+  { id:'shukra',   n:'Shukracharya',  sub:'Master of Mritasanjivani', t:'hero', p:5, r:'E', txt:'ON PLAY: Once per game, revive a fallen friendly Unit from your discard at half its printed power.' },
   { id:'rahu',     n:'Rahu',          sub:'The Shadow That Devours', t:'hero', p:4, r:'E', txt:'PASSIVE: At the start of each round, the opponent discards 1 random card from their hand.' },
   // ---- UNITS (12) ----
-  { id:'hiranya',  n:'Hiranyakashipu',sub:'The Immortal Tyrant',  t:'unit', p:7, r:'E', txt:'PASSIVE: Cannot be destroyed by any Astra (Brahmastra overrides). Only a Mantra may remove it.' },
-  { id:'ravana',   n:'Ravana',        sub:'The Ten Headed King',  t:'unit', p:7, r:'E', txt:'ON PLAY: Gains +1 power for each card in the opponent’s hand (max +5).' },
+  { id:'hiranya',  n:'Hiranyakashipu',sub:'The Immortal Tyrant',  t:'unit', p:7, r:'E', txt:'PASSIVE: Cannot be destroyed by any Astra except Brahmastra. Only a Mantra may remove it.' },
+  { id:'ravana',   n:'Ravana',        sub:'The Ten Headed King',  t:'unit', p:7, r:'E', txt:'ON PLAY: Gains +1 power for each card in the opponent’s hand, up to +5.' },
   { id:'kumbha',   n:'Kumbhakarna',   sub:'The Sleeping Giant',   t:'unit', p:8, r:'E', txt:'ON PLAY: Its power counts at once. At the start of your next turn it wakes and deals 3 damage to all enemy Units.' },
-  { id:'meghnad',  n:'Meghnad',       sub:'Son of Thunder',       t:'unit', p:6, r:'R', txt:'ON PLAY: If an enemy Hero is on the board, deal 2 damage to it directly (bypasses Hero immunity).' },
+  { id:'meghnad',  n:'Meghnad',       sub:'Son of Thunder',       t:'unit', p:6, r:'R', txt:'ON PLAY: If an enemy Hero is on the board, deal 2 damage to it directly. Hero immunity does not protect against this.' },
   { id:'kalanemi', n:'Kalanemi',      sub:'The False Saint',      t:'unit', p:5, r:'R', txt:'ON PLAY: Disguised until your next turn; when revealed, deal 2 damage to all enemy Units.' },
-  { id:'bana',     n:'Bana Asura',    sub:'The Thousand Armed',   t:'unit', p:6, r:'E', txt:'PASSIVE: Gains +1 power for each Astra played this round (a Chandrahas-doubled Astra counts twice). No limit.' },
+  { id:'bana',     n:'Bana Asura',    sub:'The Thousand Armed',   t:'unit', p:6, r:'E', txt:'PASSIVE: Gains +1 power for each Astra played this round; a doubled Astra counts twice. No limit.' },
   { id:'maricha',  n:'Maricha',       sub:'The Deceptive Demon',  t:'unit', p:3, r:'R', txt:'ON PLAY: Transform into a copy of any Unit on the board, inheriting its power.' },
   { id:'vibhishana',n:'Vibhishana',   sub:'The Righteous Asura',  t:'unit', p:4, r:'U', txt:'ON PLAY: Reveal the opponent’s hand to you for this round.' },
   { id:'tataka',   n:'Tataka',        sub:'The Forest Terror',    t:'unit', p:4, r:'U', txt:'ON PLAY: Destroy the lowest power Unit on the board — friendly or enemy.' },
@@ -2087,11 +2087,11 @@ const ASURA_DECK_DEF = [
   { id:'berserker',n:'Asura Berserker',sub:'Chaos Foot Soldier',  t:'unit', p:3, r:'C', txt:'PASSIVE: Gains +1 power each time any Astra is played this round by either player.' },
   { id:'naraka',   n:'Narakasura',    sub:'Lord of Darkness',     t:'unit', p:5, r:'R', txt:'ON PLAY: Steal 1 power from every enemy Unit and add it to this Unit.' },
   // ---- ASTRAS (3) ----
-  { id:'pashupata',n:'Pashupatastra', sub:'Shiva’s Wrath',   t:'astra', p:0, r:'M', dmgAstra:true, txt:'Deal damage equal to your total board power to ALL enemy Units, split evenly (min 1 each). Triggers Chaos Surge.' },
-  { id:'nagastra', n:'Nagastra',      sub:'Serpent Weapon',       t:'astra', p:0, r:'R', txt:'Apply a Venom Token to ALL enemy Units. Venom deals -1 power at round end (0 kills). Triggers Chaos Surge.' },
-  { id:'tamasa',   n:'Tamasa',        sub:'The Darkness Weapon',  t:'astra', p:0, r:'R', txt:'The opponent must skip their next turn (single-turn skip, not a round Pass). Triggers Chaos Surge.' },
+  { id:'pashupata',n:'Pashupatastra', sub:'Shiva’s Wrath',   t:'astra', p:0, r:'M', dmgAstra:true, txt:'Deal damage equal to your total board power to ALL enemy Units, split evenly, at least 1 each. Triggers Chaos Surge.' },
+  { id:'nagastra', n:'Nagastra',      sub:'Serpent Weapon',       t:'astra', p:0, r:'R', txt:'Apply a Venom Token to ALL enemy Units. Venom deals -1 power at round end; at 0 power the Unit dies. Triggers Chaos Surge.' },
+  { id:'tamasa',   n:'Tamasa',        sub:'The Darkness Weapon',  t:'astra', p:0, r:'R', txt:'The opponent skips their next turn. They may still Pass the round. Triggers Chaos Surge.' },
   // ---- MANTRAS (2) ----
-  { id:'sanjivani',n:'Sanjivani Corruption',sub:'Dark Revival',   t:'mantra', p:0, r:'R', txt:'Steal the opponent’s last destroyed Unit this round; place it on your board at its original power.' },
+  { id:'sanjivani',n:'Sanjivani Corruption',sub:'Dark Revival',   t:'mantra', p:0, r:'R', txt:'Steal the opponent’s last destroyed Unit this round; place it on your board at its printed power.' },
   { id:'ahamkara', n:'Ahamkara',      sub:'The Ego Weapon',       t:'mantra', p:0, r:'U', txt:'Choose a friendly Unit: double its current power until round end, then it is destroyed regardless.' },
   // ---- ARTIFACTS (2) ----
   { id:'tripura',  n:'Tripura',       sub:'The Three Demon Cities',t:'artifact', p:0, r:'M', txt:'PASSIVE: All your Units gain +1 power at the start of every turn. Ends the instant any Astra is played by either player.' },
@@ -2104,7 +2104,7 @@ const ASURA_DECK_DEF = [
   // ---- WAVE 1 (batch 4 — the passive-aura tier) ----
   { id:'shumbha', n:'Shumbha',          sub:'The Bonded Demon',     t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: +1 power while Nishumbha is on your board.' },
   { id:'nishumbha',n:'Nishumbha',       sub:'The Bonded Demon',     t:'unit', p:4, r:'R', wave:1, txt:'PASSIVE: +1 power while Shumbha is on your board.' },
-  { id:'holika',  n:'Holika',           sub:'The Unburnt',          t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: Immune to Astra damage. Suffers +1 from every other power loss.' },
+  { id:'holika',  n:'Holika',           sub:'The Unburnt',          t:'unit', p:5, r:'R', wave:1, txt:'PASSIVE: Immune to Astra damage. Every other power loss costs it 1 more.' },
   // ---- WAVE 1 (batch 5 — the draw/discard tier) ----
   { id:'bloodoath',n:'Rudhira Bali',    sub:'Pact of the Pyre',     t:'mantra', p:0, r:'U', wave:1, txt:'Destroy your lowest-power Unit: draw 1 card.' },   // R67 (design round 1): draw 2→1 (card-engine haircut; +4.9 Δbase, nearly-free price). ART GATE: Asuras_Mantra_BloodOath_rUncommon.
   // ---- WAVE 1 (batch 6 — the debuff/price tier) ----
@@ -2124,11 +2124,11 @@ const ASURA_DECK_DEF = [
   { id:'andhaka',  n:'Andhaka',         sub:'The Blind Demon',      t:'unit', p:6, r:'R', wave:1, txt:'PASSIVE: Cannot be targeted by Astras while another friendly Unit is on the board.' },
   { id:'vidyutastra',n:'Vidyutastra',   sub:'The Lightning Weapon', t:'astra', p:0, r:'R', wave:1, dmgAstra:true, txt:'Deal 2 damage to an enemy Unit. Triggers Chaos Surge twice.' },
   // ---- WAVE 1 (batch 16 — the artifact/counter tier) ----
-  { id:'vritra',   n:'Vritra',          sub:'The Withholder',       t:'hero', p:6, r:'L', wave:1, txt:'ON PLAY: Bind an enemy Unit (0 power contribution) while Vritra remains.' },   // R65 P8→P7; R80 (design round 3, CONDITIONAL — ARMED: Asura still +5.3 after rung one): P7→P6. Honestly labeled ladder insurance (he is +2.2, sub-noise). Ability unchanged. ART GATE: Asuras_Hero_Vritra_P6_rLegendary.
+  { id:'vritra',   n:'Vritra',          sub:'The Withholder',       t:'hero', p:6, r:'L', wave:1, txt:'ON PLAY: Bind an enemy Unit while Vritra remains: it contributes 0 power.' },   // R65 P8→P7; R80 (design round 3, CONDITIONAL — ARMED: Asura still +5.3 after rung one): P7→P6. Honestly labeled ladder insurance (he is +2.2, sub-noise). Ability unchanged. ART GATE: Asuras_Hero_Vritra_P6_rLegendary.
   { id:'brahmadanda',n:'Brahmadanda',   sub:'Staff of Brahma',      t:'astra', p:0, r:'E', wave:1, txt:'Negate the next enemy Astra this round.' },
   { id:'ironcrucible',n:'The Iron Crucible',sub:'Forge of the Price',t:'artifact', p:0, r:'M', wave:1, txt:'ROUND END: your Units that lost power this round regain 1.' },
   // ---- WAVE 1 (batch 19 — deferred heroes) ----
-  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:5, r:'L', wave:1, txt:'ROUND END (once per game): become a copy of the strongest friendly Unit’s power THIS ROUND ONLY.' },   // R64 P7→P6; R66 once-per-game gain-only; R72 THIS-ROUND-ONLY revert; R76 (design round 3, the closer): P6→P5 — with the carry dead her printed power is what she scores every non-spike round; the only above-noise Asura line. Ability unchanged. ART GATE (4th/final frame): Asuras_Hero_Mahishi_P5_rLegendary.
+  { id:'mahishi',  n:'Mahishi',          sub:'The Buffalo Queen',    t:'hero', p:5, r:'L', wave:1, txt:'ROUND END, once per game: copy the power of your strongest Unit until round end.' },   // R64 P7→P6; R66 once-per-game gain-only; R72 THIS-ROUND-ONLY revert; R76 (design round 3, the closer): P6→P5 — with the carry dead her printed power is what she scores every non-spike round; the only above-noise Asura line. Ability unchanged. ART GATE (4th/final frame): Asuras_Hero_Mahishi_P5_rLegendary.
 ];
 
 // Generic faction registry. Add factions here; mkPlayer selects by key.
