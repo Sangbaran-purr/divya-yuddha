@@ -6089,12 +6089,10 @@ function fiRenderVanaras(){
   });
   node.append(strat);
   // §7 GALLERY — THE DEVOTED HOST, 44 CARDS (no hidden slots, no "of 66", live card.txt on inspect)
-  node.append(fiSecTitle('The Devoted Host'));
-  const order=fiGalleryOrder(F);
-  node.append(fh('div',{class:'fi-vgal-count'}, order.length+' Cards'));
-  const grid=fh('div',{class:'fi-gallery'});
-  order.forEach(c=> grid.append(fiThumb(c, F, 'fi-thumb')));
-  node.append(grid);
+  node.append(fiSecTitle('The Devoted Host'));   // T49b: T47/T48 redirect pattern — curated launch six + CTA, NOT an inline 44-thumb gallery
+  node.append(fh('div',{class:'fi-vgal-count'}, DECKS[F].length+' Cards'));   // doc-ruled "44 CARDS"; no "of 66", no reveal count, no sealed slots
+  node.append(fh('div',{class:'fic-cards fic-host'}, ...['hanuman','warrior','neela','jambavan','gandiva','ramasignet'].map(id=>fiCMtxt(F,id))));   // all LAUNCH — no sealed wave art in the host strip
+  node.append(fh('button',{class:'fi-dcta', onclick:()=>{ colFaction='vanaras'; showCollection(); }}, 'View Full Collection ›'));
   // §8 SIGNATURE SYNERGIES (4)
   node.append(fiSecTitle('Signature Synergies'));
   const syn=fh('div',{class:'fi-dsyn'});
