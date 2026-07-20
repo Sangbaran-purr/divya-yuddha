@@ -751,8 +751,116 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .fi-back{ position:fixed; top:12px; left:12px; z-index:3; width:40px; height:40px; border-radius:9px; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.2); color:var(--gold); font-size:22px; line-height:1; cursor:pointer; padding:0; display:flex; align-items:center; justify-content:center; }
 .fi-back:active{ transform:scale(.92); }
 .fi-col{ position:relative; z-index:1; max-width:520px; margin:0 auto; padding:54px 16px 40px; }
+/* T47 THE WIDEN: at >=1024 the fi column widens to 960 for the Devas codex page. The 5 untouched tabs (built for 520)
+   keep their 520 layout centered inside the wide column — only .fi-devas-page uses the full width. Phone unchanged. */
+@media(min-width:1024px){
+  .fi-col{ max-width:960px; }
+  #fi-body > *:not(.fi-devas-page){ max-width:520px; margin-left:auto; margin-right:auto; }
+}
 .fi-tabs{ display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px; margin-bottom:16px; scrollbar-width:none; }
 .fi-tabs::-webkit-scrollbar{ display:none; }
+
+/* ═══ T47 — DEVAS CODEX PAGE ═══ */
+.fi-devas-page{ color:var(--ink); }
+.fi-dsec-title{ font-family:Cinzel,serif; font-size:13px; letter-spacing:.2em; color:var(--gold); text-transform:uppercase;
+  text-align:center; margin:22px 0 12px; text-shadow:0 2px 8px rgba(0,0,0,.9); }
+/* §1 hero */
+.fi-dhero{ position:relative; border-radius:14px; overflow:hidden; background:center/cover no-repeat #0a0704;
+  min-height:300px; display:flex; align-items:flex-end; border:1px solid var(--gold-dim-25); }
+.fi-dhero-scrim{ position:absolute; inset:0; background:linear-gradient(180deg, rgba(6,4,2,.15) 0%, rgba(6,4,2,.55) 55%, rgba(6,4,2,.92) 100%); }
+.fi-dhero-in{ position:relative; z-index:1; padding:18px 16px; width:100%; }
+.fi-dhero-eyebrow{ font-family:Cinzel,serif; font-size:9px; letter-spacing:.42em; color:var(--gold-2); text-transform:uppercase; }
+.fi-dhero-title{ font-family:Cinzel,serif; font-size:34px; letter-spacing:.16em; color:var(--gold-bright); line-height:1; margin:3px 0 8px; text-shadow:0 2px 12px rgba(0,0,0,.95); }
+.fi-dhero-intro{ font-family:'Crimson Pro',Georgia,serif; font-size:13px; line-height:1.5; color:var(--parchment); max-width:640px; text-shadow:0 1px 6px rgba(0,0,0,.9); }
+.fi-dchips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.fi-dchip{ font-family:Cinzel,serif; font-size:9px; letter-spacing:.06em; color:var(--gold-hi); text-transform:uppercase;
+  background:rgba(0,0,0,.5); border:1px solid var(--gold-dim-25); border-radius:20px; padding:6px 12px; }
+.fi-dchip b{ color:var(--gold-2); font-weight:400; }
+.fi-dpillars{ display:flex; gap:8px; margin-top:12px; }
+.fi-dpillar{ flex:1 1 0; text-align:center; background:rgba(0,0,0,.4); border:1px solid var(--gold-dim-25); border-radius:10px; padding:12px 6px; }
+.fi-dpillar-ic{ font-size:24px; line-height:1; color:var(--gold-hi); }
+.fi-dpillar-img{ width:26px; height:26px; object-fit:contain; }
+.fi-dpillar-nm{ font-family:Cinzel,serif; font-size:10px; letter-spacing:.14em; color:var(--gold-hi); text-transform:uppercase; margin-top:6px; }
+/* shared panel */
+.fi-dpanel{ background:rgba(0,0,0,.5); backdrop-filter:blur(6px); border:1px solid var(--gold-dim-25); border-radius:12px; padding:16px; margin-bottom:12px; }
+.fi-dlist{ list-style:none; margin:0; padding:0; }
+.fi-dlist li{ position:relative; padding-left:16px; margin-bottom:7px; font-family:'Crimson Pro',Georgia,serif; font-size:12.5px; line-height:1.45; color:var(--parchment); }
+.fi-dlist li::before{ content:'◆'; position:absolute; left:0; top:1px; font-size:8px; color:var(--gold-2); }
+/* §2 shield */
+.fi-dshield{ display:flex; flex-direction:column; gap:14px; }
+.fi-dshield-art{ border-radius:10px; overflow:hidden; border:1px solid var(--gold-dim-25); }
+.fi-dshield-art img{ width:100%; height:auto; display:block; }
+.fi-dlead{ font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:14px; color:var(--gold-hi); margin:0 0 10px; }
+.fi-dsub{ font-family:Cinzel,serif; font-size:10px; letter-spacing:.16em; color:var(--gold-2); text-transform:uppercase; margin-bottom:8px; }
+/* T41b codex mini */
+.fic-mini{ position:relative; width:100%; aspect-ratio:5/7; border-radius:9px; overflow:hidden; cursor:pointer;
+  background:linear-gradient(#1a1206,#0e0a04); border:1px solid var(--gold-dim-25); }
+.fic-art{ position:absolute; top:0; left:0; width:100%; height:65%; overflow:hidden; }
+.fic-art img{ width:100%; height:100%; object-fit:cover; object-position:top center; opacity:0; transition:opacity .3s ease; }
+.fic-art img.on{ opacity:1; }
+.fic-art.fic-pending{ display:flex; align-items:center; justify-content:center; padding:4px; text-align:center;
+  font-family:Cinzel,serif; font-size:8px; color:var(--gold-hi); background:radial-gradient(circle at 50% 40%, rgba(22,15,7,.9), rgba(6,4,2,.95)); }
+.fic-band{ position:absolute; left:0; right:0; top:65%; bottom:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:2px 4px; text-align:center; background:linear-gradient(180deg, rgba(24,15,6,.96), rgba(4,3,1,.98)); border-top:1px solid rgba(232,200,116,.22); }
+.fic-nm{ font-family:Cinzel,serif; font-size:8px; letter-spacing:.02em; color:var(--gold-hi); line-height:1.12; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.fic-epi{ font-size:6px; color:var(--parchment); opacity:.7; font-style:italic; line-height:1.1; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.fic-chip{ position:absolute; top:4px; right:4px; min-width:17px; height:17px; padding:0 3px; border-radius:9px; display:flex; align-items:center; justify-content:center;
+  font-family:Cinzel,serif; font-size:10px; font-weight:700; color:var(--gold-bright); background:radial-gradient(circle at 40% 34%, #2b2110, #0e0904); border:1px solid var(--gold-2); }
+/* mini + verbatim txt */
+.fic-cards{ display:flex; flex-direction:column; gap:10px; }
+.fic-card{ display:flex; gap:10px; align-items:flex-start; background:rgba(0,0,0,.4); border:1px solid var(--gold-dim-25); border-radius:10px; padding:10px; }
+.fic-card .fic-mini{ flex:0 0 66px; width:66px; }
+.fic-txt{ flex:1 1 auto; min-width:0; }
+.fic-txt-nm{ font-family:Cinzel,serif; font-size:12px; letter-spacing:.04em; color:var(--gold-bright); margin-bottom:3px; }
+.fic-txt p{ font-family:'Crimson Pro',Georgia,serif; font-size:12px; line-height:1.45; color:var(--parchment); margin:0; }
+.fic-trio{ display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-top:10px; }
+/* §3 strengths/weaknesses + altar */
+.fi-dsw{ display:flex; flex-direction:column; gap:12px; }
+.fi-dsw-h{ font-family:Cinzel,serif; font-size:12px; letter-spacing:.14em; text-transform:uppercase; margin-bottom:8px; }
+.fi-dstr .fi-dsw-h{ color:var(--green); } .fi-dstr{ border-color:var(--green-dim); }
+.fi-dwk .fi-dsw-h{ color:var(--crimson); } .fi-dwk{ border-color:var(--crimson-dim); }
+.fi-daltar{ border-radius:12px; overflow:hidden; border:1px solid var(--gold-dim-25); }
+.fi-daltar img{ width:100%; height:auto; display:block; }
+/* §4 strategy */
+.fi-dstrats{ display:flex; flex-direction:column; gap:12px; }
+.fi-dstrat{ position:relative; }
+.fi-dstrat-n{ position:absolute; top:12px; right:14px; font-family:Cinzel,serif; font-size:30px; color:rgba(232,200,116,.16); line-height:1; }
+.fi-dstrat-h{ font-family:Cinzel,serif; font-size:13px; letter-spacing:.08em; color:var(--gold-bright); text-transform:uppercase; }
+.fi-dstrat-cap{ font-family:'Crimson Pro',Georgia,serif; font-size:12.5px; line-height:1.45; color:var(--parchment); margin:6px 0 0; }
+/* §5 host */
+.fic-host{ display:grid; grid-template-columns:1fr; gap:10px; }
+.fi-dcta{ display:block; width:100%; margin:12px 0 0; min-height:46px; border-radius:9px; cursor:pointer;
+  font-family:Cinzel,serif; font-size:12px; letter-spacing:.1em; text-transform:uppercase;
+  background:linear-gradient(180deg,rgba(43,28,10,.85),rgba(22,13,5,.9)); border:1px solid var(--gold-2); color:var(--gold-hi); }
+.fi-dcta.primary{ background:linear-gradient(180deg,#4a3210,#241505); color:var(--gold-bright); }
+.fi-dcta.locked{ opacity:.55; border-color:var(--gold-dim-25); color:var(--parchment); }
+/* §6 synergies */
+.fi-dsyn{ display:flex; flex-direction:column; gap:12px; }
+.fi-dsyn-h{ font-family:Cinzel,serif; font-size:12px; letter-spacing:.1em; color:var(--gold-bright); text-transform:uppercase; margin-bottom:10px; }
+.fi-dsyn-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.fi-dsyn-row .fic-mini{ flex:0 0 60px; width:60px; }
+.fi-dplus{ color:var(--gold-2); font-size:16px; }
+.fi-darrow{ color:var(--gold-2); font-size:18px; margin:0 2px; }
+.fi-dsyn-res{ flex:1 1 140px; font-family:'Crimson Pro',Georgia,serif; font-style:italic; font-size:12px; color:var(--gold-hi); }
+/* §7 matchup */
+.fi-dmatch-row{ display:grid; grid-template-columns:96px 1fr; gap:6px 10px; padding:8px 0; border-bottom:1px solid rgba(232,200,116,.12); }
+.fi-dmatch-row:last-child{ border-bottom:0; }
+.fi-dmatch-k{ font-family:Cinzel,serif; font-size:10px; letter-spacing:.06em; color:var(--gold-2); text-transform:uppercase; }
+.fi-dmatch-v{ font-family:'Crimson Pro',Georgia,serif; font-size:12px; line-height:1.4; color:var(--parchment); }
+/* §8 closing */
+.fi-dclosing{ text-align:center; font-family:Cinzel,serif; font-style:italic; font-size:15px; letter-spacing:.06em; color:var(--gold-bright); margin:22px 0 4px; text-shadow:0 2px 10px rgba(0,0,0,.9); }
+@media(min-width:1024px){
+  .fi-dhero{ min-height:360px; }
+  .fi-dhero-title{ font-size:46px; }
+  .fi-dshield{ flex-direction:row; align-items:center; }
+  .fi-dshield-art{ flex:0 0 44%; }
+  .fic-cards{ display:grid; grid-template-columns:1fr 1fr; }
+  .fic-host{ grid-template-columns:repeat(3,1fr); }
+  .fi-dsw{ flex-direction:row; align-items:stretch; }
+  .fi-dsw > *{ flex:1 1 0; }
+  .fi-dstrats{ flex-direction:row; } .fi-dstrat{ flex:1 1 0; }
+  .fi-dctas{ display:flex; gap:12px; } .fi-dctas .fi-dcta{ flex:1 1 0; }
+}
 .fi-tab{ flex:0 0 auto; padding:9px 13px; border-radius:9px; background:rgba(0,0,0,.45); backdrop-filter:blur(5px); border:1px solid rgba(255,255,255,.16); color:var(--ink-dim); font-family:Cinzel,serif; font-size:11px; letter-spacing:.5px; white-space:nowrap; cursor:pointer; }
 .fi-tab.sel{ border-color:var(--gold); color:var(--gold); background:rgba(60,44,12,.5); }
 .fi-idhead{ text-align:center; margin-bottom:16px; }
@@ -5648,6 +5756,131 @@ function fiRenderWin(){
   node.append(fh('div',{class:'htw-closing'}, 'Discipline is power. Patience is victory.'));
   return node;
 }
+/* ═══ TASK 47 — DEVAS CODEX PAGE. Authority: docs/DEVAS_CODEX_CONTENT_v1.md. Claim tags: [PULLED]=engine-verbatim,
+   [VERIFY]=STEP-0-confirmed engine truth, [ED]=editorial. Every card mini is the T41b component (art crop + band);
+   every txt shown is the LIVE engine txt (verbatim by construction, pulled from DECKS.devas). ═══ */
+function fiDDef(id){ return DECKS.devas.find(c=>c.id===id); }
+function fiCM(id){                               // T41b codex mini: art crop + name band + power chip, tappable → inspect
+  const c=fiDDef(id); if(!c) return fh('div',null);
+  const m=fh('div',{class:'fic-mini', onclick:()=>fiOpenInspectCard('devas', c)});
+  const art=fh('div',{class:'fic-art'});
+  const img=new Image(); img.alt=c.n; img.loading='lazy';
+  img.onload=()=>img.classList.add('on'); img.onerror=()=>{ art.classList.add('fic-pending'); art.textContent=c.n; };
+  img.src=fiThumbSrc(c,'devas'); art.append(img); m.append(art);
+  m.append(fh('div',{class:'fic-band'}, fh('div',{class:'fic-nm'}, c.n), c.sub?fh('div',{class:'fic-epi'}, c.sub):null));
+  if(c.p>0) m.append(fh('div',{class:'fic-chip'}, String(c.p)));
+  return m;
+}
+function fiCMtrio(ids){ return fh('div',{class:'fic-trio'}, ...ids.map(fiCM)); }
+function fiCMtxt(id){                            // mini + LIVE verbatim engine txt (§2 key cards, §5 host)
+  const c=fiDDef(id);
+  return fh('div',{class:'fic-card'}, fiCM(id),
+    fh('div',{class:'fic-txt'}, fh('div',{class:'fic-txt-nm'}, c.n), fh('p',null, c.txt)));
+}
+function fiSecTitle(t){ return fh('div',{class:'fi-dsec-title'}, t); }
+function fiRenderDevas(){
+  const GOLD='#E8C874', node=fh('div',{class:'fi-devas-page'});
+  // ── §1 HERO BANNER ──
+  const hero=fh('div',{class:'fi-dhero'});
+  hero.style.backgroundImage="url('assets/img/devas_codex_hero.png?v=1')";
+  hero.append(fh('div',{class:'fi-dhero-scrim'}),
+    fh('div',{class:'fi-dhero-in'},
+      fh('div',{class:'fi-dhero-eyebrow'}, 'THE SHINING ONES'),
+      fh('div',{class:'fi-dhero-title'}, 'DEVAS'),
+      fh('p',{class:'fi-dhero-intro'}, 'Born of light and bound by Dharma, the Devas uphold order and protect the realms. Their strength is not in brute force, but in unity, healing, and the endurance to outlast the darkest storm.'),
+      fh('div',{class:'fi-dchips'},
+        fh('div',{class:'fi-dchip'}, fh('b',null,'Difficulty'),' Beginner'),
+        fh('div',{class:'fi-dchip'}, fh('b',null,'Playstyle'),' Protection and Endurance'))));
+  node.append(hero);
+  node.append(fh('div',{class:'fi-dpillars'},
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic'}, '☀'), fh('div',{class:'fi-dpillar-nm'}, 'Order')),
+    fh('div',{class:'fi-dpillar'}, fh('img',{class:'fi-dpillar-img', src:'assets/img/icon_shield.png?v=1', alt:''}), fh('div',{class:'fi-dpillar-nm'}, 'Protection')),
+    fh('div',{class:'fi-dpillar'}, fh('div',{class:'fi-dpillar-ic'}, '❁'), fh('div',{class:'fi-dpillar-nm'}, 'Renewal'))));
+  // ── §2 DHARMA SHIELD ──
+  node.append(fiSecTitle('Signature Mechanic — Dharma Shield'));
+  const shield=fh('section',{class:'fi-dpanel fi-dshield'});
+  shield.append(fh('div',{class:'fi-dshield-art'}, fh('img',{src:'assets/img/devas_codex_shield.png?v=1', alt:''})));
+  const sbody=fh('div',{class:'fi-dshield-body'});
+  sbody.append(fh('p',{class:'fi-dlead'}, 'Dharma Shield is the divine favor that guards your chosen Units from harm.'),
+    fh('div',{class:'fi-dsub'}, 'How Dharma Shield works'));
+  const ul=fh('ul',{class:'fi-dlist'});
+  [ // [VERIFY] lines = STEP-0 engine truth (astra target-prevention + cap 1); [PULLED] = engine txt
+   'A shielded Unit cannot be targeted by the opponent’s single-target Astras. Board-wide Astras still strike it.',
+   'By default you may hold one Dharma Shield at a time.',
+   'Dharma Kavacha expands your protection: Dharma Shield protects TWO Units instead of one.',
+   'Brahmastra overrides all shields and immunities.'
+  ].forEach(t=>ul.append(fh('li',null,t)));
+  sbody.append(ul); shield.append(sbody); node.append(shield);
+  node.append(fiSecTitle('Key Cards'));
+  node.append(fh('div',{class:'fic-cards'}, fiCMtxt('kavacha'), fiCMtxt('vedikeeper'), fiCMtxt('airavatacalf')));
+  // ── §3 STRENGTHS / WEAKNESSES (altar divider) ──
+  node.append(fiSecTitle('Strengths & Weaknesses'));
+  const sw=fh('div',{class:'fi-dsw'});
+  const mk=(cls,title,items)=>{ const col=fh('div',{class:'fi-dpanel '+cls}, fh('div',{class:'fi-dsw-h'}, title));
+    const l=fh('ul',{class:'fi-dlist'}); items.forEach(t=>l.append(fh('li',null,t))); col.append(l); return col; };
+  sw.append(mk('fi-dstr','Strengths',[
+    'Protected Units force inefficient answers.',
+    'Healing and restoration keep your board alive.',
+    'Revival recovers advantage you thought was lost.',
+    'Long-round endurance: your board grows as the round drags on.',
+    'Protection of key engines keeps your value flowing.']));
+  sw.append(fh('div',{class:'fi-daltar'}, fh('img',{src:'assets/img/devas_codex_altar.png?v=1', alt:''})));
+  sw.append(mk('fi-dwk','Weaknesses',[
+    'Slower opening tempo.',
+    'Protection spent on the wrong target is protection wasted.',
+    'Less explosive than the Asuras.',
+    'Vulnerable once shields are exhausted.',
+    'Naga Venom pressures protected boards — the Devas’ hardest matchup (~40:60 at launch).']));
+  node.append(sw);
+  // ── §4 CORE STRATEGY ──
+  node.append(fiSecTitle('Core Strategy — How Devas Win'));
+  const strat=fh('div',{class:'fi-dstrats'});
+  [['Preserve the Important Unit','Shield the engine that matters, not the biggest body.',['kavacha','vedikeeper','ribhu']],
+   ['Win Through Accumulation','Healing, revival and permanent growth reward patient, disciplined play.',['pavamana','gayatri','dawnsentinel']],
+   ['Force Inefficient Removal','Make your opponent spend multiple answers on a single protected target.',['indra','soldier','vigilrakshak']]
+  ].forEach(([t,cap,ids],i)=>{
+    strat.append(fh('section',{class:'fi-dpanel fi-dstrat'},
+      fh('div',{class:'fi-dstrat-n'}, String(i+1)),
+      fh('div',{class:'fi-dstrat-h'}, t), fh('p',{class:'fi-dstrat-cap'}, cap), fiCMtrio(ids)));
+  });
+  node.append(strat);
+  // ── §5 THE CELESTIAL HOST ──
+  node.append(fiSecTitle('The Celestial Host'));
+  node.append(fh('div',{class:'fic-cards fic-host'}, ...['indra','surya','brihaspati','vayu','vajra','gayatri'].map(fiCMtxt)));
+  node.append(fh('button',{class:'fi-dcta', onclick:()=>{ colFaction='devas'; showCollection(); }}, 'View Full Collection ›'));
+  // ── §6 SIGNATURE SYNERGIES ──
+  node.append(fiSecTitle('Signature Synergies'));
+  const syn=fh('div',{class:'fi-dsyn'});
+  [['The Unbreakable Wall',['indra','kavacha'],'Your key unit becomes a fortress.'],
+   ['Two Shields, Not One',['kavacha','ribhu'],'Force your opponent to over-commit on removal.'],
+   ['Heal and Rise Again',['ashwini','gayatri'],'Restore your forces and bring them back stronger.'],
+   ['Endurance Over Time',['dawnbanner','dawnsentinel'],'Continuous growth wins long rounds.']
+  ].forEach(([t,ids,res])=>{
+    const p=fh('section',{class:'fi-dpanel fi-dsyn-p'}, fh('div',{class:'fi-dsyn-h'}, t));
+    const row=fh('div',{class:'fi-dsyn-row'});
+    ids.forEach((id,i)=>{ if(i>0) row.append(fh('span',{class:'fi-dplus'}, '+')); row.append(fiCM(id)); });
+    row.append(fh('span',{class:'fi-darrow'}, '→'), fh('div',{class:'fi-dsyn-res'}, res));
+    p.append(row); syn.append(p);
+  });
+  node.append(syn);
+  // ── §7 MATCHUP GUIDANCE ──
+  node.append(fiSecTitle('Matchup Guidance'));
+  const mg=fh('section',{class:'fi-dpanel fi-dmatch'});
+  [['Strong into','Attrition decks that rely on single big threats — your shields and healing outlast one-answer plans.'],
+   ['Difficult against','Nagas — Venom bypasses the shield game and pressures every protected board (~40:60 at launch).'],
+   ['Protect','Your engines — Indra, Brihaspati, healers and revival targets generate value over time.'],
+   ['Remove first','Enemy healers and engines that generate value every turn.'],
+   ['Beginner tip','Play patiently. Every shield and heal adds up. You do not need the biggest turn — you need the last one.']
+  ].forEach(([k,v])=>mg.append(fh('div',{class:'fi-dmatch-row'}, fh('span',{class:'fi-dmatch-k'}, k), fh('span',{class:'fi-dmatch-v'}, v))));
+  node.append(mg);
+  // ── §8 CLOSING + CTAs ──
+  node.append(fh('div',{class:'fi-dclosing'}, 'The Devas do not overwhelm the battlefield. They make it endure.'));
+  node.append(fh('div',{class:'fi-dctas'},
+    fh('button',{class:'fi-dcta', onclick:()=>{ colFaction='devas'; showCollection(); }}, 'View Deva Collection'),
+    fh('button',{class:'fi-dcta locked', onclick:()=>toastMute('Coming with the Wave')}, 'Build a Deva Deck'),
+    fh('button',{class:'fi-dcta primary', onclick:()=>fiSelectTab('asuras')}, 'Continue to Asuras ›')));
+  return node;
+}
 function fiRenderFaction(faction){
   const C=FI_CONTENT[faction], hex=FI_FAC_HEX[faction], node=fh('div',null);
   node.append(fh('div',{class:'fi-idhead'},
@@ -5737,7 +5970,7 @@ function fiRenderRealms(){
 const fiTabNodes = {};
 function fiSelectTab(tab){
   document.querySelectorAll('#fi-tabs .fi-tab').forEach(b=> b.classList.toggle('sel', b.dataset.tab===tab));
-  if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : fiRenderFaction(tab);
+  if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : tab==='devas' ? fiRenderDevas() : fiRenderFaction(tab);   // T47: Devas gets the dedicated codex page
   const body=$('fi-body'); body.innerHTML=''; body.append(fiTabNodes[tab]);
   $('factionintro').scrollTop=0;
 }

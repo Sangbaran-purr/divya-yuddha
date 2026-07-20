@@ -723,3 +723,69 @@ the other five tabs render unchanged; collection roundel row intact (6
 roundels); landing/vault/mulligan/battle identical; parity — engine 0
 lines, test.js byte-identical 40.9/59.1, scenario 50 / venom 38 /
 story 48, 0 console.log / 0 console errors. NOT committed.
+
+## AMENDMENT A7 — DEVAS CODEX PAGE + FI-COL WIDEN (ruled 2026-07-20, T47)
+Authority: docs/DEVAS_CODEX_CONTENT_v1.md. The Devas tab of the
+Factions & Realms page (#factionintro, data-tab="devas") now renders
+the dedicated Devas codex (fiRenderDevas) — §1 hero + chips + pillars,
+§2 Dharma Shield panel, §3 strengths/altar/weaknesses, §4 core
+strategy, §5 the Celestial Host, §6 signature synergies, §7 matchup
+guidance, §8 closing + CTAs. Every card render is the T41b codex mini
+(.fic-mini: art crop 65% + name band + power chip, tappable → inspect);
+every txt shown is the LIVE engine txt (verbatim by construction,
+pulled from DECKS.devas). The old fiRenderFaction('devas') content is
+replaced; the other 5 tabs are untouched.
+
+THE WIDEN (ruled): .fi-col max-width 520 → 960 at >=1024; phone
+unchanged. The 5 tabs built for 520 (How to win, Asuras, Vanaras,
+Nagas, Realms) are constrained to 520 CENTERED inside the wide column
+via `#fi-body > *:not(.fi-devas-page){ max-width:520px; margin:auto }`
+(inside the >=1024 media) — only the Devas page uses the full 960, so
+no untouched content reflows. Measured at 1280: fi-col 960, devas page
+928, each other tab 520, no h-overflow.
+
+CLAIM TABLE (final rendered text ↔ engine):
+  [VERIFY-1] shield-block — draft "ignores the next source of damage;
+    the shield breaks instead" was the WRONG mechanic. STEP 0 pulled:
+    a shielded Unit is `astraProtected` → it drops out of every
+    single-target Astra's targetSpec (untargetable; e.g. Agneyastra/
+    Gandiva/Vajra → 0 targets), AoE Astras iterate opp.units directly
+    and PIERCE, Venom drain is unaffected, shields are sticky per-round
+    (no absorb/break). FINAL rendered line: "A shielded Unit cannot be
+    targeted by the opponent's single-target Astras. Board-wide Astras
+    still strike it." (a [VERIFY] resolution within protocol — the
+    shield exists, described precisely; NOT a STOP.)
+  [VERIFY-2] shield-limit — `shieldCap(pl)` = 1 by default (Kavacha →
+    2). FINAL: "By default you may hold one Dharma Shield at a time." ✓
+  [PULLED] Dharma Kavacha "…protects TWO Units instead of one." =
+    kavacha def txt verbatim ✓ (rendered mini txt === engine).
+  [PULLED] "Brahmastra overrides all shields and immunities." =
+    brahmastra def txt fragment ✓.
+  [PULLED] §5 six host txts (indra/surya/brihaspati/vayu/vajra/gayatri)
+    = live DECKS.devas txt, verbatim ✓.
+  [PULLED-baseline] Naga "~40:60 at launch" = the launch anchor
+    Deva-vs-Naga 40.9/59.1 ✓.
+  [ED] intro / chips / strengths-weaknesses phrasing / strategy /
+    synergy results / closing — editorial voice, no engine claim.
+
+CTA WIRING (all proven through real buttons): §5 [View Full
+Collection] and §8 [View Deva Collection] → colFaction='devas';
+showCollection() (lands on the Devas collection tab; the collection's
+own BACK returns to the landing). §8 [Build a Deva Deck] →
+visible-locked, toasts "Coming with the Wave" (no nav). §8 [Continue
+to Asuras] → fiSelectTab('asuras') (tab switch). Every card mini →
+fiOpenInspectCard('devas', c) (the existing FI inspect).
+
+ASSETS — 3 files, optimized in place: devas_codex_hero (1920×819 →
+1600×682 JPEG-in-png 273KB), devas_codex_altar (1536×1024 → 1200×800
+234KB), devas_codex_shield (1254² 377KB). ?v=1 stamps.
+
+GATES (all green): claim table verified (rendered === engine); both
+widths — 390 single-column stacked, 1280 the devas page at 960 with
+2-col shield/key-cards/host/strengths/strategy, the 5 other tabs at
+520, no overlap/h-scroll, minis tappable; all 3 CTAs real-button
+proven; the other 5 tabs + the win(45b) tab render unchanged at BOTH
+phone and 960; regression landing/collection(44)/vault/mulligan/battle
+identical; parity — engine 0 lines, test.js byte-identical 40.9/59.1,
+scenario 50 / venom 38 / story 48, 0 console.log / 0 console errors.
+NOT committed.
