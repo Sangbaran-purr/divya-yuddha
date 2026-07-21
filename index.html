@@ -412,32 +412,42 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .lpq-badge{ flex:0 0 auto; min-width:20px; height:20px; padding:0 6px; border-radius:11px; background:var(--gold); color:#1a1204; font-family:Cinzel,serif; font-weight:700; font-size:11px; display:flex; align-items:center; justify-content:center; box-shadow:0 0 10px rgba(232,200,116,.5); }
 #quests{ display:block; overflow-y:auto; padding:0; }
 .q-col{ position:relative; z-index:1; max-width:520px; margin:0 auto; padding:54px 16px 40px; }
-.q-head{ font-family:Cinzel,serif; font-size:20px; letter-spacing:3px; color:var(--gold); text-align:center; margin-bottom:6px; }
-.q-intro{ font-size:12px; color:var(--ink-dim); text-align:center; margin-bottom:18px; letter-spacing:.3px; }
-.q-sect{ font-family:Cinzel,serif; font-size:12px; letter-spacing:2px; color:var(--gold-2); margin:16px 2px 9px; display:flex; justify-content:space-between; align-items:baseline; }
-.q-sect .q-reset{ font-family:'Crimson Pro',serif; font-size:10px; letter-spacing:.4px; color:var(--ink-dim); text-transform:none; }
-.q-row{ display:flex; align-items:center; gap:12px; padding:11px 13px; margin-bottom:9px; border-radius:11px; background:rgba(0,0,0,.46); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.14); }
+.q-head{ font-family:Cinzel,serif; font-size:24px; letter-spacing:3px; color:var(--gold); text-align:center; margin-bottom:8px; }
+.q-intro{ font-size:14px; color:var(--ink-dim); text-align:center; margin-bottom:20px; letter-spacing:.3px; }
+.q-sect{ font-family:Cinzel,serif; font-size:14px; letter-spacing:2px; color:var(--gold-2); margin:18px 2px 11px; display:flex; justify-content:space-between; align-items:baseline; }
+.q-sect .q-reset{ font-family:'Crimson Pro',serif; font-size:12px; letter-spacing:.4px; color:var(--ink-dim); text-transform:none; }
+.q-row{ display:flex; align-items:center; gap:14px; padding:14px 15px; margin-bottom:11px; border-radius:12px; background:rgba(0,0,0,.46); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.14); }
 .q-row.done{ border-color:var(--gold-dim); background:rgba(28,20,6,.5); }
 .q-row.claimed{ opacity:.55; }
 .q-row-main{ flex:1 1 auto; min-width:0; }
-.q-label{ font-size:13px; color:#f2ead6; letter-spacing:.3px; margin-bottom:6px; }
-.q-bar{ height:5px; border-radius:3px; background:rgba(255,255,255,.13); overflow:hidden; }
-.q-bar i{ display:block; height:100%; width:0; border-radius:3px; background:linear-gradient(90deg,var(--gold-2),var(--hi)); transition:width .4s ease; }
-.q-reward{ font-size:10px; color:var(--ink-dim); letter-spacing:.4px; margin-top:5px; }
-.q-right{ flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-end; gap:4px; min-width:56px; }
-.q-prog{ font-family:Cinzel,serif; font-size:12px; color:var(--gold); }
-.q-claim{ font-family:Cinzel,serif; font-size:11px; letter-spacing:1px; color:var(--gold); background:rgba(232,200,116,.14); border:1px solid var(--gold); border-radius:8px; padding:5px 12px; cursor:pointer; }
+.q-label{ font-size:16px; color:#f2ead6; letter-spacing:.3px; margin-bottom:8px; }
+.q-bar{ height:7px; border-radius:4px; background:rgba(255,255,255,.13); overflow:hidden; }
+.q-bar i{ display:block; height:100%; width:0; border-radius:4px; background:linear-gradient(90deg,var(--gold-2),var(--hi)); transition:width .4s ease; }
+.q-reward{ font-size:12px; color:var(--ink-dim); letter-spacing:.4px; margin-top:7px; }
+.q-right{ flex:0 0 auto; display:flex; flex-direction:column; align-items:flex-end; gap:6px; min-width:66px; }
+.q-prog{ font-family:Cinzel,serif; font-size:19px; color:var(--gold); }
+.q-claim{ font-family:Cinzel,serif; font-size:13px; letter-spacing:1px; color:var(--gold); background:rgba(232,200,116,.14); border:1px solid var(--gold); border-radius:8px; padding:7px 14px; cursor:pointer; }
 .q-claim:active{ transform:scale(.96); }
-.q-claimed{ font-size:16px; color:var(--gold); }
+.q-claimed{ font-size:22px; color:var(--gold); }
 /* T55 — quest reskin: icon roundel, lotus header emblem, ornate WEEKLY divider */
-.q-ic{ flex:0 0 auto; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; overflow:hidden; background:radial-gradient(circle at 50% 38%, rgba(232,200,116,.16), rgba(0,0,0,.34)); border:1px solid var(--gold-dim); }
+.q-ic{ flex:0 0 auto; width:60px; height:60px; border-radius:50%; display:flex; align-items:center; justify-content:center; overflow:hidden; background:radial-gradient(circle at 50% 38%, rgba(232,200,116,.16), rgba(0,0,0,.34)); border:1px solid var(--gold-dim); }
 .q-ic img{ width:84%; height:84%; object-fit:contain; opacity:0; transition:opacity .3s; }
 .q-ic.on img{ opacity:1; }
 .q-row.done .q-ic{ border-color:var(--gold); }
 .q-row.claimed .q-ic{ filter:saturate(.7); }
-#q-flourish:empty::before{ content:''; display:block; width:52px; height:52px; margin:2px auto 0; background:url('assets/img/q_flourish_lotus.png?v=1') center/contain no-repeat; opacity:.92; }
+#q-flourish{ margin:14px auto 26px; }   /* T55b: the GAP — lotus emblem breathes above the intro line (overrides .earn-extra:empty margin via #id specificity) */
+#q-flourish:empty::before{ content:''; display:block; width:60px; height:60px; margin:0 auto; background:url('assets/img/q_flourish_lotus.png?v=1') center/contain no-repeat; opacity:.92; }
 #q-daily + .q-sect{ margin-top:26px; padding-top:20px; position:relative; border-top:1px solid transparent; border-image:linear-gradient(90deg, transparent, var(--gold-dim) 28%, var(--gold-dim) 72%, transparent) 1; }
-#q-daily + .q-sect::before{ content:'✦'; position:absolute; top:-9px; left:50%; transform:translateX(-50%); color:var(--gold); font-size:11px; }
+#q-daily + .q-sect::before{ content:'✦'; position:absolute; top:-9px; left:50%; transform:translateX(-50%); color:var(--gold); font-size:12px; }
+/* T55b — desktop: relax the quest column to 680 (quests-only; the 520 rule on other screens is untouched) + a size step up for the larger rows */
+@media(min-width:1024px){
+  .q-col{ max-width:680px; }
+  .q-ic{ width:76px; height:76px; }
+  .q-head{ font-size:28px; } .q-sect{ font-size:15px; } .q-sect .q-reset{ font-size:13px; }
+  .q-row{ padding:17px 20px; gap:16px; }
+  .q-label{ font-size:19px; } .q-reward{ font-size:13px; } .q-bar{ height:8px; }
+  .q-prog{ font-size:22px; } .q-claimed{ font-size:24px; } .q-claim{ font-size:14px; } .q-right{ min-width:74px; }
+}
 
 /* ===== M1 slice 3: wallet + Sadhana on the profile card ===== */
 .lp-wallet{ display:flex; gap:16px; margin-top:7px; }
