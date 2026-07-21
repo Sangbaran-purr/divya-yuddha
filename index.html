@@ -381,10 +381,22 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #landing, #factionintro, #storyselect, #quests{ background:#0a0704; overflow:hidden; }   /* T36: #factionselect left this group — it carries its OWN plate now (A3) */
 #factionintro::before, #storyselect::before, #quests::before{ content:''; position:fixed; inset:0; z-index:0; background:url('assets/img/menu_bg.jpg') center/cover no-repeat; filter:brightness(.9); }   /* image shows through — only ~10% darken, no blur/desat */
 #factionintro::after, #storyselect::after, #quests::after{ content:''; position:fixed; inset:0; z-index:0; background:linear-gradient(to bottom, transparent 0%, rgba(0,0,0,.10) 45%, rgba(0,0,0,.6) 100%); }   /* soft bottom gradient for legibility */
-/* T53 — HOW TO WIN background art. Win tab ONLY, via the .tab-win class (toggled in fiSelectTab). Overrides the shared #factionintro backdrop pseudos, which sit fixed BEHIND .fi-col — so zero overlap with the tab bar, zero bleed to other tabs (class removed on tab switch), zero effect on battle screens. Reversible: this block + the one class-toggle line. The menu_bg is layered under the art as the 404 fallback (a missing art file → menu_bg shows, no broken state). */
-#factionintro.tab-win::before{ background-image:url('assets/img/win_codex_bg_portrait.png?v=1'), url('assets/img/menu_bg.jpg'); }   /* portrait <1024; size/position/repeat (center/cover/no-repeat) inherited from the base rule and repeated across both layers */
-@media(min-width:1024px){ #factionintro.tab-win::before{ background-image:url('assets/img/win_codex_bg_landscape.png?v=1'), url('assets/img/menu_bg.jpg'); } }   /* landscape 1024+ */
-#factionintro.tab-win::after{ background:linear-gradient(to bottom, rgba(6,4,1,.42) 0%, rgba(6,4,1,.50) 48%, rgba(6,4,1,.66) 100%); }   /* legibility scrim over the art (T53b: lightened per live verdict — panels carry their own dark fills, so the scrim only protects directly-on-backdrop text) */
+/* T54 — PER-TAB CODEX BACKGROUNDS (generalizes T53/T53b). Each fi tab carries its own backdrop via a single tab-<name> class on #factionintro (toggled in fiSelectTab), overriding the shared #factionintro backdrop pseudos which sit fixed BEHIND .fi-col — so zero tab-bar overlap, zero bleed (only one tab-* class at a time), zero effect on battle screens (#factionintro is intro-only). menu_bg is layered UNDER the art as the 404 fallback: a not-yet-intaken pair (asuras/vanaras/nagas/realms) renders nothing for the art layer → menu_bg shows (no broken state); the file lights up automatically on intake. Rollback: per-tab = delete that tab's two lines; whole = revert. size/position/repeat (center/cover/no-repeat) inherit from the base rule, repeated across both layers. */
+#factionintro.tab-win::before{      background-image:url('assets/img/win_codex_bg_portrait.png?v=1'),      url('assets/img/menu_bg.jpg'); }
+#factionintro.tab-devas::before{    background-image:url('assets/img/devas_codex_bg_portrait.png?v=1'),    url('assets/img/menu_bg.jpg'); }
+#factionintro.tab-asuras::before{   background-image:url('assets/img/asuras_codex_bg_portrait.png?v=1'),   url('assets/img/menu_bg.jpg'); }   /* pair not yet intaken → menu_bg fallback */
+#factionintro.tab-vanaras::before{  background-image:url('assets/img/vanaras_codex_bg_portrait.png?v=1'),  url('assets/img/menu_bg.jpg'); }   /* pair not yet intaken → menu_bg fallback */
+#factionintro.tab-nagas::before{    background-image:url('assets/img/nagas_codex_bg_portrait.png?v=1'),    url('assets/img/menu_bg.jpg'); }   /* pair not yet intaken → menu_bg fallback */
+#factionintro.tab-realms::before{   background-image:url('assets/img/realms_codex_bg_portrait.png?v=1'),   url('assets/img/menu_bg.jpg'); }   /* pair not yet intaken → menu_bg fallback */
+@media(min-width:1024px){
+  #factionintro.tab-win::before{      background-image:url('assets/img/win_codex_bg_landscape.png?v=1'),      url('assets/img/menu_bg.jpg'); }
+  #factionintro.tab-devas::before{    background-image:url('assets/img/devas_codex_bg_landscape.png?v=1'),    url('assets/img/menu_bg.jpg'); }
+  #factionintro.tab-asuras::before{   background-image:url('assets/img/asuras_codex_bg_landscape.png?v=1'),   url('assets/img/menu_bg.jpg'); }
+  #factionintro.tab-vanaras::before{  background-image:url('assets/img/vanaras_codex_bg_landscape.png?v=1'),  url('assets/img/menu_bg.jpg'); }
+  #factionintro.tab-nagas::before{    background-image:url('assets/img/nagas_codex_bg_landscape.png?v=1'),    url('assets/img/menu_bg.jpg'); }
+  #factionintro.tab-realms::before{   background-image:url('assets/img/realms_codex_bg_landscape.png?v=1'),   url('assets/img/menu_bg.jpg'); }
+}
+#factionintro[class*="tab-"]::after{ background:linear-gradient(to bottom, rgba(6,4,1,.42) 0%, rgba(6,4,1,.50) 48%, rgba(6,4,1,.66) 100%); }   /* T53b .42/.50/.66 legibility scrim — shared by all six tabs; specificity (1,1,1) beats the base #factionintro::after; storyselect/quests never carry a tab-* class */
 /* T34: the landing's Mount-Meru #landingbg + its ::before scrims are RETIRED — replaced by the sky-rotunda plate stage
    (#landstage below). assets/img/landing_bg.jpg is now unreferenced (left on disk; not deleted by this task). */
 
@@ -6427,7 +6439,7 @@ function fiRenderRealms(){
 const fiTabNodes = {};
 function fiSelectTab(tab){
   document.querySelectorAll('#fi-tabs .fi-tab').forEach(b=> b.classList.toggle('sel', b.dataset.tab===tab));
-  $('factionintro').classList.toggle('tab-win', tab==='win');   // T53: win-tab background art (scoped; removed on any other tab)
+  { const fi=$('factionintro'); fi.className = (fi.className.replace(/\btab-[a-z]+\b/g,'').trim() + ' tab-'+tab).trim(); }   // T54: per-tab backdrop — swap to the single tab-<name> class (preserves other classes; only one tab-* at a time)
   if(!fiTabNodes[tab]) fiTabNodes[tab] = tab==='win' ? fiRenderWin() : tab==='realms' ? fiRenderRealms() : tab==='devas' ? fiRenderDevas() : tab==='asuras' ? fiRenderAsuras() : tab==='vanaras' ? fiRenderVanaras() : tab==='nagas' ? fiRenderNagas() : fiRenderFaction(tab);   // T47 Devas / T48 Asuras / T49 Vanaras / T51 Nagas codex pages
   const body=$('fi-body'); body.innerHTML=''; body.append(fiTabNodes[tab]);
   $('factionintro').scrollTop=0;
