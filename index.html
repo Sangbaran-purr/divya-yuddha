@@ -397,6 +397,10 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   #factionintro.tab-realms::before{   background-image:url('assets/img/realms_codex_bg_landscape.png?v=1'),   url('assets/img/menu_bg.jpg'); }
 }
 #factionintro[class*="tab-"]::after{ background:linear-gradient(to bottom, rgba(6,4,1,.42) 0%, rgba(6,4,1,.50) 48%, rgba(6,4,1,.66) 100%); }   /* T53b .42/.50/.66 legibility scrim — shared by all six tabs; specificity (1,1,1) beats the base #factionintro::after; storyselect/quests never carry a tab-* class */
+/* T55 — QUESTS backdrop. Scoped to #quests, overrides the shared base ::before/::after (menu_bg group @above): same pattern as T54 — the codex art over a menu_bg fallback layer (404 → menu_bg shows, no broken state) + the .42/.50/.66 scrim standard. No tab toggle (single backdrop). size/position/repeat inherit from the base #quests::before and repeat across both layers. */
+#quests::before{ background-image:url('assets/img/quests_codex_bg_portrait.png?v=1'), url('assets/img/menu_bg.jpg'); }
+@media(min-width:1024px){ #quests::before{ background-image:url('assets/img/quests_codex_bg_landscape.png?v=1'), url('assets/img/menu_bg.jpg'); } }
+#quests::after{ background:linear-gradient(to bottom, rgba(6,4,1,.42) 0%, rgba(6,4,1,.50) 48%, rgba(6,4,1,.66) 100%); }
 /* T34: the landing's Mount-Meru #landingbg + its ::before scrims are RETIRED — replaced by the sky-rotunda plate stage
    (#landstage below). assets/img/landing_bg.jpg is now unreferenced (left on disk; not deleted by this task). */
 
@@ -425,6 +429,15 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .q-claim{ font-family:Cinzel,serif; font-size:11px; letter-spacing:1px; color:var(--gold); background:rgba(232,200,116,.14); border:1px solid var(--gold); border-radius:8px; padding:5px 12px; cursor:pointer; }
 .q-claim:active{ transform:scale(.96); }
 .q-claimed{ font-size:16px; color:var(--gold); }
+/* T55 — quest reskin: icon roundel, lotus header emblem, ornate WEEKLY divider */
+.q-ic{ flex:0 0 auto; width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; overflow:hidden; background:radial-gradient(circle at 50% 38%, rgba(232,200,116,.16), rgba(0,0,0,.34)); border:1px solid var(--gold-dim); }
+.q-ic img{ width:84%; height:84%; object-fit:contain; opacity:0; transition:opacity .3s; }
+.q-ic.on img{ opacity:1; }
+.q-row.done .q-ic{ border-color:var(--gold); }
+.q-row.claimed .q-ic{ filter:saturate(.7); }
+#q-flourish:empty::before{ content:''; display:block; width:52px; height:52px; margin:2px auto 0; background:url('assets/img/q_flourish_lotus.png?v=1') center/contain no-repeat; opacity:.92; }
+#q-daily + .q-sect{ margin-top:26px; padding-top:20px; position:relative; border-top:1px solid transparent; border-image:linear-gradient(90deg, transparent, var(--gold-dim) 28%, var(--gold-dim) 72%, transparent) 1; }
+#q-daily + .q-sect::before{ content:'✦'; position:absolute; top:-9px; left:50%; transform:translateX(-50%); color:var(--gold); font-size:11px; }
 
 /* ===== M1 slice 3: wallet + Sadhana on the profile card ===== */
 .lp-wallet{ display:flex; gap:16px; margin-top:7px; }
@@ -5179,13 +5192,15 @@ function questRow(q, scope){
   const def=QUEST_DEFS[q.id]; const done=(q.prog|0)>=def.target, r=META_CONFIG.quests[scope];
   const row=document.createElement('div'); row.className='q-row'+(done?' done':'')+(q.claimed?' claimed':'');
   const pct=def.target ? Math.min(100, (q.prog|0)/def.target*100) : 0;
+  const ic=document.createElement('div'); ic.className='q-ic';   // T55: left icon roundel (mapped by instance id; 404 → remove → plain row)
+  const iimg=new Image(); iimg.alt=''; iimg.onload=()=>ic.classList.add('on'); iimg.onerror=()=>ic.remove(); iimg.src='assets/img/quest_icon_'+q.id+'.png?v=1'; ic.appendChild(iimg);
   const main=document.createElement('div'); main.className='q-row-main';
   main.innerHTML=`<div class="q-label">${def.label}</div><div class="q-bar"><i style="width:${pct}%"></i></div><div class="q-reward">+${r.coins} coins · +${r.amsha} Amsha · +${r.xp} XP</div>`;
   const right=document.createElement('div'); right.className='q-right';
   const prog=document.createElement('div'); prog.className='q-prog'; prog.textContent=Math.min(q.prog|0,def.target)+'/'+def.target; right.appendChild(prog);
   if(q.claimed){ const c=document.createElement('div'); c.className='q-claimed'; c.textContent='✓'; right.appendChild(c); }
   else if(done){ const b=document.createElement('button'); b.className='q-claim'; b.textContent='CLAIM'; b.onclick=()=>claimQuest(scope,q.id); right.appendChild(b); }
-  row.appendChild(main); row.appendChild(right); return row;
+  row.appendChild(ic); row.appendChild(main); row.appendChild(right); return row;
 }
 function renderQuests(){
   const M=loadMeta(), d=$('q-daily'), w=$('q-weekly'); if(!d||!w) return;
