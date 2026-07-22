@@ -140,7 +140,7 @@ const VANARA_DECK_DEF = [
   // ---- HEROES (3) ----
   { id:'hanuman', n:'Hanuman',       sub:'Devotion Incarnate',   t:'hero', p:9, r:'L', txt:'PASSIVE: Each Vanara Unit of printed power 4+ you play gains +1 on entry (+2 while Jambavan is on the board).' },
   { id:'sugriva', n:'Sugriva',       sub:'King of the Vanaras',  t:'hero', p:6, r:'E', txt:'ON PLAY: Draw 1 extra card immediately.' },
-  { id:'angad',   n:'Angad',         sub:'The Unyielding Messenger', t:'hero', p:7, r:'E', txt:'PASSIVE: Immune to opponent Mantras. When the opponent plays an Astra, they forfeit their next turn.' },
+  { id:'angad',   n:'Angad',         sub:'The Unyielding Messenger', t:'hero', p:7, r:'E', txt:'PASSIVE: When the opponent plays an Astra, they forfeit their next turn.' },
   // ---- UNITS (12) ----
   { id:'nala',    n:'Nala',          sub:'The Bridge Builder',   t:'unit', p:5, r:'E', txt:'ON PLAY: Place a copy of the lowest-power Vanara Unit in your hand onto the row at half power.' },
   { id:'neela',   n:'Neela',         sub:'Commander of the Vanguard', t:'unit', p:5, r:'R', txt:'ON PLAY: All Vanara Units on the board gain +1 power.' },
@@ -153,7 +153,7 @@ const VANARA_DECK_DEF = [
   { id:'scout',   n:'Vanara Scout',  sub:'Eyes of the Jungle',   t:'unit', p:2, r:'C', txt:'ON PLAY: Reveal the opponent’s hand; gain +1 power for each Vanara Unit already on the board.' },
   { id:'warrior', n:'Vanara Warrior',sub:'Loyal to the Last',    t:'unit', p:3, r:'C', txt:'PASSIVE: +1 power for each other Vanara Unit on the board (max +4).' },
   { id:'dadhimukha',n:'Dadhimukha',  sub:'Guardian of Madhuvana',t:'unit', p:3, r:'U', txt:'ON PLAY: Draw 1 card. If Sugriva is on the board, also give all friendly Vanara Units +1 power.' },
-  { id:'riksha',  n:'Riksha',        sub:'Son of the Wind',      t:'unit', p:4, r:'R', txt:'ON PLAY: Move to any position on the row. Gains +3 power while Hanuman is on the board.' },
+  { id:'riksha',  n:'Riksha',        sub:'Son of the Wind',      t:'unit', p:4, r:'R', txt:'PASSIVE: Gains +3 power while Hanuman is on the board.' },
   // ---- ASTRAS (3) ----
   { id:'gandiva', n:'Gandiva Arrow', sub:'Blessed Shaft',        t:'astra', p:0, r:'R', txt:'Destroy one enemy Unit regardless of power. If a Vanara used Leap this round, destroy one more.' },
   { id:'lankadahan',n:'Lanka Dahan', sub:'Fire of Hanuman',      t:'astra', p:0, r:'L', dmgAstra:true, txt:'Deal 2 damage to ALL enemy Units. All friendly Vanara Units gain +1 power.' },
@@ -908,7 +908,6 @@ function castMantra(g, pi, id, targetUid=null){
       log(g, `Ahamkara doubles ${t.n} to ${t.power} — doomed to shatter at round end.`);
     }
   } else if (id==='ramanaam'){
-    // §9: cannot be countered by any Naga effect this round (dormant hook — Nagas not built).
     const buff = 2;   // EXP-D: flat +2 (dropped Hanuman upgrade)
     for (const u of pl.units) if (!u.ghost) u.power+=buff;
     log(g, `Rama Naam resounds — all Vanara Units +${buff}.`);
