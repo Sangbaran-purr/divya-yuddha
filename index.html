@@ -4593,7 +4593,7 @@ if (typeof module!=='undefined'){
 }
 </script>
 <!-- ENGINE:END -->
-<script src="src/chapters.js"></script>
+<script src="src/chapters.js?v=1"></script>
 <script>
 const $=id=>document.getElementById(id);
 const TYPE_ICON={hero:'👑',unit:'⚔',astra:'🔱',mantra:'🕉',artifact:'🧿'};
@@ -6978,6 +6978,7 @@ function storyBestUnitIdx(){ const pl=G.players[0]; const idxs=playableIndices(G
 function _storyCard(i){ const c=G.players[0].hand[i]; return { kind:'card', index:i, uid:c?c.uid:null }; }   // carry the UID so glow matches by identity, not DOM position
 function storyResolveHighlight(h){                                   // → {kind:'pass'|'shield'|'card', index?, uid?}
   if(!h) return { kind:'pass' };
+  if(h.concept) return { kind:'concept' };   // T60b R4: a CONCEPT beat teaches, not plays → NO glow (applyStoryGuidance glows only card/pass/shield, so 'concept' falls through to nothing)
   if(h.shield) return { kind:'shield' };
   if(h.action==='pass') return { kind:'pass' };
   if(h.auto){ const opp=G.players[1];
@@ -7046,9 +7047,11 @@ function applyStoryGuidance(){
   if(!Story || CutState || G.over || choreoActive || G.turn!==0 || G.players[0].passed){ hideBrihaspati(); return; }   // never guide behind a cutscene overlay
   if(Story.mode==='FREE'){   // ch6–7: NO mask, NO glow, NO beats. Only a one-time Artifact shimmer + the held intro line (dual-line).
     const shim=Story.chapter.artifactShimmer;
-    if(shim && !Story.shimmerDone){ const c=G.players[0].hand.find(x=>x.n===shim);   // point at the Artifact by UID, not position
-      const el=c && storyHiEl(c.uid); if(el) el.classList.add('story-shimmer'); }
-    if(Story.holdLine) showBrihaspati(Story.holdLine, Story.chapter.introInstruct); else hideBrihaspati();
+    const shimCard = shim ? G.players[0].hand.find(x=>x.n===shim) : null;   // the Artifact card in hand, if present (point at it by UID, not position)
+    if(shim && !Story.shimmerDone && shimCard){ const el=storyHiEl(shimCard.uid); if(el) el.classList.add('story-shimmer'); }
+    // T60b R6: the "Play <Artifact>" instruct degrades WITH the shimmer — shown only while the card is in hand; suppressed (display only, string untouched) when absent. It returns as authored when the card arrives.
+    const shimInstruct = shimCard ? Story.chapter.introInstruct : '';
+    if(Story.holdLine) showBrihaspati(Story.holdLine, shimInstruct); else hideBrihaspati();
     return;
   }
   // beat-driven modes (LOCKED/SUGGESTED). FAIL OPEN if the beat script is missing/empty/exhausted → no mask, no lock (default = fully playable).
@@ -7076,11 +7079,13 @@ function applyStoryGuidance(){
     if(tgt.kind==='pass'){ $('passbtn').disabled=false; $('passbtn').classList.add('story-hi'); } else $('passbtn').disabled=true;
   }
   // Brihaspati line — SHARES the glow's resolution:
-  //  1) a HELD line (intro / round-2 advice / deviation aside) shows until the next action;
-  //  2) FALLBACK (eff.fellBack) → the moment aside, NEVER the stale beat instruct (the invariant — text always agrees with the fallen-back glow);
+  //  1) FALLBACK (eff.fellBack) → the moment aside, NEVER the authored beat instruct (T60b R1+R2: the glow has fallen back to a
+  //     DIFFERENT card, so the copy switches with it — and this check now PRECEDES the held line, so a held line can never
+  //     display over a fallen-back glow. Glow uses the existing bestOrPass/pass path unchanged.);
+  //  2) otherwise a HELD line (intro / round-2 advice / deviation aside) shows until the next action;
   //  3) otherwise the beat's own line + instruct (the card that is actually glowing).
-  if(Story.holdLine){ showBrihaspati(Story.holdLine, Story.holdInstruct||''); Story.lineBeat=-1; return; }
   if(eff.fellBack){ showBrihaspati(STORY_MOMENT_CHANGED, ''); Story.lineBeat=-1; return; }
+  if(Story.holdLine){ showBrihaspati(Story.holdLine, Story.holdInstruct||''); Story.lineBeat=-1; return; }
   const effBeat=Math.min(Story.beatIdx, Story.chapter.guidance.length-1);
   if(Story.lineBeat!==effBeat){ showBrihaspati(beat.line, beat.instruct); Story.lineBeat=effBeat; }
 }

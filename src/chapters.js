@@ -245,7 +245,7 @@ const CHAPTERS = {
     opponentScript:[ {action:'play', cardName:'Naga Sadhu'}, {action:'play', cardName:'Nagastra'}, {action:'play', cardName:'Naga Archer'}, {handoff:'ai'} ],
     guidance:[
       { highlight:{card:'Surya Dev'},  line:'They open with poison, not steel. Stand your line and watch the marks.', instruct:'Tap the glowing card: Surya Dev — hold your line against the poison.' },
-      { highlight:{card:'Yama'},       line:'Poison does not duel. It waits.', instruct:'The green marks are Venom — poisoned warriors lose power when the round ends.' },
+      { highlight:{concept:true},      line:'Poison does not duel. It waits.', instruct:'The green marks are Venom — poisoned warriors lose power when the round ends.' },   // T60b R4: concept beat — teaches the Venom marks, no card glow
       { highlight:{card:'Pavamana'},   line:'What the poison stains, the sacred breath washes.', instruct:'Tap Pavamana — it cleanses the Venom from your warriors.' },
       { highlight:{auto:'bestOrPass'}, line:'A short battle starves a slow poison.', instruct:'If you are ahead, tap PASS ROUND — a quick end gives the poison no time to feed.' },
     ],

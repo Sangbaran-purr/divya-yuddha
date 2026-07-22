@@ -262,5 +262,28 @@ ok('ch7_unmake true: won + destroyed an enemy Artifact', STORY_PREDICATES.ch7_un
 ok('ch7_unmake false: won but destroyed none', STORY_PREDICATES.ch7_unmake({ winner:0, players:[{artifactsDestroyedByMe:0},{}] })===false);
 ok('ch7_unmake false: destroyed one but lost', STORY_PREDICATES.ch7_unmake({ winner:1, players:[{artifactsDestroyedByMe:1},{}] })===false);
 
+/* ---------- (R7) BOOK-1 GUIDANCE COPY↔GLOW ASSERTION (T60b) ----------
+   ONE source of truth per beat: the authored directive and the glow must agree. Three tiers (per the T60b R7 ruling):
+     1. CARD highlight  → every DECKS card named in line/instruct prose MUST equal highlight.card.
+     2. concept/auto/action:pass → prose names NO DECKS card (a nameless, non-play beat).
+     3. shield          → EXEMPT from the nameless check (shield-beat prose may name the follow-up card, per b1c3's
+                          two-step pattern), but matched EXPLICITLY as a known shape — never silently skipped.
+   Any highlight shape outside these tiers = failure. */
+console.log('\nguidance copy↔glow assertion (T60b R7):');
+(function(){
+  const allNames = [...new Set(Object.values(E.DECKS).flat().map(c=>c.n))].sort((a,b)=>b.length-a.length);   // longest-first
+  const esc = s => s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const namesInProse = prose => allNames.filter(n => new RegExp('\\b'+esc(n)+'\\b').test(prose));
+  Object.values(CHAPTERS).filter(ch=>ch.book===1 && Array.isArray(ch.guidance) && ch.guidance.length).forEach(ch=>{
+    ch.guidance.forEach((beat,i)=>{
+      const id=`${ch.id} guidance[${i}]`, h=beat.highlight||{}, named=namesInProse(`${beat.line||''} ${beat.instruct||''}`);
+      if(h.card)                                    ok(`${id} (card '${h.card}'): prose names only that card`, named.every(n=>n===h.card));
+      else if(h.concept || h.auto || h.action==='pass') ok(`${id} (${h.concept?'concept':h.auto?'auto':'action:pass'}): prose names no card`, named.length===0);
+      else if(h.shield)                             ok(`${id} (shield): known exempt shape`, true);
+      else                                          ok(`${id}: highlight is a known shape (card/concept/auto/action:pass/shield)`, false);
+    });
+  });
+})();
+
 console.log(`\n${fail===0?'✓ ALL':'✗'} ${pass} STORY CHECKS PASS${fail?`, ${fail} FAILED`:''}`);
 process.exit(fail===0?0:1);
