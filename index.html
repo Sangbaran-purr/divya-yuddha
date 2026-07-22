@@ -7131,7 +7131,7 @@ const CUT_MOTION = {   // id → { from, to, origin, dur(s), ease, vfx } (BOOK1_
   b1c7_i2:{ from:'scale(1.16)',                to:'scale(1.06)',                origin:'50% 55%', dur:8, ease:'ease-out', vfx:'none' },   // PULL-OUT (intro; the mid reuse carries the flash)
 };
 const CUT_DEFAULT_M={ from:'scale(1.08)', to:'scale(1.12)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'none' };
-function cutImgUrl(id, mobileOnly){ const wide = !mobileOnly && innerWidth>=1024; return `assets/story/${id}${wide?'_wide':''}.jpg?v=2`; }   // T56: _wide variant at ≥1024 (resolved at call/display time), inline ?v=2 cache stamp — the single de-facto cutscene stamp (bump this ONE literal on a byte-swap). mobileOnly forces the base name for the layered 404-fallback.
+function cutImgUrl(id, mobileOnly){ const wide = !mobileOnly && innerWidth>=1024; return `assets/story/${id}${wide?'_wide':''}.jpg?v=3`; }   // T56: _wide variant at ≥1024 (resolved at call/display time), inline ?v=2 cache stamp — the single de-facto cutscene stamp (bump this ONE literal on a byte-swap). mobileOnly forces the base name for the layered 404-fallback.
 // The chapter's first intro image — the backdrop for any text-only / 404 panel (so plates never render over plain black).
 function storyIntroFallback(ch){ const p0=ch && ch.cutscenes && ch.cutscenes.intro && ch.cutscenes.intro[0]; return p0 ? (p0.img||cutImgUrl(p0.id)) : 'assets/img/menu_bg.jpg'; }
 // Set a panel's backdrop to a fallback image darkened ~65% (over the existing scrim). Chain: fallback → menu_bg.jpg.
