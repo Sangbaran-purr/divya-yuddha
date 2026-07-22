@@ -7131,7 +7131,7 @@ const CUT_MOTION = {   // id → { from, to, origin, dur(s), ease, vfx } (BOOK1_
   b1c7_i2:{ from:'scale(1.16)',                to:'scale(1.06)',                origin:'50% 55%', dur:8, ease:'ease-out', vfx:'none' },   // PULL-OUT (intro; the mid reuse carries the flash)
 };
 const CUT_DEFAULT_M={ from:'scale(1.08)', to:'scale(1.12)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'none' };
-function cutImgUrl(id){ return `assets/story/${id}.jpg`; }
+function cutImgUrl(id, mobileOnly){ const wide = !mobileOnly && innerWidth>=1024; return `assets/story/${id}${wide?'_wide':''}.jpg?v=2`; }   // T56: _wide variant at ≥1024 (resolved at call/display time), inline ?v=2 cache stamp — the single de-facto cutscene stamp (bump this ONE literal on a byte-swap). mobileOnly forces the base name for the layered 404-fallback.
 // The chapter's first intro image — the backdrop for any text-only / 404 panel (so plates never render over plain black).
 function storyIntroFallback(ch){ const p0=ch && ch.cutscenes && ch.cutscenes.intro && ch.cutscenes.intro[0]; return p0 ? (p0.img||cutImgUrl(p0.id)) : 'assets/img/menu_bg.jpg'; }
 // Set a panel's backdrop to a fallback image darkened ~65% (over the existing scrim). Chain: fallback → menu_bg.jpg.
@@ -7181,12 +7181,14 @@ function cutNext(){
   if(st.i>=st.panels.length){ cutEnd(); return; }
   const p=st.panels[st.i], m=p.m||CUT_MOTION[p.id]||CUT_DEFAULT_M;   // inline p.m overrides the manifest (reuse a panel at a different motion)
   const next=st.layers[1-st.showLayer], cur=st.layers[st.showLayer];
-  const src=p.img||cutImgUrl(p.id);                                 // p.img = a non-story asset (e.g. the swarga board reused as b1c3_i3)
+  const src=p.img||cutImgUrl(p.id);                                 // p.img = a non-story override; else the SELECTED (_wide at ≥1024, else mobile) url + ?v=2
+  const mob=p.img?src:cutImgUrl(p.id,true);                         // T56: mobile url (base name) for the layered 404-fallback; overrides have no wide/mobile pair
   next.classList.remove('cut-noart');
-  next.style.backgroundImage=`url('${src}')`;
-  // PANEL IMAGE FALLBACK: art may be missing (the ch3/4/5 victory plates, or a 404 generally). Never render over plain
-  // black — fall back to the chapter's FIRST intro image darkened ~65%, and if that too is missing, to menu_bg.jpg.
-  const probe=new Image(); probe.onerror=()=>{ if(st===CutState && st.panels[st.i]===p) setCutBackdropFallback(next, st.fallback); }; probe.src=src;
+  next.style.backgroundImage = (src!==mob) ? `url('${src}'), url('${mob}')` : `url('${src}')`;   // T54 layered: _wide over mobile — a missing _wide falls back to the mobile filename with zero flash
+  // PANEL IMAGE FALLBACK: art may be missing (a 404 generally). Never render over plain black — fall back to the chapter's
+  // FIRST intro image darkened ~65%, and if that too is missing, to menu_bg.jpg. Probe the MOBILE layer (the deepest guaranteed
+  // layer) so a _wide-only 404 stays on the CSS mobile fallback and does NOT trip the deep chapter-intro fallback.
+  const probe=new Image(); probe.onerror=()=>{ if(st===CutState && st.panels[st.i]===p) setCutBackdropFallback(next, st.fallback); }; probe.src=mob;
   next.style.animation='none';
   if(p.mohini && !reducedMotion()){   // MOHINI two-phase DRIFT (b1c7_v1): RISE to the vessel, hold, then a slow lateral drift to the right-edge silhouette (Book 2 hook)
     next.style.transition='none'; next.style.transformOrigin='50% 45%'; next.style.transform='scale(1.12) translateY(4%)'; next.style.opacity='0'; void next.offsetWidth;

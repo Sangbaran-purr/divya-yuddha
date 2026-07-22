@@ -157,11 +157,11 @@ const CHAPTERS = {
       { highlight:{card:'Vajra', target:'largestEnemy'}, line:'The strike is spent. Now answer — Heaven’s weapons answer only when heaven is ready.', instruct:"Tap Vajra, then tap the enemy's biggest unit — destroy it." },
       { highlight:{auto:'bestOrPass'},                   line:'The sky is yours. Bring your host to bear.', instruct:"Play your best card, or tap PASS ROUND if you are ahead." },
     ],
-    // b1c3_i1 exists in assets/story; b1c3_i3 REUSES the swarga board image (zero new art); b1c3_v1 art pending → text plate.
+    // b1c3_i1/i3/v1 all ship dedicated art in assets/story (T56: the b1c3_i3 board-reuse override was retired — it now resolves through cutImgUrl like every other panel).
     cutscenes:{
       intro:[
         { id:'b1c3_i1', plate:"Shukracharya has stopped asking questions. On a ridge above the battlefield he raises a blade that should not exist — white fire along its edge, and a light that every Deva recognizes with a chill: the light of their OWN heaven. A stolen spark of Indra's thunderbolt, in an enemy's hand. The age of raids is over. The age of weapons has begun.", ambience:null },
-        { id:'b1c3_i3', img:'assets/img/board_swarga.jpg', m:{ from:'scale(1.18)', to:'scale(1.06)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'none' }, plate:"The armies meet in Swarga itself, before the thousand-petal throne. Here even the realm takes a side — every hero stands taller on home ground. Brihaspati's counsel is one line: 'Read the sky before you read your hand.'", ambience:null },
+        { id:'b1c3_i3', m:{ from:'scale(1.18)', to:'scale(1.06)', origin:'50% 50%', dur:8, ease:'ease-out', vfx:'none' }, plate:"The armies meet in Swarga itself, before the thousand-petal throne. Here even the realm takes a side — every hero stands taller on home ground. Brihaspati's counsel is one line: 'Read the sky before you read your hand.'", ambience:null },
       ],
       // MID: after the opponent's 3rd turn resolves, before the Astra turn (VAJRA). Two panels over the blade image
       // (b1c3_i1): the softened telegraph, then a Brihaspati aside making the Asuras' BORROWED Vajra diegetic — both
