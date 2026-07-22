@@ -145,3 +145,49 @@ This doc feeds the Vanaras and Nagas Codex content docs. The
 Vanaras page is UNGATED as of P13. The Nagas page waits on P15
 (the two Venom edges above). Nothing in this doc may be taught
 on a page until its line is [PULLED].
+
+## P15 CLOSURE (2026-07-22) — SUPERSEDES MARKED LINES ABOVE
+The two [VERIFY] edges are closed; one [PULLED] line above is
+CORRECTED. Where this section conflicts with lines above, this
+section wins. The doc is now fully [PULLED].
+
+CORRECTION — KARKOTAKA (supersedes the "every enemy turn" line):
+R92 engine truth: while Karkotaka is on board, the owner's Venom
+PASSIVE fires ONCE, at the moment either player first passes each
+round, as a flat -1 (escalation ignored), and is removed from the
+round-end drain. Tokens are untouched — they still drain at round
+end. Pulled at venomKarkotakaEarly and the pass() first-pass call.
+
+EDGE 1 — APPLIER SET [PULLED, closed set, 13 id-gated sites]:
+Launch: Nagastra (ASURA card, +1 to ALL enemies), Naga Sadhu (+1
+all), Naga Archer (+1 one), Mrityunjaya (sets 1 on the revived
+Unit), Ananta Coil (board-token per friendly death, Naga-gated).
+Wave: Visha Vayu (+1 all), Kalakuta Vial (+2 one), Patala
+Hatchling (+1 random), Nirmoka (+1 death-trigger), Uraga Colossus
+(sets 2 on itself), Padmavati (+1 round-end pre-drain, R54),
+Kulika (transfer), Shankhapala (mover, net zero). No generic
+applier path exists.
+
+EDGE 2 — STACK SEMANTICS [PULLED]:
+Each token drains -1 (3 tokens = -3), delivered as ONE venomLoss
+event of the summed amount. Consequences: Holika's +1 is
+per-event (3 tokens cost her 4, not 6); sarpaDouble multiplies
+the TOKEN drain only (x2); drainAmount escalation (Patala Throne,
+Vasuki R3, Venom Strike) feeds the PASSIVE only and never touches
+tokens. Karkotaka and Sarpa Satra compose without multiplying
+(different halves: early flat passive vs round-end doubled
+tokens). Order at round end: pre-drain tokens (Padmavati), then
+passive, then tokens, then death sweep, THEN scoring — a
+venom-killed Unit scores zero. Hymn of the Depths is a second
+full mid-round drain. boardTokens persist across rounds; all
+other venom flags reset.
+
+EDGE 3 — EXCLUSIVITY [PULLED]:
+NOT exclusive. Code-gated Naga-only: the passive tide (round-end,
+Karkotaka-early, Hymn) and Ananta board-tokens. Ungated: token
+application and token drain — Nagastra in the ASURA launch deck
+is the live cross-faction applier, and its tokens drain normally.
+Naga identity owns the tide; the poison itself is a weapon anyone
+printed with it may carry.
+
+STATUS: Nagas Codex content doc is UNGATED as of this closure.
