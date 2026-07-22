@@ -205,3 +205,33 @@ full effect and economy, Hanuman's exact passive trigger and amount,
 Angad's complete ability, Rama Naam's exact effect and any conditionals.
 Diff every line against docs/VANARA_CARD_DB_v1.md. Report deltas only.
 No code changes. STOP after reporting.
+
+## ERRATA v1.1 (P13 engine pull, 2026-07-22) — SUPERSEDES THE ENTRIES ABOVE
+Authority: src/engine.js per the P13 read-only pull. Where an entry above
+conflicts with a line here, this section wins. Six corrections:
+
+1. HANUMAN (H1): entry bonus applies ONLY to Vanara Units of printed
+   power 4 or greater; the bonus is +1, becoming +2 per Unit while
+   Jambavan is on the board.
+2. ANGAD (H3): shipped ability is the Astra tax only ("When the opponent
+   plays an Astra, they forfeit their next turn"). The mantra-immunity
+   clause is not implemented and has been struck from the card text
+   (ruled, T61).
+3. NEELA (U02): flat +1 to all Vanara Units on the board. There is no
+   Sugriva conditional (dropped, EXP-D).
+4. RAMA NAAM (M1): flat +2 to all friendly Vanara Units. No Hanuman
+   bonus, no anti-Naga clause.
+5. KISHKINDHA CROWN (R2): on Leap, leaper and copied Unit gain +1 each
+   (not +2/+2, EXP-E). Leap limit twice per round is correct.
+6. RIKSHA (U12): no move ability at launch (wave-gated); +3 power while
+   Hanuman is on the board (on-board condition, not adjacency).
+
+## LEAP — CANONICAL DEFINITION (closes the knowledge hole)
+Leap is a POWER-COPY, not movement. The leaping Unit's power becomes the
+current effective power of an adjacent friendly Unit; no Unit changes
+position. Base allowance one Leap per round, counter resets at round
+end. Kishkindha Crown raises the limit to two and adds +1 to both
+participants. Copied value is read at leap time and includes the
+target's auras; the aura source itself does not transfer. Venom tokens,
+shields, and flags never travel. Heroes are positionless and can
+neither leap nor be copied. "Leap onto" in flavor text is metaphor.
