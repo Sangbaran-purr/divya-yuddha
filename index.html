@@ -538,8 +538,19 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .story-ch.done .ch-num{ color:var(--green); border-color:var(--green-dim); }
 .story-ch .ch-check{ color:var(--green); }
 .story-ch .ch-bonus{ color:var(--gold); font-size:13px; }
-#cutscene{ display:block; overflow:hidden; background:#000; padding:0; z-index:96; }   /* above the board HUD (#hudwrap z-95) so a MID-match cutscene fully covers it */
-.cut-panel{ position:fixed; inset:0; z-index:0; background-position:center; background-size:cover; background-repeat:no-repeat; opacity:0; will-change:transform,opacity; backface-visibility:hidden; }   /* Ken Burns via transform; cover = never letterboxes (handles the 896×1284 panel too) */
+#cutscene{ display:block; overflow:hidden; background:#0a0704; padding:0; z-index:96; --cut-top-bias:22%; --cut-max-aspect:1.9; }   /* above the board HUD (#hudwrap z-95). T59: the two framing knobs live here (inherit to .cut-panel). bg = the page ground (#0a0704, not pure black) so the crop-cap letterbox pillars read as page, not void. */
+.cut-panel{ position:fixed; inset:0; z-index:0; background-position:center; background-size:cover; background-repeat:no-repeat; opacity:0; will-change:transform,opacity; backface-visibility:hidden; }   /* Ken Burns via transform; cover crops top/bottom on wide viewports — T59 biases + caps that at >=1024 below */
+/* T59 — WIDE-PANEL FRAMING (>=1024 only; mobile portrait stays center/inset:0, untouched). KNOB 1 --cut-top-bias: bias the cover
+   crop upward so subject heads survive (crop comes out of the BOTTOM). KNOB 2 --cut-max-aspect: clamp the stage aspect and
+   letterbox with the page ground beyond it, so no panel loses more than ~(1 − 1.5/1.9)=21% of its height. Both tunable one-hunk. */
+@media(min-width:1024px){
+  .cut-panel{
+    background-position:center var(--cut-top-bias);
+    top:0; height:100vh; bottom:auto; right:auto;
+    width:min(100vw, calc(100vh * var(--cut-max-aspect)));
+    left:calc(50% - min(50vw, calc(50vh * var(--cut-max-aspect))));   /* centers the clamped stage → equal page-ground pillars when aspect > --cut-max-aspect */
+  }
+}
 .cut-panel.cut-noart{ background:radial-gradient(circle at 50% 38%, #1c140b 0%, #0a0704 55%, #030201 100%) !important; }   /* 404 fallback: a warm vignette behind the text-only plate (no broken-image) */
 #cut-vfx{ position:fixed; inset:0; z-index:1; pointer-events:none; }                                  /* embers/smoke overlay, above panels, below scrim+plate */
 #cut-scrim{ position:fixed; inset:0; z-index:2; pointer-events:none; background:linear-gradient(to bottom, transparent 40%, rgba(0,0,0,.35) 62%, rgba(0,0,0,.88) 100%); }
