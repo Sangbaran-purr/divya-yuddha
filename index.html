@@ -558,6 +558,20 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #cut-flash.fire{ animation:mythicFlash .5s ease-out; }
 @keyframes mohiniDrift{ 0%{ transform:scale(1.12) translateY(4%); } 60%{ transform:scale(1.12) translateY(0) translateX(0); } 70%{ transform:scale(1.12) translateY(0) translateX(0); } 100%{ transform:scale(1.12) translateY(0) translateX(-4%); } }   /* two-phase: RISE, 1s hold, lateral DRIFT to the Book-2 silhouette */
 #bossvs{ display:flex; align-items:center; justify-content:center; z-index:97; background:radial-gradient(circle at 50% 40%, #1a0808, #060202 78%); cursor:pointer; }
+/* T62 — INTRO TRAILER overlay. z-200 clears the whole ladder (toast-hi 99 is the previous ceiling) because this gates the app before home.
+   The video element is injected by JS and carries display:block (shaped-element law); object-fit:contain letterboxes onto the page ground
+   so the trailer's authored framing is never cropped. Teardown removes the element outright. */
+#introv{ position:fixed; inset:0; z-index:200; background:#0a0704; overflow:hidden; }
+#introv.hidden{ display:none; }
+#introv-poster{ position:absolute; inset:0; background:center/cover no-repeat; }
+#introv video{ position:absolute; inset:0; display:block; width:100%; height:100%; object-fit:contain; background:#0a0704; }
+#introv-gate{ position:absolute; inset:0; z-index:2; display:flex; align-items:center; justify-content:center; cursor:pointer; background:linear-gradient(to bottom, rgba(6,4,1,.34) 0%, rgba(6,4,1,.52) 100%); }
+#introv-gate.hidden{ display:none; }
+#introv-begin{ font-family:Cinzel,serif; font-size:19px; letter-spacing:.32em; color:var(--gold); text-shadow:0 2px 18px rgba(0,0,0,.9); border:1px solid var(--gold-dim); border-radius:10px; padding:14px 26px; background:rgba(10,7,3,.5); animation:introBeat 2.2s ease-in-out infinite; }
+@keyframes introBeat{ 0%,100%{ opacity:.82; } 50%{ opacity:1; } }
+#introv-skip{ position:fixed; top:16px; right:16px; z-index:3; background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.22); color:var(--ink); border-radius:8px; padding:8px 15px; font-family:Cinzel,serif; font-size:12px; letter-spacing:.12em; cursor:pointer; }
+#introv-skip.hidden{ display:none; }
+@media (prefers-reduced-motion: reduce){ #introv-begin{ animation:none; } }
 #bossvs .bv-inner{ text-align:center; padding:24px; animation:bvIn .6s ease-out; }
 #bossvs .bv-vs{ font-family:Cinzel,serif; font-size:13px; letter-spacing:5px; color:var(--crimson); margin-bottom:26px; }
 #bossvs .bv-name{ font-family:Cinzel,serif; font-size:38px; font-weight:700; letter-spacing:3px; color:#e7b0a0; text-shadow:0 2px 18px rgba(200,60,50,.5); }
@@ -2035,6 +2049,14 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     </div>
   </div>
   <footer class="land-foot">v0.1 · Season I</footer>
+</div>
+
+<!-- T62 — INTRO TRAILER (R-A: every launch, before home). Gate → play-with-sound → home. Fail-open: any error/stall goes straight to home.
+     The <video> element is created/destroyed in JS so a torn-down overlay leaves NO element behind (home's rAF/audio hooks untouched). -->
+<div id="introv" class="hidden">
+  <div id="introv-poster"></div>
+  <div id="introv-gate"><div id="introv-begin">TAP TO BEGIN</div></div>
+  <button id="introv-skip" class="hidden">SKIP ›</button>
 </div>
 
 <div class="overlay hidden" id="quests">
@@ -8365,8 +8387,50 @@ function showGameOver(){
   else Audio2.sfx('roundloss');                          // stalemate keeps the synth cue
 }
 
+/* ── T62 — INTRO TRAILER (R-A..R-E) ─────────────────────────────────────────────────────────────
+   R-A: plays on EVERY launch, before home.  R-B: first launch is a mandatory watch (no skip) EXCEPT
+   prefers-reduced-motion, which always gets skip.  R-C: from launch 2 the skip is present from second zero.
+   R-D: TAP TO BEGIN gate (autoplay-with-sound is browser-blocked); the tap starts playback WITH sound.
+   R-E: FAIL-OPEN IS ABSOLUTE — error, 404, unsupported codec, blocked play, or a >4s stall all go
+   STRAIGHT to home. Skip and every fail path land on the SAME home-entry call (finish → done → showLanding).
+   OPTION B: VIDEO_BASE is the runtime origin branch — relative on web today, the absolute Pages URL under a
+   future Capacitor wrap. PRE-WIRED AND DORMANT: nothing native exists yet; the wrap task inherits it as-is
+   (its asset-exclusion half is the deferred www/-staging design, not built here). */
+const VIDEO_BASE = (window.Capacitor || location.protocol==='capacitor:')   // modern Capacitor is capacitor:// (iOS) or http://localhost (Android) — window.Capacitor covers both. file: is deliberately NOT here: it would make local previews stream from Pages.
+  ? 'https://sangbaran-purr.github.io/divya-yuddha/assets/video/'
+  : 'assets/video/';
+const INTRO_MP4 = VIDEO_BASE+'intro_trailer.mp4?v=1', INTRO_POSTER = VIDEO_BASE+'intro_poster.jpg?v=1';
+const INTRO_STALL_MS = 4000;
+function introLaunchCount(){ let n=0; try{ n=parseInt(localStorage.getItem('dy_intro_launches')||'0',10)||0; }catch(e){ n=0; }
+  n++; try{ localStorage.setItem('dy_intro_launches', String(n)); }catch(e){} return n; }
+function playIntro(done){
+  const ov=$('introv'); if(!ov){ done(); return; }                       // no overlay in the DOM → straight to home
+  let finished=false, vid=null, stall=null;
+  const finish=()=>{ if(finished) return; finished=true;                 // ONE home entry, whatever the path
+    if(stall){ clearTimeout(stall); stall=null; }
+    if(vid){ try{ vid.pause(); }catch(e){} vid.removeAttribute('src'); try{ vid.load(); }catch(e){} vid.remove(); vid=null; }   // teardown: the element is GONE (home's rAF/audio hooks untouched)
+    ov.classList.add('hidden'); done(); };
+  const skippable = introLaunchCount()>1 || reducedMotion();             // R-B / R-C
+  const gate=$('introv-gate'), skip=$('introv-skip');
+  $('introv-poster').style.backgroundImage=`url('${INTRO_POSTER}')`;
+  gate.classList.remove('hidden'); skip.classList.add('hidden'); ov.classList.remove('hidden');
+  skip.onclick=(e)=>{ e.stopPropagation(); finish(); };
+  vid=document.createElement('video');                                   // built here so a 404/codec error fails open BEFORE the user taps a dead gate
+  vid.setAttribute('playsinline',''); vid.playsInline=true; vid.preload='metadata';
+  vid.poster=INTRO_POSTER; vid.src=INTRO_MP4;
+  vid.onerror=finish; vid.onended=finish;
+  ov.insertBefore(vid, gate);
+  gate.onclick=()=>{
+    gate.classList.add('hidden');
+    if(skippable) skip.classList.remove('hidden');                       // R-C: from second zero of playback
+    vid.muted=false; vid.volume=1;                                       // R-D: the tap starts it WITH sound
+    stall=setTimeout(finish, INTRO_STALL_MS);                            // R-E: >4s to first frame → home
+    vid.onplaying=()=>{ if(stall){ clearTimeout(stall); stall=null; } };
+    const p=vid.play(); if(p && p.catch) p.catch(finish);                // blocked/failed play → home
+  };
+}
 VFX.init();
-showLanding();
+playIntro(showLanding);   // R-A: the intro gates every launch; showLanding is the single home entry (skip + every fail path land here)
 </script>
 </body>
 </html>
