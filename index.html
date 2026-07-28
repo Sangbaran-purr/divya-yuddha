@@ -7351,11 +7351,12 @@ const facClass = f => f==='asuras' ? 'fac-asura' : f==='vanaras' ? 'fac-vanara' 
 // board owner's — so a Maricha-copy (Deva unit now owned by an Asura) or a Mohini-steal loads the copied card's real art.
 const CARD_FACTION = (()=>{ const m={}; try{ for(const f in DECKS) for(const c of DECKS[f]){ m[c.id]=f; m['n:'+c.n]=f; } }catch(e){} return m; })();
 function cardHomeFaction(c){ return (c && (CARD_FACTION[c.id] || CARD_FACTION['n:'+c.n])) || null; }
-/* T63 — global card-art cache-buster. Appended to EVERY cardArtSrc path, so bumping it forces a one-time
-   full refresh across all 182 card-art URLs (132 pre-existing + 50 wired this task). This is the intended,
-   necessary consequence of the 28 same-filename swaps: without it, returning clients keep the stale Naga art.
-   Bump this string whenever card frames are re-exported. */
-const CARD_ART_V = 't63';
+/* T64 — global card-art cache-buster. Appended to EVERY cardArtSrc path, so bumping it forces a one-time
+   full refresh across all 177 card-art URLs. T64 full-canon sync: 126 derivatives replaced/added (whole
+   launch + wave roster onto the new unified frame art), so every returning client must re-fetch — the
+   intended, necessary consequence of the same-filename swaps. Bump this string whenever card frames are
+   re-exported. */
+const CARD_ART_V = 't64';
 function cardArtSrc(c, faction){
   const fac = cardHomeFaction(c) || faction;   // resolve by the card's home deck (fixes copied/stolen cards; identical to `faction` for normal cards)
   const name = c.n.replace(/[^A-Za-z0-9]/g,'');   // name segment = card name with ALL non-alphanumerics removed (spaces, apostrophes, …)
