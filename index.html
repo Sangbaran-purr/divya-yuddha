@@ -69,8 +69,12 @@ header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; ali
 #field::after{ content:''; position:absolute; inset:0; z-index:1; background:rgba(6,4,2,var(--board-overlay,.30)); pointer-events:none; }   /* dark overlay for readability; per-realm strength via --board-overlay */
 #vfxcanvas{ position:absolute; inset:0; z-index:5; pointer-events:none; }
 #vfxflash{ position:absolute; inset:0; z-index:6; pointer-events:none; opacity:0; background:radial-gradient(circle at 50% 50%, rgba(255,251,235,.92), rgba(255,235,175,.5) 42%, transparent 74%); }
-#vfxflash.fire{ animation:mythicFlash .5s ease-out; }
+#vfxflash.fire{ animation:mythicFlash calc(.5s * var(--vfx-t,1)) ease-out; }
 @keyframes mythicFlash{ 0%{opacity:0;} 8%{opacity:.98;} 24%{opacity:.35;} 100%{opacity:0;} }   /* synced to bolt 2: sharp flash → ~200ms afterglow decay */
+/* T66 combat vignette: white screen-edge flash (transparent centre → white edge, opacity-only) */
+#vfxvignette{ position:fixed; inset:0; z-index:59; pointer-events:none; opacity:0; background:radial-gradient(ellipse at 50% 50%, transparent 56%, rgba(255,252,240,.85) 100%); }
+#vfxvignette.fire{ animation:vignetteFlash calc(.06s * var(--vfx-t,1)) ease-out; }
+@keyframes vignetteFlash{ 0%{opacity:0;} 50%{opacity:.25;} 100%{opacity:0;} }
 #embers{ position:absolute; inset:0; pointer-events:none; z-index:2; overflow:hidden; }
 .ember{ position:absolute; bottom:-8px; border-radius:50%; opacity:0;
   background:radial-gradient(circle, #ffe9a8, #C9A84C 60%, transparent 72%);
@@ -148,15 +152,16 @@ header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; ali
 .medallion.buffed .mark{ color:#5fd06f; } .medallion.hurt .mark{ color:#e05a4a; }
 .bc.targetable{ outline:2px solid var(--gold); outline-offset:1px; z-index:6; animation:pulse 1s infinite alternate; }
 @keyframes pulse{ from{ outline-color:#e0b040; box-shadow:0 0 6px #c9a84c; } to{ outline-color:#fff0c0; box-shadow:0 0 15px #ffe9a8; } }
-.bc.landing{ animation:land .45s ease-out; }
-@keyframes land{ 0%{ transform:scale(.82); box-shadow:0 0 0 0 rgba(255,233,168,.9);} 45%{ box-shadow:0 0 0 4px rgba(255,233,168,.75);} 100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(255,233,168,0);} }
+.bc.landing{ animation:land calc(.45s * var(--vfx-t,1)) ease-out; }
+/* T66 ambient: anticipation dip (.82 → .78) then overshoot (1.02) then settle — a 1-frame snap so plays never read limp */
+@keyframes land{ 0%{ transform:scale(.82); box-shadow:0 0 0 0 rgba(255,233,168,.9);} 12%{ transform:scale(.78);} 55%{ box-shadow:0 0 0 4px rgba(255,233,168,.75);} 72%{ transform:scale(1.02);} 100%{ transform:scale(1); box-shadow:0 0 0 0 rgba(255,233,168,0);} }
 .slot-empty{ flex:1; min-height:24px; display:flex; align-items:center; justify-content:center; color:#6a5730; opacity:.55; font-size:13px; }
 
 .art-slot{ display:flex; gap:6px; align-items:center; justify-content:center; min-height:0; }
 .art-chip{ font-size:10px; font-family:Cinzel,serif; color:var(--gold); border:1px solid var(--gold-dim); border-radius:4px; padding:2px 8px; background:#1a1408; }
 
 /* floating combat text */
-.floater{ position:fixed; z-index:66; font-family:Cinzel,serif; font-weight:700; font-size:16px; pointer-events:none; text-shadow:0 1px 2px #000; animation:floatUp .6s ease-out forwards; }
+.floater{ position:fixed; z-index:66; font-family:Cinzel,serif; font-weight:700; font-size:16px; pointer-events:none; text-shadow:0 1px 2px #000; animation:floatUp calc(.6s * var(--vfx-t,1)) ease-out forwards; }
 .floater.up{ color:#6fe07e; } .floater.down{ color:#ff6a58; }
 @keyframes floatUp{ 0%{ transform:translateY(0); opacity:0; } 22%{ opacity:1; } 100%{ transform:translateY(-26px); opacity:0; } }
 
@@ -1292,19 +1297,19 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 /* ===== event choreography ===== */
 #choreolayer{ position:fixed; inset:0; z-index:64; pointer-events:none; }
 #choreolayer.locked{ pointer-events:auto; cursor:pointer; }
-.bc.choreo-src{ animation:choreoLift .42s ease-out; z-index:5; }
+.bc.choreo-src{ animation:choreoLift calc(.42s * var(--vfx-t,1)) ease-out; z-index:5; }
 @keyframes choreoLift{ 0%{ transform:translateY(0) scale(1);} 40%{ transform:translateY(-8px) scale(1.09); filter:brightness(1.25);} 100%{ transform:translateY(0) scale(1);} }
-.bc.hit{ animation:choreoHit .3s ease-out; }
+.bc.hit{ animation:choreoHit calc(.3s * var(--vfx-t,1)) ease-out; }
 @keyframes choreoHit{ 0%,100%{ transform:translateX(0);} 20%{ transform:translateX(-4px);} 40%{ transform:translateX(4px) ;} 60%{ transform:translateX(-3px);} 80%{ transform:translateX(2px);} }
-.bc.pumped{ animation:choreoPump .32s ease-out; }
+.bc.pumped{ animation:choreoPump calc(.32s * var(--vfx-t,1)) ease-out; }
 @keyframes choreoPump{ 0%,100%{ transform:scale(1);} 45%{ transform:scale(1.13); filter:brightness(1.3);} }
-.dissolve-clone{ position:fixed; z-index:65; border-radius:12px; pointer-events:none; background:linear-gradient(#3a1414,#180808); border:2px solid #b0483c; display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-size:11px; color:#ffd9d0; text-align:center; padding:4px; animation:dissolveAway .5s ease-in forwards; }
+.dissolve-clone{ position:fixed; z-index:65; border-radius:12px; pointer-events:none; background:linear-gradient(#3a1414,#180808); border:2px solid #b0483c; display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-size:11px; color:#ffd9d0; text-align:center; padding:4px; animation:dissolveAway calc(.5s * var(--vfx-t,1)) ease-in forwards; }
 @keyframes dissolveAway{ 0%{ opacity:1; transform:scale(1);} 100%{ opacity:0; transform:scale(.7) rotate(4deg); filter:blur(3px);} }
 .floater.venom{ color:var(--venom); } .floater.note{ color:#ffe08a; font-size:13px; }
-.callout{ position:fixed; z-index:67; font-family:Cinzel,serif; font-weight:700; font-size:12px; letter-spacing:1px; color:#fff2cf; pointer-events:none; text-shadow:0 1px 3px #000, 0 0 8px rgba(255,220,140,.5); animation:calloutPop .5s ease-out forwards; white-space:nowrap; }
+.callout{ position:fixed; z-index:67; font-family:Cinzel,serif; font-weight:700; font-size:12px; letter-spacing:1px; color:#fff2cf; pointer-events:none; text-shadow:0 1px 3px #000, 0 0 8px rgba(255,220,140,.5); animation:calloutPop calc(.5s * var(--vfx-t,1)) ease-out forwards; white-space:nowrap; }
 @keyframes calloutPop{ 0%{ transform:translateY(4px) scale(.85); opacity:0;} 25%{ opacity:1;} 78%{ opacity:1; transform:translateY(-6px) scale(1);} 100%{ opacity:0; transform:translateY(-12px);} }
 #ftoast{ position:fixed; top:31%; left:0; right:0; z-index:69; text-align:center; pointer-events:none; }
-#ftoast .ft{ display:inline-block; font-family:Cinzel,serif; font-size:17px; font-weight:700; letter-spacing:3px; padding:8px 22px; border-radius:12px; border:1.5px solid; background:rgba(8,6,3,.82); animation:ftPop .62s ease-out; text-transform:uppercase; }
+#ftoast .ft{ display:inline-block; font-family:Cinzel,serif; font-size:17px; font-weight:700; letter-spacing:3px; padding:8px 22px; border-radius:12px; border:1.5px solid; background:rgba(8,6,3,.82); animation:ftPop calc(.62s * var(--vfx-t,1)) ease-out; text-transform:uppercase; }
 @keyframes ftPop{ 0%{ transform:scale(.8); opacity:0;} 22%{ transform:scale(1.04); opacity:1;} 80%{ opacity:1;} 100%{ opacity:0; transform:scale(1);} }
 .ft.f-chaos{ color:var(--crimson); border-color:var(--crimson); box-shadow:0 0 18px rgba(224,72,60,.5); }
 .ft.f-dharma{ color:var(--gold); border-color:var(--gold); box-shadow:0 0 18px rgba(201,168,76,.5); }
@@ -1427,31 +1432,35 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 @keyframes mutetoastFade{ 0%{opacity:0;transform:translateX(-50%) translateY(-6px);} 15%{opacity:1;transform:translateX(-50%) translateY(0);} 80%{opacity:1;} 100%{opacity:0;} }
 
 /* ===== board VFX ===== */
-.shard{ position:fixed; z-index:65; width:8px; height:8px; pointer-events:none; border-radius:2px; will-change:transform,opacity; animation:shardFly .6s ease-out forwards; }
+.shard{ position:fixed; z-index:65; width:8px; height:8px; pointer-events:none; border-radius:2px; will-change:transform,opacity; animation:shardFly calc(.6s * var(--vfx-t,1)) ease-out forwards; }
 @keyframes shardFly{ 0%{ opacity:1; transform:translate(0,0) rotate(0) scale(1);} 100%{ opacity:0; transform:translate(var(--dx),var(--dy)) rotate(var(--dr)) scale(.4);} }
-.bc.cracking{ animation:crackSplit .5s ease-in forwards; }
+.bc.cracking{ animation:crackSplit calc(.5s * var(--vfx-t,1)) ease-in forwards; }
 @keyframes crackSplit{ 0%{ clip-path:polygon(0 0,100% 0,100% 100%,0 100%);} 40%{ clip-path:polygon(0 0,48% 6%,100% 0,100% 45%,52% 55%,100% 100%,0 100%,45% 52%);} 100%{ opacity:0; clip-path:polygon(0 0,48% 20%,100% 0,100% 45%,52% 55%,100% 100%,0 100%,45% 52%); transform:scale(.9);} }
-.bc.impact{ animation:impactFlash .3s ease-out; }
-@keyframes impactFlash{ 0%,100%{ box-shadow:none; transform:translate(0,0);} 15%{ box-shadow:0 0 0 3px rgba(255,70,50,.85), 0 0 18px rgba(255,60,40,.6); transform:translate(-3px,1px);} 45%{ transform:translate(3px,-1px);} 70%{ transform:translate(-2px,0);} }
+.bc.impact{ animation:impactFlash calc(.3s * var(--vfx-t,1)) ease-out; }
+/* T66 combat: jolt ±3px → ±5px, red ring 3px → 4px */
+@keyframes impactFlash{ 0%,100%{ box-shadow:none; transform:translate(0,0);} 15%{ box-shadow:0 0 0 4px rgba(255,70,50,.9), 0 0 20px rgba(255,60,40,.65); transform:translate(-5px,2px);} 45%{ transform:translate(5px,-2px);} 70%{ transform:translate(-3px,1px);} }
 .fx-ring{ position:fixed; z-index:63; border-radius:50%; pointer-events:none; will-change:transform,opacity; }
-.fx-ring.buff{ border:2.5px solid var(--green,#6fe07e); animation:ringRise .55s ease-out forwards; }
-.fx-ring.shield{ border:3px solid var(--gold); box-shadow:0 0 14px rgba(201,168,76,.7); animation:ringSnap .45s cubic-bezier(.2,1.4,.4,1) forwards; }
+.fx-ring.buff{ border:2.5px solid var(--green,#6fe07e); animation:ringRise calc(.55s * var(--vfx-t,1)) ease-out forwards; }
+.fx-ring.shield{ border:3px solid var(--gold); box-shadow:0 0 14px rgba(201,168,76,.7); animation:ringSnap calc(.45s * var(--vfx-t,1)) cubic-bezier(.2,1.4,.4,1) forwards; }
 @keyframes ringRise{ 0%{ opacity:0; transform:translate(-50%,-30%) scale(.5);} 25%{ opacity:.9;} 100%{ opacity:0; transform:translate(-50%,-140%) scale(1.1);} }
 @keyframes ringSnap{ 0%{ opacity:0; transform:translate(-50%,-50%) scale(1.8) rotate(-40deg);} 55%{ opacity:1;} 100%{ opacity:0; transform:translate(-50%,-50%) scale(1) rotate(0);} }
-.fx-drip{ position:fixed; z-index:64; width:7px; height:12px; border-radius:0 0 60% 60%/0 0 100% 100%; background:linear-gradient(var(--venom,#78e08f),#2f7d4a); pointer-events:none; opacity:.9; box-shadow:0 0 6px rgba(120,224,143,.6); animation:dripSlide .7s ease-in forwards; }
+.fx-drip{ position:fixed; z-index:64; width:7px; height:12px; border-radius:0 0 60% 60%/0 0 100% 100%; background:linear-gradient(var(--venom,#78e08f),#2f7d4a); pointer-events:none; opacity:.9; box-shadow:0 0 6px rgba(120,224,143,.6); animation:dripSlide calc(.7s * var(--vfx-t,1)) ease-in forwards; }
 @keyframes dripSlide{ 0%{ opacity:0; transform:translate(-50%,0) scaleY(.6);} 20%{ opacity:.95;} 100%{ opacity:0; transform:translate(-50%,var(--dy,42px)) scaleY(1.3);} }
-.venombadge.wet{ animation:venomPulse .6s ease-out; }
+.venombadge.wet{ animation:venomPulse calc(.6s * var(--vfx-t,1)) ease-out; }
 @keyframes venomPulse{ 0%,100%{ transform:scale(1);} 40%{ transform:scale(1.5); filter:drop-shadow(0 0 6px var(--venom));} }
-.floater.down.heavy{ font-size:21px; font-weight:800; animation:floatArc .7s ease-out forwards; }
+.floater.down.heavy{ font-size:21px; font-weight:800; animation:floatArc calc(.7s * var(--vfx-t,1)) ease-out forwards; }
 @keyframes floatArc{ 0%{ opacity:0; transform:translate(0,0) scale(.7);} 20%{ opacity:1;} 100%{ opacity:0; transform:translate(10px,-30px) scale(1.1);} }
 #boardwash{ position:fixed; inset:0; z-index:60; pointer-events:none; opacity:0; }
-#boardwash.on{ animation:washPulse .7s ease-out; }
+#boardwash.on{ animation:washPulse calc(.7s * var(--vfx-t,1)) ease-out; }
 @keyframes washPulse{ 0%{opacity:0;} 25%{opacity:.5;} 100%{opacity:0;} }
-#field.shake{ animation:screenShake .22s ease-in-out; }
+#field.shake{ animation:screenShake calc(.22s * var(--vfx-t,1)) ease-in-out; }
 @keyframes screenShake{ 0%,100%{ transform:translate(0,0);} 20%{ transform:translate(-6px,3px);} 40%{ transform:translate(6px,-3px);} 60%{ transform:translate(-4px,2px);} 80%{ transform:translate(4px,-1px);} }
+/* T66 spectacle: zoom-punch (scale 1→1.035→1) COMPOSED with a ±9px shake in ONE keyframe → single transform per frame, no two-animation conflict, no wrapper */
+#field.shake-big{ animation:fieldSpectacle calc(.28s * var(--vfx-t,1)) cubic-bezier(.22,1,.36,1); }
+@keyframes fieldSpectacle{ 0%{ transform:scale(1) translate(0,0);} 18%{ transform:scale(1.035) translate(-9px,4px);} 38%{ transform:scale(1.028) translate(9px,-4px);} 58%{ transform:scale(1.014) translate(-6px,3px);} 78%{ transform:scale(1.004) translate(5px,-2px);} 100%{ transform:scale(1) translate(0,0);} }
 #showcaseCard.shimmer::after{ content:''; position:absolute; inset:0; z-index:3; pointer-events:none; background:linear-gradient(105deg, transparent 30%, rgba(255,246,214,.5) 48%, transparent 66%); background-size:250% 100%; animation:shimmerSweep 1.4s ease-in-out infinite; }
 @keyframes shimmerSweep{ 0%{ background-position:180% 0;} 100%{ background-position:-80% 0;} }
-.fx-arc{ position:fixed; z-index:64; height:2.5px; transform-origin:left center; background:linear-gradient(90deg, transparent, var(--green,#6fe07e), transparent); pointer-events:none; animation:arcFade .5s ease-out forwards; }
+.fx-arc{ position:fixed; z-index:64; height:2.5px; transform-origin:left center; background:linear-gradient(90deg, transparent, var(--green,#6fe07e), transparent); pointer-events:none; animation:arcFade calc(.5s * var(--vfx-t,1)) ease-out forwards; }
 @keyframes arcFade{ 0%{ opacity:0;} 25%{ opacity:.95;} 100%{ opacity:0;} }
 #gearbtn:active{ transform:scale(.94); }
 .set-row{ margin:14px 0; text-align:left; }
@@ -1931,6 +1940,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 <div id="ftoast" class="hidden"><span class="ft"></span></div>
 <div id="resultsummary" class="hidden"></div>
 <div id="boardwash"></div>
+<div id="vfxvignette"></div>   <!-- T66 combat screen-edge vignette flash -->
 <div id="showcase" class="hidden"><div id="showcaseCard"></div></div>
 <div id="choreolayer"></div>
 <div class="overlay hidden" id="settings"><div class="modal">
@@ -7587,7 +7597,20 @@ function showRoundBanner(){
 const SPEEDS={ relaxed:1.4, normal:1.0, fast:0.6 };
 let speedMult = SPEEDS[localStorage.getItem('dy_speed')] || 1.0;
 const CHOREO_SPEED = 1.3;   // global baseline pacing multiplier for ALL choreography steps (showcase / effects / summary). ↑ = slower. One number to tune.
-function setSpeed(key){ if(!SPEEDS[key])return; speedMult=SPEEDS[key]; localStorage.setItem('dy_speed',key); syncSettingsUI(); }
+// T66 — unified VFX pacing. vfxT() = the SAME multiplier the canvas layer uses (S()=CHOREO_SPEED) × the user speed.
+// Bound into CSS via --vfx-t so DOM-effect durations AND their JS removal timeouts breathe together with canvas + settings.
+function vfxT(){ return (typeof speedMult!=='undefined'?speedMult:1) * CHOREO_SPEED; }
+function applyVfxT(){ try{ document.documentElement.style.setProperty('--vfx-t', vfxT().toFixed(3)); }catch(e){} }
+applyVfxT();
+// T66 — three-tier escalation ladder. Routes ALL effect dispatch (T65 firing map): L/M plays → spectacle;
+// astra plays + damage/destroy → combat; everything else (units, mantras, buffs, venom, shield) → ambient.
+function vfxTier(c, ev){
+  if(ev.type==='play' && c && (c.r==='L'||c.r==='M')) return 'spectacle';   // Legendary/Mythic plays (incl. Brahmastra-tier astras, which are L/M)
+  if(ev.type==='play' && c && c.t==='astra') return 'combat';               // lower-rarity astra resolution
+  if(ev.type==='damage' || ev.type==='destroy') return 'combat';            // combat events
+  return 'ambient';                                                          // units, mantras, buffs, venom, shield, tokens
+}
+function setSpeed(key){ if(!SPEEDS[key])return; speedMult=SPEEDS[key]; localStorage.setItem('dy_speed',key); applyVfxT(); syncSettingsUI(); }
 function findCardByUid(uid){
   for(const pi of [0,1]){ const p=G.players[pi];
     for(const z of [p.units,p.heroes,p.discard,p.hand]){ const c=z.find(x=>x&&x.uid===uid); if(c) return c; }
@@ -7953,26 +7976,26 @@ function factionToast(ability, text){
   if (reducedMotion()) return;
   const b=$('ftoast'), t=b.querySelector('.ft');
   t.className='ft '+FTOAST_CLASS(ability); t.textContent=text||ability;
-  b.classList.remove('hidden'); t.style.animation='none'; void t.offsetWidth; t.style.animation='ftPop .62s ease-out';
-  clearTimeout(b._t); b._t=setTimeout(()=>b.classList.add('hidden'), 640);
+  b.classList.remove('hidden'); t.style.animation='none'; void t.offsetWidth; t.style.animation='ftPop '+(0.62*vfxT()).toFixed(2)+'s ease-out';
+  clearTimeout(b._t); b._t=setTimeout(()=>b.classList.add('hidden'), 640*vfxT());
 }
 function calloutAt(pos, txt){
   if (!pos || !txt || reducedMotion()) return;
   const c=document.createElement('div'); c.className='callout'; c.textContent=txt;
   c.style.left=pos.cx+'px'; c.style.top=(pos.rect.top-14)+'px'; c.style.transform='translateX(-50%)';
-  $('choreolayer').appendChild(c); setTimeout(()=>c.remove(), 520);
+  $('choreolayer').appendChild(c); setTimeout(()=>c.remove(), 520*vfxT());
 }
 function floatAt(pos, txt, kind){
   if (!pos || reducedMotion()) return;
   const f=document.createElement('div'); f.className='floater '+kind; f.textContent=txt;
   f.style.left=(pos.cx-9)+'px'; f.style.top=pos.top+'px';
-  $('choreolayer').appendChild(f); setTimeout(()=>f.remove(), 620);
+  $('choreolayer').appendChild(f); setTimeout(()=>f.remove(), 620*vfxT());
 }
 function dissolveAt(pos, name, color){
   if (!pos || reducedMotion()) return;
   const d=document.createElement('div'); d.className='dissolve-clone cracking';
   d.style.left=pos.rect.left+'px'; d.style.top=pos.rect.top+'px'; d.style.width=pos.rect.width+'px'; d.style.height=pos.rect.height+'px';
-  d.textContent='✖ '+(name||''); $('choreolayer').appendChild(d); setTimeout(()=>d.remove(), 520);
+  d.textContent='✖ '+(name||''); $('choreolayer').appendChild(d); setTimeout(()=>d.remove(), 520*vfxT());
   shardBurst(pos.rect, color||'#e0483c');   // faction-colored particle shards scatter out
 }
 function shardBurst(rect, color){
@@ -7985,7 +8008,7 @@ function shardBurst(rect, color){
     s.style.setProperty('--dx',(Math.cos(ang)*dist).toFixed(0)+'px');
     s.style.setProperty('--dy',(Math.sin(ang)*dist+28).toFixed(0)+'px');
     s.style.setProperty('--dr',(Math.random()*540-270).toFixed(0)+'deg');
-    $('choreolayer').appendChild(s); setTimeout(()=>s.remove(),640);
+    $('choreolayer').appendChild(s); setTimeout(()=>s.remove(),640*vfxT());
   }
 }
 function fxRing(pos, kind){
@@ -7993,34 +8016,38 @@ function fxRing(pos, kind){
   const sz=Math.max(pos.rect.width,pos.rect.height)*(kind==='shield'?1.05:0.9);
   const r=document.createElement('div'); r.className='fx-ring '+kind;
   r.style.width=r.style.height=sz+'px'; r.style.left=pos.cx+'px'; r.style.top=(pos.rect.top+pos.rect.height/2)+'px';
-  $('choreolayer').appendChild(r); setTimeout(()=>r.remove(),600);
+  $('choreolayer').appendChild(r); setTimeout(()=>r.remove(),600*vfxT());
 }
 function fxDrip(pos){
   if(!pos||reducedMotion()) return;
   const d=document.createElement('div'); d.className='fx-drip';
   d.style.left=(pos.cx-3+(Math.random()*pos.rect.width*0.4-pos.rect.width*0.2))+'px'; d.style.top=(pos.rect.top+8)+'px';
   d.style.setProperty('--dy',(pos.rect.height*0.7).toFixed(0)+'px');
-  $('choreolayer').appendChild(d); setTimeout(()=>d.remove(),720);
+  $('choreolayer').appendChild(d); setTimeout(()=>d.remove(),720*vfxT());
 }
 function fxLeapArc(fromPos, toPos){
   if(!fromPos||!toPos||reducedMotion()) return;
   const x1=fromPos.cx, y1=fromPos.rect.top+fromPos.rect.height/2, x2=toPos.cx, y2=toPos.rect.top+toPos.rect.height/2;
   const len=Math.hypot(x2-x1,y2-y1), ang=Math.atan2(y2-y1,x2-x1)*180/Math.PI;
   const a=document.createElement('div'); a.className='fx-arc'; a.style.left=x1+'px'; a.style.top=y1+'px'; a.style.width=len+'px'; a.style.transform=`rotate(${ang}deg)`;
-  $('choreolayer').appendChild(a); setTimeout(()=>a.remove(),500);
+  $('choreolayer').appendChild(a); setTimeout(()=>a.remove(),500*vfxT());
 }
 let lastShakeAt=0;
-function screenShake(){
-  if(reducedMotion()) return; const now=performance.now(); if(now-lastShakeAt<1000) return; lastShakeAt=now;   // max one shake / second
-  const f=$('field'); f.classList.remove('shake'); void f.offsetWidth; f.classList.add('shake'); setTimeout(()=>f.classList.remove('shake'),240);
+function screenShake(spectacle){
+  if(reducedMotion()) return; const now=performance.now(); if(now-lastShakeAt<1000) return; lastShakeAt=now;   // max one shake / second (global gate, shared across tiers)
+  const f=$('field'); const cls=spectacle?'shake-big':'shake';   // T66: spectacle = ±9px shake + zoom-punch (single composed keyframe); combat = ±6px translate-only
+  f.classList.remove('shake','shake-big'); void f.offsetWidth; f.classList.add(cls);
+  setTimeout(()=>f.classList.remove('shake','shake-big'), (spectacle?300:240)*vfxT());
 }
+// T66 combat: a single ~60ms white screen-edge vignette flash (fixed overlay, opacity-only) on combat astra resolution
+function vignetteFlash(){ if(reducedMotion()) return; const v=$('vfxvignette'); if(!v) return; v.classList.remove('fire'); void v.offsetWidth; v.classList.add('fire'); setTimeout(()=>v.classList.remove('fire'), 120*vfxT()); }
 function boardWash(color){
   if(reducedMotion()) return; const w=$('boardwash'); w.style.background=`radial-gradient(circle at 50% 45%, ${color}55, transparent 70%)`;
-  w.classList.remove('on'); void w.offsetWidth; w.classList.add('on'); setTimeout(()=>w.classList.remove('on'),720);
+  w.classList.remove('on'); void w.offsetWidth; w.classList.add('on'); setTimeout(()=>w.classList.remove('on'),720*vfxT());
 }
 const FAC_HEX={ devas:'#e0b040', asuras:'#e0483c', vanaras:'#6fc257', nagas:'#3fb9a8' };
 function ownerPiOfUid(uid){ for(const pi of [0,1]){ const p=G.players[pi]; if([...p.units,...p.heroes,...p.discard].some(c=>c&&c.uid===uid)) return pi; if(p.artifact&&p.artifact.uid===uid) return pi; } return 0; }
-function wetBadge(el){ if(!el)return; const b=el.querySelector('.venombadge'); if(b){ b.classList.remove('wet'); void b.offsetWidth; b.classList.add('wet'); setTimeout(()=>b.classList.remove('wet'),600); } }
+function wetBadge(el){ if(!el)return; const b=el.querySelector('.venombadge'); if(b){ b.classList.remove('wet'); void b.offsetWidth; b.classList.add('wet'); setTimeout(()=>b.classList.remove('wet'),600*vfxT()); } }
 function leapArcFromText(leaperPos, text){
   const m=/copies (.+)$/.exec(text||''); if(!m||!leaperPos) return; const name=m[1].trim();
   const el=[...document.querySelectorAll('#field .bc')].find(e=>((e.querySelector('.mini-name')||{}).textContent||'')===name);
@@ -8080,7 +8107,7 @@ const VFX = (()=>{
       else sprite(sEmber, p.x+flick, p.y, p.sz, 0, Math.max(0,p.life/p.max)); }
     cx.setTransform(DPR,0,0,DPR,0,0); cx.globalAlpha=1; cx.lineCap='round'; cx.lineJoin='round';
     for(let i=bolts.length-1;i>=0;i--){ const b=bolts[i]; b.life-=dt; if(b.life<=0){ bolts.splice(i,1); continue; } const a=b.life/b.max;
-      for(const st of [[9,`rgba(150,190,255,${.16*a})`],[3.5,`rgba(205,228,255,${.5*a})`],[1,`rgba(255,255,255,${.95*a})`]]){ cx.lineWidth=st[0]; cx.strokeStyle=st[1]; poly(b.main); for(const br of b.branches) poly(br); } }
+      for(const st of [[12,`rgba(150,190,255,${.16*a})`],[5,`rgba(205,228,255,${.5*a})`],[1.5,`rgba(255,255,255,${.95*a})`]]){ cx.lineWidth=st[0]; cx.strokeStyle=st[1]; poly(b.main); for(const br of b.branches) poly(br); } }   // T66 spectacle: bolt widths 9/3.5/1 -> 12/5/1.5 for slot-scale presence
     cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
   }
   function step(now){
@@ -8094,18 +8121,18 @@ const VFX = (()=>{
   // (a) CARD LANDS — warm stone dust + gold embers
   function cardLand(cxp, cyp){ if(reducedMotion()||!ready) return; const {x,y}=local(cxp,cyp), s=S();
     for(let i=0;i<Math.min(3,room());i++){ const ang=Math.random()*6.28; addSmoke(sDust, x+(Math.random()*24-12), y+6, Math.cos(ang)*16, -6-Math.random()*8, 1, 20+Math.random()*14, (1.5+Math.random()*.6)*s, .42); }
-    const n=Math.min(8, Math.max(5,5+Math.floor(Math.random()*4)), room()); for(let i=0;i<n;i++){ const ang=-Math.PI/2+(Math.random()-.5)*1.9, sp=40+Math.random()*70; addEmber(x, y+4, ang, sp, 100, .6*s, 4+Math.random()*3); } }
+    const n=Math.min(10, 6+Math.floor(Math.random()*5), room()); for(let i=0;i<n;i++){ const ang=-Math.PI/2+(Math.random()-.5)*1.9, sp=40+Math.random()*70; addEmber(x, y+4, ang, sp, 100, .6*s, 4+Math.random()*3); } }   // T66 ambient: embers 5-8 -> 6-10
   // (b) ASTRA BURST — 3 fire populations (additive) + delayed smoke puffs
-  function astraBurst(cxp, cyp){ if(reducedMotion()||!ready) return; const {x,y}=local(cxp,cyp), s=S();
-    for(let i=0;i<Math.min(6,room());i++){ const ang=Math.random()*6.28, sp=20+Math.random()*50; addFire(x,y,ang,sp, 30+Math.random()*16, (.5+Math.random()*.3)*s, -70, 1.2); }   // large soft glows (flame body)
-    for(let i=0;i<Math.min(12,room());i++){ const ang=Math.random()*6.28, sp=70+Math.random()*140; addFire(x,y,ang,sp, 12+Math.random()*10, (.4+Math.random()*.25)*s, -110, 2.0); }  // small hot cores
-    for(let i=0;i<Math.min(8,room());i++){ const ang=-Math.PI/2+(Math.random()-.5)*2.2, sp=60+Math.random()*90; addEmber(x,y,ang,sp,-60,(.6+Math.random()*.5)*s, 5+Math.random()*3.5); }   // rising embers
-    setTimeout(()=>{ if(!ready) return; for(let i=0;i<Math.min(4,room());i++){ const ang=Math.random()*6.28; addSmoke(sDust, x+(Math.random()-.5)*20, y-6, Math.cos(ang)*14, -10-Math.random()*10, -2, 24+Math.random()*18, (1.4+Math.random()*.6)*s, .4); } }, 220*s);   // smoke after the flame peak
+  function astraBurst(cxp, cyp){ if(reducedMotion()||!ready) return; const {x,y}=local(cxp,cyp), s=S(), SZ=1.4;   // T66 STEP 3: ×1.4 slot-scale so bursts read at card-slot render size (counts still cap-gated by room())
+    for(let i=0;i<Math.min(6,room());i++){ const ang=Math.random()*6.28, sp=20+Math.random()*50; addFire(x,y,ang,sp, (30+Math.random()*16)*SZ, (.5+Math.random()*.3)*s, -70, 1.2); }   // large soft glows (flame body)
+    for(let i=0;i<Math.min(16,room());i++){ const ang=Math.random()*6.28, sp=70+Math.random()*140; addFire(x,y,ang,sp, (12+Math.random()*10)*SZ, (.4+Math.random()*.25)*s, -110, 2.0); }  // T66 combat: hot cores 12 -> 16
+    for(let i=0;i<Math.min(8,room());i++){ const ang=-Math.PI/2+(Math.random()-.5)*2.2, sp=60+Math.random()*90; addEmber(x,y,ang,sp,-60,(.6+Math.random()*.5)*s, (5+Math.random()*3.5)*SZ); }   // rising embers
+    setTimeout(()=>{ if(!ready) return; for(let i=0;i<Math.min(4,room());i++){ const ang=Math.random()*6.28; addSmoke(sDust, x+(Math.random()-.5)*20, y-6, Math.cos(ang)*14, -10-Math.random()*10, -2, (24+Math.random()*18)*SZ, (1.4+Math.random()*.6)*s, .4); } }, 220*s);   // smoke after the flame peak
   }
   // (c) BRAHMASTRA / Mythic — dim → bolt → dark → bolt+flash → afterglow → smoke roll + embers
-  function brahmastraSmoke(ix,iy){ const s=S();
-    for(let i=0;i<Math.min(16,room());i++){ const ang=Math.random()*6.28, spread=30+Math.random()*90; addSmoke(sDark, ix+(Math.random()-.5)*40, iy+(Math.random()-.5)*20, Math.cos(ang)*spread, -6-Math.random()*14, -3, 34+Math.random()*30, (1.6+Math.random()*.8)*s, .55); }   // rolls outward across the board
-    for(let i=0;i<Math.min(8,room());i++){ const ang=-Math.PI/2+(Math.random()-.5)*2, sp=50+Math.random()*90; addEmber(ix,iy,ang,sp,-40,(.7+Math.random()*.5)*s, 6+Math.random()*4); }
+  function brahmastraSmoke(ix,iy){ const s=S(), SZ=1.4;
+    for(let i=0;i<Math.min(16,room());i++){ const ang=Math.random()*6.28, spread=30+Math.random()*90; addSmoke(sDark, ix+(Math.random()-.5)*40, iy+(Math.random()-.5)*20, Math.cos(ang)*spread, -6-Math.random()*14, -3, (34+Math.random()*30)*SZ, (1.6+Math.random()*.8)*s, .55); }   // rolls outward across the board
+    for(let i=0;i<Math.min(8,room());i++){ const ang=-Math.PI/2+(Math.random()-.5)*2, sp=50+Math.random()*90; addEmber(ix,iy,ang,sp,-40,(.7+Math.random()*.5)*s, (6+Math.random()*4)*SZ); }
   }
   function flashDiv(){ const f=$('vfxflash'); if(f){ f.classList.remove('fire'); void f.offsetWidth; f.classList.add('fire'); } }
   function mythic(cxp, cyp){ if(reducedMotion()||!ready) return; const s=S(); const p=(cxp!=null)?local(cxp,cyp):{x:w*0.5,y:h*0.5}, ix=p.x, iy=p.y;
@@ -8116,7 +8143,7 @@ const VFX = (()=>{
   }
   return { init, resize, cardLand, astraBurst, mythic };
 })();
-function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320); }
+function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
 async function playEvent(ev, snap){
   playEventSound(ev);
   const src = ev.sourceUid!=null ? posOf(ev.sourceUid, snap) : null;
@@ -8124,16 +8151,19 @@ async function playEvent(ev, snap){
   if (ev.type==='play'){
     const c=findCardByUid(ev.sourceUid); const isAstra = c && c.t==='astra';
     const isBody = c && (c.t==='unit'||c.t==='hero');
+    const tier = vfxTier(c, ev);                  // T66 ladder: ambient | combat | spectacle
     cardPlaySound(c);                             // Astra→impact file · Unit/Hero→clash file · Mantra→om/heal file · Artifact→artifact file (synth cardplay fully retired)
-    if(src){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
+    if(src){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }   // cpulse fires CONCURRENT with the impact visual (beat 1a)
     if(isBody && src) VFX.cardLand(src.cx, src.rect.top+src.rect.height/2);   // (a) card-lands dust + embers — same beat as the clash SFX
-    if(isAstra){ const tp=halfCenterClient(1-ownerPiOfUid(ev.sourceUid)); if(tp){ VFX.astraBurst(tp.x, tp.y); if(c.r==='M') VFX.mythic(tp.x, tp.y); } }   // (b) fire burst on the sfx_astra beat; (c) Mythic → lightning + flash + smoke
-    let hold=700;
-    if(c && (c.r==='L'||c.r==='M')){ hold+=300; screenShake(); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); if(!isAstra) Audio2.sfx('boom'); }   // non-astra Mythic/Legendary keep the synth boom
+    if(isAstra){ const tp=halfCenterClient(1-ownerPiOfUid(ev.sourceUid)); if(tp){ VFX.astraBurst(tp.x, tp.y); if(tier==='combat') vignetteFlash(); if(c.r==='M') VFX.mythic(tp.x, tp.y); } }   // (b) burst; combat → screen-edge vignette; Mythic → lightning + flash + smoke
+    let hold=700, hitStop=0;
+    if(tier==='spectacle'){ hold+=300; hitStop=110; screenShake(true); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); if(!isAstra) Audio2.sfx('boom'); }   // SPECTACLE: zoom-punch + ±9 shake + wash + 110ms hit-stop
+    else if(tier==='combat'){ hitStop=70; }                                    // COMBAT astra: 70ms hit-stop (burst + vignette above)
     else if(c && c.t==='hero') hold+=300;
+    if(hitStop) await cDelay(hitStop);                                         // HIT-STOP injected at the impact instant, before the hold (scaled by --vfx-t via cDelay; skipped in reduced-motion since playEvent never runs there)
     await cDelay(hold); return;
   }
-  if (ev.type==='destroy'){ const u=ev.targetUids[0]; dissolveAt(posOf(u, snap), snap[u]&&snap[u].name, snap[u]&&snap[u].color); await cDelay(600); return; }   // crack + shards + dwell
+  if (ev.type==='destroy'){ const u=ev.targetUids[0]; await cDelay(40); dissolveAt(posOf(u, snap), snap[u]&&snap[u].name, snap[u]&&snap[u].color); await cDelay(600); return; }   // 40ms hit-stop → death reads as a beat, then crack + shards + dwell
   if (src && (ev.type==='buff'||ev.type==='token')){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
   const tgts=ev.targetUids||[];
   if (!tgts.length){ await cDelay(180); return; }
@@ -8142,14 +8172,19 @@ async function playEvent(ev, snap){
     if (choreoSkip) break;
     const pos=posOf(tgts[i], snap);
     if (pos){
-      if (ev.type==='damage'){ cpulse(pos.el,'impact'); floatAt(pos, ev.text||String(ev.amount), 'down heavy'); }
-      else if (ev.type==='venom'){ cpulse(pos.el,'impact'); fxDrip(pos); wetBadge(pos.el); floatAt(pos, '☠ '+(ev.amount||''), 'venom'); }
-      else if (ev.type==='buff'){ cpulse(pos.el,'pumped'); fxRing(pos,'buff'); floatAt(pos, ev.text||('+'+ev.amount), 'up'); if(ev.abilityName==='Leap') leapArcFromText(pos, ev.text); }
-      else if (ev.type==='token'){ fxDrip(pos); wetBadge(pos.el); floatAt(pos, '☠', 'venom'); }
-      else if (ev.type==='shield'){ fxRing(pos,'shield'); floatAt(pos, '🛡', 'note'); }
-      else { floatAt(pos, ev.text||ev.abilityName||'', 'note'); }
-    }
-    await cDelay(280);
+      // BEAT SEQUENCING (T66 1b): impact VISUAL + cpulse fire first; the floater/number is deferred ~120ms (scaled).
+      // COMBAT damage adds a 70ms hit-stop on top so the hit lands, the queue pauses, THEN the number reads.
+      let ft, fk, hitStop=0;
+      if (ev.type==='damage'){ cpulse(pos.el,'impact'); ft=ev.text||String(ev.amount); fk='down heavy'; hitStop=70; }   // combat
+      else if (ev.type==='venom'){ cpulse(pos.el,'impact'); fxDrip(pos); wetBadge(pos.el); ft='☠ '+(ev.amount||''); fk='venom'; }   // ambient (poison = dread, not punch)
+      else if (ev.type==='buff'){ cpulse(pos.el,'pumped'); fxRing(pos,'buff'); ft=ev.text||('+'+ev.amount); fk='up'; if(ev.abilityName==='Leap') leapArcFromText(pos, ev.text); }   // ambient
+      else if (ev.type==='token'){ fxDrip(pos); wetBadge(pos.el); ft='☠'; fk='venom'; }
+      else if (ev.type==='shield'){ fxRing(pos,'shield'); ft='🛡'; fk='note'; }
+      else { ft=ev.text||ev.abilityName||''; fk='note'; }
+      await cDelay(120 + hitStop);     // hit → (beat + combat hit-stop) → number
+      floatAt(pos, ft, fk);
+      await cDelay(160);               // settle before the next target (120+160 = the pre-T66 280ms spacing for ambient events)
+    } else { await cDelay(280); }
   }
   await cDelay(160 + bigHit);
 }
