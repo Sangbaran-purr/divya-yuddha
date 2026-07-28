@@ -4685,6 +4685,7 @@ function startGame(p0Faction, p1Faction){
   showRealmIntro();
   render();
   VFX.init(); VFX.resize();      // size the impact-VFX canvas to the now-visible board
+  VFX.preloadSprites();          // T67: load + tint the painted VFX kit at MATCH START (async, non-blocking; mulligan proceeds; procedural fallback covers the load gap)
   beginMulligan();          // play begins when the player confirms their opening hand
 }
 const FAC_LABEL = f => f==='asuras' ? 'ASURA' : f==='vanaras' ? 'VANARA' : f==='nagas' ? 'NAGA' : 'DEVA';
@@ -6966,7 +6967,7 @@ function startStoryChapter(id){
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers(); battleStageStart();   // T42
   Audio2.musicDuck(false); Audio2.playTrack('battle'); conchPending=true;   // release the intro duck INTO the menu→battle crossfade (the crossfade + conch stay the hinge)
-  showRealmIntro(); render(); VFX.init(); VFX.resize();
+  showRealmIntro(); render(); VFX.init(); VFX.resize(); VFX.preloadSprites();   // T67 sprite kit at story-match start too
   if (G.mulliganCount>0) storyBeginMulligan();   // ch4/ch5: run the mulligan phase (teaches it) with the pre-match Brihaspati line
   else pump();                                   // ch1–3 (mulligan:0): straight into round 1 (player-first via storyRng)
 }
@@ -8051,7 +8052,9 @@ function wetBadge(el){ if(!el)return; const b=el.querySelector('.venombadge'); i
 function leapArcFromText(leaperPos, text){
   const m=/copies (.+)$/.exec(text||''); if(!m||!leaperPos) return; const name=m[1].trim();
   const el=[...document.querySelectorAll('#field .bc')].find(e=>((e.querySelector('.mini-name')||{}).textContent||'')===name);
-  if(el){ const r=el.getBoundingClientRect(); fxLeapArc(leaperPos, { cx:r.left+r.width/2, rect:r }); }
+  if(el){ const r=el.getBoundingClientRect(), tx=r.left+r.width/2, ty=r.top+r.height/2, ly=leaperPos.rect.top+leaperPos.rect.height/2;
+    if(!VFX.sprStreak(leaperPos.cx, ly, tx, ty, r.width)) fxLeapArc(leaperPos, { cx:tx, rect:r });   // E9 painted Vanara-green streak replaces the arc line
+  }
 }
 function halfCenterClient(pi){ const el=document.querySelector(pi===1?'.half.opp':'.half.me'); if(!el) return null; const r=el.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
 
@@ -8091,6 +8094,75 @@ const VFX = (()=>{
     const main=displace(sx,sy,ix,iy,full*0.25,6), branches=[], nb=2+Math.floor(Math.random()*2), base=Math.atan2(iy-sy,ix-sx);
     for(let k=0;k<nb;k++){ const a=main[1+Math.floor(Math.random()*(main.length-2))], dir=base+(Math.random()<.5?1:-1)*(0.52+Math.random()*0.18), len=full*(0.2+Math.random()*0.2); branches.push(displace(a.x,a.y,a.x+Math.cos(dir)*len,a.y+Math.sin(dir)*len,len*0.25,4)); }
     return { main, branches, life:0.14, max:0.14 }; }
+  // ===================== T67 SPRITE COMPOSITOR (painted VFX kit) =====================
+  // Painted textures drawn on the SAME canvas/rAF as the particles; separate instance layer + cap (12).
+  let sprImg={}, sprTint={}, spritesReady=false, sprLoadN=0, sprites=[];
+  const SCAP=12;
+  const SPR_NAMES=['aura_1','aura_2','aura_3','bloom_1','bloom_2','lightning_1','lightning_2','lightning_3','lightning_4','ring_1','ring_2','shield_1','shield_2','smoke_1','smoke_2','streak_1','streak_2','surge_1','surge_2','venom_1','venom_2'];
+  const SPR_FAC={ devas:'#e0b040', asuras:'#e0483c', vanaras:'#6fc257', nagas:'#3fb9a8' };
+  function offc2(wd,ht){ const c=document.createElement('canvas'); c.width=wd; c.height=ht; return c; }
+  function tintOf(img,color){ const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height, c=offc2(iw,ih), g=c.getContext('2d'); g.drawImage(img,0,0,iw,ih); g.globalCompositeOperation='multiply'; g.fillStyle=color; g.fillRect(0,0,iw,ih); return c; }  // white-gold × faction color; black stays black → no additive contribution
+  function buildTints(key,img){                                                       // tint ONCE at load, never per-frame
+    if(/^aura|^ring/.test(key)){ sprTint[key]={}; for(const f in SPR_FAC) sprTint[key][f]=tintOf(img,SPR_FAC[f]); }   // faction-tinted
+    else if(/^bloom/.test(key)){ sprTint[key]={ damage:tintOf(img,'#ff5a44') }; }                                    // red for damage; destroy uses raw white-gold
+    else if(/^streak/.test(key)){ sprTint[key]={ leap:tintOf(img,SPR_FAC.vanaras) }; }                               // Leap = Vanara green
+    // shield(gold) / venom(green) / surge(ember) / lightning(blue-white) / smoke: ship as-loaded (GL4 overrides)
+  }
+  function preloadSprites(){ if(sprLoadN>0) return;                                    // idempotent, once per session (0d slot; async → never blocks the mulligan)
+    SPR_NAMES.forEach(key=>{ const im=new Image(); im.decoding='async';
+      im.onload=()=>{ sprImg[key]=im; try{buildTints(key,im);}catch(e){} sprLoadN++; if(sprLoadN>=SPR_NAMES.length) spritesReady=true; };
+      im.onerror=()=>{ sprLoadN++; if(sprLoadN>=SPR_NAMES.length) spritesReady=true; };   // a missing sprite just leaves its procedural fallback in place
+      im.src='assets/vfx/game/vfx_'+key+'.png'; });
+  }
+  function pick(pre,n){ return pre+'_'+(1+Math.floor(Math.random()*n)); }
+  function haveSpr(key){ return !!sprImg[key]; }
+  function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
+  function addSpr(o){ if(reducedMotion()) return; if(!o.img && !o.swap) return; if(sprites.length>=SCAP) sprites.shift(); o.age=0; o.max=o.life; o.swapT=0; sprites.push(o); wake(); }   // oldest evicted at cap
+  function drawSprites(dt){
+    if(!sprites.length) return;
+    for(let i=sprites.length-1;i>=0;i--){ const s=sprites[i]; s.age+=dt; if(s.age>=s.max) sprites.splice(i,1); }
+    cx.globalCompositeOperation='source-over'; for(const s of sprites){ if(s.smoke) drawOneSpr(s,dt); }   // smoke occludes
+    cx.globalCompositeOperation='lighter';     for(const s of sprites){ if(!s.smoke) drawOneSpr(s,dt); }   // additive kit
+    cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
+  }
+  function drawOneSpr(s,dt){
+    if(s.swap){ s.swapT+=dt; if(!s.img || s.swapT>=0.05){ s.swapT=0; s.img=sprImg[pick('lightning',4)]; s.flip=(Math.random()<.5?-1:1); } }   // lightning: hard-swap variant every 50ms + random flip = free variation
+    const img=s.img; if(!img) return;
+    const t=Math.min(1,s.age/s.max), ez=1-Math.pow(1-t,2);
+    let sc=s.sc0+(s.sc1-s.sc0)*ez; if(s.overshoot) sc+=Math.sin(t*Math.PI)*s.overshoot*(1-t);
+    let op; const pk=(s.peakAt!=null?s.peakAt:0.3);
+    if(s.crash) op=s.opPeak*(1-t);                                            // 1->0 crash (bloom)
+    else if(t<pk) op=s.op0+(s.opPeak-s.op0)*(t/pk);
+    else op=s.opPeak+(s.op1-s.opPeak)*((t-pk)/(1-pk));
+    if(op<=0.004) return;
+    const size=s.size, sx=DPR*sc*(s.flip||1)*(s.stretchX||1), sy=DPR*sc*(s.squashY||1);
+    const c=Math.cos(s.rot||0), sn=Math.sin(s.rot||0), dx=s.x+(s.driftX||0)*t, dy=s.y+(s.driftY||0)*t;
+    cx.globalAlpha=Math.min(1,op);
+    cx.setTransform(sx*c, sx*sn, -sy*sn, sy*c, DPR*dx, DPR*dy);
+    const ax=(s.anchorX!=null?s.anchorX:0.5), ay=(s.anchorY!=null?s.anchorY:0.5);
+    cx.drawImage(img, -size*ax, -size*ay, size, size);
+  }
+  function cw(cardW){ return cardW||w*0.16; }
+  // ---- STEP 3 motion recipes (all life ×S()=vfxT parity; each returns true if the painted sprite fired, false → caller keeps procedural) ----
+  function sprAura(cxp,cyp,faction,cardW){ if(reducedMotion()||!ready||!haveSpr('aura_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    addSpr({ img:imgTint(pick('aura',3),faction), x,y, size:W*1.9, sc0:0.8,sc1:1.15, op0:0,opPeak:0.8,op1:0, peakAt:0.4, life:0.5*vfxT(), rot:Math.random()*6.28 }); return true; }
+  function sprBloom(cxp,cyp,kind,cardW){ if(reducedMotion()||!ready||!haveSpr('bloom_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), k=pick('bloom',2);
+    addSpr({ img:(kind==='damage'?imgTint(k,'damage'):sprImg[k]), x,y, size:W*2.0, sc0:0.6,sc1:1.2, opPeak:1, crash:true, life:0.16*vfxT(), rot:Math.random()*6.28, anchorX:(/2$/.test(k)?0.4:0.5), anchorY:(/2$/.test(k)?0.6:0.5) }); return true; }
+  function sprRing(cxp,cyp,faction,cardW){ if(reducedMotion()||!ready||!haveSpr('ring_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    addSpr({ img:imgTint(pick('ring',2),faction), x, y, size:W*2.2, sc0:0.7,sc1:1.05, overshoot:0.12, op0:0,opPeak:1,op1:0, peakAt:0.3, life:0.6*vfxT(), squashY:0.42 }); return true; }
+  function sprSmoke(cxp,cyp,count,cardW){ if(reducedMotion()||!ready||!haveSpr('smoke_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), n=count||1;
+    for(let i=0;i<n;i++){ setTimeout(()=>{ if(!ready) return; addSpr({ img:sprImg[pick('smoke',2)], smoke:true, x:x+(Math.random()-.5)*W*0.5, y:y+(Math.random()-.5)*W*0.3, size:W*1.8, sc0:1.0,sc1:1.35, op0:0.85,opPeak:0.85,op1:0, peakAt:0.05, life:0.9*vfxT(), rot:(Math.random()-.5)*0.21, driftY:-(20+Math.random()*20) }); }, i*80*vfxT()); } return true; }
+  function sprLightning(cxp,cyp,cardW){ if(reducedMotion()||!ready||!haveSpr('lightning_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    addSpr({ img:sprImg[pick('lightning',4)], swap:true, x,y, size:W*3.2, sc0:1.0,sc1:1.06, op0:0,opPeak:0.95,op1:0, peakAt:0.12, life:0.45*vfxT(), flip:(Math.random()<.5?-1:1) }); return true; }
+  function sprShield(cxp,cyp,cardW){ if(reducedMotion()||!ready||!haveSpr('shield_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    addSpr({ img:sprImg[pick('shield',2)], x,y, size:W*2.4, sc0:1.3,sc1:1.0, overshoot:0.18, op0:0,opPeak:0.7,op1:0, peakAt:0.35, life:0.5*vfxT() }); return true; }   // serene: no shake, no hit-stop (caller-side)
+  function sprVenom(cxp,cyp,cardW){ if(reducedMotion()||!ready||!haveSpr('venom_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    addSpr({ img:sprImg[pick('venom',2)], x, y:y-W*0.25, size:W*1.7, sc0:0.9,sc1:1.0, op0:0,opPeak:0.6,op1:0, peakAt:0.35, life:0.7*vfxT(), driftY:W*0.2 }); return true; }   // ambient dread: never past 1.0, never flashes
+  function sprSurge(cxp,cyp,cardW){ if(reducedMotion()||!ready||!haveSpr('surge_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    addSpr({ img:sprImg[pick('surge',2)], x,y, size:W*2.1, sc0:0.8,sc1:1.2, op0:0,opPeak:0.9,op1:0, peakAt:0.2, life:0.45*vfxT(), rot:(Math.random()-.5)*0.5 }); return true; }
+  function sprStreak(fx,fy,tx,ty,cardW){ if(reducedMotion()||!ready||!haveSpr('streak_1')) return false; const a=local(fx,fy), b=local(tx,ty), W=cw(cardW);
+    const dxp=b.x-a.x, dyp=b.y-a.y, len=Math.hypot(dxp,dyp)||1, ang=Math.atan2(dyp,dxp);
+    addSpr({ img:imgTint(pick('streak',2),'leap'), x:(a.x+b.x)/2, y:(a.y+b.y)/2, size:W*1.4, sc0:1,sc1:1, stretchX:Math.max(1,len/(W*1.0)), squashY:0.7, rot:ang, op0:0,opPeak:0.9,op1:0, peakAt:0.25, life:0.3*vfxT() }); return true; }
   function frame(dt, now){
     const t=now/1000;
     cx.setTransform(1,0,0,1,0,0); cx.globalAlpha=1; cx.globalCompositeOperation='source-over'; cx.clearRect(0,0,canvas.width,canvas.height);
@@ -8109,10 +8181,11 @@ const VFX = (()=>{
     for(let i=bolts.length-1;i>=0;i--){ const b=bolts[i]; b.life-=dt; if(b.life<=0){ bolts.splice(i,1); continue; } const a=b.life/b.max;
       for(const st of [[12,`rgba(150,190,255,${.16*a})`],[5,`rgba(205,228,255,${.5*a})`],[1.5,`rgba(255,255,255,${.95*a})`]]){ cx.lineWidth=st[0]; cx.strokeStyle=st[1]; poly(b.main); for(const br of b.branches) poly(br); } }   // T66 spectacle: bolt widths 9/3.5/1 -> 12/5/1.5 for slot-scale presence
     cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
+    drawSprites(dt);   // T67 painted sprite layer (smoke source-over, kit additive) — on top of particles/bolts
   }
   function step(now){
     const dt=Math.min(0.05,(now-last)/1000); last=now; frame(dt, now);
-    if(parts.length||bolts.length||tint) raf=requestAnimationFrame(step); else { raf=0; cx.clearRect(0,0,canvas.width,canvas.height); }
+    if(parts.length||bolts.length||tint||sprites.length) raf=requestAnimationFrame(step); else { raf=0; cx.clearRect(0,0,canvas.width,canvas.height); }
   }
   function poly(pts){ cx.beginPath(); cx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) cx.lineTo(pts[i].x,pts[i].y); cx.stroke(); }
   function addFire(x,y,ang,sp,sz,life,buoy,inward){ add({ kind:'glow', x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, buoy, inward, cx0:x, cy0:y, flHz:63+Math.random()*30, flP:Math.random()*6.28, flA:2+Math.random()*2, sz, life, max:life }); }
@@ -8141,7 +8214,9 @@ const VFX = (()=>{
     setTimeout(()=>{ if(ready){ bolts.push(mkBolt(ix,iy)); flashDiv(); wake(); } }, (90+100+60)*s);     // 60ms dark → bolt 2 (new shape) + full-screen flash
     setTimeout(()=>{ if(ready) brahmastraSmoke(ix,iy); }, (90+100+60+140)*s);                            // afterglow tail (flash div) → smoke + embers
   }
-  return { init, resize, cardLand, astraBurst, mythic };
+  return { init, resize, cardLand, astraBurst, mythic,
+           preloadSprites, spritesReady:()=>spritesReady, sprCount:()=>sprites.length,
+           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
 async function playEvent(ev, snap){
@@ -8156,6 +8231,12 @@ async function playEvent(ev, snap){
     if(src){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }   // cpulse fires CONCURRENT with the impact visual (beat 1a)
     if(isBody && src) VFX.cardLand(src.cx, src.rect.top+src.rect.height/2);   // (a) card-lands dust + embers — same beat as the clash SFX
     if(isAstra){ const tp=halfCenterClient(1-ownerPiOfUid(ev.sourceUid)); if(tp){ VFX.astraBurst(tp.x, tp.y); if(tier==='combat') vignetteFlash(); if(c.r==='M') VFX.mythic(tp.x, tp.y); } }   // (b) burst; combat → screen-edge vignette; Mythic → lightning + flash + smoke
+    // T67 painted sprite layer (falls back to procedural when a sprite isn't loaded)
+    if(isBody && src){ const fac=cardHomeFaction(c) || (G.players[ownerPiOfUid(ev.sourceUid)]||{}).faction || 'devas';
+      VFX.sprRing(src.cx, src.rect.top+src.rect.height*0.78, fac, src.rect.width);                                          // E2 landing ground ring (faction-tinted)
+      if(tier==='ambient' && fac==='devas') VFX.sprAura(src.cx, src.rect.top+src.rect.height*0.5, 'devas', src.rect.width); }  // E1 ambient Deva blessing aura
+    if(tier==='spectacle'){ const lp = src ? {x:src.cx, y:src.rect.top+src.rect.height*0.5} : (isAstra ? halfCenterClient(1-ownerPiOfUid(ev.sourceUid)) : null);
+      if(lp){ VFX.sprLightning(lp.x, lp.y, src?src.rect.width:null); if(isAstra) VFX.sprSmoke(lp.x, lp.y, 3, null); } }         // E3 painted wrap LAYERED over procedural bolts; astra → E5 Brahmastra 3-layer smoke roll
     let hold=700, hitStop=0;
     if(tier==='spectacle'){ hold+=300; hitStop=110; screenShake(true); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); if(!isAstra) Audio2.sfx('boom'); }   // SPECTACLE: zoom-punch + ±9 shake + wash + 110ms hit-stop
     else if(tier==='combat'){ hitStop=70; }                                    // COMBAT astra: 70ms hit-stop (burst + vignette above)
@@ -8163,7 +8244,9 @@ async function playEvent(ev, snap){
     if(hitStop) await cDelay(hitStop);                                         // HIT-STOP injected at the impact instant, before the hold (scaled by --vfx-t via cDelay; skipped in reduced-motion since playEvent never runs there)
     await cDelay(hold); return;
   }
-  if (ev.type==='destroy'){ const u=ev.targetUids[0]; await cDelay(40); dissolveAt(posOf(u, snap), snap[u]&&snap[u].name, snap[u]&&snap[u].color); await cDelay(600); return; }   // 40ms hit-stop → death reads as a beat, then crack + shards + dwell
+  if (ev.type==='destroy'){ const u=ev.targetUids[0]; const dp=posOf(u, snap); await cDelay(40);
+    if(dp){ VFX.sprBloom(dp.cx, dp.rect.top+dp.rect.height/2, 'destroy', dp.rect.width); VFX.sprSmoke(dp.cx, dp.rect.top+dp.rect.height/2, 1, dp.rect.width); }   // E4 white-gold bloom + E5 one smoke instance at the death
+    dissolveAt(dp, snap[u]&&snap[u].name, snap[u]&&snap[u].color); await cDelay(600); return; }   // 40ms hit-stop → death reads as a beat, then crack + shards + dwell
   if (src && (ev.type==='buff'||ev.type==='token')){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
   const tgts=ev.targetUids||[];
   if (!tgts.length){ await cDelay(180); return; }
@@ -8174,12 +8257,16 @@ async function playEvent(ev, snap){
     if (pos){
       // BEAT SEQUENCING (T66 1b): impact VISUAL + cpulse fire first; the floater/number is deferred ~120ms (scaled).
       // COMBAT damage adds a 70ms hit-stop on top so the hit lands, the queue pauses, THEN the number reads.
-      let ft, fk, hitStop=0;
-      if (ev.type==='damage'){ cpulse(pos.el,'impact'); ft=ev.text||String(ev.amount); fk='down heavy'; hitStop=70; }   // combat
-      else if (ev.type==='venom'){ cpulse(pos.el,'impact'); fxDrip(pos); wetBadge(pos.el); ft='☠ '+(ev.amount||''); fk='venom'; }   // ambient (poison = dread, not punch)
-      else if (ev.type==='buff'){ cpulse(pos.el,'pumped'); fxRing(pos,'buff'); ft=ev.text||('+'+ev.amount); fk='up'; if(ev.abilityName==='Leap') leapArcFromText(pos, ev.text); }   // ambient
-      else if (ev.type==='token'){ fxDrip(pos); wetBadge(pos.el); ft='☠'; fk='venom'; }
-      else if (ev.type==='shield'){ fxRing(pos,'shield'); ft='🛡'; fk='note'; }
+      let ft, fk, hitStop=0; const tcy=pos.rect.top+pos.rect.height/2, tfac=(G.players[ownerPiOfUid(tgts[i])]||{}).faction||'devas';
+      if (ev.type==='damage'){ cpulse(pos.el,'impact'); VFX.sprBloom(pos.cx, tcy, 'damage', pos.rect.width); ft=ev.text||String(ev.amount); fk='down heavy'; hitStop=70; }   // combat: E4 red bloom at the hit
+      else if (ev.type==='venom'){ cpulse(pos.el,'impact'); if(!VFX.sprVenom(pos.cx, tcy, pos.rect.width)) fxDrip(pos); wetBadge(pos.el); ft='☠ '+(ev.amount||''); fk='venom'; }   // E6 venom body replaces drip (wet badge stays)
+      else if (ev.type==='buff'){ cpulse(pos.el,'pumped');
+        if(ev.abilityName==='Chaos Surge'){ VFX.sprSurge(pos.cx, tcy, pos.rect.width); }                                  // E8 Chaos Surge flare (combat weight)
+        else if(ev.abilityName==='Leap'){ fxRing(pos,'buff'); leapArcFromText(pos, ev.text); }                            // E9 streak fired inside leapArcFromText
+        else if(!VFX.sprAura(pos.cx, tcy, tfac, pos.rect.width)){ fxRing(pos,'buff'); }                                    // E1 buff aura (faction-tinted) replaces the green ring
+        ft=ev.text||('+'+ev.amount); fk='up'; }
+      else if (ev.type==='token'){ if(!VFX.sprVenom(pos.cx, tcy, pos.rect.width)) fxDrip(pos); wetBadge(pos.el); ft='☠'; fk='venom'; }
+      else if (ev.type==='shield'){ if(!VFX.sprShield(pos.cx, tcy, pos.rect.width)) fxRing(pos,'shield'); ft='🛡'; fk='note'; }   // E7 shield wrap replaces ring-snap body (serene)
       else { ft=ev.text||ev.abilityName||''; fk='note'; }
       await cDelay(120 + hitStop);     // hit → (beat + combat hit-stop) → number
       floatAt(pos, ft, fk);
