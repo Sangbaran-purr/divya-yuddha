@@ -7351,21 +7351,28 @@ const facClass = f => f==='asuras' ? 'fac-asura' : f==='vanaras' ? 'fac-vanara' 
 // board owner's — so a Maricha-copy (Deva unit now owned by an Asura) or a Mohini-steal loads the copied card's real art.
 const CARD_FACTION = (()=>{ const m={}; try{ for(const f in DECKS) for(const c of DECKS[f]){ m[c.id]=f; m['n:'+c.n]=f; } }catch(e){} return m; })();
 function cardHomeFaction(c){ return (c && (CARD_FACTION[c.id] || CARD_FACTION['n:'+c.n])) || null; }
+/* T63 — global card-art cache-buster. Appended to EVERY cardArtSrc path, so bumping it forces a one-time
+   full refresh across all 182 card-art URLs (132 pre-existing + 50 wired this task). This is the intended,
+   necessary consequence of the 28 same-filename swaps: without it, returning clients keep the stale Naga art.
+   Bump this string whenever card frames are re-exported. */
+const CARD_ART_V = 't63';
 function cardArtSrc(c, faction){
   const fac = cardHomeFaction(c) || faction;   // resolve by the card's home deck (fixes copied/stolen cards; identical to `faction` for normal cards)
   const name = c.n.replace(/[^A-Za-z0-9]/g,'');   // name segment = card name with ALL non-alphanumerics removed (spaces, apostrophes, …)
+  const v = `?v=${CARD_ART_V}`;                 // cache-buster suffix (transparent to <img src>; thumb URLs derive via dir-swap and keep it)
   /* R84.4 — TOKEN STEM. The Rakta frame reads TOKEN in both the type and rarity fields where the engine files
      t:'unit' / r:'C' — a DELIBERATE frame-vs-engine difference, ruled and recorded. So the derived stem cannot come
      from t/r for a token: without this branch cardArtSrc builds Asuras_Unit_Rakta_P2_rCommon.png and can never
      resolve the accepted frame. Tokens are in no DECKS array, so cardHomeFaction() is null and `fac` falls back to
      the OWNER's faction — which is correct: a Rakta belongs to whoever spawned it. */
-  if (c.token) return `assets/cards/${factionToken(fac)}_Token_${name}_P${c.base}_rToken.png`;
+  if (c.token) return `assets/cards/${factionToken(fac)}_Token_${name}_P${c.base}_rToken.png` + v;
   const type = c.t.charAt(0).toUpperCase()+c.t.slice(1);
   const stem = `assets/cards/${factionToken(fac)}_${type}_${name}`;
   const rar = RARITY_NAME[c.r];
-  return c.base > 0
+  return (c.base > 0
     ? `${stem}_P${c.base}_r${rar}.png`   // Units / Heroes
-    : `${stem}_r${rar}.png`;             // Astras / Mantras / Artifacts
+    : `${stem}_r${rar}.png`)             // Astras / Mantras / Artifacts
+    + v;
 }
 function attachArt(el, c, faction){
   if (c.ghost || c.id==='ghost') return;            // Yama tokens have no art
