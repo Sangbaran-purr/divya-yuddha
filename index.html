@@ -8121,8 +8121,10 @@ const VFX = (()=>{
   function drawSprites(dt){
     if(!sprites.length) return;
     for(let i=sprites.length-1;i>=0;i--){ const s=sprites[i]; s.age+=dt; if(s.age>=s.max) sprites.splice(i,1); }
-    cx.globalCompositeOperation='source-over'; for(const s of sprites){ if(s.smoke) drawOneSpr(s,dt); }   // smoke occludes
-    cx.globalCompositeOperation='lighter';     for(const s of sprites){ if(!s.smoke) drawOneSpr(s,dt); }   // additive kit
+    cx.save();                                                              // T67b R2: isolate all sprite state
+    for(const s of sprites){ if(s.smoke) drawOneSpr(s,dt); }                // pass 1: smoke (occludes, source-over set per-sprite)
+    for(const s of sprites){ if(!s.smoke) drawOneSpr(s,dt); }               // pass 2: kit (additive, 'lighter' set per-sprite)
+    cx.restore();                                                          // guaranteed clean gco/alpha/transform back to the frame's
     cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
   }
   function drawOneSpr(s,dt){
@@ -8137,6 +8139,7 @@ const VFX = (()=>{
     if(op<=0.004) return;
     const size=s.size, sx=DPR*sc*(s.flip||1)*(s.stretchX||1), sy=DPR*sc*(s.squashY||1);
     const c=Math.cos(s.rot||0), sn=Math.sin(s.rot||0), dx=s.x+(s.driftX||0)*t, dy=s.y+(s.driftY||0)*t;
+    cx.globalCompositeOperation = s.smoke ? 'source-over' : 'lighter';      // T67b R2: set blend PER SPRITE — a kit sprite can never draw source-over (no state leak / device default can show its black)
     cx.globalAlpha=Math.min(1,op);
     cx.setTransform(sx*c, sx*sn, -sy*sn, sy*c, DPR*dx, DPR*dy);
     const ax=(s.anchorX!=null?s.anchorX:0.5), ay=(s.anchorY!=null?s.anchorY:0.5);
@@ -8232,9 +8235,10 @@ async function playEvent(ev, snap){
     if(isBody && src) VFX.cardLand(src.cx, src.rect.top+src.rect.height/2);   // (a) card-lands dust + embers — same beat as the clash SFX
     if(isAstra){ const tp=halfCenterClient(1-ownerPiOfUid(ev.sourceUid)); if(tp){ VFX.astraBurst(tp.x, tp.y); if(tier==='combat') vignetteFlash(); if(c.r==='M') VFX.mythic(tp.x, tp.y); } }   // (b) burst; combat → screen-edge vignette; Mythic → lightning + flash + smoke
     // T67 painted sprite layer (falls back to procedural when a sprite isn't loaded)
-    if(isBody && src){ const fac=cardHomeFaction(c) || (G.players[ownerPiOfUid(ev.sourceUid)]||{}).faction || 'devas';
-      VFX.sprRing(src.cx, src.rect.top+src.rect.height*0.78, fac, src.rect.width);                                          // E2 landing ground ring (faction-tinted)
-      if(tier==='ambient' && fac==='devas') VFX.sprAura(src.cx, src.rect.top+src.rect.height*0.5, 'devas', src.rect.width); }  // E1 ambient Deva blessing aura
+    if(isBody && src){ const fac=cardHomeFaction(c) || (G.players[ownerPiOfUid(ev.sourceUid)]||{}).faction || 'devas', isHero=(c.t==='hero');
+      VFX.sprRing(src.cx, src.rect.top+src.rect.height*0.78, fac, src.rect.width*(isHero?1.15:1));                          // E2 landing ground ring (faction-tinted; heroes land bigger)
+      // T67b R1: EVERY Hero entrance (both seats, all factions, ALL rarities) gets a faction-tinted aura at combat weight — Epic heroes no longer land bare; L/M heroes also keep the spectacle stack below. Ambient-Deva UNITS keep their small blessing aura.
+      if(isHero || (tier==='ambient' && fac==='devas')) VFX.sprAura(src.cx, src.rect.top+src.rect.height*0.5, fac, src.rect.width*(isHero?1.3:1)); }
     if(tier==='spectacle'){ const lp = src ? {x:src.cx, y:src.rect.top+src.rect.height*0.5} : (isAstra ? halfCenterClient(1-ownerPiOfUid(ev.sourceUid)) : null);
       if(lp){ VFX.sprLightning(lp.x, lp.y, src?src.rect.width:null); if(isAstra) VFX.sprSmoke(lp.x, lp.y, 3, null); } }         // E3 painted wrap LAYERED over procedural bolts; astra → E5 Brahmastra 3-layer smoke roll
     let hold=700, hitStop=0;
@@ -8560,6 +8564,7 @@ function playIntro(done){
   };
 }
 VFX.init();
+VFX.preloadSprites();   // T67b: preload the painted kit at PAGE LOAD (not match start) — sprites get the whole intro→landing→faction-select→mulligan window to load, so they're ready before the first play even on slow device connections (fixes the match-start race that made effects fire "occasionally/never" cold). Async, non-blocking; idempotent so the startGame call no-ops.
 playIntro(showLanding);   // R-A: the intro gates every launch; showLanding is the single home entry (skip + every fail path land here)
 </script>
 </body>
