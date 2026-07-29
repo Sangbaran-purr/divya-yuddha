@@ -8101,7 +8101,15 @@ const VFX = (()=>{
   const SPR_NAMES=['aura_1','aura_2','aura_3','bloom_1','bloom_2','lightning_1','lightning_2','lightning_3','lightning_4','ring_1','ring_2','shield_1','shield_2','smoke_1','smoke_2','streak_1','streak_2','surge_1','surge_2','venom_1','venom_2'];
   const SPR_FAC={ devas:'#e0b040', asuras:'#e0483c', vanaras:'#6fc257', nagas:'#3fb9a8' };
   function offc2(wd,ht){ const c=document.createElement('canvas'); c.width=wd; c.height=ht; return c; }
-  function tintOf(img,color){ const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height, c=offc2(iw,ih), g=c.getContext('2d'); g.drawImage(img,0,0,iw,ih); g.globalCompositeOperation='multiply'; g.fillStyle=color; g.fillRect(0,0,iw,ih); return c; }  // white-gold × faction color; black stays black → no additive contribution
+  function tintOf(img,color){ const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height, c=offc2(iw,ih), g=c.getContext('2d');
+    g.drawImage(img,0,0,iw,ih); g.globalCompositeOperation='multiply'; g.fillStyle=color; g.fillRect(0,0,iw,ih);   // RGB tinted; black stays black → no additive contribution
+    // C2 WHITE-HOT CORE (F4): add the top-luminance core back UNtinted so bright centers stay white-gold, separated from the gold board
+    try{ const core=offc2(iw,ih), cg=core.getContext('2d'); cg.drawImage(img,0,0,iw,ih);
+      const id=cg.getImageData(0,0,iw,ih), d=id.data;
+      for(let i=0;i<d.length;i+=4){ if(Math.max(d[i],d[i+1],d[i+2])<205){ d[i]=d[i+1]=d[i+2]=0; } }   // keep only the hot core (>205)
+      cg.putImageData(id,0,0); g.globalCompositeOperation='lighter'; g.globalAlpha=0.55; g.drawImage(core,0,0); g.globalAlpha=1;
+    }catch(e){}
+    return c; }
   function buildTints(key,img){                                                       // tint ONCE at load, never per-frame
     if(/^aura|^ring/.test(key)){ sprTint[key]={}; for(const f in SPR_FAC) sprTint[key][f]=tintOf(img,SPR_FAC[f]); }   // faction-tinted
     else if(/^bloom/.test(key)){ sprTint[key]={ damage:tintOf(img,'#ff5a44') }; }                                    // red for damage; destroy uses raw white-gold
@@ -8110,15 +8118,41 @@ const VFX = (()=>{
   }
   function preloadSprites(){ if(sprLoadN>0) return;                                    // idempotent, once per session (0d slot; async → never blocks the mulligan)
     SPR_NAMES.forEach(key=>{ const im=new Image(); im.decoding='async';
-      im.onload=()=>{ sprImg[key]=im; try{buildTints(key,im);}catch(e){} sprLoadN++; if(sprLoadN>=SPR_NAMES.length) spritesReady=true; };
-      im.onerror=()=>{ sprLoadN++; if(sprLoadN>=SPR_NAMES.length) spritesReady=true; };   // a missing sprite just leaves its procedural fallback in place
+      im.onload=()=>{ sprImg[key]=im; try{buildTints(key,im);}catch(e){} sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; preloadSheets(); } };
+      im.onerror=()=>{ sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; preloadSheets(); } };   // a missing sprite just leaves its procedural fallback in place; stills done → start sheets (B5)
       im.src='assets/vfx/game/vfx_'+key+'.png'; });
   }
   function pick(pre,n){ return pre+'_'+(1+Math.floor(Math.random()*n)); }
   function haveSpr(key){ return !!sprImg[key]; }
   function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
-  function addSpr(o){ if(reducedMotion()) return; if(!o.img && !o.swap) return; if(sprites.length>=SCAP) sprites.shift(); o.age=0; o.max=o.life; o.swapT=0; sprites.push(o); wake(); }   // oldest evicted at cap
+  // ===================== T68R FLIPBOOK SHEETS =====================
+  let sheetImg={}, sheetsReady=false, sheetLoadN=0;
+  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2'];
+  const SHEET_COLS=6, SHEET_FRAMES=24, SHEET_CELL=256;
+  // B2 PLAYBACK MODES: pingpong default; venom + smoke_2(bloom-envelope) forward-only (venom NEVER reverses — drips must fall, never rise)
+  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward' };
+  const sheetFrameCanvas=offc2(SHEET_CELL,SHEET_CELL);   // B4: ONE reusable 256² canvas for draw-time aura tint (no 8×6MB pre-tinted sheets → ~50MB saved)
+  function haveSheet(key){ return !!sheetImg[key]; }
+  function preloadSheets(){ if(sheetLoadN>0) return;   // B5: sheets load at PAGE LOAD but AFTER the stills (stills are the guaranteed floor; sheets progressively upgrade)
+    SHEET_NAMES.forEach(key=>{ const im=new Image(); im.decoding='async';
+      im.onload=()=>{ sheetImg[key]=im; sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };
+      im.onerror=()=>{ sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };   // a missing sheet just keeps the still + envelope fallback
+      im.src='assets/vfx/game/sheets/vfx_'+key+'.png'; });
+  }
+  function addSheetSpr(key, x, y, size, o){ if(reducedMotion()||!sheetImg[key]) return false;
+    const mode=SHEET_MODE[key]||'forward';
+    addSpr(Object.assign({ sheet:key, mode, frame:(Math.random()*SHEET_FRAMES)|0, dir:(mode==='pingpong'&&Math.random()<.5?-1:1), fAcc:0, x, y, size, anchorX:0.5, anchorY:0.5, sc0:1,sc1:1, op0:0,opPeak:1,op1:0, peakAt:0.15 }, o||{})); return true; }
+  // C1 GROUND DIM (F3): soft radial darkening under COMBAT+ / SPECTACLE effects only (never ambient, never reduced-motion)
+  let gdim=null;
+  function groundDim(cxp,cyp,radius){ if(reducedMotion()) return; const {x,y}=local(cxp,cyp); gdim={ x, y, r:radius*1.8, peak:0.25, age:0, rise:0.08*vfxT(), life:0.5*vfxT() }; wake(); }
+  function addSpr(o){ if(reducedMotion()) return; if(!o.img && !o.swap && !o.sheet) return; if(sprites.length>=SCAP) sprites.shift(); o.age=0; o.max=o.life; o.swapT=0; sprites.push(o); wake(); }   // oldest evicted at cap
   function drawSprites(dt){
+    // C1 GROUND DIM: soft radial darkening drawn FIRST (source-over), so the additive effect glows over a dimmed board → contrast
+    if(gdim){ gdim.age+=dt; if(gdim.age>=gdim.life) gdim=null;
+      else { const a = gdim.age<gdim.rise ? gdim.peak*(gdim.age/gdim.rise) : gdim.peak*(1-(gdim.age-gdim.rise)/(gdim.life-gdim.rise));
+        if(a>0.003){ cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
+          const g=cx.createRadialGradient(gdim.x*DPR,gdim.y*DPR,0, gdim.x*DPR,gdim.y*DPR,gdim.r*DPR);
+          g.addColorStop(0,`rgba(0,0,0,${a.toFixed(3)})`); g.addColorStop(1,'rgba(0,0,0,0)'); cx.fillStyle=g; cx.fillRect(0,0,canvas.width,canvas.height); } } }
     if(!sprites.length) return;
     for(let i=sprites.length-1;i>=0;i--){ const s=sprites[i]; s.age+=dt; if(s.age>=s.max) sprites.splice(i,1); }
     cx.save();                                                              // T67b R2: isolate all sprite state
@@ -8129,40 +8163,72 @@ const VFX = (()=>{
   }
   function drawOneSpr(s,dt){
     if(s.swap){ s.swapT+=dt; if(!s.img || s.swapT>=0.05){ s.swapT=0; s.img=sprImg[pick('lightning',4)]; s.flip=(Math.random()<.5?-1:1); } }   // lightning: hard-swap variant every 50ms + random flip = free variation
-    const img=s.img; if(!img) return;
-    const t=Math.min(1,s.age/s.max), ez=1-Math.pow(1-t,2);
+    // B1/B2: advance flipbook frame at 24fps / vfxT (faster at 'fast', slower at 'relaxed')
+    if(s.sheet){ s.fAcc+=dt*24/(vfxT()||1);
+      while(s.fAcc>=1){ s.fAcc-=1; s.frame+=s.dir;
+        if(s.mode==='pingpong'){ if(s.frame>=SHEET_FRAMES){ s.frame=SHEET_FRAMES-2; s.dir=-1; } else if(s.frame<0){ s.frame=1; s.dir=1; } }
+        else if(s.frame>=SHEET_FRAMES){ s.frame=SHEET_FRAMES-1; } }   // forward-only clamps at last frame (venom never reverses → drips never rise)
+    }
+    const img=s.sheet ? sheetImg[s.sheet] : s.img; if(!img) return;
+    const t=Math.min(1,s.age/s.max);
+    const ez = s.crash ? t : (1-Math.pow(1-t,3));                            // C3 F5: cubic-OUT growth
     let sc=s.sc0+(s.sc1-s.sc0)*ez; if(s.overshoot) sc+=Math.sin(t*Math.PI)*s.overshoot*(1-t);
     let op; const pk=(s.peakAt!=null?s.peakAt:0.3);
-    if(s.crash) op=s.opPeak*(1-t);                                            // 1->0 crash (bloom)
-    else if(t<pk) op=s.op0+(s.opPeak-s.op0)*(t/pk);
-    else op=s.opPeak+(s.op1-s.opPeak)*((t-pk)/(1-pk));
+    if(s.crash) op=s.opPeak*(1-Math.pow(t,1.4));                             // bloom crash
+    else if(t<pk) op=s.op0+(s.opPeak-s.op0)*Math.pow(t/pk,0.6);              // C3: soft ~60-80ms birth (fast-in then settle)
+    else op=s.opPeak+(s.op1-s.opPeak)*Math.pow((t-pk)/(1-pk),1.6);          // C3: cubic-IN decay
     if(op<=0.004) return;
     const size=s.size, sx=DPR*sc*(s.flip||1)*(s.stretchX||1), sy=DPR*sc*(s.squashY||1);
     const c=Math.cos(s.rot||0), sn=Math.sin(s.rot||0), dx=s.x+(s.driftX||0)*t, dy=s.y+(s.driftY||0)*t;
-    cx.globalCompositeOperation = s.smoke ? 'source-over' : 'lighter';      // T67b R2: set blend PER SPRITE — a kit sprite can never draw source-over (no state leak / device default can show its black)
-    cx.globalAlpha=Math.min(1,op);
+    cx.globalCompositeOperation = s.smoke ? 'source-over' : 'lighter';       // T67b R2: blend per-sprite (flipbook sheets are all additive → 'lighter')
     cx.setTransform(sx*c, sx*sn, -sy*sn, sy*c, DPR*dx, DPR*dy);
     const ax=(s.anchorX!=null?s.anchorX:0.5), ay=(s.anchorY!=null?s.anchorY:0.5);
+    if(s.sheet){
+      const fr=Math.max(0,Math.min(SHEET_FRAMES-1, Math.floor(s.frame))), sx0=(fr%SHEET_COLS)*SHEET_CELL, sy0=((fr/SHEET_COLS)|0)*SHEET_CELL;
+      if(s.tintFac){   // B4: draw-time aura faction tint via the shared 256² offscreen (multiply; black stays black under 'lighter')
+        const og=sheetFrameCanvas.getContext('2d'); og.globalCompositeOperation='source-over'; og.clearRect(0,0,SHEET_CELL,SHEET_CELL);
+        og.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, 0,0,SHEET_CELL,SHEET_CELL);
+        og.globalCompositeOperation='multiply'; og.fillStyle=SPR_FAC[s.tintFac]||'#e0b040'; og.fillRect(0,0,SHEET_CELL,SHEET_CELL);
+        cx.globalAlpha=Math.min(1,op); cx.drawImage(sheetFrameCanvas, -size*ax,-size*ay, size,size);
+      } else { cx.globalAlpha=Math.min(1,op); cx.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, -size*ax,-size*ay, size,size); }
+      return;
+    }
+    cx.globalAlpha=Math.min(1,op);
     cx.drawImage(img, -size*ax, -size*ay, size, size);
+    if(s.halo){ cx.globalAlpha=Math.min(1,op)*0.25; const hs=size*1.35; cx.drawImage(img, -hs*ax, -hs*ay, hs, hs); }   // C3 F5: double-stamp halo on additive stills
   }
   function cw(cardW){ return cardW||w*0.16; }
   // ---- STEP 3 motion recipes (all life ×S()=vfxT parity; each returns true if the painted sprite fired, false → caller keeps procedural) ----
-  function sprAura(cxp,cyp,faction,cardW){ if(reducedMotion()||!ready||!haveSpr('aura_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
-    addSpr({ img:imgTint(pick('aura',3),faction), x,y, size:W*1.9, sc0:0.8,sc1:1.15, op0:0,opPeak:0.8,op1:0, peakAt:0.4, life:0.5*vfxT(), rot:Math.random()*6.28 }); return true; }
+  // ---- recipes: FLIPBOOK-first for the 4 converted effects (still + envelope fallback); C3 halo on additive stills; C1 ground-dim on combat+/spectacle ----
+  function sprAura(cxp,cyp,faction,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), v=pick('aura',2);   // aura_1/2 have sheets; aura_3 still-only
+    if(haveSheet(v)) return addSheetSpr(v, x, y, W*2.2, { opPeak:0.85, life:0.55*vfxT(), tintFac:faction });   // B4 draw-time faction tint
+    if(!haveSpr('aura_1')) return false;
+    addSpr({ img:imgTint(pick('aura',3),faction), x,y, size:W*1.9, sc0:0.8,sc1:1.15, op0:0,opPeak:0.8,op1:0, peakAt:0.4, life:0.5*vfxT(), rot:Math.random()*6.28, halo:true }); return true; }
   function sprBloom(cxp,cyp,kind,cardW){ if(reducedMotion()||!ready||!haveSpr('bloom_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), k=pick('bloom',2);
+    groundDim(cxp,cyp,W*1.6);   // C1: bloom = combat hit
     addSpr({ img:(kind==='damage'?imgTint(k,'damage'):sprImg[k]), x,y, size:W*2.0, sc0:0.6,sc1:1.2, opPeak:1, crash:true, life:0.16*vfxT(), rot:Math.random()*6.28, anchorX:(/2$/.test(k)?0.4:0.5), anchorY:(/2$/.test(k)?0.6:0.5) }); return true; }
   function sprRing(cxp,cyp,faction,cardW){ if(reducedMotion()||!ready||!haveSpr('ring_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
-    addSpr({ img:imgTint(pick('ring',2),faction), x, y, size:W*2.2, sc0:0.7,sc1:1.05, overshoot:0.12, op0:0,opPeak:1,op1:0, peakAt:0.3, life:0.6*vfxT(), squashY:0.42 }); return true; }
-  function sprSmoke(cxp,cyp,count,cardW){ if(reducedMotion()||!ready||!haveSpr('smoke_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), n=count||1;
-    for(let i=0;i<n;i++){ setTimeout(()=>{ if(!ready) return; addSpr({ img:sprImg[pick('smoke',2)], smoke:true, x:x+(Math.random()-.5)*W*0.5, y:y+(Math.random()-.5)*W*0.3, size:W*1.8, sc0:1.0,sc1:1.35, op0:0.85,opPeak:0.85,op1:0, peakAt:0.05, life:0.9*vfxT(), rot:(Math.random()-.5)*0.21, driftY:-(20+Math.random()*20) }); }, i*80*vfxT()); } return true; }
+    addSpr({ img:imgTint(pick('ring',2),faction), x, y, size:W*2.2, sc0:0.7,sc1:1.05, overshoot:0.12, op0:0,opPeak:1,op1:0, peakAt:0.3, life:0.6*vfxT(), squashY:0.42, halo:true }); return true; }   // ambient landing → no ground-dim
+  function sprSmoke(cxp,cyp,count,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), n=count||1;
+    groundDim(cxp,cyp,W*1.8);   // C1: smoke = destroy/spectacle
+    for(let i=0;i<n;i++){ setTimeout(()=>{ if(!ready) return; const v=pick('smoke',2);
+      if(haveSheet(v)){ addSheetSpr(v, x+(Math.random()-.5)*W*0.5, y+(Math.random()-.5)*W*0.3, W*1.9, { opPeak:0.85, life:0.9*vfxT(), driftY:-(20+Math.random()*20) }); }   // flipbook smoke is an additive rolling GLOW (fixes the black-blob verdict)
+      else if(haveSpr('smoke_1')){ addSpr({ img:sprImg[v], smoke:true, x:x+(Math.random()-.5)*W*0.5, y:y+(Math.random()-.5)*W*0.3, size:W*1.8, sc0:1.0,sc1:1.35, op0:0.85,opPeak:0.85,op1:0, peakAt:0.05, life:0.9*vfxT(), rot:(Math.random()-.5)*0.21, driftY:-(20+Math.random()*20) }); } }, i*80*vfxT()); }
+    return (haveSheet('smoke_1')||haveSpr('smoke_1')); }
   function sprLightning(cxp,cyp,cardW){ if(reducedMotion()||!ready||!haveSpr('lightning_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    groundDim(cxp,cyp,W*2.4);   // C1: lightning = spectacle
     addSpr({ img:sprImg[pick('lightning',4)], swap:true, x,y, size:W*3.2, sc0:1.0,sc1:1.06, op0:0,opPeak:0.95,op1:0, peakAt:0.12, life:0.45*vfxT(), flip:(Math.random()<.5?-1:1) }); return true; }
   function sprShield(cxp,cyp,cardW){ if(reducedMotion()||!ready||!haveSpr('shield_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
-    addSpr({ img:sprImg[pick('shield',2)], x,y, size:W*2.4, sc0:1.3,sc1:1.0, overshoot:0.18, op0:0,opPeak:0.7,op1:0, peakAt:0.35, life:0.5*vfxT() }); return true; }   // serene: no shake, no hit-stop (caller-side)
-  function sprVenom(cxp,cyp,cardW){ if(reducedMotion()||!ready||!haveSpr('venom_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
-    addSpr({ img:sprImg[pick('venom',2)], x, y:y-W*0.25, size:W*1.7, sc0:0.9,sc1:1.0, op0:0,opPeak:0.6,op1:0, peakAt:0.35, life:0.7*vfxT(), driftY:W*0.2 }); return true; }   // ambient dread: never past 1.0, never flashes
-  function sprSurge(cxp,cyp,cardW){ if(reducedMotion()||!ready||!haveSpr('surge_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
-    addSpr({ img:sprImg[pick('surge',2)], x,y, size:W*2.1, sc0:0.8,sc1:1.2, op0:0,opPeak:0.9,op1:0, peakAt:0.2, life:0.45*vfxT(), rot:(Math.random()-.5)*0.5 }); return true; }
+    addSpr({ img:sprImg[pick('shield',2)], x,y, size:W*2.4, sc0:1.3,sc1:1.0, overshoot:0.18, op0:0,opPeak:0.7,op1:0, peakAt:0.35, life:0.5*vfxT(), halo:true }); return true; }   // serene: no shake, no hit-stop, no dim
+  function sprVenom(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), v=pick('venom',2);   // ambient dread → no dim; forward-only sheet (venom never reverses)
+    if(haveSheet(v)) return addSheetSpr(v, x, y-W*0.25, W*1.9, { opPeak:0.6, life:0.7*vfxT(), driftY:W*0.2 });
+    if(!haveSpr('venom_1')) return false;
+    addSpr({ img:sprImg[v], x, y:y-W*0.25, size:W*1.7, sc0:0.9,sc1:1.0, op0:0,opPeak:0.6,op1:0, peakAt:0.35, life:0.7*vfxT(), driftY:W*0.2, halo:true }); return true; }
+  function sprSurge(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), v=pick('surge',2);
+    groundDim(cxp,cyp,W*2.1);   // C1: surge = combat weight
+    if(haveSheet(v)) return addSheetSpr(v, x, y, W*2.2, { opPeak:0.95, life:0.5*vfxT(), rot:(Math.random()-.5)*0.4 });
+    if(!haveSpr('surge_1')) return false;
+    addSpr({ img:sprImg[v], x,y, size:W*2.1, sc0:0.8,sc1:1.2, op0:0,opPeak:0.9,op1:0, peakAt:0.2, life:0.45*vfxT(), rot:(Math.random()-.5)*0.5, halo:true }); return true; }
   function sprStreak(fx,fy,tx,ty,cardW){ if(reducedMotion()||!ready||!haveSpr('streak_1')) return false; const a=local(fx,fy), b=local(tx,ty), W=cw(cardW);
     const dxp=b.x-a.x, dyp=b.y-a.y, len=Math.hypot(dxp,dyp)||1, ang=Math.atan2(dyp,dxp);
     addSpr({ img:imgTint(pick('streak',2),'leap'), x:(a.x+b.x)/2, y:(a.y+b.y)/2, size:W*1.4, sc0:1,sc1:1, stretchX:Math.max(1,len/(W*1.0)), squashY:0.7, rot:ang, op0:0,opPeak:0.9,op1:0, peakAt:0.25, life:0.3*vfxT() }); return true; }
@@ -8188,7 +8254,7 @@ const VFX = (()=>{
   }
   function step(now){
     const dt=Math.min(0.05,(now-last)/1000); last=now; frame(dt, now);
-    if(parts.length||bolts.length||tint||sprites.length) raf=requestAnimationFrame(step); else { raf=0; cx.clearRect(0,0,canvas.width,canvas.height); }
+    if(parts.length||bolts.length||tint||sprites.length||gdim) raf=requestAnimationFrame(step); else { raf=0; cx.clearRect(0,0,canvas.width,canvas.height); }
   }
   function poly(pts){ cx.beginPath(); cx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) cx.lineTo(pts[i].x,pts[i].y); cx.stroke(); }
   function addFire(x,y,ang,sp,sz,life,buoy,inward){ add({ kind:'glow', x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, buoy, inward, cx0:x, cy0:y, flHz:63+Math.random()*30, flP:Math.random()*6.28, flA:2+Math.random()*2, sz, life, max:life }); }
@@ -8218,7 +8284,8 @@ const VFX = (()=>{
     setTimeout(()=>{ if(ready) brahmastraSmoke(ix,iy); }, (90+100+60+140)*s);                            // afterglow tail (flash div) → smoke + embers
   }
   return { init, resize, cardLand, astraBurst, mythic,
-           preloadSprites, spritesReady:()=>spritesReady, sprCount:()=>sprites.length,
+           preloadSprites, preloadSheets, spritesReady:()=>spritesReady, sheetsReady:()=>sheetsReady, sprCount:()=>sprites.length,
+           frameOf:(i)=>{ const s=sprites[i]; return s?{sheet:s.sheet,frame:s.frame,dir:s.dir,mode:s.mode}:null; },   // G2 instrumentation: read live frame index
            sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
