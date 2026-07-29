@@ -8093,7 +8093,7 @@ const VFX = (()=>{
   function local(cxp, cyp){ const r=fieldEl.getBoundingClientRect(); return { x:cxp-r.left, y:cyp-r.top }; }
   function room(){ return CAP-parts.length; }
   function wake(){ if(!raf){ last=performance.now(); raf=requestAnimationFrame(step); } }
-  function add(p){ if(parts.length>=CAP) parts.shift(); parts.push(p); wake(); }
+  function add(p){ if(parts.length>=CAP){ const e=parts[0]; if(e && e.life>0.08*vfxT()) e.life=0.08*vfxT(); if(parts.length>=CAP+8) parts.shift(); } parts.push(p); wake(); }   // T75: evicted particle fast-fades 80ms
   function sprite(img, x, y, size, rot, alpha){ if(alpha<=0) return; cx.globalAlpha=alpha<1?alpha:1; const c=Math.cos(rot||0), s=Math.sin(rot||0); cx.setTransform(DPR*c, DPR*s, -DPR*s, DPR*c, DPR*x, DPR*y); cx.drawImage(img, -size/2, -size/2, size, size); }
   // midpoint-displacement bolt: straight top→impact, recursively displace midpoints perpendicular; fork 2–3 branches
   function displace(x1,y1,x2,y2,disp,levels){ let pts=[{x:x1,y:y1},{x:x2,y:y2}];
@@ -8321,8 +8321,8 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   // S4 GPU PARTICLES: procedural ember sprites in the fx particleLayer (so bloom catches them). Cap gpu.PCAP, oldest-evicted.
   function gpuEmit(x,y,size,n,opts){ if(!gpu.particleLayer||!gpu.emberTex) return; const P=gpu.PIXI; opts=opts||{};
     const spMul=opts.speed||1, buoyMul=(opts.buoy!=null?opts.buoy:1), drag=opts.drag||1.6, tint=opts.tint||0xffcaa0, lifeMul=opts.life||1, spread=(opts.spread!=null?opts.spread:0.4);
-    for(let i=0;i<n;i++){ if(gpu.particles.length>=gpu.PCAP){ const old=gpu.particles.shift(); try{ gpu.particleLayer.removeChild(old.spr); old.spr.destroy(); }catch(e){} }
-      const ang=Math.random()*6.283, sp=(0.4+Math.random()*1.2)*size*spMul, life=(0.35+Math.random()*0.5)*vfxT()*lifeMul;
+    for(let i=0;i<n;i++){ if(gpu.particles.length>=gpu.PCAP){ const e0=gpu.particles[0]; if(e0 && !e0._evict){ e0._evict=true; e0.max=Math.min(e0.max, e0.age+0.08*vfxT()); } if(gpu.particles.length>=gpu.PCAP+40){ const old=gpu.particles.shift(); try{ gpu.particleLayer.removeChild(old.spr); old.spr.destroy(); }catch(e){} } }   // T75: evicted → fast-fade 80ms (hard backstop at cap+40)
+      const ang=Math.random()*6.283, sp=(0.4+Math.random()*1.2)*size*spMul, jit=(opts.jitter!=null?opts.jitter:0), life=(0.35+Math.random()*0.5)*vfxT()*lifeMul*1.6*(1+(Math.random()-0.5)*2*jit);   // T75: ×1.6 follow-through + per-particle ±jitter (bursts die raggedly)
       const spr=new P.Sprite(gpu.emberTex); spr.anchor.set(0.5); spr.x=x+(Math.random()-.5)*size*spread; spr.y=y+(Math.random()-.5)*size*spread;
       const sz=(2+Math.random()*4); spr.width=spr.height=sz; spr.blendMode='add'; spr.alpha=0; spr.tint=tint;
       gpu.particleLayer.addChild(spr);
@@ -8330,8 +8330,8 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   }
   // T70-P2H beat 1: reverse-emission — particles ring in from ~1.4–2.8× card and converge on (x,y)
   function gpuEmitInward(x,y,size,n){ if(!gpu.particleLayer||!gpu.emberTex) return; const P=gpu.PIXI;
-    for(let i=0;i<n;i++){ if(gpu.particles.length>=gpu.PCAP){ const old=gpu.particles.shift(); try{ gpu.particleLayer.removeChild(old.spr); old.spr.destroy(); }catch(e){} }
-      const ang=Math.random()*6.283, R=size*(1.4+Math.random()*1.4), life=(0.28+Math.random()*0.14)*vfxT(), sp=R/life*0.9;
+    for(let i=0;i<n;i++){ if(gpu.particles.length>=gpu.PCAP){ const e0=gpu.particles[0]; if(e0 && !e0._evict){ e0._evict=true; e0.max=Math.min(e0.max, e0.age+0.08*vfxT()); } if(gpu.particles.length>=gpu.PCAP+40){ const old=gpu.particles.shift(); try{ gpu.particleLayer.removeChild(old.spr); old.spr.destroy(); }catch(e){} } }   // T75: evicted → fast-fade 80ms (hard backstop at cap+40)
+      const ang=Math.random()*6.283, R=size*(1.4+Math.random()*1.4), life=(0.28+Math.random()*0.14)*vfxT()*1.6, sp=R/life*0.9*1.6;   // T75: ×1.6 follow-through (keep the same convergence distance → speed ×1.6)
       const sx=x+Math.cos(ang)*R, sy=y+Math.sin(ang)*R, sz=(2+Math.random()*3);
       const spr=new P.Sprite(gpu.emberTex); spr.anchor.set(0.5); spr.x=sx; spr.y=sy; spr.width=spr.height=sz; spr.blendMode='add'; spr.alpha=0; spr.tint=0xffe0a0;
       gpu.particleLayer.addChild(spr);
@@ -8341,7 +8341,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     for(let i=P.length-1;i>=0;i--){ const p=P[i]; p.age+=dt;
       if(p.age>=p.max){ try{ gpu.particleLayer.removeChild(p.spr); p.spr.destroy(); }catch(e){} P.splice(i,1); continue; }
       const k=Math.exp(-p.drag*dt); p.vx*=k; p.vy=p.vy*k + p.buoy*dt; p.x+=p.vx*dt; p.y+=p.vy*dt;
-      const t=p.age/p.max; p.spr.x=p.x; p.spr.y=p.y; p.spr.alpha=(t<0.15?t/0.15:1-(t-0.15)/0.85)*0.9; const g=1+t*1.4; p.spr.width=p.spr.height=p.sz*g; }
+      const t=p.age/p.max; p.spr.x=p.x; p.spr.y=p.y; const d=(t-0.15)/0.85; p.spr.alpha=(t<0.15 ? t/0.15 : 1-Math.pow(Math.max(0,d),3))*0.9; const g=1+t*1.4; p.spr.width=p.spr.height=p.sz*g; }   // T75: cubic-in death (breathing tail)
   }
   function gpuSpawnSurge(x,y,size,rot,life){
     if(!gpu.enabled||!gpu.texReady||!gpu.PIXI) return false;
@@ -8368,7 +8368,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       const f0=Math.max(0,Math.min(s.nf-1, Math.floor(s.frame))), f1=Math.min(s.nf-1,f0+1), frac=Math.max(0,Math.min(1,s.frame-f0));
       s.spr.texture=gpu.tex[s.key][f0];                                                       // frame A = uTexture
       const t=Math.min(1,s.age/s.max), pk=s.peakAt;
-      const alpha=Math.max(0,Math.min(1, t<pk ? (s.opPeak)*Math.pow(t/pk,0.6) : s.opPeak+(0-s.opPeak)*Math.pow((t-pk)/(1-pk),1.6) ));
+      const alpha=Math.max(0,Math.min(1, t<pk ? (s.opPeak)*Math.pow(t/pk,0.6) : s.opPeak+(0-s.opPeak)*Math.pow((t-pk)/(1-pk),3) ));   // T75: cubic-IN release (breathing tail)
       if(s.mvFilter){ const u=s.mvFilter.resources.m.uniforms, cols=s.cols||8, rows=s.rows||4;   // per-sprite grid (T74: 64f=8x8 / 48f=8x6 / 32f=8x4)
         u.uP0=new Float32Array([frac,16/384,s.age,0.012]); u.uP1=new Float32Array([gpu.mv?1:0, 1/cols, 1/rows, alpha]);
         u.uP2=new Float32Array([(f1%cols)/cols, ((f1/cols)|0)/rows, (f0%cols)/cols, ((f0/cols)|0)/rows]); }
@@ -8400,13 +8400,13 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       const dimQ=new PIXI.Sprite(PIXI.Texture.WHITE); dimQ.tint=0x000000; dimQ.width=cw; dimQ.height=ch; dimQ.alpha=0; gpu.dimLayer.addChild(dimQ);       // FULL-VIEWPORT scene dim (dimLayer → not bloomed)
       const flashQ=new PIXI.Sprite(PIXI.Texture.WHITE); flashQ.tint=0xfff2d6; flashQ.width=cw; flashQ.height=ch; flashQ.alpha=0; flashQ.blendMode='add'; gpu.fxLayer.addChild(flashQ);   // FULL-VIEWPORT flash
       const aura=new PIXI.Sprite(gpu.auraTex); aura.anchor.set(0.5); aura.x=x; aura.y=y; aura.blendMode='add'; aura.alpha=0; aura.width=aura.height=W*0.5; gpu.fxLayer.addChild(aura);   // beat-1 gather glow
-      gpu.hero={ age:0, T, dur:1.8*T, x, y, W, cw, ch, dimQ, flashQ, aura, ring:null, light:null, lightT0:null, flashT0:null, ringT0:null, fired:{}, beat:0 };
+      gpu.hero={ age:0, T, dur:2.9*T, x, y, W, cw, ch, dimQ, flashQ, aura, ring:null, light:null, lightT0:null, flashT0:null, ringT0:null, fired:{}, beat:0 };   // T75: aftermath extends 1.8→2.9s (beats 1–3 unchanged; the extra ~700ms plays under gameplay, decoupled)
       gpu.heroLog=[]; wake(); return true;
     }catch(e){ return false; }
   }
   function gpuHeroTick(dt){
     const h=gpu.hero; if(!h) return; h.age+=dt; const t=h.age, T=h.T, W=h.W;
-    const B1=0.35*T, B2=0.55*T, B3=0.90*T, B4=1.80*T;   // beat boundaries (seconds, ×vfxT)
+    const B1=0.35*T, B2=0.55*T, B3=0.90*T, B4=2.90*T;   // beat boundaries (seconds, ×vfxT); T75: beats 1–3 unchanged, beat 4 (aftermath) extends to 2.9s
     // SCENE DIM keyframe: ramp 0→.40 over beat 1, hold, release across beat 4
     h.dimQ.alpha = t<B1 ? 0.40*(t/B1) : (t<B3 ? 0.40 : 0.40*Math.max(0,1-(t-B3)/(B4-B3)));
     // BEAT 1 — ANTICIPATION: aura grows 0.5→2× card + brightens, then dissipates into the strike
@@ -8430,8 +8430,8 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       if(re>=1 && h.ring.alpha<0.02){ try{ gpu.fxLayer.removeChild(h.ring); h.ring.destroy(); }catch(e){} h.ring=null; } }
     // BEAT 4 — AFTERMATH: MV smoke 3× card rolling, embers drifting, dim releasing (handled by the dim keyframe above)
     if(t>=B3 && !h.fired.b4){ h.fired.b4=true; h.beat=4;
-      for(let i=0;i<2;i++) gpuSpawnHeroSmoke(h.x+(Math.random()-.5)*W*1.2, h.y+(Math.random()-.5)*W*0.6, W*3, 0.9*T);   // 2 MV-smoke render-textures (perf)
-      gpuEmit(h.x,h.y,W,220,{ speed:0.8, buoy:1.3, drag:1.4, life:1.7 }); heroLog(4,'aftermath: 2× MV smoke 3×card, 220 drifting embers, dim release'); }
+      for(let i=0;i<2;i++) gpuSpawnHeroSmoke(h.x+(Math.random()-.5)*W*1.2, h.y+(Math.random()-.5)*W*0.6, W*3, 1.7*T);   // T75: smoke rolls longer through the extended aftermath
+      gpuEmit(h.x,h.y,W,220,{ speed:0.8, buoy:1.3, drag:1.4, life:2.4, jitter:0.3 }); heroLog(4,'aftermath: 2× MV smoke 3×card, 220 drifting embers dying over the final ~1200ms, dim release'); }   // T75: embers drift + die over the final ~1200ms, ragged (jitter)
     if(t>=h.dur) gpuHeroEnd();
   }
   function gpuHeroEnd(){ const h=gpu.hero; if(!h) return;
@@ -8449,7 +8449,9 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   // C1 GROUND DIM (F3): soft radial darkening under COMBAT+ / SPECTACLE effects only (never ambient, never reduced-motion)
   let gdim=null;
   function groundDim(cxp,cyp,radius){ if(!dimOn||reducedMotion()) return; const {x,y}=local(cxp,cyp); gdim={ x, y, r:radius*1.8, peak:0.25, age:0, rise:0.08*vfxT(), life:0.5*vfxT() }; wake(); }   // T70-DIM: OFF by default (VFX.dim gate). All combat/spectacle recipes route through here, so this single gate kills every Canvas2D ground-dim.
-  function addSpr(o){ if(reducedMotion()) return; if(!o.img && !o.swap && !o.sheet) return; if(sprites.length>=SCAP) sprites.shift(); o.age=0; o.max=o.life; o.swapT=0; sprites.push(o); wake(); }   // oldest evicted at cap
+  function addSpr(o){ if(reducedMotion()) return; if(!o.img && !o.swap && !o.sheet) return;
+    if(sprites.length>=SCAP){ const e=sprites[0]; if(e && !e._evict){ e._evict=true; e.max=Math.min(e.max, e.age+0.08*vfxT()); } if(sprites.length>=SCAP+3) sprites.shift(); }   // T75: evicted → fast-fade 80ms (not vanish); hard backstop at cap+3
+    o.age=0; o.max=o.life; o.swapT=0; sprites.push(o); wake(); }
   // C1 GROUND DIM — T69A: moved OUT of drawSprites and drawn AFTER the bloom pass with 'destination-over' (behind the glow).
   // Same dimmed-board-under-glow contrast, but the bloom source never contains it → bloom can't deepen the dim's alpha into an opaque-dark box.
   function drawGroundDim(dt){
@@ -8471,7 +8473,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
   }
   function drawOneSpr(s,dt){
-    if(s.swap){ s.swapT+=dt; if(!s.img || s.swapT>=0.05){ s.swapT=0; s.img=sprImg[pick('lightning',4)]; s.flip=(Math.random()<.5?-1:1); } }   // lightning: hard-swap variant every 50ms + random flip
+    if(s.swap && (s.swapUntil==null || s.age<s.swapUntil)){ s.swapT+=dt; if(!s.img || s.swapT>=0.05){ s.swapT=0; s.img=sprImg[pick('lightning',4)]; s.flip=(Math.random()<.5?-1:1); } }   // lightning: hard-swap every 50ms + flip DURING the flicker window (T75: then holds the last frame into the afterglow fade)
     // F1b: fractional frame advance at 16fps / vfxT → 32 frames @1.5-cadence play the 2s window at ~1:1 real tempo
     if(s.sheet){ const nf=(sheetGrid[s.sheet]||{}).frames||24;
       s.frame += dt*SHEET_FPS/(vfxT()||1) * s.dir;
@@ -8483,9 +8485,9 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     const ez = s.crash ? t : (1-Math.pow(1-t,3));                            // C3 F5: cubic-OUT growth
     let sc=s.sc0+(s.sc1-s.sc0)*ez; if(s.overshoot) sc+=Math.sin(t*Math.PI)*s.overshoot*(1-t);
     let op; const pk=(s.peakAt!=null?s.peakAt:0.3);
-    if(s.crash) op=s.opPeak*(1-Math.pow(t,1.4));
-    else if(t<pk) op=s.op0+(s.opPeak-s.op0)*Math.pow(t/pk,0.6);              // C3: soft ~60-80ms birth
-    else op=s.opPeak+(s.op1-s.opPeak)*Math.pow((t-pk)/(1-pk),1.6);          // C3: cubic-IN decay
+    if(s.crash) op=s.opPeak*(1-Math.pow(t,2.4));                             // T75: crash afterglow breathes out (was 1.4)
+    else if(t<pk) op=s.op0+(s.opPeak-s.op0)*Math.pow(t/pk,0.6);              // C3: soft ~60-80ms birth (attack UNCHANGED)
+    else op=s.opPeak+(s.op1-s.opPeak)*Math.pow((t-pk)/(1-pk),3);            // T75: cubic-IN release (breathing tail; was 1.6)
     if(op<=0.004) return;
     const size=s.size, sx=DPR*sc*(s.flip||1)*(s.stretchX||1), sy=DPR*sc*(s.squashY||1);
     const c=Math.cos(s.rot||0), sn=Math.sin(s.rot||0), dx=s.x+(s.driftX||0)*t, dy=s.y+(s.driftY||0)*t;
@@ -8510,38 +8512,42 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     if(s.halo){ cx.globalCompositeOperation=blend; cx.globalAlpha=Math.min(1,op)*0.25; const hs=size*1.35; cx.drawImage(img, -hs*ax, -hs*ay, hs, hs); }   // C3 F5 double-stamp halo + F3b gco re-assert
   }
   function cw(cardW){ return cardW||w*0.16; }
+  // T75 THE ENVELOPE LAW: fast-in, slow-out. Attack ms is UNCHANGED (from current peakAt×life); the release extends and carries the growth. VFX.linger scales the RELEASE ONLY (default 1.0, 0.5–2.0). Release decay is cubic-in (a breathing tail). {a:attackMs, t:newTotalMs}.
+  const ENV={ aura:{a:82,t:950}, bloom:{a:40,t:300}, ring:{a:180,t:1000}, smoke:{a:135,t:1500}, lightning:{a:54,t:750}, shield:{a:175,t:800}, venom:{a:105,t:1300}, surge:{a:75,t:1150} };
+  let lingerVal=1;
+  function envLife(name){ const e=ENV[name], rel=(e.t-e.a)*lingerVal, tot=e.a+rel; return { life:tot/1000*vfxT(), peakAt:e.a/tot }; }   // → {life(sec×vfxT), peakAt(fraction)}; attack ms constant across linger settings
   // ---- STEP 3 motion recipes (all life ×S()=vfxT parity; each returns true if the painted sprite fired, false → caller keeps procedural) ----
   // ---- recipes: FLIPBOOK-first for the 4 converted effects (still + envelope fallback); C3 halo on additive stills; C1 ground-dim on combat+/spectacle ----
   function sprAura(cxp,cyp,faction,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), v=pick('aura',2);   // aura_1/2 have sheets; aura_3 still-only
-    if(haveSheet(v)) return addSheetSpr(v, x, y, W*2.2, { opPeak:0.85, life:0.55*vfxT(), tintFac:faction });   // B4 draw-time faction tint
+    if(haveSheet(v)) return addSheetSpr(v, x, y, W*2.2, Object.assign({ opPeak:0.85, tintFac:faction }, envLife('aura')));   // B4 draw-time faction tint; T75 fast-in slow-out
     if(!haveSpr('aura_1')) return false;
-    addSpr({ img:imgTint(pick('aura',3),faction), x,y, size:W*1.9, sc0:0.8,sc1:1.15, op0:0,opPeak:0.8,op1:0, peakAt:0.4, life:0.5*vfxT(), rot:Math.random()*6.28, halo:true }); return true; }
+    addSpr({ img:imgTint(pick('aura',3),faction), x,y, size:W*1.9, sc0:0.8,sc1:1.15, op0:0,opPeak:0.8,op1:0, rot:Math.random()*6.28, halo:true, ...envLife('aura') }); return true; }
   function sprBloom(cxp,cyp,kind,cardW){ if(reducedMotion()||!ready||!haveSpr('bloom_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), k=pick('bloom',2);
     groundDim(cxp,cyp,W*1.6);   // C1: bloom = combat hit
-    addSpr({ img:(kind==='damage'?imgTint(k,'damage'):sprImg[k]), x,y, size:W*2.0, sc0:0.6,sc1:1.2, opPeak:1, crash:true, life:0.16*vfxT(), rot:Math.random()*6.28, anchorX:(/2$/.test(k)?0.4:0.5), anchorY:(/2$/.test(k)?0.6:0.5) }); return true; }
+    addSpr({ img:(kind==='damage'?imgTint(k,'damage'):sprImg[k]), x,y, size:W*2.0, sc0:0.6,sc1:1.2, opPeak:1, crash:true, rot:Math.random()*6.28, anchorX:(/2$/.test(k)?0.4:0.5), anchorY:(/2$/.test(k)?0.6:0.5), ...envLife('bloom') }); return true; }   // T75: flash instant, afterglow breathes out (300ms)
   function sprRing(cxp,cyp,faction,cardW){ if(reducedMotion()||!ready||!haveSpr('ring_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
-    addSpr({ img:imgTint(pick('ring',2),faction), x, y, size:W*2.2, sc0:0.7,sc1:1.05, overshoot:0.12, op0:0,opPeak:1,op1:0, peakAt:0.3, life:0.6*vfxT(), squashY:0.42, halo:true }); return true; }   // ambient landing → no ground-dim
+    addSpr({ img:imgTint(pick('ring',2),faction), x, y, size:W*2.2, sc0:0.7,sc1:1.05, overshoot:0.12, op0:0,opPeak:1,op1:0, squashY:0.42, halo:true, ...envLife('ring') }); return true; }   // ambient landing → no ground-dim; T75 linger
   function sprSmoke(cxp,cyp,count,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), n=count||1;
     groundDim(cxp,cyp,W*1.8);   // C1: smoke = destroy/spectacle
     for(let i=0;i<n;i++){ setTimeout(()=>{ if(!ready) return; const v=pick('smoke',2);
-      if(haveSheet(v)){ addSheetSpr(v, x+(Math.random()-.5)*W*0.5, y+(Math.random()-.5)*W*0.3, W*1.9, { opPeak:0.85, life:0.9*vfxT(), driftY:-(20+Math.random()*20) }); }   // flipbook smoke is an additive rolling GLOW (fixes the black-blob verdict)
-      else if(haveSpr('smoke_1')){ addSpr({ img:sprImg[v], smoke:true, x:x+(Math.random()-.5)*W*0.5, y:y+(Math.random()-.5)*W*0.3, size:W*1.8, sc0:1.0,sc1:1.35, op0:0.85,opPeak:0.85,op1:0, peakAt:0.05, life:0.9*vfxT(), rot:(Math.random()-.5)*0.21, driftY:-(20+Math.random()*20) }); } }, i*80*vfxT()); }
+      if(haveSheet(v)){ addSheetSpr(v, x+(Math.random()-.5)*W*0.5, y+(Math.random()-.5)*W*0.3, W*1.9, Object.assign({ opPeak:0.85, driftY:-(20+Math.random()*20) }, envLife('smoke'))); }   // flipbook smoke is an additive rolling GLOW; T75 linger (1500ms)
+      else if(haveSpr('smoke_1')){ addSpr({ img:sprImg[v], smoke:true, x:x+(Math.random()-.5)*W*0.5, y:y+(Math.random()-.5)*W*0.3, size:W*1.8, sc0:1.0,sc1:1.35, op0:0.85,opPeak:0.85,op1:0, rot:(Math.random()-.5)*0.21, driftY:-(20+Math.random()*20), ...envLife('smoke') }); } }, i*80*vfxT()); }
     return (haveSheet('smoke_1')||haveSpr('smoke_1')); }
   function sprLightning(cxp,cyp,cardW){ if(reducedMotion()||!ready||!haveSpr('lightning_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
     groundDim(cxp,cyp,W*2.4);   // C1: lightning = spectacle
-    addSpr({ img:sprImg[pick('lightning',4)], swap:true, x,y, size:W*3.2, sc0:1.0,sc1:1.06, op0:0,opPeak:0.95,op1:0, peakAt:0.12, life:0.45*vfxT(), flip:(Math.random()<.5?-1:1) }); return true; }
+    addSpr({ img:sprImg[pick('lightning',4)], swap:true, swapUntil:0.45*vfxT(), x,y, size:W*3.2, sc0:1.0,sc1:1.06, op0:0,opPeak:0.95,op1:0, flip:(Math.random()<.5?-1:1), ...envLife('lightning') }); return true; }   // T75: flicker for ~450ms, then a 300ms afterglow fade of the last frame (no more flicker)
   function sprShield(cxp,cyp,cardW){ if(reducedMotion()||!ready||!haveSpr('shield_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
-    addSpr({ img:sprImg[pick('shield',2)], x,y, size:W*2.4, sc0:1.3,sc1:1.0, overshoot:0.18, op0:0,opPeak:0.7,op1:0, peakAt:0.35, life:0.5*vfxT(), halo:true }); return true; }   // serene: no shake, no hit-stop, no dim
+    addSpr({ img:sprImg[pick('shield',2)], x,y, size:W*2.4, sc0:1.3,sc1:1.0, overshoot:0.18, op0:0,opPeak:0.7,op1:0, halo:true, ...envLife('shield') }); return true; }   // serene: no shake, no hit-stop, no dim; T75 snap unchanged, hold extends
   function sprVenom(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), v=pick('venom',2);   // ambient dread → no dim; forward-only sheet (venom never reverses)
-    if(haveSheet(v)) return addSheetSpr(v, x, y-W*0.25, W*1.9, { opPeak:0.6, life:0.7*vfxT(), driftY:W*0.2 });
+    if(haveSheet(v)) return addSheetSpr(v, x, y-W*0.25, W*1.9, Object.assign({ opPeak:0.6, driftY:W*0.2 }, envLife('venom')));   // T75: dread benefits most from lingering (1300ms)
     if(!haveSpr('venom_1')) return false;
-    addSpr({ img:sprImg[v], x, y:y-W*0.25, size:W*1.7, sc0:0.9,sc1:1.0, op0:0,opPeak:0.6,op1:0, peakAt:0.35, life:0.7*vfxT(), driftY:W*0.2, halo:true }); return true; }
+    addSpr({ img:sprImg[v], x, y:y-W*0.25, size:W*1.7, sc0:0.9,sc1:1.0, op0:0,opPeak:0.6,op1:0, driftY:W*0.2, halo:true, ...envLife('venom') }); return true; }
   function sprSurge(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), v=pick('surge',2);
-    if(gpu.enabled && gpu.texReady && gpuSpawnSurge(x, y, W*2.2, (Math.random()-.5)*0.4, 0.5*vfxT())) return true;   // T70-P1: GPU serves the effect AND its ground-dim (S5) → the Canvas2D gdim below is skipped for GPU-served surge
+    if(gpu.enabled && gpu.texReady && gpuSpawnSurge(x, y, W*2.2, (Math.random()-.5)*0.4, envLife('surge').life)) return true;   // T70-P1: GPU serves the effect AND its ground-dim (S5); T75 linger lifetime
     groundDim(cxp,cyp,W*2.1);   // C1: Canvas2D dim only when Canvas2D serves surge (P2 moves the rest of the effects onto the GPU dim)
-    if(haveSheet(v)) return addSheetSpr(v, x, y, W*2.2, { opPeak:0.95, life:0.5*vfxT(), rot:(Math.random()-.5)*0.4 });
+    if(haveSheet(v)) return addSheetSpr(v, x, y, W*2.2, Object.assign({ opPeak:0.95, rot:(Math.random()-.5)*0.4 }, envLife('surge')));   // T75 linger (1150ms)
     if(!haveSpr('surge_1')) return false;
-    addSpr({ img:sprImg[v], x,y, size:W*2.1, sc0:0.8,sc1:1.2, op0:0,opPeak:0.9,op1:0, peakAt:0.2, life:0.45*vfxT(), rot:(Math.random()-.5)*0.5, halo:true }); return true; }
+    addSpr({ img:sprImg[v], x,y, size:W*2.1, sc0:0.8,sc1:1.2, op0:0,opPeak:0.9,op1:0, rot:(Math.random()-.5)*0.5, halo:true, ...envLife('surge') }); return true; }
   function sprStreak(fx,fy,tx,ty,cardW){ if(reducedMotion()||!ready||!haveSpr('streak_1')) return false; const a=local(fx,fy), b=local(tx,ty), W=cw(cardW);
     const dxp=b.x-a.x, dyp=b.y-a.y, len=Math.hypot(dxp,dyp)||1, ang=Math.atan2(dyp,dxp);
     addSpr({ img:imgTint(pick('streak',2),'leap'), x:(a.x+b.x)/2, y:(a.y+b.y)/2, size:W*1.4, sc0:1,sc1:1, stretchX:Math.max(1,len/(W*1.0)), squashY:0.7, rot:ang, op0:0,opPeak:0.9,op1:0, peakAt:0.25, life:0.3*vfxT() }); return true; }
@@ -8573,7 +8579,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     cx.globalCompositeOperation='lighter';
     for(const p of parts){ if(p.kind==='smoke') continue; const age=1-p.life/p.max, flick=Math.sin(t*p.flHz+p.flP)*p.flA;
       if(p.kind==='glow'){ const idx=Math.min(4,Math.floor(age*5)), sc=age<0.2?age/0.2:1-(age-0.2)/0.8*0.85; sprite(sGlow[idx], p.x+flick, p.y, p.sz*Math.max(0.1,sc), 0, Math.min(1,p.life/p.max*1.4)); }
-      else sprite(sEmber, p.x+flick, p.y, p.sz, 0, Math.max(0,p.life/p.max)); }
+      else sprite(sEmber, p.x+flick, p.y, p.sz, 0, Math.pow(Math.max(0,p.life/p.max),0.6)); }   // T75: cubic-in death tail (lingers then fades)
     cx.setTransform(DPR,0,0,DPR,0,0); cx.globalAlpha=1; cx.lineCap='round'; cx.lineJoin='round';
     for(let i=bolts.length-1;i>=0;i--){ const b=bolts[i]; b.life-=dt; if(b.life<=0){ bolts.splice(i,1); continue; } const a=b.life/b.max;
       for(const st of [[12,`rgba(150,190,255,${.16*a})`],[5,`rgba(205,228,255,${.5*a})`],[1.5,`rgba(255,255,255,${.95*a})`]]){ cx.lineWidth=st[0]; cx.strokeStyle=st[1]; poly(b.main); for(const br of b.branches) poly(br); } }   // T66 spectacle: bolt widths 9/3.5/1 -> 12/5/1.5 for slot-scale presence
@@ -8591,9 +8597,9 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
              else { raf=0; try{ cx.clearRect(0,0,canvas.width,canvas.height); }catch(_){} } }
   }
   function poly(pts){ cx.beginPath(); cx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) cx.lineTo(pts[i].x,pts[i].y); cx.stroke(); }
-  function addFire(x,y,ang,sp,sz,life,buoy,inward){ add({ kind:'glow', x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, buoy, inward, cx0:x, cy0:y, flHz:63+Math.random()*30, flP:Math.random()*6.28, flA:2+Math.random()*2, sz, life, max:life }); }
-  function addSmoke(set, x, y, vx, vy, g, sz, life, a){ add({ kind:'smoke', sprite:set[Math.floor(Math.random()*set.length)], x, y, vx, vy, g, rot:Math.random()*6.28, spin:(Math.random()-.5)*.8, curlF:1.5+Math.random(), curlP:Math.random()*6.28, curlA:6+Math.random()*8, sz, life, max:life, a }); }
-  function addEmber(x,y,ang,sp,buoy,life,sz){ add({ kind:'ember', x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, buoy, inward:0, cx0:x, cy0:y, flHz:63+Math.random()*30, flP:Math.random()*6.28, flA:.9+Math.random(), sz, life, max:life }); }
+  function addFire(x,y,ang,sp,sz,life,buoy,inward){ add({ kind:'glow', x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, buoy, inward, cx0:x, cy0:y, flHz:63+Math.random()*30, flP:Math.random()*6.28, flA:2+Math.random()*2, sz, life:life*1.6, max:life*1.6 }); }
+  function addSmoke(set, x, y, vx, vy, g, sz, life, a){ add({ kind:'smoke', sprite:set[Math.floor(Math.random()*set.length)], x, y, vx, vy, g, rot:Math.random()*6.28, spin:(Math.random()-.5)*.8, curlF:1.5+Math.random(), curlP:Math.random()*6.28, curlA:6+Math.random()*8, sz, life:life*1.6, max:life*1.6, a }); }   // T75 ×1.6
+  function addEmber(x,y,ang,sp,buoy,life,sz){ add({ kind:'ember', x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, buoy, inward:0, cx0:x, cy0:y, flHz:63+Math.random()*30, flP:Math.random()*6.28, flA:.9+Math.random(), sz, life:life*1.6, max:life*1.6 }); }
   // (a) CARD LANDS — warm stone dust + gold embers
   function cardLand(cxp, cyp){ if(reducedMotion()||!ready) return; const {x,y}=local(cxp,cyp), s=S();
     for(let i=0;i<Math.min(3,room());i++){ const ang=Math.random()*6.28; addSmoke(sDust, x+(Math.random()*24-12), y+6, Math.cos(ang)*16, -6-Math.random()*8, 1, 20+Math.random()*14, (1.5+Math.random()*.6)*s, .42); }
@@ -8623,6 +8629,8 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
            frameOf:(i)=>{ const s=sprites[i]; return s?{sheet:s.sheet,frame:s.frame,dir:s.dir,mode:s.mode}:null; },   // G2 instrumentation: read live frame index
            setBloom:(v)=>{ bloomOn=!!v; }, bloomState:()=>({ok:BLOOM_OK,on:bloomOn}),   // G3 A/B proof hook (bloom on/off)
            get dim(){ return dimOn; }, set dim(v){ dimOn=!!v; },   // T70-DIM master flag: per-effect ground-dim OFF by default; true re-enables both paths (reserved for the hero-moment scene dim, R3)
+           get linger(){ return lingerVal; }, set linger(v){ lingerVal=Math.max(0.5,Math.min(2,(+v)||1)); },   // T75 owner knob: live multiplier on RELEASE durations only (attack ms constant), 0.5–2.0
+           envLifeOf:(name)=>{ const e=ENV[name]; if(!e) return null; const rel=(e.t-e.a)*lingerVal, tot=e.a+rel; return { attackMs:e.a, totalMs:Math.round(tot), lifeMs:Math.round(envLife(name).life/vfxT()*1000) }; },   // G2/G6 instrumentation
            gpuHero,   // T70-P2H: fire the 4-beat hero moment (returns true if the GPU served it → caller suppresses the Canvas2D spectacle)
            gpu:{ get renderer(){return gpu.renderer;}, get enabled(){return gpu.enabled;}, get disabled(){return gpu.disabled;}, get texReady(){return gpu.texReady;}, get live(){return gpu.sprites.length;}, get particles(){return gpu.particles.length;}, get dims(){return gpu.dimLayer?gpu.dimLayer.children.length:0;},   // T70-P0/P1 A/B + instrumentation
                  toggle(){ if(!gpu.disabled) gpu.enabled=!gpu.enabled; return gpu.enabled; },
@@ -8668,7 +8676,7 @@ async function playEvent(ev, snap){
       heroServed = !!(lp && VFX.gpuHero && VFX.gpuHero(lp.x, lp.y, src?src.rect.width:null));                                   // T70-P2H: the GPU hero moment SERVES the spectacle → suppress the Canvas2D wrap/smoke below (no double-fire)
       if(lp && !heroServed){ VFX.sprLightning(lp.x, lp.y, src?src.rect.width:null); if(isAstra) VFX.sprSmoke(lp.x, lp.y, 3, null); } }   // fallback (gpu disabled/not ready): the existing Canvas2D spectacle stack, intact
     let hold=700, hitStop=0;
-    if(tier==='spectacle'){ hold += heroServed ? 1100 : 300; hitStop=110; screenShake(true); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); if(!isAstra) Audio2.sfx('boom'); }   // SPECTACLE: zoom-punch + ±9 shake + wash + 110ms hit-stop; hero moment holds ~1.8s so the choreography queue serializes it (G6)
+    if(tier==='spectacle'){ hold += heroServed ? 1500 : 300; hitStop=110; screenShake(true); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); if(!isAstra) Audio2.sfx('boom'); }   // SPECTACLE: zoom-punch + ±9 shake + wash + 110ms hit-stop; T75: hero hold 1800→2200ms (700+1500); the remaining ~700ms of the 2.9s aftermath plays UNDER gameplay (decoupled, PART C)
     else if(tier==='combat'){ hitStop=70; }                                    // COMBAT astra: 70ms hit-stop (burst + vignette above)
     else if(c && c.t==='hero') hold+=300;
     if(hitStop) await cDelay(hitStop);                                         // HIT-STOP injected at the impact instant, before the hold (scaled by --vfx-t via cDelay; skipped in reduced-motion since playEvent never runs there)
