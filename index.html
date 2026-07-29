@@ -245,6 +245,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .bs-layer{ position:absolute; inset:0; pointer-events:none; }
 .bs-dim{ background:linear-gradient(180deg, rgba(7,4,2,.7), rgba(7,4,2,.5) 42%, rgba(7,4,2,.8)); }
 .bs-vig{ background:radial-gradient(125% 100% at 50% 40%, transparent 46%, rgba(0,0,0,.72) 100%); }
+@media(min-width:1024px){ .bs-vig{ background:radial-gradient(86% 92% at 50% 42%, transparent 38%, rgba(0,0,0,.86) 100%); } }   /* T71 2a: tighter, deeper edge vignette frames the widened board — the hall reads as staging, not margin; centre stays readable */
 #battlestage > .ember-fx{ position:fixed; inset:0; width:100%; max-width:none; height:100%; margin:0; pointer-events:none; }
 
 /* board table — the two-zone play surface; feathered/transparent edges reveal the realm floor around it */
@@ -269,15 +270,19 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #passbtn{ background:linear-gradient(180deg,#2a1e0a,#1a1206); border-color:var(--gold-2); color:var(--gold-bright); letter-spacing:.14em; }
 
 @media(min-width:1024px){
-  /* T42b DEFECT-3: the match column stays 520-capped on desktop. Desktop drops the mobile centering-carousel padding
-     (calc(50%-…) shows only ~3) for a LEFT-PACKED row so FIVE minis sit in the visible row (5×92 + 4×9 gap + 2×8 pad
-     = 512 ≤ 518); a 6th+ overflow-scrolls with the edge fade. scroll-snap-align:start so packed cards don't centre-snap. */
-  #hand{ padding:14px 8px 16px; }
-  .hc{ width:92px; scroll-snap-align:start; }
-  .hc-nm{ font-size:10px; } .hc-epi{ font-size:7.5px; } .hc-chip{ min-width:20px; height:20px; font-size:12px; }
-  .deckstack{ width:52px; } .deckstack img{ width:52px; } .deckcnt{ font-size:12px; }
-  .score-av{ width:46px; height:46px; }
-  .zbody, .zhead{ padding-left:64px; }   /* T42b DEFECT-1: desktop deck stack is 52 wide → clear 64 */
+  /* T71 DESKTOP STAGE PASS: the match column now COMMANDS the viewport (was T42b's 520-cap). The column widens to
+     min(1000px,90vw); board minis scale up via a raised MINI_MAX in sizeBoard() (height-fitting logic grows the cards
+     to fill the taller board); the hand row LEFT-PACKS proportionally larger cards (118 + 9 gap + pad → ~7 in the
+     visible row, the rest overflow-scroll with the edge fade). scroll-snap-align:start so packed cards don't centre-snap.
+     2b DEPTH GLOW: a faction-neutral gold ambient glow + drop shadow lifts the board off the temple backdrop. */
+  #app{ max-width:min(1000px, 90vw); box-shadow:0 0 90px 18px rgba(224,176,64,.09), 0 26px 90px rgba(0,0,0,.62); }
+  #hudcol{ max-width:min(1000px, 90vw); }
+  #hand{ padding:16px 12px 20px; }
+  .hc{ width:118px; scroll-snap-align:start; }
+  .hc-nm{ font-size:12px; } .hc-epi{ font-size:9px; } .hc-chip{ min-width:24px; height:24px; font-size:14px; }
+  .deckstack{ width:60px; } .deckstack img{ width:60px; } .deckcnt{ font-size:13px; }
+  .score-av{ width:52px; height:52px; }
+  .zbody, .zhead{ padding-left:74px; }   /* desktop deck stack is 60 wide → clear 74 */
 }
 @media(max-width:479px){
   .hc{ width:104px; }
@@ -4640,8 +4645,9 @@ function pulsePlaque(el){ if(reducedMotion())return; el.classList.remove('pulse'
 /* Scale board minis so both rows of a half always fit fully — never clipped.
    Each half gets a --mini-h; only below the 56px floor do we fall back to
    within-zone scrolling (with a fade affordance via .scrollzone). */
-const MINI_MIN=56, MINI_MAX=96, ROW_PAD=6, EMPTY_ROW=28;
+const MINI_MIN=56, MINI_MAX=96, MINI_MAX_DESK=150, ROW_PAD=6, EMPTY_ROW=28;   // T71: desktop lifts the mini cap so the height-fitting logic scales cards up to command the wider board
 function sizeBoard(){
+  const miniMax = (window.innerWidth>=1024) ? MINI_MAX_DESK : MINI_MAX;   // desktop only; mobile stays byte-identical at 96
   for (const side of ['opp','me']){
     const half=document.querySelector('.half.'+side); if(!half) continue;
     const zbody=half.querySelector('.zbody');
@@ -4657,7 +4663,7 @@ function sizeBoard(){
     const childGaps=Math.max(0, rows.length+(artH>1?1:0)-1)*gap;
     const content=zbody.clientHeight - padV - artH - childGaps - emptyRows.length*EMPTY_ROW;
     const per=Math.floor((content - nRows*ROW_PAD)/nRows) - 1; // -1 safety
-    if (per>=MINI_MIN){ half.style.setProperty('--mini-h', Math.min(per, MINI_MAX)+'px'); half.classList.remove('scrollzone'); }
+    if (per>=MINI_MIN){ half.style.setProperty('--mini-h', Math.min(per, miniMax)+'px'); half.classList.remove('scrollzone'); }
     else { half.style.setProperty('--mini-h', MINI_MIN+'px'); half.classList.add('scrollzone'); }
   }
 }
@@ -5510,11 +5516,10 @@ function battleFitPlate(){ const el=$('battleplate'), p=BATTLE_PLATE[battlePlate
   const s=Math.max(innerWidth/p.w, innerHeight/p.h); el.style.width=(p.w*s)+'px'; el.style.height=(p.h*s)+'px'; }
 /* the board table asset per orientation (R-F cooled surface; alpha table over the scrim at full saturation) */
 function battleSetTable(){ const el=$('boardtable'); if(!el) return;
-  /* #field is always <=520px (portrait) — #app is 520-capped on every width — so the TALL table is correct on all
-     widths; object-fit:cover on the wide asset would zoom-crop it to a sliver. The wide table awaits a future
-     desktop-widening task (out of this reskin's scope fence). REVERSAL when #app widens on desktop (adopts the
-     WIDE asset) — restore this one branch:  el.src = (innerWidth>=1024) ? '...board_table_wide.png?v=1' : '...tall...'; */
-  el.src = 'assets/img/board_table_tall.png?v=1'; }
+  /* T71: #app now WIDENS on desktop (min(1000px,90vw)), so the field is landscape ≥1024 — adopt the WIDE table asset
+     (the reversal the T42 comment reserved). object-fit:cover on the wide asset now fits a landscape field correctly;
+     the tall asset would zoom-crop to a sliver in a wide field. Mobile (<1024) keeps the tall table byte-identical. */
+  el.src = (innerWidth>=1024) ? 'assets/img/board_table_wide.png?v=1' : 'assets/img/board_table_tall.png?v=1'; }
 function battleStageStart(){
   battlePickPlate(); battleFitPlate(); battleSetTable();
   Ember.start('battlestage', EMBER_CARD_DENSITY, 'hudwrap');   // gate on the match being active (#hudwrap)
