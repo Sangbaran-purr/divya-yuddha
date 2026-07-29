@@ -8153,7 +8153,8 @@ const VFX = (()=>{
   // A transparent Pixi canvas above #vfxcanvas. One loop owns time: the T69A-hardened step calls gpuTick(dt) inside its try/catch, so the unkillable-loop guarantee covers the GPU layer too. Any failure → gpu.disabled → Canvas2D floor.
   const gpu={ renderer:'none', enabled:false, disabled:false, texReady:false, app:null, PIXI:null, stage:null, gcanvas:null, sprites:[], tex:{}, mvtex:{}, _poison:false, wasNonEmpty:false,
     dimLayer:null, fxLayer:null, particleLayer:null, particles:[], dims:[], emberTex:null, dimTex:null, bloomFilter:null,
-    mv:true, haze:true, bloom:{ threshold:0.55, intensity:1.3 }, PCAP:2000 };   // T70-DIM R2: intensity 1.15→1.3 — bloom carries the contrast the removed dim used to
+    mv:true, haze:true, bloom:{ threshold:0.55, intensity:1.3 }, PCAP:3000,   // T70-DIM R2: intensity 1.15→1.3. T70-P2H: cap 2000→3000 for the beat-3 shockwave burst.
+    hero:null, heroReady:false, heroTex:{}, auraTex:null, heroLog:[] };        // T70-P2H: the hero-moment sequencer state + its extra textures (ring/lightning/smoke sheet)
   // ---- T70-P1 SHADERS (dual-source per 0b; GLSL = defaultFilterVert + finalColor/uTexture; WGSL = GlobalFilterUniforms g0 + custom g1) ----
   const _WGSL_HDR=`struct GlobalFilterUniforms { uInputSize:vec4<f32>, uInputPixel:vec4<f32>, uInputClamp:vec4<f32>, uOutputFrame:vec4<f32>, uGlobalFrame:vec4<f32>, uOutputTexture:vec4<f32> };
 @group(0) @binding(0) var<uniform> gfu: GlobalFilterUniforms;
@@ -8224,7 +8225,8 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   function _radialCanvas(size, stops){ const c=document.createElement('canvas'); c.width=c.height=size; const g=c.getContext('2d'); const rg=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2); stops.forEach(s=>rg.addColorStop(s[0],s[1])); g.fillStyle=rg; g.fillRect(0,0,size,size); return c; }
   function gpuMakeTextures(){ const P=gpu.PIXI;
     gpu.emberTex=P.Texture.from(_radialCanvas(32,[[0,'rgba(255,244,214,1)'],[0.35,'rgba(255,180,90,0.85)'],[1,'rgba(255,150,60,0)']]));
-    gpu.dimTex=P.Texture.from(_radialCanvas(256,[[0,'rgba(0,0,0,1)'],[0.55,'rgba(0,0,0,0.75)'],[1,'rgba(0,0,0,0)']])); }
+    gpu.dimTex=P.Texture.from(_radialCanvas(256,[[0,'rgba(0,0,0,1)'],[0.55,'rgba(0,0,0,0.75)'],[1,'rgba(0,0,0,0)']]));
+    gpu.auraTex=P.Texture.from(_radialCanvas(256,[[0,'rgba(255,246,214,1)'],[0.4,'rgba(255,208,120,0.82)'],[1,'rgba(255,176,74,0)']])); }   // T70-P2H: gold gather-glow for beat 1
   function gpuMakeBloom(){ const P=gpu.PIXI; return new P.Filter({
     glProgram:P.GlProgram.from({vertex:P.defaultFilterVert, fragment:BLOOM_GL, name:'t70-bloom'}),
     gpuProgram:P.GpuProgram.from({vertex:{source:BLOOM_WGSL,entryPoint:'mainVertex'}, fragment:{source:BLOOM_WGSL,entryPoint:'mainFragment'}}),
@@ -8248,7 +8250,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       gpu.app=app; gpu.stage=app.stage; gpu.renderer=(app.renderer&&app.renderer.name)||'none'; gpu.enabled=true;
       // T70-P1 layer hierarchy: dimLayer (S5, normal blend, NOT bloomed) BENEATH fxLayer (surge + particles, ADD, bloom filter on top)
       gpu.dimLayer=new PIXI.Container(); gpu.fxLayer=new PIXI.Container(); gpu.particleLayer=new PIXI.Container();
-      gpu.fxLayer.addChild(gpu.particleLayer); app.stage.addChild(gpu.dimLayer); app.stage.addChild(gpu.fxLayer);
+      app.stage.addChild(gpu.dimLayer); app.stage.addChild(gpu.fxLayer); app.stage.addChild(gpu.particleLayer);   // T70-P2H PERF: particleLayer moved OUT of the bloomed fxLayer (above it, still ADD) — bloom no longer reprocesses 1000s of hero-burst particles every frame; embers stay bright additive without it
       gpuMakeTextures();
       try{ gpu.bloomFilter=gpuMakeBloom(); gpu.fxLayer.filters=[gpu.bloomFilter]; }catch(e){ gpu.bloomFilter=null; }   // S1 bloom on the fx layer only (dim excluded by construction)
       gpuResize(); gpuLoadSurge();
@@ -8265,17 +8267,39 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
         const mvBase=await PIXI.Assets.load('assets/vfx/game/sheets/mv/vfx_'+key+'.png'); gpu.mvSheetTex=gpu.mvSheetTex||{}; gpu.mvSheetTex[key]=mvBase;   // S2: whole MV sheet bound once; cell origins select the frame
       }
       gpu.texReady=true;
+      gpuLoadHero();   // T70-P2H: load the hero-moment extra textures after surge (async; heroReady gates the trigger)
     }catch(e){ gpu.texReady=false; }
+  }
+  async function gpuLoadHero(){   // T70-P2H: ring (beat 3 shockwave) + lightning (beat 2 wrap) stills + smoke sheet+MV (beat 4 MV smoke)
+    try{ const PIXI=gpu.PIXI;
+      gpu.heroTex.ring  = await PIXI.Assets.load('assets/vfx/game/vfx_ring_1.png');
+      gpu.heroTex.light = await PIXI.Assets.load('assets/vfx/game/vfx_lightning_1.png');
+      const sm=await PIXI.Assets.load('assets/vfx/game/sheets/vfx_smoke_1.png'); gpu.sheetTex['smoke_1']=sm;
+      const smf=[]; for(let i=0;i<32;i++){ const fx=(i%8)*SHEET_CELL, fy=((i/8)|0)*SHEET_CELL; smf.push(new PIXI.Texture({ source:sm.source, frame:new PIXI.Rectangle(fx,fy,SHEET_CELL,SHEET_CELL) })); }
+      gpu.tex['smoke_1']=smf;
+      gpu.mvSheetTex['smoke_1']=await PIXI.Assets.load('assets/vfx/game/sheets/mv/vfx_smoke_1.png');
+      gpu.heroReady=true;
+    }catch(e){ gpu.heroReady=false; }
   }
   // PL5 CONTRACT: same tier=combat surge, ported T68F numbers — pingpong 32f @16fps×vfxT, random start+dir, ADD blend, anchor .5, constant scale, soft-birth envelope (peakAt .15, birth^0.6 / decay^1.6, opPeak .95, life .5×vfxT)
   // S4 GPU PARTICLES: procedural ember sprites in the fx particleLayer (so bloom catches them). Cap gpu.PCAP, oldest-evicted.
-  function gpuEmit(x,y,size,n){ if(!gpu.particleLayer||!gpu.emberTex) return; const P=gpu.PIXI;
+  function gpuEmit(x,y,size,n,opts){ if(!gpu.particleLayer||!gpu.emberTex) return; const P=gpu.PIXI; opts=opts||{};
+    const spMul=opts.speed||1, buoyMul=(opts.buoy!=null?opts.buoy:1), drag=opts.drag||1.6, tint=opts.tint||0xffcaa0, lifeMul=opts.life||1, spread=(opts.spread!=null?opts.spread:0.4);
     for(let i=0;i<n;i++){ if(gpu.particles.length>=gpu.PCAP){ const old=gpu.particles.shift(); try{ gpu.particleLayer.removeChild(old.spr); old.spr.destroy(); }catch(e){} }
-      const ang=Math.random()*6.283, sp=(0.4+Math.random()*1.2)*size, life=(0.35+Math.random()*0.5)*vfxT();
-      const spr=new P.Sprite(gpu.emberTex); spr.anchor.set(0.5); spr.x=x+(Math.random()-.5)*size*0.4; spr.y=y+(Math.random()-.5)*size*0.4;
-      const sz=(2+Math.random()*4); spr.width=spr.height=sz; spr.blendMode='add'; spr.alpha=0; spr.tint=0xffcaa0;
+      const ang=Math.random()*6.283, sp=(0.4+Math.random()*1.2)*size*spMul, life=(0.35+Math.random()*0.5)*vfxT()*lifeMul;
+      const spr=new P.Sprite(gpu.emberTex); spr.anchor.set(0.5); spr.x=x+(Math.random()-.5)*size*spread; spr.y=y+(Math.random()-.5)*size*spread;
+      const sz=(2+Math.random()*4); spr.width=spr.height=sz; spr.blendMode='add'; spr.alpha=0; spr.tint=tint;
       gpu.particleLayer.addChild(spr);
-      gpu.particles.push({ spr, x:spr.x, y:spr.y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp-size*0.5, age:0, max:life, buoy:-size*0.6, drag:1.6, sz }); }
+      gpu.particles.push({ spr, x:spr.x, y:spr.y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp-size*0.5*buoyMul, age:0, max:life, buoy:-size*0.6*buoyMul, drag, sz }); }
+  }
+  // T70-P2H beat 1: reverse-emission — particles ring in from ~1.4–2.8× card and converge on (x,y)
+  function gpuEmitInward(x,y,size,n){ if(!gpu.particleLayer||!gpu.emberTex) return; const P=gpu.PIXI;
+    for(let i=0;i<n;i++){ if(gpu.particles.length>=gpu.PCAP){ const old=gpu.particles.shift(); try{ gpu.particleLayer.removeChild(old.spr); old.spr.destroy(); }catch(e){} }
+      const ang=Math.random()*6.283, R=size*(1.4+Math.random()*1.4), life=(0.28+Math.random()*0.14)*vfxT(), sp=R/life*0.9;
+      const sx=x+Math.cos(ang)*R, sy=y+Math.sin(ang)*R, sz=(2+Math.random()*3);
+      const spr=new P.Sprite(gpu.emberTex); spr.anchor.set(0.5); spr.x=sx; spr.y=sy; spr.width=spr.height=sz; spr.blendMode='add'; spr.alpha=0; spr.tint=0xffe0a0;
+      gpu.particleLayer.addChild(spr);
+      gpu.particles.push({ spr, x:sx, y:sy, vx:-Math.cos(ang)*sp, vy:-Math.sin(ang)*sp, age:0, max:life, buoy:0, drag:0.4, sz }); }
   }
   function gpuParticleTick(dt){ const P=gpu.particles;
     for(let i=P.length-1;i>=0;i--){ const p=P[i]; p.age+=dt;
@@ -8289,7 +8313,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       const cont=new PIXI.Container(); cont.x=x; cont.y=y; cont.rotation=rot;                 // rotation on the container → uTexture stays axis-aligned for cell sampling
       const spr=new PIXI.Sprite(gpu.tex[key][frame]); spr.anchor.set(0.5); spr.blendMode='add'; spr.alpha=1; spr.width=size; spr.height=size;
       let mvFilter=null; try{ mvFilter=gpuMakeMvFilter(key); spr.filters=[mvFilter]; }catch(e){ mvFilter=null; }   // S2+S3a; if it fails the sprite still renders nearest-frame
-      cont.addChild(spr); gpu.fxLayer.addChildAt(cont, gpu.fxLayer.getChildIndex(gpu.particleLayer));  // surge under the particle layer
+      cont.addChild(spr); gpu.fxLayer.addChild(cont);
       let dimSpr=null; if(dimOn){ dimSpr=new PIXI.Sprite(gpu.dimTex); dimSpr.anchor.set(0.5); dimSpr.x=x; dimSpr.y=y; dimSpr.width=dimSpr.height=size*2.0; dimSpr.alpha=0; gpu.dimLayer.addChild(dimSpr); }   // T70-DIM: GPU ground-dim OFF by default (VFX.dim gate); mechanism kept for the scene dim (R3)
       gpuEmit(x,y,size, 150+((Math.random()*150)|0));                                        // S4 combat weight 150–300
       const haze=gpuHaze(x,y,size);                                                          // S3b DOM haze (flagged)
@@ -8317,9 +8341,67 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       if(s.haze){ s.haze.style.opacity=String(Math.max(0, (t<0.25?t/0.25:1-(t-0.25)/0.75))*0.5); }
     }
     gpuParticleTick(dt);
-    const busy=A.length||gpu.particles.length;
+    gpuHeroTick(dt);   // T70-P2H: the 4-beat hero-moment sequencer (single clock)
+    const busy=A.length||gpu.particles.length||gpu.hero;
     if(busy || gpu.wasNonEmpty){ try{ gpu.app.renderer.render(gpu.stage); }catch(e){} }
-    gpu.wasNonEmpty=busy>0;
+    gpu.wasNonEmpty=!!busy;
+  }
+  // ===================== T70-P2H THE HERO MOMENT (4-beat choreographed spectacle, ONE clock) =====================
+  function heroLog(beat,msg){ if(gpu.hero) gpu.heroLog.push({ beat, tms:Math.round(gpu.hero.age*1000), msg, particles:gpu.particles.length, sprites:gpu.sprites.length }); }
+  // an MV-interpolated smoke sprite (beat 4) — reuses the surge sprite+MV path with the smoke_1 sheet; pushed to gpu.sprites so gpuTick animates + cleans it
+  function gpuSpawnHeroSmoke(x,y,size,life){ if(!gpu.heroReady||!gpu.tex['smoke_1']) return;
+    try{ const PIXI=gpu.PIXI, key='smoke_1', nf=32, frame=(Math.random()*nf)|0;
+      const cont=new PIXI.Container(); cont.x=x; cont.y=y; cont.rotation=(Math.random()-.5)*0.5;
+      const spr=new PIXI.Sprite(gpu.tex[key][frame]); spr.anchor.set(0.5); spr.blendMode='add'; spr.alpha=1; spr.width=size; spr.height=size;
+      let mvFilter=null; try{ mvFilter=gpuMakeMvFilter(key); spr.filters=[mvFilter]; }catch(e){ mvFilter=null; }
+      cont.addChild(spr); gpu.fxLayer.addChild(cont);
+      gpu.sprites.push({ cont, spr, key, frame, dir:(Math.random()<0.5?-1:1), nf, age:0, max:life, opPeak:0.72, peakAt:0.2, mvFilter, dimSpr:null, haze:null });
+    }catch(e){}
+  }
+  function gpuHero(x,y,cardW){
+    if(!gpu.enabled||!gpu.heroReady||!gpu.PIXI||gpu.hero) return false;   // one at a time (the choreography queue serializes anyway — G6)
+    try{ const PIXI=gpu.PIXI, T=vfxT(), W=cardW||90, r=fieldEl.getBoundingClientRect(), cw=r.width, ch=r.height;
+      const dimQ=new PIXI.Sprite(PIXI.Texture.WHITE); dimQ.tint=0x000000; dimQ.width=cw; dimQ.height=ch; dimQ.alpha=0; gpu.dimLayer.addChild(dimQ);       // FULL-VIEWPORT scene dim (dimLayer → not bloomed)
+      const flashQ=new PIXI.Sprite(PIXI.Texture.WHITE); flashQ.tint=0xfff2d6; flashQ.width=cw; flashQ.height=ch; flashQ.alpha=0; flashQ.blendMode='add'; gpu.fxLayer.addChild(flashQ);   // FULL-VIEWPORT flash
+      const aura=new PIXI.Sprite(gpu.auraTex); aura.anchor.set(0.5); aura.x=x; aura.y=y; aura.blendMode='add'; aura.alpha=0; aura.width=aura.height=W*0.5; gpu.fxLayer.addChild(aura);   // beat-1 gather glow
+      gpu.hero={ age:0, T, dur:1.8*T, x, y, W, cw, ch, dimQ, flashQ, aura, ring:null, light:null, lightT0:null, flashT0:null, ringT0:null, fired:{}, beat:0 };
+      gpu.heroLog=[]; wake(); return true;
+    }catch(e){ return false; }
+  }
+  function gpuHeroTick(dt){
+    const h=gpu.hero; if(!h) return; h.age+=dt; const t=h.age, T=h.T, W=h.W;
+    const B1=0.35*T, B2=0.55*T, B3=0.90*T, B4=1.80*T;   // beat boundaries (seconds, ×vfxT)
+    // SCENE DIM keyframe: ramp 0→.40 over beat 1, hold, release across beat 4
+    h.dimQ.alpha = t<B1 ? 0.40*(t/B1) : (t<B3 ? 0.40 : 0.40*Math.max(0,1-(t-B3)/(B4-B3)));
+    // BEAT 1 — ANTICIPATION: aura grows 0.5→2× card + brightens, then dissipates into the strike
+    h.aura.alpha = t<B1 ? Math.min(0.95, (t/B1)*1.15) : Math.max(0, 0.95*(1-(t-B1)/(0.45*T)));
+    h.aura.width = h.aura.height = W*(0.5 + 1.5*Math.min(1,t/B1));
+    if(!h.fired.b1){ h.fired.b1=true; h.beat=1; gpuEmitInward(h.x,h.y,W,320); heroLog(1,'anticipation: dim→40%, 320 inward, aura grow to 2×'); }
+    // BEAT 2 — STRIKE: lightning 4× card, full-viewport flash 120ms, bloom ×1.8 (hit-stop/zoom-punch come from the choreography's screenShake — not duplicated here)
+    if(t>=B1 && !h.fired.b2){ h.fired.b2=true; h.beat=2;
+      const lg=new gpu.PIXI.Sprite(gpu.heroTex.light); lg.anchor.set(0.5); lg.x=h.x; lg.y=h.y; lg.blendMode='add'; lg.width=lg.height=W*4; lg.alpha=0; gpu.fxLayer.addChild(lg); h.light=lg; h.lightT0=t;
+      if(gpu.bloomFilter){ try{ gpu.bloomFilter.resources.b.uniforms.uIntensity=gpu.bloom.intensity*1.8; }catch(e){} }
+      h.flashT0=t; heroLog(2,'strike: lightning 4×card, flash 120ms, bloom×1.8'); }
+    if(h.flashT0!=null){ const fe=(t-h.flashT0)/(0.12*T); h.flashQ.alpha = fe<0.25 ? fe/0.25 : Math.max(0,1-(fe-0.25)/0.75); if(fe>=1){ h.flashQ.alpha=0; h.flashT0=null; } }
+    if(h.light){ const le=(t-h.lightT0)/(0.28*T); h.light.alpha=Math.max(0, le<0.12 ? le/0.12 : 1-(le-0.12)/0.88)*0.95; }
+    if(h.fired.b2 && !h.fired.bloomBack && t>B2+0.12*T){ h.fired.bloomBack=true; if(gpu.bloomFilter){ try{ gpu.bloomFilter.resources.b.uniforms.uIntensity=gpu.bloom.intensity; }catch(e){} } }
+    // BEAT 3 — SHOCKWAVE: ring card→FULL BOARD WIDTH over 350ms, opacity crashing; 1000-particle outward burst
+    if(t>=B2 && !h.fired.b3){ h.fired.b3=true; h.beat=3;
+      const rg=new gpu.PIXI.Sprite(gpu.heroTex.ring); rg.anchor.set(0.5); rg.x=h.x; rg.y=h.y; rg.blendMode='add'; rg.alpha=0.95; rg.width=rg.height=W; gpu.fxLayer.addChild(rg); h.ring=rg; h.ringT0=t;
+      gpuEmit(h.x,h.y,W,1000,{ speed:2.6, buoy:0.15, drag:1.1, life:1.1, spread:0.15 }); heroLog(3,'shockwave: ring card→board width, 1000 outward'); }
+    if(h.ring){ const re=Math.min(1,(t-h.ringT0)/(0.35*T)); h.ring.width=h.ring.height=W+(h.cw*1.05-W)*re; h.ring.alpha=Math.max(0,0.95*(1-re*re));
+      if(h.ring.alpha>0.1){ h.ringMaxVisW=Math.max(h.ringMaxVisW||0, h.ring.width); gpu._lastRingMaxVisW=h.ringMaxVisW; }   // G3: peak ring width WHILE visibly bright (anti-stamp)
+      if(re>=1 && h.ring.alpha<0.02){ try{ gpu.fxLayer.removeChild(h.ring); h.ring.destroy(); }catch(e){} h.ring=null; } }
+    // BEAT 4 — AFTERMATH: MV smoke 3× card rolling, embers drifting, dim releasing (handled by the dim keyframe above)
+    if(t>=B3 && !h.fired.b4){ h.fired.b4=true; h.beat=4;
+      for(let i=0;i<2;i++) gpuSpawnHeroSmoke(h.x+(Math.random()-.5)*W*1.2, h.y+(Math.random()-.5)*W*0.6, W*3, 0.9*T);   // 2 MV-smoke render-textures (perf)
+      gpuEmit(h.x,h.y,W,220,{ speed:0.8, buoy:1.3, drag:1.4, life:1.7 }); heroLog(4,'aftermath: 2× MV smoke 3×card, 220 drifting embers, dim release'); }
+    if(t>=h.dur) gpuHeroEnd();
+  }
+  function gpuHeroEnd(){ const h=gpu.hero; if(!h) return;
+    try{ if(gpu.bloomFilter) gpu.bloomFilter.resources.b.uniforms.uIntensity=gpu.bloom.intensity; }catch(e){}
+    for(const q of [h.dimQ,h.flashQ,h.aura,h.light,h.ring]){ if(q){ try{ q.parent&&q.parent.removeChild(q); q.destroy(); }catch(e){} } }
+    gpu.hero=null;   // the beat-4 smoke sprites (in gpu.sprites) + particles finish on their own timers
   }
   // S3b HAZE (DOM ellipse; ⚠ touches the DOM layer — PL2 says overlay-only. Flag ON by default; feature-detected; reduced-motion excluded; owner keeps/kills on device verdict.)
   function gpuHaze(x,y,size){ if(!gpu.haze || reducedMotion()) return null;
@@ -8468,7 +8550,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     const dt=Math.min(0.05,(now-last)/1000); last=now;                 // T69A: dt clamp (≤50ms) + fresh last → a wake after any idle gap can't mass-expire (verified NOT the round-death cause; kept structural)
     try{ frame(dt, now); }
     catch(e){}                                                         // T69A ROOT FIX: a thrown draw must NEVER kill the loop. one thrown frame used to leave raf truthy → wake() could never restart → all later-round effects dead. frame() re-clears every canvas state at its top, so a dropped frame leaks nothing.
-    finally{ if(parts.length||bolts.length||tint||sprites.length||gdim||gpu.sprites.length||gpu.particles.length) raf=requestAnimationFrame(step);   // ALWAYS re-arm while content lives (incl. live GPU sprites/particles) → raf can never get stuck truthy after a throw
+    finally{ if(parts.length||bolts.length||tint||sprites.length||gdim||gpu.sprites.length||gpu.particles.length||gpu.hero) raf=requestAnimationFrame(step);   // ALWAYS re-arm while content lives (incl. live GPU sprites/particles/hero-moment) → raf can never get stuck truthy after a throw
              else { raf=0; try{ cx.clearRect(0,0,canvas.width,canvas.height); }catch(_){} } }
   }
   function poly(pts){ cx.beginPath(); cx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) cx.lineTo(pts[i].x,pts[i].y); cx.stroke(); }
@@ -8503,9 +8585,13 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
            frameOf:(i)=>{ const s=sprites[i]; return s?{sheet:s.sheet,frame:s.frame,dir:s.dir,mode:s.mode}:null; },   // G2 instrumentation: read live frame index
            setBloom:(v)=>{ bloomOn=!!v; }, bloomState:()=>({ok:BLOOM_OK,on:bloomOn}),   // G3 A/B proof hook (bloom on/off)
            get dim(){ return dimOn; }, set dim(v){ dimOn=!!v; },   // T70-DIM master flag: per-effect ground-dim OFF by default; true re-enables both paths (reserved for the hero-moment scene dim, R3)
+           gpuHero,   // T70-P2H: fire the 4-beat hero moment (returns true if the GPU served it → caller suppresses the Canvas2D spectacle)
            gpu:{ get renderer(){return gpu.renderer;}, get enabled(){return gpu.enabled;}, get disabled(){return gpu.disabled;}, get texReady(){return gpu.texReady;}, get live(){return gpu.sprites.length;}, get particles(){return gpu.particles.length;}, get dims(){return gpu.dimLayer?gpu.dimLayer.children.length:0;},   // T70-P0/P1 A/B + instrumentation
                  toggle(){ if(!gpu.disabled) gpu.enabled=!gpu.enabled; return gpu.enabled; },
                  get frame0(){ return gpu.sprites[0]?gpu.sprites[0].frame:null; },                      // G2 instrumentation: live fractional GPU frame index
+                 get heroReady(){ return gpu.heroReady; }, get heroActive(){ return !!gpu.hero; }, get heroBeat(){ return gpu.hero?gpu.hero.beat:0; }, get heroLog(){ return gpu.heroLog.slice(); }, get PCAP(){ return gpu.PCAP; },   // T70-P2H instrumentation
+                 get heroRingMaxVisW(){ return gpu.hero?(gpu.hero.ringMaxVisW||0):(gpu._lastRingMaxVisW||0); }, get fieldW(){ return fieldEl?fieldEl.getBoundingClientRect().width:0; },
+                 __heroAdvance(dt){ try{ if(gpu.hero) gpuHeroTick(dt); gpuParticleTick(dt); if(gpu.app) gpu.app.renderer.render(gpu.stage); }catch(e){} return gpu.hero?gpu.hero.beat:0; },   // G-test: drive the sequencer synchronously (bypasses the pane's rAF throttling)
                  get mv(){return gpu.mv;}, set mv(v){ gpu.mv=!!v; },                                   // S2 A/B: mv interp on/off (live)
                  get haze(){return gpu.haze;}, set haze(v){ gpu.haze=!!v; },                            // S3b DOM haze flag
                  get bloomParams(){return {threshold:gpu.bloom.threshold,intensity:gpu.bloom.intensity};},
@@ -8534,10 +8620,12 @@ async function playEvent(ev, snap){
       VFX.sprRing(src.cx, src.rect.top+src.rect.height*0.78, fac, src.rect.width*(isHero?1.15:1));                          // E2 landing ground ring (faction-tinted; heroes land bigger)
       // T67b R1: EVERY Hero entrance (both seats, all factions, ALL rarities) gets a faction-tinted aura at combat weight — Epic heroes no longer land bare; L/M heroes also keep the spectacle stack below. Ambient-Deva UNITS keep their small blessing aura.
       if(isHero || (tier==='ambient' && fac==='devas')) VFX.sprAura(src.cx, src.rect.top+src.rect.height*0.5, fac, src.rect.width*(isHero?1.3:1)); }
+    let heroServed=false;
     if(tier==='spectacle'){ const lp = src ? {x:src.cx, y:src.rect.top+src.rect.height*0.5} : (isAstra ? halfCenterClient(1-ownerPiOfUid(ev.sourceUid)) : null);
-      if(lp){ VFX.sprLightning(lp.x, lp.y, src?src.rect.width:null); if(isAstra) VFX.sprSmoke(lp.x, lp.y, 3, null); } }         // E3 painted wrap LAYERED over procedural bolts; astra → E5 Brahmastra 3-layer smoke roll
+      heroServed = !!(lp && VFX.gpuHero && VFX.gpuHero(lp.x, lp.y, src?src.rect.width:null));                                   // T70-P2H: the GPU hero moment SERVES the spectacle → suppress the Canvas2D wrap/smoke below (no double-fire)
+      if(lp && !heroServed){ VFX.sprLightning(lp.x, lp.y, src?src.rect.width:null); if(isAstra) VFX.sprSmoke(lp.x, lp.y, 3, null); } }   // fallback (gpu disabled/not ready): the existing Canvas2D spectacle stack, intact
     let hold=700, hitStop=0;
-    if(tier==='spectacle'){ hold+=300; hitStop=110; screenShake(true); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); if(!isAstra) Audio2.sfx('boom'); }   // SPECTACLE: zoom-punch + ±9 shake + wash + 110ms hit-stop
+    if(tier==='spectacle'){ hold += heroServed ? 1100 : 300; hitStop=110; screenShake(true); boardWash(FAC_HEX[G.players[ownerPiOfUid(ev.sourceUid)].faction]||'#e0b040'); if(!isAstra) Audio2.sfx('boom'); }   // SPECTACLE: zoom-punch + ±9 shake + wash + 110ms hit-stop; hero moment holds ~1.8s so the choreography queue serializes it (G6)
     else if(tier==='combat'){ hitStop=70; }                                    // COMBAT astra: 70ms hit-stop (burst + vignette above)
     else if(c && c.t==='hero') hold+=300;
     if(hitStop) await cDelay(hitStop);                                         // HIT-STOP injected at the impact instant, before the hold (scaled by --vfx-t via cDelay; skipped in reduced-motion since playEvent never runs there)
