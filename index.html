@@ -8125,23 +8125,22 @@ const VFX = (()=>{
   function pick(pre,n){ return pre+'_'+(1+Math.floor(Math.random()*n)); }
   function haveSpr(key){ return !!sprImg[key]; }
   function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
-  // ===================== T68R FLIPBOOK SHEETS =====================
-  let sheetImg={}, sheetsReady=false, sheetLoadN=0;
+  // ===================== FLIPBOOK SHEETS (T68F: 384px, per-sheet grid, real-time playback + frame blending) =====================
+  let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoadN=0;
   const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2'];
-  const SHEET_COLS=6, SHEET_FRAMES=24, SHEET_CELL=256;
-  // B2 PLAYBACK MODES: pingpong default; venom + smoke_2(bloom-envelope) forward-only (venom NEVER reverses — drips must fall, never rise)
-  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward' };
-  const sheetFrameCanvas=offc2(SHEET_CELL,SHEET_CELL);   // B4: ONE reusable 256² canvas for draw-time aura tint (no 8×6MB pre-tinted sheets → ~50MB saved)
+  const SHEET_CELL=384, SHEET_FPS=16;   // F1b: 16fps base ×vfxT → 32 frames @1.5-source-cadence play the 2s window at ~1:1 real tempo (kills the T68R 10× time-lapse)
+  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward' };   // venom NEVER reverses
+  const sheetFrameCanvas=offc2(SHEET_CELL,SHEET_CELL);   // B4: ONE reusable 384² canvas for draw-time aura tint
   function haveSheet(key){ return !!sheetImg[key]; }
-  function preloadSheets(){ if(sheetLoadN>0) return;   // B5: sheets load at PAGE LOAD but AFTER the stills (stills are the guaranteed floor; sheets progressively upgrade)
+  function preloadSheets(){ if(sheetLoadN>0) return;   // B5: sheets preload at page load AFTER the stills (stills = guaranteed floor)
     SHEET_NAMES.forEach(key=>{ const im=new Image(); im.decoding='async';
-      im.onload=()=>{ sheetImg[key]=im; sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };
-      im.onerror=()=>{ sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };   // a missing sheet just keeps the still + envelope fallback
+      im.onload=()=>{ sheetImg[key]=im; const cols=Math.round((im.naturalWidth||im.width)/SHEET_CELL), rows=Math.round((im.naturalHeight||im.height)/SHEET_CELL); sheetGrid[key]={cols,rows,frames:cols*rows}; sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };   // grid derived from sheet dims (8x4=32 or 6x4=24)
+      im.onerror=()=>{ sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };   // a missing sheet keeps the still + envelope fallback
       im.src='assets/vfx/game/sheets/vfx_'+key+'.png'; });
   }
   function addSheetSpr(key, x, y, size, o){ if(reducedMotion()||!sheetImg[key]) return false;
-    const mode=SHEET_MODE[key]||'forward';
-    addSpr(Object.assign({ sheet:key, mode, frame:(Math.random()*SHEET_FRAMES)|0, dir:(mode==='pingpong'&&Math.random()<.5?-1:1), fAcc:0, x, y, size, anchorX:0.5, anchorY:0.5, sc0:1,sc1:1, op0:0,opPeak:1,op1:0, peakAt:0.15 }, o||{})); return true; }
+    const mode=SHEET_MODE[key]||'forward', nf=(sheetGrid[key]||{}).frames||24;
+    addSpr(Object.assign({ sheet:key, mode, frame:(Math.random()*nf)|0, dir:(mode==='pingpong'&&Math.random()<.5?-1:1), fAcc:0, x, y, size, anchorX:0.5, anchorY:0.5, sc0:1,sc1:1, op0:0,opPeak:1,op1:0, peakAt:0.15 }, o||{})); return true; }
   // C1 GROUND DIM (F3): soft radial darkening under COMBAT+ / SPECTACLE effects only (never ambient, never reduced-motion)
   let gdim=null;
   function groundDim(cxp,cyp,radius){ if(reducedMotion()) return; const {x,y}=local(cxp,cyp); gdim={ x, y, r:radius*1.8, peak:0.25, age:0, rise:0.08*vfxT(), life:0.5*vfxT() }; wake(); }
@@ -8150,9 +8149,11 @@ const VFX = (()=>{
     // C1 GROUND DIM: soft radial darkening drawn FIRST (source-over), so the additive effect glows over a dimmed board → contrast
     if(gdim){ gdim.age+=dt; if(gdim.age>=gdim.life) gdim=null;
       else { const a = gdim.age<gdim.rise ? gdim.peak*(gdim.age/gdim.rise) : gdim.peak*(1-(gdim.age-gdim.rise)/(gdim.life-gdim.rise));
-        if(a>0.003){ cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
+        if(a>0.003){ cx.save();   // F3b: gdim wrapped in save/restore so its source-over can NEVER leak into a sprite draw
+          cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
           const g=cx.createRadialGradient(gdim.x*DPR,gdim.y*DPR,0, gdim.x*DPR,gdim.y*DPR,gdim.r*DPR);
-          g.addColorStop(0,`rgba(0,0,0,${a.toFixed(3)})`); g.addColorStop(1,'rgba(0,0,0,0)'); cx.fillStyle=g; cx.fillRect(0,0,canvas.width,canvas.height); } } }
+          g.addColorStop(0,`rgba(0,0,0,${a.toFixed(3)})`); g.addColorStop(1,'rgba(0,0,0,0)'); cx.fillStyle=g; cx.fillRect(0,0,canvas.width,canvas.height);
+          cx.restore(); } } }
     if(!sprites.length) return;
     for(let i=sprites.length-1;i>=0;i--){ const s=sprites[i]; s.age+=dt; if(s.age>=s.max) sprites.splice(i,1); }
     cx.save();                                                              // T67b R2: isolate all sprite state
@@ -8162,40 +8163,42 @@ const VFX = (()=>{
     cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
   }
   function drawOneSpr(s,dt){
-    if(s.swap){ s.swapT+=dt; if(!s.img || s.swapT>=0.05){ s.swapT=0; s.img=sprImg[pick('lightning',4)]; s.flip=(Math.random()<.5?-1:1); } }   // lightning: hard-swap variant every 50ms + random flip = free variation
-    // B1/B2: advance flipbook frame at 24fps / vfxT (faster at 'fast', slower at 'relaxed')
-    if(s.sheet){ s.fAcc+=dt*24/(vfxT()||1);
-      while(s.fAcc>=1){ s.fAcc-=1; s.frame+=s.dir;
-        if(s.mode==='pingpong'){ if(s.frame>=SHEET_FRAMES){ s.frame=SHEET_FRAMES-2; s.dir=-1; } else if(s.frame<0){ s.frame=1; s.dir=1; } }
-        else if(s.frame>=SHEET_FRAMES){ s.frame=SHEET_FRAMES-1; } }   // forward-only clamps at last frame (venom never reverses → drips never rise)
+    if(s.swap){ s.swapT+=dt; if(!s.img || s.swapT>=0.05){ s.swapT=0; s.img=sprImg[pick('lightning',4)]; s.flip=(Math.random()<.5?-1:1); } }   // lightning: hard-swap variant every 50ms + random flip
+    // F1b: fractional frame advance at 16fps / vfxT → 32 frames @1.5-cadence play the 2s window at ~1:1 real tempo
+    if(s.sheet){ const nf=(sheetGrid[s.sheet]||{}).frames||24;
+      s.frame += dt*SHEET_FPS/(vfxT()||1) * s.dir;
+      if(s.mode==='pingpong'){ if(s.frame>=nf-1){ s.frame=(nf-1)-(s.frame-(nf-1)); s.dir=-1; if(s.frame<0)s.frame=0; } else if(s.frame<0){ s.frame=-s.frame; s.dir=1; if(s.frame>nf-1)s.frame=nf-1; } }
+      else if(s.frame>nf-1){ s.frame=nf-1; }   // forward-only clamps at last frame (venom never reverses; transient sprites end before looping)
     }
     const img=s.sheet ? sheetImg[s.sheet] : s.img; if(!img) return;
     const t=Math.min(1,s.age/s.max);
     const ez = s.crash ? t : (1-Math.pow(1-t,3));                            // C3 F5: cubic-OUT growth
     let sc=s.sc0+(s.sc1-s.sc0)*ez; if(s.overshoot) sc+=Math.sin(t*Math.PI)*s.overshoot*(1-t);
     let op; const pk=(s.peakAt!=null?s.peakAt:0.3);
-    if(s.crash) op=s.opPeak*(1-Math.pow(t,1.4));                             // bloom crash
-    else if(t<pk) op=s.op0+(s.opPeak-s.op0)*Math.pow(t/pk,0.6);              // C3: soft ~60-80ms birth (fast-in then settle)
+    if(s.crash) op=s.opPeak*(1-Math.pow(t,1.4));
+    else if(t<pk) op=s.op0+(s.opPeak-s.op0)*Math.pow(t/pk,0.6);              // C3: soft ~60-80ms birth
     else op=s.opPeak+(s.op1-s.opPeak)*Math.pow((t-pk)/(1-pk),1.6);          // C3: cubic-IN decay
     if(op<=0.004) return;
     const size=s.size, sx=DPR*sc*(s.flip||1)*(s.stretchX||1), sy=DPR*sc*(s.squashY||1);
     const c=Math.cos(s.rot||0), sn=Math.sin(s.rot||0), dx=s.x+(s.driftX||0)*t, dy=s.y+(s.driftY||0)*t;
-    cx.globalCompositeOperation = s.smoke ? 'source-over' : 'lighter';       // T67b R2: blend per-sprite (flipbook sheets are all additive → 'lighter')
-    cx.setTransform(sx*c, sx*sn, -sy*sn, sy*c, DPR*dx, DPR*dy);
+    const blend = s.smoke ? 'source-over' : 'lighter';
+    cx.setTransform(sx*c, sx*sn, -sy*sn, sy*c, DPR*dx, DPR*dy);              // transform shared by all sub-draws below
     const ax=(s.anchorX!=null?s.anchorX:0.5), ay=(s.anchorY!=null?s.anchorY:0.5);
     if(s.sheet){
-      const fr=Math.max(0,Math.min(SHEET_FRAMES-1, Math.floor(s.frame))), sx0=(fr%SHEET_COLS)*SHEET_CELL, sy0=((fr/SHEET_COLS)|0)*SHEET_CELL;
-      if(s.tintFac){   // B4: draw-time aura faction tint via the shared 256² offscreen (multiply; black stays black under 'lighter')
-        const og=sheetFrameCanvas.getContext('2d'); og.globalCompositeOperation='source-over'; og.clearRect(0,0,SHEET_CELL,SHEET_CELL);
-        og.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, 0,0,SHEET_CELL,SHEET_CELL);
-        og.globalCompositeOperation='multiply'; og.fillStyle=SPR_FAC[s.tintFac]||'#e0b040'; og.fillRect(0,0,SHEET_CELL,SHEET_CELL);
-        cx.globalAlpha=Math.min(1,op); cx.drawImage(sheetFrameCanvas, -size*ax,-size*ay, size,size);
-      } else { cx.globalAlpha=Math.min(1,op); cx.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, -size*ax,-size*ay, size,size); }
+      const gr=sheetGrid[s.sheet]||{cols:6,frames:24}, cols=gr.cols, nf=gr.frames;
+      const ff=Math.max(0,Math.min(nf-1, s.frame)), f0=Math.floor(ff), f1=Math.min(nf-1,f0+1), frac=ff-f0;
+      const drawFrame=(fr,alpha)=>{ if(alpha<=0.003) return; const sx0=(fr%cols)*SHEET_CELL, sy0=((fr/cols)|0)*SHEET_CELL;
+        cx.globalCompositeOperation=blend; cx.globalAlpha=alpha;            // F3b: UNCONDITIONAL gco+alpha assertion per draw
+        if(s.tintFac){ const og=sheetFrameCanvas.getContext('2d'); og.globalCompositeOperation='source-over'; og.clearRect(0,0,SHEET_CELL,SHEET_CELL);
+          og.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, 0,0,SHEET_CELL,SHEET_CELL); og.globalCompositeOperation='multiply'; og.fillStyle=SPR_FAC[s.tintFac]||'#e0b040'; og.fillRect(0,0,SHEET_CELL,SHEET_CELL);
+          cx.drawImage(sheetFrameCanvas, -size*ax,-size*ay, size,size); }
+        else cx.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, -size*ax,-size*ay, size,size); };
+      drawFrame(f0, op*(1-frac)); drawFrame(f1, op*frac);                    // F1c FRAME BLENDING: cross-fade floor+ceil by the fractional part → erases residual stepping
       return;
     }
-    cx.globalAlpha=Math.min(1,op);
+    cx.globalCompositeOperation=blend; cx.globalAlpha=Math.min(1,op);        // F3b: unconditional per-draw
     cx.drawImage(img, -size*ax, -size*ay, size, size);
-    if(s.halo){ cx.globalAlpha=Math.min(1,op)*0.25; const hs=size*1.35; cx.drawImage(img, -hs*ax, -hs*ay, hs, hs); }   // C3 F5: double-stamp halo on additive stills
+    if(s.halo){ cx.globalCompositeOperation=blend; cx.globalAlpha=Math.min(1,op)*0.25; const hs=size*1.35; cx.drawImage(img, -hs*ax, -hs*ay, hs, hs); }   // C3 F5 double-stamp halo + F3b gco re-assert
   }
   function cw(cardW){ return cardW||w*0.16; }
   // ---- STEP 3 motion recipes (all life ×S()=vfxT parity; each returns true if the painted sprite fired, false → caller keeps procedural) ----
