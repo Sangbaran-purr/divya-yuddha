@@ -8070,6 +8070,7 @@ const VFX = (()=>{
   let canvas, cx, fieldEl, w=0, h=0, parts=[], bolts=[], tint=null, raf=0, last=0, ready=false;
   let sGlow=[], sEmber=null, sDust=[], sDark=[];
   let bloomCv=null, bloomCx=null, bloomOn=true;   // T69A bloom post-pass (half-res offscreen); bloomOn = A/B toggle for the G3 proof
+  let dimOn=false;   // T70-DIM (owner ruling): the per-effect ground-dim reads as a stain, not contrast → OFF by default on BOTH paths. Mechanism kept, gated by VFX.dim, reserved for the hero-moment scene dim (R3).
   const BLOOM_OK=(()=>{ try{ return 'filter' in document.createElement('canvas').getContext('2d'); }catch(e){ return false; } })();   // feature-detect ctx.filter; skip cleanly where absent
   const S=()=> (typeof CHOREO_SPEED!=='undefined'?CHOREO_SPEED:1);
   function offc(size){ const c=document.createElement('canvas'); c.width=c.height=size; return c; }
@@ -8152,7 +8153,7 @@ const VFX = (()=>{
   // A transparent Pixi canvas above #vfxcanvas. One loop owns time: the T69A-hardened step calls gpuTick(dt) inside its try/catch, so the unkillable-loop guarantee covers the GPU layer too. Any failure → gpu.disabled → Canvas2D floor.
   const gpu={ renderer:'none', enabled:false, disabled:false, texReady:false, app:null, PIXI:null, stage:null, gcanvas:null, sprites:[], tex:{}, mvtex:{}, _poison:false, wasNonEmpty:false,
     dimLayer:null, fxLayer:null, particleLayer:null, particles:[], dims:[], emberTex:null, dimTex:null, bloomFilter:null,
-    mv:true, haze:true, bloom:{ threshold:0.55, intensity:1.15 }, PCAP:2000 };
+    mv:true, haze:true, bloom:{ threshold:0.55, intensity:1.3 }, PCAP:2000 };   // T70-DIM R2: intensity 1.15→1.3 — bloom carries the contrast the removed dim used to
   // ---- T70-P1 SHADERS (dual-source per 0b; GLSL = defaultFilterVert + finalColor/uTexture; WGSL = GlobalFilterUniforms g0 + custom g1) ----
   const _WGSL_HDR=`struct GlobalFilterUniforms { uInputSize:vec4<f32>, uInputPixel:vec4<f32>, uInputClamp:vec4<f32>, uOutputFrame:vec4<f32>, uGlobalFrame:vec4<f32>, uOutputTexture:vec4<f32> };
 @group(0) @binding(0) var<uniform> gfu: GlobalFilterUniforms;
@@ -8289,7 +8290,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       const spr=new PIXI.Sprite(gpu.tex[key][frame]); spr.anchor.set(0.5); spr.blendMode='add'; spr.alpha=1; spr.width=size; spr.height=size;
       let mvFilter=null; try{ mvFilter=gpuMakeMvFilter(key); spr.filters=[mvFilter]; }catch(e){ mvFilter=null; }   // S2+S3a; if it fails the sprite still renders nearest-frame
       cont.addChild(spr); gpu.fxLayer.addChildAt(cont, gpu.fxLayer.getChildIndex(gpu.particleLayer));  // surge under the particle layer
-      const dimSpr=new PIXI.Sprite(gpu.dimTex); dimSpr.anchor.set(0.5); dimSpr.x=x; dimSpr.y=y; dimSpr.width=dimSpr.height=size*2.0; dimSpr.alpha=0; gpu.dimLayer.addChild(dimSpr);   // S5 GPU dim
+      let dimSpr=null; if(dimOn){ dimSpr=new PIXI.Sprite(gpu.dimTex); dimSpr.anchor.set(0.5); dimSpr.x=x; dimSpr.y=y; dimSpr.width=dimSpr.height=size*2.0; dimSpr.alpha=0; gpu.dimLayer.addChild(dimSpr); }   // T70-DIM: GPU ground-dim OFF by default (VFX.dim gate); mechanism kept for the scene dim (R3)
       gpuEmit(x,y,size, 150+((Math.random()*150)|0));                                        // S4 combat weight 150–300
       const haze=gpuHaze(x,y,size);                                                          // S3b DOM haze (flagged)
       gpu.sprites.push({ cont, spr, key, frame, dir:(Math.random()<0.5?-1:1), nf, age:0, max:life, opPeak:0.95, peakAt:0.15, mvFilter, dimSpr, haze,
@@ -8329,7 +8330,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   }
   // C1 GROUND DIM (F3): soft radial darkening under COMBAT+ / SPECTACLE effects only (never ambient, never reduced-motion)
   let gdim=null;
-  function groundDim(cxp,cyp,radius){ if(reducedMotion()) return; const {x,y}=local(cxp,cyp); gdim={ x, y, r:radius*1.8, peak:0.25, age:0, rise:0.08*vfxT(), life:0.5*vfxT() }; wake(); }
+  function groundDim(cxp,cyp,radius){ if(!dimOn||reducedMotion()) return; const {x,y}=local(cxp,cyp); gdim={ x, y, r:radius*1.8, peak:0.25, age:0, rise:0.08*vfxT(), life:0.5*vfxT() }; wake(); }   // T70-DIM: OFF by default (VFX.dim gate). All combat/spectacle recipes route through here, so this single gate kills every Canvas2D ground-dim.
   function addSpr(o){ if(reducedMotion()) return; if(!o.img && !o.swap && !o.sheet) return; if(sprites.length>=SCAP) sprites.shift(); o.age=0; o.max=o.life; o.swapT=0; sprites.push(o); wake(); }   // oldest evicted at cap
   // C1 GROUND DIM — T69A: moved OUT of drawSprites and drawn AFTER the bloom pass with 'destination-over' (behind the glow).
   // Same dimmed-board-under-glow contrast, but the bloom source never contains it → bloom can't deepen the dim's alpha into an opaque-dark box.
@@ -8436,7 +8437,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     bloomCx.filter='blur('+(3*DPR).toFixed(1)+'px)';                          // 3·DPR half-res px ≈ a constant ~6 CSS-px halo at any DPR
     bloomCx.drawImage(canvas, 0,0,canvas.width,canvas.height, 0,0,bw,bh);
     bloomCx.filter='none';                                                    // T67b R2: reset filter immediately after the pass (state discipline)
-    cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='lighter'; cx.globalAlpha=0.5; cx.imageSmoothingEnabled=true;
+    cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='lighter'; cx.globalAlpha=0.6; cx.imageSmoothingEnabled=true;   // T70-DIM R2: recomposite 0.5→0.6 — bloom carries the contrast the removed dim used to
     cx.drawImage(bloomCv, 0,0,bw,bh, 0,0,canvas.width,canvas.height);
     cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;              // leave state clean for the next frame's top-of-frame reset
   }
@@ -8501,6 +8502,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
            preloadSprites, preloadSheets, spritesReady:()=>spritesReady, sheetsReady:()=>sheetsReady, sprCount:()=>sprites.length,
            frameOf:(i)=>{ const s=sprites[i]; return s?{sheet:s.sheet,frame:s.frame,dir:s.dir,mode:s.mode}:null; },   // G2 instrumentation: read live frame index
            setBloom:(v)=>{ bloomOn=!!v; }, bloomState:()=>({ok:BLOOM_OK,on:bloomOn}),   // G3 A/B proof hook (bloom on/off)
+           get dim(){ return dimOn; }, set dim(v){ dimOn=!!v; },   // T70-DIM master flag: per-effect ground-dim OFF by default; true re-enables both paths (reserved for the hero-moment scene dim, R3)
            gpu:{ get renderer(){return gpu.renderer;}, get enabled(){return gpu.enabled;}, get disabled(){return gpu.disabled;}, get texReady(){return gpu.texReady;}, get live(){return gpu.sprites.length;}, get particles(){return gpu.particles.length;}, get dims(){return gpu.dimLayer?gpu.dimLayer.children.length:0;},   // T70-P0/P1 A/B + instrumentation
                  toggle(){ if(!gpu.disabled) gpu.enabled=!gpu.enabled; return gpu.enabled; },
                  get frame0(){ return gpu.sprites[0]?gpu.sprites[0].frame:null; },                      // G2 instrumentation: live fractional GPU frame index
