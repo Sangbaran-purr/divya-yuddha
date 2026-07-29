@@ -8512,9 +8512,9 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     if(s.halo){ cx.globalCompositeOperation=blend; cx.globalAlpha=Math.min(1,op)*0.25; const hs=size*1.35; cx.drawImage(img, -hs*ax, -hs*ay, hs, hs); }   // C3 F5 double-stamp halo + F3b gco re-assert
   }
   function cw(cardW){ return cardW||w*0.16; }
-  // T75 THE ENVELOPE LAW: fast-in, slow-out. Attack ms is UNCHANGED (from current peakAt×life); the release extends and carries the growth. VFX.linger scales the RELEASE ONLY (default 1.0, 0.5–2.0). Release decay is cubic-in (a breathing tail). {a:attackMs, t:newTotalMs}.
+  // T75 THE ENVELOPE LAW: fast-in, slow-out. Attack ms is UNCHANGED (from current peakAt×life); the release extends and carries the growth. VFX.linger scales the RELEASE ONLY (default 0.7 per the owner device verdict, range 0.5–2.0). Release decay is cubic-in (a breathing tail). {a:attackMs, t:newTotalMs}.
   const ENV={ aura:{a:82,t:950}, bloom:{a:40,t:300}, ring:{a:180,t:1000}, smoke:{a:135,t:1500}, lightning:{a:54,t:750}, shield:{a:175,t:800}, venom:{a:105,t:1300}, surge:{a:75,t:1150} };
-  let lingerVal=1;
+  let lingerVal=0.7;
   function envLife(name){ const e=ENV[name], rel=(e.t-e.a)*lingerVal, tot=e.a+rel; return { life:tot/1000*vfxT(), peakAt:e.a/tot }; }   // → {life(sec×vfxT), peakAt(fraction)}; attack ms constant across linger settings
   // ---- STEP 3 motion recipes (all life ×S()=vfxT parity; each returns true if the painted sprite fired, false → caller keeps procedural) ----
   // ---- recipes: FLIPBOOK-first for the 4 converted effects (still + envelope fallback); C3 halo on additive stills; C1 ground-dim on combat+/spectacle ----
