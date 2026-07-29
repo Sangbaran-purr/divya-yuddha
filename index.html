@@ -8087,7 +8087,8 @@ const VFX = (()=>{
     sEmber=makeGlow([[0,'rgba(255,244,196,1)'],[.4,'rgba(255,176,74,.9)'],[1,'rgba(255,146,52,0)']],16);
     sDust=[]; sDark=[]; for(let i=0;i<3;i++){ sDust.push(makeBlob('152,134,106',72,.5)); sDark.push(makeBlob('54,52,58',96,.6)); }
   }
-  function init(){ fieldEl=$('field'); canvas=$('vfxcanvas'); if(!canvas) return; cx=canvas.getContext('2d'); if(!sGlow.length) initSprites(); resize(); ready=true; gpuInit(); }   // T70-P0: boot the GPU overlay (async, non-blocking; failure → Canvas2D floor)
+  function init(){ fieldEl=$('field'); canvas=$('vfxcanvas'); if(!canvas) return; cx=canvas.getContext('2d'); try{ cx.imageSmoothingEnabled=true; cx.imageSmoothingQuality='high'; }catch(e){}   // C2: high-quality upscale on the Canvas2D path
+    if(!sGlow.length) initSprites(); resize(); ready=true; gpuInit(); }   // T70-P0: boot the GPU overlay (async, non-blocking; failure → Canvas2D floor)
   function resize(){ if(!canvas||!fieldEl) return; const r=fieldEl.getBoundingClientRect(); w=r.width; h=r.height; canvas.width=Math.max(1,Math.round(w*DPR)); canvas.height=Math.max(1,Math.round(h*DPR)); canvas.style.width=w+'px'; canvas.style.height=h+'px'; if(typeof gpuResize==='function') gpuResize(); }
   function local(cxp, cyp){ const r=fieldEl.getBoundingClientRect(); return { x:cxp-r.left, y:cyp-r.top }; }
   function room(){ return CAP-parts.length; }
@@ -8105,6 +8106,13 @@ const VFX = (()=>{
   // ===================== T67 SPRITE COMPOSITOR (painted VFX kit) =====================
   // Painted textures drawn on the SAME canvas/rAF as the particles; separate instance layer + cap (12).
   let sprImg={}, sprTint={}, spritesReady=false, sprLoadN=0, sprites=[], bakeMs=0;   // T72: bakeMs = total load-time luminance-alpha bake cost (G5)
+  // T74 QUALITY LADDER: display-resolution rungs. HIGH 512px/64f sheets + 1024 stills · MEDIUM 448/48f + 768 · LOW 384/32f + 512 (current, the regression floor). Selected at boot; preload ONLY the chosen rung (nobody downloads three). st=still dir, sd=sheet dir, mvd=MV dir, cell=sheet cell.
+  const RUNG={ hi:{cell:512, st:'hi/', sd:'sheets/hi/', mvd:'sheets/hi/mv/'}, md:{cell:448, st:'md/', sd:'sheets/md/', mvd:'sheets/md/mv/'}, lo:{cell:384, st:'', sd:'sheets/', mvd:'sheets/mv/'} };
+  function pickRung(){ try{ const dm=navigator.deviceMemory||4, dpr=Math.min(2,window.devicePixelRatio||1); if(dm>=8 && dpr>=2) return 'hi'; if(dm>=4) return 'md'; return 'lo'; }catch(e){ return 'lo'; } }   // deviceMemory / DPR heuristic (renderer refines post-init if needed)
+  let vfxRung=pickRung();
+  const stillURL=(key)=>'assets/vfx/game/'+RUNG[vfxRung].st+'vfx_'+key+'.png';
+  const sheetURL=(key)=>'assets/vfx/game/'+RUNG[vfxRung].sd+'vfx_'+key+'.png';
+  const mvURL=(key)=>'assets/vfx/game/'+RUNG[vfxRung].mvd+'vfx_'+key+'.png';
   const SCAP=12;
   const SPR_NAMES=['aura_1','aura_2','aura_3','bloom_1','bloom_2','lightning_1','lightning_2','lightning_3','lightning_4','ring_1','ring_2','shield_1','shield_2','smoke_1','smoke_2','streak_1','streak_2','surge_1','surge_2','venom_1','venom_2'];
   const SPR_FAC={ devas:'#e0b040', asuras:'#e0483c', vanaras:'#6fc257', nagas:'#3fb9a8' };
@@ -8139,7 +8147,7 @@ const VFX = (()=>{
         }catch(e){}
         sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; preloadSheets(); } };
       im.onerror=()=>{ sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; preloadSheets(); } };   // a missing sprite just leaves its procedural fallback in place; stills done → start sheets (B5)
-      im.src='assets/vfx/game/vfx_'+key+'.png'; });
+      im.src=stillURL(key); });   // T74: rung-selected still resolution
   }
   function pick(pre,n){ return pre+'_'+(1+Math.floor(Math.random()*n)); }
   function haveSpr(key){ return !!sprImg[key]; }
@@ -8147,9 +8155,10 @@ const VFX = (()=>{
   // ===================== FLIPBOOK SHEETS (T68F: 384px, per-sheet grid, real-time playback + frame blending) =====================
   let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoadN=0;
   const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2'];
-  const SHEET_CELL=384, SHEET_FPS=16;   // F1b: 16fps base ×vfxT → 32 frames @1.5-source-cadence play the 2s window at ~1:1 real tempo (kills the T68R 10× time-lapse)
+  let SHEET_CELL=RUNG[vfxRung].cell;   // T74: rung-dependent sheet cell (hi 512 / md 448 / lo 384). Frame count derives from the sheet dims / cell, so 64f/48f/32f are auto-detected.
+  const SHEET_FPS=16;   // F1b: 16fps base ×vfxT → the window plays at ~1:1 real tempo
   const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward' };   // venom NEVER reverses
-  const sheetFrameCanvas=offc2(SHEET_CELL,SHEET_CELL);   // B4: ONE reusable 384² canvas for draw-time aura tint
+  const sheetFrameCanvas=offc2(512,512);   // B4: ONE reusable canvas (max cell 512) for draw-time aura tint; draws consume only the SHEET_CELL sub-region
   function haveSheet(key){ return !!sheetImg[key]; }
   function preloadSheets(){ if(sheetLoadN>0) return;   // B5: sheets preload at page load AFTER the stills (stills = guaranteed floor)
     SHEET_NAMES.forEach(key=>{ const im=new Image(); im.decoding='async';
@@ -8157,7 +8166,7 @@ const VFX = (()=>{
         try{ const t0=performance.now(); sheetImg[key]=bakeAlpha(im); bakeMs+=performance.now()-t0; }catch(e){}   // T72: every 2D flipbook sheet draws additive ('lighter') → luminance-alpha bake (same-dims canvas, grid unchanged)
         sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };
       im.onerror=()=>{ sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };   // a missing sheet keeps the still + envelope fallback
-      im.src='assets/vfx/game/sheets/vfx_'+key+'.png'; });
+      im.src=sheetURL(key); });   // T74: rung-selected sheet resolution
   }
   function addSheetSpr(key, x, y, size, o){ if(reducedMotion()||!sheetImg[key]) return false;
     const mode=SHEET_MODE[key]||'forward', nf=(sheetGrid[key]||{}).frames||24;
@@ -8271,13 +8280,19 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       try{ if(gpu.gcanvas){ gpu.gcanvas.remove(); gpu.gcanvas=null; } }catch(_){}}
   }
   function gpuResize(){ if(!gpu.app||!fieldEl) return; const r=fieldEl.getBoundingClientRect(); try{ gpu.app.renderer.resize(r.width, r.height); }catch(e){} }
-  async function gpuLoadSurge(){                                                             // PL4: reuse the existing 8x4 384px COLOR + MV sheets as textures (no pixel copies — frame rects share one source)
+  // C1: explicit linear min/mag filtering on every effect texture (upscaled → linear = smooth). mipmaps only on stills (drawn small → avoids shimmer); sheets are always drawn large so mipmaps would just cost memory.
+  function gpuTexFilter(tex, mip){ try{ const s=tex&&(tex.source||tex); if(!s) return; s.scaleMode='linear'; if(s.style){ s.style.scaleMode='linear'; } if(mip){ try{ s.autoGenerateMipmaps=true; if(s.style) s.style.mipmapFilter='linear'; }catch(e){} } }catch(e){} }
+  // T74: derive the grid (cols/rows/frames) from the loaded sheet dims / SHEET_CELL, so 64f (8x8) / 48f (8x6) / 32f (8x4) all work with no hardcoded frame count
+  function gpuSliceSheet(key, base){ const P=gpu.PIXI, src=base.source, cols=Math.round((src.width||base.width)/SHEET_CELL), rows=Math.round((src.height||base.height)/SHEET_CELL), nf=cols*rows;
+    gpu.grid=gpu.grid||{}; gpu.grid[key]={cols,rows,nf};
+    const frames=[]; for(let i=0;i<nf;i++){ const fx=(i%cols)*SHEET_CELL, fy=((i/cols)|0)*SHEET_CELL; frames.push(new P.Texture({ source:src, frame:new P.Rectangle(fx,fy,SHEET_CELL,SHEET_CELL) })); }
+    gpu.tex[key]=frames; return gpu.grid[key]; }
+  async function gpuLoadSurge(){                                                             // PL4: rung COLOR + MV sheets as textures (no pixel copies — frame rects share one source)
     try{ const PIXI=gpu.PIXI;
       for(const key of ['surge_1','surge_2']){
-        const base=await PIXI.Assets.load('assets/vfx/game/sheets/vfx_'+key+'.png'); const src=base.source; gpu.sheetTex=gpu.sheetTex||{}; gpu.sheetTex[key]=base;
-        const frames=[]; for(let i=0;i<32;i++){ const fx=(i%8)*SHEET_CELL, fy=((i/8)|0)*SHEET_CELL; frames.push(new PIXI.Texture({ source:src, frame:new PIXI.Rectangle(fx,fy,SHEET_CELL,SHEET_CELL) })); }
-        gpu.tex[key]=frames;
-        const mvBase=await PIXI.Assets.load('assets/vfx/game/sheets/mv/vfx_'+key+'.png'); gpu.mvSheetTex=gpu.mvSheetTex||{}; gpu.mvSheetTex[key]=mvBase;   // S2: whole MV sheet bound once; cell origins select the frame
+        const base=await PIXI.Assets.load(sheetURL(key)); gpu.sheetTex=gpu.sheetTex||{}; gpu.sheetTex[key]=base; gpuTexFilter(base);
+        gpuSliceSheet(key, base);
+        const mvBase=await PIXI.Assets.load(mvURL(key)); gpu.mvSheetTex=gpu.mvSheetTex||{}; gpu.mvSheetTex[key]=mvBase;   // S2: whole MV sheet bound once; cell origins select the frame
       }
       gpu.texReady=true;
       gpuLoadHero();   // T70-P2H: load the hero-moment extra textures after surge (async; heroReady gates the trigger)
@@ -8289,17 +8304,16 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       const w=img.naturalWidth||512, h=img.naturalHeight||512, c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d');
       g.drawImage(img,0,0,w,h); const id=g.getImageData(0,0,w,h), d=id.data;
       for(let i=0;i<d.length;i+=4){ d[i+3]=Math.max(d[i],d[i+1],d[i+2]); }   // alpha = luminance
-      g.putImageData(id,0,0); return P.Texture.from(c);
+      g.putImageData(id,0,0); const t=P.Texture.from(c); gpuTexFilter(t, true); return t;   // C1: still → linear + mipmaps
     }catch(e){ return await P.Assets.load(url); }
   }
   async function gpuLoadHero(){   // T70-P2H: ring (beat 3 shockwave) + lightning (beat 2 wrap) stills + smoke sheet+MV (beat 4 MV smoke)
     try{ const PIXI=gpu.PIXI;
-      gpu.heroTex.ring  = await heroKitTex('assets/vfx/game/vfx_ring_1.png');       // luminance-alpha → additive-clean (no black tile)
-      gpu.heroTex.light = await heroKitTex('assets/vfx/game/vfx_lightning_1.png');
-      const sm=await PIXI.Assets.load('assets/vfx/game/sheets/vfx_smoke_1.png'); gpu.sheetTex['smoke_1']=sm;
-      const smf=[]; for(let i=0;i<32;i++){ const fx=(i%8)*SHEET_CELL, fy=((i/8)|0)*SHEET_CELL; smf.push(new PIXI.Texture({ source:sm.source, frame:new PIXI.Rectangle(fx,fy,SHEET_CELL,SHEET_CELL) })); }
-      gpu.tex['smoke_1']=smf;
-      gpu.mvSheetTex['smoke_1']=await PIXI.Assets.load('assets/vfx/game/sheets/mv/vfx_smoke_1.png');
+      gpu.heroTex.ring  = await heroKitTex(stillURL('ring_1'));       // luminance-alpha → additive-clean (no black tile); T74 rung-selected resolution
+      gpu.heroTex.light = await heroKitTex(stillURL('lightning_1'));
+      const sm=await PIXI.Assets.load(sheetURL('smoke_1')); gpu.sheetTex['smoke_1']=sm; gpuTexFilter(sm);
+      gpuSliceSheet('smoke_1', sm);
+      gpu.mvSheetTex['smoke_1']=await PIXI.Assets.load(mvURL('smoke_1'));
       gpu.heroReady=true;
     }catch(e){ gpu.heroReady=false; }
   }
@@ -8331,7 +8345,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   }
   function gpuSpawnSurge(x,y,size,rot,life){
     if(!gpu.enabled||!gpu.texReady||!gpu.PIXI) return false;
-    try{ const PIXI=gpu.PIXI, key=(Math.random()<0.5?'surge_1':'surge_2'), nf=32, frame=(Math.random()*nf)|0;
+    try{ const PIXI=gpu.PIXI, key=(Math.random()<0.5?'surge_1':'surge_2'), gr=gpu.grid[key]||{cols:8,rows:4,nf:32}, nf=gr.nf, frame=(Math.random()*nf)|0;
       const cont=new PIXI.Container(); cont.x=x; cont.y=y; cont.rotation=rot;                 // rotation on the container → uTexture stays axis-aligned for cell sampling
       const spr=new PIXI.Sprite(gpu.tex[key][frame]); spr.anchor.set(0.5); spr.blendMode='add'; spr.alpha=1; spr.width=size; spr.height=size;
       let mvFilter=null; try{ mvFilter=gpuMakeMvFilter(key); spr.filters=[mvFilter]; }catch(e){ mvFilter=null; }   // S2+S3a; if it fails the sprite still renders nearest-frame
@@ -8339,13 +8353,13 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       let dimSpr=null; if(dimOn){ dimSpr=new PIXI.Sprite(gpu.dimTex); dimSpr.anchor.set(0.5); dimSpr.x=x; dimSpr.y=y; dimSpr.width=dimSpr.height=size*2.0; dimSpr.alpha=0; gpu.dimLayer.addChild(dimSpr); }   // T70-DIM: GPU ground-dim OFF by default (VFX.dim gate); mechanism kept for the scene dim (R3)
       gpuEmit(x,y,size, 150+((Math.random()*150)|0));                                        // S4 combat weight 150–300
       const haze=gpuHaze(x,y,size);                                                          // S3b DOM haze (flagged)
-      gpu.sprites.push({ cont, spr, key, frame, dir:(Math.random()<0.5?-1:1), nf, age:0, max:life, opPeak:0.95, peakAt:0.15, mvFilter, dimSpr, haze,
+      gpu.sprites.push({ cont, spr, key, frame, dir:(Math.random()<0.5?-1:1), nf, cols:gr.cols, rows:gr.rows, age:0, max:life, opPeak:0.95, peakAt:0.15, mvFilter, dimSpr, haze,
                          dimPeak:0.25, dimRise:0.08*vfxT(), dimLife:0.5*vfxT(), dimAge:0 });
       wake(); return true;
     }catch(e){ return false; }
   }
   function gpuTick(dt){
-    if(!gpu.app) return; const A=gpu.sprites; const cols=8, rows=4;
+    if(!gpu.app) return; const A=gpu.sprites;
     for(let i=A.length-1;i>=0;i--){ const s=A[i]; s.age+=dt;
       if(s.age>=s.max){ try{ if(s.mvFilter&&s.mvFilter.destroy) s.mvFilter.destroy(); gpu.fxLayer.removeChild(s.cont); s.cont.destroy({children:true}); if(s.dimSpr){ gpu.dimLayer.removeChild(s.dimSpr); s.dimSpr.destroy(); } if(s.haze) s.haze.remove(); }catch(e){} A.splice(i,1); continue; }
       s.frame += dt*SHEET_FPS/(vfxT()||1)*s.dir;
@@ -8355,7 +8369,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       s.spr.texture=gpu.tex[s.key][f0];                                                       // frame A = uTexture
       const t=Math.min(1,s.age/s.max), pk=s.peakAt;
       const alpha=Math.max(0,Math.min(1, t<pk ? (s.opPeak)*Math.pow(t/pk,0.6) : s.opPeak+(0-s.opPeak)*Math.pow((t-pk)/(1-pk),1.6) ));
-      if(s.mvFilter){ const u=s.mvFilter.resources.m.uniforms;                                // update MV uniforms (cheap; no texture rebind)
+      if(s.mvFilter){ const u=s.mvFilter.resources.m.uniforms, cols=s.cols||8, rows=s.rows||4;   // per-sprite grid (T74: 64f=8x8 / 48f=8x6 / 32f=8x4)
         u.uP0=new Float32Array([frac,16/384,s.age,0.012]); u.uP1=new Float32Array([gpu.mv?1:0, 1/cols, 1/rows, alpha]);
         u.uP2=new Float32Array([(f1%cols)/cols, ((f1/cols)|0)/rows, (f0%cols)/cols, ((f0/cols)|0)/rows]); }
       else { s.spr.alpha=alpha; }
@@ -8372,12 +8386,12 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   function heroLog(beat,msg){ if(gpu.hero) gpu.heroLog.push({ beat, tms:Math.round(gpu.hero.age*1000), msg, particles:gpu.particles.length, sprites:gpu.sprites.length }); }
   // an MV-interpolated smoke sprite (beat 4) — reuses the surge sprite+MV path with the smoke_1 sheet; pushed to gpu.sprites so gpuTick animates + cleans it
   function gpuSpawnHeroSmoke(x,y,size,life){ if(!gpu.heroReady||!gpu.tex['smoke_1']) return;
-    try{ const PIXI=gpu.PIXI, key='smoke_1', nf=32, frame=(Math.random()*nf)|0;
+    try{ const PIXI=gpu.PIXI, key='smoke_1', gr=gpu.grid[key]||{cols:8,rows:4,nf:32}, nf=gr.nf, frame=(Math.random()*nf)|0;
       const cont=new PIXI.Container(); cont.x=x; cont.y=y; cont.rotation=(Math.random()-.5)*0.5;
       const spr=new PIXI.Sprite(gpu.tex[key][frame]); spr.anchor.set(0.5); spr.blendMode='add'; spr.alpha=1; spr.width=size; spr.height=size;
       let mvFilter=null; try{ mvFilter=gpuMakeMvFilter(key); spr.filters=[mvFilter]; }catch(e){ mvFilter=null; }
       cont.addChild(spr); gpu.fxLayer.addChild(cont);
-      gpu.sprites.push({ cont, spr, key, frame, dir:(Math.random()<0.5?-1:1), nf, age:0, max:life, opPeak:0.72, peakAt:0.2, mvFilter, dimSpr:null, haze:null });
+      gpu.sprites.push({ cont, spr, key, frame, dir:(Math.random()<0.5?-1:1), nf, cols:gr.cols, rows:gr.rows, age:0, max:life, opPeak:0.72, peakAt:0.2, mvFilter, dimSpr:null, haze:null });
     }catch(e){}
   }
   function gpuHero(x,y,cardW){
@@ -8486,7 +8500,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
         if(s.tintFac){ const og=sheetFrameCanvas.getContext('2d'); og.globalCompositeOperation='source-over'; og.clearRect(0,0,SHEET_CELL,SHEET_CELL);
           og.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, 0,0,SHEET_CELL,SHEET_CELL); og.globalCompositeOperation='multiply'; og.fillStyle=SPR_FAC[s.tintFac]||'#e0b040'; og.fillRect(0,0,SHEET_CELL,SHEET_CELL);
           og.globalCompositeOperation='destination-in'; og.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, 0,0,SHEET_CELL,SHEET_CELL); og.globalCompositeOperation='source-over';   // T72: the multiply re-opaqued alpha → restore the baked luminance-alpha (keeps the tinted colour, black ground transparent)
-          cx.drawImage(sheetFrameCanvas, -size*ax,-size*ay, size,size); }
+          cx.drawImage(sheetFrameCanvas, 0,0,SHEET_CELL,SHEET_CELL, -size*ax,-size*ay, size,size); }   // only the SHEET_CELL sub-region
         else cx.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, -size*ax,-size*ay, size,size); };
       drawFrame(f0, op*(1-frac)); drawFrame(f1, op*frac);                    // F1c FRAME BLENDING: cross-fade floor+ceil by the fractional part → erases residual stepping
       return;
@@ -8548,7 +8562,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   }
   function frame(dt, now){
     const t=now/1000;
-    cx.setTransform(1,0,0,1,0,0); cx.globalAlpha=1; cx.globalCompositeOperation='source-over'; cx.clearRect(0,0,canvas.width,canvas.height);
+    cx.setTransform(1,0,0,1,0,0); cx.globalAlpha=1; cx.globalCompositeOperation='source-over'; cx.imageSmoothingEnabled=true; cx.clearRect(0,0,canvas.width,canvas.height);   // C2: re-assert smoothing after any context state churn
     if(tint){ tint.life-=dt; if(tint.life<=0) tint=null; else { cx.globalAlpha=tint.a*(tint.life/tint.max); cx.fillStyle=tint.color; cx.fillRect(0,0,canvas.width,canvas.height); cx.globalAlpha=1; } }
     for(let i=parts.length-1;i>=0;i--){ const p=parts[i]; p.life-=dt; if(p.life<=0){ parts.splice(i,1); continue; }
       if(p.kind==='smoke'){ p.vy+=(p.g||0)*dt; p.x+=p.vx*dt; p.y+=p.vy*dt; p.rot+=p.spin*dt; }
@@ -8614,6 +8628,10 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
                  toggle(){ if(!gpu.disabled) gpu.enabled=!gpu.enabled; return gpu.enabled; },
                  get frame0(){ return gpu.sprites[0]?gpu.sprites[0].frame:null; },                      // G2 instrumentation: live fractional GPU frame index
                  get heroReady(){ return gpu.heroReady; }, get heroActive(){ return !!gpu.hero; }, get heroBeat(){ return gpu.hero?gpu.hero.beat:0; }, get heroLog(){ return gpu.heroLog.slice(); }, get PCAP(){ return gpu.PCAP; },   // T70-P2H instrumentation
+                 get quality(){ return vfxRung; }, get cell(){ return SHEET_CELL; }, get gridInfo(){ return gpu.grid||{}; },   // T74 quality-ladder instrumentation
+                 set quality(q){ if(!RUNG[q]||q===vfxRung) return; vfxRung=q; SHEET_CELL=RUNG[q].cell;   // T74: force a rung (reloads only the selected rung's assets)
+                   sprImg={}; sprTint={}; spritesReady=false; sprLoadN=0; sheetImg={}; sheetGrid={}; sheetsReady=false; sheetLoadN=0; bakeMs=0; preloadSprites();
+                   try{ if(gpu.app){ gpu.tex={}; gpu.sheetTex={}; gpu.mvSheetTex={}; gpu.heroTex={}; gpu.grid={}; gpu.texReady=false; gpu.heroReady=false; gpuLoadSurge(); } }catch(e){} },
                  get heroRingMaxVisW(){ return gpu.hero?(gpu.hero.ringMaxVisW||0):(gpu._lastRingMaxVisW||0); }, get fieldW(){ return fieldEl?fieldEl.getBoundingClientRect().width:0; },
                  __heroAdvance(dt){ try{ if(gpu.hero) gpuHeroTick(dt); gpuParticleTick(dt); if(gpu.app) gpu.app.renderer.render(gpu.stage); }catch(e){} return gpu.hero?gpu.hero.beat:0; },   // G-test: drive the sequencer synchronously (bypasses the pane's rAF throttling)
                  get heroBlends(){ const h=gpu.hero; return h?{ ring:h.ring&&h.ring.blendMode, light:h.light&&h.light.blendMode, aura:h.aura&&h.aura.blendMode, flash:h.flashQ&&h.flashQ.blendMode, dim:h.dimQ&&h.dimQ.blendMode, ringXY:h.ring?[Math.round(h.ring.x),Math.round(h.ring.y),Math.round(h.ring.width)]:null }:null; },   // T70-P2H-fix diagnostic

@@ -118,7 +118,69 @@ def build_all_mv(mv_cell):
     print(f"  TOTAL MV payload: {tot/1048576:.2f}MB  (6MB ceiling)")
     return tot
 
+# ---- T74: DISPLAY-RESOLUTION QUALITY LADDER (t74 mode) ----
+# The T71 desktop board draws effects up to ~2100 physical px @DPR2; the 384px sheets / 512px stills upscale ≤4.1×
+# (worst = the ring-shockwave STILL) → visible softness. Re-derive at display resolution from the 1254px still masters
+# and the 960px clips. Ruling asked 768/64f sheets, but 768/64f × the 3 GPU-loaded sheets (surge_1/2, smoke_1) + MV =
+# ~540MB decoded (≈720 with mipmaps) >> the 420MB ceiling, and the sheet draws are only 1.2–1.7× — so HIGH sheets are
+# 512px/64f (fits 420MB, 512 ≥ the ≤651px sheet draws → crisp) and the decisive fix is STILLS → 1024px (the 4.1× case).
+SPR_NAMES_PY = ["aura_1","aura_2","aura_3","bloom_1","bloom_2","lightning_1","lightning_2","lightning_3","lightning_4",
+                "ring_1","ring_2","shield_1","shield_2","smoke_1","smoke_2","streak_1","streak_2","surge_1","surge_2","venom_1","venom_2"]
+RUNGS = { "hi": {"cell":512,"frames":64,"cols":8,"mv":384,"still":1024},
+          "md": {"cell":448,"frames":48,"cols":8,"mv":384,"still":768} }
+def _idx(effect, frames):
+    start = CLIP_CFG[effect][1]; rd = imageio.get_reader(os.path.join(CLIPS, f"vfx_{effect}_clip.mp4")); total = rd.count_frames(); rd.close()
+    cadence = WIN / frames
+    return [min(total-1, start+round(i*cadence)) for i in range(frames)], cadence
+def build_rung_sheet(effect, cfg, rk):
+    cell,frames,cols = cfg["cell"],cfg["frames"],cfg["cols"]; rows = frames//cols
+    idx,cad = _idx(effect, frames); mask = radial_mask(cell)
+    rd = imageio.get_reader(os.path.join(CLIPS, f"vfx_{effect}_clip.mp4"))
+    sheet = Image.new("RGB", (cols*cell, rows*cell), (0,0,0))
+    for i,j in enumerate(idx):
+        im = Image.fromarray(rd.get_data(j)[:,:,:3]).convert("RGB").resize((cell,cell), Image.LANCZOS)
+        sheet.paste(Image.fromarray(treat(np.asarray(im), mask), "RGB"), ((i%cols)*cell, (i//cols)*cell))
+    rd.close()
+    od = os.path.join(SHEETS, rk); os.makedirs(od, exist_ok=True); out = os.path.join(od, f"vfx_{effect}.png"); sheet.save(out, "JPEG", quality=Q)
+    return os.path.getsize(out), cols, rows, frames, cell, round(cad/24.0*1000), (cols*cell*rows*cell*4)
+def build_rung_mv(effect, cfg, rk):
+    cell,frames,cols,mv = cfg["cell"],cfg["frames"],cfg["cols"],cfg["mv"]; rows = frames//cols
+    idx,cad = _idx(effect, frames); rd = imageio.get_reader(os.path.join(CLIPS, f"vfx_{effect}_clip.mp4"))
+    grays = [np.asarray(Image.fromarray(rd.get_data(j)[:,:,:3]).convert("L").resize((mv,mv), Image.LANCZOS)) for j in idx]; rd.close()
+    fscale = 384.0/mv; sheet = Image.new("RGB", (cols*mv, rows*mv), (128,128,0))
+    for i in range(frames):
+        enc = np.zeros((mv,mv,3), np.uint8); enc[...,0]=128; enc[...,1]=128
+        if i < frames-1:
+            flow = cv2.calcOpticalFlowFarneback(grays[i], grays[i+1], None, 0.5,3,15,3,5,1.2,0)
+            fx = np.clip(flow[...,0]*fscale, -MV_RANGE, MV_RANGE); fy = np.clip(flow[...,1]*fscale, -MV_RANGE, MV_RANGE)
+            enc[...,0]=np.clip(128+fx/MV_RANGE*127,0,255).astype(np.uint8); enc[...,1]=np.clip(128+fy/MV_RANGE*127,0,255).astype(np.uint8)
+        sheet.paste(Image.fromarray(enc,"RGB"), ((i%cols)*mv, (i//cols)*mv))
+    od = os.path.join(SHEETS, rk, "mv"); os.makedirs(od, exist_ok=True); out = os.path.join(od, f"vfx_{effect}.png"); sheet.save(out, "PNG")
+    return os.path.getsize(out)
+def build_rung_still(name, cfg, rk):
+    size = cfg["still"]; m = radial_mask(size)
+    im = Image.open(os.path.join(MASTERS, f"vfx_{name}.png")).convert("RGB").resize((size,size), Image.LANCZOS)
+    od = os.path.join(GAME, rk); os.makedirs(od, exist_ok=True); out = os.path.join(od, f"vfx_{name}.png")
+    Image.fromarray(treat(np.asarray(im), m), "RGB").save(out, "JPEG", quality=85)
+    return os.path.getsize(out)
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "t74":
+        if cv2 is None: print("*** cv2 missing ***"); sys.exit(1)
+        for rk, cfg in RUNGS.items():
+            print(f"=== RUNG '{rk}': sheets {cfg['cell']}px/{cfg['frames']}f (8x{cfg['frames']//cfg['cols']}), stills {cfg['still']}px, MV {cfg['mv']}px ===")
+            ctot=0; dec=0; adjms=0
+            for e in CLIP_CFG:
+                sz,cols,rows,fr,cell,ms,d = build_rung_sheet(e, cfg, rk); ctot+=sz; dec+=d; adjms=ms
+                print(f"  sheets/{rk}/vfx_{e}.png  {sz/1024:.0f}KB  {cols}x{rows}={fr}f  {cols*cell}x{rows*cell}  adj={ms}ms")
+            mvtot=0
+            for e in CLIP_CFG: mvtot += build_rung_mv(e, cfg, rk)
+            stot=0
+            for n in SPR_NAMES_PY: stot += build_rung_still(n, cfg, rk)
+            gpu3 = 3*(cfg['cols']*cfg['cell']*(cfg['frames']//cfg['cols'])*cfg['cell']*4) + 3*(cfg['cols']*cfg['mv']*(cfg['frames']//cfg['cols'])*cfg['mv']*4)
+            print(f"  color {ctot/1048576:.2f}MB + MV {mvtot/1048576:.2f}MB + stills {stot/1048576:.2f}MB = {(ctot+mvtot+stot)/1048576:.2f}MB payload  ·  adj-frame {adjms}ms  ·  GPU-loaded(3 sheets+MV) decoded {gpu3/1048576:.0f}MB (ceiling 420)")
+        print("  T74 LADDER DONE")
+        sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1] == "mv":
         if cv2 is None:
             print("*** cv2 missing: pip install opencv-python-headless ***"); sys.exit(1)
