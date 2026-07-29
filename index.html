@@ -8174,11 +8174,11 @@ void main(){ float frac=uP0.x, flow=uP0.y, t=uP0.z, noise=uP0.w; vec2 cell=uP1.y
   vec2 uv=vTextureCoord;
   vec2 w=vec2(_h(uv*7.0+t), _h(uv*7.0-t*1.31))-0.5; uv+=w*noise;                 // S3a heat wobble
   vec2 cuv=clamp(uv,0.0,1.0);
-  if(uP1.x<0.5){ finalColor=texture(uTexture,cuv)*alpha; return; }               // A/B: mv off = nearest frame (+ wobble)
+  if(uP1.x<0.5){ vec4 o=texture(uTexture,cuv); finalColor=vec4(o.rgb, max(o.r,max(o.g,o.b)))*alpha; return; }   // A/B: mv off = nearest frame (+ wobble). T70-P2H-fix: alpha=luminance so opaque-JPEG black grounds stay transparent under ADD (brightening unchanged)
   vec2 fl=(texture(uMvSheet, uP2.zw+cuv*cell).rg-0.5)*2.0*flow;
   vec2 la=clamp(uv+fl*frac,0.0,1.0), lb=clamp(uv-fl*(1.0-frac),0.0,1.0);
   vec4 a=texture(uTexture, la); vec4 b=texture(uSheet, uP2.xy+lb*cell);
-  finalColor=mix(a,b,frac)*alpha; }`;
+  vec4 o=mix(a,b,frac); finalColor=vec4(o.rgb, max(o.r,max(o.g,o.b)))*alpha; }`;   // T70-P2H-fix: alpha=luminance (black grounds transparent under ADD)
   const MV_WGSL=_WGSL_HDR+`
 struct MvU { uP0:vec4<f32>, uP1:vec4<f32>, uP2:vec4<f32> };
 @group(1) @binding(0) var<uniform> m: MvU;
@@ -8193,11 +8193,11 @@ fn _h(p:vec2<f32>)->f32{ return fract(sin(dot(p, vec2<f32>(41.3,289.1)))*43758.5
   var uv=vuv;
   var w=vec2<f32>(_h(uv*7.0+vec2<f32>(t)), _h(uv*7.0-vec2<f32>(t*1.31)))-vec2<f32>(0.5); uv=uv+w*noise;
   let cuv=clamp(uv,vec2<f32>(0.0),vec2<f32>(1.0));
-  if(m.uP1.x<0.5){ return textureSample(uTexture,uSampler,cuv)*alpha; }
+  if(m.uP1.x<0.5){ let o=textureSample(uTexture,uSampler,cuv); return vec4<f32>(o.rgb, max(o.r,max(o.g,o.b)))*alpha; }
   var fl=(textureSample(uMvSheet,uMvSheetSampler, m.uP2.zw+cuv*cell).rg-vec2<f32>(0.5))*2.0*flow;
   let la=clamp(uv+fl*frac, vec2<f32>(0.0),vec2<f32>(1.0)); let lb=clamp(uv-fl*(1.0-frac), vec2<f32>(0.0),vec2<f32>(1.0));
   var a=textureSample(uTexture,uSampler,la); var b=textureSample(uSheet,uSheetSampler, m.uP2.xy+lb*cell);
-  return mix(a,b,frac)*alpha; }`;
+  let o=mix(a,b,frac); return vec4<f32>(o.rgb, max(o.r,max(o.g,o.b)))*alpha; }`;   // T70-P2H-fix: alpha=luminance (black grounds transparent under ADD)
   // S1 HDR BLOOM (fxLayer filter): bright-pass (smooth knee) + concentric-tap gaussian (half-res reach) + additive recombine + soft tonemap
   const BLOOM_GL=`in vec2 vTextureCoord;
 out vec4 finalColor;
@@ -8270,10 +8270,19 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
       gpuLoadHero();   // T70-P2H: load the hero-moment extra textures after surge (async; heroReady gates the trigger)
     }catch(e){ gpu.texReady=false; }
   }
+  // T70-P2H-fix (L9): the kit stills are OPAQUE JPEGs (no alpha). A plain additive sprite of an opaque black-ground texture accumulates alpha → an opaque black tile. Bake a luminance-derived alpha so the black ground is truly transparent; then blendMode='add' draws only the bright energy. (The generated aura/ember textures already have canvas alpha, so they were never affected.)
+  async function heroKitTex(url){ const P=gpu.PIXI;
+    try{ const img=await new Promise((res,rej)=>{ const im=new Image(); im.decoding='async'; im.onload=()=>res(im); im.onerror=rej; im.src=url; });
+      const w=img.naturalWidth||512, h=img.naturalHeight||512, c=document.createElement('canvas'); c.width=w; c.height=h; const g=c.getContext('2d');
+      g.drawImage(img,0,0,w,h); const id=g.getImageData(0,0,w,h), d=id.data;
+      for(let i=0;i<d.length;i+=4){ d[i+3]=Math.max(d[i],d[i+1],d[i+2]); }   // alpha = luminance
+      g.putImageData(id,0,0); return P.Texture.from(c);
+    }catch(e){ return await P.Assets.load(url); }
+  }
   async function gpuLoadHero(){   // T70-P2H: ring (beat 3 shockwave) + lightning (beat 2 wrap) stills + smoke sheet+MV (beat 4 MV smoke)
     try{ const PIXI=gpu.PIXI;
-      gpu.heroTex.ring  = await PIXI.Assets.load('assets/vfx/game/vfx_ring_1.png');
-      gpu.heroTex.light = await PIXI.Assets.load('assets/vfx/game/vfx_lightning_1.png');
+      gpu.heroTex.ring  = await heroKitTex('assets/vfx/game/vfx_ring_1.png');       // luminance-alpha → additive-clean (no black tile)
+      gpu.heroTex.light = await heroKitTex('assets/vfx/game/vfx_lightning_1.png');
       const sm=await PIXI.Assets.load('assets/vfx/game/sheets/vfx_smoke_1.png'); gpu.sheetTex['smoke_1']=sm;
       const smf=[]; for(let i=0;i<32;i++){ const fx=(i%8)*SHEET_CELL, fy=((i/8)|0)*SHEET_CELL; smf.push(new PIXI.Texture({ source:sm.source, frame:new PIXI.Rectangle(fx,fy,SHEET_CELL,SHEET_CELL) })); }
       gpu.tex['smoke_1']=smf;
@@ -8592,6 +8601,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
                  get heroReady(){ return gpu.heroReady; }, get heroActive(){ return !!gpu.hero; }, get heroBeat(){ return gpu.hero?gpu.hero.beat:0; }, get heroLog(){ return gpu.heroLog.slice(); }, get PCAP(){ return gpu.PCAP; },   // T70-P2H instrumentation
                  get heroRingMaxVisW(){ return gpu.hero?(gpu.hero.ringMaxVisW||0):(gpu._lastRingMaxVisW||0); }, get fieldW(){ return fieldEl?fieldEl.getBoundingClientRect().width:0; },
                  __heroAdvance(dt){ try{ if(gpu.hero) gpuHeroTick(dt); gpuParticleTick(dt); if(gpu.app) gpu.app.renderer.render(gpu.stage); }catch(e){} return gpu.hero?gpu.hero.beat:0; },   // G-test: drive the sequencer synchronously (bypasses the pane's rAF throttling)
+                 get heroBlends(){ const h=gpu.hero; return h?{ ring:h.ring&&h.ring.blendMode, light:h.light&&h.light.blendMode, aura:h.aura&&h.aura.blendMode, flash:h.flashQ&&h.flashQ.blendMode, dim:h.dimQ&&h.dimQ.blendMode, ringXY:h.ring?[Math.round(h.ring.x),Math.round(h.ring.y),Math.round(h.ring.width)]:null }:null; },   // T70-P2H-fix diagnostic
                  get mv(){return gpu.mv;}, set mv(v){ gpu.mv=!!v; },                                   // S2 A/B: mv interp on/off (live)
                  get haze(){return gpu.haze;}, set haze(v){ gpu.haze=!!v; },                            // S3b DOM haze flag
                  get bloomParams(){return {threshold:gpu.bloom.threshold,intensity:gpu.bloom.intensity};},
