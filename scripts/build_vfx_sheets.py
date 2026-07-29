@@ -10,6 +10,10 @@ import os, sys, math
 import numpy as np
 from PIL import Image
 import imageio.v2 as imageio
+try:
+    import cv2   # T70-P1 S2-DATA: Farneback optical flow for the MV sheets (mv mode only)
+except Exception:
+    cv2 = None
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CLIPS = os.path.join(ROOT, "assets/vfx/clips")
@@ -71,7 +75,59 @@ def mask_still(name):
     Image.fromarray(treat(np.asarray(im), MASK_STILL), "RGB").save(out, "JPEG", quality=85)
     return os.path.getsize(out)
 
+# ---- T70-P1 S2-DATA: MOTION-VECTOR PIPELINE (mv mode) ----
+# Farneback flow between ADJACENT extracted frames (the SAME window/cadence/idx as the color sheets, frame-for-frame).
+# Encode flow into R,G (signed x,y displacement, ±16px @384 range, centred 128); B=0. TRUE PNG (flow must not JPEG-block).
+# MV frame i = flow (frame_i -> frame_i+1); the shader negates for reverse playback. Last frame = neutral (128,128,0).
+MVDIR = os.path.join(SHEETS, "mv")
+MV_RANGE = 16.0          # ±px at 384 (per spec)
+def build_mv_sheet(effect, mv_cell):
+    frames, start = CLIP_CFG[effect]
+    cols = frames // ROWS
+    rd = imageio.get_reader(os.path.join(CLIPS, f"vfx_{effect}_clip.mp4"))
+    total = rd.count_frames()
+    cadence = WIN / frames
+    idx = [min(total - 1, start + round(i * cadence)) for i in range(frames)]   # IDENTICAL to build_sheet
+    grays = []
+    for j in idx:
+        im = Image.fromarray(rd.get_data(j)[:, :, :3]).convert("L").resize((mv_cell, mv_cell), Image.LANCZOS)
+        grays.append(np.asarray(im))
+    rd.close()
+    fscale = 384.0 / mv_cell                                   # express flow in 384px units regardless of MV resolution
+    sheet = Image.new("RGB", (cols * mv_cell, ROWS * mv_cell), (128, 128, 0))
+    for i in range(frames):
+        enc = np.zeros((mv_cell, mv_cell, 3), np.uint8); enc[..., 0] = 128; enc[..., 1] = 128
+        if i < frames - 1:
+            flow = cv2.calcOpticalFlowFarneback(grays[i], grays[i + 1], None, 0.5, 3, 15, 3, 5, 1.2, 0)
+            fx = np.clip(flow[..., 0] * fscale, -MV_RANGE, MV_RANGE)
+            fy = np.clip(flow[..., 1] * fscale, -MV_RANGE, MV_RANGE)
+            enc[..., 0] = np.clip(128 + fx / MV_RANGE * 127, 0, 255).astype(np.uint8)
+            enc[..., 1] = np.clip(128 + fy / MV_RANGE * 127, 0, 255).astype(np.uint8)
+        sheet.paste(Image.fromarray(enc, "RGB"), ((i % cols) * mv_cell, (i // cols) * mv_cell))
+    out = os.path.join(MVDIR, f"vfx_{effect}.png")
+    sheet.save(out, "PNG")
+    return os.path.getsize(out), cols, ROWS, frames, mv_cell
+
+def build_all_mv(mv_cell):
+    os.makedirs(MVDIR, exist_ok=True)
+    tot = 0
+    print(f"=== MV SHEETS ({mv_cell}px cells, TRUE PNG) — Farneback flow, same idx as color sheets ===")
+    for e in CLIP_CFG:
+        sz, cols, rows, fr, cell = build_mv_sheet(e, mv_cell); tot += sz
+        print(f"  mv/vfx_{e}.png  {sz/1024:.0f}KB  {cols}x{rows}={fr}f  {cols*cell}x{rows*cell}")
+    print(f"  TOTAL MV payload: {tot/1048576:.2f}MB  (6MB ceiling)")
+    return tot
+
 if __name__ == "__main__":
+    if len(sys.argv) > 1 and sys.argv[1] == "mv":
+        if cv2 is None:
+            print("*** cv2 missing: pip install opencv-python-headless ***"); sys.exit(1)
+        tot = build_all_mv(384)
+        if tot > 6 * 1048576:                                  # spec: drop to 192px if over 6MB
+            print("  *** OVER 6MB — rebuilding MV at 192px (flow is smooth; half-res upsamples fine) ***")
+            tot = build_all_mv(192)
+        print("  MV DONE")
+        sys.exit(0)
     tot = 0; decoded = 0
     print(f"=== SHEETS ({CELL}px cells, q{Q}) — CAUSE 1: 2s window, consecutive-cadence frames ===")
     for e in CLIP_CFG:
