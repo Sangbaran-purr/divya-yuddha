@@ -8064,6 +8064,8 @@ const VFX = (()=>{
   const CAP=120, DPR=Math.min(2, window.devicePixelRatio||1);
   let canvas, cx, fieldEl, w=0, h=0, parts=[], bolts=[], tint=null, raf=0, last=0, ready=false;
   let sGlow=[], sEmber=null, sDust=[], sDark=[];
+  let bloomCv=null, bloomCx=null, bloomOn=true;   // T69A bloom post-pass (half-res offscreen); bloomOn = A/B toggle for the G3 proof
+  const BLOOM_OK=(()=>{ try{ return 'filter' in document.createElement('canvas').getContext('2d'); }catch(e){ return false; } })();   // feature-detect ctx.filter; skip cleanly where absent
   const S=()=> (typeof CHOREO_SPEED!=='undefined'?CHOREO_SPEED:1);
   function offc(size){ const c=document.createElement('canvas'); c.width=c.height=size; return c; }
   function makeGlow(stops, size){ const c=offc(size), g=c.getContext('2d'), rg=g.createRadialGradient(size/2,size/2,0,size/2,size/2,size/2); stops.forEach(([o,col])=>rg.addColorStop(o,col)); g.fillStyle=rg; g.fillRect(0,0,size,size); return c; }
@@ -8145,15 +8147,18 @@ const VFX = (()=>{
   let gdim=null;
   function groundDim(cxp,cyp,radius){ if(reducedMotion()) return; const {x,y}=local(cxp,cyp); gdim={ x, y, r:radius*1.8, peak:0.25, age:0, rise:0.08*vfxT(), life:0.5*vfxT() }; wake(); }
   function addSpr(o){ if(reducedMotion()) return; if(!o.img && !o.swap && !o.sheet) return; if(sprites.length>=SCAP) sprites.shift(); o.age=0; o.max=o.life; o.swapT=0; sprites.push(o); wake(); }   // oldest evicted at cap
+  // C1 GROUND DIM — T69A: moved OUT of drawSprites and drawn AFTER the bloom pass with 'destination-over' (behind the glow).
+  // Same dimmed-board-under-glow contrast, but the bloom source never contains it → bloom can't deepen the dim's alpha into an opaque-dark box.
+  function drawGroundDim(dt){
+    if(!gdim) return; gdim.age+=dt; if(gdim.age>=gdim.life){ gdim=null; return; }
+    const a = gdim.age<gdim.rise ? gdim.peak*(gdim.age/gdim.rise) : gdim.peak*(1-(gdim.age-gdim.rise)/(gdim.life-gdim.rise));
+    if(a<=0.003) return;
+    cx.save(); cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='destination-over'; cx.globalAlpha=1;
+    const g=cx.createRadialGradient(gdim.x*DPR,gdim.y*DPR,0, gdim.x*DPR,gdim.y*DPR,gdim.r*DPR);
+    g.addColorStop(0,`rgba(0,0,0,${a.toFixed(3)})`); g.addColorStop(1,'rgba(0,0,0,0)'); cx.fillStyle=g; cx.fillRect(0,0,canvas.width,canvas.height);
+    cx.restore();
+  }
   function drawSprites(dt){
-    // C1 GROUND DIM: soft radial darkening drawn FIRST (source-over), so the additive effect glows over a dimmed board → contrast
-    if(gdim){ gdim.age+=dt; if(gdim.age>=gdim.life) gdim=null;
-      else { const a = gdim.age<gdim.rise ? gdim.peak*(gdim.age/gdim.rise) : gdim.peak*(1-(gdim.age-gdim.rise)/(gdim.life-gdim.rise));
-        if(a>0.003){ cx.save();   // F3b: gdim wrapped in save/restore so its source-over can NEVER leak into a sprite draw
-          cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
-          const g=cx.createRadialGradient(gdim.x*DPR,gdim.y*DPR,0, gdim.x*DPR,gdim.y*DPR,gdim.r*DPR);
-          g.addColorStop(0,`rgba(0,0,0,${a.toFixed(3)})`); g.addColorStop(1,'rgba(0,0,0,0)'); cx.fillStyle=g; cx.fillRect(0,0,canvas.width,canvas.height);
-          cx.restore(); } } }
     if(!sprites.length) return;
     for(let i=sprites.length-1;i>=0;i--){ const s=sprites[i]; s.age+=dt; if(s.age>=s.max) sprites.splice(i,1); }
     cx.save();                                                              // T67b R2: isolate all sprite state
@@ -8235,6 +8240,21 @@ const VFX = (()=>{
   function sprStreak(fx,fy,tx,ty,cardW){ if(reducedMotion()||!ready||!haveSpr('streak_1')) return false; const a=local(fx,fy), b=local(tx,ty), W=cw(cardW);
     const dxp=b.x-a.x, dyp=b.y-a.y, len=Math.hypot(dxp,dyp)||1, ang=Math.atan2(dyp,dxp);
     addSpr({ img:imgTint(pick('streak',2),'leap'), x:(a.x+b.x)/2, y:(a.y+b.y)/2, size:W*1.4, sc0:1,sc1:1, stretchX:Math.max(1,len/(W*1.0)), squashY:0.7, rot:ang, op0:0,opPeak:0.9,op1:0, peakAt:0.25, life:0.3*vfxT() }); return true; }
+  // T69A BLOOM POST-PASS: draw the vfx canvas into a half-res offscreen WITH ctx.filter blur, then composite that back full-size additively.
+  // Bright additive content bleeds soft light (the flat→luminous jump inside Canvas2D); dark content (the ground-dim) stays dark because 'lighter' of near-black adds ~0 → the dim is never brightened.
+  function bloomPass(){
+    if(!BLOOM_OK||!bloomOn) return;
+    const bw=Math.max(1,canvas.width>>1), bh=Math.max(1,canvas.height>>1);   // half-res intermediate = quarter the pixels (perf)
+    if(!bloomCv){ bloomCv=document.createElement('canvas'); bloomCx=bloomCv.getContext('2d'); }
+    if(bloomCv.width!==bw||bloomCv.height!==bh){ bloomCv.width=bw; bloomCv.height=bh; }
+    bloomCx.setTransform(1,0,0,1,0,0); bloomCx.globalCompositeOperation='source-over'; bloomCx.globalAlpha=1; bloomCx.clearRect(0,0,bw,bh);
+    bloomCx.filter='blur('+(3*DPR).toFixed(1)+'px)';                          // 3·DPR half-res px ≈ a constant ~6 CSS-px halo at any DPR
+    bloomCx.drawImage(canvas, 0,0,canvas.width,canvas.height, 0,0,bw,bh);
+    bloomCx.filter='none';                                                    // T67b R2: reset filter immediately after the pass (state discipline)
+    cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='lighter'; cx.globalAlpha=0.5; cx.imageSmoothingEnabled=true;
+    cx.drawImage(bloomCv, 0,0,bw,bh, 0,0,canvas.width,canvas.height);
+    cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;              // leave state clean for the next frame's top-of-frame reset
+  }
   function frame(dt, now){
     const t=now/1000;
     cx.setTransform(1,0,0,1,0,0); cx.globalAlpha=1; cx.globalCompositeOperation='source-over'; cx.clearRect(0,0,canvas.width,canvas.height);
@@ -8254,10 +8274,15 @@ const VFX = (()=>{
       for(const st of [[12,`rgba(150,190,255,${.16*a})`],[5,`rgba(205,228,255,${.5*a})`],[1.5,`rgba(255,255,255,${.95*a})`]]){ cx.lineWidth=st[0]; cx.strokeStyle=st[1]; poly(b.main); for(const br of b.branches) poly(br); } }   // T66 spectacle: bolt widths 9/3.5/1 -> 12/5/1.5 for slot-scale presence
     cx.setTransform(1,0,0,1,0,0); cx.globalCompositeOperation='source-over'; cx.globalAlpha=1;
     drawSprites(dt);   // T67 painted sprite layer (smoke source-over, kit additive) — on top of particles/bolts
+    if(sprites.length||bolts.length||parts.length) bloomPass();   // T69A: bloom only when additive content exists → empty/reduced-motion frames skip it cleanly
+    drawGroundDim(dt);   // T69A: dim LAST (destination-over) → behind the glow, excluded from the bloom source
   }
   function step(now){
-    const dt=Math.min(0.05,(now-last)/1000); last=now; frame(dt, now);
-    if(parts.length||bolts.length||tint||sprites.length||gdim) raf=requestAnimationFrame(step); else { raf=0; cx.clearRect(0,0,canvas.width,canvas.height); }
+    const dt=Math.min(0.05,(now-last)/1000); last=now;                 // T69A: dt clamp (≤50ms) + fresh last → a wake after any idle gap can't mass-expire (verified NOT the round-death cause; kept structural)
+    try{ frame(dt, now); }
+    catch(e){}                                                         // T69A ROOT FIX: a thrown draw must NEVER kill the loop. one thrown frame used to leave raf truthy → wake() could never restart → all later-round effects dead. frame() re-clears every canvas state at its top, so a dropped frame leaks nothing.
+    finally{ if(parts.length||bolts.length||tint||sprites.length||gdim) raf=requestAnimationFrame(step);   // ALWAYS re-arm while content lives → raf can never get stuck truthy after a throw
+             else { raf=0; try{ cx.clearRect(0,0,canvas.width,canvas.height); }catch(_){} } }
   }
   function poly(pts){ cx.beginPath(); cx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) cx.lineTo(pts[i].x,pts[i].y); cx.stroke(); }
   function addFire(x,y,ang,sp,sz,life,buoy,inward){ add({ kind:'glow', x, y, vx:Math.cos(ang)*sp, vy:Math.sin(ang)*sp, buoy, inward, cx0:x, cy0:y, flHz:63+Math.random()*30, flP:Math.random()*6.28, flA:2+Math.random()*2, sz, life, max:life }); }
@@ -8289,6 +8314,7 @@ const VFX = (()=>{
   return { init, resize, cardLand, astraBurst, mythic,
            preloadSprites, preloadSheets, spritesReady:()=>spritesReady, sheetsReady:()=>sheetsReady, sprCount:()=>sprites.length,
            frameOf:(i)=>{ const s=sprites[i]; return s?{sheet:s.sheet,frame:s.frame,dir:s.dir,mode:s.mode}:null; },   // G2 instrumentation: read live frame index
+           setBloom:(v)=>{ bloomOn=!!v; }, bloomState:()=>({ok:BLOOM_OK,on:bloomOn}),   // G3 A/B proof hook (bloom on/off)
            sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
