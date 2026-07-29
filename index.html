@@ -8104,11 +8104,16 @@ const VFX = (()=>{
     return { main, branches, life:0.14, max:0.14 }; }
   // ===================== T67 SPRITE COMPOSITOR (painted VFX kit) =====================
   // Painted textures drawn on the SAME canvas/rAF as the particles; separate instance layer + cap (12).
-  let sprImg={}, sprTint={}, spritesReady=false, sprLoadN=0, sprites=[];
+  let sprImg={}, sprTint={}, spritesReady=false, sprLoadN=0, sprites=[], bakeMs=0;   // T72: bakeMs = total load-time luminance-alpha bake cost (G5)
   const SCAP=12;
   const SPR_NAMES=['aura_1','aura_2','aura_3','bloom_1','bloom_2','lightning_1','lightning_2','lightning_3','lightning_4','ring_1','ring_2','shield_1','shield_2','smoke_1','smoke_2','streak_1','streak_2','surge_1','surge_2','venom_1','venom_2'];
   const SPR_FAC={ devas:'#e0b040', asuras:'#e0483c', vanaras:'#6fc257', nagas:'#3fb9a8' };
   function offc2(wd,ht){ const c=document.createElement('canvas'); c.width=wd; c.height=ht; return c; }
+  // T72 (mirrors the GPU heroKitTex): opaque kit textures (JPEG-in-.png, no alpha) stamp alpha=255 under 'lighter' → black regions render as opaque black tiles. Bake alpha=luminance per pixel so the black ground is transparent; additive color math is unchanged (bright stays bright).
+  function bakeAlpha(src){ const w=src.naturalWidth||src.width, h=src.naturalHeight||src.height, c=offc2(w,h), g=c.getContext('2d');
+    g.drawImage(src,0,0,w,h);
+    try{ const id=g.getImageData(0,0,w,h), d=id.data, n=d.length; for(let i=0;i<n;i+=4){ const r=d[i],gg=d[i+1],b=d[i+2]; d[i+3]= r>gg ? (r>b?r:b) : (gg>b?gg:b); } g.putImageData(id,0,0); }catch(e){ return src; }   // inline max (no fn-call per pixel)
+    return c; }
   function tintOf(img,color){ const iw=img.naturalWidth||img.width, ih=img.naturalHeight||img.height, c=offc2(iw,ih), g=c.getContext('2d');
     g.drawImage(img,0,0,iw,ih); g.globalCompositeOperation='multiply'; g.fillStyle=color; g.fillRect(0,0,iw,ih);   // RGB tinted; black stays black → no additive contribution
     // C2 WHITE-HOT CORE (F4): add the top-luminance core back UNtinted so bright centers stay white-gold, separated from the gold board
@@ -8126,7 +8131,13 @@ const VFX = (()=>{
   }
   function preloadSprites(){ if(sprLoadN>0) return;                                    // idempotent, once per session (0d slot; async → never blocks the mulligan)
     SPR_NAMES.forEach(key=>{ const im=new Image(); im.decoding='async';
-      im.onload=()=>{ sprImg[key]=im; try{buildTints(key,im);}catch(e){} sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; preloadSheets(); } };
+      im.onload=()=>{ sprImg[key]=im; try{buildTints(key,im);}catch(e){}
+        try{ const t0=performance.now();
+          if(!/^smoke/.test(key)) sprImg[key]=bakeAlpha(im);                         // T72: additive stills → luminance-alpha (smoke stills stay opaque; they draw source-over)
+          const tv=sprTint[key]; if(tv){ for(const k in tv) tv[k]=bakeAlpha(tv[k]); }  // and EVERY tinted variant (the tile returns through the tinted copies otherwise)
+          bakeMs+=performance.now()-t0;
+        }catch(e){}
+        sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; preloadSheets(); } };
       im.onerror=()=>{ sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; preloadSheets(); } };   // a missing sprite just leaves its procedural fallback in place; stills done → start sheets (B5)
       im.src='assets/vfx/game/vfx_'+key+'.png'; });
   }
@@ -8142,7 +8153,9 @@ const VFX = (()=>{
   function haveSheet(key){ return !!sheetImg[key]; }
   function preloadSheets(){ if(sheetLoadN>0) return;   // B5: sheets preload at page load AFTER the stills (stills = guaranteed floor)
     SHEET_NAMES.forEach(key=>{ const im=new Image(); im.decoding='async';
-      im.onload=()=>{ sheetImg[key]=im; const cols=Math.round((im.naturalWidth||im.width)/SHEET_CELL), rows=Math.round((im.naturalHeight||im.height)/SHEET_CELL); sheetGrid[key]={cols,rows,frames:cols*rows}; sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };   // grid derived from sheet dims (8x4=32 or 6x4=24)
+      im.onload=()=>{ sheetImg[key]=im; const cols=Math.round((im.naturalWidth||im.width)/SHEET_CELL), rows=Math.round((im.naturalHeight||im.height)/SHEET_CELL); sheetGrid[key]={cols,rows,frames:cols*rows};   // grid derived from RAW dims first
+        try{ const t0=performance.now(); sheetImg[key]=bakeAlpha(im); bakeMs+=performance.now()-t0; }catch(e){}   // T72: every 2D flipbook sheet draws additive ('lighter') → luminance-alpha bake (same-dims canvas, grid unchanged)
+        sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };
       im.onerror=()=>{ sheetLoadN++; if(sheetLoadN>=SHEET_NAMES.length) sheetsReady=true; };   // a missing sheet keeps the still + envelope fallback
       im.src='assets/vfx/game/sheets/vfx_'+key+'.png'; });
   }
@@ -8472,6 +8485,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
         cx.globalCompositeOperation=blend; cx.globalAlpha=alpha;            // F3b: UNCONDITIONAL gco+alpha assertion per draw
         if(s.tintFac){ const og=sheetFrameCanvas.getContext('2d'); og.globalCompositeOperation='source-over'; og.clearRect(0,0,SHEET_CELL,SHEET_CELL);
           og.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, 0,0,SHEET_CELL,SHEET_CELL); og.globalCompositeOperation='multiply'; og.fillStyle=SPR_FAC[s.tintFac]||'#e0b040'; og.fillRect(0,0,SHEET_CELL,SHEET_CELL);
+          og.globalCompositeOperation='destination-in'; og.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, 0,0,SHEET_CELL,SHEET_CELL); og.globalCompositeOperation='source-over';   // T72: the multiply re-opaqued alpha → restore the baked luminance-alpha (keeps the tinted colour, black ground transparent)
           cx.drawImage(sheetFrameCanvas, -size*ax,-size*ay, size,size); }
         else cx.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, -size*ax,-size*ay, size,size); };
       drawFrame(f0, op*(1-frac)); drawFrame(f1, op*frac);                    // F1c FRAME BLENDING: cross-fade floor+ceil by the fractional part → erases residual stepping
@@ -8590,7 +8604,8 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     setTimeout(()=>{ if(ready) brahmastraSmoke(ix,iy); }, (90+100+60+140)*s);                            // afterglow tail (flash div) → smoke + embers
   }
   return { init, resize, cardLand, astraBurst, mythic,
-           preloadSprites, preloadSheets, spritesReady:()=>spritesReady, sheetsReady:()=>sheetsReady, sprCount:()=>sprites.length,
+           preloadSprites, preloadSheets, spritesReady:()=>spritesReady, sheetsReady:()=>sheetsReady, sprCount:()=>sprites.length, bakeMs:()=>bakeMs,
+           __advance2D:(dt)=>{ try{ frame(dt, performance.now()); }catch(e){} },   // G-test: drive the Canvas2D frame synchronously (bypasses the pane's rAF throttling)
            frameOf:(i)=>{ const s=sprites[i]; return s?{sheet:s.sheet,frame:s.frame,dir:s.dir,mode:s.mode}:null; },   // G2 instrumentation: read live frame index
            setBloom:(v)=>{ bloomOn=!!v; }, bloomState:()=>({ok:BLOOM_OK,on:bloomOn}),   // G3 A/B proof hook (bloom on/off)
            get dim(){ return dimOn; }, set dim(v){ dimOn=!!v; },   // T70-DIM master flag: per-effect ground-dim OFF by default; true re-enables both paths (reserved for the hero-moment scene dim, R3)
