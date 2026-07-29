@@ -8081,8 +8081,8 @@ const VFX = (()=>{
     sEmber=makeGlow([[0,'rgba(255,244,196,1)'],[.4,'rgba(255,176,74,.9)'],[1,'rgba(255,146,52,0)']],16);
     sDust=[]; sDark=[]; for(let i=0;i<3;i++){ sDust.push(makeBlob('152,134,106',72,.5)); sDark.push(makeBlob('54,52,58',96,.6)); }
   }
-  function init(){ fieldEl=$('field'); canvas=$('vfxcanvas'); if(!canvas) return; cx=canvas.getContext('2d'); if(!sGlow.length) initSprites(); resize(); ready=true; }
-  function resize(){ if(!canvas||!fieldEl) return; const r=fieldEl.getBoundingClientRect(); w=r.width; h=r.height; canvas.width=Math.max(1,Math.round(w*DPR)); canvas.height=Math.max(1,Math.round(h*DPR)); canvas.style.width=w+'px'; canvas.style.height=h+'px'; }
+  function init(){ fieldEl=$('field'); canvas=$('vfxcanvas'); if(!canvas) return; cx=canvas.getContext('2d'); if(!sGlow.length) initSprites(); resize(); ready=true; gpuInit(); }   // T70-P0: boot the GPU overlay (async, non-blocking; failure → Canvas2D floor)
+  function resize(){ if(!canvas||!fieldEl) return; const r=fieldEl.getBoundingClientRect(); w=r.width; h=r.height; canvas.width=Math.max(1,Math.round(w*DPR)); canvas.height=Math.max(1,Math.round(h*DPR)); canvas.style.width=w+'px'; canvas.style.height=h+'px'; if(typeof gpuResize==='function') gpuResize(); }
   function local(cxp, cyp){ const r=fieldEl.getBoundingClientRect(); return { x:cxp-r.left, y:cyp-r.top }; }
   function room(){ return CAP-parts.length; }
   function wake(){ if(!raf){ last=performance.now(); raf=requestAnimationFrame(step); } }
@@ -8143,6 +8143,60 @@ const VFX = (()=>{
   function addSheetSpr(key, x, y, size, o){ if(reducedMotion()||!sheetImg[key]) return false;
     const mode=SHEET_MODE[key]||'forward', nf=(sheetGrid[key]||{}).frames||24;
     addSpr(Object.assign({ sheet:key, mode, frame:(Math.random()*nf)|0, dir:(mode==='pingpong'&&Math.random()<.5?-1:1), fAcc:0, x, y, size, anchorX:0.5, anchorY:0.5, sc0:1,sc1:1, op0:0,opPeak:1,op1:0, peakAt:0.15 }, o||{})); return true; }
+  // ===================== T70-P0 GPU OVERLAY LAYER (Pixi v8, WebGPU-first; PL2 overlay / PL3 triple-fallback / PL5 stable recipe API / PL6 vendored) =====================
+  // A transparent Pixi canvas above #vfxcanvas. One loop owns time: the T69A-hardened step calls gpuTick(dt) inside its try/catch, so the unkillable-loop guarantee covers the GPU layer too. Any failure → gpu.disabled → Canvas2D floor.
+  const gpu={ renderer:'none', enabled:false, disabled:false, texReady:false, app:null, PIXI:null, stage:null, gcanvas:null, sprites:[], tex:{}, _poison:false, wasNonEmpty:false };
+  async function gpuInit(){
+    if(gpu.disabled || gpu.app || !fieldEl) return;
+    try{
+      if(gpu._poison) throw new Error('sim-init-throw');                                   // G3 hook: exercise the real catch → floor
+      const PIXI = await import('./assets/vendor/pixi.min.mjs');                            // PL6: local ESM, no CDN; dynamic import works from a classic script
+      gpu.PIXI=PIXI;
+      let gc=document.getElementById('vfxgpu');
+      if(!gc){ gc=document.createElement('canvas'); gc.id='vfxgpu'; gc.style.cssText='position:absolute;inset:0;z-index:6;pointer-events:none;'; fieldEl.appendChild(gc); }
+      gpu.gcanvas=gc;
+      const app=new PIXI.Application();
+      await app.init({ canvas:gc, backgroundAlpha:0, antialias:true, autoStart:false, resolution:DPR, autoDensity:true, preference:'webgpu' });   // PL3: webgpu preferred, Pixi auto-falls to webgl
+      gpu.app=app; gpu.stage=app.stage; gpu.renderer=(app.renderer&&app.renderer.name)||'none'; gpu.enabled=true;
+      gpuResize(); gpuLoadSurge();
+    }catch(e){ gpu.disabled=true; gpu.enabled=false; gpu.renderer='none'; gpu.app=null;      // PL3 FLOOR: everything falls through to Canvas2D, zero console noise
+      try{ if(gpu.gcanvas){ gpu.gcanvas.remove(); gpu.gcanvas=null; } }catch(_){}}
+  }
+  function gpuResize(){ if(!gpu.app||!fieldEl) return; const r=fieldEl.getBoundingClientRect(); try{ gpu.app.renderer.resize(r.width, r.height); }catch(e){} }
+  async function gpuLoadSurge(){                                                             // PL4: reuse the existing 8x4 384px sheets as textures (no pixel copies — Pixi frame rects share one source)
+    try{ const PIXI=gpu.PIXI;
+      for(const key of ['surge_1','surge_2']){
+        const base=await PIXI.Assets.load('assets/vfx/game/sheets/vfx_'+key+'.png'); const src=base.source;
+        const frames=[]; for(let i=0;i<32;i++){ const fx=(i%8)*SHEET_CELL, fy=((i/8)|0)*SHEET_CELL; frames.push(new PIXI.Texture({ source:src, frame:new PIXI.Rectangle(fx,fy,SHEET_CELL,SHEET_CELL) })); }
+        gpu.tex[key]=frames;
+      }
+      gpu.texReady=true;
+    }catch(e){ gpu.texReady=false; }
+  }
+  // PL5 CONTRACT: same tier=combat surge, ported T68F numbers — pingpong 32f @16fps×vfxT, random start+dir, ADD blend, anchor .5, constant scale, soft-birth envelope (peakAt .15, birth^0.6 / decay^1.6, opPeak .95, life .5×vfxT)
+  function gpuSpawnSurge(x,y,size,rot,life){
+    if(!gpu.enabled||!gpu.texReady||!gpu.PIXI) return false;
+    try{ const PIXI=gpu.PIXI, key=(Math.random()<0.5?'surge_1':'surge_2'), nf=32, frame=(Math.random()*nf)|0;
+      const spr=new PIXI.Sprite(gpu.tex[key][frame]); spr.anchor.set(0.5); spr.x=x; spr.y=y; spr.rotation=rot; spr.blendMode='add'; spr.alpha=0; spr.width=size; spr.height=size;
+      gpu.stage.addChild(spr);
+      gpu.sprites.push({ spr, key, frame, dir:(Math.random()<0.5?-1:1), nf, age:0, max:life, opPeak:0.95, op0:0, op1:0, peakAt:0.15 });
+      wake(); return true;
+    }catch(e){ return false; }
+  }
+  function gpuTick(dt){
+    if(!gpu.app) return; const A=gpu.sprites;
+    for(let i=A.length-1;i>=0;i--){ const s=A[i]; s.age+=dt;
+      if(s.age>=s.max){ try{ gpu.stage.removeChild(s.spr); s.spr.destroy(); }catch(e){} A.splice(i,1); continue; }
+      s.frame += dt*SHEET_FPS/(vfxT()||1)*s.dir;                                             // pingpong bounce over 32 frames (identical to the Canvas2D sheet advance)
+      if(s.frame>=s.nf-1){ s.frame=(s.nf-1)-(s.frame-(s.nf-1)); s.dir=-1; if(s.frame<0)s.frame=0; }
+      else if(s.frame<0){ s.frame=-s.frame; s.dir=1; if(s.frame>s.nf-1)s.frame=s.nf-1; }
+      const fi=Math.max(0,Math.min(s.nf-1, Math.round(s.frame))); s.spr.texture=gpu.tex[s.key][fi];
+      const t=Math.min(1,s.age/s.max), pk=s.peakAt;                                          // soft-birth envelope (ported verbatim)
+      s.spr.alpha=Math.max(0,Math.min(1, t<pk ? s.op0+(s.opPeak-s.op0)*Math.pow(t/pk,0.6) : s.opPeak+(s.op1-s.opPeak)*Math.pow((t-pk)/(1-pk),1.6) ));
+    }
+    if(A.length || gpu.wasNonEmpty){ try{ gpu.app.renderer.render(gpu.stage); }catch(e){} }   // one extra render after the last sprite clears the canvas
+    gpu.wasNonEmpty=A.length>0;
+  }
   // C1 GROUND DIM (F3): soft radial darkening under COMBAT+ / SPECTACLE effects only (never ambient, never reduced-motion)
   let gdim=null;
   function groundDim(cxp,cyp,radius){ if(reducedMotion()) return; const {x,y}=local(cxp,cyp); gdim={ x, y, r:radius*1.8, peak:0.25, age:0, rise:0.08*vfxT(), life:0.5*vfxT() }; wake(); }
@@ -8233,7 +8287,8 @@ const VFX = (()=>{
     if(!haveSpr('venom_1')) return false;
     addSpr({ img:sprImg[v], x, y:y-W*0.25, size:W*1.7, sc0:0.9,sc1:1.0, op0:0,opPeak:0.6,op1:0, peakAt:0.35, life:0.7*vfxT(), driftY:W*0.2, halo:true }); return true; }
   function sprSurge(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), v=pick('surge',2);
-    groundDim(cxp,cyp,W*2.1);   // C1: surge = combat weight
+    groundDim(cxp,cyp,W*2.1);   // C1: surge = combat weight (stays Canvas2D this phase; S5 moves it into the GPU layer)
+    if(gpu.enabled && gpu.texReady && gpuSpawnSurge(x, y, W*2.2, (Math.random()-.5)*0.4, 0.5*vfxT())) return true;   // T70-P0: GPU path when available; else Canvas2D unchanged
     if(haveSheet(v)) return addSheetSpr(v, x, y, W*2.2, { opPeak:0.95, life:0.5*vfxT(), rot:(Math.random()-.5)*0.4 });
     if(!haveSpr('surge_1')) return false;
     addSpr({ img:sprImg[v], x,y, size:W*2.1, sc0:0.8,sc1:1.2, op0:0,opPeak:0.9,op1:0, peakAt:0.2, life:0.45*vfxT(), rot:(Math.random()-.5)*0.5, halo:true }); return true; }
@@ -8276,12 +8331,13 @@ const VFX = (()=>{
     drawSprites(dt);   // T67 painted sprite layer (smoke source-over, kit additive) — on top of particles/bolts
     if(sprites.length||bolts.length||parts.length) bloomPass();   // T69A: bloom only when additive content exists → empty/reduced-motion frames skip it cleanly
     drawGroundDim(dt);   // T69A: dim LAST (destination-over) → behind the glow, excluded from the bloom source
+    gpuTick(dt);   // T70-P0: drive the GPU overlay from the SAME loop, inside step's try/catch (one loop owns time; the T69A guarantee covers it)
   }
   function step(now){
     const dt=Math.min(0.05,(now-last)/1000); last=now;                 // T69A: dt clamp (≤50ms) + fresh last → a wake after any idle gap can't mass-expire (verified NOT the round-death cause; kept structural)
     try{ frame(dt, now); }
     catch(e){}                                                         // T69A ROOT FIX: a thrown draw must NEVER kill the loop. one thrown frame used to leave raf truthy → wake() could never restart → all later-round effects dead. frame() re-clears every canvas state at its top, so a dropped frame leaks nothing.
-    finally{ if(parts.length||bolts.length||tint||sprites.length||gdim) raf=requestAnimationFrame(step);   // ALWAYS re-arm while content lives → raf can never get stuck truthy after a throw
+    finally{ if(parts.length||bolts.length||tint||sprites.length||gdim||gpu.sprites.length) raf=requestAnimationFrame(step);   // ALWAYS re-arm while content lives (incl. live GPU sprites) → raf can never get stuck truthy after a throw
              else { raf=0; try{ cx.clearRect(0,0,canvas.width,canvas.height); }catch(_){} } }
   }
   function poly(pts){ cx.beginPath(); cx.moveTo(pts[0].x,pts[0].y); for(let i=1;i<pts.length;i++) cx.lineTo(pts[i].x,pts[i].y); cx.stroke(); }
@@ -8315,6 +8371,10 @@ const VFX = (()=>{
            preloadSprites, preloadSheets, spritesReady:()=>spritesReady, sheetsReady:()=>sheetsReady, sprCount:()=>sprites.length,
            frameOf:(i)=>{ const s=sprites[i]; return s?{sheet:s.sheet,frame:s.frame,dir:s.dir,mode:s.mode}:null; },   // G2 instrumentation: read live frame index
            setBloom:(v)=>{ bloomOn=!!v; }, bloomState:()=>({ok:BLOOM_OK,on:bloomOn}),   // G3 A/B proof hook (bloom on/off)
+           gpu:{ get renderer(){return gpu.renderer;}, get enabled(){return gpu.enabled;}, get disabled(){return gpu.disabled;}, get texReady(){return gpu.texReady;}, get live(){return gpu.sprites.length;},   // T70-P0 (1c) A/B + instrumentation
+                 toggle(){ if(!gpu.disabled) gpu.enabled=!gpu.enabled; return gpu.enabled; },
+                 __simInitFail(){ try{ if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu._poison=true; return gpuInit(); },   // G3: force the real init throw → floor
+                 __reinit(){ gpu._poison=false; gpu.disabled=false; gpu.app=null; return gpuInit(); } },
            sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
