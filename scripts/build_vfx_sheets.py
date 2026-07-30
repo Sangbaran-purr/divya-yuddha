@@ -164,7 +164,53 @@ def build_rung_still(name, cfg, rk):
     Image.fromarray(treat(np.asarray(im), m), "RGB").save(out, "JPEG", quality=85)
     return os.path.getsize(out)
 
+# ---- A5: SEQ MODE — ingest a pre-rendered PNG sequence (animate_vfx.py output) → packed sheet + MV ----
+# Same standing law as the clip pipeline: per-frame black clamp + radial mask (treat), rung-laddered
+# cells (lo 384 / md 448 / hi 512), MV via Farneback at 384px. The sequence is authored at composite
+# resolution (1254²); seq mode owns the downscale to each rung. Grid derives from the frame count
+# (27 → 9×3, exact). Sheets are JPEG-in-.png (runtime bakeAlpha adds luminance-alpha, T72).
+SEQDIR = os.path.join(ROOT, "assets/vfx/seq")
+SEQ_RUNGS = { "lo": {"cell":384, "dir":SHEETS},
+              "md": {"cell":448, "dir":os.path.join(SHEETS,"md")},
+              "hi": {"cell":512, "dir":os.path.join(SHEETS,"hi")} }
+SEQ_MVCELL = 384
+def _seq_grid(n):
+    cols = min(9, n); rows = math.ceil(n / cols); return cols, rows   # compact; runtime derives cols from width/CELL
+def build_seq(name):
+    fdir = os.path.join(SEQDIR, name)
+    files = sorted(f for f in os.listdir(fdir) if f.startswith("frame_") and f.endswith(".png"))
+    if not files:
+        print(f"*** no frame_*.png in {fdir} — run animate_vfx.py {name} first ***"); sys.exit(1)
+    frames = [np.asarray(Image.open(os.path.join(fdir, f)).convert("RGB")) for f in files]
+    n = len(frames); cols, rows = _seq_grid(n)
+    src_res = frames[0].shape[0]
+    print(f"=== SEQ '{name}': {n} frames @ {src_res}px source → {cols}x{rows} grid, rungs lo/md/hi + MV{SEQ_MVCELL} ===")
+    for rk, cfg in SEQ_RUNGS.items():
+        cell = cfg["cell"]; mask = radial_mask(cell); os.makedirs(cfg["dir"], exist_ok=True)
+        sheet = Image.new("RGB", (cols*cell, rows*cell), (0,0,0))
+        for i, fr in enumerate(frames):
+            im = np.asarray(Image.fromarray(fr).resize((cell,cell), Image.LANCZOS))
+            sheet.paste(Image.fromarray(treat(im, mask), "RGB"), ((i%cols)*cell, (i//cols)*cell))
+        out = os.path.join(cfg["dir"], f"vfx_{name}.png"); sheet.save(out, "JPEG", quality=Q)
+        # MV: Farneback flow between adjacent frames (same law as the clip MV; last frame neutral).
+        grays = [np.asarray(Image.fromarray(fr).convert("L").resize((SEQ_MVCELL,SEQ_MVCELL), Image.LANCZOS)) for fr in frames]
+        fscale = 384.0/SEQ_MVCELL; mvsheet = Image.new("RGB", (cols*SEQ_MVCELL, rows*SEQ_MVCELL), (128,128,0))
+        for i in range(n):
+            enc = np.zeros((SEQ_MVCELL,SEQ_MVCELL,3), np.uint8); enc[...,0]=128; enc[...,1]=128
+            if i < n-1:
+                flow = cv2.calcOpticalFlowFarneback(grays[i], grays[i+1], None, 0.5,3,15,3,5,1.2,0)
+                fx = np.clip(flow[...,0]*fscale, -MV_RANGE, MV_RANGE); fy = np.clip(flow[...,1]*fscale, -MV_RANGE, MV_RANGE)
+                enc[...,0]=np.clip(128+fx/MV_RANGE*127,0,255).astype(np.uint8); enc[...,1]=np.clip(128+fy/MV_RANGE*127,0,255).astype(np.uint8)
+            mvsheet.paste(Image.fromarray(enc,"RGB"), ((i%cols)*SEQ_MVCELL, (i//cols)*SEQ_MVCELL))
+        mvd = os.path.join(cfg["dir"], "mv"); os.makedirs(mvd, exist_ok=True); mvsheet.save(os.path.join(mvd, f"vfx_{name}.png"), "PNG")
+        sz = os.path.getsize(out); mvsz = os.path.getsize(os.path.join(mvd, f"vfx_{name}.png"))
+        print(f"  {rk}: sheets/{rk if rk!='lo' else ''}vfx_{name}.png {sz/1024:.0f}KB  {cols*cell}x{rows*cell}  + mv {mvsz/1024:.0f}KB  decoded={(cols*cell*rows*cell*4)/1048576:.1f}MB")
+    print(f"  SEQ '{name}' DONE ({n} frames, one grid 9x3 no blanks)")
+
 if __name__ == "__main__":
+    if len(sys.argv) > 2 and sys.argv[1] == "seq":
+        if cv2 is None: print("*** cv2 missing: pip install opencv-python-headless ***"); sys.exit(1)
+        build_seq(sys.argv[2]); sys.exit(0)
     if len(sys.argv) > 1 and sys.argv[1] == "t74":
         if cv2 is None: print("*** cv2 missing ***"); sys.exit(1)
         for rk, cfg in RUNGS.items():

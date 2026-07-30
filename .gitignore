@@ -1,1 +1,4 @@
 .DS_Store
+
+# animate_vfx.py per-frame intermediates — regenerable (deterministic A3 seed) from the tracked layers
+assets/vfx/seq/
