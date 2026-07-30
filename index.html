@@ -8165,12 +8165,12 @@ const VFX = (()=>{
   function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
   // ===================== FLIPBOOK SHEETS (T68F: 384px, per-sheet grid, real-time playback + frame blending) =====================
   let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoading={};   // T81: per-key load tracking (was a global sheetLoadN counter — lazy loading is incremental per match)
-  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff','shield','venom','chaos_wash','chaos_mark'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
+  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff','shield','venom','chaos_wash','chaos_mark','pashupatastra'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
   const LANDING_SHEET={ devas:'c1a_deva', asuras:'landing_asura', vanaras:'landing_vanara', nagas:'landing_naga' };   // faction → landing sheet key (all four ship as of T81)
-  const SHEET_GRID_CFG={ brahmastra:{cols:8, rows:5}, gayatri:{cols:6, rows:6}, chaos_wash:{cols:6, rows:4} };   // T78/T79: RECTANGULAR row-plate sheets — grid can't derive from width/SHEET_CELL (non-square cells); cw/ch = sheetDims/(cols,rows). Square sheets omit this (cw=ch=SHEET_CELL).
+  const SHEET_GRID_CFG={ brahmastra:{cols:8, rows:5}, gayatri:{cols:6, rows:6}, chaos_wash:{cols:6, rows:4}, pashupatastra:{cols:8, rows:5} };   // T78/T79: RECTANGULAR row-plate sheets — grid can't derive from width/SHEET_CELL (non-square cells); cw/ch = sheetDims/(cols,rows). Square sheets omit this (cw=ch=SHEET_CELL).
   let SHEET_CELL=RUNG[vfxRung].cell;   // T74: rung-dependent sheet cell (hi 512 / md 448 / lo 384). Frame count derives from the sheet dims / cell, so 64f/48f/32f are auto-detected.
   const SHEET_FPS=16;   // F1b: 16fps base ×vfxT → the window plays at ~1:1 real tempo
-  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward', shield:'forward', venom:'forward', chaos_wash:'forward', chaos_mark:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward (plays through, clamps at the empty last frame, dies at life)
+  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward', shield:'forward', venom:'forward', chaos_wash:'forward', chaos_mark:'forward', pashupatastra:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward (plays through, clamps at the empty last frame, dies at life)
   const sheetFrameCanvas=offc2(512,512);   // B4: ONE reusable canvas (max cell 512) for draw-time aura tint; draws consume only the SHEET_CELL sub-region
   function haveSheet(key){ return !!sheetImg[key]; }
   // T81: LOAD ONE SHEET, idempotent per key (skips if already loaded or in-flight). bakeAlpha + grid derivation as before.
@@ -8193,7 +8193,7 @@ const VFX = (()=>{
     if(LEGACY_VFX){ SHEET_NAMES.forEach(loadSheet); return; }   // A/B rollback: blanket-load the whole catalog
     loadSheet(LANDING_SHEET[facA]); loadSheet(LANDING_SHEET[facB]);
     if(facA==='devas' || facB==='devas'){ loadSheet('brahmastra'); loadSheet('gayatri'); loadSheet('vajra'); }   // T78/T79/T82 Deva-only cards
-    if(facA==='asuras' || facB==='asuras'){ loadSheet('chaos_wash'); loadSheet('chaos_mark'); }   // T87 Asura-only Chaos Surge pair
+    if(facA==='asuras' || facB==='asuras'){ loadSheet('chaos_wash'); loadSheet('chaos_mark'); loadSheet('pashupatastra'); }   // T87 Asura-only Chaos Surge pair
   }
   function addSheetSpr(key, x, y, size, o){ if(reducedMotion()||!sheetImg[key]) return false;
     const mode=SHEET_MODE[key]||'forward', nf=(sheetGrid[key]||{}).frames||24;
@@ -8581,6 +8581,9 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     return addSheetSpr('chaos_wash', x, y, boardW, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 24/SHEET_FPS*vfxT() }); }
   function sprChaosMark(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
     return addSheetSpr('chaos_mark', x, y, W*1.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 12/SHEET_FPS*vfxT() }); }
+  // T89: PASHUPATASTRA — Brahmastra's inverse board strike (violet devouring vortex) over the enemy rows. Same row-plate machinery, 40f one-shot.
+  function sprPashupatastra(cxp,cyp,boardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp);
+    return addSheetSpr('pashupatastra', x, y, boardW, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 40/SHEET_FPS*vfxT() }); }
   function sprBloom(cxp,cyp,kind,cardW){ if(reducedMotion()||!ready||!haveSpr('bloom_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), k=pick('bloom',2);
     groundDim(cxp,cyp,W*1.6);   // C1: bloom = combat hit
     addSpr({ img:(kind==='damage'?imgTint(k,'damage'):sprImg[k]), x,y, size:W*2.0, sc0:0.6,sc1:1.2, opPeak:1, crash:true, rot:Math.random()*6.28, anchorX:(/2$/.test(k)?0.4:0.5), anchorY:(/2$/.test(k)?0.6:0.5), ...envLife('bloom') }); return true; }   // T75: flash instant, afterglow breathes out (300ms)
@@ -8710,7 +8713,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
                  __simInitFail(){ try{ if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu._poison=true; return gpuInit(); },   // G3: force the real init throw → floor
                  __reinit(){ gpu._poison=false; gpu.disabled=false; gpu.app=null; return gpuInit(); },
                  __forceBackend(pref){ gpu._pref=pref; try{ if(gpu.gcanvas){ gpu.gcanvas.remove(); gpu.gcanvas=null; } if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu.sprites.length=0; gpu.particles.length=0; return gpuInit(); } },   // G2: force webgl to prove the GLSL variants run
-           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark };
+           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark, sprPashupatastra };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
 // T88 CAUSALITY: every destroy/damage the player sees must answer WHO did it (source) before TO WHOM (the target beats).
@@ -8746,6 +8749,7 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
     if(LEGACY_VFX && isBody && src) VFX.cardLand(src.cx, src.rect.top+src.rect.height/2);   // (a) card-lands dust + embers — same beat as the clash SFX [T77-gated]
     if(LEGACY_VFX && isAstra){ const tp=halfCenterClient(1-ownerPiOfUid(ev.sourceUid)); if(tp){ VFX.astraBurst(tp.x, tp.y); if(tier==='combat') vignetteFlash(); if(c.r==='M') VFX.mythic(tp.x, tp.y); } }   // (b) burst; combat → screen-edge vignette; Mythic → lightning + flash + smoke [T77-gated; astra hit-stop/shake stay below]
     if(isAstra && c && c.id==='brahmastra'){ const oh=document.querySelector('.half.opp'); if(oh){ const r=oh.getBoundingClientRect(); VFX.sprBrahmastra(r.left+r.width/2, r.top+r.height*0.5, r.width*1.04); } }   // T78: BOARD EFFECT (NEW pipeline, ungated) — the golden pillar row-plate over the enemy rows (Brahmastra destroys ALL enemy Units, engine-verified). Its strike beat rides the unconditional spectacle hit-stop below.
+    if(isAstra && c && c.id==='pashupata'){ const oh=document.querySelector('.half.opp'); if(oh){ const r=oh.getBoundingClientRect(); VFX.sprPashupatastra(r.left+r.width/2, r.top+r.height*0.5, r.width*1.04); } }   // T89: BOARD EFFECT (NEW pipeline, ungated) — the violet devouring vortex over the enemy rows (Pashupatastra = AoE board damage, engine-verified; pierces shields). The vortex tear-open (beat 2) rides the spectacle hit-stop below.
     if(c && c.t==='mantra' && c.id==='gayatri'){ const cst=ownerPiOfUid(ev.sourceUid), mh=document.querySelector(cst===1?'.half.opp':'.half.me'); if(mh){ const r=mh.getBoundingClientRect(); VFX.sprGayatri(r.left+r.width/2, r.top+r.height*0.5, r.width*1.04); } }   // T79: MANTRA row wash (NEW pipeline, ungated) — the serene sigil/lotus over the CASTER's (friendly) half; Gayatri revives the lowest friendly Unit shielded (engine-verified). No hit-stop coupling.
     // T67 painted sprite layer (falls back to procedural when a sprite isn't loaded)
     if(isBody && src){ const fac=cardHomeFaction(c) || (G.players[ownerPiOfUid(ev.sourceUid)]||{}).faction || 'devas', isHero=(c.t==='hero');

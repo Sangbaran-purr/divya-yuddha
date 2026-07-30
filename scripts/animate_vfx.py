@@ -270,6 +270,38 @@ BRIEFS = {
         "opacity": [[1, 3, 0.0, 0.35, "out"], [4, 8, 0.35, 0.35, "lin"], [9, 12, 0.35, 0.0, "out"]] },
     ],
   },
+
+  # PASHUPATASTRA — Brahmastra's INVERSE: it CONSUMES. Everything converges inward (ash drawn to the void), the vortex
+  # breathes wider then SNAPS SHUT. Same mythic weight + four-beat skeleton, mirrored flow. 40 frames = 1667ms @24fps
+  # (~2.5s at 16fps, matching Brahmastra), one-shot, 1920×640 cover-fit. The VIOLET is the F2 exemption (nothing else wears it).
+  # Beat-3 L1 breathe = OPACITY (op_sine dip 1.0→0.92→1.0) — scale_sine can't do a partial breathe (it holds a scale ramp on
+  # either side); reported. drift:'inward' (radial inverse) + rotate (15° churn) are the new vocabulary.
+  "pashupatastra": {
+    "seed": 0x9A54BA, "fps": 24, "frames": 40, "one_shot": True, "layers_dir": "pashupatastra", "canvas": (1920, 640),
+    "layers": [
+      # L1 VORTEX — beat 2 TEARS open (2-frame snap + scale 0.6→1.0), beat 3 holds + breathes, beat 4 COLLAPSES to a point
+      # (scale 1.0→0.15). Slow rotation 15° across its whole life (slow reads as massive).
+      { "src": "L1_vortex", "kind": "xform",
+        "opacity": [[11, 12, 0.0, 1.0, "out"], [13, 28, 1.0, 1.0, "lin"], [29, 36, 1.0, 0.0, "in"]],
+        "op_sine": [15, 28, 1.0, -0.08],   # beat-3 breathe: opacity dip 1.0→0.92→1.0
+        "scale":   [[11, 14, 0.6, 1.0, "out"], [15, 28, 1.0, 1.0, "lin"], [29, 36, 1.0, 0.15, "in"]],
+        "rotate":  [11, 36, 15] },
+      # L2 ARCS — beat 3 erratic flicker (the world crackling as it is unmade), dead by 26.
+      { "src": "L2_arcs", "kind": "xform",
+        "op_keys": [15, [0.8, 0.4, 0.7, 0.35, 0.55, 0.3, 0.6, 0.25, 0.4, 0.15, 0.2, 0.0]],   # frames 15-26
+        "scale":   [[15, 26, 1.0, 1.04, "lin"]] },
+      # L3 ASH — INWARD-drifting particles in two cohorts: early (20%, beat 1, slow pull) + main (80%, beat 3, fast consumption).
+      # Deaths near the centre are CORRECT (ash vanishing into the void), all clamped dead by 32.
+      { "src": "L3_ash", "kind": "particles", "drift": "inward",
+        "cohorts": [ {"frac": 0.2, "emit_frames": [3, 10],  "speed_px_s": [20, 40],  "life_frames": [12, 22]},
+                     {"frac": 0.8, "emit_frames": [15, 20], "speed_px_s": [60, 110], "life_frames": [8, 16]} ],
+        "emit_frames": [3, 20], "inner_radius": 1.0, "inner_boost": 1.0, "speed_px_s": [20, 110], "life_frames": [8, 22],
+        "jitter_deg": 12.0, "fade_frames": 2, "die_by": 32, "lum_thresh": 44, "min_area": 3 },
+      # L4 GLOW — beat 1 dread rises SLOWLY (ease-in, the inverse of Brahmastra's snap), deepens, holds, lifts LAST (black at 40).
+      { "src": "L4_glow", "kind": "xform",
+        "opacity": [[1, 10, 0.0, 0.5, "in"], [11, 14, 0.5, 0.7, "lin"], [15, 28, 0.7, 0.7, "lin"], [29, 40, 0.7, 0.0, "out"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
@@ -287,10 +319,13 @@ def _seg_val(segs, f, default_before, hold):
             return vs + (ve - vs) * EASE[ez](max(0.0, min(1.0, t)))
     return default_before                                     # a gap between segments (opacity → 0)
 
-def _warp(rgb, s, dx, dy, anchor="center"):
-    """Scale by s (pivot = centre, or bottom-centre for anchor='bottom' → streams grow upward), then translate (dx,dy)."""
+def _warp(rgb, s, dx, dy, anchor="center", rot=0.0):
+    """Scale by s (pivot centre / bottom-centre), optional rotation `rot`° about the pivot, then translate (dx,dy)."""
     h, w = rgb.shape[:2]; cx = w / 2.0; cy = (h if anchor == "bottom" else h / 2.0)
-    M = np.float32([[s, 0, cx - s * cx + dx], [0, s, cy - s * cy + dy]])
+    if rot == 0.0:
+        M = np.float32([[s, 0, cx - s * cx + dx], [0, s, cy - s * cy + dy]])   # UNCHANGED (byte-identical for every prior effect)
+    else:
+        M = cv2.getRotationMatrix2D((cx, cy), rot, s); M[0, 2] += dx; M[1, 2] += dy   # T89: scale + rotate about the pivot (getRotationMatrix2D(_,0,s) == the manual matrix above)
     return cv2.warpAffine(rgb, M, (w, h), flags=cv2.INTER_LINEAR, borderValue=(0, 0, 0))
 
 def _fit_cover(rgb, W, H):
@@ -319,6 +354,16 @@ def _extract_particles(rgb, lum_thresh, min_area):
         out.append({"patch": patch * mask, "x0": x, "y0": y, "w": ww, "h": hh,
                     "cx": float(cent[i][0]), "cy": float(cent[i][1])})
     return out
+
+def _particle_vel(drift, ajit, spd, cx, cy, cx0, cy0):
+    """Per-drift velocity. radial=outward, inward=toward centre (T89 devour), down, up (default). Byte-identical to the inline forms."""
+    if drift == "radial":
+        ang = math.atan2(cy - cy0, cx - cx0) + ajit; return math.cos(ang)*spd, math.sin(ang)*spd
+    if drift == "inward":
+        ang = math.atan2(cy0 - cy, cx0 - cx) + ajit; return math.cos(ang)*spd, math.sin(ang)*spd
+    if drift == "down":
+        return math.sin(ajit)*spd, math.cos(ajit)*spd
+    return math.sin(ajit)*spd, -math.cos(ajit)*spd   # up
 
 def _add_patch(canvas, patch, ox, oy, op):
     """Additive paste of patch's top-left at (ox,oy), clipped to canvas, scaled by op."""
@@ -361,23 +406,27 @@ def render(name):
         ef0, ef1 = L["emit_frames"]; ir = L["inner_radius"] * rref; ib = L["inner_boost"]
         s0, s1 = L["speed_px_s"]; jit = math.radians(L["jitter_deg"]); l0, l1 = L["life_frames"]
         drift = L.get("drift", "up"); die_by = L.get("die_by", N)   # T83: radial-outward burst + a per-brief death-by frame (default N)
+        cohorts = L.get("cohorts")                                   # T89: [{frac,emit_frames,speed_px_s,life_frames}...] — assign each particle to a cohort (staggered waves). Gated → c1a (no cohorts) is byte-identical.
         for pt in blobs:
-            r = math.hypot(pt["cx"] - cx0, pt["cy"] - cy0)
-            inner = r <= ir
-            # centre-weighted burst: inner blobs are inner_boost× more likely to fire in frames ef0..ef0+1
-            choices = list(range(ef0, ef1 + 1))
-            weights = [(ib if (inner and fr <= ef0 + 1) else 1.0) for fr in choices]
-            pt["act"] = random.choices(choices, weights=weights, k=1)[0]
-            ajit = random.uniform(-jit, jit)                           # angle jitter (draw order PRESERVED = the old `theta`, so the up-drift path is byte-identical)
-            spd = random.uniform(s0, s1)
-            if drift == "radial":                                      # radially OUTWARD from centre (T83 damage burst)
-                ang = math.atan2(pt["cy"] - cy0, pt["cx"] - cx0) + ajit
-                pt["vx"] = math.cos(ang) * spd; pt["vy"] = math.sin(ang) * spd
-            elif drift == "down":                                      # DOWNWARD seep (T86 venom — inverse of 'up')
-                pt["vx"] = math.sin(ajit) * spd; pt["vy"] = math.cos(ajit) * spd
-            else:                                                      # upward (default: c1a / gayatri, unchanged)
-                pt["vx"] = math.sin(ajit) * spd; pt["vy"] = -math.cos(ajit) * spd
-            pt["life"] = max(1, min(random.randint(l0, l1), die_by - pt["act"]))   # clamp: dead by `die_by` (default N). VETO "all dead / final frame black". die_by=N leaves c1a/gayatri unchanged.
+            if cohorts:                                              # COHORT path (Pashupatastra's early/main ash) — one assignment draw, then that cohort's window/speed/life
+                rc = random.random(); cum = 0.0; co = cohorts[-1]
+                for cc in cohorts:
+                    cum += cc["frac"]
+                    if rc <= cum: co = cc; break
+                cef0, cef1 = co["emit_frames"]; cs0, cs1 = co["speed_px_s"]; cl0, cl1 = co["life_frames"]
+                pt["act"] = random.randint(cef0, cef1)
+                ajit = random.uniform(-jit, jit); spd = random.uniform(cs0, cs1)
+                pt["vx"], pt["vy"] = _particle_vel(drift, ajit, spd, pt["cx"], pt["cy"], cx0, cy0)
+                pt["life"] = max(1, min(random.randint(cl0, cl1), die_by - pt["act"]))
+            else:                                                    # SINGLE-WINDOW path (c1a / gayatri / damage / buff / venom) — UNCHANGED, byte-identical draw order
+                r = math.hypot(pt["cx"] - cx0, pt["cy"] - cy0); inner = r <= ir
+                choices = list(range(ef0, ef1 + 1))                  # centre-weighted burst: inner blobs are inner_boost× more likely in frames ef0..ef0+1
+                weights = [(ib if (inner and fr <= ef0 + 1) else 1.0) for fr in choices]
+                pt["act"] = random.choices(choices, weights=weights, k=1)[0]
+                ajit = random.uniform(-jit, jit)                     # angle jitter (draw order PRESERVED = the old `theta`)
+                spd = random.uniform(s0, s1)
+                pt["vx"], pt["vy"] = _particle_vel(drift, ajit, spd, pt["cx"], pt["cy"], cx0, cy0)
+                pt["life"] = max(1, min(random.randint(l0, l1), die_by - pt["act"]))   # clamp: dead by die_by (default N)
         parts_meta.append({"blobs": blobs, "fade": L["fade_frames"], "op_cap": L.get("op_cap", 1.0)})
 
     od = os.path.join(SEQ, name); os.makedirs(od, exist_ok=True)
@@ -415,7 +464,12 @@ def render(name):
                     xf0, xf1, xpx = L["drift_x"]
                     if f >= xf0:
                         dx = storm_sign * xpx * min(1.0, (f - xf0) / max(1, xf1 - xf0))
-                canvas += _warp(rgb, sc, dx, dy, L.get("scale_anchor", "center")).astype(np.float32) * op
+                rot = 0.0
+                if "rotate" in L:                               # T89: slow rotation [f0,f1,total_deg] across the layer's life (the vortex churns)
+                    rf0, rf1, rdeg = L["rotate"]
+                    if f >= rf0:
+                        rot = rdeg * min(1.0, (f - rf0) / max(1, rf1 - rf0))
+                canvas += _warp(rgb, sc, dx, dy, L.get("scale_anchor", "center"), rot).astype(np.float32) * op
             else:  # particles
                 fade = pm["fade"]; cap = pm["op_cap"]
                 for pt in pm["blobs"]:
