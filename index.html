@@ -8711,9 +8711,27 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
            sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
+// T88 CAUSALITY: every destroy/damage the player sees must answer WHO did it (source) before TO WHOM (the target beats).
+// destroy/damage events carry only the cause STRING (abilityName), not a sourceUid — so we match the cause to a board card.
+const GENERIC_CAUSES = new Set(['reduced to 0','Venom']);   // deaths from a sweep / venom drains are already legible via the PRECEDING damage/venom beat + the ☠/wetBadge/venom-tick vocabulary — attributing them again would double up.
+function sourcePosForCause(cause, snap){   // the acting SOURCE = a board Unit/Hero whose name equals the cause; return its (DOM-anchored) rect, else null
+  if(!cause || typeof G==='undefined' || !G || !G.players) return null;
+  for(const pi of [0,1]){ const p=G.players[pi]; if(!p) continue;
+    for(const u of [...(p.units||[]), ...(p.heroes||[])]){ if(u && !u.ghost && u.n===cause){ const q=posOf(u.uid, snap); if(q && q.el) return q; } } }
+  return null;
+}
+async function attributeSource(ev, evs, snap){   // ~520ms source beat (cpulse + callout AT the source), ONCE per cause, then the caller plays the target beats
+  const cause = ev.abilityName; if(!cause || GENERIC_CAUSES.has(cause)) return;
+  const pe = evs.find(e=>e.type==='play'); const act = pe && findCardByUid(pe.sourceUid);
+  if(act && act.n===cause) return;   // IMMEDIATE: the cause IS the card the player just played this action — the showcase/callout already named it (Vajra, Brahmastra, Vasuki, on-play destroyers). No extra beat.
+  if(ev!==evs.find(e=>(e.type==='damage'||e.type==='destroy') && e.abilityName===cause)) return;   // DELAYED/TRIGGERED, but attribute only ONCE per cause (the first of its damage/destroy events this action) — one Kumbhakarna beat, then all the victims.
+  const sp = sourcePosForCause(cause, snap);
+  if(sp){ cpulse(sp.el, 'choreo-src'); calloutAt(sp, cause); await cDelay(520); }   // the player watches the SOURCE flare and shout, THEN the victims resolve. Sourceless delayed causes (no board card by that name) get no beat — no worse than today, flagged for a ruling.
+}
 async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event slice, for the surviving-damage look-ahead (a same-uid destroy ⇒ killing blow ⇒ no tick)
   playEventSound(ev);
   const src = ev.sourceUid!=null ? posOf(ev.sourceUid, snap) : null;
+  if (ev.type==='destroy' || ev.type==='damage') await attributeSource(ev, evs, snap);   // T88: WHO did it, before the target beats below
   if (ev.type==='toast'){ factionToast(ev.abilityName, ev.text); await cDelay(620); return; }
   if (ev.type==='play'){
     const c=findCardByUid(ev.sourceUid); const isAstra = c && c.t==='astra';
