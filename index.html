@@ -8163,12 +8163,12 @@ const VFX = (()=>{
   function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
   // ===================== FLIPBOOK SHEETS (T68F: 384px, per-sheet grid, real-time playback + frame blending) =====================
   let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoading={};   // T81: per-key load tracking (was a global sheetLoadN counter — lazy loading is incremental per match)
-  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
+  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
   const LANDING_SHEET={ devas:'c1a_deva', asuras:'landing_asura', vanaras:'landing_vanara', nagas:'landing_naga' };   // faction → landing sheet key (all four ship as of T81)
   const SHEET_GRID_CFG={ brahmastra:{cols:8, rows:5}, gayatri:{cols:6, rows:6} };   // T78/T79: RECTANGULAR row-plate sheets — grid can't derive from width/SHEET_CELL (non-square cells); cw/ch = sheetDims/(cols,rows). Square sheets omit this (cw=ch=SHEET_CELL).
   let SHEET_CELL=RUNG[vfxRung].cell;   // T74: rung-dependent sheet cell (hi 512 / md 448 / lo 384). Frame count derives from the sheet dims / cell, so 64f/48f/32f are auto-detected.
   const SHEET_FPS=16;   // F1b: 16fps base ×vfxT → the window plays at ~1:1 real tempo
-  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward (plays through, clamps at the empty last frame, dies at life)
+  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward (plays through, clamps at the empty last frame, dies at life)
   const sheetFrameCanvas=offc2(512,512);   // B4: ONE reusable canvas (max cell 512) for draw-time aura tint; draws consume only the SHEET_CELL sub-region
   function haveSheet(key){ return !!sheetImg[key]; }
   // T81: LOAD ONE SHEET, idempotent per key (skips if already loaded or in-flight). bakeAlpha + grid derivation as before.
@@ -8185,6 +8185,7 @@ const VFX = (()=>{
   // the ≤2 factions' landing sheets, plus the two row plates IFF a Deva deck is present (Brahmastra + Gayatri are Deva-only, engine-verified).
   function loadMatchSheets(facA, facB){
     loadSheet('damage');   // T83: faction-agnostic — every match loads the shared damage tick
+    loadSheet('buff');     // T84: faction-agnostic — every match loads the shared buff surge
     if(LEGACY_VFX){ SHEET_NAMES.forEach(loadSheet); return; }   // A/B rollback: blanket-load the whole catalog
     loadSheet(LANDING_SHEET[facA]); loadSheet(LANDING_SHEET[facB]);
     if(facA==='devas' || facB==='devas'){ loadSheet('brahmastra'); loadSheet('gayatri'); loadSheet('vajra'); }   // T78/T79/T82 Deva-only cards
@@ -8561,6 +8562,9 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   // T83: shared DAMAGE TICK status sting — faction-agnostic, fires on SURVIVING damage at the hit unit. HALF-WEIGHT: drawn at W*1.4 (vs a landing's W*2.4 → ~⅓ the area) and the sheet opacities are capped (0.7/0.75/0.4) → ~¼ on-screen weight. 12f (~0.75s), the shortest.
   function sprDamage(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
     return addSheetSpr('damage', x, y, W*1.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 12/SHEET_FPS*vfxT() }); }
+  // T84: shared BUFF SURGE — damage's inverse (a small fast gain, golden upward blessing). Same half-weight draw (W*1.4), 12f. Fires on any power-GAIN tick at the gained unit.
+  function sprBuff(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    return addSheetSpr('buff', x, y, W*1.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 12/SHEET_FPS*vfxT() }); }
   function sprBloom(cxp,cyp,kind,cardW){ if(reducedMotion()||!ready||!haveSpr('bloom_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), k=pick('bloom',2);
     groundDim(cxp,cyp,W*1.6);   // C1: bloom = combat hit
     addSpr({ img:(kind==='damage'?imgTint(k,'damage'):sprImg[k]), x,y, size:W*2.0, sc0:0.6,sc1:1.2, opPeak:1, crash:true, rot:Math.random()*6.28, anchorX:(/2$/.test(k)?0.4:0.5), anchorY:(/2$/.test(k)?0.6:0.5), ...envLife('bloom') }); return true; }   // T75: flash instant, afterglow breathes out (300ms)
@@ -8690,7 +8694,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
                  __simInitFail(){ try{ if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu._poison=true; return gpuInit(); },   // G3: force the real init throw → floor
                  __reinit(){ gpu._poison=false; gpu.disabled=false; gpu.app=null; return gpuInit(); },
                  __forceBackend(pref){ gpu._pref=pref; try{ if(gpu.gcanvas){ gpu.gcanvas.remove(); gpu.gcanvas=null; } if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu.sprites.length=0; gpu.particles.length=0; return gpuInit(); } },   // G2: force webgl to prove the GLSL variants run
-           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage };
+           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
 async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event slice, for the surviving-damage look-ahead (a same-uid destroy ⇒ killing blow ⇒ no tick)
@@ -8747,9 +8751,10 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
         ft=ev.text||String(ev.amount); fk='down heavy'; hitStop=70; }   // cpulse+hit-stop+number STAY
       else if (ev.type==='venom'){ cpulse(pos.el,'impact'); if(LEGACY_VFX && !VFX.sprVenom(pos.cx, tcy, pos.rect.width)) fxDrip(pos); wetBadge(pos.el); ft='☠ '+(ev.amount||''); fk='venom'; }   // E6 venom body [T77-gated]; wetBadge + ☠ number STAY (venom state)
       else if (ev.type==='buff'){ cpulse(pos.el,'pumped');
-        if(LEGACY_VFX){ if(ev.abilityName==='Chaos Surge'){ VFX.sprSurge(pos.cx, tcy, pos.rect.width); }                   // E8 Chaos Surge flare [T77-gated]
-          else if(ev.abilityName==='Leap'){ fxRing(pos,'buff'); leapArcFromText(pos, ev.text); }                          // E9 leap streak [T77-gated]
-          else if(!VFX.sprAura(pos.cx, tcy, tfac, pos.rect.width)){ fxRing(pos,'buff'); } }                               // E1 buff aura [T77-gated]
+        if(LEGACY_VFX){ if(ev.abilityName==='Chaos Surge'){ VFX.sprSurge(pos.cx, tcy, pos.rect.width); }                   // E8 Chaos Surge flare [T77-gated legacy]
+          else if(ev.abilityName==='Leap'){ fxRing(pos,'buff'); leapArcFromText(pos, ev.text); }                          // E9 leap streak [T77-gated legacy]
+          else if(!VFX.sprAura(pos.cx, tcy, tfac, pos.rect.width)){ fxRing(pos,'buff'); } }                               // E1 buff aura [T77-gated legacy]
+        else if(!evs.some(e=>e.type==='play' && e.sourceUid===tgts[i])) VFX.sprBuff(pos.cx, tcy, pos.rect.width);   // T84: gain tick, generic (Chaos Surge/Leap/on-play/mid-board all funnel here). Suppressed for a unit PLAYED this action — its landing flare already fires on it (the only same-action-same-unit coincidence; Gayatri revive emits no buff).
         ft=ev.text||('+'+ev.amount); fk='up'; }                                                                          // cpulse + the +power number STAY
       else if (ev.type==='token'){ if(LEGACY_VFX && !VFX.sprVenom(pos.cx, tcy, pos.rect.width)) fxDrip(pos); wetBadge(pos.el); ft='☠'; fk='venom'; }   // [T77-gated]; wetBadge + ☠ STAY
       else if (ev.type==='shield'){ if(LEGACY_VFX && !VFX.sprShield(pos.cx, tcy, pos.rect.width)) fxRing(pos,'shield'); ft='🛡'; fk='note'; }   // E7 shield wrap [T77-gated]; 🛡 number + persistent shieldbadge STAY (shield state)

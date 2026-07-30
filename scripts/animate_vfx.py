@@ -168,6 +168,28 @@ BRIEFS = {
         "opacity": [[1, 3, 0.0, 0.4, "out"], [4, 7, 0.4, 0.4, "lin"], [8, 12, 0.4, 0.0, "out"]] },
     ],
   },
+
+  # BUFF SURGE — damage's INVERSE: a small fast BLESSING, same half-weight law (caps, short, quick exit) but motion RISES
+  # everywhere (damage bursts outward; buff streams upward). 12 frames = 500ms @24fps (~0.75s at 16fps), one-shot, 1254²
+  # square, 3 layers. L2 = particle extraction, UPWARD drift (not a burst). Every opacity capped (0.65/0.7/0.4).
+  "buff": {
+    "seed": 0xB4FF00, "fps": 24, "frames": 12, "one_shot": True, "layers_dir": "buff",
+    "layers": [
+      # L1 SURGE — RISES in (ease-out, not a snap — a blessing arrives), BOTTOM-anchored scale (streams grow upward), capped 0.65.
+      { "src": "L1_surge", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[1, 3, 0.0, 0.65, "out"], [4, 7, 0.65, 0.0, "in"]],
+        "scale":   [[1, 3, 0.9, 1.0, "out"]] },
+      # L2 MOTES — RISING motes (staggered 1-5, upward drift, NOT a burst), capped 0.7, dead by 11.
+      { "src": "L2_motes", "kind": "particles",
+        "emit_frames": [1, 5], "inner_radius": 1.0, "inner_boost": 1.0, "drift": "up",
+        "speed_px_s": [30, 70], "jitter_deg": 6.0, "life_frames": [5, 9], "fade_frames": 2,
+        "op_cap": 0.7, "die_by": 11, "lum_thresh": 40, "min_area": 3 },
+      # L3 GLOW — dark pulse capped 0.4, a subtle 6px upward LIFT across the hold, alive at 11, black at 12.
+      { "src": "L3_glow", "kind": "xform",
+        "opacity":  [[1, 3, 0.0, 0.4, "out"], [4, 8, 0.4, 0.4, "lin"], [9, 12, 0.4, 0.0, "out"]],
+        "drift_up": [4, 8, 6] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
@@ -185,9 +207,9 @@ def _seg_val(segs, f, default_before, hold):
             return vs + (ve - vs) * EASE[ez](max(0.0, min(1.0, t)))
     return default_before                                     # a gap between segments (opacity → 0)
 
-def _warp(rgb, s, dx, dy):
-    """Scale about centre by s, then translate by (dx,dy) px. cv2 affine (bilinear). Non-square safe."""
-    h, w = rgb.shape[:2]; cx, cy = w / 2.0, h / 2.0
+def _warp(rgb, s, dx, dy, anchor="center"):
+    """Scale by s (pivot = centre, or bottom-centre for anchor='bottom' → streams grow upward), then translate (dx,dy)."""
+    h, w = rgb.shape[:2]; cx = w / 2.0; cy = (h if anchor == "bottom" else h / 2.0)
     M = np.float32([[s, 0, cx - s * cx + dx], [0, s, cy - s * cy + dy]])
     return cv2.warpAffine(rgb, M, (w, h), flags=cv2.INTER_LINEAR, borderValue=(0, 0, 0))
 
@@ -300,7 +322,12 @@ def render(name):
                     sc = base + amp * math.sin(ph * math.pi)
                 else:
                     sc = _seg_val(L.get("scale", []), f, 1.0, hold=True)
-                canvas += _warp(rgb, sc, 0.0, 0.0).astype(np.float32) * op
+                dy = 0.0
+                if "drift_up" in L:                             # subtle upward positional lift across a span [f0,f1,total_px]
+                    df0, df1, dpx = L["drift_up"]
+                    if f >= df0:
+                        dy = -dpx * min(1.0, (f - df0) / max(1, df1 - df0))
+                canvas += _warp(rgb, sc, 0.0, dy, L.get("scale_anchor", "center")).astype(np.float32) * op
             else:  # particles
                 fade = pm["fade"]; cap = pm["op_cap"]
                 for pt in pm["blobs"]:
