@@ -303,30 +303,33 @@ BRIEFS = {
     ],
   },
 
-  # SUDARSHANA CHAKRA — the spinning target strike (second Deva Mythic; the rotate vocabulary's showcase). Target-anchored
-  # like Vajra: square, source-res, 18f one-shot. It is a REMOVAL, not a kill — the discus descends, spins through the cut,
-  # and is gone; the hero vanishes from its row. T92 STROBE FIX A (owner ruling): rotation 84° across frames 1-12
-  # (~7.6°/frame, under a tooth-gap) so the serrated rim TRACKS frame-to-frame instead of aliasing (the 40°/frame veto).
+  # SUDARSHANA CHAKRA — the THROWN spinning discus (second Deva Mythic; the rotate + squash_y vocabulary showcase). It is
+  # HURLED flat across the board: a face-on serrated disc spinning in its own plane, foreshortened by squash_y 0.35 to an
+  # ellipse (frisbee perspective), that flies to the struck hero and BITES (sparks + glow at arrival). Target-strike class
+  # (square, source-res, 18f one-shot). TWO PHASES: FLIGHT f1-8 (squashed disc + trail only, no sparks/glow) → IMPACT f9-18
+  # (disc passes THROUGH + radial spark burst + glow bloom). STROBE FIX A stands: rotation 84° across f1-12 (~7.6°/frame,
+  # under a tooth-gap) so the rim TRACKS during flight. The cross-board TRAVEL is a RUNTIME concern (addSheetSpr travel) —
+  # the compositor renders the disc IN PLACE, squashed + spinning; the runtime carries it from the caster's half to the target.
   "sudarshana": {
     "seed": 0x5DA12A, "fps": 24, "frames": 18, "one_shot": True, "layers_dir": "sudarshana",
     "layers": [
-      # L1 DISCUS — descends & strikes (f1-2 arrival snap + scale 0.8→1.0), holds spinning through the cut, gone by 12.
-      { "src": "L1_discus", "kind": "xform",
-        "opacity": [[1, 2, 0.0, 1.0, "out"], [3, 9, 1.0, 1.0, "lin"], [10, 12, 1.0, 0.0, "in"]],
-        "scale":   [[1, 3, 0.8, 1.0, "out"], [4, 12, 1.0, 1.04, "lin"]],
+      # L1 DISCUS — FLIGHT: 2-frame rise to 0.85, spins as a squashed (0.35) ellipse through f8; IMPACT: passes THROUGH (opacity→0 by 12).
+      { "src": "L1_discus", "kind": "xform", "squash_y": 0.35,
+        "opacity": [[1, 2, 0.0, 0.85, "out"], [3, 8, 0.85, 0.85, "lin"], [9, 12, 0.85, 0.0, "in"]],
+        "scale":   [[1, 3, 0.9, 1.0, "out"], [4, 12, 1.0, 1.05, "lin"]],
         "rotate":  [1, 12, 84] },
-      # L2 TRAIL — the spin-blur ring, tracks the discus in lockstep (MATCHED rotation), lags on arrival + lingers 2f past.
-      { "src": "L2_trail", "kind": "xform",
-        "opacity": [[2, 4, 0.0, 0.85, "out"], [5, 10, 0.85, 0.6, "lin"], [11, 14, 0.6, 0.0, "in"]],
+      # L2 TRAIL — the squashed (0.35) spin-blur ring, MATCHED rotation, 0.6, lags the disc on arrival + lingers 2f past.
+      { "src": "L2_trail", "kind": "xform", "squash_y": 0.35,
+        "opacity": [[2, 3, 0.0, 0.6, "out"], [4, 10, 0.6, 0.6, "lin"], [11, 14, 0.6, 0.0, "in"]],
         "scale":   [[2, 14, 1.0, 1.06, "lin"]],
         "rotate":  [1, 12, 84] },
-      # L3 SPARKS — RADIAL burst at the strike instant (emit f3-5), consumed outward, dead by 12.
+      # L3 SPARKS — IMPACT ONLY: RADIAL burst at the BITE (emit f9-11, the T91 numbers), consumed outward, dead by 18. NOT squashed (a round bite).
       { "src": "L3_sparks", "kind": "particles", "drift": "radial",
-        "emit_frames": [3, 5], "inner_radius": 1.0, "inner_boost": 1.0, "speed_px_s": [80, 150], "life_frames": [6, 12],
-        "jitter_deg": 14.0, "fade_frames": 2, "die_by": 12, "lum_thresh": 44, "min_area": 3 },
-      # L4 GLOW — blooms with the strike, holds, the ONLY linger (alive at f17, black at f18).
+        "emit_frames": [9, 11], "inner_radius": 1.0, "inner_boost": 1.0, "speed_px_s": [80, 150], "life_frames": [6, 12],
+        "jitter_deg": 14.0, "fade_frames": 2, "die_by": 18, "lum_thresh": 44, "min_area": 3 },
+      # L4 GLOW — IMPACT ONLY: rises f9-12 to 0.5 at the bite, lingers, black at 18. NOT squashed (a round bloom).
       { "src": "L4_glow", "kind": "xform",
-        "opacity": [[1, 4, 0.0, 0.55, "out"], [5, 10, 0.55, 0.55, "lin"], [11, 18, 0.55, 0.0, "out"]] },
+        "opacity": [[9, 12, 0.0, 0.5, "out"], [13, 15, 0.5, 0.5, "lin"], [16, 18, 0.5, 0.0, "out"]] },
     ],
   },
 }
@@ -346,13 +349,19 @@ def _seg_val(segs, f, default_before, hold):
             return vs + (ve - vs) * EASE[ez](max(0.0, min(1.0, t)))
     return default_before                                     # a gap between segments (opacity → 0)
 
-def _warp(rgb, s, dx, dy, anchor="center", rot=0.0):
-    """Scale by s (pivot centre / bottom-centre), optional rotation `rot`° about the pivot, then translate (dx,dy)."""
+def _warp(rgb, s, dx, dy, anchor="center", rot=0.0, squash_y=1.0):
+    """Scale by s (pivot centre / bottom-centre), optional rotation `rot`° about the pivot, then translate (dx,dy).
+    T92-amend: optional post-rotate vertical squash_y about the pivot — rotate IN-PLANE FIRST, then foreshorten to an
+    ellipse (frisbee perspective). squash_y==1.0 → the matrix is byte-identical to before (every prior effect, incl. the
+    rot==0 fast path, is untouched)."""
     h, w = rgb.shape[:2]; cx = w / 2.0; cy = (h if anchor == "bottom" else h / 2.0)
     if rot == 0.0:
         M = np.float32([[s, 0, cx - s * cx + dx], [0, s, cy - s * cy + dy]])   # UNCHANGED (byte-identical for every prior effect)
     else:
         M = cv2.getRotationMatrix2D((cx, cy), rot, s); M[0, 2] += dx; M[1, 2] += dy   # T89: scale + rotate about the pivot (getRotationMatrix2D(_,0,s) == the manual matrix above)
+    if squash_y != 1.0:                                                         # T92-amend: foreshorten AFTER rotate → the in-plane spin reads as an ellipse in perspective
+        S = np.float32([[1.0, 0.0, 0.0], [0.0, squash_y, cy * (1.0 - squash_y)]])   # vertical squash about the pivot cy
+        M = (S @ np.vstack([M, [0.0, 0.0, 1.0]]))[:2]                           # S · [scale/rotate/translate] — squash composes LAST (order matters)
     return cv2.warpAffine(rgb, M, (w, h), flags=cv2.INTER_LINEAR, borderValue=(0, 0, 0))
 
 def _fit_cover(rgb, W, H):
@@ -496,7 +505,7 @@ def render(name):
                     rf0, rf1, rdeg = L["rotate"]
                     if f >= rf0:
                         rot = rdeg * min(1.0, (f - rf0) / max(1, rf1 - rf0))
-                canvas += _warp(rgb, sc, dx, dy, L.get("scale_anchor", "center"), rot).astype(np.float32) * op
+                canvas += _warp(rgb, sc, dx, dy, L.get("scale_anchor", "center"), rot, L.get("squash_y", 1.0)).astype(np.float32) * op   # T92-amend: squash_y (default 1.0) → gated, byte-identical when absent
             else:  # particles
                 fade = pm["fade"]; cap = pm["op_cap"]
                 for pt in pm["blobs"]:

@@ -8540,7 +8540,9 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     else op=s.opPeak+(s.op1-s.opPeak)*Math.pow((t-pk)/(1-pk),3);            // T75: cubic-IN release (breathing tail; was 1.6)
     if(op<=0.004) return;
     const size=s.size, sx=DPR*sc*(s.flip||1)*(s.stretchX||1), sy=DPR*sc*(s.squashY||1);
-    const c=Math.cos(s.rot||0), sn=Math.sin(s.rot||0), dx=s.x+(s.driftX||0)*t, dy=s.y+(s.driftY||0)*t;
+    let px=s.x, py=s.y;
+    if(s.travel){ const tp=Math.min(1, (s.age*1000)/((s.travel.ms||400)*(vfxT()||1))); px=s.travel.fromX+(s.x-s.travel.fromX)*tp; py=s.travel.fromY+(s.y-s.travel.fromY)*tp; }   // T92-amend (first sprite-path extension since T78): cross-board THROW — the draw position lerps origin→anchor over travelMs (vfxT-scaled to track the animation), then PINS at the anchor. Absent s.travel → px=s.x,py=s.y = byte-identical for every other effect.
+    const c=Math.cos(s.rot||0), sn=Math.sin(s.rot||0), dx=px+(s.driftX||0)*t, dy=py+(s.driftY||0)*t;
     const blend = s.smoke ? 'source-over' : 'lighter';
     cx.setTransform(sx*c, sx*sn, -sy*sn, sy*c, DPR*dx, DPR*dy);              // transform shared by all sub-draws below
     const ax=(s.anchorX!=null?s.anchorX:0.5), ay=(s.anchorY!=null?s.anchorY:0.5);
@@ -8587,8 +8589,10 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   // T82: single-unit STRIKE class — Vajra, anchored on the TARGET unit's card rect (not the caster). Square card-anchored sheet (reuses the landing path), 18f one-shot forward, flat envelope, drawn at card scale. The fastest effect (~1.125s at 16fps).
   function sprVajra(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
     return addSheetSpr('vajra', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 18/SHEET_FPS*vfxT() }); }
-  function sprSudarshana(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);   // T92: Sudarshana Chakra — the spinning target strike at the removed hero's rect (target-strike register like Vajra; 6×3, 18f forward, flat envelope so the baked in/out carries)
-    return addSheetSpr('sudarshana', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 18/SHEET_FPS*vfxT() }); }
+  function sprSudarshana(cxp,cyp,cardW, fromXp, fromYp, travelMs){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);   // T92-amend: Sudarshana Chakra — the THROWN spinning discus. Anchor = the removed hero's rect; optional (fromXp,fromYp)+travelMs = the cross-board flight from the caster's half (compositor spins+squashes in place, the runtime carries it). Target-strike register (6×3, 18f forward, flat envelope so the baked flight/impact phases carry).
+    const o={ frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 18/SHEET_FPS*vfxT() };
+    if(fromXp!=null && fromYp!=null){ const f=local(fromXp,fromYp); o.travel={ fromX:f.x, fromY:f.y, ms:(travelMs||400) }; }
+    return addSheetSpr('sudarshana', x, y, W*2.4, o); }
   // T83: shared DAMAGE TICK status sting — faction-agnostic, fires on SURVIVING damage at the hit unit. HALF-WEIGHT: drawn at W*1.4 (vs a landing's W*2.4 → ~⅓ the area) and the sheet opacities are capped (0.7/0.75/0.4) → ~¼ on-screen weight. 12f (~0.75s), the shortest.
   function sprDamage(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
     return addSheetSpr('damage', x, y, W*1.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 12/SHEET_FPS*vfxT() }); }
@@ -8832,8 +8836,12 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
     await cDelay(40);
     if(LEGACY_VFX && dp){ VFX.sprBloom(dp.cx, dp.rect.top+dp.rect.height/2, 'destroy', dp.rect.width); VFX.sprSmoke(dp.cx, dp.rect.top+dp.rect.height/2, 1, dp.rect.width); }   // E4 white-gold bloom + E5 smoke at death [T77-gated; the dissolve-beat below stays — it carries card identity + the death beat]
     const dcard=(!snap[u])?findCardByUid(u):null; dissolveAt(dp, (snap[u]&&snap[u].name)||(dcard&&dcard.n), (snap[u]&&snap[u].color)||(dcard?(FAC_HEX[cardHomeFaction(dcard)]||'#e0483c'):null)); await cDelay(600); return; }   // 40ms hit-stop → death reads as a beat, then crack + shards + dwell. T88b: a kill-on-entry unit isn't in the snapshot → pull its name/colour from the card (in discard) so the dissolve still reads.
-  if (ev.type==='passive' && ev.abilityName==='Sudarshana'){ const u=ev.targetUids[0]; const dp=posOf(u, snap);   // T92: Sudarshana Chakra — the spinning target strike at the REMOVED hero's rect (posOf via snapshot — the hero was on board before the splice). It is a REMOVAL, not a kill → NO death dissolve (the hero returns next round); the strike + the hero's disappearance from the row carry the story. The callout names the cause AT the hero so the temporary removal isn't a silent vanishing (T88 principle).
-    if(dp){ calloutAt(dp, 'Sudarshana Chakra'); await cDelay(300); VFX.sprSudarshana(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width); await cDelay(700); }
+  if (ev.type==='passive' && ev.abilityName==='Sudarshana'){ const u=ev.targetUids[0]; const dp=posOf(u, snap);   // T92: Sudarshana Chakra — the THROWN spinning discus. Anchor = the REMOVED hero's rect (posOf via snapshot — the hero was on board before the splice). It is a REMOVAL, not a kill → NO death dissolve (the hero returns next round); the strike + the hero's disappearance from the row carry the story. The callout names the cause AT the hero so the temporary removal isn't a silent vanishing (T88 principle).
+    if(dp){ calloutAt(dp, 'Sudarshana Chakra'); await cDelay(300);
+      const caster=1-ownerPiOfUid(u), ch=document.querySelector(caster===1?'.half.opp':'.half.me');   // T92-amend: origin = the CASTER's half center (T79/T87 half idiom) — caster = the side opposite the removed hero's owner, cleanly derivable at the handler from the target uid.
+      let fx=null, fy=null; if(ch){ const r=ch.getBoundingClientRect(); fx=r.left+r.width/2; fy=r.top+r.height*0.5; }
+      VFX.sprSudarshana(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width, fx, fy, 400);   // thrown flat from the caster's half to the target (~400ms flight); the impact phase bites + pins at the hero
+      await cDelay(700); }
     return; }
   if (src && (ev.type==='buff'||ev.type==='token')){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
   const tgts=ev.targetUids||[];
