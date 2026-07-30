@@ -120,6 +120,32 @@ BRIEFS = {
         "opacity":  [[1, 12, 0.0, 0.45, "io"], [13, 26, 0.45, 0.45, "lin"], [27, 36, 0.45, 0.0, "out"]] },
     ],
   },
+
+  # VAJRA — single-unit STRIKE class (card-anchored on the TARGET, refined G2). The FASTEST effect: near-instant attack, hard
+  # impact, fast decay, only the glow lingers — the inverse of Gayatri in every number. 18 frames = 750ms @24fps (~1.125s at
+  # SHEET_FPS 16), one-shot, 1254² square. No particle extraction (L3 is a whole-layer flicker). ⚠ frame-1 reading: the brief's
+  # "0→1 over frames 1-2" is reconciled with the VETO "frame 1 = bolt alone" by resolving toward SNAP — the bolt is already
+  # struck (0.85) on frame 1, full on frame 2; the impact flashes ONE FRAME AFTER (frame 2). Keyed via op_keys (electric flicker).
+  "vajra": {
+    "seed": 0x7A47AB, "fps": 24, "frames": 18, "one_shot": True, "layers_dir": "vajra",
+    "layers": [
+      # L1 BOLT — instant strike (f1 struck), full, single restrike flicker (f4), dead by f8. Descends into frame (scale 0.85→1.0).
+      { "src": "L1_bolt", "kind": "xform",
+        "op_keys": [1, [0.85, 1.0, 1.0, 0.55, 1.0, 0.55, 0.2, 0.0]],   # frames 1-8
+        "scale":   [[1, 2, 0.85, 1.0, "out"]] },
+      # L2 IMPACT — the flash, ONE FRAME AFTER the bolt (f2), hard then fast fade; burst kick outward 0.9→1.18.
+      { "src": "L2_impact", "kind": "xform",
+        "op_keys": [2, [0.75, 1.0, 0.8, 0.55, 0.35, 0.2, 0.08, 0.0]],   # frames 2-9 (absent f1)
+        "scale":   [[2, 3, 0.9, 1.12, "out"], [4, 9, 1.12, 1.18, "lin"]] },
+      # L3 CRACKLE — decaying electric flicker (verbatim keys), dead by f12; arcs reaching outward (scale 1.0→1.06).
+      { "src": "L3_crackle", "kind": "xform",
+        "op_keys": [2, [0.9, 0.5, 0.75, 0.4, 0.55, 0.25, 0.35, 0.15, 0.2, 0.08, 0.0]],   # frames 2-12
+        "scale":   [[2, 12, 1.0, 1.06, "lin"]] },
+      # L4 GLOW — blooms with the strike, holds, the ONLY linger (alive at f17, black at f18).
+      { "src": "L4_glow", "kind": "xform",
+        "opacity": [[1, 4, 0.0, 0.6, "out"], [5, 10, 0.6, 0.6, "lin"], [11, 18, 0.6, 0.0, "out"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
@@ -235,6 +261,10 @@ def render(name):
                     f0, f1, base, amp = L["op_sine"]
                     if f0 <= f <= f1:
                         op = base + amp * math.sin(((f - f0) / (f1 - f0)) * math.pi)
+                if "op_keys" in L:                              # PER-FRAME keyed opacity (electric flicker/restrike) — [firstFrame, [v0,v1,...]]; overrides segments for its span
+                    kf0, kvals = L["op_keys"]
+                    if kf0 <= f < kf0 + len(kvals):
+                        op = kvals[f - kf0]
                 if op <= 0.0:
                     continue
                 if "scale_sine" in L:
