@@ -1434,6 +1434,10 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #gearbtn,#mutebtn{ background:none; border:1px solid #4a3a18; color:var(--ink-dim); border-radius:8px; width:30px; height:28px; font-size:14px; cursor:pointer; padding:0; }
 #gearbtn:active,#mutebtn:active{ transform:scale(.92); }
 .mutetoast{ position:fixed; top:64px; left:50%; transform:translateX(-50%); z-index:73; background:rgba(12,9,4,.94); border:1px solid #5a4718; color:#f0e2c0; font-family:Cinzel,serif; font-size:12px; letter-spacing:1px; padding:6px 16px; border-radius:20px; pointer-events:none; animation:mutetoastFade 1.2s ease-out forwards; }
+/* T90: jank ramp-down notice — the mutetoast look, but persistent + actionable (dismissible). */
+.jank-notice{ position:fixed; bottom:18px; left:50%; transform:translateX(-50%); z-index:74; max-width:92vw; display:flex; align-items:center; gap:10px; background:rgba(12,9,4,.96); border:1px solid #5a4718; color:#f0e2c0; font-family:'Crimson Pro',Georgia,serif; font-size:13px; padding:9px 12px 9px 16px; border-radius:12px; box-shadow:0 6px 22px rgba(0,0,0,.5); animation:mutetoastFade .3s ease-out; }
+.jank-notice .jank-act{ flex:0 0 auto; background:rgba(232,200,116,.14); border:1px solid var(--gold-dim,#8a6d2a); color:var(--gold,#e8c874); font-family:Cinzel,serif; font-size:11px; letter-spacing:.5px; padding:5px 11px; border-radius:8px; cursor:pointer; }
+.jank-notice .jank-x{ flex:0 0 auto; background:none; border:none; color:#9a8c6a; font-size:14px; cursor:pointer; padding:2px 4px; line-height:1; }
 @keyframes mutetoastFade{ 0%{opacity:0;transform:translateX(-50%) translateY(-6px);} 15%{opacity:1;transform:translateX(-50%) translateY(0);} 80%{opacity:1;} 100%{opacity:0;} }
 
 /* ===== board VFX ===== */
@@ -1966,6 +1970,12 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
       <button id="testsfx" class="tgl">▶ Test all SFX</button>
       <button id="testvfx" class="tgl">✦ Test VFX</button>
     </div>
+  </div>
+  <div class="set-row"><div class="set-lbl">VFX QUALITY</div>
+    <div class="seg" id="vfxqseg">
+      <button data-vq="auto">Auto</button><button data-vq="hi">High</button><button data-vq="md">Medium</button><button data-vq="lo">Low</button>
+    </div>
+    <div class="set-hint">Higher = crisper effects, more memory. Auto matches your device. Applies from your next match.</div>
   </div>
   <button class="fsel-start" onclick="$('settings').classList.add('hidden')">DONE</button>
 </div></div>
@@ -4692,6 +4702,7 @@ function startGame(p0Faction, p1Faction){
   render();
   VFX.init(); VFX.resize();      // size the impact-VFX canvas to the now-visible board
   VFX.preloadSprites();          // T67: load + tint the painted VFX kit at MATCH START (async, non-blocking; mulligan proceeds; procedural fallback covers the load gap)
+  applyVfxQuality();   // T90: resolve the player's VFX-quality rung before the fetch
   VFX.loadMatchSheets(currentFactions.p0, currentFactions.p1);   // T81: lazy — only THIS match's factions' landing sheets (+ the Deva row plates if a Deva is in the match). Loads during the mulligan window.
   beginMulligan();          // play begins when the player confirms their opening hand
 }
@@ -6973,7 +6984,7 @@ function startStoryChapter(id){
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers(); battleStageStart();   // T42
   Audio2.musicDuck(false); Audio2.playTrack('battle'); conchPending=true;   // release the intro duck INTO the menu→battle crossfade (the crossfade + conch stay the hinge)
-  showRealmIntro(); render(); VFX.init(); VFX.resize(); VFX.preloadSprites(); VFX.loadMatchSheets(currentFactions.p0, currentFactions.p1);   // T67 sprite kit + T81 lazy match sheets at story-match start too
+  showRealmIntro(); render(); VFX.init(); VFX.resize(); VFX.preloadSprites(); applyVfxQuality(); VFX.loadMatchSheets(currentFactions.p0, currentFactions.p1);   // T67 sprite kit + T81 lazy match sheets at story-match start too
   if (G.mulliganCount>0) storyBeginMulligan();   // ch4/ch5: run the mulligan phase (teaches it) with the pre-match Brihaspati line
   else pump();                                   // ch1–3 (mulligan:0): straight into round 1 (player-first via storyRng)
 }
@@ -7618,6 +7629,14 @@ function vfxTier(c, ev){
   return 'ambient';                                                          // units, mantras, buffs, venom, shield, tokens
 }
 function setSpeed(key){ if(!SPEEDS[key])return; speedMult=SPEEDS[key]; localStorage.setItem('dy_speed',key); applyVfxT(); syncSettingsUI(); }
+// T90: player-owned VFX quality (auto/hi/md/lo, dy_vfxq). Takes effect from the NEXT match (applyVfxQuality runs at match start). RAISING quality re-arms the jank prompt.
+const VFXQ_RANK={ lo:0, md:1, hi:2, auto:2 };
+function setVfxQuality(q){ if(!(q in VFXQ_RANK)) return; const old=localStorage.getItem('dy_vfxq')||'auto';
+  localStorage.setItem('dy_vfxq', q);
+  if((VFXQ_RANK[q]||0) > (VFXQ_RANK[old]||0)){ localStorage.removeItem('dy_vfxjank'); jankPromptShown=false; jankOnsets=[]; }   // re-offer the jank prompt only after the player RAISES quality
+  syncVfxQualityUI(); }
+function syncVfxQualityUI(){ const q=localStorage.getItem('dy_vfxq')||'auto'; document.querySelectorAll('#vfxqseg button').forEach(b=>b.classList.toggle('sel', b.dataset.vq===q)); }
+function applyVfxQuality(){ try{ if(window.VFX && VFX.applyQuality) VFX.applyQuality(localStorage.getItem('dy_vfxq')||'auto'); }catch(e){} }   // match-start rung resolution (before loadMatchSheets)
 function findCardByUid(uid){
   for(const pi of [0,1]){ const p=G.players[pi];
     for(const z of [p.units,p.heroes,p.discard,p.hand]){ const c=z.find(x=>x&&x.uid===uid); if(c) return c; }
@@ -7804,6 +7823,7 @@ function unlockAudioOnce(){ if(audioUnlocked)return; audioUnlocked=true; Audio2.
 /* ---- settings panel ---- */
 function syncSettingsUI(){
   document.querySelectorAll('#speedseg button').forEach(b=>b.classList.toggle('sel', SPEEDS[b.dataset.sp]===speedMult));
+  syncVfxQualityUI();   // T90
   $('musictoggle').textContent = Audio2.hasMusic ? '♪ Music' : '♪ Add music';
   $('musictoggle').classList.toggle('on', Audio2.hasMusic && Audio2.musicOn);
   $('musichint').classList.toggle('hidden', Audio2.hasMusic);
@@ -7835,6 +7855,8 @@ updateMuteIcon();
 $('gearbtn').onclick=()=>{ syncSettingsUI(); $('settings').classList.remove('hidden'); };
 $('settings').onclick=e=>{ if(e.target.id==='settings') $('settings').classList.add('hidden'); };
 document.querySelectorAll('#speedseg button').forEach(b=> b.onclick=()=>setSpeed(b.dataset.sp));
+document.querySelectorAll('#vfxqseg button').forEach(b=> b.onclick=()=>setVfxQuality(b.dataset.vq));   // T90
+syncVfxQualityUI();   // T90: reflect the persisted quality on load
 $('musictoggle').onclick=()=>{ unlockAudioOnce(); if(!Audio2.hasMusic){ toastMute('Set window.MUSIC_URL to add music'); return; } Audio2.setMusic(!Audio2.musicOn); syncSettingsUI(); updateMuteIcon(); };
 $('sfxtoggle').onclick=()=>{ unlockAudioOnce(); Audio2.setSfx(!Audio2.sfxOn); if(Audio2.sfxOn) Audio2.sfx('buff'); syncSettingsUI(); updateMuteIcon(); };
 $('sfxvol').oninput=e=>{ Audio2.setSfxVol(e.target.value/100); };
@@ -8652,7 +8674,9 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     gpuTick(dt);   // T70-P0: drive the GPU overlay from the SAME loop, inside step's try/catch (one loop owns time; the T69A guarantee covers it)
   }
   function step(now){
+    const rawMs=now-last;                                              // T90: raw frame time (PRE-clamp) for the jank watcher
     const dt=Math.min(0.05,(now-last)/1000); last=now;                 // T69A: dt clamp (≤50ms) + fresh last → a wake after any idle gap can't mass-expire (verified NOT the round-death cause; kept structural)
+    try{ jankSample(rawMs); }catch(e){}                                // T90: match-time jank detection (gated on choreoActive inside; never throws into the loop)
     try{ frame(dt, now); }
     catch(e){}                                                         // T69A ROOT FIX: a thrown draw must NEVER kill the loop. one thrown frame used to leave raf truthy → wake() could never restart → all later-round effects dead. frame() re-clears every canvas state at its top, so a dropped frame leaks nothing.
     finally{ if(parts.length||bolts.length||tint||sprites.length||gdim||gpu.sprites.length||gpu.particles.length||gpu.hero) raf=requestAnimationFrame(step);   // ALWAYS re-arm while content lives (incl. live GPU sprites/particles/hero-moment) → raf can never get stuck truthy after a throw
@@ -8687,6 +8711,8 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   }
   return { init, resize, cardLand, astraBurst, mythic,
            preloadSprites, loadMatchSheets, spritesReady:()=>spritesReady, sheetsReady:()=>sheetsReady, sprCount:()=>sprites.length, bakeMs:()=>bakeMs,
+           applyQuality(setting){ const q=(setting==='auto'||!RUNG[setting])?pickRung():setting; if(q!==vfxRung){ vfxRung=q; SHEET_CELL=RUNG[q].cell; sheetImg={}; sheetGrid={}; sheetsReady=false; sheetLoading={}; } return q; },   // T90: resolve the player's VFX-quality setting (auto=heuristic) → set the rung. Clears the sheet caches ONLY if the rung changed, so the NEXT loadMatchSheets re-fetches at the new rung (take-effect-next-match). currentRung() reads the resolved rung for the jank prompt.
+           currentRung(){ return vfxRung; },
            __advance2D:(dt)=>{ try{ frame(dt, performance.now()); }catch(e){} },   // G-test: drive the Canvas2D frame synchronously (bypasses the pane's rAF throttling)
            frameOf:(i)=>{ const s=sprites[i]; return s?{sheet:s.sheet,frame:s.frame,dir:s.dir,mode:s.mode}:null; },   // G2 instrumentation: read live frame index
            setBloom:(v)=>{ bloomOn=!!v; }, bloomState:()=>({ok:BLOOM_OK,on:bloomOn}),   // G3 A/B proof hook (bloom on/off)
@@ -8716,6 +8742,35 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
            sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark, sprPashupatastra };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
+// T90 JANK WATCHER — during MATCH CHOREOGRAPHY ONLY, detect sustained frame stutter and (at most once/session) suggest a lower VFX quality. Suggest, never force, never nag.
+let jankOnsets=[], jankLastDropped=false, jankPromptShown=false;
+function jankSample(rawMs){
+  if(typeof choreoActive==='undefined' || !choreoActive) return;   // match-time choreography only (menus/cutscenes use other rAF loops). The hit-stop is a choreo PAUSE, not a step stall — the renderer runs smoothly through it, so it yields NO dropped-frame samples.
+  const dropped = rawMs>=34 && rawMs<=250;                         // ≥34ms = missed a 60fps frame (real render jank); >250ms = a background/idle stall (iOS throttle) → excluded
+  if(dropped && !jankLastDropped){                                 // count HITCH ONSETS (a drop after a smooth frame = one cluster) — a single hero-moment render is 1 onset, never enough
+    const now=performance.now(); jankOnsets.push(now);
+    while(jankOnsets.length && now-jankOnsets[0]>5000) jankOnsets.shift();   // 5s rolling window
+    if(jankOnsets.length>=4) maybeJankPrompt();                    // SUSTAINED: ≥4 separate hitches in 5s → the device is genuinely struggling (conservative; tune on device)
+  }
+  jankLastDropped = dropped;
+}
+function maybeJankPrompt(){
+  if(jankPromptShown) return;                                      // at most once per session
+  if(localStorage.getItem('dy_vfxjank')==='1') return;            // persistently dismissed — re-armed only when the player RAISES quality (Settings handler)
+  const rung = (typeof VFX!=='undefined' && VFX.currentRung) ? VFX.currentRung() : 'lo';   // VFX is a lexical const, NOT window.VFX
+  if(rung==='lo') return;                                          // already at the floor — nothing to suggest
+  jankPromptShown=true; showJankPrompt(rung);
+}
+function showJankPrompt(rung){
+  const next = rung==='hi' ? 'md' : 'lo', label = { md:'Medium', lo:'Low' }[next];
+  const box=document.createElement('div'); box.className='jank-notice';
+  const msg=document.createElement('span'); msg.textContent='Visuals stuttering? You can lower VFX quality in Settings.'; box.appendChild(msg);
+  const act=document.createElement('button'); act.className='jank-act'; act.textContent='Switch to '+label;
+  act.onclick=()=>{ localStorage.setItem('dy_vfxq', next); if(typeof syncVfxQualityUI==='function') syncVfxQualityUI(); box.remove(); toastMute('VFX quality → '+label+' · applies next match'); };
+  const x=document.createElement('button'); x.className='jank-x'; x.setAttribute('aria-label','Dismiss'); x.textContent='✕';
+  x.onclick=()=>{ localStorage.setItem('dy_vfxjank','1'); box.remove(); };   // dismiss ⇒ persist so it never re-nags across sessions (until quality is raised)
+  box.append(act, x); document.body.appendChild(box);
+}
 // T88 CAUSALITY: every destroy/damage the player sees must answer WHO did it (source) before TO WHOM (the target beats).
 // destroy/damage events carry only the cause STRING (abilityName), not a sourceUid — so we match the cause to a board card.
 const GENERIC_CAUSES = new Set(['reduced to 0','Venom']);   // deaths from a sweep / venom drains are already legible via the PRECEDING damage/venom beat + the ☠/wetBadge/venom-tick vocabulary — attributing them again would double up.
