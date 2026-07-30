@@ -190,6 +190,28 @@ BRIEFS = {
         "drift_up": [4, 8, 6] },
     ],
   },
+
+  # SHIELD FORMATION — the state-ARRIVAL class: a barrier FORMS (not an impact). RING first (the anchor beat), DOME rises
+  # from it, calm strength. Weight sits BETWEEN the status ticks and a landing. 14 frames = 583ms @24fps (~0.875s at 16fps),
+  # one-shot, 1254² square. ALL whole-layer (no particle extraction — a formation does not scatter). Reuses scale_anchor +
+  # op_sine (no new vocabulary). This is the ARRIVAL only; the persistent shield state stays on the .shieldbadge.
+  "shield": {
+    "seed": 0x5A1E1D, "fps": 24, "frames": 14, "one_shot": True, "layers_dir": "shield",
+    "layers": [
+      # L2 RING — fires FIRST: 2-frame snap (the ground circle inscribes), hold, fade.
+      { "src": "L2_ring", "kind": "xform",
+        "opacity": [[1, 2, 0.0, 0.8, "out"], [3, 9, 0.8, 0.8, "lin"], [10, 14, 0.8, 0.0, "out"]],
+        "scale":   [[1, 2, 0.85, 1.0, "out"]] },
+      # L1 DOME — rises FROM the ring plane (bottom-anchored scale 0.25→1.0), holds with a single breathe, hands off by 14.
+      { "src": "L1_dome", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[3, 7, 0.0, 0.75, "io"], [11, 14, 0.75, 0.0, "out"]],
+        "op_sine": [8, 10, 0.75, 0.07],   # hold-breathe 0.75→0.82→0.75 (the barrier is alive)
+        "scale":   [[3, 7, 0.25, 1.0, "io"]] },
+      # L3 GLOW — capped 0.35 (the source is the brightest glow in the library; the cap holds the weight band).
+      { "src": "L3_glow", "kind": "xform",
+        "opacity": [[2, 6, 0.0, 0.35, "out"], [7, 10, 0.35, 0.35, "lin"], [11, 14, 0.35, 0.0, "out"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
