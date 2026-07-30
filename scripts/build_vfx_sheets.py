@@ -175,9 +175,14 @@ SEQ_RUNGS = { "lo": {"cell":384, "bw":512, "dir":SHEETS},                       
               "hi": {"cell":512, "bw":768, "dir":os.path.join(SHEETS,"hi")} }
 SEQ_MVW = 384                                                                   # MV cell width (height = /aspect for wide)
 def _seq_grid(n):
-    for c in (8, 9, 7, 6, 10, 5, 4):
-        if n % c == 0: return c, n // c                                         # exact grid, no blanks
-    c = min(9, n); return c, math.ceil(n / c)                                   # fallback (padded)
+    # most-square exact grid, cols≥rows (27→9×3, 36→6×6, 40→8×5). rows = largest divisor ≤ √n.
+    rows = 1
+    for r in range(1, int(math.isqrt(n)) + 1):
+        if n % r == 0: rows = r
+    cols = n // rows
+    if cols > 12:                                                               # near-prime → padded fallback
+        cols = min(9, n); rows = math.ceil(n / cols)
+    return cols, rows
 def _rowplate_mask(W, H):
     # ROW-PLATE EDGE LAW (v5a G2): top/bottom cosine-fade to 0 (blend into the board); a GENTLE left/right fade
     # (8%) prevents a hard cell-boundary seam while letting the sweep burn most of the width.

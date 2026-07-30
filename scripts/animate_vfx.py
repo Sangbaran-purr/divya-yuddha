@@ -27,7 +27,8 @@ SEQ    = os.path.join(ROOT, "assets/vfx/seq")
 def _lin(t):  return t
 def _out(t):  return 1.0 - (1.0 - t) ** 2      # ease-out (fast start, soft land)
 def _in(t):   return t * t                     # ease-in  (soft start, fast end)
-EASE = {"lin": _lin, "out": _out, "in": _in}
+def _io(t):   return 0.5 * (1.0 - math.cos(math.pi * t))   # ease-in-out (symmetric S-curve — serene rises)
+EASE = {"lin": _lin, "out": _out, "in": _in, "io": _io}
 
 # ═══════════════════════════════════════════════════════════════════════════
 # MOTION BRIEFS — DATA. frames are 1-based (matching the brief text). A property's
@@ -87,6 +88,33 @@ BRIEFS = {
       { "src": "L4_glow", "kind": "xform",
         "opacity": [[1, 8, 0.0, 0.45, "out"], [9, 28, 0.45, 0.45, "lin"], [29, 40, 0.45, 0.0, "out"]],
         "scale_sine": [8, 40, 1.0, 0.05] },
+    ],
+  },
+
+  # GAYATRI MANTRA — the Mantra class (G3 pure row wash), the INVERSE of Brahmastra: nothing strikes, everything SETTLES.
+  # 36 frames = 1500ms @24fps (~2.25s at SHEET_FPS 16), one-shot, 1920x640 row plate cover-fit, over the CASTER's (friendly)
+  # half. Every envelope is gentle (ease-in-out rises, ≥6-frame spans); the sigil INSCRIBES then breathes, the lotus blooms
+  # BEHIND it (lagging ~3f), motes drift up like incense (even spread, no burst), the warmth is the last thing alive.
+  "gayatri": {
+    "seed": 0x6A47A1, "fps": 24, "frames": 36, "one_shot": True, "layers_dir": "gayatri", "canvas": (1920, 640),
+    "layers": [
+      # L1 SIGIL — slow inscription (reveals, never pops), a single luminance breathe across the hold, gentle fade. No drift/rotation.
+      { "src": "L1_sigil", "kind": "xform",
+        "opacity":  [[1, 10, 0.0, 0.85, "io"], [23, 36, 0.85, 0.0, "out"]],
+        "op_sine":  [11, 22, 0.85, 0.07],   # hold-breathe 0.85→0.92→0.85 (single arc — alive, not static)
+        "scale":    [[1, 10, 0.94, 1.0, "io"]] },
+      # L2 LOTUS — blooms BEHIND the sigil (lags ~3f), opening outward, keeps opening barely through the hold, gentle fade.
+      { "src": "L2_lotus", "kind": "xform",
+        "opacity":  [[4, 14, 0.0, 0.7, "io"], [15, 24, 0.7, 0.7, "lin"], [25, 36, 0.7, 0.0, "out"]],
+        "scale":    [[4, 14, 0.85, 1.05, "io"], [15, 24, 1.05, 1.10, "lin"]] },
+      # L3 PARTICLES — incense motes: EVEN activation (inner_boost 1.0 = NO burst), calm upward-only drift, soft 3-frame deaths.
+      { "src": "L3_particles", "kind": "particles",
+        "emit_frames": [3, 20], "inner_radius": 0.42, "inner_boost": 1.0,
+        "speed_px_s": [8, 20], "jitter_deg": 8.0, "life_frames": [14, 26], "fade_frames": 3,
+        "lum_thresh": 44, "min_area": 3 },
+      # L4 GLOW — ambient warmth of the chant, rises with the inscription, holds, the LAST thing alive (fades after the light).
+      { "src": "L4_glow", "kind": "xform",
+        "opacity":  [[1, 12, 0.0, 0.45, "io"], [13, 26, 0.45, 0.45, "lin"], [27, 36, 0.45, 0.0, "out"]] },
     ],
   },
 }
@@ -188,7 +216,7 @@ def render(name):
             theta = random.uniform(-jit, jit)                          # around vertical (up)
             spd = random.uniform(s0, s1)
             pt["vx"] = math.sin(theta) * spd; pt["vy"] = -math.cos(theta) * spd   # up = -y
-            pt["life"] = random.randint(l0, l1)
+            pt["life"] = max(1, min(random.randint(l0, l1), N - pt["act"]))       # clamp: dead by frame N (VETO "all dead / final frame black"); briefs whose act+life already fit N are unchanged (c1a)
         parts_meta.append({"blobs": blobs, "fade": L["fade_frames"]})
 
     od = os.path.join(SEQ, name); os.makedirs(od, exist_ok=True)
@@ -200,6 +228,10 @@ def render(name):
         for (L, rgb), pm in zip(layers, parts_meta):
             if L["kind"] == "xform":
                 op = _seg_val(L.get("opacity", []), f, 0.0, hold=False)
+                if "op_sine" in L:                              # a luminance BREATHE across a hold (single sine arc, base+amp*sin)
+                    f0, f1, base, amp = L["op_sine"]
+                    if f0 <= f <= f1:
+                        op = base + amp * math.sin(((f - f0) / (f1 - f0)) * math.pi)
                 if op <= 0.0:
                     continue
                 if "scale_sine" in L:
