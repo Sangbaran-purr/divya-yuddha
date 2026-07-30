@@ -8837,11 +8837,17 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
     if(LEGACY_VFX && dp){ VFX.sprBloom(dp.cx, dp.rect.top+dp.rect.height/2, 'destroy', dp.rect.width); VFX.sprSmoke(dp.cx, dp.rect.top+dp.rect.height/2, 1, dp.rect.width); }   // E4 white-gold bloom + E5 smoke at death [T77-gated; the dissolve-beat below stays — it carries card identity + the death beat]
     const dcard=(!snap[u])?findCardByUid(u):null; dissolveAt(dp, (snap[u]&&snap[u].name)||(dcard&&dcard.n), (snap[u]&&snap[u].color)||(dcard?(FAC_HEX[cardHomeFaction(dcard)]||'#e0483c'):null)); await cDelay(600); return; }   // 40ms hit-stop → death reads as a beat, then crack + shards + dwell. T88b: a kill-on-entry unit isn't in the snapshot → pull its name/colour from the card (in discard) so the dissolve still reads.
   if (ev.type==='passive' && ev.abilityName==='Sudarshana'){ const u=ev.targetUids[0]; const dp=posOf(u, snap);   // T92: Sudarshana Chakra — the THROWN spinning discus. Anchor = the REMOVED hero's rect (posOf via snapshot — the hero was on board before the splice). It is a REMOVAL, not a kill → NO death dissolve (the hero returns next round); the strike + the hero's disappearance from the row carry the story. The callout names the cause AT the hero so the temporary removal isn't a silent vanishing (T88 principle).
-    if(dp){ calloutAt(dp, 'Sudarshana Chakra'); await cDelay(300);
-      const caster=1-ownerPiOfUid(u), ch=document.querySelector(caster===1?'.half.opp':'.half.me');   // T92-amend: origin = the CASTER's half center (T79/T87 half idiom) — caster = the side opposite the removed hero's owner, cleanly derivable at the handler from the target uid.
+    if(dp){
+      const caster=1-ownerPiOfUid(u), ch=document.querySelector(caster===1?'.half.opp':'.half.me');   // origin = the CASTER's half center (T79/T87 half idiom) — caster = the side opposite the removed hero's owner, cleanly derivable at the handler from the target uid.
       let fx=null, fy=null; if(ch){ const r=ch.getBoundingClientRect(); fx=r.left+r.width/2; fy=r.top+r.height*0.5; }
-      VFX.sprSudarshana(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width, fx, fy, 400);   // thrown flat from the caster's half to the target (~400ms flight); the impact phase bites + pins at the hero
-      await cDelay(700); }
+      VFX.sprSudarshana(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width, fx, fy, 380);   // THROW — thrown flat from the caster's half; travelMs 380 → the flight completes at the frame-9 CONTACT PIN (cDelay scales by exactly vfxT, so the await below tracks the sprite frame timing).
+      await cDelay(380);   // FLIGHT (frames 1-8) → the disc reaches the target rect.
+      // 3f BITE (frames 9-10): the disc PINS at full presence + the baked spark burst (L3 f9-11) and glow (L4 f9-12) fire AT the contact point. The cast's spectacle hit-stop (110ms) fired back at the astra PLAY beat (~1s earlier); this contact is a separate, later beat, so we punctuate it with its OWN hit-stop — a combat-weight shake (a sharp precise BITE, distinct from the cast's board cataclysm) + a ~100ms freeze — so the hit is FELT at the target.
+      // ⚠ 3f STOP-AND-REPORT (cpulse): the removed hero's element is GONE from the live DOM by choreography time — runAction render()s the final board BEFORE this event loop, and render() draws op.heroes (fillRow oheroes), NOT removedHeroes. So posOf(u,snap) misses the DOM and returns el:null → there is NO live element at the vacated slot to cpulse. Per 3f we stop short of a substitute (no pulsing an adjacent unit or the empty row); the pin + sparks + hit-stop carry the contact.
+      screenShake(false); await cDelay(100);
+      await cDelay(300);   // the disc passes ON (fade 11-13) + linger; the hero is already off the board.
+      calloutAt(dp, 'Sudarshana Chakra');   // NAME the deed LAST, at the vacated slot (T88 legibility — a removal, not a kill; no death dissolve). calloutAt reads dp's coordinates, not dp.el (which is null here).
+      await cDelay(140); }
     return; }
   if (src && (ev.type==='buff'||ev.type==='token')){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
   const tgts=ev.targetUids||[];

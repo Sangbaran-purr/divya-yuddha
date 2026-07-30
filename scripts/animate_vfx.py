@@ -313,10 +313,11 @@ BRIEFS = {
   "sudarshana": {
     "seed": 0x5DA12A, "fps": 24, "frames": 18, "one_shot": True, "layers_dir": "sudarshana",
     "layers": [
-      # L1 DISCUS — FLIGHT: 2-frame rise to 0.85, spins as a squashed (0.35) ellipse through f8; IMPACT: passes THROUGH (opacity→0 by 12).
+      # L1 DISCUS — FLIGHT f1-8: 2-frame rise to 0.85, spins as a squashed (0.35) ellipse; CONTACT PIN f9-10: HELD at full
+      # presence (it bites before it vanishes); PASS-THROUGH f11-13: fade to 0 (the disc passes on). (3f addendum.)
       { "src": "L1_discus", "kind": "xform", "squash_y": 0.35,
-        "opacity": [[1, 2, 0.0, 0.85, "out"], [3, 8, 0.85, 0.85, "lin"], [9, 12, 0.85, 0.0, "in"]],
-        "scale":   [[1, 3, 0.9, 1.0, "out"], [4, 12, 1.0, 1.05, "lin"]],
+        "opacity": [[1, 2, 0.0, 0.85, "out"], [3, 10, 0.85, 0.85, "lin"], [11, 13, 0.85, 0.0, "in"]],
+        "scale":   [[1, 3, 0.9, 1.0, "out"], [4, 13, 1.0, 1.05, "lin"]],
         "rotate":  [1, 12, 84] },
       # L2 TRAIL — the squashed (0.35) spin-blur ring, MATCHED rotation, 0.6, lags the disc on arrival + lingers 2f past.
       { "src": "L2_trail", "kind": "xform", "squash_y": 0.35,
