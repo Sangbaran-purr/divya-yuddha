@@ -165,17 +165,27 @@ def build_rung_still(name, cfg, rk):
     return os.path.getsize(out)
 
 # ---- A5: SEQ MODE — ingest a pre-rendered PNG sequence (animate_vfx.py output) → packed sheet + MV ----
-# Same standing law as the clip pipeline: per-frame black clamp + radial mask (treat), rung-laddered
-# cells (lo 384 / md 448 / hi 512), MV via Farneback at 384px. The sequence is authored at composite
-# resolution (1254²); seq mode owns the downscale to each rung. Grid derives from the frame count
-# (27 → 9×3, exact). Sheets are JPEG-in-.png (runtime bakeAlpha adds luminance-alpha, T72).
+# TWO CLASSES (T78): SQUARE card-anchored effects (c1a: radial mask, square rung cells 384/448/512 — UNCHANGED)
+# and WIDE row-plate board effects (brahmastra 1920×640 3:1: TOP/BOTTOM edge-law mask per v5a G2, RECTANGULAR cells
+# cellW=rung board width {512/640/768}, cellH=cellW/aspect). Class is auto-detected from the source aspect (>1.4 = wide).
+# Grid derives from the frame count (27→9×3, 40→8×5, exact). Sheets are JPEG-in-.png (runtime bakeAlpha, T72).
 SEQDIR = os.path.join(ROOT, "assets/vfx/seq")
-SEQ_RUNGS = { "lo": {"cell":384, "dir":SHEETS},
-              "md": {"cell":448, "dir":os.path.join(SHEETS,"md")},
-              "hi": {"cell":512, "dir":os.path.join(SHEETS,"hi")} }
-SEQ_MVCELL = 384
+SEQ_RUNGS = { "lo": {"cell":384, "bw":512, "dir":SHEETS},                       # bw = row-plate cell WIDTH per rung
+              "md": {"cell":448, "bw":640, "dir":os.path.join(SHEETS,"md")},
+              "hi": {"cell":512, "bw":768, "dir":os.path.join(SHEETS,"hi")} }
+SEQ_MVW = 384                                                                   # MV cell width (height = /aspect for wide)
 def _seq_grid(n):
-    cols = min(9, n); rows = math.ceil(n / cols); return cols, rows   # compact; runtime derives cols from width/CELL
+    for c in (8, 9, 7, 6, 10, 5, 4):
+        if n % c == 0: return c, n // c                                         # exact grid, no blanks
+    c = min(9, n); return c, math.ceil(n / c)                                   # fallback (padded)
+def _rowplate_mask(W, H):
+    # ROW-PLATE EDGE LAW (v5a G2): top/bottom cosine-fade to 0 (blend into the board); a GENTLE left/right fade
+    # (8%) prevents a hard cell-boundary seam while letting the sweep burn most of the width.
+    fy = np.ones(H, np.float32); vt = max(1, int(H*0.18))
+    for i in range(vt): fy[i] = fy[H-1-i] = 0.5*(1-math.cos(math.pi*i/vt))
+    fx = np.ones(W, np.float32); ht = max(1, int(W*0.08))
+    for i in range(ht): fx[i] = fx[W-1-i] = 0.5*(1-math.cos(math.pi*i/ht))
+    return (fy[:,None]*fx[None,:])[..., None]
 def build_seq(name):
     fdir = os.path.join(SEQDIR, name)
     files = sorted(f for f in os.listdir(fdir) if f.startswith("frame_") and f.endswith(".png"))
@@ -183,29 +193,36 @@ def build_seq(name):
         print(f"*** no frame_*.png in {fdir} — run animate_vfx.py {name} first ***"); sys.exit(1)
     frames = [np.asarray(Image.open(os.path.join(fdir, f)).convert("RGB")) for f in files]
     n = len(frames); cols, rows = _seq_grid(n)
-    src_res = frames[0].shape[0]
-    print(f"=== SEQ '{name}': {n} frames @ {src_res}px source → {cols}x{rows} grid, rungs lo/md/hi + MV{SEQ_MVCELL} ===")
+    srcH, srcW = frames[0].shape[:2]; aspect = srcW/srcH; wide = aspect > 1.4
+    cls = f"WIDE row-plate (aspect {aspect:.2f})" if wide else "square card-anchored"
+    print(f"=== SEQ '{name}': {n} frames @ {srcW}x{srcH} source → {cols}x{rows} grid, {cls}, rungs lo/md/hi + MV ===")
     for rk, cfg in SEQ_RUNGS.items():
-        cell = cfg["cell"]; mask = radial_mask(cell); os.makedirs(cfg["dir"], exist_ok=True)
-        sheet = Image.new("RGB", (cols*cell, rows*cell), (0,0,0))
+        if wide:
+            cw = cfg["bw"]; ch = round(cw/aspect); mask = _rowplate_mask(cw, ch)   # rectangular cell + edge-law mask
+            mvw = SEQ_MVW; mvh = round(mvw/aspect)
+        else:
+            cw = ch = cfg["cell"]; mask = radial_mask(cw); mvw = mvh = SEQ_MVW      # square (c1a path, unchanged)
+        os.makedirs(cfg["dir"], exist_ok=True)
+        sheet = Image.new("RGB", (cols*cw, rows*ch), (0,0,0))
         for i, fr in enumerate(frames):
-            im = np.asarray(Image.fromarray(fr).resize((cell,cell), Image.LANCZOS))
-            sheet.paste(Image.fromarray(treat(im, mask), "RGB"), ((i%cols)*cell, (i//cols)*cell))
+            im = np.asarray(Image.fromarray(fr).resize((cw,ch), Image.LANCZOS))
+            sheet.paste(Image.fromarray(treat(im, mask), "RGB"), ((i%cols)*cw, (i//cols)*ch))
         out = os.path.join(cfg["dir"], f"vfx_{name}.png"); sheet.save(out, "JPEG", quality=Q)
-        # MV: Farneback flow between adjacent frames (same law as the clip MV; last frame neutral).
-        grays = [np.asarray(Image.fromarray(fr).convert("L").resize((SEQ_MVCELL,SEQ_MVCELL), Image.LANCZOS)) for fr in frames]
-        fscale = 384.0/SEQ_MVCELL; mvsheet = Image.new("RGB", (cols*SEQ_MVCELL, rows*SEQ_MVCELL), (128,128,0))
+        # MV: Farneback flow between adjacent frames (last frame neutral). Canvas2D board plate uses frame-blend, not MV;
+        # MV is built per the seq spec for a future GPU wire.
+        grays = [np.asarray(Image.fromarray(fr).convert("L").resize((mvw,mvh), Image.LANCZOS)) for fr in frames]
+        fscale = 384.0/mvw; mvsheet = Image.new("RGB", (cols*mvw, rows*mvh), (128,128,0))
         for i in range(n):
-            enc = np.zeros((SEQ_MVCELL,SEQ_MVCELL,3), np.uint8); enc[...,0]=128; enc[...,1]=128
+            enc = np.zeros((mvh,mvw,3), np.uint8); enc[...,0]=128; enc[...,1]=128
             if i < n-1:
                 flow = cv2.calcOpticalFlowFarneback(grays[i], grays[i+1], None, 0.5,3,15,3,5,1.2,0)
                 fx = np.clip(flow[...,0]*fscale, -MV_RANGE, MV_RANGE); fy = np.clip(flow[...,1]*fscale, -MV_RANGE, MV_RANGE)
                 enc[...,0]=np.clip(128+fx/MV_RANGE*127,0,255).astype(np.uint8); enc[...,1]=np.clip(128+fy/MV_RANGE*127,0,255).astype(np.uint8)
-            mvsheet.paste(Image.fromarray(enc,"RGB"), ((i%cols)*SEQ_MVCELL, (i//cols)*SEQ_MVCELL))
+            mvsheet.paste(Image.fromarray(enc,"RGB"), ((i%cols)*mvw, (i//cols)*mvh))
         mvd = os.path.join(cfg["dir"], "mv"); os.makedirs(mvd, exist_ok=True); mvsheet.save(os.path.join(mvd, f"vfx_{name}.png"), "PNG")
         sz = os.path.getsize(out); mvsz = os.path.getsize(os.path.join(mvd, f"vfx_{name}.png"))
-        print(f"  {rk}: sheets/{rk if rk!='lo' else ''}vfx_{name}.png {sz/1024:.0f}KB  {cols*cell}x{rows*cell}  + mv {mvsz/1024:.0f}KB  decoded={(cols*cell*rows*cell*4)/1048576:.1f}MB")
-    print(f"  SEQ '{name}' DONE ({n} frames, one grid 9x3 no blanks)")
+        print(f"  {rk}: cell {cw}x{ch}  sheet {cols*cw}x{rows*ch} {sz/1024:.0f}KB  + mv {mvsz/1024:.0f}KB  decoded={(cols*cw*rows*ch*4)/1048576:.1f}MB")
+    print(f"  SEQ '{name}' DONE ({n} frames, {cols}x{rows} grid)")
 
 if __name__ == "__main__":
     if len(sys.argv) > 2 and sys.argv[1] == "seq":

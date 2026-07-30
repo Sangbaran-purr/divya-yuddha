@@ -61,6 +61,34 @@ BRIEFS = {
         "scale_sine": [6, 27, 1.0, 0.04] },   # [f0, f1, base, amp] → base + amp*sin(phase*pi), one arc
     ],
   },
+
+  # BRAHMASTRA — the board-effect class (C2b: "golden pillar of annihilation, ground to sky"). 40 frames = 1667ms @24fps,
+  # one-shot, composited into a 1920x640 ROW PLATE (cover-fit of the 16:9 layers → full-width, centre-cropped band) placed over
+  # the enemy rows. FOUR BEATS: (1) anticipation — glow gathers; (2) strike — the column slams ground-to-sky (impact beat,
+  # coincides with the Astra hit-stop); (3) shockwave — ring expands + embers burst; (4) aftermath — column fades, embers drift,
+  # glow lingers longest. AUTHORED brief (no per-frame brief shipped with the layers) — numbers below are the owner's to tune.
+  "brahmastra": {
+    "seed": 0xB4A17A, "fps": 24, "frames": 40, "one_shot": True, "layers_dir": "brahmastra", "canvas": (1920, 640),
+    "layers": [
+      # L1 COLUMN (the pillar — the star). Beat 2 strike snap + settle, hold, then aftermath fade. Locked (no drift).
+      { "src": "L1_column", "kind": "xform",
+        "opacity": [[8, 11, 0.0, 1.0, "out"], [12, 22, 1.0, 1.0, "lin"], [23, 34, 1.0, 0.0, "in"]],
+        "scale":   [[8, 11, 1.15, 1.0, "out"]] },
+      # L2 RING (the shockwave). Beat 3: quick rise, long release, expanding outward 0.5→1.5.
+      { "src": "L2_ring", "kind": "xform",
+        "opacity": [[14, 16, 0.0, 0.9, "out"], [17, 30, 0.9, 0.0, "in"]],
+        "scale":   [[14, 30, 0.5, 1.5, "lin"]] },
+      # L3 EMBERS (particles). Burst after the strike (frames 12–18), centre-weighted, rising, ragged death by frame 40.
+      { "src": "L3_embers", "kind": "particles",
+        "emit_frames": [12, 18], "inner_radius": 0.42, "inner_boost": 2.5,
+        "speed_px_s": [30, 70], "jitter_deg": 18.0, "life_frames": [14, 26], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 3 },
+      # L4 GLOW (afterglow). Beat 1 anticipation (rises FIRST), holds through the strike/shockwave, longest linger to frame 40.
+      { "src": "L4_glow", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.45, "out"], [9, 28, 0.45, 0.45, "lin"], [29, 40, 0.45, 0.0, "out"]],
+        "scale_sine": [8, 40, 1.0, 0.05] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
@@ -79,10 +107,21 @@ def _seg_val(segs, f, default_before, hold):
     return default_before                                     # a gap between segments (opacity → 0)
 
 def _warp(rgb, s, dx, dy):
-    """Scale about centre by s, then translate by (dx,dy) px. cv2 affine (bilinear)."""
+    """Scale about centre by s, then translate by (dx,dy) px. cv2 affine (bilinear). Non-square safe."""
     h, w = rgb.shape[:2]; cx, cy = w / 2.0, h / 2.0
     M = np.float32([[s, 0, cx - s * cx + dx], [0, s, cy - s * cy + dy]])
     return cv2.warpAffine(rgb, M, (w, h), flags=cv2.INTER_LINEAR, borderValue=(0, 0, 0))
+
+def _fit_cover(rgb, W, H):
+    """Scale a layer to COVER a WxH canvas (fill, preserve aspect, centre-crop the overflow)."""
+    h, w = rgb.shape[:2]
+    if (w, h) == (W, H):
+        return rgb
+    s = max(W / w, H / h)
+    rw, rh = max(1, round(w * s)), max(1, round(h * s))
+    r = cv2.resize(rgb, (rw, rh), interpolation=cv2.INTER_LANCZOS4 if s < 1 else cv2.INTER_LINEAR)
+    x0 = (rw - W) // 2; y0 = (rh - H) // 2
+    return r[y0:y0 + H, x0:x0 + W]
 
 def _extract_particles(rgb, lum_thresh, min_area):
     """Connected-component blobs above a luminance threshold → (patch_rgb_float, cx, cy)."""
@@ -117,26 +156,30 @@ def render(name):
     b = BRIEFS[name]; N = b["frames"]; fps = b["fps"]; one_shot = b.get("one_shot", True)
     random.seed(b["seed"]); np.random.seed(b["seed"] & 0x7fffffff)   # A3 determinism law
     ld = os.path.join(LAYERS, b.get("layers_dir", name))             # input layer dir (may differ from the brief/output key)
-    layers = []
+    raw = []
     for L in b["layers"]:
         p = os.path.join(ld, L["src"] + ".png")
         if not os.path.exists(p):
             print(f"*** MISSING LAYER {p} ***"); sys.exit(1)
-        rgb = np.asarray(Image.open(p).convert("RGB"))
-        layers.append((L, rgb))
-    res = layers[0][1].shape[0]
+        raw.append((L, np.asarray(Image.open(p).convert("RGB"))))
+    # canvas: brief 'canvas' (W,H) → cover-fit each layer to it (board-effect row plates); else the square layer size.
+    if "canvas" in b:
+        resW, resH = b["canvas"]
+        layers = [(L, _fit_cover(rgb, resW, resH)) for L, rgb in raw]
+    else:
+        resH, resW = raw[0][1].shape[:2]; layers = raw
 
     # pre-extract particle blobs (once) + assign deterministic per-particle attributes
+    cx0, cy0 = resW / 2.0, resH / 2.0; rref = min(resW, resH) / 2.0    # centre + radius reference (non-square safe)
     parts_meta = []
     for L, rgb in layers:
         if L["kind"] != "particles":
             parts_meta.append(None); continue
         blobs = _extract_particles(rgb, L["lum_thresh"], L["min_area"])
-        ef0, ef1 = L["emit_frames"]; ir = L["inner_radius"] * (res / 2.0); ib = L["inner_boost"]
+        ef0, ef1 = L["emit_frames"]; ir = L["inner_radius"] * rref; ib = L["inner_boost"]
         s0, s1 = L["speed_px_s"]; jit = math.radians(L["jitter_deg"]); l0, l1 = L["life_frames"]
-        c = res / 2.0
         for pt in blobs:
-            r = math.hypot(pt["cx"] - c, pt["cy"] - c)
+            r = math.hypot(pt["cx"] - cx0, pt["cy"] - cy0)
             inner = r <= ir
             # centre-weighted burst: inner blobs are inner_boost× more likely to fire in frames ef0..ef0+1
             choices = list(range(ef0, ef1 + 1))
@@ -153,7 +196,7 @@ def render(name):
         if old.startswith("frame_"): os.remove(os.path.join(od, old))
 
     for f in range(1, N + 1):
-        canvas = np.zeros((res, res, 3), np.float32)
+        canvas = np.zeros((resH, resW, 3), np.float32)
         for (L, rgb), pm in zip(layers, parts_meta):
             if L["kind"] == "xform":
                 op = _seg_val(L.get("opacity", []), f, 0.0, hold=False)
@@ -183,7 +226,7 @@ def render(name):
             os.path.join(od, f"frame_{f:03d}.png"))
 
     mode = "one-shot" if one_shot else "looping"
-    print(f"animate_vfx '{name}': {N} frames @ {fps}fps ({mode}), {res}x{res} true-black, "
+    print(f"animate_vfx '{name}': {N} frames @ {fps}fps ({mode}), {resW}x{resH} true-black, "
           f"{len(parts_meta[[i for i,(L,_) in enumerate(layers) if L['kind']=='particles'][0]]['blobs']) if any(L['kind']=='particles' for L,_ in layers) else 0} particles → {od}")
 
 if __name__ == "__main__":

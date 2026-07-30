@@ -8162,16 +8162,20 @@ const VFX = (()=>{
   function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
   // ===================== FLIPBOOK SHEETS (T68F: 384px, per-sheet grid, real-time playback + frame blending) =====================
   let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoadN=0;
-  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva'];   // T76: c1a_deva = the first animate_vfx seq sheet (Deva landing composite, one-shot forward)
+  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','brahmastra'];   // T76 c1a_deva (card-anchored seq); T78 brahmastra (board-effect row-plate seq)
+  const NEW_SHEETS=['c1a_deva','brahmastra'];   // T77/T78: the new catalog pipeline — these load even when LEGACY_VFX gates the rest off
+  const SHEET_GRID_CFG={ brahmastra:{cols:8, rows:5} };   // T78: RECTANGULAR row-plate sheets — grid can't derive from width/SHEET_CELL (non-square cells); cw/ch = sheetDims/(cols,rows). Square sheets omit this (cw=ch=SHEET_CELL).
   let SHEET_CELL=RUNG[vfxRung].cell;   // T74: rung-dependent sheet cell (hi 512 / md 448 / lo 384). Frame count derives from the sheet dims / cell, so 64f/48f/32f are auto-detected.
   const SHEET_FPS=16;   // F1b: 16fps base ×vfxT → the window plays at ~1:1 real tempo
-  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward' };   // venom NEVER reverses; c1a_deva = one-shot forward (plays through, clamps at the empty last frame, dies at life)
+  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', brahmastra:'forward' };   // venom NEVER reverses; c1a_deva/brahmastra = one-shot forward (plays through, clamps at the empty last frame, dies at life)
   const sheetFrameCanvas=offc2(512,512);   // B4: ONE reusable canvas (max cell 512) for draw-time aura tint; draws consume only the SHEET_CELL sub-region
   function haveSheet(key){ return !!sheetImg[key]; }
   function preloadSheets(){ if(sheetLoadN>0) return;   // B5: sheets preload at page load AFTER the stills (stills = guaranteed floor)
-    const names = LEGACY_VFX ? SHEET_NAMES : ['c1a_deva'];   // T77: legacy sheets cannot fire when gated → fetch only c1a_deva (the one new-pipeline sheet)
+    const names = LEGACY_VFX ? SHEET_NAMES : NEW_SHEETS;   // T77/T78: gated → fetch only the new-pipeline sheets (c1a_deva, brahmastra)
     names.forEach(key=>{ const im=new Image(); im.decoding='async';
-      im.onload=()=>{ sheetImg[key]=im; const cols=Math.round((im.naturalWidth||im.width)/SHEET_CELL), rows=Math.round((im.naturalHeight||im.height)/SHEET_CELL); sheetGrid[key]={cols,rows,frames:cols*rows};   // grid derived from RAW dims first
+      im.onload=()=>{ sheetImg[key]=im; const W=im.naturalWidth||im.width, H=im.naturalHeight||im.height, gc=SHEET_GRID_CFG[key];
+        const cols=gc?gc.cols:Math.round(W/SHEET_CELL), rows=gc?gc.rows:Math.round(H/SHEET_CELL), cw=Math.round(W/cols), ch=Math.round(H/rows);
+        sheetGrid[key]={cols,rows,frames:cols*rows,cw,ch};   // T78: cw/ch per-sheet cell dims (square: =SHEET_CELL; rectangular row-plate: from SHEET_GRID_CFG)
         try{ const t0=performance.now(); sheetImg[key]=bakeAlpha(im); bakeMs+=performance.now()-t0; }catch(e){}   // T72: every 2D flipbook sheet draws additive ('lighter') → luminance-alpha bake (same-dims canvas, grid unchanged)
         sheetLoadN++; if(sheetLoadN>=names.length) sheetsReady=true; };
       im.onerror=()=>{ sheetLoadN++; if(sheetLoadN>=names.length) sheetsReady=true; };   // a missing sheet keeps the still + envelope fallback
@@ -8506,13 +8510,14 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     if(s.sheet){
       const gr=sheetGrid[s.sheet]||{cols:6,frames:24}, cols=gr.cols, nf=gr.frames;
       const ff=Math.max(0,Math.min(nf-1, s.frame)), f0=Math.floor(ff), f1=Math.min(nf-1,f0+1), frac=ff-f0;
-      const drawFrame=(fr,alpha)=>{ if(alpha<=0.003) return; const sx0=(fr%cols)*SHEET_CELL, sy0=((fr/cols)|0)*SHEET_CELL;
+      const cW=gr.cw||SHEET_CELL, cH=gr.ch||SHEET_CELL, dH=size*cH/cW;   // T78: per-sheet cell dims (square: =SHEET_CELL, dH=size → identical; rectangular row-plate: 3:1 draw). Tint path is square-only (all tinted sheets are square).
+      const drawFrame=(fr,alpha)=>{ if(alpha<=0.003) return; const sx0=(fr%cols)*cW, sy0=((fr/cols)|0)*cH;
         cx.globalCompositeOperation=blend; cx.globalAlpha=alpha;            // F3b: UNCONDITIONAL gco+alpha assertion per draw
         if(s.tintFac){ const og=sheetFrameCanvas.getContext('2d'); og.globalCompositeOperation='source-over'; og.clearRect(0,0,SHEET_CELL,SHEET_CELL);
           og.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, 0,0,SHEET_CELL,SHEET_CELL); og.globalCompositeOperation='multiply'; og.fillStyle=SPR_FAC[s.tintFac]||'#e0b040'; og.fillRect(0,0,SHEET_CELL,SHEET_CELL);
           og.globalCompositeOperation='destination-in'; og.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, 0,0,SHEET_CELL,SHEET_CELL); og.globalCompositeOperation='source-over';   // T72: the multiply re-opaqued alpha → restore the baked luminance-alpha (keeps the tinted colour, black ground transparent)
           cx.drawImage(sheetFrameCanvas, 0,0,SHEET_CELL,SHEET_CELL, -size*ax,-size*ay, size,size); }   // only the SHEET_CELL sub-region
-        else cx.drawImage(img, sx0,sy0,SHEET_CELL,SHEET_CELL, -size*ax,-size*ay, size,size); };
+        else cx.drawImage(img, sx0,sy0,cW,cH, -size*ax,-dH*ay, size,dH); };   // T78: rectangular-safe (square → size×size, unchanged)
       drawFrame(f0, op*(1-frac)); drawFrame(f1, op*frac);                    // F1c FRAME BLENDING: cross-fade floor+ceil by the fractional part → erases residual stepping
       return;
     }
@@ -8534,6 +8539,9 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   // T76: the first animate_vfx seq composite — a ONE-SHOT Deva landing flare (beam → 4-point star → glow linger). The scale/opacity animation is BAKED per-frame, so the runtime envelope is FLAT (op 1 throughout) and it just plays the 27-frame forward sheet once; life = 27/SHEET_FPS ×vfxT (plays through, clamps at the empty last frame, dies). Missing sheet → addSheetSpr guard no-ops.
   function sprC1aDeva(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
     return addSheetSpr('c1a_deva', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 27/SHEET_FPS*vfxT() }); }
+  // T78: BOARD-EFFECT class — the Brahmastra row-plate (1920×640 3:1). `boardW` = the enemy-half width; the sheet draws boardW wide × boardW/3 tall (rectangular cw/ch), centred at (cxp,cyp). Flat envelope (baked animation), one-shot forward, life = 40/SHEET_FPS ×vfxT (~2.5s at 16fps — the ultimate-weapon spectacle lingers under the following gameplay, decoupled).
+  function sprBrahmastra(cxp,cyp,boardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp);
+    return addSheetSpr('brahmastra', x, y, boardW, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 40/SHEET_FPS*vfxT() }); }
   function sprBloom(cxp,cyp,kind,cardW){ if(reducedMotion()||!ready||!haveSpr('bloom_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), k=pick('bloom',2);
     groundDim(cxp,cyp,W*1.6);   // C1: bloom = combat hit
     addSpr({ img:(kind==='damage'?imgTint(k,'damage'):sprImg[k]), x,y, size:W*2.0, sc0:0.6,sc1:1.2, opPeak:1, crash:true, rot:Math.random()*6.28, anchorX:(/2$/.test(k)?0.4:0.5), anchorY:(/2$/.test(k)?0.6:0.5), ...envLife('bloom') }); return true; }   // T75: flash instant, afterglow breathes out (300ms)
@@ -8663,7 +8671,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
                  __simInitFail(){ try{ if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu._poison=true; return gpuInit(); },   // G3: force the real init throw → floor
                  __reinit(){ gpu._poison=false; gpu.disabled=false; gpu.app=null; return gpuInit(); },
                  __forceBackend(pref){ gpu._pref=pref; try{ if(gpu.gcanvas){ gpu.gcanvas.remove(); gpu.gcanvas=null; } if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu.sprites.length=0; gpu.particles.length=0; return gpuInit(); } },   // G2: force webgl to prove the GLSL variants run
-           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva };
+           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprBrahmastra };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
 async function playEvent(ev, snap){
@@ -8678,6 +8686,7 @@ async function playEvent(ev, snap){
     if(src){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }   // cpulse fires CONCURRENT with the impact visual (beat 1a)
     if(LEGACY_VFX && isBody && src) VFX.cardLand(src.cx, src.rect.top+src.rect.height/2);   // (a) card-lands dust + embers — same beat as the clash SFX [T77-gated]
     if(LEGACY_VFX && isAstra){ const tp=halfCenterClient(1-ownerPiOfUid(ev.sourceUid)); if(tp){ VFX.astraBurst(tp.x, tp.y); if(tier==='combat') vignetteFlash(); if(c.r==='M') VFX.mythic(tp.x, tp.y); } }   // (b) burst; combat → screen-edge vignette; Mythic → lightning + flash + smoke [T77-gated; astra hit-stop/shake stay below]
+    if(isAstra && c && c.id==='brahmastra'){ const oh=document.querySelector('.half.opp'); if(oh){ const r=oh.getBoundingClientRect(); VFX.sprBrahmastra(r.left+r.width/2, r.top+r.height*0.5, r.width*1.04); } }   // T78: BOARD EFFECT (NEW pipeline, ungated) — the golden pillar row-plate over the enemy rows (Brahmastra destroys ALL enemy Units, engine-verified). Its strike beat rides the unconditional spectacle hit-stop below.
     // T67 painted sprite layer (falls back to procedural when a sprite isn't loaded)
     if(isBody && src){ const fac=cardHomeFaction(c) || (G.players[ownerPiOfUid(ev.sourceUid)]||{}).faction || 'devas', isHero=(c.t==='hero');
       if(LEGACY_VFX) VFX.sprRing(src.cx, src.rect.top+src.rect.height*0.78, fac, src.rect.width*(isHero?1.15:1));                          // E2 landing ground ring (faction-tinted; heroes land bigger) [T77-gated]
