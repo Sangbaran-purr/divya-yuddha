@@ -212,6 +212,27 @@ BRIEFS = {
         "opacity": [[2, 6, 0.0, 0.35, "out"], [7, 10, 0.35, 0.35, "lin"], [11, 14, 0.35, 0.0, "out"]] },
     ],
   },
+
+  # VENOM TICK — the LIGHTEST effect in the library (≤ the damage tick), fires on venom application AND each drain. Venom
+  # SEEPS DOWNWARD (damage bursts out, buff rises, venom falls — the direction triad closes). 10 frames = 417ms @24fps
+  # (~0.625s at 16fps, the SHORTEST), one-shot, 1254² square. Acid-green. All caps below damage's (0.55/0.6/0.3). L2 = drops.
+  "venom": {
+    "seed": 0x7E4032, "fps": 24, "frames": 10, "one_shot": True, "layers_dir": "venom",
+    "layers": [
+      # L1 SPLASH — 2-frame snap CAPPED at 0.55 (under damage's 0.7), fast die.
+      { "src": "L1_splash", "kind": "xform",
+        "opacity": [[1, 2, 0.0, 0.55, "out"], [3, 6, 0.55, 0.0, "in"]],
+        "scale":   [[1, 2, 0.94, 1.0, "out"]] },
+      # L2 DROPS — seep DOWNWARD (staggered 1-4, not a burst), capped 0.6, dead by 9.
+      { "src": "L2_drops", "kind": "particles",
+        "emit_frames": [1, 4], "inner_radius": 1.0, "inner_boost": 1.0, "drift": "down",
+        "speed_px_s": [35, 75], "jitter_deg": 5.0, "life_frames": [4, 7], "fade_frames": 2,
+        "op_cap": 0.6, "die_by": 9, "lum_thresh": 40, "min_area": 3 },
+      # L3 GLOW — the DIMMEST glow in the library, capped 0.3, rise/hold/fade, alive at 9, black at 10.
+      { "src": "L3_glow", "kind": "xform",
+        "opacity": [[1, 3, 0.0, 0.3, "out"], [4, 6, 0.3, 0.3, "lin"], [7, 10, 0.3, 0.0, "out"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
@@ -314,6 +335,8 @@ def render(name):
             if drift == "radial":                                      # radially OUTWARD from centre (T83 damage burst)
                 ang = math.atan2(pt["cy"] - cy0, pt["cx"] - cx0) + ajit
                 pt["vx"] = math.cos(ang) * spd; pt["vy"] = math.sin(ang) * spd
+            elif drift == "down":                                      # DOWNWARD seep (T86 venom — inverse of 'up')
+                pt["vx"] = math.sin(ajit) * spd; pt["vy"] = math.cos(ajit) * spd
             else:                                                      # upward (default: c1a / gayatri, unchanged)
                 pt["vx"] = math.sin(ajit) * spd; pt["vy"] = -math.cos(ajit) * spd
             pt["life"] = max(1, min(random.randint(l0, l1), die_by - pt["act"]))   # clamp: dead by `die_by` (default N). VETO "all dead / final frame black". die_by=N leaves c1a/gayatri unchanged.
