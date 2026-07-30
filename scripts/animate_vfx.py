@@ -61,8 +61,10 @@ def _landing_brief(layers_dir, seed):
     return { "seed": seed, "fps": 24, "frames": 27, "one_shot": True, "layers_dir": layers_dir, "layers": LANDING_LAYERS }
 
 BRIEFS = {
-  "c1a_deva":      _landing_brief("landing_deva",  0xC1A0DE),   # Deva landing (shipped sheet name kept; seed unchanged → byte-identical)
-  "landing_asura": _landing_brief("landing_asura", 0xA5172A),   # T80 Asura landing (same class brief, own seed/layers)
+  "c1a_deva":       _landing_brief("landing_deva",   0xC1A0DE),   # Deva landing (shipped sheet name kept; seed unchanged → byte-identical)
+  "landing_asura":  _landing_brief("landing_asura",  0xA5172A),   # T80 Asura landing (same class brief, own seed/layers)
+  "landing_vanara": _landing_brief("landing_vanara", 0x7A9A2A),   # T81 Vanara landing
+  "landing_naga":   _landing_brief("landing_naga",   0x9A6A2A),   # T81 Naga landing
 
   # BRAHMASTRA — the board-effect class (C2b: "golden pillar of annihilation, ground to sky"). 40 frames = 1667ms @24fps,
   # one-shot, composited into a 1920x640 ROW PLATE (cover-fit of the 16:9 layers → full-width, centre-cropped band) placed over

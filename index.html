@@ -4692,6 +4692,7 @@ function startGame(p0Faction, p1Faction){
   render();
   VFX.init(); VFX.resize();      // size the impact-VFX canvas to the now-visible board
   VFX.preloadSprites();          // T67: load + tint the painted VFX kit at MATCH START (async, non-blocking; mulligan proceeds; procedural fallback covers the load gap)
+  VFX.loadMatchSheets(currentFactions.p0, currentFactions.p1);   // T81: lazy — only THIS match's factions' landing sheets (+ the Deva row plates if a Deva is in the match). Loads during the mulligan window.
   beginMulligan();          // play begins when the player confirms their opening hand
 }
 const FAC_LABEL = f => f==='asuras' ? 'ASURA' : f==='vanaras' ? 'VANARA' : f==='nagas' ? 'NAGA' : 'DEVA';
@@ -6972,7 +6973,7 @@ function startStoryChapter(id){
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers(); battleStageStart();   // T42
   Audio2.musicDuck(false); Audio2.playTrack('battle'); conchPending=true;   // release the intro duck INTO the menu→battle crossfade (the crossfade + conch stay the hinge)
-  showRealmIntro(); render(); VFX.init(); VFX.resize(); VFX.preloadSprites();   // T67 sprite kit at story-match start too
+  showRealmIntro(); render(); VFX.init(); VFX.resize(); VFX.preloadSprites(); VFX.loadMatchSheets(currentFactions.p0, currentFactions.p1);   // T67 sprite kit + T81 lazy match sheets at story-match start too
   if (G.mulliganCount>0) storyBeginMulligan();   // ch4/ch5: run the mulligan phase (teaches it) with the pre-match Brihaspati line
   else pump();                                   // ch1–3 (mulligan:0): straight into round 1 (player-first via storyRng)
 }
@@ -8145,7 +8146,7 @@ const VFX = (()=>{
     // shield(gold) / venom(green) / surge(ember) / lightning(blue-white) / smoke: ship as-loaded (GL4 overrides)
   }
   function preloadSprites(){ if(sprLoadN>0) return;                                    // idempotent, once per session (0d slot; async → never blocks the mulligan)
-    if(!LEGACY_VFX){ spritesReady=true; preloadSheets(); return; }                     // T77: legacy stills cannot fire → skip the fetch (c1a uses no stills); still chain to the sheet preload (c1a_deva)
+    if(!LEGACY_VFX){ spritesReady=true; return; }                                       // T77: legacy stills cannot fire → skip. T81: sheets are NO LONGER chained here — they load per-match via loadMatchSheets (page load fetches no sheets).
     SPR_NAMES.forEach(key=>{ const im=new Image(); im.decoding='async';
       im.onload=()=>{ sprImg[key]=im; try{buildTints(key,im);}catch(e){}
         try{ const t0=performance.now();
@@ -8153,33 +8154,39 @@ const VFX = (()=>{
           const tv=sprTint[key]; if(tv){ for(const k in tv) tv[k]=bakeAlpha(tv[k]); }  // and EVERY tinted variant (the tile returns through the tinted copies otherwise)
           bakeMs+=performance.now()-t0;
         }catch(e){}
-        sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; preloadSheets(); } };
-      im.onerror=()=>{ sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; preloadSheets(); } };   // a missing sprite just leaves its procedural fallback in place; stills done → start sheets (B5)
+        sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; } };            // T81: no sheet chain (LEGACY-on stills only; sheets load per-match)
+      im.onerror=()=>{ sprLoadN++; if(sprLoadN>=SPR_NAMES.length){ spritesReady=true; } };   // a missing sprite just leaves its procedural fallback in place
       im.src=stillURL(key); });   // T74: rung-selected still resolution
   }
   function pick(pre,n){ return pre+'_'+(1+Math.floor(Math.random()*n)); }
   function haveSpr(key){ return !!sprImg[key]; }
   function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
   // ===================== FLIPBOOK SHEETS (T68F: 384px, per-sheet grid, real-time playback + frame blending) =====================
-  let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoadN=0;
-  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','brahmastra','gayatri'];   // T76 c1a_deva (Deva landing); T80 landing_asura (Asura landing, same class); T78 brahmastra; T79 gayatri
-  const NEW_SHEETS=['c1a_deva','landing_asura','brahmastra','gayatri'];   // T77+: the new catalog pipeline — these load even when LEGACY_VFX gates the rest off (Vanara/Naga landings join here when their sheets land)
+  let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoading={};   // T81: per-key load tracking (was a global sheetLoadN counter — lazy loading is incremental per match)
+  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
+  const LANDING_SHEET={ devas:'c1a_deva', asuras:'landing_asura', vanaras:'landing_vanara', nagas:'landing_naga' };   // faction → landing sheet key (all four ship as of T81)
   const SHEET_GRID_CFG={ brahmastra:{cols:8, rows:5}, gayatri:{cols:6, rows:6} };   // T78/T79: RECTANGULAR row-plate sheets — grid can't derive from width/SHEET_CELL (non-square cells); cw/ch = sheetDims/(cols,rows). Square sheets omit this (cw=ch=SHEET_CELL).
   let SHEET_CELL=RUNG[vfxRung].cell;   // T74: rung-dependent sheet cell (hi 512 / md 448 / lo 384). Frame count derives from the sheet dims / cell, so 64f/48f/32f are auto-detected.
   const SHEET_FPS=16;   // F1b: 16fps base ×vfxT → the window plays at ~1:1 real tempo
-  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', brahmastra:'forward', gayatri:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward (plays through, clamps at the empty last frame, dies at life)
+  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward (plays through, clamps at the empty last frame, dies at life)
   const sheetFrameCanvas=offc2(512,512);   // B4: ONE reusable canvas (max cell 512) for draw-time aura tint; draws consume only the SHEET_CELL sub-region
   function haveSheet(key){ return !!sheetImg[key]; }
-  function preloadSheets(){ if(sheetLoadN>0) return;   // B5: sheets preload at page load AFTER the stills (stills = guaranteed floor)
-    const names = LEGACY_VFX ? SHEET_NAMES : NEW_SHEETS;   // T77/T78: gated → fetch only the new-pipeline sheets (c1a_deva, brahmastra)
-    names.forEach(key=>{ const im=new Image(); im.decoding='async';
-      im.onload=()=>{ sheetImg[key]=im; const W=im.naturalWidth||im.width, H=im.naturalHeight||im.height, gc=SHEET_GRID_CFG[key];
-        const cols=gc?gc.cols:Math.round(W/SHEET_CELL), rows=gc?gc.rows:Math.round(H/SHEET_CELL), cw=Math.round(W/cols), ch=Math.round(H/rows);
-        sheetGrid[key]={cols,rows,frames:cols*rows,cw,ch};   // T78: cw/ch per-sheet cell dims (square: =SHEET_CELL; rectangular row-plate: from SHEET_GRID_CFG)
-        try{ const t0=performance.now(); sheetImg[key]=bakeAlpha(im); bakeMs+=performance.now()-t0; }catch(e){}   // T72: every 2D flipbook sheet draws additive ('lighter') → luminance-alpha bake (same-dims canvas, grid unchanged)
-        sheetLoadN++; if(sheetLoadN>=names.length) sheetsReady=true; };
-      im.onerror=()=>{ sheetLoadN++; if(sheetLoadN>=names.length) sheetsReady=true; };   // a missing sheet keeps the still + envelope fallback
-      im.src=sheetURL(key); });   // T74: rung-selected sheet resolution
+  // T81: LOAD ONE SHEET, idempotent per key (skips if already loaded or in-flight). bakeAlpha + grid derivation as before.
+  function loadSheet(key){ if(!key || sheetImg[key] || sheetLoading[key]) return; sheetLoading[key]=true;
+    const im=new Image(); im.decoding='async';
+    im.onload=()=>{ const W=im.naturalWidth||im.width, H=im.naturalHeight||im.height, gc=SHEET_GRID_CFG[key];
+      const cols=gc?gc.cols:Math.round(W/SHEET_CELL), rows=gc?gc.rows:Math.round(H/SHEET_CELL), cw=Math.round(W/cols), ch=Math.round(H/rows);
+      sheetGrid[key]={cols,rows,frames:cols*rows,cw,ch};   // cw/ch per-sheet cell dims (square: =SHEET_CELL; rectangular row-plate: from SHEET_GRID_CFG)
+      try{ const t0=performance.now(); sheetImg[key]=bakeAlpha(im); bakeMs+=performance.now()-t0; }catch(e){ sheetImg[key]=im; }   // T72 luminance-alpha bake
+      sheetsReady=true; };
+    im.onerror=()=>{ sheetLoading[key]=false; };   // missing sheet → leave unloaded; the recipe's addSheetSpr guard no-ops
+    im.src=sheetURL(key); }   // T74: rung-selected resolution
+  // T81 PER-MATCH LAZY LOAD (owner ruling): page load fetches NO sheets; at match start we load ONLY what this match can use —
+  // the ≤2 factions' landing sheets, plus the two row plates IFF a Deva deck is present (Brahmastra + Gayatri are Deva-only, engine-verified).
+  function loadMatchSheets(facA, facB){
+    if(LEGACY_VFX){ SHEET_NAMES.forEach(loadSheet); return; }   // A/B rollback: blanket-load the whole catalog
+    loadSheet(LANDING_SHEET[facA]); loadSheet(LANDING_SHEET[facB]);
+    if(facA==='devas' || facB==='devas'){ loadSheet('brahmastra'); loadSheet('gayatri'); }
   }
   function addSheetSpr(key, x, y, size, o){ if(reducedMotion()||!sheetImg[key]) return false;
     const mode=SHEET_MODE[key]||'forward', nf=(sheetGrid[key]||{}).frames||24;
@@ -8537,8 +8544,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     if(!haveSpr('aura_1')) return false;
     addSpr({ img:imgTint(pick('aura',3),faction), x,y, size:W*1.9, sc0:0.8,sc1:1.15, op0:0,opPeak:0.8,op1:0, rot:Math.random()*6.28, halo:true, ...envLife('aura') }); return true; }
   // T76: the first animate_vfx seq composite — a ONE-SHOT Deva landing flare (beam → 4-point star → glow linger). The scale/opacity animation is BAKED per-frame, so the runtime envelope is FLAT (op 1 throughout) and it just plays the 27-frame forward sheet once; life = 27/SHEET_FPS ×vfxT (plays through, clamps at the empty last frame, dies). Missing sheet → addSheetSpr guard no-ops.
-  // T80: the LANDING CLASS is faction-keyed. Deva→c1a_deva, Asura→landing_asura; Vanara/Naga have no sheet yet → no-op (addSheetSpr guards on a missing sheet; add the key + the sheet when they land). All landings share the c1a envelope (27f one-shot, flat runtime envelope, drawn at card scale W*2.4).
-  const LANDING_SHEET={ devas:'c1a_deva', asuras:'landing_asura' };   // faction → landing sheet key (extend as sheets land)
+  // T80/T81: the LANDING CLASS is faction-keyed via LANDING_SHEET (defined in the sheet config; all four factions ship). All landings share the c1a envelope (27f one-shot, flat runtime envelope, drawn at card scale W*2.4). A faction whose sheet isn't loaded yet no-ops (addSheetSpr guards on a missing sheet).
   function sprLanding(faction, cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const key=LANDING_SHEET[faction]; if(!key) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
     return addSheetSpr(key, x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 27/SHEET_FPS*vfxT() }); }
   function sprC1aDeva(cxp,cyp,cardW){ return sprLanding('devas', cxp,cyp,cardW); }   // shipped recipe name kept (A/B + back-compat)
@@ -8650,7 +8656,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     setTimeout(()=>{ if(ready) brahmastraSmoke(ix,iy); }, (90+100+60+140)*s);                            // afterglow tail (flash div) → smoke + embers
   }
   return { init, resize, cardLand, astraBurst, mythic,
-           preloadSprites, preloadSheets, spritesReady:()=>spritesReady, sheetsReady:()=>sheetsReady, sprCount:()=>sprites.length, bakeMs:()=>bakeMs,
+           preloadSprites, loadMatchSheets, spritesReady:()=>spritesReady, sheetsReady:()=>sheetsReady, sprCount:()=>sprites.length, bakeMs:()=>bakeMs,
            __advance2D:(dt)=>{ try{ frame(dt, performance.now()); }catch(e){} },   // G-test: drive the Canvas2D frame synchronously (bypasses the pane's rAF throttling)
            frameOf:(i)=>{ const s=sprites[i]; return s?{sheet:s.sheet,frame:s.frame,dir:s.dir,mode:s.mode}:null; },   // G2 instrumentation: read live frame index
            setBloom:(v)=>{ bloomOn=!!v; }, bloomState:()=>({ok:BLOOM_OK,on:bloomOn}),   // G3 A/B proof hook (bloom on/off)
@@ -8664,7 +8670,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
                  get heroReady(){ return gpu.heroReady; }, get heroActive(){ return !!gpu.hero; }, get heroBeat(){ return gpu.hero?gpu.hero.beat:0; }, get heroLog(){ return gpu.heroLog.slice(); }, get PCAP(){ return gpu.PCAP; },   // T70-P2H instrumentation
                  get quality(){ return vfxRung; }, get cell(){ return SHEET_CELL; }, get gridInfo(){ return gpu.grid||{}; },   // T74 quality-ladder instrumentation
                  set quality(q){ if(!RUNG[q]||q===vfxRung) return; vfxRung=q; SHEET_CELL=RUNG[q].cell;   // T74: force a rung (reloads only the selected rung's assets)
-                   sprImg={}; sprTint={}; spritesReady=false; sprLoadN=0; sheetImg={}; sheetGrid={}; sheetsReady=false; sheetLoadN=0; bakeMs=0; preloadSprites();
+                   sprImg={}; sprTint={}; spritesReady=false; sprLoadN=0; sheetImg={}; sheetGrid={}; sheetsReady=false; sheetLoading={}; bakeMs=0; preloadSprites();
                    try{ if(gpu.app){ gpu.tex={}; gpu.sheetTex={}; gpu.mvSheetTex={}; gpu.heroTex={}; gpu.grid={}; gpu.texReady=false; gpu.heroReady=false; gpuLoadSurge(); } }catch(e){} },
                  get heroRingMaxVisW(){ return gpu.hero?(gpu.hero.ringMaxVisW||0):(gpu._lastRingMaxVisW||0); }, get fieldW(){ return fieldEl?fieldEl.getBoundingClientRect().width:0; },
                  __heroAdvance(dt){ try{ if(gpu.hero) gpuHeroTick(dt); gpuParticleTick(dt); if(gpu.app) gpu.app.renderer.render(gpu.stage); }catch(e){} return gpu.hero?gpu.hero.beat:0; },   // G-test: drive the sequencer synchronously (bypasses the pane's rAF throttling)
