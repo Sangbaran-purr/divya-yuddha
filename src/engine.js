@@ -1222,6 +1222,7 @@ function resolveAstra(g, pi, c, targetUid){
       let t = targetUid!=null ? opp.heroes.find(h=>h.uid===targetUid) : null;
       if (!t) t = opp.heroes.reduce((a,b)=>a.power>=b.power?a:b);
       opp.heroes.splice(opp.heroes.indexOf(t),1); opp.removedHeroes.push(t);
+      emit(g,'passive',{targetUids:[t.uid],abilityName:'Sudarshana',text:'removed'});   // T92: observational emit (rule #7 — no state/rng touch) so the temporary hero-removal is attributable + choreographable; behavior-neutral (no engine/story/quest consumer branches on 'passive')
       if (t.id==='vritra'){ for (const u of pl.units) if (u.vritraBound){ u.bound=false; u.vritraBound=false; log(g,`With Vritra gone, ${u.n} slips its bonds.`); emit(g,'passive',{targetUids:[u.uid],abilityName:'Vritra',text:'released'}); } }   // WAVE 1 batch 16 — "while Vritra remains": Vritra removed (the only hero-removal path, Sudarshana) → free its binds on the removing side's Units
       log(g,`Sudarshana Chakra removes ${t.n} for this round.`); break;
     }

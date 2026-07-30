@@ -302,6 +302,33 @@ BRIEFS = {
         "opacity": [[1, 10, 0.0, 0.5, "in"], [11, 14, 0.5, 0.7, "lin"], [15, 28, 0.7, 0.7, "lin"], [29, 40, 0.7, 0.0, "out"]] },
     ],
   },
+
+  # SUDARSHANA CHAKRA — the spinning target strike (second Deva Mythic; the rotate vocabulary's showcase). Target-anchored
+  # like Vajra: square, source-res, 18f one-shot. It is a REMOVAL, not a kill — the discus descends, spins through the cut,
+  # and is gone; the hero vanishes from its row. T92 STROBE FIX A (owner ruling): rotation 84° across frames 1-12
+  # (~7.6°/frame, under a tooth-gap) so the serrated rim TRACKS frame-to-frame instead of aliasing (the 40°/frame veto).
+  "sudarshana": {
+    "seed": 0x5DA12A, "fps": 24, "frames": 18, "one_shot": True, "layers_dir": "sudarshana",
+    "layers": [
+      # L1 DISCUS — descends & strikes (f1-2 arrival snap + scale 0.8→1.0), holds spinning through the cut, gone by 12.
+      { "src": "L1_discus", "kind": "xform",
+        "opacity": [[1, 2, 0.0, 1.0, "out"], [3, 9, 1.0, 1.0, "lin"], [10, 12, 1.0, 0.0, "in"]],
+        "scale":   [[1, 3, 0.8, 1.0, "out"], [4, 12, 1.0, 1.04, "lin"]],
+        "rotate":  [1, 12, 84] },
+      # L2 TRAIL — the spin-blur ring, tracks the discus in lockstep (MATCHED rotation), lags on arrival + lingers 2f past.
+      { "src": "L2_trail", "kind": "xform",
+        "opacity": [[2, 4, 0.0, 0.85, "out"], [5, 10, 0.85, 0.6, "lin"], [11, 14, 0.6, 0.0, "in"]],
+        "scale":   [[2, 14, 1.0, 1.06, "lin"]],
+        "rotate":  [1, 12, 84] },
+      # L3 SPARKS — RADIAL burst at the strike instant (emit f3-5), consumed outward, dead by 12.
+      { "src": "L3_sparks", "kind": "particles", "drift": "radial",
+        "emit_frames": [3, 5], "inner_radius": 1.0, "inner_boost": 1.0, "speed_px_s": [80, 150], "life_frames": [6, 12],
+        "jitter_deg": 14.0, "fade_frames": 2, "die_by": 12, "lum_thresh": 44, "min_area": 3 },
+      # L4 GLOW — blooms with the strike, holds, the ONLY linger (alive at f17, black at f18).
+      { "src": "L4_glow", "kind": "xform",
+        "opacity": [[1, 4, 0.0, 0.55, "out"], [5, 10, 0.55, 0.55, "lin"], [11, 18, 0.55, 0.0, "out"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
