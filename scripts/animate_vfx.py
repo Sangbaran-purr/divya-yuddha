@@ -233,6 +233,43 @@ BRIEFS = {
         "opacity": [[1, 3, 0.0, 0.3, "out"], [4, 6, 0.3, 0.3, "lin"], [7, 10, 0.3, 0.0, "out"]] },
     ],
   },
+
+  # CHAOS WASH — the Asura storm that the weapons carry: a wild, rolling, UNSTABLE row plate over the surging half. 24 frames
+  # = 1000ms @24fps (~1.5s at 16fps), one-shot, 1920×640 cover-fit (mixed source dims). All whole-layer (arcs FLICKER, not
+  # extract). Seed 0xC4057A is ODD → storm_sign +1 → the storm rolls RIGHT (+30px). W2 edge law (top/bottom fade, L/R burn).
+  "chaos_wash": {
+    "seed": 0xC4057A, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "chaos_wash", "canvas": (1920, 640),
+    "layers": [
+      # L1 STORM — rolls in, breathes hot, fades; horizontal ROLL +30px across life (seed → right).
+      { "src": "L1_storm", "kind": "xform",
+        "opacity":  [[1, 4, 0.0, 0.8, "out"], [15, 24, 0.8, 0.0, "in"]],
+        "op_sine":  [5, 14, 0.8, 0.10],   # breathes hot 0.8→0.9→0.8
+        "drift_x":  [1, 24, 30] },
+      # L2 ARCS — ERRATIC flicker (spikes and dips, NOT a clean decay — chaos), scale creep.
+      { "src": "L2_arcs", "kind": "xform",
+        "op_keys": [2, [0.7, 0.3, 0.85, 0.45, 0.6, 0.25, 0.75, 0.35, 0.5, 0.2, 0.55, 0.3, 0.4, 0.15, 0.25, 0.1, 0.0]],   # frames 2-18
+        "scale":   [[2, 18, 1.0, 1.04, "lin"]] },
+      # L3 GLOW — rise/hold/fade, last alive at 23, black at 24.
+      { "src": "L3_glow", "kind": "xform",
+        "opacity": [[1, 6, 0.0, 0.5, "out"], [7, 16, 0.5, 0.5, "lin"], [17, 24, 0.5, 0.0, "out"]] },
+    ],
+  },
+
+  # CHAOS MARK — where the storm LANDS: an erratic spark on the blessed unit, tick-scale. 12 frames = 500ms @24fps, one-shot,
+  # 1254² square, both whole-layer. Erratic op_keys flicker (distinct from Vajra's ORDERLY restrike — chaos is never clean).
+  "chaos_mark": {
+    "seed": 0xC4A12A, "fps": 24, "frames": 12, "one_shot": True, "layers_dir": "chaos_mark",
+    "layers": [
+      # L1 CRACKLE — 2-frame snap, then erratic flicker, dead by 9. Scale creeps 0.9→1.05→1.1.
+      { "src": "L1_crackle", "kind": "xform",
+        "opacity": [[1, 2, 0.0, 0.75, "out"]],
+        "op_keys": [3, [0.75, 0.4, 0.65, 0.3, 0.45, 0.2, 0.0]],   # frames 3-9 erratic
+        "scale":   [[1, 2, 0.9, 1.05, "out"], [3, 9, 1.05, 1.1, "lin"]] },
+      # L2 GLOW — capped 0.35, rise/hold/fade, alive at 11, black at 12.
+      { "src": "L2_glow", "kind": "xform",
+        "opacity": [[1, 3, 0.0, 0.35, "out"], [4, 8, 0.35, 0.35, "lin"], [9, 12, 0.35, 0.0, "out"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
@@ -299,6 +336,7 @@ def render(name):
         print(f"*** unknown brief '{name}' (have: {', '.join(BRIEFS)}) ***"); sys.exit(1)
     b = BRIEFS[name]; N = b["frames"]; fps = b["fps"]; one_shot = b.get("one_shot", True)
     random.seed(b["seed"]); np.random.seed(b["seed"] & 0x7fffffff)   # A3 determinism law
+    storm_sign = 1 if (b["seed"] & 1) else -1                        # T87: seed-derived roll direction (right if odd) — from the seed VALUE, NOT an rng draw, so it never perturbs the determinism sequence
     ld = os.path.join(LAYERS, b.get("layers_dir", name))             # input layer dir (may differ from the brief/output key)
     raw = []
     for L in b["layers"]:
@@ -372,7 +410,12 @@ def render(name):
                     df0, df1, dpx = L["drift_up"]
                     if f >= df0:
                         dy = -dpx * min(1.0, (f - df0) / max(1, df1 - df0))
-                canvas += _warp(rgb, sc, 0.0, dy, L.get("scale_anchor", "center")).astype(np.float32) * op
+                dx = 0.0
+                if "drift_x" in L:                              # horizontal ROLL [f0,f1,px]; sign = seed-derived storm_sign (T87)
+                    xf0, xf1, xpx = L["drift_x"]
+                    if f >= xf0:
+                        dx = storm_sign * xpx * min(1.0, (f - xf0) / max(1, xf1 - xf0))
+                canvas += _warp(rgb, sc, dx, dy, L.get("scale_anchor", "center")).astype(np.float32) * op
             else:  # particles
                 fade = pm["fade"]; cap = pm["op_cap"]
                 for pt in pm["blobs"]:

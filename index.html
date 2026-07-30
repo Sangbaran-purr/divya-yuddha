@@ -8163,12 +8163,12 @@ const VFX = (()=>{
   function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
   // ===================== FLIPBOOK SHEETS (T68F: 384px, per-sheet grid, real-time playback + frame blending) =====================
   let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoading={};   // T81: per-key load tracking (was a global sheetLoadN counter — lazy loading is incremental per match)
-  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff','shield','venom'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
+  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff','shield','venom','chaos_wash','chaos_mark'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
   const LANDING_SHEET={ devas:'c1a_deva', asuras:'landing_asura', vanaras:'landing_vanara', nagas:'landing_naga' };   // faction → landing sheet key (all four ship as of T81)
-  const SHEET_GRID_CFG={ brahmastra:{cols:8, rows:5}, gayatri:{cols:6, rows:6} };   // T78/T79: RECTANGULAR row-plate sheets — grid can't derive from width/SHEET_CELL (non-square cells); cw/ch = sheetDims/(cols,rows). Square sheets omit this (cw=ch=SHEET_CELL).
+  const SHEET_GRID_CFG={ brahmastra:{cols:8, rows:5}, gayatri:{cols:6, rows:6}, chaos_wash:{cols:6, rows:4} };   // T78/T79: RECTANGULAR row-plate sheets — grid can't derive from width/SHEET_CELL (non-square cells); cw/ch = sheetDims/(cols,rows). Square sheets omit this (cw=ch=SHEET_CELL).
   let SHEET_CELL=RUNG[vfxRung].cell;   // T74: rung-dependent sheet cell (hi 512 / md 448 / lo 384). Frame count derives from the sheet dims / cell, so 64f/48f/32f are auto-detected.
   const SHEET_FPS=16;   // F1b: 16fps base ×vfxT → the window plays at ~1:1 real tempo
-  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward', shield:'forward', venom:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward (plays through, clamps at the empty last frame, dies at life)
+  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward', shield:'forward', venom:'forward', chaos_wash:'forward', chaos_mark:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward (plays through, clamps at the empty last frame, dies at life)
   const sheetFrameCanvas=offc2(512,512);   // B4: ONE reusable canvas (max cell 512) for draw-time aura tint; draws consume only the SHEET_CELL sub-region
   function haveSheet(key){ return !!sheetImg[key]; }
   // T81: LOAD ONE SHEET, idempotent per key (skips if already loaded or in-flight). bakeAlpha + grid derivation as before.
@@ -8191,6 +8191,7 @@ const VFX = (()=>{
     if(LEGACY_VFX){ SHEET_NAMES.forEach(loadSheet); return; }   // A/B rollback: blanket-load the whole catalog
     loadSheet(LANDING_SHEET[facA]); loadSheet(LANDING_SHEET[facB]);
     if(facA==='devas' || facB==='devas'){ loadSheet('brahmastra'); loadSheet('gayatri'); loadSheet('vajra'); }   // T78/T79/T82 Deva-only cards
+    if(facA==='asuras' || facB==='asuras'){ loadSheet('chaos_wash'); loadSheet('chaos_mark'); }   // T87 Asura-only Chaos Surge pair
   }
   function addSheetSpr(key, x, y, size, o){ if(reducedMotion()||!sheetImg[key]) return false;
     const mode=SHEET_MODE[key]||'forward', nf=(sheetGrid[key]||{}).frames||24;
@@ -8573,6 +8574,11 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   // T86: shared VENOM TICK — the LIGHTEST effect (fires on venom application AND each drain, acid-green, seeps downward). Drawn at W*1.3 (smallest). 10f (shortest). Pure flavor — the ☠ floater + wetBadge + persistent .venombadge carry the state. (Distinct from the legacy sprVenom.)
   function sprVenomTick(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
     return addSheetSpr('venom', x, y, W*1.3, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 10/SHEET_FPS*vfxT() }); }
+  // T87: Chaos Surge dual-layer. WASH = the Asura storm over the surging half (row plate, like brahmastra/gayatri). MARK = the erratic spark where it lands (card-anchored, tick-scale W*1.4). Fired together on a surge buff (wash once/action, mark per surged unit, delayed).
+  function sprChaosWash(cxp,cyp,boardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp);
+    return addSheetSpr('chaos_wash', x, y, boardW, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 24/SHEET_FPS*vfxT() }); }
+  function sprChaosMark(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    return addSheetSpr('chaos_mark', x, y, W*1.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 12/SHEET_FPS*vfxT() }); }
   function sprBloom(cxp,cyp,kind,cardW){ if(reducedMotion()||!ready||!haveSpr('bloom_1')) return false; const {x,y}=local(cxp,cyp), W=cw(cardW), k=pick('bloom',2);
     groundDim(cxp,cyp,W*1.6);   // C1: bloom = combat hit
     addSpr({ img:(kind==='damage'?imgTint(k,'damage'):sprImg[k]), x,y, size:W*2.0, sc0:0.6,sc1:1.2, opPeak:1, crash:true, rot:Math.random()*6.28, anchorX:(/2$/.test(k)?0.4:0.5), anchorY:(/2$/.test(k)?0.6:0.5), ...envLife('bloom') }); return true; }   // T75: flash instant, afterglow breathes out (300ms)
@@ -8702,7 +8708,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
                  __simInitFail(){ try{ if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu._poison=true; return gpuInit(); },   // G3: force the real init throw → floor
                  __reinit(){ gpu._poison=false; gpu.disabled=false; gpu.app=null; return gpuInit(); },
                  __forceBackend(pref){ gpu._pref=pref; try{ if(gpu.gcanvas){ gpu.gcanvas.remove(); gpu.gcanvas=null; } if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu.sprites.length=0; gpu.particles.length=0; return gpuInit(); } },   // G2: force webgl to prove the GLSL variants run
-           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick };
+           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
 async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event slice, for the surviving-damage look-ahead (a same-uid destroy ⇒ killing blow ⇒ no tick)
@@ -8765,7 +8771,10 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
         if(LEGACY_VFX){ if(ev.abilityName==='Chaos Surge'){ VFX.sprSurge(pos.cx, tcy, pos.rect.width); }                   // E8 Chaos Surge flare [T77-gated legacy]
           else if(ev.abilityName==='Leap'){ fxRing(pos,'buff'); leapArcFromText(pos, ev.text); }                          // E9 leap streak [T77-gated legacy]
           else if(!VFX.sprAura(pos.cx, tcy, tfac, pos.rect.width)){ fxRing(pos,'buff'); } }                               // E1 buff aura [T77-gated legacy]
-        else if(!evs.some(e=>e.type==='play' && e.sourceUid===tgts[i])) VFX.sprBuff(pos.cx, tcy, pos.rect.width);   // T84: gain tick, generic (Chaos Surge/Leap/on-play/mid-board all funnel here). Suppressed for a unit PLAYED this action — its landing flare already fires on it (the only same-action-same-unit coincidence; Gayatri revive emits no buff).
+        else if(ev.abilityName==='Chaos Surge'){   // T87: Chaos Surge REPLACES the gold tick with the dual-layer storm — wash over the surging half (ONCE per action), + an erratic mark on THIS surged unit ~350ms into the wash (setTimeout idiom).
+          if(ev===evs.find(e=>e.type==='buff' && e.abilityName==='Chaos Surge')){ const owner=ownerPiOfUid(tgts[i]), wh=document.querySelector(owner===1?'.half.opp':'.half.me'); if(wh){ const r=wh.getBoundingClientRect(); VFX.sprChaosWash(r.left+r.width/2, r.top+r.height*0.5, r.width*1.04); } }
+          const mx=pos.cx, my=tcy, mw=pos.rect.width; setTimeout(()=>{ if(!choreoSkip) VFX.sprChaosMark(mx, my, mw); }, 350*vfxT()); }
+        else if(!evs.some(e=>e.type==='play' && e.sourceUid===tgts[i])) VFX.sprBuff(pos.cx, tcy, pos.rect.width);   // T84: gain tick, generic (Leap/on-play/mid-board). Suppressed for a unit PLAYED this action — its landing flare covers it. (Gayatri revive emits no buff.)
         ft=ev.text||('+'+ev.amount); fk='up'; }                                                                          // cpulse + the +power number STAY
       else if (ev.type==='token'){
         if(LEGACY_VFX){ if(!VFX.sprVenom(pos.cx, tcy, pos.rect.width)) fxDrip(pos); }   // [T77-gated legacy]
