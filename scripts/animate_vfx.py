@@ -35,33 +35,34 @@ EASE = {"lin": _lin, "out": _out, "in": _in, "io": _io}
 # segments are [f_start, f_end, v_start, v_end, ease]; opacity outside all segments = 0
 # (absent); scale outside = held (first-seg start before, last-seg end after).
 # ═══════════════════════════════════════════════════════════════════════════
+# ═══ LANDING CLASS (T80) — the c1a brief IS the shared landing brief. EVERY faction uses these EXACT envelopes; only the
+# layers_dir + seed differ (layer filenames are identical per faction). Tune the landing choreography by editing LANDING_LAYERS
+# ONCE → it propagates to all factions. 27 frames = 1125ms @24fps, one-shot (the VFX_v4a A3 proof, now generalized).
+LANDING_LAYERS = [
+  # L1 CORE BEAM — snap in, hold, ease out; scale settle 1.06→1.0; locked to the landing point.
+  { "src": "L1_beam", "kind": "xform",
+    "opacity": [[1, 2, 0.0, 1.0, "out"], [3, 7, 1.0, 1.0, "lin"], [8, 16, 1.0, 0.0, "in"]],
+    "scale":   [[1, 2, 1.06, 1.0, "out"]] },
+  # L2 GROUND WASH — starts 1 frame after L1 (causal lag); short rise, long overlapping release; drift 1.0→1.18.
+  { "src": "L2_wash", "kind": "xform",
+    "opacity": [[2, 4, 0.0, 0.9, "out"], [5, 16, 0.9, 0.0, "in"]],
+    "scale":   [[2, 16, 1.0, 1.18, "lin"]] },
+  # L3 PARTICLES — connected-component extraction; centre-weighted burst; upward drift + jitter + lifespan, 2-frame fast-fade.
+  { "src": "L3_particles", "kind": "particles",
+    "emit_frames": [1, 4], "inner_radius": 0.40, "inner_boost": 2.5,
+    "speed_px_s": [25, 55], "jitter_deg": 15.0, "life_frames": [12, 23], "fade_frames": 2,
+    "lum_thresh": 40, "min_area": 3 },
+  # L4 OUTER GLOW — slowest riser, longest linger (survives to the final frame); slow single sine breathe 1.0→1.04→1.0.
+  { "src": "L4_glow", "kind": "xform",
+    "opacity": [[1, 5, 0.0, 0.55, "out"], [6, 13, 0.55, 0.55, "lin"], [14, 27, 0.55, 0.0, "out"]],
+    "scale_sine": [6, 27, 1.0, 0.04] },   # [f0, f1, base, amp] → base + amp*sin(phase*pi), one arc
+]
+def _landing_brief(layers_dir, seed):
+    return { "seed": seed, "fps": 24, "frames": 27, "one_shot": True, "layers_dir": layers_dir, "layers": LANDING_LAYERS }
+
 BRIEFS = {
-  # C1A DEVA LANDING — 27 frames = 1125ms @24fps, one-shot (VFX_v4a A3 first pipeline proof).
-  "c1a_deva": {
-    "seed": 0xC1A0DE, "fps": 24, "frames": 27, "one_shot": True, "layers_dir": "landing_deva",
-    "layers": [
-      # L1 CORE BEAM — snap in, hold, ease out; scale settle 1.06→1.0; locked to the landing point.
-      { "src": "L1_beam", "kind": "xform",
-        "opacity": [[1, 2, 0.0, 1.0, "out"], [3, 7, 1.0, 1.0, "lin"], [8, 16, 1.0, 0.0, "in"]],
-        "scale":   [[1, 2, 1.06, 1.0, "out"]] },
-      # L2 GROUND WASH — starts 1 frame after L1 (causal lag); short rise, long overlapping release;
-      # linear outward drift 1.0→1.18.
-      { "src": "L2_wash", "kind": "xform",
-        "opacity": [[2, 4, 0.0, 0.9, "out"], [5, 16, 0.9, 0.0, "in"]],
-        "scale":   [[2, 16, 1.0, 1.18, "lin"]] },
-      # L3 PARTICLES — connected-component extraction; centre-weighted emission burst; per-particle
-      # upward drift + jitter + lifespan, fast-fade over the final 2 frames (mirrors the T75 eviction).
-      { "src": "L3_particles", "kind": "particles",
-        "emit_frames": [1, 4], "inner_radius": 0.40, "inner_boost": 2.5,
-        "speed_px_s": [25, 55], "jitter_deg": 15.0, "life_frames": [12, 23], "fade_frames": 2,
-        "lum_thresh": 40, "min_area": 3 },
-      # L4 OUTER GLOW — slowest riser, longest linger (survives to the final frame); slow single sine
-      # breathe 1.0→1.04→1.0 across 6–27.
-      { "src": "L4_glow", "kind": "xform",
-        "opacity": [[1, 5, 0.0, 0.55, "out"], [6, 13, 0.55, 0.55, "lin"], [14, 27, 0.55, 0.0, "out"]],
-        "scale_sine": [6, 27, 1.0, 0.04] },   # [f0, f1, base, amp] → base + amp*sin(phase*pi), one arc
-    ],
-  },
+  "c1a_deva":      _landing_brief("landing_deva",  0xC1A0DE),   # Deva landing (shipped sheet name kept; seed unchanged → byte-identical)
+  "landing_asura": _landing_brief("landing_asura", 0xA5172A),   # T80 Asura landing (same class brief, own seed/layers)
 
   # BRAHMASTRA — the board-effect class (C2b: "golden pillar of annihilation, ground to sky"). 40 frames = 1667ms @24fps,
   # one-shot, composited into a 1920x640 ROW PLATE (cover-fit of the 16:9 layers → full-width, centre-cropped band) placed over
