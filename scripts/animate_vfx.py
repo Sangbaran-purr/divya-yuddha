@@ -146,6 +146,28 @@ BRIEFS = {
         "opacity": [[1, 4, 0.0, 0.6, "out"], [5, 10, 0.6, 0.6, "lin"], [11, 18, 0.6, 0.0, "out"]] },
     ],
   },
+
+  # DAMAGE TICK — shared, faction-agnostic card-anchored STATUS sting (replaces the gated legacy damage bloom). A SMALL FAST
+  # HURT at ~HALF the weight of a landing: fires constantly, on both halves, several times a turn. Every opacity is CAPPED
+  # (0.7 / 0.75 / 0.4, never 1.0) and it's drawn smaller — the half-weight rule is baked in. 12 frames = 500ms @24fps
+  # (~0.75s at 16fps, the shortest in the library), one-shot, 1254² square. 3 layers (not 4). L2 = particle extraction, RADIAL burst.
+  "damage": {
+    "seed": 0xDA3A6E, "fps": 24, "frames": 12, "one_shot": True, "layers_dir": "damage",
+    "layers": [
+      # L1 CRACK FLASH — 2-frame snap CAPPED at 0.7 (half-weight), fast die.
+      { "src": "L1_crack", "kind": "xform",
+        "opacity": [[1, 2, 0.0, 0.7, "out"], [3, 6, 0.7, 0.0, "in"]],
+        "scale":   [[1, 2, 0.92, 1.0, "out"]] },
+      # L2 SHARDS — a real BURST: all activate in frames 1-3, RADIALLY OUTWARD from centre, capped 0.75, dead by frame 11.
+      { "src": "L2_shards", "kind": "particles",
+        "emit_frames": [1, 3], "inner_radius": 1.0, "inner_boost": 1.0, "drift": "radial",
+        "speed_px_s": [40, 90], "jitter_deg": 10.0, "life_frames": [5, 9], "fade_frames": 2,
+        "op_cap": 0.75, "die_by": 11, "lum_thresh": 40, "min_area": 3 },
+      # L3 PAIN GLOW — a dark pulse CAPPED at 0.4 (not a bloom), rise/hold/fall, alive at 11, black at 12.
+      { "src": "L3_glow", "kind": "xform",
+        "opacity": [[1, 3, 0.0, 0.4, "out"], [4, 7, 0.4, 0.4, "lin"], [8, 12, 0.4, 0.0, "out"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
@@ -235,6 +257,7 @@ def render(name):
         blobs = _extract_particles(rgb, L["lum_thresh"], L["min_area"])
         ef0, ef1 = L["emit_frames"]; ir = L["inner_radius"] * rref; ib = L["inner_boost"]
         s0, s1 = L["speed_px_s"]; jit = math.radians(L["jitter_deg"]); l0, l1 = L["life_frames"]
+        drift = L.get("drift", "up"); die_by = L.get("die_by", N)   # T83: radial-outward burst + a per-brief death-by frame (default N)
         for pt in blobs:
             r = math.hypot(pt["cx"] - cx0, pt["cy"] - cy0)
             inner = r <= ir
@@ -242,11 +265,15 @@ def render(name):
             choices = list(range(ef0, ef1 + 1))
             weights = [(ib if (inner and fr <= ef0 + 1) else 1.0) for fr in choices]
             pt["act"] = random.choices(choices, weights=weights, k=1)[0]
-            theta = random.uniform(-jit, jit)                          # around vertical (up)
+            ajit = random.uniform(-jit, jit)                           # angle jitter (draw order PRESERVED = the old `theta`, so the up-drift path is byte-identical)
             spd = random.uniform(s0, s1)
-            pt["vx"] = math.sin(theta) * spd; pt["vy"] = -math.cos(theta) * spd   # up = -y
-            pt["life"] = max(1, min(random.randint(l0, l1), N - pt["act"]))       # clamp: dead by frame N (VETO "all dead / final frame black"); briefs whose act+life already fit N are unchanged (c1a)
-        parts_meta.append({"blobs": blobs, "fade": L["fade_frames"]})
+            if drift == "radial":                                      # radially OUTWARD from centre (T83 damage burst)
+                ang = math.atan2(pt["cy"] - cy0, pt["cx"] - cx0) + ajit
+                pt["vx"] = math.cos(ang) * spd; pt["vy"] = math.sin(ang) * spd
+            else:                                                      # upward (default: c1a / gayatri, unchanged)
+                pt["vx"] = math.sin(ajit) * spd; pt["vy"] = -math.cos(ajit) * spd
+            pt["life"] = max(1, min(random.randint(l0, l1), die_by - pt["act"]))   # clamp: dead by `die_by` (default N). VETO "all dead / final frame black". die_by=N leaves c1a/gayatri unchanged.
+        parts_meta.append({"blobs": blobs, "fade": L["fade_frames"], "op_cap": L.get("op_cap", 1.0)})
 
     od = os.path.join(SEQ, name); os.makedirs(od, exist_ok=True)
     for old in os.listdir(od):                                         # clean stale frames (rerunnable)
@@ -275,16 +302,16 @@ def render(name):
                     sc = _seg_val(L.get("scale", []), f, 1.0, hold=True)
                 canvas += _warp(rgb, sc, 0.0, 0.0).astype(np.float32) * op
             else:  # particles
-                fade = pm["fade"]
+                fade = pm["fade"]; cap = pm["op_cap"]
                 for pt in pm["blobs"]:
                     age = f - pt["act"]
                     if not one_shot:
                         age = (f - pt["act"]) % N                      # LOOP: lifecycle wraps
                     if age < 0 or age >= pt["life"]:
                         continue
-                    op = 1.0
+                    op = cap                                           # T83: per-shard opacity cap (default 1.0)
                     if age >= pt["life"] - fade:                       # fast-fade over the final `fade` frames
-                        op = max(0.0, (pt["life"] - age) / float(fade))
+                        op = cap * max(0.0, (pt["life"] - age) / float(fade))
                     dx = pt["vx"] * (age / fps); dy = pt["vy"] * (age / fps)
                     _add_patch(canvas, pt["patch"], pt["x0"] + dx, pt["y0"] + dy, op)
         Image.fromarray(np.clip(canvas, 0, 255).astype(np.uint8), "RGB").save(
