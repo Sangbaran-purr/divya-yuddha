@@ -1324,7 +1324,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
   let surasaNegateAstra=false;
   if (opp.surasaTrap){
     const sur = opp.units.find(u=>u.uid===opp.surasaTrap && !u.ghost);
-    if (c.t==='unit'){ c.power-=2; if (sur) sur.power+=2; opp.surasaTrap=false;
+    if (c.t==='unit'){ c.power-=2; emit(g,'damage',{targetUids:[c.uid],amount:-2,abilityName:'Surasa'}); if (sur) sur.power+=2; opp.surasaTrap=false;   // T88b: observational emit (rule #7 \u2014 no state/rng touch) AFTER the play event so the story reads exists\u2192hurt; the trap's -2 is now attributable + choreographable (kill-on-entry legibility)
       log(g, `Surasa\u2019s trap saps ${c.n} (\u22122)${sur?` and feeds Surasa (+2 \u2192 ${sur.power})`:''}.`); }
     else if (c.t==='astra'){ surasaNegateAstra=true; opp.surasaTrap=false;
       log(g, `Surasa\u2019s trap swallows ${c.n} \u2014 its effect is negated (Chaos Surge still churns, \u00a79).`); }

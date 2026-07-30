@@ -3603,7 +3603,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
   let surasaNegateAstra=false;
   if (opp.surasaTrap){
     const sur = opp.units.find(u=>u.uid===opp.surasaTrap && !u.ghost);
-    if (c.t==='unit'){ c.power-=2; if (sur) sur.power+=2; opp.surasaTrap=false;
+    if (c.t==='unit'){ c.power-=2; emit(g,'damage',{targetUids:[c.uid],amount:-2,abilityName:'Surasa'}); if (sur) sur.power+=2; opp.surasaTrap=false;   // T88b: observational emit (rule #7 \u2014 no state/rng touch) AFTER the play event so the story reads exists\u2192hurt; the trap's -2 is now attributable + choreographable (kill-on-entry legibility)
       log(g, `Surasa\u2019s trap saps ${c.n} (\u22122)${sur?` and feeds Surasa (+2 \u2192 ${sur.power})`:''}.`); }
     else if (c.t==='astra'){ surasaNegateAstra=true; opp.surasaTrap=false;
       log(g, `Surasa\u2019s trap swallows ${c.n} \u2014 its effect is negated (Chaos Surge still churns, \u00a79).`); }
@@ -7890,8 +7890,10 @@ async function showcaseCard(uid, playedAs){
   fillShowcase(c, { copy: isCopy || transformed });              // PHASE 2 — the resolved card (the copy), with the ⧉ COPY tag
   if(transformed && !reducedMotion()){ el.style.animation='none'; void el.offsetWidth; el.style.animation=''; }   // re-pop as the crossfade beat (reuse the existing showcasePop)
   sc.classList.remove('hidden','out'); void sc.offsetWidth;
+  const r=el.getBoundingClientRect(), scPos={ el:null, cx:r.left+r.width/2, top:r.top+6, rect:r };   // T88b: the showcase card's rect, captured WHILE visible → the fallback position for a kill-on-entry death (which has no board/snapshot rect)
   await cDelay(1400);
   sc.classList.add('out'); await cDelay(300); sc.classList.add('hidden'); sc.classList.remove('out'); el.classList.remove('shimmer');
+  return scPos;
 }
 function summarize(evs){
   const nm=uid=>{ const c=findCardByUid(uid); return c?c.n:'a Unit'; };
@@ -8714,6 +8716,7 @@ function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cl
 // T88 CAUSALITY: every destroy/damage the player sees must answer WHO did it (source) before TO WHOM (the target beats).
 // destroy/damage events carry only the cause STRING (abilityName), not a sourceUid — so we match the cause to a board card.
 const GENERIC_CAUSES = new Set(['reduced to 0','Venom']);   // deaths from a sweep / venom drains are already legible via the PRECEDING damage/venom beat + the ☠/wetBadge/venom-tick vocabulary — attributing them again would double up.
+let koePos = {};   // T88b: kill-on-entry fallback positions {uid → showcase-rect pos}, reset per action — a unit played AND destroyed the same action has no board/snapshot rect, so its -2 floater + dissolve resolve at the position the showcase occupied.
 function sourcePosForCause(cause, snap){   // the acting SOURCE = a board Unit/Hero whose name equals the cause; return its (DOM-anchored) rect, else null
   if(!cause || typeof G==='undefined' || !G || !G.players) return null;
   for(const pi of [0,1]){ const p=G.players[pi]; if(!p) continue;
@@ -8726,7 +8729,8 @@ async function attributeSource(ev, evs, snap){   // ~520ms source beat (cpulse +
   if(act && act.n===cause) return;   // IMMEDIATE: the cause IS the card the player just played this action — the showcase/callout already named it (Vajra, Brahmastra, Vasuki, on-play destroyers). No extra beat.
   if(ev!==evs.find(e=>(e.type==='damage'||e.type==='destroy') && e.abilityName===cause)) return;   // DELAYED/TRIGGERED, but attribute only ONCE per cause (the first of its damage/destroy events this action) — one Kumbhakarna beat, then all the victims.
   const sp = sourcePosForCause(cause, snap);
-  if(sp){ cpulse(sp.el, 'choreo-src'); calloutAt(sp, cause); await cDelay(520); }   // the player watches the SOURCE flare and shout, THEN the victims resolve. Sourceless delayed causes (no board card by that name) get no beat — no worse than today, flagged for a ruling.
+  if(sp){ cpulse(sp.el, 'choreo-src'); calloutAt(sp, cause); await cDelay(520); }   // WHO — the player watches the SOURCE flare and shout, THEN the victims resolve.
+  else { const t0=ev.targetUids && ev.targetUids[0]; const tp = (t0 && koePos[t0]) || { cx: window.innerWidth/2, top: window.innerHeight*0.42, rect:{top: window.innerHeight*0.42} }; calloutAt(tp, cause); await cDelay(480); }   // T88b: SOURCELESS delayed cause (only Surasa-died-but-trap-fired reaches here today) → name the cause at the victim's (kill-on-entry showcase) position, else screen-centre. Kumbhakarna/Kalanemi/decay always have a board source above.
 }
 async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event slice, for the surviving-damage look-ahead (a same-uid destroy ⇒ killing blow ⇒ no tick)
   playEventSound(ev);
@@ -8761,18 +8765,18 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
     if(hitStop) await cDelay(hitStop);                                         // HIT-STOP injected at the impact instant, before the hold (scaled by --vfx-t via cDelay; skipped in reduced-motion since playEvent never runs there)
     await cDelay(hold); return;
   }
-  if (ev.type==='destroy'){ const u=ev.targetUids[0]; const dp=posOf(u, snap);
+  if (ev.type==='destroy'){ const u=ev.targetUids[0]; const dp=posOf(u, snap) || koePos[u];   // T88b: kill-on-entry death dissolves at the showcase position
     if(ev.abilityName==='Vajra' && dp) VFX.sprVajra(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width);   // T82: target-anchored strike (NEW pipeline, ungated) — keyed off the RESOLUTION event's struck unit; the 2-frame snap lands inside the 40ms death hit-stop below
     await cDelay(40);
     if(LEGACY_VFX && dp){ VFX.sprBloom(dp.cx, dp.rect.top+dp.rect.height/2, 'destroy', dp.rect.width); VFX.sprSmoke(dp.cx, dp.rect.top+dp.rect.height/2, 1, dp.rect.width); }   // E4 white-gold bloom + E5 smoke at death [T77-gated; the dissolve-beat below stays — it carries card identity + the death beat]
-    dissolveAt(dp, snap[u]&&snap[u].name, snap[u]&&snap[u].color); await cDelay(600); return; }   // 40ms hit-stop → death reads as a beat, then crack + shards + dwell
+    const dcard=(!snap[u])?findCardByUid(u):null; dissolveAt(dp, (snap[u]&&snap[u].name)||(dcard&&dcard.n), (snap[u]&&snap[u].color)||(dcard?(FAC_HEX[cardHomeFaction(dcard)]||'#e0483c'):null)); await cDelay(600); return; }   // 40ms hit-stop → death reads as a beat, then crack + shards + dwell. T88b: a kill-on-entry unit isn't in the snapshot → pull its name/colour from the card (in discard) so the dissolve still reads.
   if (src && (ev.type==='buff'||ev.type==='token')){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
   const tgts=ev.targetUids||[];
   if (!tgts.length){ await cDelay(180); return; }
   const bigHit = tgts.length>=3 ? 300 : 0;   // 3+ target effects get an extra hold
   for (let i=0;i<tgts.length;i++){
     if (choreoSkip) break;
-    const pos=posOf(tgts[i], snap);
+    const pos=posOf(tgts[i], snap) || koePos[tgts[i]];   // T88b: kill-on-entry -2 floater at the showcase position
     if (pos){
       // BEAT SEQUENCING (T66 1b): impact VISUAL + cpulse fire first; the floater/number is deferred ~120ms (scaled).
       // COMBAT damage adds a 70ms hit-stop on top so the hit lands, the queue pauses, THEN the number reads.
@@ -8831,7 +8835,9 @@ function runAction(mutate, opts={}){
   (async()=>{
     try{
       const playEv = evs.find(e=>e.type==='play');
-      if (opts.actor===1 && playEv){ try{ await showcaseCard(playEv.sourceUid, playEv.abilityName); }catch(e){} }   // SHOWCASE; playEv.abilityName = pre-copy name → two-phase Maricha reveal. A broken showcase never aborts the match
+      koePos = {};   // T88b: reset the kill-on-entry position map for this action
+      const koeUid = (playEv && evs.some(e=>e.type==='destroy' && (e.targetUids||[]).includes(playEv.sourceUid))) ? playEv.sourceUid : null;   // a played unit that dies THIS action (kill-on-entry, e.g. into Surasa's trap) — no board/snapshot rect
+      if ((opts.actor===1 || koeUid) && playEv){ try{ const sp=await showcaseCard(playEv.sourceUid, playEv.abilityName); if(koeUid && sp) koePos[koeUid]=sp; }catch(e){} }   // SHOWCASE for opponent plays AND for ANY kill-on-entry (own OR opp) so the card VISIBLY EXISTS before it dies; capture its rect so the death beats have a position. (playEv.abilityName = pre-copy name → two-phase Maricha reveal.)
       render();                              // final board; spawnFloaters + HUD totals held while choreoActive
       for (const ev of evs){ if(choreoSkip) break; try{ await playEvent(ev, snap, evs); }catch(e){} }   // skip a broken step (e.g. a VFX drawImage race) — keep the match playable
       const roundEnded = G.roundHistory.length>roundCountAtActionStart && !G.over;
