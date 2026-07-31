@@ -7438,7 +7438,7 @@ function cardArtSrc(c, faction){
 /* T93/T93b — BOARD TILE SOURCE. The frameless art-forward tiles live in assets/board/ under the SAME canonical stem as
    the framed cards (the thumbs dir-swap precedent), so the mapping is a dir + cache-stamp swap on cardArtSrc. Own stamp
    (BOARD_ART_V) bound to the tile bytes; the framed CARD_ART_V is untouched. */
-const BOARD_ART_V = 't93';
+const BOARD_ART_V = 'b60';   // bumped from 't93' on the board-art swap — the 60/60 purpose-made zoomed tiles are byte changes across the set, so the cache stamp must move
 function boardTileSrc(c, faction){ return cardArtSrc(c, faction).replace('assets/cards/','assets/board/').replace('?v='+CARD_ART_V, '?v='+BOARD_ART_V); }
 function attachArt(el, c, faction, board){
   if (c.ghost || c.id==='ghost') return;            // Yama tokens have no art
@@ -7475,7 +7475,7 @@ function boardCard(c, pi, targetSet){
     (c.bound?'<div class="bindbadge">⛓</div>':'')+
     (c.stolenBy!==-1?'<div class="stealbadge">🌀</div>':'')+
     `<div class="medallion ${state}">${c.bound?'0':ep}${mark?`<span class="mark">${mark}</span>`:''}</div>`;
-  attachArt(d, c, fac);   // T93c INTERIM: board uses the FRAMED cardArtSrc, cover-filled by .bc .art (100% object-fit:cover) → no black bands. The T93b board-tile mode (attachArt's `board` branch → boardTileSrc, the assets/board/ tiles, BOARD_ART_V, onerror) stays DORMANT-BUT-INTACT: re-add the `true` arg to swap in the owner's zoomed-art tile set when it lands (drop the new tiles into assets/board/, bump BOARD_ART_V).
+  attachArt(d, c, fac, true);   // BOARD-ART SWAP (60/60 purpose-made zoomed tiles landed, all four factions at plain stems): the `true` arg ACTIVATES board-tile mode → boardTileSrc (assets/board/, BOARD_ART_V) with the T93b onerror fallback (zoomed tile → framed card → no-art). Body cards (Units/Heroes) render the purpose-made zoomed art; a card without a tile falls back to the framed card gracefully. Hand + inspect (the other attachArt call sites) keep the framed cardArtSrc, unchanged.
   // Leap selection (my own units, pi===0): pick a leaper, then an adjacent target.
   const leapPick = pi===0 && leapMode && ((leapMode==='leaper') || (leapMode.leaper && leapMode.adj && leapMode.adj.has(c.uid)));
   // Dharma Shield designation (my own un-shielded Units, pi===0).
