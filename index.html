@@ -1313,6 +1313,13 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 @keyframes choreoPump{ 0%,100%{ transform:scale(1);} 45%{ transform:scale(1.13); filter:brightness(1.3);} }
 .dissolve-clone{ position:fixed; z-index:65; border-radius:12px; pointer-events:none; background:linear-gradient(#3a1414,#180808); border:2px solid #b0483c; display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-size:11px; color:#ffd9d0; text-align:center; padding:4px; animation:dissolveAway calc(.5s * var(--vfx-t,1)) ease-in forwards; }
 @keyframes dissolveAway{ 0%{ opacity:1; transform:scale(1);} 100%{ opacity:0; transform:scale(.7) rotate(4deg); filter:blur(3px);} }
+/* T97 VICTIM SHOWCASE — the struck card's real visual held over its (now-emptied) cell for the strike duration, then it exits.
+   z-63 = below the dissolve/shard overlays (65) so the death particles read on top; above the board. animation:none neutralises any
+   inherited .bc entrance anim on the clone. 'kill' reuses dissolveAway (crack+blur, Vajra). 'removal' = clean fade+lift, NO crack/blur (Sudarshana law: the hero returns, it does not die). */
+.victim-showcase{ z-index:63; pointer-events:none; animation:none; }
+.victim-showcase.victim-kill{ animation:dissolveAway calc(.5s * var(--vfx-t,1)) ease-in forwards; }
+.victim-showcase.victim-removal{ animation:victimVanish calc(.3s * var(--vfx-t,1)) ease-out forwards; }
+@keyframes victimVanish{ 0%{ opacity:1; transform:scale(1);} 100%{ opacity:0; transform:scale(1.05);} }
 .floater.venom{ color:var(--venom); } .floater.note{ color:#ffe08a; font-size:13px; }
 .callout{ position:fixed; z-index:67; font-family:Cinzel,serif; font-weight:700; font-size:12px; letter-spacing:1px; color:#fff2cf; pointer-events:none; text-shadow:0 1px 3px #000, 0 0 8px rgba(255,220,140,.5); animation:calloutPop calc(.5s * var(--vfx-t,1)) ease-out forwards; white-space:nowrap; }
 @keyframes calloutPop{ 0%{ transform:translateY(4px) scale(.85); opacity:0;} 25%{ opacity:1;} 78%{ opacity:1; transform:translateY(-6px) scale(1);} 100%{ opacity:0; transform:translateY(-12px);} }
@@ -8061,6 +8068,38 @@ function shardBurst(rect, color){
     $('choreolayer').appendChild(s); setTimeout(()=>s.remove(),640*vfxT());
   }
 }
+// ===== T97 VICTIM SHOWCASE: the strike lands on the VISIBLE card, THEN the card goes (owner device verdict — the T88b showcase pattern) =====
+// runAction render()s the final board BEFORE the strike choreography, so the victim's cell is empty by strike time — AND an astra-cast
+// spectacle beat plays first, so the gap between render() and the destroy beat is long. captureVictims() clones the live .bc node WHILE it
+// is still on the board (between mutate() and render()) and SHOWS it immediately — a pointer-events:none overlay in #choreolayer (which
+// survives render()) that PERSISTS over the now-emptied cell through the cast beat AND the strike (no premature vanish, no pop-back).
+// showcaseVictim(uid, exitKind) then exits it AT the strike's contact beat: 'kill' → crack+dissolve+shards; 'removal' → clean vanish (NO
+// dissolve — Sudarshana law, the hero returns next round). Pixel-exact (the rendered node), no re-derivation from spliced-out unit data.
+let victimClones = {};   // uid → { node, rect, color } — cloned + shown pre-render, exited at the strike beat (reset per action)
+function captureVictims(uids){
+  clearVictims();        // drop any clone a skipped/prior action left un-exited
+  uids.forEach(u=>{
+    const el=document.querySelector(`#field .bc[data-uid="${u}"]`);
+    if(!el) return;                                    // no live cell (e.g. a Vajra kill-on-entry) → helper no-ops, the existing koePos/dissolveAt path stands
+    const r=el.getBoundingClientRect();
+    const node=el.cloneNode(true); node.removeAttribute('id');
+    node.className=el.className+' victim-showcase';
+    Object.assign(node.style, { position:'fixed', left:r.left+'px', top:r.top+'px', width:r.width+'px', height:r.height+'px', margin:'0', transform:'none', pointerEvents:'none' });
+    let color='#e0483c'; for(const k in FAC_COLOR) if(el.classList.contains(k)) color=FAC_COLOR[k];
+    $('choreolayer').appendChild(node);                // SHOW now — persists over the cell render() is about to empty, through the whole strike sequence
+    victimClones[u]={ node, rect:r, color };
+  });
+}
+// exit the held victim card at the strike's contact beat.
+function showcaseVictim(uid, exitKind){
+  const v=victimClones[uid]; if(!v) return false; delete victimClones[uid];
+  const node=v.node;
+  if(reducedMotion()){ node.remove(); return true; }
+  if(exitKind==='kill'){ node.classList.add('victim-kill'); shardBurst(v.rect, v.color); setTimeout(()=>node.remove(), 520*vfxT()); }   // the REAL card cracks+dissolves + faction shards (replaces the placeholder dissolveAt box)
+  else { node.classList.add('victim-removal'); setTimeout(()=>node.remove(), 320*vfxT()); }                                            // 'removal': clean fade+lift, no crack — the hero is spirited off, not slain
+  return true;
+}
+function clearVictims(){ for(const u in victimClones){ try{ victimClones[u].node.remove(); }catch(e){} } victimClones={}; }   // defensive: remove any un-exited clone (e.g. a skipped strike)
 function fxRing(pos, kind){
   if(!pos||reducedMotion()) return;
   const sz=Math.max(pos.rect.width,pos.rect.height)*(kind==='shield'?1.05:0.9);
@@ -8852,20 +8891,23 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
     await cDelay(hold); return;
   }
   if (ev.type==='destroy'){ const u=ev.targetUids[0]; const dp=posOf(u, snap) || koePos[u];   // T88b: kill-on-entry death dissolves at the showcase position
-    if(ev.abilityName==='Vajra' && dp) VFX.sprVajra(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width);   // T82: target-anchored strike (NEW pipeline, ungated) — keyed off the RESOLUTION event's struck unit; the 2-frame snap lands inside the 40ms death hit-stop below
+    if(ev.abilityName==='Vajra' && dp) VFX.sprVajra(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width);   // T82: target-anchored strike (NEW pipeline, ungated) — keyed off the RESOLUTION event's struck unit; the 2-frame snap lands inside the 40ms death hit-stop below. T97: the struck card is STILL VISIBLE here (captured + persisted at render) → the bolt lands ON the card.
     await cDelay(40);
     if(LEGACY_VFX && dp){ VFX.sprBloom(dp.cx, dp.rect.top+dp.rect.height/2, 'destroy', dp.rect.width); VFX.sprSmoke(dp.cx, dp.rect.top+dp.rect.height/2, 1, dp.rect.width); }   // E4 white-gold bloom + E5 smoke at death [T77-gated; the dissolve-beat below stays — it carries card identity + the death beat]
-    const dcard=(!snap[u])?findCardByUid(u):null; dissolveAt(dp, (snap[u]&&snap[u].name)||(dcard&&dcard.n), (snap[u]&&snap[u].color)||(dcard?(FAC_HEX[cardHomeFaction(dcard)]||'#e0483c'):null)); await cDelay(600); return; }   // 40ms hit-stop → death reads as a beat, then crack + shards + dwell. T88b: a kill-on-entry unit isn't in the snapshot → pull its name/colour from the card (in discard) so the dissolve still reads.
+    const shown = ev.abilityName==='Vajra' ? showcaseVictim(u, 'kill') : false;   // T97: AT contact (post the 40ms impact hit-stop) the held REAL card cracks+dissolves (kill exit + faction shards). Only Vajra is wired (the sole target-anchored destroy strike).
+    if(!shown){ const dcard=(!snap[u])?findCardByUid(u):null; dissolveAt(dp, (snap[u]&&snap[u].name)||(dcard&&dcard.n), (snap[u]&&snap[u].color)||(dcard?(FAC_HEX[cardHomeFaction(dcard)]||'#e0483c'):null)); }   // T97: the victim showcase owns the death dissolve when shown (real card, not the placeholder box); non-Vajra / no-live-cell → the placeholder dissolve at the snapshot/showcase position (unchanged). 40ms hit-stop → death reads as a beat, then crack + shards + dwell.
+    await cDelay(600); return; }
   if (ev.type==='passive' && ev.abilityName==='Sudarshana'){ const u=ev.targetUids[0]; const dp=posOf(u, snap);   // T92: Sudarshana Chakra — the THROWN spinning discus. Anchor = the REMOVED hero's rect (posOf via snapshot — the hero was on board before the splice). It is a REMOVAL, not a kill → NO death dissolve (the hero returns next round); the strike + the hero's disappearance from the row carry the story. The callout names the cause AT the hero so the temporary removal isn't a silent vanishing (T88 principle).
     if(dp){
+      // T97: the hero card is captured + persisted (captureVictims) → it stays VISIBLE through the whole cast beat AND the disc flight, so the disc bites a VISIBLE hero (no empty-slot flight). The 'removal' exit fires at the BITE below → hit-then-gone (the parked ruling's words). NO dissolve — T92 law: the hero returns next round, it is spirited off, not slain.
       const caster=1-ownerPiOfUid(u), ch=document.querySelector(caster===1?'.half.opp':'.half.me');   // origin = the CASTER's half center (T79/T87 half idiom) — caster = the side opposite the removed hero's owner, cleanly derivable at the handler from the target uid.
       let fx=null, fy=null; if(ch){ const r=ch.getBoundingClientRect(); fx=r.left+r.width/2; fy=r.top+r.height*0.5; }
       VFX.sprSudarshana(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width, fx, fy, 380);   // THROW — thrown flat from the caster's half; travelMs 380 → the flight completes at the frame-9 CONTACT PIN (cDelay scales by exactly vfxT, so the await below tracks the sprite frame timing).
-      await cDelay(380);   // FLIGHT (frames 1-8) → the disc reaches the target rect.
+      await cDelay(380);   // FLIGHT (frames 1-8) → the disc reaches the STILL-VISIBLE hero.
       // 3f BITE (frames 9-10): the disc PINS at full presence + the baked spark burst (L3 f9-11) and glow (L4 f9-12) fire AT the contact point. The cast's spectacle hit-stop (110ms) fired back at the astra PLAY beat (~1s earlier); this contact is a separate, later beat, so we punctuate it with its OWN hit-stop — a combat-weight shake (a sharp precise BITE, distinct from the cast's board cataclysm) + a ~100ms freeze — so the hit is FELT at the target.
-      // ⚠ 3f STOP-AND-REPORT (cpulse): the removed hero's element is GONE from the live DOM by choreography time — runAction render()s the final board BEFORE this event loop, and render() draws op.heroes (fillRow oheroes), NOT removedHeroes. So posOf(u,snap) misses the DOM and returns el:null → there is NO live element at the vacated slot to cpulse. Per 3f we stop short of a substitute (no pulsing an adjacent unit or the empty row); the pin + sparks + hit-stop carry the contact.
       screenShake(false); await cDelay(100);
-      await cDelay(300);   // the disc passes ON (fade 11-13) + linger; the hero is already off the board.
+      showcaseVictim(u, 'removal');   // T97: the disc has bitten — NOW the visible hero vanishes cleanly (removal exit). Hit-then-gone. (T97 resolves the old 3f cpulse STOP-AND-REPORT: there is now a visible hero card at the vacated slot for the whole strike; the vanish carries the removal, so no cpulse substitute is needed.)
+      await cDelay(300);   // the disc passes ON (fade 11-13) + linger; the hero has just vanished.
       calloutAt(dp, 'Sudarshana Chakra');   // NAME the deed LAST, at the vacated slot (T88 legibility — a removal, not a kill; no death dissolve). calloutAt reads dp's coordinates, not dp.el (which is null here).
       await cDelay(140); }
     return; }
@@ -8943,6 +8985,8 @@ function runAction(mutate, opts={}){
       koePos = {};   // T88b: reset the kill-on-entry position map for this action
       const koeUid = (playEv && evs.some(e=>e.type==='destroy' && (e.targetUids||[]).includes(playEv.sourceUid))) ? playEv.sourceUid : null;   // a played unit that dies THIS action (kill-on-entry, e.g. into Surasa's trap) — no board/snapshot rect
       if ((opts.actor===1 || koeUid) && playEv){ try{ const sp=await showcaseCard(playEv.sourceUid, playEv.abilityName); if(koeUid && sp) koePos[koeUid]=sp; }catch(e){} }   // SHOWCASE for opponent plays AND for ANY kill-on-entry (own OR opp) so the card VISIBLY EXISTS before it dies; capture its rect so the death beats have a position. (playEv.abilityName = pre-copy name → two-phase Maricha reveal.)
+      const victimUids=[]; for(const ev of evs){ if(ev.type==='destroy' && ev.abilityName==='Vajra') (ev.targetUids||[]).forEach(u=>victimUids.push(u)); else if(ev.type==='passive' && ev.abilityName==='Sudarshana') (ev.targetUids||[]).forEach(u=>victimUids.push(u)); }
+      captureVictims(victimUids);            // T97: clone the struck cards WHILE still on board — the next render() empties their cells; the strike then lands on the held clone
       render();                              // final board; spawnFloaters + HUD totals held while choreoActive
       for (const ev of evs){ if(choreoSkip) break; try{ await playEvent(ev, snap, evs); }catch(e){} }   // skip a broken step (e.g. a VFX drawImage race) — keep the match playable
       const roundEnded = G.roundHistory.length>roundCountAtActionStart && !G.over;
@@ -8950,6 +8994,7 @@ function runAction(mutate, opts={}){
       try{ await choreoRace(animateTotals(), snapTotals); }catch(e){}          // totals count up — but rAF starvation (iOS bg) can't hang it: 3s cap snaps to final
     } finally {
       // GUARANTEE: no thrown/skipped/hung step can leave the choreo locked — always release the lock and resume the match
+      clearVictims();   // T97: drop any victim-showcase clone whose strike beat was skipped/broke, so it never persists past the action
       choreoActive=false; choreoStartedAt=0; choreoForce=[]; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML='';
       try{ render(); showResultSummary(evs); if (G.roundHistory.length>roundCountAtActionStart && !G.over) showRoundBanner(); }catch(e){}
       pump();
