@@ -8277,8 +8277,14 @@ const VFX = (()=>{
     if(facA==='nagas' || facB==='nagas'){ loadSheet('nagapasha'); }   // T94 Naga-conditional — Nagapasha bind arrival
   }
   function addSheetSpr(key, x, y, size, o){ if(reducedMotion()||!sheetImg[key]) return false;
-    const mode=SHEET_MODE[key]||'forward', nf=(sheetGrid[key]||{}).frames||24;
-    addSpr(Object.assign({ sheet:key, mode, frame:(Math.random()*nf)|0, dir:(mode==='pingpong'&&Math.random()<.5?-1:1), fAcc:0, x, y, size, anchorX:0.5, anchorY:0.5, sc0:1,sc1:1, op0:0,opPeak:1,op1:0, peakAt:0.15 }, o||{})); return true; }
+    const mode=(o&&o.loop)?'pingpong':(SHEET_MODE[key]||'forward'), nf=(sheetGrid[key]||{}).frames||24;   // T99 (runtime extension #3): a looping sprite forces pingpong frame direction; ABSENT o.loop → mode is exactly SHEET_MODE[key]||'forward' as before.
+    const sp=Object.assign({ sheet:key, mode, frame:(Math.random()*nf)|0, dir:(mode==='pingpong'&&Math.random()<.5?-1:1), fAcc:0, x, y, size, anchorX:0.5, anchorY:0.5, sc0:1,sc1:1, op0:0,opPeak:1,op1:0, peakAt:0.15 }, o||{});
+    if(o && o.loop){   // T99: PERSISTENT + STOPPABLE. Large finite life keeps age/max DEFINED (~0) for the untouched one-shot draw line; the !s.loop cull-skip is what actually keeps it alive. Returns a handle; every non-loop call falls through to `return true` exactly as before.
+      if(sp.life==null) sp.life=1e6;
+      addSpr(sp);
+      return { stop(fadeMs){ if(sp._stopped) return; sp._stopped=true; sp.loop=false; sp.sc0=sp.sc1; sp.op0=sp.opPeak; sp.op1=0; sp.peakAt=0.0001; sp.crash=false; sp.age=0; sp.max=Math.max(0.05,(fadeMs||0)/1000); } };   // stop: clear loop → cullable + one-shot op path resumes; fade opPeak→0 over fadeMs (real seconds, dt-driven), hold scale, then the age>=max cull removes it.
+    }
+    addSpr(sp); return true; }
   // ===================== T70-P0 GPU OVERLAY LAYER (Pixi v8, WebGPU-first; PL2 overlay / PL3 triple-fallback / PL5 stable recipe API / PL6 vendored) =====================
   // A transparent Pixi canvas above #vfxcanvas. One loop owns time: the T69A-hardened step calls gpuTick(dt) inside its try/catch, so the unkillable-loop guarantee covers the GPU layer too. Any failure → gpu.disabled → Canvas2D floor.
   const gpu={ renderer:'none', enabled:false, disabled:false, texReady:false, app:null, PIXI:null, stage:null, gcanvas:null, sprites:[], tex:{}, mvtex:{}, _poison:false, wasNonEmpty:false,
@@ -8573,7 +8579,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   }
   function drawSprites(dt){
     if(!sprites.length) return;
-    for(let i=sprites.length-1;i>=0;i--){ const s=sprites[i]; s.age+=dt; if(s.age>=s.max) sprites.splice(i,1); }
+    for(let i=sprites.length-1;i>=0;i--){ const s=sprites[i]; s.age+=dt; if(s.age>=s.max && !s.loop) sprites.splice(i,1); }   // T99: a loop sprite is NOT age-culled (s.loop truthy); stop() clears s.loop so it culls again. One-shot: s.loop===undefined → `&& !undefined` === `&& true` → byte-identical.
     cx.save();                                                              // T67b R2: isolate all sprite state
     for(const s of sprites){ if(s.smoke) drawOneSpr(s,dt); }                // pass 1: smoke (occludes, source-over set per-sprite)
     for(const s of sprites){ if(!s.smoke) drawOneSpr(s,dt); }               // pass 2: kit (additive, 'lighter' set per-sprite)
@@ -8596,6 +8602,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     if(s.crash) op=s.opPeak*(1-Math.pow(t,2.4));                             // T75: crash afterglow breathes out (was 1.4)
     else if(t<pk) op=s.op0+(s.opPeak-s.op0)*Math.pow(t/pk,0.6);              // C3: soft ~60-80ms birth (attack UNCHANGED)
     else op=s.opPeak+(s.op1-s.opPeak)*Math.pow((t-pk)/(1-pk),3);            // T75: cubic-IN release (breathing tail; was 1.6)
+    if(s.loop){ const bt=Math.min(1,s.age/(s.birthS||0.25)); op=s.op0+(s.opPeak-s.op0)*Math.pow(bt,0.6); sc=s.sc0+(s.sc1-s.sc0)*(1-Math.pow(1-bt,3)); }   // T99: a loop sprite HOLDS at opPeak/sc1 after a ~250ms birth ramp — the one-shot t=age/max envelope above is computed then OVERRIDDEN, ONLY for loops (one-shot sprites never enter this branch → their op/sc statements are byte-identical). Drift uses t~0 (age/1e6); loop auras don't drift.
     if(op<=0.004) return;
     const size=s.size, sx=DPR*sc*(s.flip||1)*(s.stretchX||1), sy=DPR*sc*(s.squashY||1);
     let px=s.x, py=s.y;
