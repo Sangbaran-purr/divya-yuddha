@@ -369,6 +369,38 @@ BRIEFS = {
         "scale":   [[14, 18, 0.9, 0.9, "lin"]] },
     ],
   },
+
+  # PAVAMANA — the PURIFYING CHANT wash (BOARD SETTLE class, Gayatri SIBLING). SERENE, friendly-half — a chant, NOT a strike:
+  # no hit-stop/shake/impact anywhere. Anti-venom: PURITY ONLY, nothing green added. 36f one-shot @24fps, 1920x640 row plate —
+  # MATCHES Gayatri (the T95 brief's 48f rescaled ×0.75 per the Q4 ruling; windows below). op_cap is NOT ported to xform →
+  # the caps are BAKED into the op values. L3 = the DERIVED pavamana_ribbons_wide (owner ruling OPTION D: 3 curls at 20/50/80%
+  # composited by scripts/make_pavamana_ribbons_wide.py — NO new compositor vocabulary) rendered as ONE unified rise (rotate 0
+  # — a chant breathes together). DIRECTION LAW: everything RISES, nothing descends. Frames 1-based (owner's 0-based +1).
+  "pavamana": {
+    "seed": 0xFA7A4A, "fps": 24, "frames": 36, "one_shot": True, "layers_dir": "pavamana", "canvas": (1920, 640),
+    "layers": [
+      # L1 FLOOR — GROUND GLOW (the quiet base everything sits on): op ramp to the 0.30 cap (f1-7), hold, die_by fade f29-34.
+      # No drift. Position baked (the glow sits in the sprite's lower third → cover-fit lands it at the plate bottom).
+      { "src": "pavamana_floor", "kind": "xform",
+        "opacity": [[1, 7, 0.0, 0.20, "lin"], [7, 29, 0.20, 0.20, "lin"], [29, 34, 0.20, 0.0, "out"]] },   # T95 item-6: 0.30→0.20 so the floor glow's plate-bottom bleed clears the row-plate edge law (the quiet base stays visible)
+      # L2 BAND — THE BREATH ARRIVES: spans the width; op ramp io to ~0.72 (f1-10), gentle breathe (op_sine, capped ≤0.75)
+      # f10-28, die_by fade f25-31. drift_x = seed-signed SLOW roll (the river flows one way, the seed decides which).
+      { "src": "pavamana_band", "kind": "xform",
+        "opacity": [[1, 10, 0.0, 0.72, "io"], [25, 31, 0.72, 0.0, "out"]],
+        "op_sine": [10, 28, 0.67, 0.08],
+        "drift_x": [1, 30, 40] },
+      # L3 RIBBONS (derived wide) — THE LIFT: ONE xform layer, unified SLOW rise (drift up), rotate 0, scale_anchor bottom,
+      # op ramp to 0.6 (f9-13), hold, die_by fade f23-28. The impurity rising off the row — reads as release, not smoke.
+      { "src": "pavamana_ribbons_wide", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[9, 13, 0.0, 0.6, "io"], [13, 23, 0.6, 0.6, "lin"], [23, 28, 0.6, 0.0, "out"]],
+        "drift_up": [9, 28, 60] },
+      # L4 MOTES — THE GAINS: spans the width (upper-two-thirds baked), very-slow rise; gentle SHIMMER (op_keys, capped ≤0.55,
+      # spread across f12-33 — never strobing, frame-to-frame Δ ≤0.15), die_by fade in the tail.
+      { "src": "pavamana_motes", "kind": "xform",
+        "op_keys": [12, [0.0, 0.15, 0.3, 0.42, 0.5, 0.46, 0.52, 0.48, 0.55, 0.5, 0.53, 0.47, 0.52, 0.45, 0.5, 0.42, 0.46, 0.38, 0.42, 0.3, 0.18, 0.0]],
+        "drift_up": [12, 33, 30] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
