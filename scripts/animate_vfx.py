@@ -483,46 +483,22 @@ BRIEFS = {
   "deva_hero_entry": {
     "seed": 0xDE7AE1, "fps": 24, "frames": 34, "one_shot": True, "layers_dir": "deva_hero", "canvas": (1254, 1254),
     "layers": [
-      # L1 rays — THE HERALD (dawn breaks before the king): scale_anchor bottom, scale 0.85→1.0 io; op ramp 0→0.75 (f0-f4), hold, die_by fade f9-f13.
+      # T104 TURN-TAKING (≤2 layers >0.5 at any frame; structure-forward) — L1 GROUND/HERALD (deva_hero_rays, dawn breaks before the king): IGNITES SOLO f1-f8 at cap 0.9 (the painted rays ARE the gorgeousness), DIMS to 0.5, held crisp 0.5 through f20, die_by fade f20-f26. scale_anchor bottom, the dawn spreads 0.85→1.0.
       { "src": "deva_hero_rays", "kind": "xform", "scale_anchor": "bottom",
-        "opacity": [[1, 5, 0.0, 0.75, "io"], [5, 10, 0.75, 0.75, "lin"], [10, 14, 0.75, 0.0, "out"]],
-        "scale":   [[1, 14, 0.85, 1.0, "io"]] },
-      # L2 motes — GLORY DUST: cover-fit; gentle per-frame shimmer (cap 0.5 baked, Δ≤0.15 no strobe), extended to f2-f30, fades in the tail (trailing 0.30→0).
+        "opacity": [[1, 5, 0.0, 0.9, "io"], [5, 8, 0.9, 0.9, "lin"], [8, 11, 0.9, 0.5, "out"], [11, 20, 0.5, 0.5, "lin"], [20, 26, 0.5, 0.0, "out"]],
+        "scale":   [[1, 10, 0.85, 1.0, "io"], [10, 26, 1.0, 1.0, "lin"]] },
+      # T104 — L2 MOTES ambient glory-dust (deva has no ring layer; the dust fills the ambient beat): cover-fit; gentle shimmer UNCHANGED (cap 0.50 baked, never >0.5 → never competes with a structure beat). f3-f31.
       { "src": "deva_hero_motes", "kind": "xform",
         "op_keys": [3, [0.0, 0.12, 0.25, 0.35, 0.42, 0.38, 0.45, 0.40, 0.48, 0.43, 0.50, 0.44, 0.48, 0.42, 0.46, 0.40, 0.44, 0.40, 0.46, 0.41, 0.47, 0.42, 0.44, 0.38, 0.30, 0.22, 0.14, 0.07, 0.0]] },
-      # L3 beam — THE DESCENT + LINGERING BLAZE (the arrival IS the opacity bloom; the HOLD AT FULL is the grandness): cover-fit full cell height; op ramp 0→1.0 io (f4-f8), HOLD AT FULL f8-f17, die_by fade f17-f22; scale 1.06→1.0 io (settling, f4-f10); NO drift.
+      # T104 TURN-TAKING — L3 RISE (deva_hero_beam, the descent; the wash UNDER the structure, not the whiteout OVER it): rises AFTER the herald settles. peak op 0.85 (was 1.0), HOLD SHORTENED to 4f (f21-f25), fade f25-f30. cover-fit, settles 1.06→1.0.
       { "src": "deva_hero_beam", "kind": "xform",
-        "opacity": [[5, 9, 0.0, 1.0, "io"], [9, 18, 1.0, 1.0, "lin"], [18, 23, 1.0, 0.0, "out"]],
-        "scale":   [[5, 11, 1.06, 1.0, "io"], [11, 23, 1.0, 1.0, "lin"]] },
-      # L4 corona — THE CROWN OF ARRIVAL (blooms PAST the cell edge as the beam hands off — the mask crops the overhang, intended): centred; scale 0.7→1.45 io (f14-f21) then holds; op ramp 0→1.0 io (f14-f17), ONE op_sine breathe (base 0.9 amp 0.1 → peaks at 1.0, no dip since the io ramp meets it), die_by fade f23-f28. op_sine end (0.9)=fade start → continuous.
+        "opacity": [[18, 21, 0.0, 0.85, "io"], [21, 25, 0.85, 0.85, "lin"], [25, 30, 0.85, 0.0, "out"]],
+        "scale":   [[18, 25, 1.06, 1.0, "io"], [25, 30, 1.0, 1.0, "lin"]] },
+      # T104 TURN-TAKING — L4 CROWN (deva_hero_corona, the crown of arrival; character UNCHANGED, re-staggered to settle AFTER the rise): centred; ramp f24-f28, ONE op_sine breathe f28-f31 (base 0.9 amp 0.1), die_by fade f31-f34; scale blooms 0.7→1.45 past the edge (mask crops, intended).
       { "src": "deva_hero_corona", "kind": "xform",
-        "opacity": [[15, 18, 0.0, 1.0, "io"], [24, 29, 0.9, 0.0, "out"]],
-        "op_sine": [18, 24, 0.9, 0.1],
-        "scale":   [[15, 22, 0.7, 1.45, "io"], [22, 29, 1.45, 1.45, "lin"]] },
-    ],
-  },
-
-  # T100-R DEVA HERO AURA (GRAND retune + NEW halo layer) — serene idle breathing; the T99 ping-pong loop's FIRST consumer. 12 frames
-  # (0..11; runtime plays 0..11..0). REVERSAL-SYMMETRY LAW: opacity/scale oscillation ONLY — ZERO drift AND ZERO rotate anywhere (a
-  # reversed rotation is visible wrong-way motion; the halo breathes, it does NOT spin). The io ramp is a smooth half-cycle (zero
-  # velocity at f1/f12) → the ping-pong reflection completes the breath, no kink at the reversal. Pure Deva white-gold. The grandness is
-  # the NEW L3 halo — the sun-crown (deva_hero_corona REUSED, first cross-brief layer reuse → the corona sprite feeds BOTH sheets, no
-  # extra decode) breathing faintly behind the hero; the envelope keeps it idle-quiet. Cycle (22 steps @ 16 × vfxT): Normal 1.79s.
-  "deva_hero_aura": {
-    "seed": 0xDE7AA1, "fps": 24, "frames": 12, "one_shot": True, "layers_dir": "deva_hero", "canvas": (1254, 1254),
-    "layers": [
-      # L1 nimbus — the breath: scale_anchor bottom, scale 0.95 (constant); op smooth io half-cycle 0.4→0.75 (the reflection completes it). NO drift. cap 0.75.
-      { "src": "deva_aura_nimbus", "kind": "xform", "scale_anchor": "bottom",
-        "opacity": [[1, 12, 0.4, 0.75, "io"]],
-        "scale":   [[1, 12, 0.95, 0.95, "lin"]] },
-      # L2 aura motes — the faint dust breathing with it: cover-fit, scale 0.9 (constant); op io ramp 0.25→0.5. NO drift. cap 0.5.
-      { "src": "deva_aura_motes", "kind": "xform",
-        "opacity": [[1, 12, 0.25, 0.5, "io"]],
-        "scale":   [[1, 12, 0.9, 0.9, "lin"]] },
-      # L3 halo (NEW) — the sun-crown breathing behind the hero (deva_hero_corona REUSED): centred, scale 0.55 fixed; op io ramp 0.15→0.32 (idle-quiet). NO drift, NO rotate. cap 0.32.
-      { "src": "deva_hero_corona", "kind": "xform",
-        "opacity": [[1, 12, 0.15, 0.32, "io"]],
-        "scale":   [[1, 12, 0.55, 0.55, "lin"]] },
+        "opacity": [[24, 28, 0.0, 0.9, "io"], [31, 34, 0.9, 0.0, "out"]],
+        "op_sine": [28, 31, 0.9, 0.1],
+        "scale":   [[24, 31, 0.7, 1.45, "io"], [31, 34, 1.45, 1.45, "lin"]] },
     ],
   },
 
@@ -534,41 +510,23 @@ BRIEFS = {
   "indra_hero_entry": {
     "seed": 0x1ADA11, "fps": 24, "frames": 34, "one_shot": True, "layers_dir": "indra", "canvas": (1254, 1254),
     "layers": [
-      # L1 seal — THE GROUND WAKES (electrified ground ellipse, baked perspective → NO squash_y): scale_anchor bottom, scale 0.95; op_keys = ramp 0→0.8 (f0-f5) then a subtle crackle riding the hold (0.67-0.80, Δ≤0.09 no strobe) then die_by fade (f20-f26). One per-frame track avoids the segment/op_keys overlap.
+      # T104 TURN-TAKING (≤2 layers >0.5 at any frame; structure-forward) — L1 GROUND (indra_seal, electrified ground ellipse, baked perspective → NO squash_y): IGNITES SOLO f1-f8 at cap 0.9 (the painted seal IS the gorgeousness — read it crisp), DIMS to 0.5 as the ring races, held crisp at 0.5 through f20, die_by fade f20-f26. scale_anchor bottom.
       { "src": "indra_seal", "kind": "xform", "scale_anchor": "bottom",
-        "op_keys": [1, [0.0, 0.15, 0.35, 0.55, 0.70, 0.80, 0.72, 0.78, 0.69, 0.76, 0.80, 0.71, 0.75, 0.68, 0.77, 0.72, 0.79, 0.70, 0.74, 0.71, 0.68, 0.55, 0.42, 0.30, 0.18, 0.08, 0.0]],
-        "scale":   [[1, 27, 0.95, 0.95, "lin"]] },
-      # L2 debris — THE CHARGE (shard burst + arcs): scale_anchor bottom, scale 0.9→1.0 io; op_keys flicker (the owner's [0,.5,.3,.65,.4,.7,.35,.5,0] expanded per-frame across f4-f18, cap 0.7 — a CHARGE crackle, jumpy by design, unlike the seal).
+        "opacity": [[1, 5, 0.0, 0.9, "io"], [5, 8, 0.9, 0.9, "lin"], [8, 11, 0.9, 0.5, "out"], [11, 20, 0.5, 0.5, "lin"], [20, 26, 0.5, 0.0, "out"]],
+        "scale":   [[1, 26, 0.95, 0.95, "lin"]] },
+      # T104 TURN-TAKING — L2 RING (indra_debris, the charge) TWO PULSES (rings read as motion; motion reads as craft): pulse1 f8-f14 cap 0.85, echo f14-f20 cap 0.6 — the ground is dimmed to 0.5 beneath it so only the ring is loud. scale_anchor bottom, expands per pulse (op=0 at f14 hides the scale reset).
       { "src": "indra_debris", "kind": "xform", "scale_anchor": "bottom",
-        "op_keys": [5, [0.0, 0.29, 0.47, 0.36, 0.40, 0.60, 0.54, 0.40, 0.57, 0.65, 0.45, 0.39, 0.48, 0.29, 0.0]],
-        "scale":   [[5, 19, 0.9, 1.0, "io"]] },
-      # L3 storm — THE STORM RISES (the grandness; the Vajra separation embodied in motion): scale_anchor bottom, scale 0.75→1.0 io (f8-f15 — it RISES), op ramp 0→1.0 io (f8-f12), HOLD AT FULL f12-f20 (the T100-R law: loudness is duration), die_by fade f20-f26. Dark centre = the card's home.
+        "opacity": [[8, 11, 0.0, 0.85, "io"], [11, 14, 0.85, 0.0, "out"], [14, 17, 0.0, 0.6, "io"], [17, 20, 0.6, 0.0, "out"]],
+        "scale":   [[8, 14, 0.55, 1.15, "io"], [14, 20, 0.7, 1.3, "io"]] },
+      # T104 TURN-TAKING — L3 RISE (indra_storm, the wash UNDER the structure, not the whiteout OVER it): rises AFTER the ring (ring gone, ground low). peak op 0.85 (was 1.0), HOLD SHORTENED to 4f (f21-f25), fade f25-f30. scale_anchor bottom, rises 0.75→1.05.
       { "src": "indra_storm", "kind": "xform", "scale_anchor": "bottom",
-        "opacity": [[9, 13, 0.0, 1.0, "io"], [13, 21, 1.0, 1.0, "lin"], [21, 27, 1.0, 0.0, "out"]],
-        "scale":   [[9, 16, 0.75, 1.0, "io"], [16, 27, 1.0, 1.0, "lin"]] },
-      # L4 wreath — THE CROWN OF STORMS (gold lightning wreath, open centre): centred; scale 0.8→1.2 io (f18-f24) then holds; op ramp 0→0.9 io (f18-f21), ONE op_sine breathe (base 0.9 amp 0.1 → peaks 1.0, no dip since the io ramp meets it), die_by fade f28-f33.
+        "opacity": [[18, 21, 0.0, 0.85, "io"], [21, 25, 0.85, 0.85, "lin"], [25, 30, 0.85, 0.0, "out"]],
+        "scale":   [[18, 25, 0.75, 1.05, "io"], [25, 30, 1.05, 1.05, "lin"]] },
+      # T104 TURN-TAKING — L4 CROWN (indra_wreath, gold lightning wreath, open centre; character UNCHANGED, re-staggered to settle AFTER the rise): ramp f24-f28, ONE op_sine breathe f28-f31 (base 0.9 amp 0.1 → peaks 1.0, solo by now), die_by fade f31-f34. centred, blooms past the edge (mask crops, intended).
       { "src": "indra_wreath", "kind": "xform",
-        "opacity": [[19, 22, 0.0, 0.9, "io"], [29, 34, 0.9, 0.0, "out"]],
-        "op_sine": [23, 29, 0.9, 0.1],
-        "scale":   [[19, 25, 0.8, 1.2, "io"], [25, 34, 1.2, 1.2, "lin"]] },
-    ],
-  },
-
-  # T101 INDRA PER-HERO OVERRIDE — AURA (ping-pong loop; replaces the Deva default aura for Indra ONLY). Idle STORM-breath. REVERSAL-
-  # SYMMETRY LAW: op/scale oscillation only — ZERO drift, ZERO rotate (lightning flicker is DIRECTION-FREE, ideal ping-pong material; the
-  # ring breathes in CRACKLE not sine, but every per-frame Δ≤0.12 so the 0..11..0 reflection stays smooth). L2 wreath REUSES indra_wreath
-  # (the T100-R cross-brief precedent → the sprite feeds both sheets, no extra decode). Cycle (22 steps @16×vfxT): Normal 1.79s.
-  "indra_hero_aura": {
-    "seed": 0x1ADAA1, "fps": 24, "frames": 12, "one_shot": True, "layers_dir": "indra", "canvas": (1254, 1254),
-    "layers": [
-      # L1 ring — the storm-breath (lightning ring): scale_anchor bottom, scale 0.95; op_keys micro-flicker riding a 0.3→0.55 rise (Δ≤0.05, so the reversal is smooth). cap 0.55.
-      { "src": "indra_ring", "kind": "xform", "scale_anchor": "bottom",
-        "op_keys": [1, [0.30, 0.34, 0.38, 0.41, 0.45, 0.42, 0.47, 0.50, 0.48, 0.52, 0.54, 0.55]],
-        "scale":   [[1, 12, 0.95, 0.95, "lin"]] },
-      # L2 wreath — the crown breathing faintly (indra_wreath REUSED): centred, scale 0.6 fixed; op io ramp 0.12→0.28 (idle-quiet). NO drift, NO rotate. cap 0.28.
-      { "src": "indra_wreath", "kind": "xform",
-        "opacity": [[1, 12, 0.12, 0.28, "io"]],
-        "scale":   [[1, 12, 0.6, 0.6, "lin"]] },
+        "opacity": [[24, 28, 0.0, 0.9, "io"], [31, 34, 0.9, 0.0, "out"]],
+        "op_sine": [28, 31, 0.9, 0.1],
+        "scale":   [[24, 31, 0.7, 1.35, "io"], [31, 34, 1.35, 1.35, "lin"]] },
     ],
   },
 
@@ -580,40 +538,49 @@ BRIEFS = {
   "agni_hero_entry": {
     "seed": 0xA6011E, "fps": 24, "frames": 34, "one_shot": True, "layers_dir": "agni", "canvas": (1254, 1254),
     "layers": [
-      # L1 ground — THE HEARTH IGNITES (lava-cracked ground disc, baked perspective → NO squash_y): scale_anchor bottom, scale 0.95; op_keys = ramp 0→0.8 (f0-f5) then an ember-crackle riding the hold (0.67-0.80, Δ≤0.09) then die_by fade (f20-f26).
+      # T104 TURN-TAKING (≤2 layers >0.5 at any frame; structure-forward) — L1 GROUND (agni_ground, lava-cracked disc, baked perspective → NO squash_y): IGNITES SOLO f1-f8 at cap 0.9 (the painted hearth IS the gorgeousness), DIMS to 0.5 as the ring races, held crisp 0.5 through f20, die_by fade f20-f26. scale_anchor bottom.
       { "src": "agni_ground", "kind": "xform", "scale_anchor": "bottom",
-        "op_keys": [1, [0.0, 0.15, 0.35, 0.55, 0.70, 0.80, 0.72, 0.78, 0.69, 0.76, 0.80, 0.71, 0.75, 0.68, 0.77, 0.72, 0.79, 0.70, 0.74, 0.71, 0.68, 0.55, 0.42, 0.30, 0.18, 0.08, 0.0]],
-        "scale":   [[1, 27, 0.95, 0.95, "lin"]] },
-      # L2 shockwave — THE RING RACES OUT (fire ring ellipse): scale_anchor bottom, scale 0.55→1.15 io (f6-f12 — the expanding wave) then holds; op ramp 0→0.85 io (f6-f8), hold, die_by fade f11-f16.
+        "opacity": [[1, 5, 0.0, 0.9, "io"], [5, 8, 0.9, 0.9, "lin"], [8, 11, 0.9, 0.5, "out"], [11, 20, 0.5, 0.5, "lin"], [20, 26, 0.5, 0.0, "out"]],
+        "scale":   [[1, 26, 0.95, 0.95, "lin"]] },
+      # T104 TURN-TAKING — L2 RING (agni_shockwave, fire ring) TWO PULSES: pulse1 f8-f14 cap 0.85, echo f14-f20 cap 0.6 (rings read as motion). scale_anchor bottom, expands per pulse (op=0 at f14 hides the reset).
       { "src": "agni_shockwave", "kind": "xform", "scale_anchor": "bottom",
-        "opacity": [[7, 9, 0.0, 0.85, "io"], [9, 12, 0.85, 0.85, "lin"], [12, 17, 0.85, 0.0, "out"]],
-        "scale":   [[7, 13, 0.55, 1.15, "io"], [13, 17, 1.15, 1.15, "lin"]] },
-      # L3 burst — THE FIRE RISES (the grandness; twin rising flame pillars, dark centre = the card's home): scale_anchor bottom, scale 0.75→1.0 io (f8-f15 — it RISES), op ramp 0→1.0 io (f8-f12), HOLD AT FULL f12-f20 (the T100-R law), die_by fade f20-f26.
+        "opacity": [[8, 11, 0.0, 0.85, "io"], [11, 14, 0.85, 0.0, "out"], [14, 17, 0.0, 0.6, "io"], [17, 20, 0.6, 0.0, "out"]],
+        "scale":   [[8, 14, 0.55, 1.15, "io"], [14, 20, 0.7, 1.3, "io"]] },
+      # T104 TURN-TAKING — L3 RISE (agni_burst, twin flame pillars, dark centre = the card's home; the wash UNDER the structure): rises AFTER the ring. peak op 0.85 (was 1.0), HOLD SHORTENED to 4f (f21-f25), fade f25-f30. scale_anchor bottom, rises 0.75→1.05.
       { "src": "agni_burst", "kind": "xform", "scale_anchor": "bottom",
-        "opacity": [[9, 13, 0.0, 1.0, "io"], [13, 21, 1.0, 1.0, "lin"], [21, 27, 1.0, 0.0, "out"]],
-        "scale":   [[9, 16, 0.75, 1.0, "io"], [16, 27, 1.0, 1.0, "lin"]] },
-      # L4 foreground — THE EMBERS SETTLE (ember debris + corner flame licks): cover-fit; op_keys = ramp 0→0.7 (f16-f20) then a gentle flicker (0.61-0.70, Δ≤0.09) then die_by fade (f27-f33).
+        "opacity": [[18, 21, 0.0, 0.85, "io"], [21, 25, 0.85, 0.85, "lin"], [25, 30, 0.85, 0.0, "out"]],
+        "scale":   [[18, 25, 0.75, 1.05, "io"], [25, 30, 1.05, 1.05, "lin"]] },
+      # T104 TURN-TAKING — L4 CROWN/SETTLE (agni_foreground, ember debris + corner flame licks; character kept, re-staggered to settle AFTER the rise): cover-fit; gentle ember flicker f24-f34 (cap 0.68, Δ≤0.1 no strobe) — the settle detail reading crisp once the blaze is gone.
       { "src": "agni_foreground", "kind": "xform",
-        "op_keys": [17, [0.0, 0.20, 0.40, 0.58, 0.70, 0.64, 0.70, 0.61, 0.68, 0.62, 0.66, 0.58, 0.48, 0.38, 0.28, 0.18, 0.09, 0.0]],
-        "scale":   [[17, 34, 1.0, 1.0, "lin"]] },
+        "op_keys": [24, [0.0, 0.30, 0.55, 0.68, 0.62, 0.68, 0.58, 0.46, 0.32, 0.18, 0.0]],
+        "scale":   [[24, 34, 1.0, 1.0, "lin"]] },
     ],
   },
 
-  # T102 AGNI PER-HERO OVERRIDE — AURA (ping-pong loop; replaces the Deva default aura for Agni ONLY). Idle HEARTH-breath. REVERSAL-SYMMETRY
-  # LAW: op/scale oscillation only — ZERO drift, ZERO rotate (fire flicker via op_keys, Δ≤0.12 so the 0..11..0 reflection stays smooth). L1
-  # REUSES agni_burst (cross-brief, third use of the pattern → feeds both sheets, no extra decode; also covers the vetoed aura-back layer).
-  # Cycle (22 steps @16×vfxT): Normal 1.79s.
-  "agni_hero_aura": {
-    "seed": 0xA601AA, "fps": 24, "frames": 12, "one_shot": True, "layers_dir": "agni", "canvas": (1254, 1254),
+  # T104 PART 3 (T103 ABSORBED) — VARUNA PER-HERO ENTRY (authored directly in the FINAL T104 shape; renders ONCE, already correct). VARUNA'S
+  # OCEAN: the tide rises and crowns — cyan-white water, RISING and ENCLOSING his own cell (Vajra separation: scale_anchor bottom / centred,
+  # NOTHING descends). SEPARATION NOTE (owner): LIQUID, NEVER ELECTRIC — this is water (tide-pool, wave, spray), distinct from Indra's storm.
+  # Structure-forward, solo-stagger law (≤2 layers >0.5 at any frame: ground solo → wave races → tide rises → spray settles), delayed-arrival
+  # reveal beat (~f25). 34 frames. WORST-CASE-SUM: ground 1-26 · shockwave 8-20 · burst 18-30 · foreground 24-34, all ≤34.
+  "varuna_hero_entry": {
+    "seed": 0x7A40DA, "fps": 24, "frames": 34, "one_shot": True, "layers_dir": "varuna", "canvas": (1254, 1254),
     "layers": [
-      # L1 burst-as-hearth (agni_burst REUSED) — the twin flames breathing low behind the card: scale_anchor bottom, scale 0.8; op io ramp 0.15→0.32 (idle-quiet). NO drift, NO rotate. cap 0.32.
-      { "src": "agni_burst", "kind": "xform", "scale_anchor": "bottom",
-        "opacity": [[1, 12, 0.15, 0.32, "io"]],
-        "scale":   [[1, 12, 0.8, 0.8, "lin"]] },
-      # L2 aura front — the ember-swoosh hearth-breath: centred, scale 0.9; op_keys micro-flicker riding a 0.3→0.55 rise (Δ≤0.05, smooth reversal). cap 0.55.
-      { "src": "agni_aura_front", "kind": "xform",
-        "op_keys": [1, [0.30, 0.34, 0.38, 0.41, 0.45, 0.42, 0.47, 0.50, 0.48, 0.52, 0.54, 0.55]],
-        "scale":   [[1, 12, 0.9, 0.9, "lin"]] },
+      # L1 GROUND (varuna_ground, tide-pool disc): IGNITES SOLO f1-f8 at cap 0.9 (the painted tide-ground IS the gorgeousness), DIMS to 0.5 as the wave races, held crisp 0.5 through f20, die_by fade f20-f26. scale_anchor bottom.
+      { "src": "varuna_ground", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[1, 5, 0.0, 0.9, "io"], [5, 8, 0.9, 0.9, "lin"], [8, 11, 0.9, 0.5, "out"], [11, 20, 0.5, 0.5, "lin"], [20, 26, 0.5, 0.0, "out"]],
+        "scale":   [[1, 26, 0.95, 0.95, "lin"]] },
+      # L2 RING (varuna_shockwave, the wave races out) TWO PULSES: pulse1 f8-f14 cap 0.85, echo f14-f20 cap 0.6 (rings read as motion). scale_anchor bottom, expands per pulse (op=0 at f14 hides the reset).
+      { "src": "varuna_shockwave", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[8, 11, 0.0, 0.85, "io"], [11, 14, 0.85, 0.0, "out"], [14, 17, 0.0, 0.6, "io"], [17, 20, 0.6, 0.0, "out"]],
+        "scale":   [[8, 14, 0.55, 1.15, "io"], [14, 20, 0.7, 1.3, "io"]] },
+      # L3 RISE (varuna_burst, the tide rises; the wash UNDER the structure): rises AFTER the wave. peak op 0.85, HOLD 4f (f21-f25), fade f25-f30. scale_anchor bottom, rises 0.75→1.05.
+      { "src": "varuna_burst", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[18, 21, 0.0, 0.85, "io"], [21, 25, 0.85, 0.85, "lin"], [25, 30, 0.85, 0.0, "out"]],
+        "scale":   [[18, 25, 0.75, 1.05, "io"], [25, 30, 1.05, 1.05, "lin"]] },
+      # L4 CROWN/SETTLE (varuna_foreground, spray + droplet detail settling): cover-fit; gentle ripple flicker f24-f34 (cap 0.68, Δ≤0.1 no strobe).
+      { "src": "varuna_foreground", "kind": "xform",
+        "op_keys": [24, [0.0, 0.30, 0.55, 0.68, 0.62, 0.68, 0.58, 0.46, 0.32, 0.18, 0.0]],
+        "scale":   [[24, 34, 1.0, 1.0, "lin"]] },
     ],
   },
 }
