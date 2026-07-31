@@ -1314,9 +1314,12 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .dissolve-clone{ position:fixed; z-index:65; border-radius:12px; pointer-events:none; background:linear-gradient(#3a1414,#180808); border:2px solid #b0483c; display:flex; align-items:center; justify-content:center; font-family:Cinzel,serif; font-size:11px; color:#ffd9d0; text-align:center; padding:4px; animation:dissolveAway calc(.5s * var(--vfx-t,1)) ease-in forwards; }
 @keyframes dissolveAway{ 0%{ opacity:1; transform:scale(1);} 100%{ opacity:0; transform:scale(.7) rotate(4deg); filter:blur(3px);} }
 /* T97 VICTIM SHOWCASE — the struck card's real visual held over its (now-emptied) cell for the strike duration, then it exits.
-   z-63 = below the dissolve/shard overlays (65) so the death particles read on top; above the board. animation:none neutralises any
-   inherited .bc entrance anim on the clone. 'kill' reuses dissolveAway (crack+blur, Vajra). 'removal' = clean fade+lift, NO crack/blur (Sudarshana law: the hero returns, it does not die). */
-.victim-showcase{ z-index:63; pointer-events:none; animation:none; }
+   T97b: hosted in #victimlayer (z-4, below the strike canvas) so the strike renders OVER it; the death particles (shardBurst) still draw
+   in #choreolayer (z-65) so they read on top of everything. animation:none neutralises any inherited .bc entrance anim on the clone.
+   'kill' reuses dissolveAway (crack+blur, Vajra). 'removal' = clean fade+lift, NO crack/blur (Sudarshana law: the hero returns, it does not die). */
+/* T97b: victim clones live in #victimlayer (a #field child, z-4) so a real board card's stacking is reproduced — ABOVE the board rows/slot (.half z-3) yet BELOW the strike canvas (#vfxcanvas z-5). The bolt/disc therefore render OVER the held card, not under it. */
+#victimlayer{ position:absolute; inset:0; z-index:4; pointer-events:none; }
+.victim-showcase{ pointer-events:none; animation:none; }
 .victim-showcase.victim-kill{ animation:dissolveAway calc(.5s * var(--vfx-t,1)) ease-in forwards; }
 .victim-showcase.victim-removal{ animation:victimVanish calc(.3s * var(--vfx-t,1)) ease-out forwards; }
 @keyframes victimVanish{ 0%{ opacity:1; transform:scale(1);} 100%{ opacity:0; transform:scale(1.05);} }
@@ -1909,6 +1912,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     <div id="deck-o" class="deckstack"><img id="deckimg-o" alt=""><span class="deckcnt" id="deckcnt-o">12</span></div>
     <div id="deck-p" class="deckstack"><img id="deckimg-p" alt=""><span class="deckcnt" id="deckcnt-p">12</span></div>
     <div id="embers"></div>
+    <div id="victimlayer"></div><!-- T97b: hosts victim-showcase clones ABOVE the board rows (.half z-3) but BELOW #vfxcanvas z-5, so the strike renders OVER the held card. Static #field child → survives render() (which only fillRow()s the row containers). -->
     <canvas id="vfxcanvas"></canvas>
     <div id="vfxflash"></div>
     <div id="oppthinking" class="hidden"><span class="think-emblem">🌀</span><span class="think-txt">Opponent is thinking<span class="td">.</span><span class="td">.</span><span class="td">.</span></span></div>
@@ -8082,12 +8086,13 @@ function captureVictims(uids){
     const el=document.querySelector(`#field .bc[data-uid="${u}"]`);
     if(!el) return;                                    // no live cell (e.g. a Vajra kill-on-entry) → helper no-ops, the existing koePos/dissolveAt path stands
     const r=el.getBoundingClientRect();
+    const fr=$('field').getBoundingClientRect();       // T97b: position is now RELATIVE to #victimlayer (inset:0 in #field), not the fixed viewport
     const node=el.cloneNode(true); node.removeAttribute('id');
     node.className=el.className+' victim-showcase';
-    Object.assign(node.style, { position:'fixed', left:r.left+'px', top:r.top+'px', width:r.width+'px', height:r.height+'px', margin:'0', transform:'none', pointerEvents:'none' });
+    Object.assign(node.style, { position:'absolute', left:(r.left-fr.left)+'px', top:(r.top-fr.top)+'px', width:r.width+'px', height:r.height+'px', margin:'0', transform:'none', pointerEvents:'none' });
     let color='#e0483c'; for(const k in FAC_COLOR) if(el.classList.contains(k)) color=FAC_COLOR[k];
-    $('choreolayer').appendChild(node);                // SHOW now — persists over the cell render() is about to empty, through the whole strike sequence
-    victimClones[u]={ node, rect:r, color };
+    $('victimlayer').appendChild(node);                // SHOW now under #vfxcanvas — persists over the cell render() is about to empty, through the whole strike sequence; the strike renders OVER it (T97b)
+    victimClones[u]={ node, rect:r, color };           // rect = VIEWPORT rect, kept for shardBurst (which draws in #choreolayer, fixed/viewport coords)
   });
 }
 // exit the held victim card at the strike's contact beat.
