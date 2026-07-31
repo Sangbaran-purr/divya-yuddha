@@ -7534,8 +7534,28 @@ function fixLogGrammar(msg){
 // (reflow, Sudarshana return, round transitions all handled: the class+tint are re-applied on every board rebuild). The T99 loop extension STAYS (no consumer today).
 // PER-HERO ENTRY OVERRIDE tier (canvas, still live). Keyed by the hero's canonical ENGINE id (rename-proof — R83 moved display names, never ids). Absent id → the faction entry, byte-unchanged.
 const HERO_ENTRY_OVERRIDE = { indra:'sprIndraHeroEntry', agni:'sprAgniHeroEntry', varuna:'sprVarunaHeroEntry' };   // T101 indra + T102 agni + T104 varuna
+// ROLLBACK (owner ruling): Deva heroes now land like normal Deva cards (the c1a landing flare), NOT the sovereign entry / delayed-arrival / solo-stagger sequences. This flag GATES OFF the whole T100–T104 Deva-hero entry branch — the recipes, entry sheets, motion briefs, and this override map are all PRESERVED-BUT-DORMANT (painted-aura-shelf precedent; flip to true to restore). The per-hero AURA/footlight system is untouched (separate map + boardCard).
+const DEVA_HERO_ENTRY_ON = false;
 // T104 PART 1 — per-hero BORDER-GLOW tint [inner, outer]: indra storm blue-white/gold · agni fire orange-gold · varuna ocean cyan-white · default warm deva gold (wave-1 heroes + other factions until their rows).
-const HERO_AURA_TINT = { indra:['#fff0d0','#6ba8ff'], agni:['#ffe0a0','#ff7a2a'], varuna:['#e0ffff','#3fc8ff'], _default:['#ffe6b0','#e0b040'] };
+const HERO_AURA_TINT = {
+  // Devas (T104)
+  indra:['#fff0d0','#6ba8ff'],   // storm blue-white/gold
+  agni:['#ffe0a0','#ff7a2a'],    // fire orange-gold
+  varuna:['#e0ffff','#3fc8ff'],  // ocean cyan-white
+  // Asuras
+  mahabali:['#ffdca0','#c83240'],// crimson-gold
+  rahu:['#b890e8','#2a0e52'],    // eclipse violet-black
+  shukra:['#fbfdff','#b8c6dc'],  // Venus silver-white
+  // Vanaras
+  hanuman:['#ffcf6a','#e8481e'], // vermilion-saffron
+  sugriva:['#c4ffd4','#1ea85a'], // emerald-green
+  angad:['#ffd890','#b0722a'],   // bronze-amber
+  // Nagas
+  vasuki:['#c8fff0','#14a882'],  // teal-emerald
+  shesha:['#bcc4ff','#3838b8'],  // cosmic indigo
+  takshaka:['#eaffa0','#9fce1e'],// acid-chartreuse
+  _default:['#ffe6b0','#e0b040'] // warm deva gold (wave-tier heroes: Kartikeya/Garuda + other factions' wave pairs — out of scope)
+};
 // T104-B DELAYED HERO ARRIVAL — uids whose placed cell is held hidden while the entry choreography plays. boardCard reads this (survives any render() mid-entry). The engine already placed the hero; only the picture is choreographed.
 let materializingHeroes = {};
 function revealMaterializingHero(uid){ if(!materializingHeroes[uid]) return; delete materializingHeroes[uid];
@@ -8937,7 +8957,7 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
       if(LEGACY_VFX) VFX.sprRing(src.cx, src.rect.top+src.rect.height*0.78, fac, src.rect.width*(isHero?1.15:1));                          // E2 landing ground ring (faction-tinted; heroes land bigger) [T77-gated]
       // T67b R1: EVERY Hero entrance (both seats, all factions, ALL rarities) gets a faction-tinted aura at combat weight — Epic heroes no longer land bare; L/M heroes also keep the spectacle stack below. Ambient-Deva UNITS keep their small blessing aura.
       if(LEGACY_VFX && (isHero || (tier==='ambient' && fac==='devas'))) VFX.sprAura(src.cx, src.rect.top+src.rect.height*0.5, fac, src.rect.width*(isHero?1.3:1));   // [T77-gated]
-      if(isHero && fac==='devas'){   // T100: a DEVA HERO play gets the sovereign ENTRY instead of the plain landing flare (suppression keyed on body-play && hero && Deva). Other factions' heroes keep the landing until their rows ship.
+      if(DEVA_HERO_ENTRY_ON && isHero && fac==='devas'){   // ROLLBACK-gated (owner ruling): flag is OFF → this whole branch is inert, so Deva heroes fall to the `else` sprLanding (normal c1a Deva card-landing). The T100–T104 entry recipes/sheets/delayed-arrival are dormant, not deleted.
         const entryRecipe=HERO_ENTRY_OVERRIDE[c.id]||'sprDevaHeroEntry';   // T101: per-hero override BEFORE the faction default (Indra → storm; absent id → the T100 faction entry, byte-unchanged). Same branch/suppression, different sheet.
         const fired=VFX[entryRecipe](src.cx, src.rect.top+src.rect.height*0.5, src.rect.width);
         if(fired){   // T104-B DELAYED ARRIVAL: hold the placed hero HIDDEN, materialize in the settle (~f25 of 34 = final quarter, inside the standing light). reduced-motion → fired===false → no hold (hero shows at once). Mirrors T97 (there: keep a removed card visible; here: hold a placed card hidden).
