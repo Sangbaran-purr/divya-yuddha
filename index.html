@@ -7677,18 +7677,31 @@ function flyClone(rect, destEl){
   requestAnimationFrame(()=>{ clone.style.left=dr.left+'px'; clone.style.top=dr.top+'px'; clone.style.width=dr.width+'px'; clone.style.height=dr.height+'px'; clone.style.opacity='.5'; });
   setTimeout(()=>{ clone.remove(); destEl.style.visibility='visible'; flash(destEl); }, 280);
 }
+// ---- center-screen banner QUEUE (shared #banner element): serializes the round-finish banner + the pass banner so they NEVER stack — a second announcement that fires while one is showing is queued and plays after. Reduced-motion is handled by the existing CSS (#banner .txt{ animation:none !important }), so this inherits static appear/disappear automatically.
+let bannerQ=[], bannerActive=false;
+function enqueueBanner(text, o={}){ bannerQ.push({ text, hold:o.hold||1800, animDur:o.animDur||1.8, sfx:o.sfx||null, cls:o.cls||'' }); if(!bannerActive) drainBanner(); }
+function drainBanner(){
+  const b=$('banner'), t=b.querySelector('.txt');
+  if(!bannerQ.length){ bannerActive=false; return; }
+  bannerActive=true;
+  const item=bannerQ.shift();
+  t.textContent=item.text;
+  t.className='txt'+(item.cls?(' '+item.cls):'');
+  b.classList.remove('hidden');
+  t.style.animation='none'; void t.offsetWidth; t.style.animation='bannerSweep '+item.animDur+'s ease-out';   // under reduced-motion the CSS forces animation:none → static show/hide
+  if(item.sfx){ try{ Audio2.fileSfx(item.sfx); }catch(e){} }
+  clearTimeout(b._t); b._t=setTimeout(()=>{ b.classList.add('hidden'); setTimeout(drainBanner, 180); }, item.hold);
+}
 function showRoundBanner(){
   const h=G.roundHistory[G.roundHistory.length-1];
   const res = h.winner==null?'ROUND DRAWN': h.winner===0?'YOU WIN':'OPPONENT WINS';
   const w0=G.players[0].roundWins, w1=G.players[1].roundWins;
   const lead = w0>w1?' · YOU LEAD': w1>w0?' · YOU TRAIL':'';
-  const b=$('banner'), t=b.querySelector('.txt');
-  t.textContent=`ROUND ${h.round} — ${res}${lead}`;
-  b.classList.remove('hidden');
-  t.style.animation='none'; void t.offsetWidth; t.style.animation='bannerSweep 1.8s ease-out';
-  if(!G.over) Audio2.fileSfx('sfx_round_end');   // round-end gong for rounds 1&2 ONLY — at match end the victory/defeat stinger owns the moment (a gong under a stinger is mud)
-  clearTimeout(b._t); b._t=setTimeout(()=>b.classList.add('hidden'), 1800);
+  enqueueBanner(`ROUND ${h.round} — ${res}${lead}`, { hold:1800, animDur:1.8, sfx: G.over?null:'sfx_round_end' });   // round-end gong for rounds 1&2 ONLY — at match end the victory/defeat stinger owns the moment
 }
+// PASS ANNOUNCEMENT (owner task): a pass emits no engine event, so it's detected UI-side via the players[pi].passed state transition in runAction. Same #banner visual class as the round-finish banner (reuse, no new look); ~1.5s hold; queued so it never stacks; sequenced into the same post-choreography position.
+function showPassBanner(pi){ enqueueBanner(pi===0?'YOU PASSED':'OPPONENT PASSED', { hold:1500, animDur:1.5 }); }
+function announcePassIfAny(passedBefore){ for(const pi of [0,1]){ if(passedBefore && !passedBefore[pi] && G.players[pi] && G.players[pi].passed) showPassBanner(pi); } }
 
 /* ================= GAME FEEL: pacing speed, audio, helpers ================= */
 const SPEEDS={ relaxed:1.4, normal:1.0, fast:0.6 };
@@ -9056,6 +9069,7 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
 }
 function runAction(mutate, opts={}){
   const snap = snapshotBoard();
+  const passedBefore=[G.players[0].passed, G.players[1].passed];   // PASS ANNOUNCEMENT: detect a passed:false→true transition after this action resolves (pass emits no event)
   roundCountAtActionStart = G.roundHistory.length;
   const evStart = G.events.length;
   mutate();
@@ -9068,7 +9082,7 @@ function runAction(mutate, opts={}){
     const pe=evs.find(e=>e.type==='play'); if(pe) cardPlaySound(findCardByUid(pe.sourceUid));
     for(const e of evs){ if(e.type==='buff') powerChangeSound('sfx_buff', e.abilityName); else if(e.type==='damage') powerChangeSound('sfx_debuff', e.abilityName); }
     if (evs.some(e=>e.type==='destroy')) Audio2.fileSfx('sfx_unit_destroy');
-    render(); showResultSummary(evs); afterChoreo(); return;
+    render(); showResultSummary(evs); announcePassIfAny(passedBefore); afterChoreo(); return;   // pass banner (if a pass just landed) enqueued BEFORE afterChoreo's round banner → pass shows first, round after
   }
   choreoActive=true; choreoSkip=false; choreoStartedAt=performance.now(); choreoForce=[];
   const layer=$('choreolayer'); layer.classList.add('locked'); layer.onclick=skipChoreo;
@@ -9089,7 +9103,7 @@ function runAction(mutate, opts={}){
       // GUARANTEE: no thrown/skipped/hung step can leave the choreo locked — always release the lock and resume the match
       clearVictims();   // T97: drop any victim-showcase clone whose strike beat was skipped/broke, so it never persists past the action
       choreoActive=false; choreoStartedAt=0; choreoForce=[]; layer.classList.remove('locked'); layer.onclick=null; layer.innerHTML='';
-      try{ render(); showResultSummary(evs); if (G.roundHistory.length>roundCountAtActionStart && !G.over) showRoundBanner(); }catch(e){}
+      try{ render(); showResultSummary(evs); announcePassIfAny(passedBefore); if (G.roundHistory.length>roundCountAtActionStart && !G.over) showRoundBanner(); }catch(e){}
       pump();
     }
   })();
