@@ -525,6 +525,52 @@ BRIEFS = {
         "scale":   [[1, 12, 0.55, 0.55, "lin"]] },
     ],
   },
+
+  # T101 INDRA PER-HERO OVERRIDE — ENTRY (first of the twelve; replaces the T100 Deva default for Indra ONLY). INDRA'S STORM: the sky
+  # declaring its king — gold-dominant lightning with blue charge. THE VAJRA SEPARATION RULE (absolute): Vajra strikes DOWN onto a victim;
+  # this storm RISES and ENCLOSES his own cell (every layer scale_anchor bottom / centred — NOTHING descends). T100-R sibling: the peak
+  # LINGERS (storm holds at full f12-f20). Single-draw. Design timeline 0-based → compositor 1-based (+1). WORST-CASE-SUM: seal 1-27 ·
+  # debris 5-19 · storm 9-27 · wreath 19-34, all ≤34.
+  "indra_hero_entry": {
+    "seed": 0x1ADA11, "fps": 24, "frames": 34, "one_shot": True, "layers_dir": "indra", "canvas": (1254, 1254),
+    "layers": [
+      # L1 seal — THE GROUND WAKES (electrified ground ellipse, baked perspective → NO squash_y): scale_anchor bottom, scale 0.95; op_keys = ramp 0→0.8 (f0-f5) then a subtle crackle riding the hold (0.67-0.80, Δ≤0.09 no strobe) then die_by fade (f20-f26). One per-frame track avoids the segment/op_keys overlap.
+      { "src": "indra_seal", "kind": "xform", "scale_anchor": "bottom",
+        "op_keys": [1, [0.0, 0.15, 0.35, 0.55, 0.70, 0.80, 0.72, 0.78, 0.69, 0.76, 0.80, 0.71, 0.75, 0.68, 0.77, 0.72, 0.79, 0.70, 0.74, 0.71, 0.68, 0.55, 0.42, 0.30, 0.18, 0.08, 0.0]],
+        "scale":   [[1, 27, 0.95, 0.95, "lin"]] },
+      # L2 debris — THE CHARGE (shard burst + arcs): scale_anchor bottom, scale 0.9→1.0 io; op_keys flicker (the owner's [0,.5,.3,.65,.4,.7,.35,.5,0] expanded per-frame across f4-f18, cap 0.7 — a CHARGE crackle, jumpy by design, unlike the seal).
+      { "src": "indra_debris", "kind": "xform", "scale_anchor": "bottom",
+        "op_keys": [5, [0.0, 0.29, 0.47, 0.36, 0.40, 0.60, 0.54, 0.40, 0.57, 0.65, 0.45, 0.39, 0.48, 0.29, 0.0]],
+        "scale":   [[5, 19, 0.9, 1.0, "io"]] },
+      # L3 storm — THE STORM RISES (the grandness; the Vajra separation embodied in motion): scale_anchor bottom, scale 0.75→1.0 io (f8-f15 — it RISES), op ramp 0→1.0 io (f8-f12), HOLD AT FULL f12-f20 (the T100-R law: loudness is duration), die_by fade f20-f26. Dark centre = the card's home.
+      { "src": "indra_storm", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[9, 13, 0.0, 1.0, "io"], [13, 21, 1.0, 1.0, "lin"], [21, 27, 1.0, 0.0, "out"]],
+        "scale":   [[9, 16, 0.75, 1.0, "io"], [16, 27, 1.0, 1.0, "lin"]] },
+      # L4 wreath — THE CROWN OF STORMS (gold lightning wreath, open centre): centred; scale 0.8→1.2 io (f18-f24) then holds; op ramp 0→0.9 io (f18-f21), ONE op_sine breathe (base 0.9 amp 0.1 → peaks 1.0, no dip since the io ramp meets it), die_by fade f28-f33.
+      { "src": "indra_wreath", "kind": "xform",
+        "opacity": [[19, 22, 0.0, 0.9, "io"], [29, 34, 0.9, 0.0, "out"]],
+        "op_sine": [23, 29, 0.9, 0.1],
+        "scale":   [[19, 25, 0.8, 1.2, "io"], [25, 34, 1.2, 1.2, "lin"]] },
+    ],
+  },
+
+  # T101 INDRA PER-HERO OVERRIDE — AURA (ping-pong loop; replaces the Deva default aura for Indra ONLY). Idle STORM-breath. REVERSAL-
+  # SYMMETRY LAW: op/scale oscillation only — ZERO drift, ZERO rotate (lightning flicker is DIRECTION-FREE, ideal ping-pong material; the
+  # ring breathes in CRACKLE not sine, but every per-frame Δ≤0.12 so the 0..11..0 reflection stays smooth). L2 wreath REUSES indra_wreath
+  # (the T100-R cross-brief precedent → the sprite feeds both sheets, no extra decode). Cycle (22 steps @16×vfxT): Normal 1.79s.
+  "indra_hero_aura": {
+    "seed": 0x1ADAA1, "fps": 24, "frames": 12, "one_shot": True, "layers_dir": "indra", "canvas": (1254, 1254),
+    "layers": [
+      # L1 ring — the storm-breath (lightning ring): scale_anchor bottom, scale 0.95; op_keys micro-flicker riding a 0.3→0.55 rise (Δ≤0.05, so the reversal is smooth). cap 0.55.
+      { "src": "indra_ring", "kind": "xform", "scale_anchor": "bottom",
+        "op_keys": [1, [0.30, 0.34, 0.38, 0.41, 0.45, 0.42, 0.47, 0.50, 0.48, 0.52, 0.54, 0.55]],
+        "scale":   [[1, 12, 0.95, 0.95, "lin"]] },
+      # L2 wreath — the crown breathing faintly (indra_wreath REUSED): centred, scale 0.6 fixed; op io ramp 0.12→0.28 (idle-quiet). NO drift, NO rotate. cap 0.28.
+      { "src": "indra_wreath", "kind": "xform",
+        "opacity": [[1, 12, 0.12, 0.28, "io"]],
+        "scale":   [[1, 12, 0.6, 0.6, "lin"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):

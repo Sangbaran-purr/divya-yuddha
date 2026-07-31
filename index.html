@@ -7516,19 +7516,25 @@ function fixLogGrammar(msg){
 // loop survives round transitions, so an idle hero breathes continuously. LO rung = aura disabled (entry still plays) — the rollback clause.
 let heroAuras = {};             // uid -> { handle, x, y, w }
 let enteringHeroes = new Set(); // uids mid-entry-cinematic — the aura is deferred to the entry settle
+// T101 PER-HERO OVERRIDE tier (on top of the T100 faction default). Keyed by the hero's canonical ENGINE id (rename-proof — R83 moved display
+// names, never ids; the engine dispatches every ability by id). Absent id → the faction recipe → today's behavior byte-unchanged. Each future
+// hero override = a layer kit + two briefs + two map entries; the lifecycle (entry suppression, reconcile start/stop/retarget) is inherited.
+const HERO_ENTRY_OVERRIDE = { indra:'sprIndraHeroEntry' };
+const HERO_AURA_OVERRIDE  = { indra:'sprIndraHeroAura' };
 function reconcileHeroAuras(){
   if(reducedMotion() || typeof G==='undefined' || !G) return;
   const auraOn = !(typeof VFX!=='undefined' && VFX.currentRung && VFX.currentRung()==='lo');   // LO: don't START auras (entry still plays)
   const live={};
   document.querySelectorAll('#field .bc.hero').forEach(el=>{ const uid=el.dataset.uid, c=findCardByUid(+uid);   // dataset.uid is a STRING; findCardByUid compares === on numeric uid → coerce for the lookup, keep the string for the map keys (DOM iteration yields strings)
-    if(c && c.t==='hero' && cardHomeFaction(c)==='devas'){ const r=el.getBoundingClientRect(); live[uid]={ cx:r.left+r.width/2, cy:r.top+r.height/2, w:r.width }; } });
+    if(c && c.t==='hero' && cardHomeFaction(c)==='devas'){ const r=el.getBoundingClientRect(); live[uid]={ cx:r.left+r.width/2, cy:r.top+r.height/2, w:r.width, id:c.id }; } });   // T101: carry the hero id for the per-hero aura override
   for(const uid in heroAuras){ const a=heroAuras[uid], L=live[uid];
     if(!L){ try{ a.handle.stop(300); }catch(e){} delete heroAuras[uid]; }                                   // hero GONE (Sudarshana removal / match change) → stop
     else { try{ a.handle.retarget(L.cx, L.cy, L.w); }catch(e){} a.x=L.cx; a.y=L.cy; a.w=L.w; }                // T100-F: hero PRESENT → TRACK the live card (reflow moves+resizes it) — no restart, the breath continues
   }
   if(!auraOn) return;
   for(const uid in live){ if(heroAuras[uid] || enteringHeroes.has(uid)) continue;
-    const L=live[uid], h=(typeof VFX!=='undefined')&&VFX.sprDevaHeroAura&&VFX.sprDevaHeroAura(L.cx, L.cy, L.w);
+    const L=live[uid], recipe=HERO_AURA_OVERRIDE[L.id]||'sprDevaHeroAura';   // T101: per-hero override BEFORE the faction default (absent id → the T100 faction aura, byte-unchanged)
+    const h=(typeof VFX!=='undefined')&&VFX[recipe]&&VFX[recipe](L.cx, L.cy, L.w);
     if(h && h.stop) heroAuras[uid]={ handle:h, x:L.cx, y:L.cy, w:L.w };
   }
 }
@@ -8271,12 +8277,12 @@ const VFX = (()=>{
   function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
   // ===================== FLIPBOOK SHEETS (T68F: 384px, per-sheet grid, real-time playback + frame blending) =====================
   let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoading={};   // T81: per-key load tracking (was a global sheetLoadN counter — lazy loading is incremental per match)
-  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff','shield','venom','chaos_wash','chaos_mark','pashupatastra','sudarshana','nagapasha','pavamana','ahamkara','sanjivani','deva_hero_entry','deva_hero_aura'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
+  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff','shield','venom','chaos_wash','chaos_mark','pashupatastra','sudarshana','nagapasha','pavamana','ahamkara','sanjivani','deva_hero_entry','deva_hero_aura','indra_hero_entry','indra_hero_aura'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
   const LANDING_SHEET={ devas:'c1a_deva', asuras:'landing_asura', vanaras:'landing_vanara', nagas:'landing_naga' };   // faction → landing sheet key (all four ship as of T81)
   const SHEET_GRID_CFG={ brahmastra:{cols:8, rows:5}, gayatri:{cols:6, rows:6}, chaos_wash:{cols:6, rows:4}, pashupatastra:{cols:8, rows:5}, pavamana:{cols:6, rows:6} };   // T78/T79: RECTANGULAR row-plate sheets — grid can't derive from width/SHEET_CELL (non-square cells); cw/ch = sheetDims/(cols,rows). Square sheets omit this (cw=ch=SHEET_CELL).
   let SHEET_CELL=RUNG[vfxRung].cell;   // T74: rung-dependent sheet cell (hi 512 / md 448 / lo 384). Frame count derives from the sheet dims / cell, so 64f/48f/32f are auto-detected.
   const SHEET_FPS=16;   // F1b: 16fps base ×vfxT → the window plays at ~1:1 real tempo
-  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward', shield:'forward', venom:'forward', chaos_wash:'forward', chaos_mark:'forward', pashupatastra:'forward', sudarshana:'forward', nagapasha:'forward', pavamana:'forward', ahamkara:'forward', sanjivani:'forward', deva_hero_entry:'forward', deva_hero_aura:'pingpong' };   // venom NEVER reverses; the seq catalog effects = one-shot forward; deva_hero_aura pingpong (T99 loop, also forced by the recipe's loop config)
+  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward', shield:'forward', venom:'forward', chaos_wash:'forward', chaos_mark:'forward', pashupatastra:'forward', sudarshana:'forward', nagapasha:'forward', pavamana:'forward', ahamkara:'forward', sanjivani:'forward', deva_hero_entry:'forward', deva_hero_aura:'pingpong', indra_hero_entry:'forward', indra_hero_aura:'pingpong' };   // venom NEVER reverses; the seq catalog effects = one-shot forward; the hero auras pingpong (T99 loop, also forced by the recipe's loop config)
   const sheetFrameCanvas=offc2(512,512);   // B4: ONE reusable canvas (max cell 512) for draw-time aura tint; draws consume only the SHEET_CELL sub-region
   function haveSheet(key){ return !!sheetImg[key]; }
   // T81: LOAD ONE SHEET, idempotent per key (skips if already loaded or in-flight). bakeAlpha + grid derivation as before.
@@ -8298,7 +8304,7 @@ const VFX = (()=>{
     loadSheet('venom');    // T86: faction-agnostic — every match loads the shared venom tick (completes the status quartet)
     if(LEGACY_VFX){ SHEET_NAMES.forEach(loadSheet); return; }   // A/B rollback: blanket-load the whole catalog
     loadSheet(LANDING_SHEET[facA]); loadSheet(LANDING_SHEET[facB]);
-    if(facA==='devas' || facB==='devas'){ loadSheet('brahmastra'); loadSheet('gayatri'); loadSheet('vajra'); loadSheet('sudarshana'); loadSheet('pavamana'); loadSheet('deva_hero_entry'); loadSheet('deva_hero_aura'); }   // T78/T79/T82/T92/T95 Deva-only cards + T100 Deva hero entry/aura
+    if(facA==='devas' || facB==='devas'){ loadSheet('brahmastra'); loadSheet('gayatri'); loadSheet('vajra'); loadSheet('sudarshana'); loadSheet('pavamana'); loadSheet('deva_hero_entry'); loadSheet('deva_hero_aura'); loadSheet('indra_hero_entry'); loadSheet('indra_hero_aura'); }   // T78/T79/T82/T92/T95 Deva cards + T100 Deva hero entry/aura + T101 Indra per-hero override
     if(facA==='asuras' || facB==='asuras'){ loadSheet('chaos_wash'); loadSheet('chaos_mark'); loadSheet('pashupatastra'); loadSheet('ahamkara'); loadSheet('sanjivani'); }   // T87/T96/T98 Asura-conditional
     if(facA==='nagas' || facB==='nagas'){ loadSheet('nagapasha'); }   // T94 Naga-conditional — Nagapasha bind arrival
   }
@@ -8691,6 +8697,10 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
     return addSheetSpr('deva_hero_entry', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 34/SHEET_FPS*vfxT() }); }
   function sprDevaHeroAura(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);   // T100: Deva hero AURA — serene idle ping-pong loop (T99's first consumer). Returns a {stop(fadeMs)} handle. The breath is BAKED into the 12 frames (0..11); the loop op holds FLAT at opPeak after a 250ms birth ramp so the frames show through, and the 0..11..0 ping-pong is the breathing.
     return addSheetSpr('deva_hero_aura', x, y, W*2.4, { loop:'pingpong', op0:0, opPeak:1, sc0:1, sc1:1, birthS:0.25, retargetK:2.4 }); }   // retargetK 2.4 = the same W→draw-size factor, so handle.retarget re-derives sp.size = cw(cardW)×2.4 (aura scales with the hero card)
+  function sprIndraHeroEntry(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);   // T101: Indra per-hero ENTRY (overrides the Deva default for Indra only) — INDRA'S STORM (34f forward: ground-seal wakes → gold-blue lightning RISES → storm-column holds full → wreath crown). Vajra separation: the storm rises+encloses, nothing descends. Flat runtime op (envelope baked). No hit-stop.
+    return addSheetSpr('indra_hero_entry', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 34/SHEET_FPS*vfxT() }); }
+  function sprIndraHeroAura(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);   // T101: Indra per-hero AURA (overrides the Deva default aura for Indra only) — idle STORM-breath (12f ping-pong: gold-blue lightning ring + wreath crackling). Same loop/handle contract as the faction aura → inherits the T100-F retarget + reconcile lifecycle unchanged (only the sheet differs).
+    return addSheetSpr('indra_hero_aura', x, y, W*2.4, { loop:'pingpong', op0:0, opPeak:1, sc0:1, sc1:1, birthS:0.25, retargetK:2.4 }); }
   function sprNagapasha(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);   // T94: Nagapasha bind ARRIVAL — target-anchored like Vajra (6×3, 18f forward, flat envelope so the baked cast→converge→cinch→settle phases carry). RESTRAINT register — no travel, no hit-stop; the effect is target-local.
     return addSheetSpr('nagapasha', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 18/SHEET_FPS*vfxT() }); }
   function sprSudarshana(cxp,cyp,cardW, fromXp, fromYp, travelMs){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);   // T92-amend: Sudarshana Chakra — the THROWN spinning discus. Anchor = the removed hero's rect; optional (fromXp,fromYp)+travelMs = the cross-board flight from the caster's half (compositor spins+squashes in place, the runtime carries it). Target-strike register (6×3, 18f forward, flat envelope so the baked flight/impact phases carry).
@@ -8850,7 +8860,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
                  __simInitFail(){ try{ if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu._poison=true; return gpuInit(); },   // G3: force the real init throw → floor
                  __reinit(){ gpu._poison=false; gpu.disabled=false; gpu.app=null; return gpuInit(); },
                  __forceBackend(pref){ gpu._pref=pref; try{ if(gpu.gcanvas){ gpu.gcanvas.remove(); gpu.gcanvas=null; } if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu.sprites.length=0; gpu.particles.length=0; return gpuInit(); } },   // G2: force webgl to prove the GLSL variants run
-           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark, sprPashupatastra, sprSudarshana, sprNagapasha, sprPavamana, sprAhamkara, sprSanjivani, sprDevaHeroEntry, sprDevaHeroAura };
+           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark, sprPashupatastra, sprSudarshana, sprNagapasha, sprPavamana, sprAhamkara, sprSanjivani, sprDevaHeroEntry, sprDevaHeroAura, sprIndraHeroEntry, sprIndraHeroAura };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
 // T90 JANK WATCHER — during MATCH CHOREOGRAPHY ONLY, detect sustained frame stutter and (at most once/session) suggest a lower VFX quality. Suggest, never force, never nag.
@@ -8924,7 +8934,8 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
       // T67b R1: EVERY Hero entrance (both seats, all factions, ALL rarities) gets a faction-tinted aura at combat weight — Epic heroes no longer land bare; L/M heroes also keep the spectacle stack below. Ambient-Deva UNITS keep their small blessing aura.
       if(LEGACY_VFX && (isHero || (tier==='ambient' && fac==='devas'))) VFX.sprAura(src.cx, src.rect.top+src.rect.height*0.5, fac, src.rect.width*(isHero?1.3:1));   // [T77-gated]
       if(isHero && fac==='devas'){   // T100: a DEVA HERO play gets the sovereign ENTRY instead of the plain landing flare (suppression keyed on body-play && hero && Deva). Other factions' heroes keep the landing until their rows ship.
-        VFX.sprDevaHeroEntry(src.cx, src.rect.top+src.rect.height*0.5, src.rect.width);
+        const entryRecipe=HERO_ENTRY_OVERRIDE[c.id]||'sprDevaHeroEntry';   // T101: per-hero override BEFORE the faction default (Indra → storm; absent id → the T100 faction entry, byte-unchanged). Same branch/suppression, different sheet.
+        VFX[entryRecipe](src.cx, src.rect.top+src.rect.height*0.5, src.rect.width);
         const huid=String(ev.sourceUid); enteringHeroes.add(huid);   // defer the breathing aura until the entry SETTLES (corona bloom ~f22) — the crown fades into the nimbus. String key: matches the DOM-derived string uids reconcile iterates.
         setTimeout(()=>{ enteringHeroes.delete(huid); try{ reconcileHeroAuras(); }catch(e){} }, 1400*vfxT());
       } else VFX.sprLanding(fac, src.cx, src.rect.top+src.rect.height*0.5, src.rect.width*(isHero?1.3:1)); }   // T80: faction-keyed landing flare (Deva→c1a_deva, Asura→landing_asura; Vanara/Naga no-op until their sheets land) — NEW pipeline, NOT gated by T77
