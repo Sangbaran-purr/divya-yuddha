@@ -895,6 +895,7 @@ function castMantra(g, pi, id, targetUid=null){
       const u=lk.unit; opp.discard.splice(opp.discard.indexOf(u),1);
       u.power=u.base; u.aegis=false; u.revivedShield=false; u.venom=0; u.asleep=false; u.doomed=false; u.revealPending=false;
       pl.units.push(u); g.lastKillThisRound=null;
+      emit(g,'passive',{targetUids:[u.uid],abilityName:'Sanjivani Corruption',text:'stolen'});   // T98: observational emit (rule #7 — no state/rng touch) — fifth of the sibling family (Vishwapasha/Vritra/Nagapasha/Ahamkara), carries the ENTERING unit's uid so the dark-revival arrival VFX anchors at its cell. Behavior-neutral (no engine/story/quest consumer branches on 'passive'); the type field disambiguates from the mantra's own 'play' event of the same abilityName.
       onUnitRevive(g, pi, u);   // WAVE 1 batch 9 — revival choke #4 (Sanjivani Corruption: the stolen enemy corpse returns to the CASTER's side → an enemy Simhika on the other side sees it)
       log(g, `Sanjivani Corruption drags ${u.n} back to fight for ${pl.name}.`);
     } else log(g, 'Sanjivani Corruption: no fallen enemy Unit to steal.');

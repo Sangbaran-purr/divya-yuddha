@@ -437,6 +437,43 @@ BRIEFS = {
         "drift_up": [3, 24, 40] },
     ],
   },
+
+  # T98 SANJIVANI CORRUPTION — DARK REVIVAL ARRIVAL (unit-anchored square, EMERGENCE register — the dark mirror of a landing).
+  # ONE stolen unit is DRAGGED BACK to the Asura board; the ground exhales, crimson wells up HEAVILY from beneath, corruption-threads
+  # claim the space, ash settles. Register law: emergence NOT impact (no hit-stop/shake/dissolve — nothing is struck), COLD (crimson +
+  # ash-grey, NO gold, no green, no violet), everything rises but HEAVILY (labored ease, not eager). Ahamkara is ego's blaze; this is the
+  # grave's cold — side by side it must read heavier and colder, never brighter/fierier. Single-draw layers (T94 primitives NOT used).
+  # The brief's design timeline is 0-based (f0-f27, 28 frames); the compositor is 1-based, so every window is shifted +1 (f0-f22 → 1-23,
+  # etc.) — relative timing preserved. Worst-case-sum clamp (owner-checked): shroud 1-23 · surge 6-21 · threads 13-25 · ashes 9-28, all ≤28.
+  "sanjivani": {
+    "seed": 0x5A9A11, "fps": 24, "frames": 28, "one_shot": True, "layers_dir": "sanjivani", "canvas": (1254, 1254),
+    "layers": [
+      # L1 shroud — THE GRAVE BREATH (the mist gathers SLOWLY): cover-fit, anchored low (scale_anchor bottom, scale 1.0 constant),
+      # op ramp 0→0.4 over f0-f6 (slow — the grave exhales), hold, die_by fade f16-f22. No drift.
+      { "src": "sanjivani_shroud", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[1, 7, 0.0, 0.4, "lin"], [7, 17, 0.4, 0.4, "lin"], [17, 23, 0.4, 0.0, "out"]],
+        "scale":   [[1, 23, 1.0, 1.0, "lin"]] },
+      # L2 surge — THE EMERGENCE (crimson wells up from beneath, LABORED): scale_anchor bottom (the eruption sources below the cell edge
+      # and rises from beneath the board), scale 0.6→0.95 io f5-f16 (SLOWER than Ahamkara's rise — dragged, not eager), op ramp 0→0.8
+      # f5-f10, hold, die_by fade f15-f20. NO breathe (the grave does not exult — no op_sine).
+      { "src": "sanjivani_surge", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[6, 11, 0.0, 0.8, "lin"], [11, 16, 0.8, 0.8, "lin"], [16, 21, 0.8, 0.0, "out"]],
+        "scale":   [[6, 17, 0.6, 0.95, "io"], [17, 21, 0.95, 0.95, "lin"]] },
+      # L3 threads — THE CLAIMING (corruption-threads reach and turn, thin-and-smoky): cover-fit, scale 0.9, drift_up very slow,
+      # rotate +0.5 deg/frame (6° across the window), op ramp 0→0.5 f12-f16, die_by fade f19-f24.
+      { "src": "sanjivani_threads", "kind": "xform",
+        "opacity": [[13, 17, 0.0, 0.5, "lin"], [17, 20, 0.5, 0.5, "lin"], [20, 25, 0.5, 0.0, "out"]],
+        "scale":   [[13, 25, 0.9, 0.9, "lin"]],
+        "rotate":  [13, 25, 6.0],
+        "drift_up": [13, 25, 14] },
+      # L4 ashes — THE SETTLING (last layer standing, the slowest drift in the catalog): cover-fit, drift_up BARELY, op_keys flicker
+      # (the owner's 7 sparse keys [0.0,0.25,0.4,0.3,0.45,0.25,0.0] expanded per-frame across f8-f27 → cap 0.45 baked, Δ≤0.15, no strobe),
+      # fades in the tail (f23-f27 = the trailing 0.30→0.0). Frames 9-28 (1-based).
+      { "src": "sanjivani_ashes", "kind": "xform",
+        "op_keys": [9, [0.0, 0.08, 0.16, 0.24, 0.29, 0.34, 0.38, 0.38, 0.35, 0.32, 0.32, 0.37, 0.42, 0.43, 0.37, 0.30, 0.24, 0.16, 0.08, 0.0]],
+        "drift_up": [9, 28, 7] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
