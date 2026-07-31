@@ -474,6 +474,57 @@ BRIEFS = {
         "drift_up": [9, 28, 7] },
     ],
   },
+
+  # T100-R DEVA HERO ENTRY (GRAND retune) — THE catalog CEILING (hero-class weight ABOVE landing 1.0). Sovereign, radiant, descending
+  # glory; no hit-stop (the heavens ARRIVE, nothing is struck). Pure Deva white-gold. Single-draw layers (T94 primitives unused). Now
+  # 34 frames — the PEAK LINGERS (the beam holds at FULL for 9 frames; the crown blooms PAST the cell edge, A5 mask crops the overhang).
+  # Design timeline 0-based (f0-f33) → compositor 1-based (+1). WORST-CASE-SUM (owner-checked): rays 1-14 · motes 3-31 · beam 5-23 ·
+  # corona 15-29, all ≤34. Beam v2 = blazing pillar spanning the middle half (floor 0, sides black); corona v2 = 93%-wide sun-crown.
+  "deva_hero_entry": {
+    "seed": 0xDE7AE1, "fps": 24, "frames": 34, "one_shot": True, "layers_dir": "deva_hero", "canvas": (1254, 1254),
+    "layers": [
+      # L1 rays — THE HERALD (dawn breaks before the king): scale_anchor bottom, scale 0.85→1.0 io; op ramp 0→0.75 (f0-f4), hold, die_by fade f9-f13.
+      { "src": "deva_hero_rays", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[1, 5, 0.0, 0.75, "io"], [5, 10, 0.75, 0.75, "lin"], [10, 14, 0.75, 0.0, "out"]],
+        "scale":   [[1, 14, 0.85, 1.0, "io"]] },
+      # L2 motes — GLORY DUST: cover-fit; gentle per-frame shimmer (cap 0.5 baked, Δ≤0.15 no strobe), extended to f2-f30, fades in the tail (trailing 0.30→0).
+      { "src": "deva_hero_motes", "kind": "xform",
+        "op_keys": [3, [0.0, 0.12, 0.25, 0.35, 0.42, 0.38, 0.45, 0.40, 0.48, 0.43, 0.50, 0.44, 0.48, 0.42, 0.46, 0.40, 0.44, 0.40, 0.46, 0.41, 0.47, 0.42, 0.44, 0.38, 0.30, 0.22, 0.14, 0.07, 0.0]] },
+      # L3 beam — THE DESCENT + LINGERING BLAZE (the arrival IS the opacity bloom; the HOLD AT FULL is the grandness): cover-fit full cell height; op ramp 0→1.0 io (f4-f8), HOLD AT FULL f8-f17, die_by fade f17-f22; scale 1.06→1.0 io (settling, f4-f10); NO drift.
+      { "src": "deva_hero_beam", "kind": "xform",
+        "opacity": [[5, 9, 0.0, 1.0, "io"], [9, 18, 1.0, 1.0, "lin"], [18, 23, 1.0, 0.0, "out"]],
+        "scale":   [[5, 11, 1.06, 1.0, "io"], [11, 23, 1.0, 1.0, "lin"]] },
+      # L4 corona — THE CROWN OF ARRIVAL (blooms PAST the cell edge as the beam hands off — the mask crops the overhang, intended): centred; scale 0.7→1.45 io (f14-f21) then holds; op ramp 0→1.0 io (f14-f17), ONE op_sine breathe (base 0.9 amp 0.1 → peaks at 1.0, no dip since the io ramp meets it), die_by fade f23-f28. op_sine end (0.9)=fade start → continuous.
+      { "src": "deva_hero_corona", "kind": "xform",
+        "opacity": [[15, 18, 0.0, 1.0, "io"], [24, 29, 0.9, 0.0, "out"]],
+        "op_sine": [18, 24, 0.9, 0.1],
+        "scale":   [[15, 22, 0.7, 1.45, "io"], [22, 29, 1.45, 1.45, "lin"]] },
+    ],
+  },
+
+  # T100-R DEVA HERO AURA (GRAND retune + NEW halo layer) — serene idle breathing; the T99 ping-pong loop's FIRST consumer. 12 frames
+  # (0..11; runtime plays 0..11..0). REVERSAL-SYMMETRY LAW: opacity/scale oscillation ONLY — ZERO drift AND ZERO rotate anywhere (a
+  # reversed rotation is visible wrong-way motion; the halo breathes, it does NOT spin). The io ramp is a smooth half-cycle (zero
+  # velocity at f1/f12) → the ping-pong reflection completes the breath, no kink at the reversal. Pure Deva white-gold. The grandness is
+  # the NEW L3 halo — the sun-crown (deva_hero_corona REUSED, first cross-brief layer reuse → the corona sprite feeds BOTH sheets, no
+  # extra decode) breathing faintly behind the hero; the envelope keeps it idle-quiet. Cycle (22 steps @ 16 × vfxT): Normal 1.79s.
+  "deva_hero_aura": {
+    "seed": 0xDE7AA1, "fps": 24, "frames": 12, "one_shot": True, "layers_dir": "deva_hero", "canvas": (1254, 1254),
+    "layers": [
+      # L1 nimbus — the breath: scale_anchor bottom, scale 0.95 (constant); op smooth io half-cycle 0.4→0.75 (the reflection completes it). NO drift. cap 0.75.
+      { "src": "deva_aura_nimbus", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[1, 12, 0.4, 0.75, "io"]],
+        "scale":   [[1, 12, 0.95, 0.95, "lin"]] },
+      # L2 aura motes — the faint dust breathing with it: cover-fit, scale 0.9 (constant); op io ramp 0.25→0.5. NO drift. cap 0.5.
+      { "src": "deva_aura_motes", "kind": "xform",
+        "opacity": [[1, 12, 0.25, 0.5, "io"]],
+        "scale":   [[1, 12, 0.9, 0.9, "lin"]] },
+      # L3 halo (NEW) — the sun-crown breathing behind the hero (deva_hero_corona REUSED): centred, scale 0.55 fixed; op io ramp 0.15→0.32 (idle-quiet). NO drift, NO rotate. cap 0.32.
+      { "src": "deva_hero_corona", "kind": "xform",
+        "opacity": [[1, 12, 0.15, 0.32, "io"]],
+        "scale":   [[1, 12, 0.55, 0.55, "lin"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
