@@ -905,6 +905,7 @@ function castMantra(g, pi, id, targetUid=null){
       let t = targetUid!=null ? real.find(u=>u.uid===targetUid) : null;
       if (!t) t = real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b);
       t.power*=2; t.doomed=true;
+      emit(g,'passive',{targetUids:[t.uid],abilityName:'Ahamkara',text:'doomed'});   // T96: observational emit (rule #7 — no state/rng touch) — fourth of the sibling family (Vishwapasha/Vritra/Nagapasha), carries the chosen target's uid so the ego-arrival VFX can anchor. Behavior-neutral (no engine/story/quest consumer branches on 'passive').
       log(g, `Ahamkara doubles ${t.n} to ${t.power} — doomed to shatter at round end.`);
     }
   } else if (id==='ramanaam'){

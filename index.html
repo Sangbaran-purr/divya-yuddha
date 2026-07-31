@@ -3197,6 +3197,7 @@ function castMantra(g, pi, id, targetUid=null){
       let t = targetUid!=null ? real.find(u=>u.uid===targetUid) : null;
       if (!t) t = real.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b);
       t.power*=2; t.doomed=true;
+      emit(g,'passive',{targetUids:[t.uid],abilityName:'Ahamkara',text:'doomed'});   // T96: observational emit (rule #7 — no state/rng touch) — fourth of the sibling family (Vishwapasha/Vritra/Nagapasha), carries the chosen target's uid so the ego-arrival VFX can anchor. Behavior-neutral (no engine/story/quest consumer branches on 'passive').
       log(g, `Ahamkara doubles ${t.n} to ${t.power} — doomed to shatter at round end.`);
     }
   } else if (id==='ramanaam'){
@@ -8199,12 +8200,12 @@ const VFX = (()=>{
   function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
   // ===================== FLIPBOOK SHEETS (T68F: 384px, per-sheet grid, real-time playback + frame blending) =====================
   let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoading={};   // T81: per-key load tracking (was a global sheetLoadN counter — lazy loading is incremental per match)
-  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff','shield','venom','chaos_wash','chaos_mark','pashupatastra','sudarshana','nagapasha','pavamana'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
+  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff','shield','venom','chaos_wash','chaos_mark','pashupatastra','sudarshana','nagapasha','pavamana','ahamkara'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
   const LANDING_SHEET={ devas:'c1a_deva', asuras:'landing_asura', vanaras:'landing_vanara', nagas:'landing_naga' };   // faction → landing sheet key (all four ship as of T81)
   const SHEET_GRID_CFG={ brahmastra:{cols:8, rows:5}, gayatri:{cols:6, rows:6}, chaos_wash:{cols:6, rows:4}, pashupatastra:{cols:8, rows:5}, pavamana:{cols:6, rows:6} };   // T78/T79: RECTANGULAR row-plate sheets — grid can't derive from width/SHEET_CELL (non-square cells); cw/ch = sheetDims/(cols,rows). Square sheets omit this (cw=ch=SHEET_CELL).
   let SHEET_CELL=RUNG[vfxRung].cell;   // T74: rung-dependent sheet cell (hi 512 / md 448 / lo 384). Frame count derives from the sheet dims / cell, so 64f/48f/32f are auto-detected.
   const SHEET_FPS=16;   // F1b: 16fps base ×vfxT → the window plays at ~1:1 real tempo
-  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward', shield:'forward', venom:'forward', chaos_wash:'forward', chaos_mark:'forward', pashupatastra:'forward', sudarshana:'forward', nagapasha:'forward', pavamana:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward (plays through, clamps at the empty last frame, dies at life)
+  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward', shield:'forward', venom:'forward', chaos_wash:'forward', chaos_mark:'forward', pashupatastra:'forward', sudarshana:'forward', nagapasha:'forward', pavamana:'forward', ahamkara:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward (plays through, clamps at the empty last frame, dies at life)
   const sheetFrameCanvas=offc2(512,512);   // B4: ONE reusable canvas (max cell 512) for draw-time aura tint; draws consume only the SHEET_CELL sub-region
   function haveSheet(key){ return !!sheetImg[key]; }
   // T81: LOAD ONE SHEET, idempotent per key (skips if already loaded or in-flight). bakeAlpha + grid derivation as before.
@@ -8227,7 +8228,7 @@ const VFX = (()=>{
     if(LEGACY_VFX){ SHEET_NAMES.forEach(loadSheet); return; }   // A/B rollback: blanket-load the whole catalog
     loadSheet(LANDING_SHEET[facA]); loadSheet(LANDING_SHEET[facB]);
     if(facA==='devas' || facB==='devas'){ loadSheet('brahmastra'); loadSheet('gayatri'); loadSheet('vajra'); loadSheet('sudarshana'); loadSheet('pavamana'); }   // T78/T79/T82/T92/T95 Deva-only cards
-    if(facA==='asuras' || facB==='asuras'){ loadSheet('chaos_wash'); loadSheet('chaos_mark'); loadSheet('pashupatastra'); }   // T87 Asura-only Chaos Surge pair
+    if(facA==='asuras' || facB==='asuras'){ loadSheet('chaos_wash'); loadSheet('chaos_mark'); loadSheet('pashupatastra'); loadSheet('ahamkara'); }   // T87/T96 Asura-conditional
     if(facA==='nagas' || facB==='nagas'){ loadSheet('nagapasha'); }   // T94 Naga-conditional — Nagapasha bind arrival
   }
   function addSheetSpr(key, x, y, size, o){ if(reducedMotion()||!sheetImg[key]) return false;
@@ -8603,6 +8604,8 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   // T82: single-unit STRIKE class — Vajra, anchored on the TARGET unit's card rect (not the caster). Square card-anchored sheet (reuses the landing path), 18f one-shot forward, flat envelope, drawn at card scale. The fastest effect (~1.125s at 16fps).
   function sprVajra(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
     return addSheetSpr('vajra', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 18/SHEET_FPS*vfxT() }); }
+  function sprAhamkara(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);   // T96: Ahamkara ego arrival — unit-anchored square (Vajra cell class), 24f forward, flat envelope so the baked seal→pillar→crown phases carry. DARK-BUFF register — no hit-stop, no shake; the unit exalts itself.
+    return addSheetSpr('ahamkara', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 24/SHEET_FPS*vfxT() }); }
   function sprNagapasha(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);   // T94: Nagapasha bind ARRIVAL — target-anchored like Vajra (6×3, 18f forward, flat envelope so the baked cast→converge→cinch→settle phases carry). RESTRAINT register — no travel, no hit-stop; the effect is target-local.
     return addSheetSpr('nagapasha', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 18/SHEET_FPS*vfxT() }); }
   function sprSudarshana(cxp,cyp,cardW, fromXp, fromYp, travelMs){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);   // T92-amend: Sudarshana Chakra — the THROWN spinning discus. Anchor = the removed hero's rect; optional (fromXp,fromYp)+travelMs = the cross-board flight from the caster's half (compositor spins+squashes in place, the runtime carries it). Target-strike register (6×3, 18f forward, flat envelope so the baked flight/impact phases carry).
@@ -8762,7 +8765,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
                  __simInitFail(){ try{ if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu._poison=true; return gpuInit(); },   // G3: force the real init throw → floor
                  __reinit(){ gpu._poison=false; gpu.disabled=false; gpu.app=null; return gpuInit(); },
                  __forceBackend(pref){ gpu._pref=pref; try{ if(gpu.gcanvas){ gpu.gcanvas.remove(); gpu.gcanvas=null; } if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu.sprites.length=0; gpu.particles.length=0; return gpuInit(); } },   // G2: force webgl to prove the GLSL variants run
-           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark, sprPashupatastra, sprSudarshana, sprNagapasha, sprPavamana };
+           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark, sprPashupatastra, sprSudarshana, sprNagapasha, sprPavamana, sprAhamkara };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
 // T90 JANK WATCHER — during MATCH CHOREOGRAPHY ONLY, detect sustained frame stutter and (at most once/session) suggest a lower VFX quality. Suggest, never force, never nag.
@@ -8868,6 +8871,9 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
     return; }
   if (ev.type==='passive' && ev.abilityName==='Nagapasha'){ const u=ev.targetUids[0]; const dp=posOf(u, snap);   // T94: Nagapasha bind ARRIVAL — the serpent-noose coils converge + cinch AT the bound unit's cell (Vajra-anchored). The unit STAYS on board (bind ≠ kill), so posOf finds it live. RESTRAINT register: NO hit-stop, no shake, no dissolve, no damage tick, no red — target untouched. The L4 residue fade hands off to the ⛓ bindbadge that render() already placed on the bound unit. No callout (the cast named it; the bind is quiet).
     if(dp){ VFX.sprNagapasha(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width); await cDelay(1125); }   // hold the coil arrival (18f @ SHEET_FPS 16 = 1125ms; cDelay scales by vfxT so the await tracks the sprite life)
+    return; }
+  if (ev.type==='passive' && ev.abilityName==='Ahamkara'){ const u=ev.targetUids[0]; const dp=posOf(u, snap);   // T96: Ahamkara ego ARRIVAL — the seal ignites + the pillar rises AT the chosen unit's cell (Vajra-anchored; the doomed unit STAYS on board with doubled power, so posOf finds it live). DARK-BUFF register: NO hit-stop, no shake, no dissolve, no damage tick — the unit is glorified, not struck. R38: the doomed unit clears silently with the board at round end (no death moment). No doomed marker exists (Q4) → the seal/crown fade clean.
+    if(dp){ VFX.sprAhamkara(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width); await cDelay(1500); }   // hold the ego arrival (24f @ SHEET_FPS 16 = 1500ms; cDelay scales by vfxT so the await tracks the sprite life)
     return; }
   if (src && (ev.type==='buff'||ev.type==='token')){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
   const tgts=ev.targetUids||[];

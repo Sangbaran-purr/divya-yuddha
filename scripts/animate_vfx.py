@@ -401,6 +401,42 @@ BRIEFS = {
         "drift_up": [12, 33, 30] },
     ],
   },
+
+  # AHAMKARA — the EGO WEAPON arrival (unit-anchored SQUARE, Vajra cell class; DARK-BUFF register — the buff family's
+  # crimson mirror). Glorification, NOT damage: no hit-stop/shake/dissolve, nothing strikes — the unit exalts itself.
+  # Crimson-first, gold-within; direction UP (everything rises); ARRIVAL-ONLY (R38: the doomed unit clears silently with the
+  # board — no round-end moment). 24f one-shot @24fps, square canvas (1254). All caps BAKED into op values (op_cap is
+  # particle-only). Single-draw layers — the T94 xform primitives are NOT used. Frames 1-based (brief f0-f23 → f1-f24).
+  "ahamkara": {
+    "seed": 0xA44A2A, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "ahamkara", "canvas": (1254, 1254),
+    "layers": [
+      # L1 WASH — IGNITE (the crimson ground): scale 0.9→1.05 (io), op ramp to the 0.35 cap (f1-5), hold, die_by fade f14-19.
+      { "src": "ahamkara_wash", "kind": "xform",
+        "opacity": [[1, 5, 0.0, 0.35, "lin"], [5, 14, 0.35, 0.35, "lin"], [14, 19, 0.35, 0.0, "out"]],
+        "scale":   [[1, 19, 0.9, 1.05, "io"]] },
+      # L2 SEAL — THE GROUND RING (squint retune: THE SEAL, not a crown). Ignites FIRST and renders BEFORE the pillar so the
+      # fire stands INSIDE the circle. The ring flattened to a perspective ground ellipse (squash_y 0.34) pinned at the cell
+      # base (scale_anchor bottom — same anchor as the pillar), slowly turning. op ramp to 0.7 (f2-5), one op_sine breathe
+      # (f7-13, amp 0.12), die_by fade f15-21. (Q4: no doomed marker → fades clean.)
+      { "src": "ahamkara_halo", "kind": "xform", "scale_anchor": "bottom", "squash_y": 0.34,
+        "opacity": [[2, 5, 0.0, 0.7, "io"], [5, 15, 0.7, 0.7, "lin"], [15, 21, 0.7, 0.0, "out"]],
+        "op_sine": [7, 13, 0.7, 0.12],
+        "scale":   [[2, 21, 0.9, 0.9, "lin"]],
+        "rotate":  [2, 21, 15.2] },
+      # L3 PILLAR — THE ASCENT (rises OUT of the lit seal, grows UP from the base — the rise is the read): scale_anchor bottom,
+      # scale 0.72→1.0 (io, f5-14) then holds; op ramp to 0.85 (f5-9), one op_sine breathe (f10-15, the fire exults), die_by
+      # fade f16-21. No drift. The baked base fire-pool now pools INSIDE the seal ring (owner-ruled: keep).
+      { "src": "ahamkara_pillar_aligned", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[5, 9, 0.0, 0.85, "io"], [16, 21, 0.85, 0.0, "out"]],
+        "op_sine": [10, 15, 0.85, 0.08],
+        "scale":   [[5, 14, 0.72, 1.0, "io"], [14, 21, 1.0, 1.0, "lin"]] },
+      # L4 EMBERS — RISING SPARKS (last layer standing, drawn on top): slow drift up, gentle flicker (op_keys, capped ≤0.55,
+      # spread f3-24, never strobing — Δ≤0.15), fades in the tail.
+      { "src": "ahamkara_embers", "kind": "xform",
+        "op_keys": [3, [0.0, 0.12, 0.25, 0.35, 0.45, 0.4, 0.5, 0.45, 0.55, 0.5, 0.52, 0.46, 0.5, 0.44, 0.48, 0.4, 0.44, 0.36, 0.4, 0.28, 0.15, 0.0]],
+        "drift_up": [3, 24, 40] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
