@@ -571,6 +571,51 @@ BRIEFS = {
         "scale":   [[1, 12, 0.6, 0.6, "lin"]] },
     ],
   },
+
+  # T102 AGNI PER-HERO OVERRIDE — ENTRY (second of the twelve; replaces the T100 Deva default for Agni ONLY, via the T101 maps). AGNI'S
+  # FIRE: the sacrificial flame arrives — the hearth of the gods, bright orange-gold. WARM and ASCENDING, not violent — every layer is
+  # scale_anchor bottom / cover-fit, nothing descends, nothing reads as an attack. Distinct from Ahamkara (crimson+gold Asura ego) and the
+  # red damage tick by temperature+context (bright gold-orange at his own cell). T100-R sibling (peak lingers). Single-draw; 0-based → +1.
+  # WORST-CASE-SUM: ground 1-27 · shockwave 7-17 · burst 9-27 · foreground 17-34, all ≤34.
+  "agni_hero_entry": {
+    "seed": 0xA6011E, "fps": 24, "frames": 34, "one_shot": True, "layers_dir": "agni", "canvas": (1254, 1254),
+    "layers": [
+      # L1 ground — THE HEARTH IGNITES (lava-cracked ground disc, baked perspective → NO squash_y): scale_anchor bottom, scale 0.95; op_keys = ramp 0→0.8 (f0-f5) then an ember-crackle riding the hold (0.67-0.80, Δ≤0.09) then die_by fade (f20-f26).
+      { "src": "agni_ground", "kind": "xform", "scale_anchor": "bottom",
+        "op_keys": [1, [0.0, 0.15, 0.35, 0.55, 0.70, 0.80, 0.72, 0.78, 0.69, 0.76, 0.80, 0.71, 0.75, 0.68, 0.77, 0.72, 0.79, 0.70, 0.74, 0.71, 0.68, 0.55, 0.42, 0.30, 0.18, 0.08, 0.0]],
+        "scale":   [[1, 27, 0.95, 0.95, "lin"]] },
+      # L2 shockwave — THE RING RACES OUT (fire ring ellipse): scale_anchor bottom, scale 0.55→1.15 io (f6-f12 — the expanding wave) then holds; op ramp 0→0.85 io (f6-f8), hold, die_by fade f11-f16.
+      { "src": "agni_shockwave", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[7, 9, 0.0, 0.85, "io"], [9, 12, 0.85, 0.85, "lin"], [12, 17, 0.85, 0.0, "out"]],
+        "scale":   [[7, 13, 0.55, 1.15, "io"], [13, 17, 1.15, 1.15, "lin"]] },
+      # L3 burst — THE FIRE RISES (the grandness; twin rising flame pillars, dark centre = the card's home): scale_anchor bottom, scale 0.75→1.0 io (f8-f15 — it RISES), op ramp 0→1.0 io (f8-f12), HOLD AT FULL f12-f20 (the T100-R law), die_by fade f20-f26.
+      { "src": "agni_burst", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[9, 13, 0.0, 1.0, "io"], [13, 21, 1.0, 1.0, "lin"], [21, 27, 1.0, 0.0, "out"]],
+        "scale":   [[9, 16, 0.75, 1.0, "io"], [16, 27, 1.0, 1.0, "lin"]] },
+      # L4 foreground — THE EMBERS SETTLE (ember debris + corner flame licks): cover-fit; op_keys = ramp 0→0.7 (f16-f20) then a gentle flicker (0.61-0.70, Δ≤0.09) then die_by fade (f27-f33).
+      { "src": "agni_foreground", "kind": "xform",
+        "op_keys": [17, [0.0, 0.20, 0.40, 0.58, 0.70, 0.64, 0.70, 0.61, 0.68, 0.62, 0.66, 0.58, 0.48, 0.38, 0.28, 0.18, 0.09, 0.0]],
+        "scale":   [[17, 34, 1.0, 1.0, "lin"]] },
+    ],
+  },
+
+  # T102 AGNI PER-HERO OVERRIDE — AURA (ping-pong loop; replaces the Deva default aura for Agni ONLY). Idle HEARTH-breath. REVERSAL-SYMMETRY
+  # LAW: op/scale oscillation only — ZERO drift, ZERO rotate (fire flicker via op_keys, Δ≤0.12 so the 0..11..0 reflection stays smooth). L1
+  # REUSES agni_burst (cross-brief, third use of the pattern → feeds both sheets, no extra decode; also covers the vetoed aura-back layer).
+  # Cycle (22 steps @16×vfxT): Normal 1.79s.
+  "agni_hero_aura": {
+    "seed": 0xA601AA, "fps": 24, "frames": 12, "one_shot": True, "layers_dir": "agni", "canvas": (1254, 1254),
+    "layers": [
+      # L1 burst-as-hearth (agni_burst REUSED) — the twin flames breathing low behind the card: scale_anchor bottom, scale 0.8; op io ramp 0.15→0.32 (idle-quiet). NO drift, NO rotate. cap 0.32.
+      { "src": "agni_burst", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[1, 12, 0.15, 0.32, "io"]],
+        "scale":   [[1, 12, 0.8, 0.8, "lin"]] },
+      # L2 aura front — the ember-swoosh hearth-breath: centred, scale 0.9; op_keys micro-flicker riding a 0.3→0.55 rise (Δ≤0.05, smooth reversal). cap 0.55.
+      { "src": "agni_aura_front", "kind": "xform",
+        "op_keys": [1, [0.30, 0.34, 0.38, 0.41, 0.45, 0.42, 0.47, 0.50, 0.48, 0.52, 0.54, 0.55]],
+        "scale":   [[1, 12, 0.9, 0.9, "lin"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
