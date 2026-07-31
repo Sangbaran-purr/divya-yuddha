@@ -438,7 +438,11 @@ def render(name):
     parts_meta = []
     for L, rgb in layers:
         if L["kind"] != "particles":
-            parts_meta.append(None); continue
+            xc = None
+            if L["kind"] == "xform" and "cohorts" in L:                # T94 primitive 1 — XFORM COHORTS (GATED: rng is drawn ONLY when the key is present ⇒ every existing brief keeps its exact draw sequence, byte-identical)
+                jd = L.get("cohort_jitter_deg", 0.0)
+                xc = [{"base": co["base_rotation"] + random.uniform(-jd, jd), "rate": co["rotate_rate"]} for co in L["cohorts"]]
+            parts_meta.append({"xcohorts": xc} if xc else None); continue
         blobs = _extract_particles(rgb, L["lum_thresh"], L["min_area"])
         ef0, ef1 = L["emit_frames"]; ir = L["inner_radius"] * rref; ib = L["inner_boost"]
         s0, s1 = L["speed_px_s"]; jit = math.radians(L["jitter_deg"]); l0, l1 = L["life_frames"]
@@ -506,7 +510,20 @@ def render(name):
                     rf0, rf1, rdeg = L["rotate"]
                     if f >= rf0:
                         rot = rdeg * min(1.0, (f - rf0) / max(1, rf1 - rf0))
-                canvas += _warp(rgb, sc, dx, dy, L.get("scale_anchor", "center"), rot, L.get("squash_y", 1.0)).astype(np.float32) * op   # T92-amend: squash_y (default 1.0) → gated, byte-identical when absent
+                xc = pm.get("xcohorts") if pm else None
+                if xc:                                          # T94 — draw the layer ONCE PER COHORT: radial placement (primitive 2) + per-cohort base+rate spin (primitive 1)
+                    rad = L.get("radial"); anch = L.get("scale_anchor", "center"); sq = L.get("squash_y", 1.0)
+                    for co in xc:
+                        ang = math.radians(co["base"]); cdx, cdy = dx, dy
+                        if rad:                                 # primitive 2 — XFORM RADIAL DRIFT: off-centre start → converge (io ease), placed at the cohort's angle
+                            rf0, rf1 = rad["frames"]; rs, re = rad["radius_start"], rad["radius_end"]
+                            t = 0.0 if f < rf0 else (1.0 if f > rf1 else (f - rf0) / (rf1 - rf0))
+                            r = (rs + (re - rs) * _io(t)) * rref
+                            cdx = r * math.cos(ang); cdy = r * math.sin(ang)
+                        crot = co["base"] + co["rate"] * (f - (rad["frames"][0] if rad else 1))
+                        canvas += _warp(rgb, sc, cdx, cdy, anch, crot, sq).astype(np.float32) * op
+                else:
+                    canvas += _warp(rgb, sc, dx, dy, L.get("scale_anchor", "center"), rot, L.get("squash_y", 1.0)).astype(np.float32) * op   # EXISTING single draw — byte-identical when no xform cohorts (absent key)
             else:  # particles
                 fade = pm["fade"]; cap = pm["op_cap"]
                 for pt in pm["blobs"]:
