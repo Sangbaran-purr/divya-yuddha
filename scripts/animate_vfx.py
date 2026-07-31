@@ -333,6 +333,42 @@ BRIEFS = {
         "opacity": [[9, 12, 0.0, 0.5, "out"], [13, 15, 0.5, 0.5, "lin"], [16, 18, 0.5, 0.0, "out"]] },
     ],
   },
+
+  # NAGAPASHA — SERPENT-NOOSE BIND ARRIVAL (target-strike class; RESTRAINT register, NOT a kill — NO hit-stop anywhere).
+  # Target-local (Vajra-anchored, no travel — beats 1-2 merge: the cast wash flickers AT the target as the coils converge).
+  # 18f one-shot @24fps, 768x768 working. Uses the T94 xform-cohorts + radial-drift primitives for the converging coils.
+  # op_cap is NOT ported to xform (ruling) → the L1/L3 caps are BAKED into the op values. RULED (T94 squint): the coils
+  # carry a CONSTANT squash_y 0.92 — deliberate, NOT the brief's "final 3 frames" (windowed squash would be a 3rd primitive,
+  # declined). Frames are the compositor's 1-based (brief f0-f17 → f1-f18).
+  "nagapasha": {
+    "seed": 0xBA9A5A, "fps": 24, "frames": 18, "one_shot": True, "layers_dir": "nagapasha", "canvas": (768, 768),
+    "layers": [
+      # L1 WASH — CAST (the noose thrown, not summoned): low, brief flicker (f1-f5). op_keys peak BAKED to the 0.35 cap.
+      { "src": "nagapasha_wash", "kind": "xform",
+        "op_keys": [1, [0.0, 0.32, 0.15, 0.35, 0.0]],
+        "scale":   [[1, 5, 0.9, 1.05, "io"]] },
+      # L2 COIL — CONVERGE: 3 cohorts (base 0/135/250 ±15 jitter, counter-rotating +2.5/-2.0/+1.7 deg/frame), radial drift
+      # 0.85→0.30 of cell (io), scale 0.55, squash_y 0.92 (constant — see header note). f3-f16.
+      { "src": "nagapasha_coil", "kind": "xform", "squash_y": 0.92, "cohort_jitter_deg": 15.0,
+        "cohorts": [ {"base_rotation": 0,   "rotate_rate":  2.5},
+                     {"base_rotation": 135, "rotate_rate": -2.0},
+                     {"base_rotation": 250, "rotate_rate":  1.7} ],
+        "radial":  {"radius_start": 0.85, "radius_end": 0.30, "frames": [3, 14]},
+        "opacity": [[3, 6, 0.0, 0.8, "io"], [6, 11, 0.8, 0.8, "lin"], [11, 14, 0.8, 0.5, "io"], [14, 16, 0.5, 0.0, "out"]],
+        "scale":   [[3, 14, 0.55, 0.55, "lin"]] },
+      # L3 NOOSE — SEIZE: the cinch (scale 1.15→0.88 io f10-f14), slow spin (+1.2 deg/frame), ONE op_sine breathe pulse
+      # (f14-f17, peak BAKED to the 0.85 cap). NO hit-stop at the cinch. f10-f18.
+      { "src": "nagapasha_noose", "kind": "xform",
+        "opacity": [[10, 14, 0.0, 0.72, "io"], [17, 18, 0.72, 0.0, "out"]],
+        "op_sine": [14, 17, 0.72, 0.13],
+        "scale":   [[10, 14, 1.15, 0.88, "io"], [14, 18, 0.88, 0.88, "lin"]],
+        "rotate":  [10, 18, 9.6] },
+      # L4 RESIDUE — SETTLE (arrival-only → hands off to the ⛓ bindbadge): op ramp then die_by fade to 0 at f18. f14-f18.
+      { "src": "nagapasha_residue", "kind": "xform", "scale_anchor": "bottom",
+        "opacity": [[14, 16, 0.0, 0.4, "io"], [16, 18, 0.4, 0.0, "out"]],
+        "scale":   [[14, 18, 0.9, 0.9, "lin"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):

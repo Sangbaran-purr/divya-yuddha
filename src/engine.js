@@ -1276,6 +1276,7 @@ function resolveAstra(g, pi, c, targetUid){
       let t = targetUid!=null ? spec.options.find(u=>u.uid===targetUid) : null;
       if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
       t.bound=true;
+      emit(g,'passive',{targetUids:[t.uid],abilityName:'Nagapasha',text:'bound'});   // T94: observational emit (rule #7 — no state/rng touch) — sibling-symmetry repair with Vishwapasha/Vritra bind emits; carries the bound target's uid so the bind-arrival VFX can anchor. Behavior-neutral (no engine/story/quest consumer branches on 'passive').
       log(g, `Nagapasha nooses ${t.n} — it cannot fight until ${opp.name} spends a turn to free it.`); break; }
     case 'worldcoil': {   // WAVE 1 batch 13 — bind an enemy Unit; releases when it LOSES a Venom token (venomLoss hook), NOT by the opponent spending a turn.
       const spec=targetSpec(g,pi,c);
