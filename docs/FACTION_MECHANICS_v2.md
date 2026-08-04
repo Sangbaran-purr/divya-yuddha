@@ -1,193 +1,110 @@
-# DIVYA YUDDHA — FACTION_MECHANICS_v2
-# Supersedes v1 (which was never committed). CLAIM PROTOCOL:
-# [PULLED] = read from the engine in a recorded pull (T46/T47/T48,
-# the 45b audit, ITEM R, P13); [VERIFY] = never pulled — must be
-# read before any page/frame/doc teaches it; [ED] = design
-# framing, not an engine claim.
-# STATUS: Deva + Asura + VANARA are pull-complete. Two Naga Venom
-# edges remain [VERIFY] — closed by P15 before the Nagas Codex.
+# DIVYA YUDDHA - FACTION_MECHANICS_v2
+# All four signature mechanics, one reference. ALL FOUR ARE NOW
+# [PULLED]. Supersedes FACTION_MECHANICS_v1 (which carried Leap
+# as VERIFY and two Venom edges open). Basis: T47 (Shield), T48
+# (Surge), and the 2026-08-04 read-only pull (Leap full + Venom
+# edges). This doc un-gates the Vanaras and Nagas Codex pages
+# and is the mechanics authority for HOW_TO_PLAY_v1 (public).
 
-## DEVAS — DHARMA SHIELD (pull-complete, T47)
-Identity [ED]: protection and endurance — the shield is divine
-favor placed on a chosen Unit.
-THE MECHANIC [PULLED]:
-- A shielded Unit becomes astraProtected: it CANNOT BE TARGETED
-  by single-target Astras (it drops out of their target pools
-  entirely — Agneyastra, Vajra, Gandiva-class find no target).
-- It is TARGETING-PREVENTION, not damage absorption: there is
-  no absorb-and-break.
-- Board-wide Astras PIERCE (Pashupatastra, Brahmastra,
-  Suryastra iterate units directly).
-- Venom is UNAFFECTED by shields (drain proceeds).
-- Shield limit: shieldCap = 1 by default; Dharma Kavacha raises
-  it to 2; Vedi Keeper grants an extra instant application this
-  round.
-- Shields are sticky per-round designations (reset at round
-  end). Deva-only.
-- Brahmastra explicitly "overrides all shields and immunities."
-KEY CARDS [PULLED]: Dharma Kavacha, Vedi Keeper, Airavata's
-Calf (enters shielded, respects the limit), Gayatri Mantra
-(revives WITH a shield), Vigil Rakshak (+2 while shielded).
-COUNTERPLAY [PULLED]: AoE Astras, Venom, and anything that
-doesn't target (Tataka's lowest-unit destruction is a [VERIFY]
-edge — does "destroy the lowest" target or select?).
+## DEVAS - DHARMA SHIELD [PULLED, T47]
+- A shielded Unit is astraProtected: it cannot be TARGETED by
+  single-target Astras (drops out of target pools entirely).
+- Targeting-prevention, not absorption. Board-wide Astras
+  PIERCE. Venom is unaffected by shields. Brahmastra overrides
+  all shields and immunities.
+- shieldCap 1 by default; Dharma Kavacha raises to 2; Vedi
+  Keeper grants an extra instant application this round.
+- Shields are sticky per-round designations, reset at round
+  end. Deva-only.
+- Key cards: Dharma Kavacha, Vedi Keeper, Airavata's Calf
+  (enters shielded), Gayatri Mantra (revives with shield),
+  Vigil Rakshak (+2 while shielded).
 
-## ASURAS — CHAOS SURGE (pull-complete, T48 incl. call sites)
-Identity [ED]: the storm the Asura weapons carry — power paid
-for in risk. THE PRICE.
-THE MECHANIC [PULLED]:
-- chaosSurge is Asura-only. When it fires, a RANDOM friendly
-  non-ghost Unit gains power (g.rng — the player does not
-  choose).
-- Amounts (complete reachable set, proven at call sites):
-  +3 per surge from Asura Astras resolving, Asura Mantras cast,
-  and Chandrahas ON PLAY; +1 "floor" surge when an Asura play
-  triggers nothing else that round-step. (+2 exists only as a
-  vestigial unwired comment — unreachable.)
-- times multiplies: Chandrahas doubles Surge counts while
-  active; Vidyutastra fires twice (times Chandrahas = 4).
-- chaosThisRound flags the round — Kali Asura's "+3 if Chaos
-  Surge triggered this round" reads it.
-- R37 (negation-source-dependent): Manasa's negation cancels
-  the Astra's effect AND its Surge; Brahmadanda cancels the
-  effect only — the Surge still fires.
-KEY CARDS [PULLED]: Kali Asura, Chandrahas, Vidyutastra,
-Bana Asura (+1 per Astra, doubled counts twice), Asura
-Berserker (+1 per Astra either player).
-COUNTERPLAY [ED, grounded]: negate the Astra at the source
-(Manasa kills the Surge too); survive the burst — Surges bless
-random units, so spread damage undoes concentrated luck.
+## ASURAS - CHAOS SURGE [PULLED, T48 incl. call sites]
+- Asura-only. When it fires, a RANDOM friendly non-ghost Unit
+  gains power (g.rng, never chosen).
+- Reachable amounts: +3 per surge (Asura Astras resolving,
+  Asura Mantras cast, Chandrahas on play); +1 floor surge when
+  an Asura play triggers nothing else. +2 is vestigial and
+  unreachable.
+- Multipliers compose: Chandrahas doubles counts while active;
+  Vidyutastra fires twice; together x4 (R44).
+- chaosThisRound feeds Kali Asura's +3.
+- R37 negation split: Manasa cancels effect AND surge;
+  Brahmadanda cancels effect only, surge still fires.
 
-## VANARAS — LEAP (pull-complete, P13 2026-07-22)
-Identity [ED]: momentum and the host that moves as one — the
-many lending strength to the one.
-THE MECHANIC [PULLED — P13, all claims file:line-traced]:
-- Leap is a POWER-COPY, NOT movement. The leaping Unit's power
-  becomes the current effective power of an ADJACENT friendly
-  Unit (adjacency = index neighbours in the ordered units
-  array). No Unit changes position. "Leap onto" is metaphor.
-- Vanara-only: canLeap gates on faction === vanaras (proven,
-  no longer presumed).
-- Allowance: base 1 per round (leapsUsed counter, reset at
-  endRound). Kishkindha Crown raises the limit to 2. (Wave:
-  Anjana adds +1 — not launch.)
-- "Feeds both" = the Crown's doLeap branch: on a Leap, leaper
-  AND copied target each gain +1 (engine truth +1/+1, not the
-  roster's +2/+2 — EXP-E).
-- Units only: Heroes are positionless (not in the units array)
-  and can neither leap nor be copied.
-- The copied VALUE is read at leap time and includes the
-  target's live auras (Warrior aura, Indra aura, banners); the
-  aura SOURCE does not transfer — the leaper gets a number, not
-  a passive.
-- Venom tokens, shields, wards, and flags never travel; the
-  leaper keeps its own state. Venom-drained values are already
-  reflected in the copied effPower.
-- Free leaps exist (Mainda ON PLAY) and do not consume the
-  round's allowance.
-- Gandiva Arrow reads leapsUsed greater than zero for its
-  second destroy — Leap as a resource other cards check.
-KEY CARDS [PULLED]: Kishkindha Crown (limit 2, +1/+1),
-Mainda (free entry-leap onto a stronger neighbour), Gandiva
-Arrow (leap-conditional second removal), Hanuman (printed-4+
-entry bonus +1, +2 with Jambavan), Vanara Warrior (+1 per
-other Vanara Unit, cap +4), Rama's Signet (floor 1, Venom
-negated), Sharabha (astra cover for effPower 3 or less),
-Angad (opponent Astra costs them their next turn).
-COUNTERPLAY [ED, grounded]: kill or shrink the copy TARGET
-before the leap (the value is read live); removal ignores
-Leap entirely since nothing moves; the Signet floor and
-Sharabha cover are the defensive spine — board-wide Astras
-pierce Sharabha's targeting cover.
+## VANARAS - LEAP [PULLED 2026-08-04]
+- LEAP IS A POWER COPY, NOT MOVEMENT. doLeap sets the leaper's
+  power to the target's current effective power. The target is
+  unchanged. No unit moves, no card is drawn, no reorder.
+- FREE ACTION: costs neither the turn nor power. The only
+  price is one charge of the per-round leap limit.
+- Limit: leapsUsed counter, reset each round. leapLimit equals
+  1 plus 1 if Kishkindha Crown plus 1 if Anjana. Crown's text
+  "Leap twice per round" means limit 1 to 2. Free leaps
+  (Mainda on play, Matanga) do not consume a charge.
+- Vanara-only (canLeap hard-gates faction). Any non-ghost
+  friendly Vanara Unit may leap. Targets: adjacent Units, plus
+  Gandhamadana from anywhere.
+- "Leap feeds both" (Crown): on a leap with Crown active, the
+  leaper AND the copied target each gain +1 power.
+- On-leap listeners: Kumuda +2 base+power if leaper-or-target;
+  Rambha +1 base+power from anywhere friendly.
+- Downstream reader: Gandiva Arrow destroys a second enemy
+  Unit if leapsUsed is nonzero this round.
+- NON-INTERACTIONS (proven): Leap does not fire afterAction or
+  the Living Bridge line-check, and being power-only it can
+  never change the Bridge adjacency run. It does not read or
+  write venom. It copies power only, never the target's
+  shield; the leaper does not inherit protection.
 
-## NAGAS — VENOM (mostly pulled; two edges open, P15 pending)
-Identity [ED]: patience and inevitability — the abyss collects.
-THE MECHANIC [PULLED]:
-- A Venom Token on a Unit deals -1 power at round end; at 0
-  power the Unit dies (the R90.8 canonical wording).
-- Venom STACKS (the vstack render path exists and displays
-  multiples).
-- Venom ignores Dharma Shields (the T47 pull, from the shield
-  side).
-- Sarpa Satra: "Venom doubles this round" (sarpaDouble, times-2
-  drain, engine-verified).
-- Karkotaka: venom ticks on EVERY ENEMY TURN, not just round
-  end (R10, engine-verified claim).
-- Garuda (Deva side): "Remove all Venom from your Units; each
-  gains +1 power per token removed" — the canonical cleanse.
-- Rama's Signet (Vanara side): negates Venom on Vanara Units
-  (floor 1) [PULLED — reconfirmed P13 from the Vanara side:
-  venomLoss floor and venomTokens negation call sites].
-[VERIFY] — P15 closes these before the Nagas Codex page:
-- The full list of Venom APPLICATION sources (Nagastra applies
-  to ALL; which cards apply single tokens; any passive
-  appliers) — the "how you poison" panel needs the real set.
-- Exact stack semantics (does each token drain -1 each, i.e.
-  3 tokens = -3 per tick?) — implied by vstack, never read.
-- Whether Venom is Naga-only as an applier class.
+## NAGAS - VENOM [PULLED complete]
+- A Venom Token drains 1 power per tick per token: a Unit with
+  N tokens loses N at round end. At 0 power the Unit dies.
+- TOKENS ARE STICKY: the drain reduces power, never the token
+  count. A token re-drains every tick until removed. Only
+  removers: Garuda cleanse (+1 power per token removed),
+  Uraga's self-shed, Shankhapala's relocation, Rama's Signet
+  negation (Vanara Units, floor 1).
+- Sarpa Satra doubles the token drain (2N) while active.
+- Modifiers at the loss site: Holika suffers +1; Vanara
+  non-negated loss floors at 1; Hiranyakashipu floors at 1.
+- Token drain is separate from and additive to the Naga
+  faction passive (base -1 plus Patala-round plus Vasuki-R3
+  plus Venom Strike). Both fire at round end before scoring;
+  Karkotaka ticks early on every enemy turn; Hymn of the
+  Depths adds a mid-round token pass.
+- APPLIER LIST (complete, 11 plus board-source plus relocator):
+  Nagastra (ASURA astra: +1 ALL enemies) - Visha Vayu (+1 all
+  enemies) - Naga Sadhu (+1 all enemies) - Naga Archer (+1
+  damaged survivor) - Patala Hatchling (+1 random) - Kalakuta
+  Vial (+2 one enemy) - Nirmoka on death (+1 highest enemy) -
+  Uraga Colossus (2 on itself) - Kulika (transfers all
+  friendly venom to random enemies) - Padmavati (+1 strongest
+  enemy each round end) - Mrityunjaya (venom 1 on the friendly
+  revived Unit, R13 cost) - Shankhapala (moves 1 token enemy
+  to enemy, net zero) - Ananta Coil (board-level token on Naga
+  death, drains a random enemy per tick).
+- NON-NAGA APPLIER EXISTS: Nagastra is defined in the Asura
+  roster block. Every other applier is Naga. (Teaching beat
+  available: even the Asuras stole the serpents' poison.)
 
-## CROSS-FACTION INTERACTION TABLE (verified cells only)
-- Shield vs single-target Astra: BLANKED [PULLED]
-- Shield vs AoE Astra: PIERCED [PULLED]
-- Shield vs Venom: NO PROTECTION [PULLED]
-- Shield vs Brahmastra: OVERRIDDEN [PULLED]
-- Venom vs Vanara (Signet up): NEGATED, floor 1 [PULLED]
-- Venom vs Garuda: CLEANSED into +1/token [PULLED]
-- Surge vs negation: source-dependent per R37 [PULLED]
-- Leap vs Venom: value copied venom-inclusive; tokens never
-  travel [PULLED — P13]
-- Leap vs Shields: no interaction (Leap does not target)
-  [PULLED — P13]
-- Leap vs auras: value at read time; source stays [PULLED — P13]
+## CROSS-FACTION INTERACTION TABLE (all cells verified)
+- Shield vs single-target Astra: BLANKED
+- Shield vs AoE Astra: PIERCED
+- Shield vs Brahmastra: OVERRIDDEN
+- Shield vs Venom: NO PROTECTION
+- Venom vs Vanara (Signet up): NEGATED, floor 1
+- Venom vs Garuda: CLEANSED into +1 per token
+- Surge vs negation: source-dependent per R37
+- Leap vs shields: no interaction, power copied without shield
+- Leap vs venom: no interaction
+- Leap vs hooks: fires onLeap (Kumuda/Rambha) and Crown +1/+1;
+  never fires afterAction / the Living Bridge check; sets
+  leapsUsed which Gandiva Arrow reads
 
-## EXECUTION
-This doc feeds the Vanaras and Nagas Codex content docs. The
-Vanaras page is UNGATED as of P13. The Nagas page waits on P15
-(the two Venom edges above). Nothing in this doc may be taught
-on a page until its line is [PULLED].
-
-## P15 CLOSURE (2026-07-22) — SUPERSEDES MARKED LINES ABOVE
-The two [VERIFY] edges are closed; one [PULLED] line above is
-CORRECTED. Where this section conflicts with lines above, this
-section wins. The doc is now fully [PULLED].
-
-CORRECTION — KARKOTAKA (supersedes the "every enemy turn" line):
-R92 engine truth: while Karkotaka is on board, the owner's Venom
-PASSIVE fires ONCE, at the moment either player first passes each
-round, as a flat -1 (escalation ignored), and is removed from the
-round-end drain. Tokens are untouched — they still drain at round
-end. Pulled at venomKarkotakaEarly and the pass() first-pass call.
-
-EDGE 1 — APPLIER SET [PULLED, closed set, 13 id-gated sites]:
-Launch: Nagastra (ASURA card, +1 to ALL enemies), Naga Sadhu (+1
-all), Naga Archer (+1 one), Mrityunjaya (sets 1 on the revived
-Unit), Ananta Coil (board-token per friendly death, Naga-gated).
-Wave: Visha Vayu (+1 all), Kalakuta Vial (+2 one), Patala
-Hatchling (+1 random), Nirmoka (+1 death-trigger), Uraga Colossus
-(sets 2 on itself), Padmavati (+1 round-end pre-drain, R54),
-Kulika (transfer), Shankhapala (mover, net zero). No generic
-applier path exists.
-
-EDGE 2 — STACK SEMANTICS [PULLED]:
-Each token drains -1 (3 tokens = -3), delivered as ONE venomLoss
-event of the summed amount. Consequences: Holika's +1 is
-per-event (3 tokens cost her 4, not 6); sarpaDouble multiplies
-the TOKEN drain only (x2); drainAmount escalation (Patala Throne,
-Vasuki R3, Venom Strike) feeds the PASSIVE only and never touches
-tokens. Karkotaka and Sarpa Satra compose without multiplying
-(different halves: early flat passive vs round-end doubled
-tokens). Order at round end: pre-drain tokens (Padmavati), then
-passive, then tokens, then death sweep, THEN scoring — a
-venom-killed Unit scores zero. Hymn of the Depths is a second
-full mid-round drain. boardTokens persist across rounds; all
-other venom flags reset.
-
-EDGE 3 — EXCLUSIVITY [PULLED]:
-NOT exclusive. Code-gated Naga-only: the passive tide (round-end,
-Karkotaka-early, Hymn) and Ananta board-tokens. Ungated: token
-application and token drain — Nagastra in the ASURA launch deck
-is the live cross-faction applier, and its tokens drain normally.
-Naga identity owns the tide; the poison itself is a weapon anyone
-printed with it may carry.
-
-STATUS: Nagas Codex content doc is UNGATED as of this closure.
+## TEACHING LAW (for HOW_TO_PLAY_v1 and all Codex pages)
+- Leap must never be illustrated or described as movement,
+  jumping, or repositioning. No movement arrows in any Leap
+  illustration. The taught verb is COPY / MATCH.
+- Nothing on any page may exceed the PULLED lines above.
