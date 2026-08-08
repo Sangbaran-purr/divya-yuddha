@@ -314,6 +314,19 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .modal .opts{ display:flex; flex-wrap:wrap; gap:8px; }
 .modal .opt{ background:#181206; border:1px solid var(--gold-dim); border-radius:8px; padding:8px 10px; cursor:pointer; min-width:110px; }
 .modal .opt .nm{ font-family:Cinzel,serif; font-size:11px; color:var(--gold); font-weight:700; }
+/* ITEM 1 — opponent-hand reveal indicator + peek panel */
+.oreveal{ display:inline-block; margin-left:8px; font-family:Cinzel,serif; font-size:9px; letter-spacing:.5px; color:#1a1206; background:var(--gold); border-radius:10px; padding:2px 8px; cursor:pointer; font-weight:700; vertical-align:middle; box-shadow:0 0 10px rgba(232,200,116,.5); animation:orevpulse 2s ease-in-out infinite; }
+.oreveal.hidden{ display:none; }
+@keyframes orevpulse{ 0%,100%{ box-shadow:0 0 8px rgba(232,200,116,.4);} 50%{ box-shadow:0 0 16px rgba(232,200,116,.85);} }
+@media (prefers-reduced-motion: reduce){ .oreveal{ animation:none !important; } }
+#oppeek .modal{ max-width:520px; }
+.oppeek-cards{ display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-bottom:12px; }
+.oppeek-card{ width:96px; aspect-ratio:5/7; border-radius:8px; overflow:hidden; border:1px solid var(--gold-dim); background:#0e0a04; position:relative; }
+.oppeek-art{ width:100%; height:100%; object-fit:cover; display:block; }
+.oppeek-fallback{ position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:6px; }
+.oppeek-fallback .ofn{ font-family:Cinzel,serif; font-size:10px; color:var(--gold); font-weight:700; line-height:1.2; }
+.oppeek-fallback .oft{ font-family:'Crimson Pro',serif; font-size:9px; color:var(--gold-2); margin-top:3px; }
+.oppeek-empty{ color:var(--gold-2); font-family:'Crimson Pro',serif; font-size:13px; text-align:center; padding:18px; }
 .modal .opt .dt{ font-size:9px; color:var(--ink-dim); margin-top:2px; }
 .modal .cancel{ margin-top:12px; background:none; border:1px solid #3a2f16; color:var(--ink-dim); border-radius:6px; padding:7px 14px; cursor:pointer; font-size:11px; }
 
@@ -1931,7 +1944,7 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     <div id="vfxflash"></div>
     <div id="oppthinking" class="hidden"><span class="think-emblem">🌀</span><span class="think-txt">Opponent is thinking<span class="td">.</span><span class="td">.</span><span class="td">.</span></span></div>
     <div class="half opp">
-      <div class="zhead"><span>OPPONENT · HAND <span id="ohand">10</span> · DECK <span id="odeck">12</span><span id="opassed"></span></span></div>
+      <div class="zhead"><span>OPPONENT · HAND <span id="ohand">10</span> · DECK <span id="odeck">12</span><span id="opassed"></span></span><span id="oreveal" class="oreveal hidden" onclick="openOppPeek()">👁 HAND REVEALED — tap to view</span></div>
       <div class="zbody">
         <div class="row hero-row" id="oheroes"></div>
         <div class="row" id="ounits"></div>
@@ -2017,6 +2030,13 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
   <h3 id="tgtitle">Choose a target</h3>
   <div class="opts" id="tgopts"></div>
   <button class="cancel" id="tgcancel">Cancel</button>
+</div></div>
+
+<!-- ITEM 1 — opponent-hand PEEK panel (Vibhishana / Vanara Scout reveal). Reuses the targeting overlay visual language. -->
+<div class="overlay hidden" id="oppeek"><div class="modal">
+  <h3>Opponent's hand — revealed this round</h3>
+  <div class="oppeek-cards" id="oppeek-cards"></div>
+  <button class="cancel" id="oppeek-close" onclick="closeOppPeek()">Close</button>
 </div></div>
 
 <div class="overlay hidden" id="gameover"><div class="modal">
@@ -7570,6 +7590,8 @@ function render(targetSet){
     ' · <span class="pip-w">'+'★'.repeat(op.roundWins)+'</span><span class="pip-l">'+'★'.repeat(2-op.roundWins)+'</span>';
   $('ohand').textContent=op.hand.length; $('odeck').textContent=op.deck.length; $('pdeck').textContent=me.deck.length;
   $('opassed').textContent=op.passed?' · PASSED':''; $('ppassed').textContent=me.passed?' · PASSED':'';
+  // ITEM 1: opponent-hand REVEAL indicator — Vibhishana / Vanara Scout set me.seesOppHand===g.round (one consumer, both setters). Tapping opens the peek panel.
+  { const _rev=$('oreveal'); if(_rev) _rev.classList.toggle('hidden', !(me.seesOppHand===G.round && op.hand.length>0)); }
   const t0=totalPower(G,0), t1=totalPower(G,1);
   if (!choreoActive){                       // totals are HELD during choreography; animateTotals() counts them up after
     $('ptotal').textContent=t0; $('ototal').textContent=t1;
@@ -7635,7 +7657,7 @@ function render(targetSet){
   if (pendingFly){ const el=$('field').querySelector(`.bc[data-uid="${pendingFly.uid}"]`); flyClone(pendingFly.rect, el); pendingFly=null; }
 
   // round-end banner (skip on match over — gameover modal takes over)
-  if (G.roundHistory.length>lastRoundLen){ if(!G.over) showRoundBanner(); lastRoundLen=G.roundHistory.length; }
+  if (G.roundHistory.length>lastRoundLen){ if(!G.over && !choreoActive) showRoundBanner(); lastRoundLen=G.roundHistory.length; }   // ITEMS 2+3: suppress the EARLY (choreo-start render) round banner so it lands AFTER the settle beat; the runAction finally fires it once, post-hold. lastRoundLen still advances → no stray refire. (Reduced-motion path: choreoActive is false → banner fires here as before, right after the static final-score set.)
 
   if (G.over) showGameOver();
 }
@@ -8030,9 +8052,9 @@ function showResultSummary(evs){
   el.style.animation='none'; void el.offsetWidth; el.style.animation='summaryIn .3s ease-out';
   clearTimeout(el._t); el._t=setTimeout(()=>el.classList.add('hidden'), 2000*CHOREO_SPEED);
 }
-function animateTotals(){
+function animateTotals(ov0, ov1){   // ITEMS 2+3: optional target overrides — at round end we count to the ROUND'S true final scores (roundHistory), not the post-reset board
   return new Promise(res=>{
-    const target={ ptotal:totalPower(G,0), ototal:totalPower(G,1) };
+    const target={ ptotal: ov0!=null?ov0:totalPower(G,0), ototal: ov1!=null?ov1:totalPower(G,1) };
     const start={ ptotal:parseInt($('ptotal').textContent)||0, ototal:parseInt($('ototal').textContent)||0 };
     if(reducedMotion() || (start.ptotal===target.ptotal && start.ototal===target.ototal)){ $('ptotal').textContent=target.ptotal; $('ototal').textContent=target.ototal; return res(); }
     ['ptotal','ototal'].forEach(id=>$(id).classList.add('counting'));
@@ -8068,6 +8090,7 @@ function posOf(uid, snap){
 }
 function cDelay(ms){ return new Promise(r=>{ if(choreoSkip) return r(); const t=setTimeout(r, ms*speedMult*CHOREO_SPEED); choreoTimers.push([t,r]); }); }
 function snapTotals(){ if(!G) return; $('ptotal').textContent=totalPower(G,0); $('ototal').textContent=totalPower(G,1); ['ptotal','ototal'].forEach(id=>{ const e=$(id); if(e) e.classList.remove('counting'); }); }
+function snapTo(t0,t1){ if(!G) return; $('ptotal').textContent=t0; $('ototal').textContent=t1; ['ptotal','ototal'].forEach(id=>{ const e=$(id); if(e) e.classList.remove('counting'); }); }   // ITEMS 2+3: snap totals to explicit final scores (round-end settle target / rAF-starvation fallback)
 // (a) An rAF-based choreo await (animateTotals + siblings) can HANG if rAF is starved (iOS backgrounding). Race it against
 // a 3s hard cap that snaps to the end-state, and register a "force finisher" so a tab-hide / skip / watchdog can end it NOW.
 function choreoRace(promise, snap){
@@ -9082,7 +9105,9 @@ function runAction(mutate, opts={}){
     const pe=evs.find(e=>e.type==='play'); if(pe) cardPlaySound(findCardByUid(pe.sourceUid));
     for(const e of evs){ if(e.type==='buff') powerChangeSound('sfx_buff', e.abilityName); else if(e.type==='damage') powerChangeSound('sfx_debuff', e.abilityName); }
     if (evs.some(e=>e.type==='destroy')) Audio2.fileSfx('sfx_unit_destroy');
-    render(); showResultSummary(evs); announcePassIfAny(passedBefore); afterChoreo(); return;   // pass banner (if a pass just landed) enqueued BEFORE afterChoreo's round banner → pass shows first, round after
+    render();
+    if (G.roundHistory.length>roundCountAtActionStart && !G.over){ const h=G.roundHistory[G.roundHistory.length-1]; snapTo(h.t0,h.t1); }   // ITEMS 2+3 reduced-motion: statically show the round's TRUE final scores (not the reset board) so they never contradict the winner banner
+    showResultSummary(evs); announcePassIfAny(passedBefore); afterChoreo(); return;   // pass banner (if a pass just landed) enqueued BEFORE afterChoreo's round banner → pass shows first, round after
   }
   choreoActive=true; choreoSkip=false; choreoStartedAt=performance.now(); choreoForce=[];
   const layer=$('choreolayer'); layer.classList.add('locked'); layer.onclick=skipChoreo;
@@ -9097,8 +9122,14 @@ function runAction(mutate, opts={}){
       render();                              // final board; spawnFloaters + HUD totals held while choreoActive
       for (const ev of evs){ if(choreoSkip) break; try{ await playEvent(ev, snap, evs); }catch(e){} }   // skip a broken step (e.g. a VFX drawImage race) — keep the match playable
       const roundEnded = G.roundHistory.length>roundCountAtActionStart && !G.over;
-      if (roundEnded && !choreoSkip){ try{ await cDelay(500); }catch(e){} }   // theatre: pause after the poison settles
-      try{ await choreoRace(animateTotals(), snapTotals); }catch(e){}          // totals count up — but rAF starvation (iOS bg) can't hang it: 3s cap snaps to final
+      if (roundEnded && !choreoSkip){   // ITEMS 2+3 — round-end RESOLUTION BEAT: the round-end effects (venom/round-end tier) already choreographed above; now settle the totals to the ROUND'S TRUE FINAL scores (roundHistory[last] — post-venom, PRE board-reset) so the score flip that decided the winner is VISIBLE, then hold before the banner. (Was: animateTotals→live totalPower = the post-RESET board = the desync root.)
+        const h=G.roundHistory[G.roundHistory.length-1];
+        try{ await cDelay(500); }catch(e){}                                       // beat: the poison settles
+        try{ await choreoRace(animateTotals(h.t0,h.t1), ()=>snapTo(h.t0,h.t1)); }catch(e){}   // count to the TRUE final totals (rAF-starvation snaps to the SAME final, not the reset board)
+        try{ await cDelay(800); }catch(e){}                                       // HOLD 800ms on the settled totals → THEN the ROUND banner fires in finally
+      } else {
+        try{ await choreoRace(animateTotals(), snapTotals); }catch(e){}            // mid-round: live totals count up (rAF starvation → 3s cap snaps to final)
+      }
     } finally {
       // GUARANTEE: no thrown/skipped/hung step can leave the choreo locked — always release the lock and resume the match
       clearVictims();   // T97: drop any victim-showcase clone whose strike beat was skipped/broke, so it never persists past the action
@@ -9207,6 +9238,23 @@ function showBoardTargetBar(c){
 }
 function hideBoardTargetBar(){ if(targetBar){ targetBar.remove(); targetBar=null; } }
 function cancelTarget(){ pendingPlay=null; hideBoardTargetBar(); $('targeting').classList.add('hidden'); render(); }
+
+// ITEM 1 — opponent-hand PEEK. One consumer for both setters (Vibhishana + Vanara Scout): renders the opponent's
+// hand face-up (cardArtSrc, art-pending fallback on 404). Reduced-motion inherits the static overlay (no animation).
+function openOppPeek(){
+  if (!G || !(G.players[0].seesOppHand===G.round)) return;   // guard: only while the reveal is live this round
+  const op=G.players[1], box=$('oppeek-cards'); if(!box) return; box.innerHTML='';
+  if (!op.hand.length){ box.innerHTML='<div class="oppeek-empty">The opponent’s hand is empty.</div>'; }
+  else op.hand.forEach(c=>{
+    const d=document.createElement('div'); d.className='oppeek-card';
+    const img=new Image(); img.className='oppeek-art'; img.alt=c.n;
+    img.onerror=function(){ img.onerror=null; img.remove(); d.innerHTML='<div class="oppeek-fallback"><div class="ofn">'+c.n+'</div><div class="oft">'+c.t+(c.p?(' · P'+c.p):'')+'</div></div>'; };
+    img.src=cardArtSrc({...c, base:c.p}, currentFactions.p1);
+    d.appendChild(img); box.appendChild(d);
+  });
+  $('oppeek').classList.remove('hidden');
+}
+function closeOppPeek(){ const o=$('oppeek'); if(o) o.classList.add('hidden'); }
 
 // generic green action bar (Leap / placement)
 function showActionBar(text, onCancel){
