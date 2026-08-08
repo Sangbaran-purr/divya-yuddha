@@ -583,6 +583,40 @@ BRIEFS = {
         "scale":   [[24, 34, 1.0, 1.0, "lin"]] },
     ],
   },
+
+  # RAMA NAAM — the Mantra class (G3 row wash), Gayatri/Pavamana SIBLING. New register: RADIANT BUFF (the light mirror
+  # of DARK BUFF). Devotion carve-out palette (saffron/vermilion at full strength — the source layers carry it). Owner
+  # motion brief, built verbatim: (1-10) wash rises sole-above-0.5 → (8-18) rays break with a slow diagonal drift, wash
+  # dims to 0.45 for the rays' solo beat → (16-28) motes lift bottom-to-top + pulse breathes ONCE → (26-36) core blooms
+  # to the 0.85 blaze ceiling (T104), holds ~4f, then ALL layers decay together in the final 6. xform: wash/rays/pulse/
+  # core; particle: motes. The +2 floaters are wired UI-side in the G3 dispatch (Rama Naam emits only a log — no engine
+  # touch under this task). Seed 0xAA4A11.
+  "ramanaam": {
+    "seed": 0xAA4A11, "fps": 24, "frames": 36, "one_shot": True, "layers_dir": "ramanaam", "canvas": (1920, 640),
+    "layers": [
+      # WASH (xform) — rises 0→0.80 sole-above-0.5 (f1-10, soft io), dims to 0.45 by f16 for the rays' solo beat, holds, final-6 decay.
+      { "src": "ramanaam_wash", "kind": "xform",
+        "opacity": [[1, 10, 0.0, 0.80, "io"], [10, 16, 0.80, 0.45, "in"], [16, 30, 0.45, 0.45, "lin"], [30, 36, 0.45, 0.0, "out"]],
+        "scale":   [[1, 10, 0.97, 1.0, "io"]] },
+      # RAYS (xform) — break in 0→0.75 (f8-18) with a slow diagonal drift matching the painted angle, decay to 0.35 as motes+pulse take the frame, final-6 decay.
+      { "src": "ramanaam_rays", "kind": "xform",
+        "opacity": [[8, 18, 0.0, 0.75, "io"], [18, 24, 0.75, 0.35, "out"], [24, 30, 0.35, 0.35, "lin"], [30, 36, 0.35, 0.0, "out"]],
+        "drift_x": [8, 36, 24], "drift_up": [8, 36, 16] },
+      # MOTES (particle) — lift bottom-to-top, EVEN activation (inner_boost 1.0 = no burst), peak cap 0.65, die by 36 with a soft fade (the final-6 decay).
+      { "src": "ramanaam_motes", "kind": "particles", "op_cap": 0.65,
+        "emit_frames": [16, 26], "inner_radius": 0.42, "inner_boost": 1.0,
+        "speed_px_s": [10, 22], "jitter_deg": 8.0, "life_frames": [12, 20], "fade_frames": 3,
+        "lum_thresh": 44, "min_area": 3 },
+      # PULSE (xform) — breathes ONCE (f16-28): scale 0.96→1.04→1.00, opacity 0→0.70→0.40, final-6 decay.
+      { "src": "ramanaam_pulse", "kind": "xform",
+        "opacity": [[16, 22, 0.0, 0.70, "io"], [22, 28, 0.70, 0.40, "io"], [28, 30, 0.40, 0.40, "lin"], [30, 36, 0.40, 0.0, "out"]],
+        "scale":   [[16, 22, 0.96, 1.04, "io"], [22, 28, 1.04, 1.00, "io"]] },
+      # CORE (xform) — the blessing settles: blooms 0→0.85 (f26-30, the T104 blaze ceiling), HOLDS 4 frames (30-34), decays last (34-36).
+      { "src": "ramanaam_core", "kind": "xform",
+        "opacity": [[26, 30, 0.0, 0.85, "io"], [30, 34, 0.85, 0.85, "lin"], [34, 36, 0.85, 0.0, "out"]],
+        "scale":   [[26, 30, 0.94, 1.0, "io"]] },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
