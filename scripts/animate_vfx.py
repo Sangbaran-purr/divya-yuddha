@@ -694,6 +694,47 @@ BRIEFS = {
         "lum_thresh": 44, "min_area": 3 },
     ],
   },
+
+  # SARPA SATRA — the serpent sacrifice; closes the Mantra row. TWO ZONES, TWO SHEETS (the pipeline can't combine a square
+  # and a wide cell). ZONE A = the sacrificed FRIENDLY cell (square, Vajra cell class) — fired on the engine's `destroy`
+  # event (abilityName 'Sarpa Satra'), framing the unit's normal dissolve. Register: SACRIFICE. Palette venom-green/black-gold.
+  # SOLO-STAGGER (global): fire decays ≤0.5 by f10 BEFORE serpent rises >0.5 (~f11) → fire ⊥ serpent, so the only concurrent
+  # >0.5 pair across BOTH zones is serpent+veil = 2, GUARANTEED regardless of the Zone-B dispatch offset.
+  "sarpasatra_a": {
+    "seed": 0x5A4A5A, "fps": 24, "frames": 20, "one_shot": True, "layers_dir": "sarpasatra", "canvas": (1254, 1254),
+    "layers": [
+      # FIRE (xform) — THE FIRE TAKES: 0→0.80 (f1-6), decays to 0.45 by f10 (FASTER than the brief's f14 so fire ⊥ serpent — the global solo-stagger guarantee), out by 20.
+      { "src": "sarpasatra_fire", "kind": "xform",
+        "opacity": [[1, 6, 0.0, 0.80, "io"], [6, 10, 0.80, 0.45, "in"], [10, 20, 0.45, 0.0, "out"]] },
+      # SERPENT (xform) — THE SOUL RISES: 0→0.75 (f5-14) with drift_up (the soul ascends), decays to 0 by 20.
+      { "src": "sarpasatra_serpent", "kind": "xform",
+        "opacity": [[5, 14, 0.0, 0.75, "io"], [14, 18, 0.75, 0.35, "in"], [18, 20, 0.35, 0.0, "out"]],
+        "drift_up": [5, 20, 30] },
+      # ASH (particle) — ASH SINKS (drift DOWN + fade), op_cap 0.45 (never above the solo-stagger line), f12-20.
+      { "src": "sarpasatra_ash", "kind": "particles", "op_cap": 0.45, "drift": "down",
+        "emit_frames": [12, 18], "inner_radius": 0.40, "inner_boost": 1.0,
+        "speed_px_s": [10, 22], "jitter_deg": 10.0, "life_frames": [3, 6], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 3 },
+    ],
+  },
+
+  # SARPA SATRA — ZONE B = THE DRAIN (wide row-plate, Pashupatastra/Gayatri geometry, canvas 1920×640 cover-fit) — fired on
+  # the FIRST enemy `damage` event (abilityName 'Sarpa Satra'), over the opponent's half. The veil reads as WEIGHT descending.
+  # Only ONE xform (veil) → Zone B internal ≤1; combined with the fire⊥serpent guarantee, the global cross-zone max is 2.
+  "sarpasatra_b": {
+    "seed": 0x5A4A5A, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "sarpasatra", "canvas": (1920, 640),
+    "layers": [
+      # VEIL (xform) — THE GLOOM DESCENDS: 0→0.75 (f1-11) with DOWNWARD drift (drift_up NEGATIVE = dy>0, the gloom sinks over the enemy row), holds 0.50 through the surge, out by 24.
+      { "src": "sarpasatra_veil", "kind": "xform",
+        "opacity": [[1, 11, 0.0, 0.75, "io"], [11, 19, 0.75, 0.50, "in"], [19, 24, 0.50, 0.0, "out"]],
+        "drift_up": [1, 24, -40] },
+      # SURGE (particle) — VENOM SURGE descends (drift DOWN), op_cap 0.50 (never above the solo-stagger line), a wide spread across the enemy row, f7-19.
+      { "src": "sarpasatra_surge", "kind": "particles", "op_cap": 0.50, "drift": "down",
+        "emit_frames": [7, 19], "inner_radius": 0.55, "inner_boost": 1.0,
+        "speed_px_s": [14, 32], "jitter_deg": 12.0, "life_frames": [4, 8], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 3 },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
