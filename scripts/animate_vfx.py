@@ -617,6 +617,51 @@ BRIEFS = {
         "scale":   [[26, 30, 0.94, 1.0, "io"]] },
     ],
   },
+
+  # KISHKINDHA OATH — CAST. The WARD register (light single-target seal; mirror family of BIND / DARK-BUFF seal). Class:
+  # CARD-SCALE SQUARE (Vajra cell, radial mask — NOT a row plate). Jade/emerald + gold (faction bond, NOT the saffron
+  # carve-out — the source layers carry it). Owner brief, verbatim: (1-8) ring rises sole-above-0.5 → (6-16) veil drapes
+  # over the face with a slow upward drift, ring dims to 0.45 → (14-24) oath settles, both decay to the persistent state
+  # (the between-moments ward marker is PROPOSED, not built under this task — the cast decays to 0 and hands off). Two
+  # layers only (ring, veil). Seed 0x0A7A0A.
+  "kishkindhaoath_cast": {
+    "seed": 0x0A7A0A, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "kishkindhaoath",
+    "layers": [
+      # RING (xform) — rises 0→0.80 sole-above-0.5 (f1-8, io), slight scale settle 1.05→1.00, dims to 0.45 as the veil takes the beat, decays f16-24.
+      { "src": "kishkindhaoath_ring", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.80, "io"], [8, 16, 0.80, 0.45, "in"], [16, 24, 0.45, 0.0, "out"]],
+        "scale":   [[1, 8, 1.05, 1.0, "io"]] },
+      # VEIL (xform) — drapes over the card face 0→0.65 (f6-16, io) with a slow upward drift, decays f16-24.
+      { "src": "kishkindhaoath_veil", "kind": "xform",
+        "opacity": [[6, 16, 0.0, 0.65, "io"], [16, 24, 0.65, 0.0, "out"]],
+        "drift_up": [6, 24, 20] },
+    ],
+  },
+
+  # KISHKINDHA OATH — FIRE. The ward TRIGGERS inside a destruction: the warded unit survives at 1, the witnesses rally +1.
+  # Same WARD register / card-scale square (Vajra cell). Plays on the engine's `ward` emit (abilityName 'Kishkindha Oath').
+  # Owner brief, verbatim: (1-6) flash blooms to the 0.85 blaze ceiling, holds 3 — the survive-at-1 read → (5-16) threads
+  # fan outward 0→0.70 as flash decays to 0.40 (the bond reaching the witnesses; the painted symmetric fan stands — the
+  # compositor does not aim per-neighbor) → (12-24) motes ripple outward (particle, op_cap 0.50) + threads decay to 0.35;
+  # the witness +1 floaters land in this window, the warded unit's →1 floater at the flash → (22-28) all decay together.
+  "kishkindhaoath_fire": {
+    "seed": 0x0A7A0A, "fps": 24, "frames": 28, "one_shot": True, "layers_dir": "kishkindhaoath",
+    "layers": [
+      # FLASH (xform) — the vow holds: blooms 0→0.85 (f1-4), holds 3 (the T104 blaze ceiling, the survive-at-1 read), decays to 0.40 as threads reach, final decay f22-28.
+      { "src": "kishkindhaoath_flash", "kind": "xform",
+        "opacity": [[1, 4, 0.0, 0.85, "io"], [4, 6, 0.85, 0.85, "lin"], [6, 16, 0.85, 0.40, "in"], [16, 22, 0.40, 0.40, "lin"], [22, 28, 0.40, 0.0, "out"]],
+        "scale":   [[1, 4, 0.94, 1.0, "io"]] },
+      # THREADS (xform) — fan OUTWARD 0→0.70 (f5-16, scale expansion = the fan), decay to 0.35 as motes ripple, final decay f22-28.
+      { "src": "kishkindhaoath_threads", "kind": "xform",
+        "opacity": [[5, 16, 0.0, 0.70, "io"], [16, 24, 0.70, 0.35, "in"], [24, 28, 0.35, 0.0, "out"]],
+        "scale":   [[5, 16, 0.85, 1.15, "io"]] },
+      # MOTES (particle) — witness ripple: drift radial-OUTWARD, op_cap 0.50 (never above the solo-stagger line), die by 28 with a soft fade.
+      { "src": "kishkindhaoath_motes", "kind": "particles", "op_cap": 0.50, "drift": "out",
+        "emit_frames": [12, 22], "inner_radius": 0.42, "inner_boost": 1.0,
+        "speed_px_s": [12, 26], "jitter_deg": 10.0, "life_frames": [10, 16], "fade_frames": 3,
+        "lum_thresh": 44, "min_area": 3 },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):

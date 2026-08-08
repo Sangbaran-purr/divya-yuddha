@@ -391,6 +391,8 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .stealbadge{ position:absolute; bottom:2px; left:3px; font-size:12px; z-index:3; filter:drop-shadow(0 1px 2px #000); }
 .copybadge{ position:absolute; bottom:2px; right:3px; font-size:11px; z-index:3; color:var(--gold); filter:drop-shadow(0 1px 2px #000); }
 .shieldbadge.sleep{ left:3px; right:auto; }
+.wardbadge{ position:absolute; bottom:2px; right:3px; font-size:12px; z-index:3; filter:drop-shadow(0 1px 1px #000); }   /* KISHKINDHA OATH ward marker — jade 🌿, bottom-right; the emoji carries the jade hue, the shadow gives contrast on any board */
+.bc.warded{ box-shadow: inset 0 0 0 1px rgba(60,190,120,.55), 0 0 5px rgba(60,190,120,.35); }   /* jade border-glow — static state (no animation), reads under reduced-motion; driven by c.ward, clears when the flag clears */
 #showcaseCard .sc-copy{ position:absolute; top:40px; left:0; background:rgba(201,168,76,.92); color:#1a1204; font-family:Cinzel,serif; font-size:10px; letter-spacing:2px; padding:3px 12px; border-radius:0 6px 6px 0; z-index:4; }
 #showcaseCard .sc-copy.sc-deceiver{ background:rgba(150,40,50,.94); color:#f6e6c8; }   /* Maricha's pre-copy phase — deceiver crimson */
 
@@ -7481,6 +7483,7 @@ function boardCard(c, pi, targetSet){
   const ep=effPower(G,pi,c);
   const sh=!c.ghost && c.t==='unit' && isShielded(G,pi,c);
   if(c.bound) d.classList.add('bound');
+  if(c.ward && !c.ghost) d.classList.add('warded');   // KISHKINDHA OATH: jade border-glow marks the sealed unit from cast until fire/expiry (driven by the engine c.ward flag; re-emitted every render like the badges → persists across re-renders/unrelated actions, clears when the engine clears the flag)
   if(c.stolenBy===0) d.classList.add('stolen');   // shown on player-0 side after a Mohini steal
   let state='', mark='';
   if(!c.ghost){ if(ep>c.base){ state='buffed'; mark='▲'; } else if(c.power<c.base){ state='hurt'; mark='▼'; } }
@@ -7492,6 +7495,7 @@ function boardCard(c, pi, targetSet){
     (sh?'<div class="shieldbadge">🛡</div>':'')+
     (c.asleep?'<div class="shieldbadge sleep">💤</div>':'')+
     (c.venom>0?`<div class="venombadge">☠${c.venom>1?`<span class="vstack">${c.venom}</span>`:''}</div>`:'')+
+    (c.ward && !c.ghost?'<div class="wardbadge" title="Warded — survives its next fall this round">🌿</div>':'')+
     (c.bound?'<div class="bindbadge">⛓</div>':'')+
     (c.stolenBy!==-1?'<div class="stealbadge">🌀</div>':'')+
     `<div class="medallion ${state}">${c.bound?'0':ep}${mark?`<span class="mark">${mark}</span>`:''}</div>`;
@@ -8337,12 +8341,12 @@ const VFX = (()=>{
   function imgTint(key,kind){ const t=sprTint[key]; if(kind && t && t[kind]) return t[kind]; return sprImg[key]; }
   // ===================== FLIPBOOK SHEETS (T68F: 384px, per-sheet grid, real-time playback + frame blending) =====================
   let sheetImg={}, sheetGrid={}, sheetsReady=false, sheetLoading={};   // T81: per-key load tracking (was a global sheetLoadN counter — lazy loading is incremental per match)
-  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff','shield','venom','chaos_wash','chaos_mark','pashupatastra','sudarshana','nagapasha','pavamana','ramanaam','ahamkara','sanjivani','deva_hero_entry','indra_hero_entry','agni_hero_entry','varuna_hero_entry'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
+  const SHEET_NAMES=['aura_1','aura_2','smoke_1','smoke_2','surge_1','surge_2','venom_1','venom_2','c1a_deva','landing_asura','landing_vanara','landing_naga','brahmastra','gayatri','vajra','damage','buff','shield','venom','chaos_wash','chaos_mark','pashupatastra','sudarshana','nagapasha','pavamana','ramanaam','kishkindhaoath_cast','kishkindhaoath_fire','ahamkara','sanjivani','deva_hero_entry','indra_hero_entry','agni_hero_entry','varuna_hero_entry'];   // full catalog (LEGACY rollback loads all of this; lazy path loads a match-specific subset)
   const LANDING_SHEET={ devas:'c1a_deva', asuras:'landing_asura', vanaras:'landing_vanara', nagas:'landing_naga' };   // faction → landing sheet key (all four ship as of T81)
   const SHEET_GRID_CFG={ brahmastra:{cols:8, rows:5}, gayatri:{cols:6, rows:6}, chaos_wash:{cols:6, rows:4}, pashupatastra:{cols:8, rows:5}, pavamana:{cols:6, rows:6}, ramanaam:{cols:6, rows:6} };   // T78/T79: RECTANGULAR row-plate sheets — grid can't derive from width/SHEET_CELL (non-square cells); cw/ch = sheetDims/(cols,rows). Square sheets omit this (cw=ch=SHEET_CELL).
   let SHEET_CELL=RUNG[vfxRung].cell;   // T74: rung-dependent sheet cell (hi 512 / md 448 / lo 384). Frame count derives from the sheet dims / cell, so 64f/48f/32f are auto-detected.
   const SHEET_FPS=16;   // F1b: 16fps base ×vfxT → the window plays at ~1:1 real tempo
-  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward', shield:'forward', venom:'forward', chaos_wash:'forward', chaos_mark:'forward', pashupatastra:'forward', sudarshana:'forward', nagapasha:'forward', pavamana:'forward', ramanaam:'forward', ahamkara:'forward', sanjivani:'forward', deva_hero_entry:'forward', indra_hero_entry:'forward', agni_hero_entry:'forward', varuna_hero_entry:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward; the hero auras pingpong (T99 loop, also forced by the recipe's loop config)
+  const SHEET_MODE={ aura_1:'pingpong', aura_2:'pingpong', smoke_1:'pingpong', surge_1:'pingpong', surge_2:'pingpong', smoke_2:'forward', venom_1:'forward', venom_2:'forward', c1a_deva:'forward', landing_asura:'forward', landing_vanara:'forward', landing_naga:'forward', brahmastra:'forward', gayatri:'forward', vajra:'forward', damage:'forward', buff:'forward', shield:'forward', venom:'forward', chaos_wash:'forward', chaos_mark:'forward', pashupatastra:'forward', sudarshana:'forward', nagapasha:'forward', pavamana:'forward', ramanaam:'forward', kishkindhaoath_cast:'forward', kishkindhaoath_fire:'forward', ahamkara:'forward', sanjivani:'forward', deva_hero_entry:'forward', indra_hero_entry:'forward', agni_hero_entry:'forward', varuna_hero_entry:'forward' };   // venom NEVER reverses; the seq catalog effects = one-shot forward; the hero auras pingpong (T99 loop, also forced by the recipe's loop config)
   const sheetFrameCanvas=offc2(512,512);   // B4: ONE reusable canvas (max cell 512) for draw-time aura tint; draws consume only the SHEET_CELL sub-region
   function haveSheet(key){ return !!sheetImg[key]; }
   // T81: LOAD ONE SHEET, idempotent per key (skips if already loaded or in-flight). bakeAlpha + grid derivation as before.
@@ -8367,7 +8371,7 @@ const VFX = (()=>{
     if(facA==='devas' || facB==='devas'){ loadSheet('brahmastra'); loadSheet('gayatri'); loadSheet('vajra'); loadSheet('sudarshana'); loadSheet('pavamana'); loadSheet('deva_hero_entry'); loadSheet('indra_hero_entry'); loadSheet('agni_hero_entry'); loadSheet('varuna_hero_entry'); }   // T78/T79/T82/T92/T95 Deva cards + T100 Deva hero entry/aura + T101 Indra + T102 Agni per-hero overrides
     if(facA==='asuras' || facB==='asuras'){ loadSheet('chaos_wash'); loadSheet('chaos_mark'); loadSheet('pashupatastra'); loadSheet('ahamkara'); loadSheet('sanjivani'); }   // T87/T96/T98 Asura-conditional
     if(facA==='nagas' || facB==='nagas'){ loadSheet('nagapasha'); }   // T94 Naga-conditional — Nagapasha bind arrival
-    if(facA==='vanaras' || facB==='vanaras'){ loadSheet('ramanaam'); }   // RAMA NAAM — Vanara-conditional MANTRA row plate (RADIANT BUFF)
+    if(facA==='vanaras' || facB==='vanaras'){ loadSheet('ramanaam'); loadSheet('kishkindhaoath_cast'); loadSheet('kishkindhaoath_fire'); }   // RAMA NAAM — Vanara-conditional MANTRA row plate (RADIANT BUFF)
   }
   function addSheetSpr(key, x, y, size, o){ if(reducedMotion()||!sheetImg[key]) return false;
     const mode=(o&&o.loop)?'pingpong':(SHEET_MODE[key]||'forward'), nf=(sheetGrid[key]||{}).frames||24;   // T99 (runtime extension #3): a looping sprite forces pingpong frame direction; ABSENT o.loop → mode is exactly SHEET_MODE[key]||'forward' as before.
@@ -8750,6 +8754,15 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
   // RAMA NAAM — the Mantra class RADIANT BUFF (light mirror of DARK BUFF); Gayatri/Pavamana SIBLING (board-settle row plate over the CASTER's friendly half). 36f one-shot forward, flat runtime op (the wash→rays→motes+pulse→core-bloom envelope is BAKED into the sheet per the motion brief). SERENE — no hit-stop, no shake. The +2 floaters are fired per-unit in the dispatch (Rama Naam emits only a log; no engine event).
   function sprRamanaam(cxp,cyp,boardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp);
     return addSheetSpr('ramanaam', x, y, boardW, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 36/SHEET_FPS*vfxT() }); }
+  // KISHKINDHA OATH — the WARD register (light single-target seal), card-scale SQUARE (Vajra cell class). TWO moments:
+  // sprOathCast (ring→veil over the warded card, 24f) fires when the oath is played; sprOathFire (flash→threads→motes over
+  // the warded card, 28f) fires on the engine's `ward` emit at the destruction-survival moment. Flat runtime op (envelope
+  // baked). SERENE — no hit-stop. Floaters (witness +1, warded →1) are wired in the dispatch. The between-moments ward
+  // marker is PROPOSED (not built under this task).
+  function sprOathCast(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    return addSheetSpr('kishkindhaoath_cast', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 24/SHEET_FPS*vfxT() }); }
+  function sprOathFire(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
+    return addSheetSpr('kishkindhaoath_fire', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 28/SHEET_FPS*vfxT() }); }
   // T82: single-unit STRIKE class — Vajra, anchored on the TARGET unit's card rect (not the caster). Square card-anchored sheet (reuses the landing path), 18f one-shot forward, flat envelope, drawn at card scale. The fastest effect (~1.125s at 16fps).
   function sprVajra(cxp,cyp,cardW){ if(reducedMotion()||!ready) return false; const {x,y}=local(cxp,cyp), W=cw(cardW);
     return addSheetSpr('vajra', x, y, W*2.4, { frame:0, dir:1, op0:1,opPeak:1,op1:1, sc0:1,sc1:1, life: 18/SHEET_FPS*vfxT() }); }
@@ -8924,7 +8937,7 @@ fn _bp(c:vec3<f32>, thr:f32)->vec3<f32>{ let l=max(c.r,max(c.g,c.b)); return c*s
                  __simInitFail(){ try{ if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu._poison=true; return gpuInit(); },   // G3: force the real init throw → floor
                  __reinit(){ gpu._poison=false; gpu.disabled=false; gpu.app=null; return gpuInit(); },
                  __forceBackend(pref){ gpu._pref=pref; try{ if(gpu.gcanvas){ gpu.gcanvas.remove(); gpu.gcanvas=null; } if(gpu.app&&gpu.app.destroy) gpu.app.destroy(true); }catch(e){} gpu.app=null; gpu.enabled=false; gpu.texReady=false; gpu.disabled=false; gpu.sprites.length=0; gpu.particles.length=0; return gpuInit(); } },   // G2: force webgl to prove the GLSL variants run
-           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark, sprPashupatastra, sprSudarshana, sprNagapasha, sprPavamana, sprRamanaam, sprAhamkara, sprSanjivani, sprDevaHeroEntry, sprIndraHeroEntry, sprAgniHeroEntry, sprVarunaHeroEntry };
+           sprAura, sprBloom, sprRing, sprSmoke, sprLightning, sprShield, sprVenom, sprSurge, sprStreak, sprC1aDeva, sprLanding, sprBrahmastra, sprGayatri, sprVajra, sprDamage, sprBuff, sprShieldForm, sprVenomTick, sprChaosWash, sprChaosMark, sprPashupatastra, sprSudarshana, sprNagapasha, sprPavamana, sprRamanaam, sprOathCast, sprOathFire, sprAhamkara, sprSanjivani, sprDevaHeroEntry, sprIndraHeroEntry, sprAgniHeroEntry, sprVarunaHeroEntry };
 })();
 function cpulse(el, cls){ if(!el||reducedMotion())return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); setTimeout(()=>el.classList.remove(cls),320*vfxT()); }
 // T90 JANK WATCHER — during MATCH CHOREOGRAPHY ONLY, detect sustained frame stutter and (at most once/session) suggest a lower VFX quality. Suggest, never force, never nag.
@@ -9003,6 +9016,15 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
         setTimeout(function(){ buffed.forEach(function(uid){ const el=document.querySelector('.bc[data-uid="'+uid+'"]'); if(el) floatText(el, 2); }); }, (26/16)*vfxT()*1000);   // 26/16fps ≈ 1.625s → the settle window; +2 floaters read as the blessing taking hold
       }
     }
+    if(c && c.t==='mantra' && c.id==='kishkindhaoath'){   // KISHKINDHA OATH CAST — the ward seal placed on ONE friendly Vanara Unit. Card-scale SQUARE (Vajra cell class), anchored on the WARDED unit (NOT a row plate). The engine emits only a log (t.ward=true, no per-target event) → the UI finds the warded unit by its ward flag (the Rama Naam board-scan idiom). WARD register: serene — no hit-stop, no shake. The between-moments persistent ward marker is PROPOSED (not built under this task). reduced-motion never reaches here (playEvent is skipped in runAction) → the branch is defensive per the b30d8da precedent; render() already shows the sealed board.
+      const cstOath=ownerPiOfUid(ev.sourceUid);
+      const warded=((G.players[cstOath]||{}).units||[]).find(u=>!u.ghost && u.ward);
+      if(warded){ const wel=document.querySelector('.bc[data-uid="'+warded.uid+'"]');
+        if(wel){ const r=wel.getBoundingClientRect();
+          if(reducedMotion()){ const w=document.createElement('img'); w.src='assets/vfx/layers/kishkindhaoath/kishkindhaoath_ring.png'; w.alt=''; const S=r.width*2.4; w.style.cssText='position:fixed;left:'+(r.left+r.width/2-S/2)+'px;top:'+(r.top+r.height/2-S/2)+'px;width:'+S+'px;height:'+S+'px;opacity:.35;z-index:5;pointer-events:none;mix-blend-mode:screen'; document.body.appendChild(w); setTimeout(function(){ w.remove(); }, 1000); }   // brief: reduced-motion = a single STATIC ring frame at 0.35 (+ the proposed ward marker)
+          else VFX.sprOathCast(r.left+r.width/2, r.top+r.height/2, r.width); }   // fire-and-forget over the warded card (24f ≈ 1.5s); the play beat's own 700ms hold outlives into it, Rama-Naam style
+      }
+    }
     // T67 painted sprite layer (falls back to procedural when a sprite isn't loaded)
     if(isBody && src){ const fac=cardHomeFaction(c) || (G.players[ownerPiOfUid(ev.sourceUid)]||{}).faction || 'devas', isHero=(c.t==='hero');
       if(LEGACY_VFX) VFX.sprRing(src.cx, src.rect.top+src.rect.height*0.78, fac, src.rect.width*(isHero?1.15:1));                          // E2 landing ground ring (faction-tinted; heroes land bigger) [T77-gated]
@@ -9060,6 +9082,17 @@ async function playEvent(ev, snap, evs=[]){   // T83: evs = this action's event 
     return; }
   if (ev.type==='passive' && ev.abilityName==='Sanjivani Corruption'){ const u=ev.targetUids[0]; const dp=posOf(u, snap);   // T98: Sanjivani Corruption dark-revival ARRIVAL — the grave exhales + crimson wells up AT the STOLEN unit's cell (Vajra-anchored). The unit was just placed on the Asura board (pl.units.push), so render() drew it before this beat → posOf finds it live. EMERGENCE register: NO hit-stop, no shake, no dissolve, no damage tick — nothing is struck, the corpse is DRAGGED BACK. Q3: no landing flare fires (the stolen unit has no play event); the neutral .bc.landing CSS pop is faction-agnostic. Q4: the Asura Chaos Surge (its own wash/mark) coexists per the Ahamkara precedent — both crimson, no contradiction.
     if(dp){ VFX.sprSanjivani(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width); await cDelay(1750); }   // hold the emergence (28f @ SHEET_FPS 16 = 1750ms; cDelay scales by vfxT so the await tracks the sprite life)
+    return; }
+  if (ev.type==='ward'){   // KISHKINDHA OATH FIRE — the ward triggers: the warded unit REFUSES to fall (survives at 1 → it STAYS on board, so posOf finds it live) and the witnesses rally +1. Card-scale SQUARE (Vajra cell class) over the warded card. WARD register: serene — no hit-stop, no shake, no dissolve. The engine emits 'ward' ONLY for the warded unit; the witness units emit nothing, so their +1 floaters are UI-computed from the board and land in the ripple window (frames 12-24 ≈ 0.75s at SHEET_FPS 16). The warded →1 floater lands at the flash (frames 1-6). Intercepts BEFORE the generic tail (which would have shown a plain 'survives at 1' note). reduced-motion never reaches here (playEvent is skipped) → render() shows the survived board; b30d8da precedent.
+    const wu=ev.targetUids[0], dp=posOf(wu, snap);
+    if(dp){
+      VFX.sprOathFire(dp.cx, dp.rect.top+dp.rect.height/2, dp.rect.width);
+      calloutAt(dp, ev.abilityName);   // name the oath AT the warded unit (T88: the survival is not a silent event)
+      setTimeout(function(){ if(!choreoSkip) floatAt(dp, '1', 'note'); }, (3/16)*vfxT()*1000);   // warded unit → 1 (survival) floater at the flash
+      const cst=ownerPiOfUid(wu); const witnesses=((G.players[cst]||{}).units||[]).filter(u=>!u.ghost && u.uid!==wu).map(u=>u.uid);   // all OTHER friendly Vanara Units — the +1 witnesses (engine buffed them, emitted nothing)
+      setTimeout(function(){ if(choreoSkip) return; witnesses.forEach(function(uid){ const el=document.querySelector('.bc[data-uid="'+uid+'"]'); if(el) floatText(el, 1); }); }, (12/16)*vfxT()*1000);   // +1 floaters in the witness-ripple window
+      await cDelay(1750);   // hold the fire beat (28f @ SHEET_FPS 16 = 1750ms; cDelay scales by vfxT so the await tracks the sprite life)
+    }
     return; }
   if (src && (ev.type==='buff'||ev.type==='token')){ cpulse(src.el,'choreo-src'); calloutAt(src, ev.abilityName); }
   const tgts=ev.targetUids||[];
