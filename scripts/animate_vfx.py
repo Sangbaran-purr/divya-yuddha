@@ -662,6 +662,38 @@ BRIEFS = {
         "lum_thresh": 44, "min_area": 3 },
     ],
   },
+
+  # MRITYUNJAYA — the Mantra DEATHLESS revival (venom-tinged: light conquered, then corrupted). Sanjivani Corruption's
+  # SQUARE arrival SIBLING (unit-anchored, Vajra cell class), 32f one-shot on the REVIVED cell. Q3 landing-interplay ON
+  # RECORD (structural — the revived unit has no play event → neutral .bc.landing pop, no landing flare). Palette: abyssal
+  # teal / ghost white-green, venom-green ONLY in the bloom beat (THE PRICE = the token lands). Coil: opacity + slight scale
+  # + drift_up ONLY (no rotation primitive — the painted spiral reads as winding through its rise). ≤2 layers >0.5 (audit).
+  "mrityunjaya": {
+    "seed": 0xD3AD1A, "fps": 24, "frames": 32, "one_shot": True, "layers_dir": "mrityunjaya", "canvas": (1254, 1254),
+    "layers": [
+      # PLATE (xform) — THE DEEP OPENS: soft ground rise 0→0.70 (f1-8, sole layer above 0.5), dims to 0.45 as the column rises, decays to 0 by 32.
+      { "src": "mrityunjaya_plate", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.70, "io"], [8, 16, 0.70, 0.45, "in"], [16, 32, 0.45, 0.0, "out"]] },
+      # COLUMN (xform) — DEATHLESS LIGHT: rises 0→0.80 (f6-16) with slow drift_up, decays to 0.40 as the coil winds, out by 32.
+      { "src": "mrityunjaya_column", "kind": "xform",
+        "opacity": [[6, 16, 0.0, 0.80, "io"], [16, 22, 0.80, 0.40, "in"], [22, 32, 0.40, 0.0, "out"]],
+        "drift_up": [6, 28, 22] },
+      # COIL (xform) — THE COIL WINDS: 0→0.70 (f12-22), scale 0.94→1.02 + gentle drift_up (the painted spiral winds through its rise — no rotation), decays to 0.35 as the bloom lands.
+      { "src": "mrityunjaya_coil", "kind": "xform",
+        "opacity": [[12, 22, 0.0, 0.70, "io"], [22, 26, 0.70, 0.35, "in"], [26, 32, 0.35, 0.0, "out"]],
+        "scale":   [[12, 22, 0.94, 1.02, "io"]],
+        "drift_up": [12, 32, 16] },
+      # BLOOM (xform) — THE PRICE: the venom lands 0→0.75 (f18-26, venom-green ONLY here), gentle bloom-open scale, out by 32. Coincides with the unit's arrival render + venombadge (frames 18-26).
+      { "src": "mrityunjaya_bloom", "kind": "xform",
+        "opacity": [[18, 26, 0.0, 0.75, "io"], [26, 32, 0.75, 0.0, "out"]],
+        "scale":   [[18, 26, 0.92, 1.0, "io"]] },
+      # MOTES (particle) — SURFACING: rise (drift UP), op_cap 0.50 (never above the solo-stagger line), a brief late flourish that decays with the rest by 32.
+      { "src": "mrityunjaya_motes", "kind": "particles", "op_cap": 0.50, "drift": "up",
+        "emit_frames": [24, 29], "inner_radius": 0.40, "inner_boost": 1.0,
+        "speed_px_s": [14, 30], "jitter_deg": 10.0, "life_frames": [3, 6], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 3 },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):

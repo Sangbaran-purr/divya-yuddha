@@ -874,7 +874,8 @@ function castMantra(g, pi, id, targetUid=null){
     if (pool.length){ const [s,t] = targetUid!=null ? (pool.find(x=>x[1].uid===targetUid)||pool.reduce((a,b)=>a[1].base>=b[1].base?a:b)) : pool.reduce((a,b)=>a[1].base>=b[1].base?a:b);
       g.players[s].discard.splice(g.players[s].discard.indexOf(t),1);
       t.power=t.base; t.venom=1; t.bound=false; t.stolenBy=-1; t.aegis=false; t.revivedShield=false; t.ward=false; t.asleep=false; t.doomed=false; t.revealPending=false; t.astraImmuneRound=0;
-      pl.units.push(t); onUnitRevive(g, pi, t);   /* WAVE 1 batch 9 — revival choke #3 (Mrityunjaya) */ log(g, `Mrityunjaya wrests ${t.n} from death — it rises venom-marked (Token).`);
+      pl.units.push(t); emit(g,'passive',{targetUids:[t.uid],abilityName:'Mrityunjaya',text:'reborn'});   // observational emit (rule #7 — no state/rng touch) — SIXTH of the sibling family (Sanjivani Corruption/Vishwapasha/Vritra/Nagapasha/Ahamkara), carries the REVIVED unit's uid so the deathless-revival arrival VFX anchors at its cell. Behavior-neutral (no engine/story/quest consumer branches on 'passive'); the type field disambiguates from the mantra's own 'play' event of the same abilityName.
+      onUnitRevive(g, pi, t);   /* WAVE 1 batch 9 — revival choke #3 (Mrityunjaya) */ log(g, `Mrityunjaya wrests ${t.n} from death — it rises venom-marked (Token).`);
     } else log(g, 'Mrityunjaya: no fallen Unit to reclaim.');
   } else if (id==='sarpasatra'){
     const real=pl.units.filter(u=>!u.ghost);
