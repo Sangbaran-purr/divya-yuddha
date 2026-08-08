@@ -12,14 +12,14 @@ const DEVA_DECK_DEF = [
   { id:'agni',    n:'Agni',           sub:'Flame of Sacrifice',   t:'hero', p:5, r:'E', txt:'TRIGGERED: Whenever any Mantra is played, deal 1 damage to a random enemy Unit.' },
   { id:'varuna',  n:'Varuna',         sub:'Lord of Oceans',       t:'hero', p:6, r:'E', txt:'PASSIVE: Opponent cannot play more than 1 Astra per round.' },
   // ---- UNITS (12) ----
-  { id:'surya',   n:'Surya Dev',      sub:'Radiance of the Dawn', t:'unit', p:6, r:'E', txt:'ON PLAY: All other friendly Units gain +1 power.' },
+  { id:'surya',   n:'Chandra Dev',      sub:'Sovereign of Moonlight', t:'unit', p:6, r:'E', txt:'ON PLAY: All other friendly Units gain +1 power.' },
   { id:'brihaspati',n:'Brihaspati',   sub:'Guru of the Gods',     t:'unit', p:5, r:'E', txt:'ON PLAY: Copy the effect of the last Mantra played by either player.' },
   { id:'vayu',    n:'Vayu',           sub:'The Invisible Force',  t:'unit', p:5, r:'R', txt:'ON PLAY: Hurl the highest power enemy Unit out of formation; it loses 2 power.' },
   { id:'vishwakarma',n:'Vishwakarma', sub:'Divine Architect',     t:'unit', p:4, r:'R', txt:'ON PLAY: Destroy the opponent\u2019s Artifact. Gain +2 power for each Artifact destroyed this game.' },
   { id:'kubera',  n:'Kubera',         sub:'Lord of Wealth',       t:'unit', p:3, r:'R', txt:'ON PLAY: Draw 2 cards. If both are Units they gain +1 power each.' },
   { id:'urvashi', n:'Urvashi',        sub:'The Eternal Apsara',   t:'unit', p:4, r:'R', txt:'ON PLAY: Opponent discards their highest power card from hand.' },
   { id:'yama',    n:'Yama',           sub:'Lord of Dharma',       t:'unit', p:6, r:'E', txt:'PASSIVE: Destroyed friendly Units leave a 1-power ghost token behind.' },
-  { id:'saraswati',n:'Saraswati',     sub:'Voice of Creation',    t:'unit', p:4, r:'R', txt:'ON PLAY: Look at opponent\u2019s hand. Lock one card \u2014 it cannot be played this round.' },
+  { id:'saraswati',n:'Narada',     sub:'The Celestial Messenger',    t:'unit', p:4, r:'R', txt:'ON PLAY: Look at opponent\u2019s hand. Lock one card \u2014 it cannot be played this round.' },
   { id:'ashwini', n:'Ashwini Kumars', sub:'Twin Healers',         t:'unit', p:3, r:'U', txt:'ON PLAY: Restore 2 power to the most wounded friendly Unit.' },
   { id:'marut',   n:'Marut',          sub:'Storm Soldier',        t:'unit', p:3, r:'C', txt:'ON PLAY: If Vayu is on your board, gain +3 power.' },
   { id:'gandharva',n:'Gandharva',     sub:'Celestial Warrior',    t:'unit', p:2, r:'C', txt:'ON PLAY: If 3+ friendly Units are on the board, gain +2 power.' },
@@ -138,14 +138,14 @@ const ASURA_DECK_DEF = [
 // Vanara roster — docs/VANARA_ROSTER.md (GDD v2.0 §7). Mechanic: LEAP (see doLeap()). Units-only positions.
 const VANARA_DECK_DEF = [
   // ---- HEROES (3) ----
-  { id:'hanuman', n:'Hanuman',       sub:'Devotion Incarnate',   t:'hero', p:9, r:'L', txt:'PASSIVE: Each Vanara Unit of printed power 4+ you play gains +1 on entry (+2 while Jambavan is on the board).' },
+  { id:'hanuman', n:'Bali',       sub:'The Unrivalled King',   t:'hero', p:9, r:'L', txt:'PASSIVE: Each Vanara Unit of printed power 4+ you play gains +1 on entry (+2 while Jambavan is on the board).' },
   { id:'sugriva', n:'Sugriva',       sub:'King of the Vanaras',  t:'hero', p:6, r:'E', txt:'ON PLAY: Draw 1 extra card immediately.' },
   { id:'angad',   n:'Angad',         sub:'The Unyielding Messenger', t:'hero', p:7, r:'E', txt:'PASSIVE: When the opponent plays an Astra, they forfeit their next turn.' },
   // ---- UNITS (12) ----
   { id:'nala',    n:'Nala',          sub:'The Bridge Builder',   t:'unit', p:5, r:'E', txt:'ON PLAY: Place a copy of the lowest-power Vanara Unit in your hand onto the row at half power.' },
   { id:'neela',   n:'Neela',         sub:'Commander of the Vanguard', t:'unit', p:5, r:'R', txt:'ON PLAY: All Vanara Units on the board gain +1 power.' },
-  { id:'jambavan',n:'Jambavan',      sub:'The Ancient Bear King',t:'unit', p:6, r:'E', txt:'PASSIVE: Hanuman’s entry bonus becomes +2 per Unit while Jambavan is on the board.' },
-  { id:'kesari',  n:'Kesari',        sub:'Father of Hanuman',    t:'unit', p:5, r:'R', txt:'ON PLAY: If Hanuman is on the board, gain power equal to Hanuman’s current power.' },
+  { id:'jambavan',n:'Jambavan',      sub:'The Ancient Bear King',t:'unit', p:6, r:'E', txt:'PASSIVE: Bali’s entry bonus becomes +2 per Unit while Jambavan is on the board.' },
+  { id:'kesari',  n:'Kesari',        sub:'Father of Hanuman',    t:'unit', p:5, r:'R', txt:'ON PLAY: If Bali is on the board, gain power equal to Bali’s current power.' },
   { id:'tara',    n:'Tara',          sub:'Queen of the Vanaras', t:'unit', p:4, r:'R', txt:'ON PLAY: Look at the top 3 cards of your deck; keep one, return the rest.' },
   { id:'dwivida', n:'Dwivida',       sub:'The Rogue Vanara',     t:'unit', p:5, r:'R', txt:'ON PLAY: Destroy one random card in the opponent’s hand.' },
   { id:'mainda',  n:'Mainda',        sub:'The Swift Striker',    t:'unit', p:4, r:'U', txt:'ON PLAY: Immediately Leap onto an adjacent Unit — free, without spending your round’s Leap.' },
@@ -153,11 +153,11 @@ const VANARA_DECK_DEF = [
   { id:'scout',   n:'Vanara Scout',  sub:'Eyes of the Jungle',   t:'unit', p:2, r:'C', txt:'ON PLAY: Reveal the opponent’s hand; gain +1 power for each Vanara Unit already on the board.' },
   { id:'warrior', n:'Vanara Warrior',sub:'Loyal to the Last',    t:'unit', p:3, r:'C', txt:'PASSIVE: +1 power for each other Vanara Unit on the board (max +4).' },
   { id:'dadhimukha',n:'Dadhimukha',  sub:'Guardian of Madhuvana',t:'unit', p:3, r:'U', txt:'ON PLAY: Draw 1 card. If Sugriva is on the board, also give all friendly Vanara Units +1 power.' },
-  { id:'riksha',  n:'Riksha',        sub:'Son of the Wind',      t:'unit', p:4, r:'R', txt:'PASSIVE: Gains +3 power while Hanuman is on the board.' },
+  { id:'riksha',  n:'Riksha',        sub:'Son of the Wind',      t:'unit', p:4, r:'R', txt:'PASSIVE: Gains +3 power while Bali is on the board.' },
   // ---- ASTRAS (3) ----
   { id:'gandiva', n:'Gandiva Arrow', sub:'Blessed Shaft',        t:'astra', p:0, r:'R', txt:'Destroy one enemy Unit regardless of power. If a Vanara used Leap this round, destroy one more.' },
   { id:'lankadahan',n:'Lanka Dahan', sub:'Fire of Hanuman',      t:'astra', p:0, r:'L', dmgAstra:true, txt:'Deal 2 damage to ALL enemy Units. All friendly Vanara Units gain +1 power.' },
-  { id:'sanjeevani',n:'Sanjeevani Call',sub:'Mountain of Life',  t:'astra', p:0, r:'U', txt:'Revive your last destroyed Unit at full power (plus Hanuman’s entry bonus if he is on board).' },
+  { id:'sanjeevani',n:'Sanjeevani Call',sub:'Mountain of Life',  t:'astra', p:0, r:'U', txt:'Revive your last destroyed Unit at full power (plus Bali’s entry bonus if he is on board).' },
   // ---- MANTRAS (2) ----
   { id:'ramanaam',n:'Rama Naam',     sub:'The Name Above All',   t:'mantra', p:0, r:'R', txt:'All friendly Vanara Units gain +2 power.' },
   { id:'kishkindhaoath',n:'Kishkindha Oath',sub:'Bond of Warriors',t:'mantra', p:0, r:'U', txt:'Ward a friendly Vanara Unit: the next time it would be destroyed this round it survives at 1 power, and all other friendly Vanara Units gain +1.' },
@@ -191,7 +191,7 @@ const VANARA_DECK_DEF = [
   { id:'gandhamadana',n:'Gandhamadana',  sub:'The Fragrant Peak',    t:'unit', p:5, r:'E', wave:1, txt:'PASSIVE: Your Leaps may target this Unit from anywhere (ignores adjacency).' },
   { id:'anjaneyaroar',n:"Anjaneya's Roar",sub:'Cry of the Son of Wind',t:'astra', p:0, r:'L', wave:1, dmgAstra:false, txt:'All enemy Units −1 this round; your Units flanked on both sides gain +1.' },
   // ---- WAVE 1 (batch 17 — heroes part 1) ----
-  { id:'makardhwaja',n:'Makardhwaja',  sub:'Son of Hanuman',       t:'hero', p:7, r:'L', wave:1, txt:'ON PLAY: Copy the power of Hanuman if he is on the board, otherwise of your strongest Unit.' },
+  { id:'makardhwaja',n:'Makardhwaja',  sub:'Son of Hanuman',       t:'hero', p:7, r:'L', wave:1, txt:'ON PLAY: Copy the power of Bali if he is on the board, otherwise of your strongest Unit.' },
   { id:'anjana',   n:'Anjana',          sub:'Mother of the Wind',   t:'hero', p:6, r:'L', wave:1, txt:'PASSIVE: Your Leap limit is increased by 1 each round.' },
 ];
 
@@ -337,7 +337,7 @@ function mulligan(g, pi, uids){
   emit(g,'toast',{abilityName:'Mulligan',text:`${pl.name} redraws ${swap.length}`});
   return redrawn.map(c=>c.uid);
 }
-// AI mulligan heuristic: toss dead conditionals (Marut w/o Vayu, Kali, Riksha/Kesari w/o Hanuman) and low vanilla
+// AI mulligan heuristic: toss dead conditionals (Marut w/o Vayu, Kali, Riksha/Kesari w/o Bali) and low vanilla
 // filler, keep the curve, never ditch your only Hero. Returns up to 3 uids.
 function aiMulliganPlan(g, pi){
   const pl=g.players[pi], hand=pl.hand;
@@ -486,7 +486,7 @@ function isShielded(g, pi, c){ return shieldedSet(g, pi).has(c.uid); }
 /* ---------- Vanara: faction helpers, positioning, LEAP ---------- */
 function heroOnBoard(pl, id){ return pl.heroes.some(h=>h.id===id); }
 function hasUnit(pl, id){ return pl.units.some(u=>!u.ghost && u.id===id); }
-// Hanuman's on-entry bonus: +1, or +2 while Jambavan is on the board; 0 without Hanuman.
+// Bali's on-entry bonus: +1, or +2 while Jambavan is on the board; 0 without Bali.
 function hanumanEntryBonus(pl){ return heroOnBoard(pl,'hanuman') ? (hasUnit(pl,'jambavan')?2:1) : 0; }
 // Rama's Signet active for a Vanara player.
 function signetActive(pl){ return pl.faction==='vanaras' && pl.artifact && pl.artifact.id==='ramasignet'; }
@@ -684,7 +684,7 @@ function onUnitDeath(g, ownerPi, unit, cause){
   if ((unit.venom||0) > 0){
     for (const p of foe.units) if (!p.ghost && p.id==='vishalakshi'){ p.base+=2; p.power+=2; log(g,`Vishalakshi feeds on ${unit.n}'s venom-death: +2 (permanent) → ${p.power}.`); emit(g,'buff',{sourceUid:p.uid,targetUids:[p.uid],amount:2,abilityName:'Vishalakshi the Pale',text:'+2'}); }
   }
-  // Raktabija's Curse (Asura): the NEXT friendly (caster-side) destruction this round → spawn two REAL 2-power Rakta tokens (ghost:false, uid-safe via mkCard), then disarm. Tokens bypass playCard so on-ENTRY auras (Hanuman) do NOT apply; read-time effPower auras do.
+  // Raktabija's Curse (Asura): the NEXT friendly (caster-side) destruction this round → spawn two REAL 2-power Rakta tokens (ghost:false, uid-safe via mkCard), then disarm. Tokens bypass playCard so on-ENTRY auras (Bali) do NOT apply; read-time effPower auras do.
   if (owner.raktabijaCurse){
     owner.raktabijaCurse=false;
     for (let i=0;i<2;i++){ const tok=mkCard({id:'rakta',n:'Rakta',sub:'Blood-born',t:'unit',p:2,r:'C',txt:'A blood-born token.',token:true}); owner.units.push(tok); }
@@ -910,7 +910,7 @@ function castMantra(g, pi, id, targetUid=null){
       log(g, `Ahamkara doubles ${t.n} to ${t.power} — doomed to shatter at round end.`);
     }
   } else if (id==='ramanaam'){
-    const buff = 2;   // EXP-D: flat +2 (dropped Hanuman upgrade)
+    const buff = 2;   // EXP-D: flat +2 (dropped Bali upgrade)
     for (const u of pl.units) if (!u.ghost) u.power+=buff;
     log(g, `Rama Naam resounds — all Vanara Units +${buff}.`);
   } else if (id==='kishkindhaoath'){
@@ -1269,7 +1269,7 @@ function resolveAstra(g, pi, c, targetUid){
         const hb = u.base>=4 ? hanumanEntryBonus(pl) : 0; if (hb) u.power+=hb;   // EXP-F: entry bonus only for printed ≥4
         pl.units.push(u); g.lastKillThisRound=null;
         onUnitRevive(g, pi, u);   // WAVE 1 batch 9 — revival choke #5 (Sanjeevani Call)
-        log(g,`Sanjeevani Call revives ${u.n} at full power${hb?` (+${hb} Hanuman)`:''}.`);
+        log(g,`Sanjeevani Call revives ${u.n} at full power${hb?` (+${hb} Bali)`:''}.`);
       } else log(g,'Sanjeevani Call: no fallen ally to revive.'); break; }
     // ---- Naga astras ----
     case 'nagapasha': {
@@ -1366,7 +1366,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         emit(g,'passive',{sourceUid:c.uid,targetUids:[t.uid],abilityName:'Vritra',text:'bound'}); }
       else log(g,'Vritra reaches out, but the enemy line is empty (or already bound).');
     }
-    if (c.id==='makardhwaja'){   // WAVE 1 batch 17 (STEP 0b) — ON PLAY: copy strength (§9 rule: power = source's current effPower). Implemented DIRECTLY, NOT through doLeap (heroes live outside pl.units). Source = Hanuman if on board, else the strongest friendly UNIT. effPower copy folds in read-time auras (Dawn Banner, R43). READINGS (logged): this is NOT a formal Leap action → does NOT consume the leap limit (FREE, Mainda precedent), does NOT fire onLeap (Kumuda/Rambha read "friendly UNIT Leaps"; he is a hero) and the source is NOT "Leapt to", and does NOT consume Matanga's arm nor take Crown's +1. Pure copy.
+    if (c.id==='makardhwaja'){   // WAVE 1 batch 17 (STEP 0b) — ON PLAY: copy strength (§9 rule: power = source's current effPower). Implemented DIRECTLY, NOT through doLeap (heroes live outside pl.units). Source = Bali if on board, else the strongest friendly UNIT. effPower copy folds in read-time auras (Dawn Banner, R43). READINGS (logged): this is NOT a formal Leap action → does NOT consume the leap limit (FREE, Mainda precedent), does NOT fire onLeap (Kumuda/Rambha read "friendly UNIT Leaps"; he is a hero) and the source is NOT "Leapt to", and does NOT consume Matanga's arm nor take Crown's +1. Pure copy.
       const hanuman = pl.heroes.find(h=>h.id==='hanuman');
       let source = hanuman || null;
       if (!source){ const units=pl.units.filter(u=>!u.ghost); source = units.length ? units.reduce((a,b)=>effPower(g,pi,a)>=effPower(g,pi,b)?a:b) : null; }
@@ -1400,13 +1400,13 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
     // Positioning: insert at the chosen slot (Vanaras leverage adjacency; others just append).
     if (position!=null && position>=0 && position<=pl.units.length) pl.units.splice(position, 0, c);
     else pl.units.push(c);
-    // Hanuman: every Unit the Vanara player plays gains +1 (or +2 with Jambavan) on entry.
-    // EXP-F: Hanuman's entry bonus only applies to Vanara Units of printed power ≥4.
-    if (pl.faction==='vanaras' && c.base>=4){ const hb=hanumanEntryBonus(pl); if (hb){ c.power+=hb; log(g,`Hanuman blesses ${c.n}: +${hb} on entry.`); } }
+    // Bali: every Unit the Vanara player plays gains +1 (or +2 with Jambavan) on entry.
+    // EXP-F: Bali's entry bonus only applies to Vanara Units of printed power ≥4.
+    if (pl.faction==='vanaras' && c.base>=4){ const hb=hanumanEntryBonus(pl); if (hb){ c.power+=hb; log(g,`Bali blesses ${c.n}: +${hb} on entry.`); } }
     switch(c.id){
       case 'surya': { const tgt=pl.units.filter(u=>u!==c && !u.ghost); for (const u of tgt) u.power+=1;
-        if (tgt.length) emit(g,'buff',{sourceUid:c.uid,targetUids:tgt.map(u=>u.uid),amount:1,abilityName:'Surya Dev',text:'+1'});
-        log(g,'Surya Dev: all other friendly Units +1.'); break; }
+        if (tgt.length) emit(g,'buff',{sourceUid:c.uid,targetUids:tgt.map(u=>u.uid),amount:1,abilityName:'Chandra Dev',text:'+1'});
+        log(g,'Chandra Dev: all other friendly Units +1.'); break; }
       // WAVE 1 — Aruna Charioteer. Weakest-defensible reading (R21+): "if Round 1" = the match's FIRST round (g.round===1) at play time; played R2+, no bonus.
       case 'aruna': if (g.round===1){ c.power+=2; log(g,'Aruna Charioteer rides the dawn: +2 (Round 1).'); emit(g,'buff',{sourceUid:c.uid,targetUids:[c.uid],amount:2,abilityName:'Aruna Charioteer',text:'+2'}); } break;
       case 'vedikeeper': pl.vediShieldGrants=(pl.vediShieldGrants||0)+1; log(g,'Vedi Keeper tends the altar — an extra Dharma Shield may be raised this round.'); break;   // WAVE 1 batch 7 (R25 fallback): +1 shield cap this round; the designateShields call at the end of this play (AI) or the human SHIELD button applies it instantly
@@ -1449,7 +1449,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
       case 'saraswati': {
         let t = targetUid!=null ? opp.hand.find(h=>h.uid===targetUid) : null;
         if (!t && opp.hand.length) t = opp.hand.reduce((a,b)=>a.p>=b.p?a:b);
-        if (t){ t.lockedRound=g.round; log(g,`Saraswati locks ${t.n} for this round.`); }
+        if (t){ t.lockedRound=g.round; log(g,`Narada locks ${t.n} for this round.`); }
         break; }
       case 'ashwini': {
         const wounded = pl.units.filter(u=>!u.ghost && u.power<u.base);
@@ -1525,7 +1525,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         else log(g,'Narakasura: no enemy Units to drain.'); break; }
       // ---- Vanara units (passives — jambavan / sharabha / warrior — handled in helpers/effPower) ----
       case 'neela': { const buff = 1; const tgt=pl.units.filter(u=>!u.ghost); for (const u of tgt) u.power+=buff; emit(g,'buff',{sourceUid:c.uid,targetUids:tgt.map(u=>u.uid),amount:buff,abilityName:'Neela',text:`+${buff}`}); log(g,`Neela rallies the host: +${buff} to all Vanara Units.`); break; }   // EXP-D: flat +1 (dropped Sugriva upgrade)
-      case 'kesari': { const h=pl.heroes.find(x=>x.id==='hanuman'); if (h){ c.power+=h.power; log(g,`Kesari swells with Hanuman’s might: +${h.power}.`); } break; }
+      case 'kesari': { const h=pl.heroes.find(x=>x.id==='hanuman'); if (h){ c.power+=h.power; log(g,`Kesari swells with Bali’s might: +${h.power}.`); } break; }
       case 'tara': { const top=pl.deck.splice(0,3);
         if (top.length){ const keep=top.reduce((a,b)=>a.p>=b.p?a:b); pl.hand.push(keep); pl.deck.unshift(...top.filter(x=>x!==keep)); log(g,`Tara scouts the deck and keeps ${keep.n}.`); } break; }
       case 'swayamprabha': { const top=pl.deck.splice(0,3);   // WAVE 1 batch 5 — "take one to hand" = the Tara pattern (engine takes the highest-printed one, tie first-found; returns the rest to the top of the deck; a <3-card deck takes what's there, empty → nothing)
@@ -1568,7 +1568,7 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
         if (pl.heroes.some(h=>h.id==='sugriva')){ for (const u of pl.units) if(!u.ghost) u.power+=1; log(g,'Dadhimukha draws; under Sugriva the host swells +1.'); }
         else log(g,'Dadhimukha draws a card.'); break; }
       case 'riksha': {
-        if (pl.heroes.some(h=>h.id==='hanuman')){ c.power+=3; log(g,'Riksha fights beside Hanuman: +3.'); }   // EXISTING launch behavior (entry-time +3), UNCHANGED — NOT gated on wave1.
+        if (pl.heroes.some(h=>h.id==='hanuman')){ c.power+=3; log(g,'Riksha fights beside Bali: +3.'); }   // EXISTING launch behavior (entry-time +3), UNCHANGED — NOT gated on wave1.
         if (g.wave1){   // WAVE 1 batch 10.5 (LAUNCH-REPAIR — DEAD flag-off via g.wave1): the printed "Move to any position on the row". Riksha has already entered at his played (or Stones-overridden) slot; now he relocates ONCE via the batch-10 moveUnit primitive (no parallel path).
           const allies = pl.units.filter(u=>!u.ghost && u!==c);
           if (allies.length){   // single Unit on board (only Riksha) → nowhere to go → structural no-op
@@ -2150,7 +2150,7 @@ function aiScoreCard(g, pi, c){
     if (pl.units.some(u=>!u.ghost)) s += 1;
     if (chandrahasActive) s += (pl.astrasThisRound===0 ? 5 : 3);   // (b) prefer Astras; grab the doubled first one
   }
-  // EXP-F: Hanuman's entry bonus only helps printed power ≥4 — value those Units up, nudge go-wide chaff down under Hanuman.
+  // EXP-F: Bali's entry bonus only helps printed power ≥4 — value those Units up, nudge go-wide chaff down under Bali.
   if (c.t==='unit' && pl.faction==='vanaras' && pl.heroes.some(h=>h.id==='hanuman')){
     s += c.base>=4 ? (pl.units.some(u=>!u.ghost && u.id==='jambavan')?2:1) : -0.75;
   }

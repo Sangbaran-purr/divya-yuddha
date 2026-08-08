@@ -7,7 +7,7 @@ let pass=0, fail=0;
 function ok(name, cond){ if(cond) pass++; else { fail++; console.log('  ✗ '+name); } }
 function eqJSON(name, a, b){ ok(name, JSON.stringify(a)===JSON.stringify(b)); if(JSON.stringify(a)!==JSON.stringify(b)) console.log('      a='+JSON.stringify(a)+'\n      b='+JSON.stringify(b)); }
 
-const DECK12 = ['Indra','Surya Dev','Vajra','Brahmastra','Marut','Kubera','Gandharva','Agni','Varuna','Vayu','Yama','Saraswati'];
+const DECK12 = ['Indra','Chandra Dev','Vajra','Brahmastra','Marut','Kubera','Gandharva','Agni','Varuna','Vayu','Yama','Narada'];
 function playToEnd(opts){ const g=E.newGame(opts); let guard=0; while(!g.over && guard++<800) E.aiTakeTurn(g, g.turn); return g; }
 function initSig(opts){ const g=E.newGame(opts); return { realm:g.realm, turn:g.turn, first:g.firstThisRound,
   p0deck:g.players[0].deck.map(c=>c.id), p0hand:g.players[0].hand.map(c=>c.id),

@@ -105,7 +105,7 @@ function driveCh3(seed, mode){ const ch=CHAPTERS.b1c3;
     else if(mode==='careless'){ const pl=g.players[0]; const ui=E.playableIndices(g,0).filter(i=>pl.hand[i].t==='unit').sort((a,b)=>pl.hand[b].p-pl.hand[a].p); if(ui.length) E.playCard(g,0,ui[0]); else E.pass(g,0); }   // dump big Units, never shield
     else { const pl=g.players[0];   // 'guided': defensive round 1 (shield champion, play only small Units), then play to win
       if(g.round===1 && !handoff){ if(!shielded){ const s=pl.units.find(u=>u.id==='surya'); if(s){ E.designateShield(g,0,s.uid); shielded=true; } }
-        const lows=['Surya Dev','Marut','Ashwini Kumars','Gandharva']; let pd=false;
+        const lows=['Chandra Dev','Marut','Ashwini Kumars','Gandharva']; let pd=false;
         for(const n of lows){ const i=pl.hand.findIndex(c=>c.n===n); if(i>=0){ E.playCard(g,0,i); pd=true; break; } } if(!pd) E.pass(g,0); }
       else E.aiTakeTurn(g,0);
     }

@@ -506,3 +506,41 @@ append-only convention.
 R92 FRAME NOTE: no re-export debt — Karkotaka's wave frame is not yet
 rolled. DOWNSTREAM: the Nagas codex venom panel teaches the R92 text
 when it is built.
+
+---
+
+## R93 — CARD RESKIN ×3: Bali / Narada / Chandra Dev (rename/reskin, ZERO mechanical diff)
+
+**Owner rulings 2026-08-07/08.** Vanara hero **Hanuman → Bali (The Unrivalled King)**; Deva units
+**Saraswati → Narada (The Celestial Messenger)** and **Surya Dev → Chandra Dev (Sovereign of Moonlight)**.
+Rename/reskin only — powers, rarities, and ability implementations UNCHANGED, balance baseline UNCHANGED
+(all four suites green: invariants · scenario 50 · venom 38 · story 69; consumer-neutral, byte-level art swap).
+
+- **Bali** — P9 Legendary Vanara Hero. "Each Vanara Unit of printed power 4+ you play gains +1 on entry
+  (+2 while Jambavan is on the board)." *Lore: "The forest grew fearless beneath the king no rival could face."*
+- **Narada** — P4 Rare Deva Unit. "ON PLAY — Look at opponent's hand. Lock one card — it cannot be played this
+  round." *Lore: "He names the choice you meant to hide, and the round closes around it."*
+- **Chandra Dev** — P6 Epic Deva Unit. "ON PLAY — All other friendly Units gain +1 power."
+  *Lore: "His light does not command the night. It teaches every star to rise."*
+
+**ID QUIRK (canonical — do NOT "fix"):** the engine ids are UNCHANGED as logic keys — **Bali id='hanuman',
+Narada id='saraswati', Chandra Dev id='surya'.** Renaming an id would be a mechanical/logic edit (dispatch,
+`heroOnBoard`, `hanumanEntryBonus`, `HERO_AURA_TINT` key, AI heuristics); the swaps are display-string-only, so the
+ids stay for zero behavioral drift. Stems derive from `c.n` (not the id) → the new display names land the shipped
+assets (`Vanaras_Hero_Bali_P9_rLegendary`, `Devas_Unit_Narada_P4_rRare`, `Devas_Unit_ChandraDev_P6_rEpic`, cards +
+board). `HERO_AURA_TINT['hanuman']` (vermilion-saffron) is Bali's tint, unchanged pending owner retint.
+
+**IDENTITY-SUB EXEMPTIONS (deliberate — three `Hanuman` strings that STAY):** these name the mythological
+*person* (Hanuman remains in the game's lore), so renaming them would create false mythology:
+  - **Kesari** sub `'Father of Hanuman'` (Kesari is Hanuman's father).
+  - **Lanka Dahan** sub `'Fire of Hanuman'`.
+  - **Makardhwaja** sub `'Son of Hanuman'` (Makardhwaja is Hanuman's son; Angad is Bali's son).
+  MECHANICAL references (Kesari/Riksha/Jambavan/Sanjeevani/Makardhwaja *txt*, all log strings, code comments, the
+  hero's own def n/sub) rename to **Bali** — they describe the on-board hero, now Bali. Grep criterion: zero
+  `Hanuman` outside those three subs; zero `Saraswati`; zero `SuryaDev`/`Surya Dev` anywhere (engine.js, index.html,
+  build.js, and story per the tight exception below). Frame/engine text divergence on Kesari/Riksha printed cards
+  is tolerated under the standing frame-text ruling.
+
+**STORY EXCEPTION (tight):** `Surya Dev → Chandra Dev` was renamed in `src/chapters.js` (ch1/ch3/ch4 deck lists +
+guidance beat text) and `src/test_story.js` — the literal string ONLY, a deck-name-resolution consequence (decks
+resolve by card name; an unknown name throws), NOT a story edit. No other story content, prose, or structure changed.
