@@ -1229,6 +1229,48 @@ BRIEFS = {
     ],
   },
 
+  # PATALA THRONE — THE SEAT OF SERPENT KINGS (Naga Mythic artifact, arrival-only — the artifact row continues into the deep). Wide
+  # plate over the CASTER'S OWN half (R95 artifact-row polarity). SIGNATURE MOTION — THE THRONE RISES FROM THE ABYSS (drift_settle
+  # NEGATIVE, the Tripura-rise / Crown-crest idiom, but ABYSSAL: dark, patient, heavy — the Naga does not race; the seat ascends and
+  # SITS, the longest hold in the row). Palette (probed on the layers): abyssal TEAL dominant — rift bright R/G/B 9/104/102, strata +
+  # breath teal — with an OLD-GOLD accent (gold glints R/G/B 74/75/34, specky: 0.4% cov spread over 12% of the frame). Register:
+  # menacing, deep, still — no hit-stop (an artifact, not an astra). Wide 1920x640, 24f, fps 24, side_feather 120. SEED 0x2E7A4C —
+  # 0x4C even → storm_sign=-1, MOOT (vertical set: drift_settle + glints drift up, NO drift_x). ALL cover-fit (the Chandrahas
+  # precedent — horizontal rift/throne content centres in the crop; no circle → no 'contain' vocab, no new primitive). SOLO-STAGGER:
+  # rift + strata the two bright xforms (the deep opens; the strata answer, LOW, never merging with the high rift); haze (breath)
+  # <0.5; gold glints capped. LOAD-BEARING NOTE (STRIKE-PLATE NO-FIRE): this VFX is the ARRIVAL only. The Throne's R11 passive
+  # (Venom drain −(1+round)) renders through the existing venom pipeline; its deepened −3-at-R2 round-end toast MUST NOT fire the
+  # Vasuki-Strike payoff plate (index.html sprVenomDrain) — that guard keys on venomStrikeNpAtAction (an ACTUAL Strike cast), NOT
+  # the drain amount, so Throne-alone stays -1 → silent. No guard change; proven live both ways (Throne-only silent, Throne+Strike fires).
+  "patala": {
+    "seed": 0x2E7A4C, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "patala", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # HAZE (breath, xform) — THE ABYSS BREATHES OUT: the deep exhales, dim + teal (peak 0.40, NEVER >0.5), holds, out f18-24.
+      { "src": "patala_breath", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.40, "out"], [8, 18, 0.40, 0.35, "lin"], [18, 24, 0.35, 0.0, "out"]],
+        "scale":   [[1, 8, 1.03, 1.0, "out"]] },
+      # RIFT (xform) — THE DEEP OPENS / THE THRONE RISES (signature): drift_settle NEGATIVE (the seat ascends from the abyss — the
+      # Tripura-rise / Crown-crest idiom), attack f4-10 to 0.66, HOLD f10-18 (the throne SITS — Mythic dwell, longest hold in the
+      # row), recede f18-24. Abyssal teal, brightest layer.
+      { "src": "patala_rift", "kind": "xform",
+        "opacity": [[4, 10, 0.0, 0.66, "io"], [10, 18, 0.66, 0.62, "lin"], [18, 24, 0.62, 0.0, "out"]],
+        "scale":   [[4, 12, 0.97, 1.0, "io"]],
+        "drift_settle": [4, 14, -120, "out"] },
+      # STRATA (xform) — THE DEEP ROCK ANSWERS beneath the throne (the strata bands rise to meet the ascending seat; APPROACH but
+      # NEVER merge — rift holds HIGH, strata stay LOW, the Chandrahas crescent/crimson discipline): gentle bloom + slight rise,
+      # attack f8-14 to 0.56, hold f14-20, recede f20-24.
+      { "src": "patala_strata", "kind": "xform",
+        "opacity": [[8, 14, 0.0, 0.56, "io"], [14, 20, 0.56, 0.52, "lin"], [20, 24, 0.52, 0.0, "out"]],
+        "drift_settle": [8, 18, -80, "out"] },
+      # GOLD (particle) — OLD-GOLD GLINTS rise off the serpent thrones (drift up, warm-gold sparks against the teal deep), op_cap
+      # 0.44. Clamp: emit 6-18 + life <=5 -> last <=24.
+      { "src": "patala_gold", "kind": "particles", "op_cap": 0.44, "drift": "up",
+        "emit_frames": [6, 18], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [12, 30], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 2 },
+    ],
+  },
+
   # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
   # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
   # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
