@@ -1271,6 +1271,72 @@ BRIEFS = {
     ],
   },
 
+  # ANANTA COIL — THE ENDLESS SERPENT (Naga Rare artifact — the artifact row's LAST build). ONE LAYER SET (loop/wash/motes/still,
+  # jade-white over deep green), TWO SHEETS (the Tripura / Sarpa Satra precedent): "anantacoil" = the ARRIVAL (wide plate, caster's
+  # OWN half, R95); "anantacoil_birth" = the COIL-BIRTH (square unit-cell — the coil rises at a fallen Naga's cell each time R14
+  # fires). Palette (probed): jade-WHITE loop (bright R/G/B 133/157/167, Lmax 255 — the endless coil), deep-GREEN still (44/77/58,
+  # the ground), jade-green wash (99/143/118), green-white motes (specky 0.7% cov). No lum_gain (every layer Lmax >=199). Register:
+  # patient, cool, ENDLESS — the coil simply IS; no hit-stop (an artifact). ALL cover-fit (Mrityunjaya/Chandrahas precedent — the
+  # coil centres in the crop; no circle-needs-'contain'). LOAD-BEARING (the birth handler, index.html): the R14 coil-birth emit
+  # (engine ~730, inside destroyUnit) carries NO uid — so the birth plate is anchored by an EVS-SCAN backward to the same-action
+  # 'destroy' (engine ~716, destroy-before-coil, only onUnitDeath buffs between), then posOf(fallenUid, snap) (the unit is spliced
+  # pre-render → the snapshot holds its cell), with a coil-owner-half fallback. Serialization: the coil-birth passive plays IN
+  # SEQUENCE after the death dissolve, inside the KILLER'S action (actor-agnostic — enemy astra OR the owner's own Sarpa Satra sac).
+
+  # SHEET 1 — ARRIVAL (wide 1920x640, caster half, R95). SEED 0x1E9C4A — 0x4A even → storm_sign=-1, MOOT (vertical: scale + motes
+  # drift up, NO drift_x). SOLO-STAGGER: coil + wash the two bright xforms; haze (still) <0.5; motes capped.
+  "anantacoil": {
+    "seed": 0x1E9C4A, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "anantacoil", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # HAZE (still, xform) — THE DEEP GREEN GROUND: the endless deep settles low, dim (peak 0.40, NEVER >0.5), holds, out f18-24.
+      { "src": "anantacoil_still", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.40, "out"], [8, 18, 0.40, 0.35, "lin"], [18, 24, 0.35, 0.0, "out"]],
+        "scale":   [[1, 8, 1.03, 1.0, "out"]] },
+      # COIL (loop, xform) — THE ENDLESS SERPENT UNCOILS (signature): jade-white, blooms into being (scale 0.94->1.0, NO travel —
+      # the coil is eternal, it does not rise or fall, it simply IS), attack f3-10 to 0.66, HOLD f10-18 (the dwell), recede f18-24.
+      { "src": "anantacoil_loop", "kind": "xform",
+        "opacity": [[3, 10, 0.0, 0.66, "io"], [10, 18, 0.66, 0.62, "lin"], [18, 24, 0.62, 0.0, "out"]],
+        "scale":   [[3, 12, 0.94, 1.0, "io"]] },
+      # WASH (xform) — THE VENOM POOL beneath the coil: jade-green, gentle bloom, attack f8-14 to 0.56, hold f14-20, recede f20-24.
+      { "src": "anantacoil_wash", "kind": "xform",
+        "opacity": [[8, 14, 0.0, 0.56, "io"], [14, 20, 0.56, 0.52, "lin"], [20, 24, 0.52, 0.0, "out"]],
+        "scale":   [[8, 14, 0.96, 1.0, "io"]] },
+      # MOTES (particle) — green-white venom motes rise off the coil (drift up), op_cap 0.44. Clamp: emit 6-18 + life <=5 -> last <=24.
+      { "src": "anantacoil_motes", "kind": "particles", "op_cap": 0.44, "drift": "up",
+        "emit_frames": [6, 18], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [12, 30], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 2 },
+    ],
+  },
+
+  # SHEET 2 — COIL-BIRTH (square 1254x1254, unit cell — the Mrityunjaya cell class). SEED 0x2F7B3D — 0x3D odd → storm_sign=+1, MOOT
+  # (vertical: drift_settle + motes drift up, NO drift_x). 28f (between Mrityunjaya 32 and Sarpa-A 20). The coil WINDS UP from the
+  # fallen cell (loop drift_settle NEGATIVE — rises from the death). SOLO-STAGGER: coil + wash >0.5; still <0.5; motes capped.
+  "anantacoil_birth": {
+    "seed": 0x2F7B3D, "fps": 24, "frames": 28, "one_shot": True, "layers_dir": "anantacoil", "canvas": (1254, 1254),
+    "layers": [
+      # STILL (xform) — THE DEEP OPENS at the fallen cell: deep-green ground rises 0->0.42 (f1-9, <0.5), dims as the coil winds, out by 28.
+      { "src": "anantacoil_still", "kind": "xform",
+        "opacity": [[1, 9, 0.0, 0.42, "out"], [9, 20, 0.42, 0.30, "in"], [20, 28, 0.30, 0.0, "out"]],
+        "scale":   [[1, 9, 0.92, 1.0, "io"]] },
+      # COIL (loop, xform) — THE VENOM COIL WINDS UP from the death (signature): jade-white, drift_settle NEGATIVE (rises from the
+      # fallen cell), attack f5-13 to 0.68, HOLD f13-20 (the coil lingers — the token is born), recede f20-28.
+      { "src": "anantacoil_loop", "kind": "xform",
+        "opacity": [[5, 13, 0.0, 0.68, "io"], [13, 20, 0.68, 0.62, "lin"], [20, 28, 0.62, 0.0, "out"]],
+        "scale":   [[5, 14, 0.90, 1.0, "io"]],
+        "drift_settle": [5, 16, -90, "out"] },
+      # WASH (xform) — THE VENOM LINGERS at the cell: jade-green, bloom, attack f9-16 to 0.54, hold f16-22, recede f22-28.
+      { "src": "anantacoil_wash", "kind": "xform",
+        "opacity": [[9, 16, 0.0, 0.54, "io"], [16, 22, 0.54, 0.50, "lin"], [22, 28, 0.50, 0.0, "out"]],
+        "scale":   [[9, 16, 0.94, 1.0, "io"]] },
+      # MOTES (particle) — green motes rise from the newborn coil (drift up), op_cap 0.46. Clamp: emit 8-22 + life <=5 -> last <=28.
+      { "src": "anantacoil_motes", "kind": "particles", "op_cap": 0.46, "drift": "up",
+        "emit_frames": [8, 22], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [12, 30], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 2 },
+    ],
+  },
+
   # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
   # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
   # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
