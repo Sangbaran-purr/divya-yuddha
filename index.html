@@ -3128,7 +3128,7 @@ function onTurnStart(g, pi){
     const p=g.players[s];
     if (p.artifact && p.artifact.id==='tripura'){
       const real=p.units.filter(u=>!u.ghost);
-      if (real.length){ for (const u of real) u.power+=1; log(g, `Tripura\u2019s cities blaze \u2014 ${p.name}\u2019s host +1 (\u00d7${real.length}).`); }
+      if (real.length){ for (const u of real) u.power+=1; log(g, `Tripura\u2019s cities blaze \u2014 ${p.name}\u2019s host +1 (\u00d7${real.length}).`); emit(g,'buff',{targetUids:real.map(u=>u.uid),amount:1,abilityName:'Tripura',text:'+1'}); }   // Crown-precedent turn-start pulse emit \u2014 SHIPPED per STEP-0 check 4: onTurnStart runs inside afterAction (playCard/pass mutate) \u2192 evs-carried \u2192 the +1 floaters ride the existing buff machinery. Behavior-neutral (rule #7): no engine 'buff' consumer; quest readers abilityName-gated ('Leap'/'Chaos Surge'), never 'Tripura'.
     }
   }
   // Kumbhakarna wakes at the start of its owner's next turn: 3 damage to all enemy Units.
@@ -3181,7 +3181,7 @@ function onAstraResolved(g, astraPi, doubled){
   }
   for (let s=0;s<2;s++){
     const pl=g.players[s];
-    if (pl.artifact && pl.artifact.id==='tripura'){ log(g, `An Astra shatters Tripura \u2014 the three cities fall.`); pl.discard.push(pl.artifact); pl.artifact=null; }
+    if (pl.artifact && pl.artifact.id==='tripura'){ log(g, `An Astra shatters Tripura \u2014 the three cities fall.`); emit(g,'passive',{sourceUid:pl.artifact.uid,abilityName:'Tripura',text:'the three cities fall'}); pl.discard.push(pl.artifact); pl.artifact=null; }   // NINTH sibling-emit (Sanjivani Corruption/Vishwapasha/Vritra/Nagapasha/Ahamkara/Mrityunjaya/Sanjeevani Call/Mohini Trap) \u2014 observational (rule #7). Emitted BEFORE the discard push so pl.artifact.uid resolves; at choreo time the shattered Tripura is in the OWNER's discard, so ownerPiOfUid(sourceUid) anchors THE FALL on the owner's half (check 3). Either player's astra can shatter either side's Tripura \u2014 the uid carries the honesty.
   }
 }
 
