@@ -892,6 +892,46 @@ BRIEFS = {
     ],
   },
 
+  # TAMASA — THE SMOTHERING (FIRST ASURA ASTRA ship; enemy-half descent, the DIMMEST set in the catalog by design). The darkness
+  # SETTLES, it does not strike (register: dim — NO hit-stop beyond the spectacle astra play beat; the spectacle tier owns that).
+  # Wide 1920x640 cover-fit, 24f, fps 24 (venomstrike/lanka class), side_feather 120. SEED 0x2A0E07 — the set is VERTICAL
+  # (drift_settle + drift down; NO drift_x), so storm_sign is MOOT (0x07 odd -> +1, unused; noted per the parity->sign idiom).
+  # THE TAIL IS THE THEFT: the void-motes murk is the LAST content standing (dark, guttering out) — the sparks (the lights) DIE
+  # DOWNWARD through the murk, the front/strata recede WITHOUT a bright clear. BRIGHTNESS-FLOOR audited (check D) — the dimmest
+  # legible sheet; per-layer luminance GAIN sanctioned iff sub-floor (rides the byte-identity re-bake gate). SOLO-STAGGER: only two
+  # xform layers exist (strata, front) so >0.5 count is <=2 by construction; particles capped <0.5 (never counted). Comet note:
+  # the sparks' static trails read UP; the bake's DOWN drift rules the motion — verified in baked frames.
+  "tamasa": {
+    "seed": 0x2A0E07, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "tamasa", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # STRATA (xform) — the murk SINKS into frame (heavy, slow): drift_settle positive (from above, f1-6), attack f1-6 to 0.66,
+      # HOLDS oppressive f6-16, RECEDES f16-24 as the void tail takes over (the murk hands off to the motes, never a bright clear).
+      { "src": "tamasa_strata", "kind": "xform",
+        "opacity": [[1, 6, 0.0, 0.66, "out"], [6, 16, 0.66, 0.60, "lin"], [16, 24, 0.60, 0.0, "out"]],
+        "scale":   [[1, 6, 1.05, 1.0, "out"]],
+        "drift_settle": [1, 6, 110, "out"] },
+      # FRONT (xform) — THE SMOTHER (signature): the darkness DESCENDS from above and HOLDS (grandness law — the smothering needs
+      # its dwell): drift_settle positive f4-16, attack f4-10 to 0.80, HOLDS f10-16, recedes f16-24.
+      { "src": "tamasa_front", "kind": "xform",
+        "opacity": [[4, 10, 0.0, 0.80, "out"], [10, 16, 0.80, 0.80, "lin"], [16, 24, 0.80, 0.0, "out"]],
+        "scale":   [[4, 12, 1.05, 1.0, "io"]],
+        "drift_settle": [4, 16, 150, "out"] },
+      # SPARKS (particle) — the DYING LIGHTS gutter DOWNWARD through the murk (drift down + fade — the lights going out). op_cap
+      # 0.46 (<0.5, un-counted). Clamp: emit 8-19 + life <=5, die_by=24 -> last <=24.
+      { "src": "tamasa_sparks", "kind": "particles", "op_cap": 0.46, "drift": "down",
+        "emit_frames": [8, 19], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [16, 38], "jitter_deg": 10.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 40, "min_area": 3 },
+      # MOTES (particle) — VOID MOTES drift in the tail; everything dims to true black (the theft). drift down, slow, dark. op_cap
+      # 0.42. Emit LATE (15-21) so the motes are the LAST content standing -> the sheet ends on dark void, not a bright dissipation.
+      # Clamp: emit 15-21 + life <=5, die_by=24 -> last <=24. Brightness-floor candidate (check D).
+      { "src": "tamasa_motes", "kind": "particles", "op_cap": 0.46, "drift": "down", "lum_gain": 6.0,
+        "emit_frames": [15, 21], "inner_radius": 0.55, "inner_boost": 1.0,
+        "speed_px_s": [8, 22], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 24, "min_area": 2 },   # lum_gain 6.0: src max 14.4 (near-black, sub-floor) → ~86; composited void ~35 (dimmest-but-legible at arm's length, well below front ~130); thresh 24 extracts the gained cores
+    ],
+  },
+
   # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
   # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
   # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
@@ -1031,6 +1071,13 @@ def render(name):
         col = np.arange(resW)
         ramp = (np.minimum(col, col[::-1]).astype(np.float32) / float(sf)).clip(0.0, 1.0)[None, :, None]   # (1,W,1) → 0 at both edges, 1 interior
         layers = [(L, (rgb.astype(np.float32) * ramp).astype(rgb.dtype)) for L, rgb in layers]
+
+    # PER-LAYER LUMINANCE GAIN (TAMASA brightness-floor mandate, check D) — multiply a layer's RGB by L['lum_gain'] before
+    # particle extraction / xform compositing, so an intentionally near-black layer (Tamasa's void motes: src max 14 < its own
+    # lum_thresh ⇒ ZERO extracted, invisible) lifts to the legibility floor while staying the DIMMEST layer. ADDITIVE + GATED:
+    # only layers declaring 'lum_gain' are touched ⇒ every existing sheet re-bakes byte-identical (the re-bake gate). Applied
+    # AFTER side_feather so the edge ramp still zeroes the sides (order preserved).
+    layers = [((L, np.clip(rgb.astype(np.float32) * L["lum_gain"], 0, 255).astype(rgb.dtype)) if "lum_gain" in L else (L, rgb)) for L, rgb in layers]
 
     # pre-extract particle blobs (once) + assign deterministic per-particle attributes
     cx0, cy0 = resW / 2.0, resH / 2.0; rref = min(resW, resH) / 2.0    # centre + radius reference (non-square safe)
