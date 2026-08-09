@@ -806,6 +806,49 @@ BRIEFS = {
         "lum_thresh": 44, "min_area": 3 },
     ],
   },
+
+  # LANKA DAHAN — the tail set alight (INVERTED Sarpa Satra two-zone). Sarpa = sacrifice(square) + drain(enemy plate);
+  # Lanka = FIRE PLATE over the enemy half (this sheet) + INSPIRATION WASH over the friendly half (the sibling sheet).
+  # Fire-budget law: the enemy plate owns the faction's ENTIRE flame allowance; the wash is warmth WITHOUT flame. THE MIRROR:
+  # enemy fire embers FALL (drift down); friendly wash sparks RISE (drift up). Both wide 1920×640 cover-fit, 24f, fps 24
+  # (sarpasatra_b class). SEED 0xF14E5B: 0x5B odd → seed&1=1 → storm_sign=+1 → the fire's drift_x lateral roll sweeps RIGHT
+  # (the firestorm front); the wash has no drift_x (sign moot). SIDE_FEATHER 120 on both (mandated bake repair — fire sides
+  # 185/203 → black). ≤2 layers >0.5 (audit; each sheet is one xform + one particle ⇒ trivially ≤1 xform).
+  "lankadahan_fire": {
+    "seed": 0xF14E5B, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "lankadahan", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # FIRE (xform) — THE ENEMY BURN: the firestorm front SURGES in with a lateral roll (drift_x right, fast attack f1-6), then
+      # HOLDS near-full f5-18 (grandness law — the faction's one big fire gets its hold), then RECEDES f18-24 (dying reds).
+      { "src": "lankadahan_fire", "kind": "xform",
+        "opacity": [[1, 5, 0.0, 0.88, "out"], [5, 18, 0.88, 0.88, "lin"], [18, 24, 0.88, 0.0, "out"]],
+        "scale":   [[1, 6, 1.06, 1.0, "out"]],
+        "drift_x": [1, 8, 70] },
+      # EMBERS (particle) — falling THROUGH the fire (downward drift), op_cap 0.50, kindled across the hold, the tail carries the
+      # dying reds. Clamp: emit 4-17 + life ≤7 ⇒ last ≤24.
+      { "src": "lankadahan_embers", "kind": "particles", "op_cap": 0.50, "drift": "down",
+        "emit_frames": [4, 17], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [20, 45], "jitter_deg": 12.0, "life_frames": [4, 7], "fade_frames": 2,
+        "lum_thresh": 40, "min_area": 3 },
+    ],
+  },
+
+  # LANKA DAHAN — INSPIRATION WASH over the FRIENDLY half. Warmth WITHOUT flame (budget law). The MIRROR of the burn: sparks RISE.
+  "lankadahan_wash": {
+    "seed": 0xF14E5B, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "lankadahan", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # WASH (xform) — THE INSPIRATION: a warm wash BREATHES in over the row (gentle attack f1-8, NO flame — dimmer peak 0.72
+      # than the fire's 0.88, budget law), HOLDS warm f8-20, SETTLES to a warm afterglow f20-24.
+      { "src": "lankadahan_wash", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.72, "io"], [8, 20, 0.72, 0.60, "lin"], [20, 24, 0.60, 0.0, "out"]],
+        "scale":   [[1, 8, 0.96, 1.0, "io"]] },
+      # SPARKS (particle) — rising UPWARD through the wash (ascending drift — the MIRROR of the ember fall), op_cap 0.50, gentle.
+      # Clamp: emit 6-18 + life ≤6 ⇒ last ≤24.
+      { "src": "lankadahan_sparks", "kind": "particles", "op_cap": 0.50, "drift": "up",
+        "emit_frames": [6, 18], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [16, 38], "jitter_deg": 10.0, "life_frames": [4, 6], "fade_frames": 2,
+        "lum_thresh": 40, "min_area": 3 },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
@@ -905,6 +948,15 @@ def render(name):
         layers = [(L, _fit_cover(rgb, resW, resH)) for L, rgb in raw]
     else:
         resH, resW = raw[0][1].shape[:2]; layers = raw
+
+    # SIDE_FEATHER (LANKA DAHAN mandate) — horizontal edge fade: multiply every layer's RGB by a ramp that is 0 at the L/R
+    # edges and 1 by `side_feather` px in, so the side columns bake to BLACK (the plate law; intake fire sides measured 185/203).
+    # ADDITIVE: only briefs that declare `side_feather` are touched ⇒ every existing sheet re-bakes byte-identical (gate).
+    sf = b.get("side_feather")
+    if sf:
+        col = np.arange(resW)
+        ramp = (np.minimum(col, col[::-1]).astype(np.float32) / float(sf)).clip(0.0, 1.0)[None, :, None]   # (1,W,1) → 0 at both edges, 1 interior
+        layers = [(L, (rgb.astype(np.float32) * ramp).astype(rgb.dtype)) for L, rgb in layers]
 
     # pre-extract particle blobs (once) + assign deterministic per-particle attributes
     cx0, cy0 = resW / 2.0, resH / 2.0; rref = min(resW, resH) / 2.0    # centre + radius reference (non-square safe)
