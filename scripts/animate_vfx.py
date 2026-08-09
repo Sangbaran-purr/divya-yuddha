@@ -1037,6 +1037,40 @@ BRIEFS = {
     ],
   },
 
+  # DHARMA KAVACHA — THE WALL OF LAW (Artifact row; the row's cheapest ship — arrival-only). Wide plate over the CASTER'S OWN half
+  # (R95 polarity), off the play event. Palette: Amrita's white-gold family but COOLER + STILLER — masonry, not nectar. Register:
+  # STRUCTURED — the one card whose light has EDGES; serene, no hit-stop. Wide 1920x640 cover-fit, 24f, fps 24, side_feather 120.
+  # SEED 0xB4C0D2 — 0xD2 EVEN → storm_sign=-1, MOOT (vertical set: drift_settle + drift up, NO drift_x). THREE xforms (strata,
+  # wall, crest) — the <=2 solo-stagger cap is this build's one real constraint: strata RISES then HANDS OFF (drops <0.5) before
+  # the crest enters >0.5; the wall holds through both. Interior peak sanctioned (the wall core runs near-255 — law has edges);
+  # blow-out moderated via opacity (Amrita radiance precedent — opacity tighten, not lum_gain). The tail is STILLNESS.
+  "kavacha": {
+    "seed": 0xB4C0D2, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "kavacha", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # STRATA (xform) — LAW IS BUILT, NOT POURED: the strata STACK UPWARD into place (drift_settle NEGATIVE -100 ⇒ rises from
+      # BELOW, decelerating), attack f1-7 to 0.66, brief hold, then HANDS OFF beneath the wall — drops <0.5 by ~f12 (before the crest).
+      { "src": "kavacha_strata", "kind": "xform",
+        "opacity": [[1, 7, 0.0, 0.66, "out"], [7, 10, 0.66, 0.60, "lin"], [10, 15, 0.60, 0.0, "in"]],
+        "scale":   [[1, 7, 1.03, 1.0, "out"]],
+        "drift_settle": [1, 8, -100, "out"] },
+      # WALL (xform) — THE WALL IGNITES and HOLDS (the wall's dwell IS the card): attack f6-13 to 0.62 (MODERATED — big bright field,
+      # keep the additive composite off the ceiling; the core still peaks near-255), HOLDS f13-20, settles to a steady STAND f20-24.
+      { "src": "kavacha_wall", "kind": "xform",
+        "opacity": [[6, 13, 0.0, 0.62, "io"], [13, 20, 0.62, 0.58, "lin"], [20, 24, 0.58, 0.0, "out"]],
+        "scale":   [[6, 13, 0.98, 1.0, "io"]] },
+      # CREST (xform) — THE CREST GLEAMS along the top: enters ONLY as the strata drops <0.5 (f15+, the stagger constraint), attack
+      # f15-21 to 0.56, recedes f21-24. The steady gleam of a wall that stands.
+      { "src": "kavacha_crest", "kind": "xform",
+        "opacity": [[15, 21, 0.0, 0.56, "io"], [21, 24, 0.56, 0.0, "out"]],
+        "scale":   [[15, 21, 0.99, 1.0, "io"]] },
+      # GLINTS (particle) — sparks CLIMB the rampart (drift up), op_cap 0.44. Clamp: emit 8-20 + life <=5 -> last <=24 (die_by).
+      { "src": "kavacha_glints", "kind": "particles", "op_cap": 0.44, "drift": "up",
+        "emit_frames": [8, 20], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [14, 34], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 2 },
+    ],
+  },
+
   # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
   # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
   # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
