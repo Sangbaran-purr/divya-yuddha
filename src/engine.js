@@ -1269,6 +1269,7 @@ function resolveAstra(g, pi, c, targetUid){
         u.power=u.base; u.aegis=false; u.revivedShield=false; u.venom=0; u.asleep=false; u.doomed=false; u.ward=false;
         const hb = u.base>=4 ? hanumanEntryBonus(pl) : 0; if (hb) u.power+=hb;   // EXP-F: entry bonus only for printed ≥4
         pl.units.push(u); g.lastKillThisRound=null;
+        emit(g,'passive',{targetUids:[u.uid],abilityName:'Sanjeevani Call',text: hb? `reborn +${hb}` : 'reborn'});   // observational emit (rule #7 — no state/rng touch) — SEVENTH of the sibling family (Sanjivani Corruption/Vishwapasha/Vritra/Nagapasha/Ahamkara/Mrityunjaya), carries the REVIVED unit's uid so the revival-arrival VFX anchors at its cell. FOLD RULING on record: the Bali entry bonus (EXP-F, printed >=4 gate; +1, +2 with Jambavan) is folded into u.power BEFORE the push — the unit arrives whole (no separate buff emit); text carries the folded amount so the arrival beat's floater can report it in the ripple window. Ordering: this emit precedes onUnitRevive so the arrival beat lands before any Simhika reaction emit in the same evs list. Behavior-neutral (STEP-0 consumer audit: nothing branches on 'passive').
         onUnitRevive(g, pi, u);   // WAVE 1 batch 9 — revival choke #5 (Sanjeevani Call)
         log(g,`Sanjeevani Call revives ${u.n} at full power${hb?` (+${hb} Bali)`:''}.`);
       } else log(g,'Sanjeevani Call: no fallen ally to revive.'); break; }
