@@ -1128,6 +1128,38 @@ BRIEFS = {
     ],
   },
 
+  # CHANDRAHAS — THE MOON BLADE'S GLEAM (Asura Rare artifact, arrival-only — the pair's Kavacha). Wide plate over the CASTER'S OWN
+  # half (R95). PALETTE LAW: cold SILVER above (the crescent — the ONLY cold light in the Asura catalog, Shiva's gift in demon
+  # hands), crimson RISING beneath; the two bands APPROACH but NEVER merge (silver upper / crimson lower — measured, no mixed frame).
+  # Register: GLEAM, not strike — no hit-stop. Wide 1920x640, 24f, fps 24, side_feather 120. SEED 0x6C1A2E — 0x2E even →
+  # storm_sign=-1, MOOT (vertical: drift_settle + drift up, NO drift_x). SOLO-STAGGER: two bright xforms (crescent, crimson); haze
+  # under 0.5; glints particle-capped.
+  "chandrahas": {
+    "seed": 0x6C1A2E, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "chandrahas", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # HAZE (xform) — THE NIGHT GATHERS: eclipse haze banks in, dim + cold (peak 0.42, NEVER >0.5), holds, settles out f18-24.
+      { "src": "chandrahas_haze", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.42, "out"], [8, 18, 0.42, 0.36, "lin"], [18, 24, 0.36, 0.0, "out"]],
+        "scale":   [[1, 8, 1.03, 1.0, "out"]] },
+      # CRESCENT (xform) — THE MOON BLADE SWEEPS IN and HANGS (the dwell IS the card): drift_settle NEGATIVE (slight rise into
+      # place), attack f4-10 to 0.68, HOLD f10-18 (the gleam), recede f18-24. Cold silver.
+      { "src": "chandrahas_crescent", "kind": "xform",
+        "opacity": [[4, 10, 0.0, 0.68, "io"], [10, 18, 0.68, 0.64, "lin"], [18, 24, 0.64, 0.0, "out"]],
+        "scale":   [[4, 12, 0.97, 1.0, "io"]],
+        "drift_settle": [4, 14, -70, "out"] },
+      # CRIMSON (xform) — THE DOMINION RISES beneath (drift_settle NEGATIVE from the base — reaching up to meet the gift; the bands
+      # APPROACH but NEVER merge: crimson stays LOW, the crescent holds HIGH). attack f8-14 to 0.60, hold, recede f20-24.
+      { "src": "chandrahas_crimson", "kind": "xform",
+        "opacity": [[8, 14, 0.0, 0.60, "io"], [14, 20, 0.60, 0.56, "lin"], [20, 24, 0.56, 0.0, "out"]],
+        "drift_settle": [8, 18, -140, "out"] },
+      # GLINTS (particle) — edge glints SHEAR off the crescent (drift up, cold-silver sparks), op_cap 0.44. Clamp: emit 6-18 + life <=5 -> last <=24.
+      { "src": "chandrahas_glints", "kind": "particles", "op_cap": 0.44, "drift": "up",
+        "emit_frames": [6, 18], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [14, 34], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 2 },
+    ],
+  },
+
   # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
   # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
   # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
