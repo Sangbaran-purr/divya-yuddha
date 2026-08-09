@@ -1071,6 +1071,63 @@ BRIEFS = {
     ],
   },
 
+  # TRIPURA — THE THREE CITIES (Asura Mythic artifact; RISE and FALL, ONE layer set → TWO sheets, the Sarpa a/b shape). Palette:
+  # tri-metal (gold/silver/iron-red) over Asura smolder. Register: DOMINION. Wide 1920x640, 24f, fps 24, side_feather 120. SEED
+  # 0x3C1A0E (shared) — 0x0E even → storm_sign=-1, MOOT (vertical sets: drift_settle + drift up/down, NO drift_x). Layer map: RISE
+  # = lights + shimmer + haze; FALL = lights (dimming) + shards + embers + haze (guttering). The FALL is the row's one violent
+  # moment but ENDS DARK (the Tamasa-tail law), not loud.
+  "tripura_rise": {
+    "seed": 0x3C1A0E, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "tripura", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # HAZE (xform) — the dominion GATHERS: rolls in low (slight rise from below), attack f1-6 to 0.55, holds as the ground f6-18,
+      # simmers out f18-24.
+      { "src": "tripura_haze", "kind": "xform",
+        "opacity": [[1, 6, 0.0, 0.55, "out"], [6, 18, 0.55, 0.50, "lin"], [18, 24, 0.50, 0.0, "out"]],
+        "scale":   [[1, 6, 1.03, 1.0, "out"]],
+        "drift_settle": [1, 8, -70, "out"] },
+      # LIGHTS (xform) — THE THREE LIGHTS ASCEND (built, not poured): drift_settle NEGATIVE (rise from below), attack f4-10 to 0.66,
+      # HOLD f10-16 (Mythic dwell), recede f16-24.
+      { "src": "tripura_lights", "kind": "xform",
+        "opacity": [[4, 10, 0.0, 0.66, "io"], [10, 16, 0.66, 0.62, "lin"], [16, 24, 0.62, 0.0, "out"]],
+        "scale":   [[4, 12, 0.97, 1.0, "io"]],
+        "drift_settle": [4, 16, -120, "out"] },
+      # SHIMMER (particle) — sparkles CLIMB through the lights (drift up), op_cap 0.44. Clamp: emit 6-18 + life <=5 -> last <=24.
+      { "src": "tripura_shimmer", "kind": "particles", "op_cap": 0.44, "drift": "up",
+        "emit_frames": [6, 18], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [12, 30], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 2 },
+    ],
+  },
+
+  # TRIPURA — THE FALL (the ninth-sibling shatter; the three cities come apart). The MIRROR of the rise. Ends DARK (Tamasa-tail law).
+  "tripura_fall": {
+    "seed": 0x3C1A0E, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "tripura", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # LIGHTS (xform) — THE ALIGNMENT BREAKS: the three lights DIM and SINK (drift_settle POSITIVE — descend from above as they die),
+      # quick presence f1-3 (already lit), then dims to 0 by f14.
+      { "src": "tripura_lights", "kind": "xform",
+        "opacity": [[1, 3, 0.0, 0.58, "out"], [3, 14, 0.58, 0.0, "in"]],
+        "scale":   [[1, 14, 1.02, 0.94, "in"]],
+        "drift_settle": [1, 14, 110, "out"] },
+      # HAZE (xform) — GUTTERS: dim ground (peak 0.42, never >0.5), gutters out f12-22.
+      { "src": "tripura_haze", "kind": "xform",
+        "opacity": [[1, 6, 0.0, 0.42, "out"], [6, 12, 0.42, 0.36, "lin"], [12, 22, 0.36, 0.0, "in"]],
+        "scale":   [[1, 6, 1.0, 1.02, "out"]] },
+      # SHARDS (particle) — the cities COME APART: shards rain DOWN through the dying lights (drift down), FAST, op_cap 0.48. Clamp:
+      # emit 4-16 + life <=6 -> last <=22.
+      { "src": "tripura_shards", "kind": "particles", "op_cap": 0.48, "drift": "down",
+        "emit_frames": [4, 16], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [30, 70], "jitter_deg": 10.0, "life_frames": [4, 6], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 3 },
+      # EMBERS (particle) — everything DIMS: embers fall (drift down), slow, the DARK TAIL (the fall ends dark — Tamasa-tail law).
+      # op_cap 0.42, source Lmax 138 (dimmest layer — brightness-floor candidate, lum_gain if sub-floor). Clamp: emit 12-21 + life <=5 -> last <=24.
+      { "src": "tripura_embers", "kind": "particles", "op_cap": 0.42, "drift": "down",
+        "emit_frames": [12, 21], "inner_radius": 0.55, "inner_boost": 1.0,
+        "speed_px_s": [10, 26], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 40, "min_area": 2 },
+    ],
+  },
+
   # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
   # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
   # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
