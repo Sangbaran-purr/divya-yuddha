@@ -1311,6 +1311,7 @@ function resolveAstra(g, pi, c, targetUid){
       if (!t) t = spec.options.reduce((a,b)=>effPower(g,1-pi,a)>=effPower(g,1-pi,b)?a:b);
       const ti=opp.units.indexOf(t);
       if (ti>=0){ opp.units.splice(ti,1); t.stolenBy=pi; t.origOwner=1-pi; pl.units.push(t);
+        emit(g,'passive',{targetUids:[t.uid],abilityName:'Mohini Trap',text:'snared'});   // observational emit (rule #7 — no state/rng touch) — EIGHTH of the sibling family (Sanjivani Corruption/Vishwapasha/Vritra/Nagapasha/Ahamkara/Mrityunjaya/Sanjeevani Call), carries the SNARED unit's uid so the illusion-arrival VFX anchors at its NEW cell on the captor's board. Behavior-neutral (no engine/story/quest consumer branches on 'passive'). A live steal is NOT a revival: the case deliberately does NOT call onUnitRevive, so Simhika never triggers — the emit likewise carries no revival semantics.
         log(g, `Mohini’s illusion turns ${t.n} to ${pl.name}’s side (exempt from your Venom).`); }
       break; }
   }
