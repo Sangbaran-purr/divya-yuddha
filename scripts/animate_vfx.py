@@ -735,6 +735,40 @@ BRIEFS = {
         "lum_thresh": 44, "min_area": 3 },
     ],
   },
+
+  # GANDIVA ARROW — the Vanara row's first Astra, a single-target STRIKE (Vajra family, square cell on the victim,
+  # victim-showcase, strike-lands-first). 20f one-shot per victim (FAST — a half-blessing; Vajra is 18f, same class).
+  # Speed IS the read: the streak blazes in along its painted diagonal (upper-left→lower-right), the flash lands, shards
+  # scatter, the ring blesses once. Palette: gold + leaf-green accent (baked into the shards/ring art). ≤2 layers >0.5
+  # (audit). SEED 0x6A0D1A is EVEN → storm_sign=-1 (drift_x rolls left by default), so the streak's drift_x uses a
+  # NEGATIVE magnitude to travel RIGHT (−1 × −px = +), matching the painted upper-left→lower-right diagonal (+drift_up
+  # negative = down → the down-right arrow line). A double-kill (Leap → a 2nd shaft) fires this sheet SERIALLY per victim.
+  "gandiva": {
+    "seed": 0x6A0D1A, "fps": 24, "frames": 20, "one_shot": True, "layers_dir": "gandiva",
+    "layers": [
+      # STREAK (xform) — THE ARROW ARRIVES: blazes 0→0.85 (f1-5, sole layer >0.5), cuts to 0.30 the instant it lands (f5-6),
+      # gone by 16. Strong diagonal drift down-RIGHT (drift_x negative ⇒ right under storm_sign=-1; drift_up negative ⇒ down).
+      { "src": "gandiva_streak", "kind": "xform",
+        "opacity": [[1, 5, 0.0, 0.85, "out"], [5, 6, 0.85, 0.30, "lin"], [6, 16, 0.30, 0.0, "out"]],
+        "scale":   [[1, 5, 1.06, 1.0, "out"]],
+        "drift_x": [1, 9, -50], "drift_up": [1, 9, -36] },
+      # FLASH (xform) — IMPACT: 0→0.85 (f4-7) hold 2 (f7-9), the streak has already cut below 0.5 → the handoff stays ≤2;
+      # decays to 0.40 as the scatter takes over (f9-14), out by 20. The victim-showcase clone takes its hit in this window.
+      { "src": "gandiva_flash", "kind": "xform",
+        "opacity": [[4, 7, 0.0, 0.85, "out"], [7, 9, 0.85, 0.85, "lin"], [9, 14, 0.85, 0.40, "in"], [14, 20, 0.40, 0.0, "out"]],
+        "scale":   [[4, 6, 0.9, 1.0, "out"]] },
+      # RING (xform) — BLESSED SCATTER: a single expand, scale 0.85→1.15, opacity 0→0.60→0.25 (f8-16), out by 20.
+      { "src": "gandiva_ring", "kind": "xform",
+        "opacity": [[8, 12, 0.0, 0.60, "out"], [12, 16, 0.60, 0.25, "in"], [16, 20, 0.25, 0.0, "out"]],
+        "scale":   [[8, 16, 0.85, 1.15, "out"]] },
+      # SHARDS (particle) — BLESSED SCATTER: a sharp radial burst (tight emit f8-10), op_cap 0.50 (never above the line),
+      # fast + short so it's dead by ~19 and hands the aftermath to the victim's exit debris (choreolayer).
+      { "src": "gandiva_shards", "kind": "particles", "op_cap": 0.50, "drift": "out",
+        "emit_frames": [8, 10], "inner_radius": 0.28, "inner_boost": 1.0,
+        "speed_px_s": [30, 60], "jitter_deg": 12.0, "life_frames": [5, 9], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 3 },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
