@@ -1160,6 +1160,41 @@ BRIEFS = {
     ],
   },
 
+  # RAMA'S SIGNET — THE SEAL OF TRUST (Vanara Rare artifact, arrival-only — the Vanara pair opens). Wide plate over the CASTER'S
+  # OWN half (R95). SIGNATURE MOTION — THE PRESS (the row's first stamped-down arrival: Amrita poured, Kavacha built, Tripura
+  # ascended, Chandrahas gleamed — the Signet is SET). Palette: warm GOLD dominant, leaf-GREEN accent (the Gandiva pairing).
+  # Register: steadfast, serene — once pressed it HOLDS; no hit-stop. Wide 1920x640, 24f, fps 24, side_feather 120. SEED 0x9A5E2C —
+  # 0x2C even → storm_sign=-1, MOOT (vertical: drift_settle + drift up, NO drift_x). CONTAIN VOCAB: ring + motes are fit:"contain"
+  # (the full-height circle in a 3:2 source composites WHOLE on the 3:1 plate; motes populate around the whole circle — the Tamasa
+  # extraction lesson). band + haze stay cover-fit. SOLO-STAGGER: band + ring the two bright xforms; haze <0.5; motes capped.
+  "ramasignet": {
+    "seed": 0x9A5E2C, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "ramasignet", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # HAZE (xform) — the promise's ground: haze settles LOW, dim + warm (peak 0.40, NEVER >0.5), holds, out f18-24.
+      { "src": "ramasignet_haze", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.40, "out"], [8, 18, 0.40, 0.35, "lin"], [18, 24, 0.35, 0.0, "out"]],
+        "scale":   [[1, 8, 1.03, 1.0, "out"]] },
+      # BAND (xform) — THE PROMISE LAID DOWN: the gold band glows in beneath the host, attack f1-8 to 0.58, HOLDS f8-20 (the seal's
+      # ground), band HOLDS LAST — recedes f20-24.
+      { "src": "ramasignet_band", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.58, "out"], [8, 20, 0.58, 0.54, "lin"], [20, 24, 0.54, 0.0, "out"]],
+        "scale":   [[1, 8, 1.02, 1.0, "out"]] },
+      # RING (xform, CONTAIN — the WHOLE circle) — THE PRESS (signature): the ring DESCENDS from above and SETS (drift_settle
+      # POSITIVE, decelerating to rest — a seal stamped into wax), slight scale-DOWN as it presses (Mohini scale vocab), then HOLDS
+      # FLAT (the dwell is the oath). attack f4-10 to 0.68, HOLD f10-18, recede f18-24.
+      { "src": "ramasignet_ring", "kind": "xform", "fit": "contain",
+        "opacity": [[4, 10, 0.0, 0.68, "io"], [10, 18, 0.68, 0.64, "lin"], [18, 24, 0.64, 0.0, "out"]],
+        "scale":   [[4, 12, 1.08, 1.0, "out"]],
+        "drift_settle": [4, 14, 120, "out"] },
+      # MOTES (particle, CONTAIN — populated around the whole circle) — the host's warmth ANSWERING: leaf-gold motes RISE around the
+      # set seal (drift up), op_cap 0.44. Clamp: emit 10-20 + life <=5 -> last <=24.
+      { "src": "ramasignet_motes", "kind": "particles", "fit": "contain", "op_cap": 0.44, "drift": "up",
+        "emit_frames": [10, 20], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [12, 30], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 2 },
+    ],
+  },
+
   # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
   # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
   # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
@@ -1234,6 +1269,20 @@ def _fit_cover(rgb, W, H):
     x0 = (rw - W) // 2; y0 = (rh - H) // 2
     return r[y0:y0 + H, x0:x0 + W]
 
+def _fit_contain(rgb, W, H):
+    """Scale a layer to FIT WHOLE inside a WxH canvas (preserve aspect, black-pad the overflow — nothing cropped). RAMA'S SIGNET
+    ring-wholeness: a full-height circle in a 3:2 source composites WHOLE on the 3:1 plate (s=min → scale-to-fit, centred, padded)."""
+    h, w = rgb.shape[:2]
+    if (w, h) == (W, H):
+        return rgb
+    s = min(W / w, H / h)
+    rw, rh = max(1, round(w * s)), max(1, round(h * s))
+    r = cv2.resize(rgb, (rw, rh), interpolation=cv2.INTER_LANCZOS4 if s < 1 else cv2.INTER_LINEAR)
+    out = np.zeros((H, W, rgb.shape[2]), rgb.dtype)
+    x0 = (W - rw) // 2; y0 = (H - rh) // 2
+    out[y0:y0 + rh, x0:x0 + rw] = r
+    return out
+
 def _extract_particles(rgb, lum_thresh, min_area):
     """Connected-component blobs above a luminance threshold → (patch_rgb_float, cx, cy)."""
     lum = rgb.max(axis=2).astype(np.uint8)
@@ -1290,7 +1339,7 @@ def render(name):
     # canvas: brief 'canvas' (W,H) → cover-fit each layer to it (board-effect row plates); else the square layer size.
     if "canvas" in b:
         resW, resH = b["canvas"]
-        layers = [(L, _fit_cover(rgb, resW, resH)) for L, rgb in raw]
+        layers = [(L, (_fit_contain if L.get("fit") == "contain" else _fit_cover)(rgb, resW, resH)) for L, rgb in raw]   # per-layer fit (RAMA'S SIGNET): default COVER (byte-identical for every no-fit recipe); fit:"contain" scales-to-fit WHOLE (the ring circle)
     else:
         resH, resW = raw[0][1].shape[:2]; layers = raw
 
