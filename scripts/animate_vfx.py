@@ -849,6 +849,48 @@ BRIEFS = {
         "lum_thresh": 40, "min_area": 3 },
     ],
   },
+
+  # VASUKI VENOM STRIKE — the ocean turns (TWO-BEAT AMPLIFIER, the mirror within one card). CAST = THE POISON RISES (surge over
+  # the CASTER's half, off the astra's play event); ROUND END = THE TIDE FALLS (amplified drain plate over the ENEMY half, off
+  # the drain 'toast', state-peek attribution). Palette: cold abyssal green/teal — Mrityunjaya's cousin, NEVER Sanjeevani's warmth.
+  # THE MIRROR: cast bubbles RISE (tide drift_settle from BELOW) / payoff droplets FALL (veil drift_settle from ABOVE). Both wide
+  # 1920×640 cover-fit, 24f, fps 24 (sarpasatra_b class), side_feather 120 (tide sides 134/54 → black). SEED 0x0CEA17: 0x17 odd →
+  # seed&1=1 → storm_sign=+1, but both recipes use drift_settle (vertical) — no drift_x, sign moot. ≤2 layers >0.5 (one xform +
+  # one particle each ⇒ ≤1). side_feather is the Lanka-Dahan vocab (no new primitive this task).
+  "venomstrike_surge": {
+    "seed": 0x0CEA17, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "venomstrike", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # TIDE (xform) — THE POISON RISES: the tide SURGES up into frame from BELOW (drift_settle -160 ⇒ starts below rest, rises
+      # decelerating — the ocean turning), rises to 0.82 by f6 and HOLDS f6-18 (grandness — a Legendary announcement), settles f18-24.
+      { "src": "venomstrike_tide", "kind": "xform",
+        "opacity": [[1, 6, 0.0, 0.82, "out"], [6, 18, 0.82, 0.82, "lin"], [18, 24, 0.82, 0.0, "out"]],
+        "scale":   [[1, 8, 0.96, 1.0, "io"]],
+        "drift_settle": [1, 10, -160, "out"] },
+      # RISE (particle) — bubbles ASCENDING through the tide (drift up), op_cap 0.50. Clamp: emit 2-17 + life ≤6 ⇒ last ≤23.
+      { "src": "venomstrike_rise", "kind": "particles", "op_cap": 0.50, "drift": "up",
+        "emit_frames": [2, 17], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [16, 38], "jitter_deg": 10.0, "life_frames": [4, 6], "fade_frames": 2,
+        "lum_thresh": 40, "min_area": 3 },
+    ],
+  },
+
+  # VASUKI VENOM STRIKE — THE TIDE FALLS (round-end amplified drain over the ENEMY half). The MIRROR of the surge: the veil SINKS.
+  "venomstrike_drain": {
+    "seed": 0x0CEA17, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "venomstrike", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # VEIL (xform) — THE TIDE FALLS: the veil strata SINK into frame from ABOVE (drift_settle +140 ⇒ starts above rest, sinks
+      # decelerating — heavy and slow), holds oppressive 0.80 f6-18, dissipates downward f18-24.
+      { "src": "venomstrike_veil", "kind": "xform",
+        "opacity": [[1, 6, 0.0, 0.80, "out"], [6, 18, 0.80, 0.80, "lin"], [18, 24, 0.80, 0.0, "out"]],
+        "scale":   [[1, 6, 1.04, 1.0, "out"]],
+        "drift_settle": [1, 10, 140, "out"] },
+      # FALL (particle) — droplets SINKING through the veil (drift down — the MIRROR of the rise), op_cap 0.50. Clamp: emit 4-18 + life ≤6 ⇒ last ≤24.
+      { "src": "venomstrike_fall", "kind": "particles", "op_cap": 0.50, "drift": "down",
+        "emit_frames": [4, 18], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [18, 40], "jitter_deg": 12.0, "life_frames": [4, 6], "fade_frames": 2,
+        "lum_thresh": 40, "min_area": 3 },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
