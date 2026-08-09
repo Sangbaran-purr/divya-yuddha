@@ -932,6 +932,46 @@ BRIEFS = {
     ],
   },
 
+  # NAGASTRA — THE STOLEN SERPENT (Asura astra; contamination plate over the CASTER's ENEMY half, off the multi-target 'token'
+  # emit). PALETTE LAW: venom green VEINED with Asura crimson, GREEN DOMINANT (measured on baked frames; source green/crimson
+  # wash 3.4 / haze 2.1 / darts 2.6 / tokens 42). Chaos Surge fires (Asura caster) → the RULED anchor inherits (plate ENEMY half /
+  # chaos wash ASURA half, serialized, opposite halves, never merged). COEXISTENCE: ADD, suppress nothing — the per-token beat
+  # (pulse/callout/skull badges/sfx_venom_apply) plays whole; the plate is the WEATHER, the beat is the rain. Wide 1920x640
+  # cover-fit, 24f, fps 24, side_feather 120. SEED 0x5E4D0B — 0x0B ODD → seed&1=1 → storm_sign=+1: the DARTS rake DOWN-RIGHT and
+  # the haze banks roll RIGHT (parity->sign->rake-direction; the sign is LIVE here, unlike the vertical venom set). NEW VOCAB:
+  # particle drift 'diag' (down-diagonal rake in the storm_sign direction, sign threaded) — ADDITIVE + GATED (only 'diag' particles
+  # read the sign; every existing sheet re-bakes byte-identical). Register: venom family — no hit-stop beyond the spectacle astra
+  # beat; the DARTS are the one aggressive beat, the rest settles. SOLO-STAGGER: two xforms (haze, wash), particles capped <0.5.
+  "nagastra": {
+    "seed": 0x5E4D0B, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "nagastra", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # HAZE (xform) — the contamination ARRIVES: horizontal banks roll in (drift_x right under storm_sign=+1 — the strata law made
+      # lateral), attack f1-6 to 0.62, HOLDS as the weather f6-18, recedes f18-24.
+      { "src": "nagastra_haze", "kind": "xform",
+        "opacity": [[1, 6, 0.0, 0.62, "out"], [6, 18, 0.62, 0.58, "lin"], [18, 24, 0.58, 0.0, "out"]],
+        "scale":   [[1, 6, 1.04, 1.0, "out"]],
+        "drift_x": [1, 12, 55] },
+      # DARTS (particle, DIAG) — THE WEAPON STRIKES ALL: the darts rake DOWN-DIAGONAL through the haze (drift 'diag' = down-RIGHT
+      # under storm_sign=+1), FAST — the one aggressive beat. op_cap 0.48 (<0.5, un-counted). Clamp: emit 4-14 + life <=6 -> last <=20.
+      { "src": "nagastra_darts", "kind": "particles", "op_cap": 0.48, "drift": "diag",
+        "emit_frames": [4, 14], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [60, 120], "jitter_deg": 8.0, "life_frames": [4, 6], "fade_frames": 2,
+        "lum_thresh": 40, "min_area": 3 },
+      # WASH (xform) — THE VENOM TAKES HOLD: the green-crimson churn SURGES up from below (drift_settle -120 ⇒ rises, the venom
+      # welling), attack f10-16 to 0.72, holds f16-20, settles to a green simmer f20-24.
+      { "src": "nagastra_wash", "kind": "xform",
+        "opacity": [[10, 16, 0.0, 0.72, "out"], [16, 20, 0.72, 0.66, "lin"], [20, 24, 0.66, 0.0, "out"]],
+        "scale":   [[10, 18, 0.97, 1.0, "io"]],
+        "drift_settle": [10, 18, -120, "out"] },
+      # TOKENS (particle, down) — THE BEADS LAND: the venom beads SINK onto the row (drift down, slow), settling where the skull
+      # badges persist (the badge-arrival handoff). op_cap 0.46. Source has bright cores (max 255) — no lum_gain. Clamp: emit 16-22 + life <=5 -> last <=24.
+      { "src": "nagastra_tokens", "kind": "particles", "op_cap": 0.46, "drift": "down",
+        "emit_frames": [16, 22], "inner_radius": 0.55, "inner_boost": 1.0,
+        "speed_px_s": [10, 26], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 40, "min_area": 2 },
+    ],
+  },
+
   # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
   # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
   # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
@@ -1022,14 +1062,17 @@ def _extract_particles(rgb, lum_thresh, min_area):
                     "cx": float(cent[i][0]), "cy": float(cent[i][1])})
     return out
 
-def _particle_vel(drift, ajit, spd, cx, cy, cx0, cy0):
-    """Per-drift velocity. radial=outward, inward=toward centre (T89 devour), down, up (default). Byte-identical to the inline forms."""
+def _particle_vel(drift, ajit, spd, cx, cy, cx0, cy0, sign=1):
+    """Per-drift velocity. radial=outward, inward=toward centre (T89 devour), down, up (default), diag (NAGASTRA down-diagonal
+    rake in the storm_sign direction). GATED: every non-'diag' mode ignores `sign` (defaulted 1) ⇒ byte-identical to the inline forms."""
     if drift == "radial":
         ang = math.atan2(cy - cy0, cx - cx0) + ajit; return math.cos(ang)*spd, math.sin(ang)*spd
     if drift == "inward":
         ang = math.atan2(cy0 - cy, cx0 - cx) + ajit; return math.cos(ang)*spd, math.sin(ang)*spd
     if drift == "down":
         return math.sin(ajit)*spd, math.cos(ajit)*spd
+    if drift == "diag":                                      # NAGASTRA — down-diagonal dart rake (~50 deg below horizontal); horizontal component in the storm_sign direction (sign threaded from the recipe seed parity)
+        a = math.radians(50) + ajit; return sign * math.cos(a) * spd, math.sin(a) * spd
     return math.sin(ajit)*spd, -math.cos(ajit)*spd   # up
 
 def _add_patch(canvas, patch, ox, oy, op):
@@ -1103,7 +1146,7 @@ def render(name):
                 cef0, cef1 = co["emit_frames"]; cs0, cs1 = co["speed_px_s"]; cl0, cl1 = co["life_frames"]
                 pt["act"] = random.randint(cef0, cef1)
                 ajit = random.uniform(-jit, jit); spd = random.uniform(cs0, cs1)
-                pt["vx"], pt["vy"] = _particle_vel(drift, ajit, spd, pt["cx"], pt["cy"], cx0, cy0)
+                pt["vx"], pt["vy"] = _particle_vel(drift, ajit, spd, pt["cx"], pt["cy"], cx0, cy0, storm_sign)
                 pt["life"] = max(1, min(random.randint(cl0, cl1), die_by - pt["act"]))
             else:                                                    # SINGLE-WINDOW path (c1a / gayatri / damage / buff / venom) — UNCHANGED, byte-identical draw order
                 r = math.hypot(pt["cx"] - cx0, pt["cy"] - cy0); inner = r <= ir
@@ -1112,7 +1155,7 @@ def render(name):
                 pt["act"] = random.choices(choices, weights=weights, k=1)[0]
                 ajit = random.uniform(-jit, jit)                     # angle jitter (draw order PRESERVED = the old `theta`)
                 spd = random.uniform(s0, s1)
-                pt["vx"], pt["vy"] = _particle_vel(drift, ajit, spd, pt["cx"], pt["cy"], cx0, cy0)
+                pt["vx"], pt["vy"] = _particle_vel(drift, ajit, spd, pt["cx"], pt["cy"], cx0, cy0, storm_sign)
                 pt["life"] = max(1, min(random.randint(l0, l1), die_by - pt["act"]))   # clamp: dead by die_by (default N)
         parts_meta.append({"blobs": blobs, "fade": L["fade_frames"], "op_cap": L.get("op_cap", 1.0)})
 
