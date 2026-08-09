@@ -555,3 +555,25 @@ figures) to the specific illusion register. **Enforcement:** the layer intake ob
 are abstract phenomena); the compositor only moves light (opacity/scale/rotate/particle drift), never introduces a figure.
 Mohini Trap's steal-arrival VFX is the eighth sibling-emit member (`'passive'`/`'Mohini Trap'`), ILLUSION register —
 no hit-stop/shake/dissolve/damage-tick/landing-flare (Q3); the residue hands off to the persistent `.stolen` badge.
+
+## R95 — ARTIFACT-ROW VFX CLASS: G4 idle-glow resolution + arrival polarity (2026-08-09, owner word)
+
+Ruled riding the Amrita Kalasha VFX task (the Artifact row opener). Sets the row's class for all 8 launch + 6 wave
+artifacts. **(a) G4 — the idle SPRITE is CUT; the glow SURVIVES as state-render CSS.** An artifact does not carry a
+persistent animated sprite while active (an idle full-frame sprite would be a constant draw + visual noise). Instead a
+subtle slow gold **breath** lives as CSS on the active `.art-chip:not(.hidden)` (box-shadow pulse, ~3s, `will-change`
+GPU-composited, wrapped in `@media (prefers-reduced-motion: no-preference)` so reduced-motion kills it for free). It is
+**generic** (one rule covers every artifact, both `#part` and `#oart`) and **dies with the chip by construction** —
+`render()`→`setArtChip` re-adds `.hidden` at round end / Tripura shatter, the selector stops matching, the glow ends.
+No per-artifact wiring, no state class beyond the existing `.hidden` toggle. **(b) ARRIVAL POLARITY — the row's
+signature, inverse of the Astra row:** an artifact's ON-PLAY arrival wash lands on the **CASTER'S OWN half**
+(`ownerPiOfUid(ev.sourceUid)`, NOT `1-x`) — artifacts BLESS their own board, where the whole Astra row strikes the
+enemy half. **(c) The blessing announces its gift (Crown-precedent):** an artifact that grants power emits a real
+`'buff'` (Kishkindha Crown's shape) so the gift is choreographed; the redundant per-target buff TICK is suppressed under
+the arrival wash (Sarpa idiom) but the `+N` floater STAYS. **(d) Revival overlap (07-30 ruling applied):** where new
+artifact art overlaps an existing shared handler (Amrita's `'revive'` nectar square vs the generic `'revive'` floater),
+the new art REPLACES the old, scoped to `abilityName` only. Amrita Kalasha's revival is the white-gold nectar square —
+the THIRD revival-family palette (vs Mrityunjaya cold-teal, Sanjeevani mountain-green+dawn-gold), SERENE register (no
+hit-stop/shake/dissolve/landing-flare, Q3). **Open follow-up (owner ruling, not wired here):** `u.aegis` ("will revive")
+renders no player-facing state today — the blessed unit's protection is invisible; whether it deserves a badge is
+deferred.

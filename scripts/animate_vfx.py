@@ -972,6 +972,71 @@ BRIEFS = {
     ],
   },
 
+  # AMRITA KALASHA — THE VESSEL'S BLESSING (ARTIFACT ROW opener). ARRIVAL POLARITY (the row's class): the blessing wash lands on the
+  # CASTER'S OWN half — artifacts bless their own board (inverse of the whole Astra row). Palette: pure WHITE-GOLD liquid nectar —
+  # the revival family's THIRD palette (vs Mrityunjaya cold-teal, Sanjeevani mountain-green+dawn-gold). SERENE throughout: no
+  # hit-stop, no shake, no landing flare (Q3). Wide 1920x640 cover-fit, 24f, fps 24, side_feather 120. SEED 0xA1C7E3 (shared with
+  # amrita_revive) — VERTICAL set (drift_settle + drift up/down, NO drift_x) → storm_sign MOOT (0xE3 odd → +1, unused; noted per the
+  # parity->sign idiom). BRIGHTEST set since Sanjeevani: radiance is a big bright field (src p99.9 250 @ 48.8% cover) → opacity
+  # MODERATED (0.64) so the additive composite doesn't blow out; particles op_cap <0.5. SOLO-STAGGER: two xforms (shafts, radiance).
+  "amrita_bless": {
+    "seed": 0xA1C7E3, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "amrita", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # SHAFTS (xform) — GRACE ARRIVES FIRST (dim): the light shafts descend into frame (drift_settle from above, f1-8), attack
+      # f1-6 to 0.52, holds through the bloom, recedes f16-24.
+      { "src": "amrita_shafts", "kind": "xform",
+        "opacity": [[1, 6, 0.0, 0.52, "out"], [6, 16, 0.52, 0.48, "lin"], [16, 24, 0.48, 0.0, "out"]],
+        "scale":   [[1, 6, 1.04, 1.0, "out"]],
+        "drift_settle": [1, 8, 90, "out"] },
+      # RADIANCE (xform) — THE BLESSING BLOOMS and HOLDS (grandness law — a Mythic blessing gets its dwell): attack f4-10 to 0.64
+      # (MODERATED — the radiance field is large + bright; keep the additive composite off the ceiling), HOLDS f10-16, recedes f16-24.
+      { "src": "amrita_radiance", "kind": "xform",
+        "opacity": [[4, 10, 0.0, 0.64, "io"], [10, 16, 0.64, 0.60, "lin"], [16, 24, 0.60, 0.0, "out"]],
+        "scale":   [[4, 12, 0.97, 1.0, "io"]] },
+      # RAIN (particle) — NECTAR RAIN falls through the light (drift down), op_cap 0.46. Clamp: emit 4-18 + life <=6 -> last <=24.
+      { "src": "amrita_rain", "kind": "particles", "op_cap": 0.46, "drift": "down",
+        "emit_frames": [4, 18], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [22, 46], "jitter_deg": 8.0, "life_frames": [4, 6], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 3 },
+      # MOTES (particle) — the BLESSING MOTES drift in the warm afterglow (drift up, serene), op_cap 0.44. Clamp: emit 14-21 + life <=5 -> last <=24.
+      { "src": "amrita_motes", "kind": "particles", "op_cap": 0.44, "drift": "up",
+        "emit_frames": [14, 21], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [10, 24], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 2 },
+    ],
+  },
+
+  # AMRITA KALASHA — THE REVIVAL (nectar square, the aegis revive at the cell). Mrityunjaya/Sanjeevani SQUARE sibling, 32f, the
+  # THIRD revival palette (white-gold nectar). Fires off the engine 'revive' emit (abilityName scoped). SEED 0xA1C7E3 (shared) —
+  # vertical set, sign MOOT. SERENE — no hit-stop/shake. White-gold nectar is bright by nature; the splash peaks 0.88 (serene, NOT a
+  # rebirth-bright exception — the nectar simply IS bright). SOLO-STAGGER: three STAGGERED xforms (plate->stream->splash, sanjeevani
+  # structure — never >2 at once); motes particle-capped.
+  "amrita_revive": {
+    "seed": 0xA1C7E3, "fps": 24, "frames": 32, "one_shot": True, "layers_dir": "amrita", "canvas": (1254, 1254),
+    "layers": [
+      # REV_PLATE (xform) — THE POOL: the nectar plate blooms at the cell 0->0.70 (f1-8), holds, dims as the splash lands, out by 32.
+      { "src": "amrita_rev_plate", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.70, "io"], [8, 16, 0.70, 0.46, "in"], [16, 32, 0.46, 0.0, "out"]],
+        "scale":   [[1, 8, 0.94, 1.02, "io"]] },
+      # REV_STREAM (xform) — THE POUR (signature): the nectar DESCENDS from above (drift_settle 200px -> rest, decelerating — a thing
+      # poured, not dropped), rises to 0.82 and HOLDS f9-16 (grandness = brightness x hold), fades as the splash blooms.
+      { "src": "amrita_rev_stream", "kind": "xform",
+        "opacity": [[5, 9, 0.0, 0.82, "io"], [9, 16, 0.82, 0.82, "lin"], [16, 22, 0.82, 0.30, "in"], [22, 32, 0.30, 0.0, "out"]],
+        "scale":   [[5, 18, 1.08, 1.0, "out"]],
+        "drift_settle": [5, 18, 200, "out"] },
+      # REV_SPLASH (xform) — LIFE LANDS: the crown splash blooms low as the stream pours home — the handoff IS the life landing.
+      { "src": "amrita_rev_splash", "kind": "xform",
+        "opacity": [[14, 20, 0.0, 0.88, "io"], [20, 24, 0.88, 0.88, "lin"], [24, 32, 0.88, 0.0, "out"]],
+        "scale":   [[14, 20, 0.90, 1.0, "io"]] },
+      # REV_MOTES (particle) — THE IMMORTAL RESIDUE ASCENDS (the mirror of the pour): gold motes RISE (drift up), slow + serene,
+      # op_cap 0.48. Clamp: emit 20-27 + life <=5 -> last <=32.
+      { "src": "amrita_rev_motes", "kind": "particles", "op_cap": 0.48, "drift": "up",
+        "emit_frames": [20, 27], "inner_radius": 0.44, "inner_boost": 1.0,
+        "speed_px_s": [12, 28], "jitter_deg": 10.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 3 },
+    ],
+  },
+
   # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
   # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
   # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
