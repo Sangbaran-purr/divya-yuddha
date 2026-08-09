@@ -891,6 +891,38 @@ BRIEFS = {
         "lum_thresh": 40, "min_area": 3 },
     ],
   },
+
+  # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
+  # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
+  # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
+  # moon-silver + iridescent violet, cold teal undertone — moderate peaks (a snare, NOT a rebirth; no rebirth-bright). Beats:
+  # veil blooms → rings CONVERGE INWARD (scale-down, the snare cinching — existing scale vocab, no new primitive) → shards SWIRL
+  # (rotate, the illusion refracting) → motes linger and thin (dreamlike dispersal). ≤2 layers >0.5 (audit). SEED 0x9E1D5A:
+  # 0x5A even → storm_sign=-1, MOOT (no drift_x; rings=scale, shards=rotate — neither seed-signed). Square → no side_feather.
+  "mohini": {
+    "seed": 0x9E1D5A, "fps": 24, "frames": 28, "one_shot": True, "layers_dir": "mohini", "canvas": (1254, 1254),
+    "layers": [
+      # VEIL (xform) — the illusion blooms at the cell (iridescent, gentle) 0→0.65 (f1-8), dims as the rings converge, out by 24.
+      { "src": "mohini_veil", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.65, "io"], [8, 16, 0.65, 0.35, "in"], [16, 24, 0.35, 0.0, "out"]],
+        "scale":   [[1, 8, 0.94, 1.02, "io"]] },
+      # RINGS (xform) — THE SNARE CINCHES: the rings CONVERGE INWARD (scale 1.18→0.90 over f5-16 — the snare tightening), opacity
+      # 0→0.70 hold, out by 24.
+      { "src": "mohini_rings", "kind": "xform",
+        "opacity": [[5, 12, 0.0, 0.70, "io"], [12, 16, 0.70, 0.70, "lin"], [16, 24, 0.70, 0.0, "out"]],
+        "scale":   [[5, 16, 1.18, 0.90, "io"]] },
+      # SHARDS (xform) — the illusion REFRACTING: a slow swirl (rotate 40° over f12-28), opacity 0→0.62 hold, out by 28.
+      { "src": "mohini_shards", "kind": "xform",
+        "opacity": [[12, 18, 0.0, 0.62, "io"], [18, 22, 0.62, 0.62, "lin"], [22, 28, 0.62, 0.0, "out"]],
+        "scale":   [[12, 18, 0.95, 1.0, "io"]],
+        "rotate":  [12, 28, 40] },
+      # MOTES (particle) — the dreamlike TAIL: motes linger and thin, dispersing outward (drift out), op_cap 0.50. Clamp: emit 18-23 + life ≤5 ⇒ last ≤28.
+      { "src": "mohini_motes", "kind": "particles", "op_cap": 0.50, "drift": "out",
+        "emit_frames": [18, 23], "inner_radius": 0.40, "inner_boost": 1.0,
+        "speed_px_s": [10, 24], "jitter_deg": 12.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 40, "min_area": 3 },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):

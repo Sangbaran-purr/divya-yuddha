@@ -544,3 +544,14 @@ board). `HERO_AURA_TINT['hanuman']` (vermilion-saffron) is Bali's tint, unchange
 **STORY EXCEPTION (tight):** `Surya Dev → Chandra Dev` was renamed in `src/chapters.js` (ch1/ch3/ch4 deck lists +
 guidance beat text) and `src/test_story.js` — the literal string ONLY, a deck-name-resolution consequence (decks
 resolve by card name; an unknown name throws), NOT a story edit. No other story content, prose, or structure changed.
+
+## R94 — SILHOUETTE-LAW EXTENSION: illusion renders as phenomenon, never as person (2026-08-09, owner word)
+
+Ruled riding the Mohini Trap VFX task. Any illusion/deception effect (Mohini Trap and its class) renders in the VFX
+catalog as a **phenomenon** — light, veils, rings, refraction, motes — and **never as a person: no figures, no faces,
+no eyes** in the animated effect. The illusion is the *turning of a mind*, shown as cold moon-silver + iridescent
+violet weather, not as a depicted seductress or victim. Extends the standing silhouette-law (VFX carry no representational
+figures) to the specific illusion register. **Enforcement:** the layer intake obeys this (mohini_veil/rings/shards/motes
+are abstract phenomena); the compositor only moves light (opacity/scale/rotate/particle drift), never introduces a figure.
+Mohini Trap's steal-arrival VFX is the eighth sibling-emit member (`'passive'`/`'Mohini Trap'`), ILLUSION register —
+no hit-stop/shake/dissolve/damage-tick/landing-flare (Q3); the residue hands off to the persistent `.stolen` badge.
