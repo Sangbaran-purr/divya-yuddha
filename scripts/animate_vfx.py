@@ -769,6 +769,43 @@ BRIEFS = {
         "lum_thresh": 44, "min_area": 3 },
     ],
   },
+
+  # SANJEEVANI CALL — the mountain brought whole (revival-arrival). MRITYUNJAYA'S SQUARE SIBLING, INVERTED: Mrityunjaya
+  # rises from the deep (cold abyssal teal); Sanjeevani DESCENDS from the sky (warm mountain-green + dawn-gold). 32f one-shot
+  # over the REVIVED cell, SHEET_FPS 16 (2000ms hold, matching Mrityunjaya). Beats: the sky opens (plate) → the carried
+  # mountain is LOWERED from above and holds (mountain, the signature beat — drift_settle: enters from above, eases to rest,
+  # decelerating) → life lands (bloom, the mountain→herb handoff IS the transfer of life; REBIRTH-BRIGHT exception → peak 0.90)
+  # → the after-glow settles downward (motes, drift down). Grandness = brightness × HOLD (mountain holds near-full f9-16).
+  # ≤2 layers >0.5 at every frame (audit). SEED 0x11FE5A: 0x5A even → seed&1=0 → storm_sign=-1 (gandiva 0x6A0D1A idiom) —
+  # MOOT here (this recipe uses drift_settle, vertical; no drift_x). COMPOSITOR VOCAB: adds drift_settle (descent), additive —
+  # no other recipe uses it → every existing sheet re-bakes byte-identical (mrityunjaya byte-identity gate enforced).
+  "sanjeevani": {
+    "seed": 0x11FE5A, "fps": 24, "frames": 32, "one_shot": True, "layers_dir": "sanjeevani", "canvas": (1254, 1254),
+    "layers": [
+      # PLATE (xform) — THE SKY OPENS: soft dawn plate blooms 0→0.72 (f1-8, sole layer >0.5), gentle scale-open, dims to 0.45 as the mountain settles, out by 32. Screen-blend warmth (baked in the art).
+      { "src": "sanjeevani_plate", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.72, "io"], [8, 16, 0.72, 0.45, "in"], [16, 32, 0.45, 0.0, "out"]],
+        "scale":   [[1, 8, 0.94, 1.02, "io"]] },
+      # MOUNTAIN (xform) — THE DESCENT (signature): LOWERED from above — drift_settle enters 200px above rest and eases DOWN to
+      # center, decelerating (a thing lowered, not dropped). Rises to 0.85 and HOLDS near-full f9-16 (grandness = brightness×hold),
+      # then fades as the bloom ignites. Slight scale-DOWN 1.10→1.0 as it settles (looms close overhead, then rests).
+      { "src": "sanjeevani_mountain", "kind": "xform",
+        "opacity": [[6, 9, 0.0, 0.85, "io"], [9, 16, 0.85, 0.85, "lin"], [16, 24, 0.85, 0.35, "in"], [24, 32, 0.35, 0.0, "out"]],
+        "scale":   [[6, 20, 1.10, 1.0, "out"]],
+        "drift_settle": [6, 20, 200, "out"] },
+      # BLOOM (xform) — LIFE LANDS: the herb bloom ignites as the mountain fades — the handoff IS the transfer of life. REBIRTH-
+      # BRIGHT exception ON RECORD → peak 0.90 (above the revival-class norm), brief hold, out by 32. Bloom-open scale.
+      { "src": "sanjeevani_bloom", "kind": "xform",
+        "opacity": [[16, 22, 0.0, 0.90, "io"], [22, 26, 0.90, 0.90, "lin"], [26, 32, 0.90, 0.0, "out"]],
+        "scale":   [[16, 22, 0.90, 1.0, "io"]] },
+      # MOTES (particle) — THE AFTER-GLOW: gold/green motes settle DOWNWARD (drift down), slow + quiet, op_cap 0.50 (never above
+      # the line), a short tail dead by 32 (clamp: emit 22-27 + life ≤5 ⇒ last ≤32).
+      { "src": "sanjeevani_motes", "kind": "particles", "op_cap": 0.50, "drift": "down",
+        "emit_frames": [22, 27], "inner_radius": 0.42, "inner_boost": 1.0,
+        "speed_px_s": [12, 28], "jitter_deg": 10.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 3 },
+    ],
+  },
 }
 
 def _seg_val(segs, f, default_before, hold):
@@ -936,6 +973,12 @@ def render(name):
                     df0, df1, dpx = L["drift_up"]
                     if f >= df0:
                         dy = -dpx * min(1.0, (f - df0) / max(1, df1 - df0))
+                if "drift_settle" in L:                         # SANJEEVANI descent: the layer ENTERS from above (dy=-from_px) and EASES to rest (dy=0) — a thing LOWERED, not dropped. [f0,f1,from_px,ease] (ease default 'out' ⇒ decelerating arrival). ADDITIVE: no other recipe uses this key, so every existing sheet re-bakes byte-identical (mrityunjaya byte-identity gate).
+                    sf0, sf1, spx = L["drift_settle"][:3]
+                    sease = L["drift_settle"][3] if len(L["drift_settle"]) > 3 else "out"
+                    if f >= sf0:
+                        sp = min(1.0, (f - sf0) / max(1, sf1 - sf0))
+                        dy += -spx * (1.0 - EASE[sease](sp))    # dy: -from_px (above rest) → 0 (rest); the layer travels DOWN, decelerating
                 dx = 0.0
                 if "drift_x" in L:                              # horizontal ROLL [f0,f1,px]; sign = seed-derived storm_sign (T87)
                     xf0, xf1, xpx = L["drift_x"]
