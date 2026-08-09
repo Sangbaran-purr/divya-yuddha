@@ -1195,6 +1195,40 @@ BRIEFS = {
     ],
   },
 
+  # KISHKINDHA CROWN — THE CANOPY CROWNS THE HOST (Vanara Mythic artifact, arrival-only — the Vanara pair CLOSES). Wide plate over
+  # the CASTER'S OWN half (R95). PAIR MIRROR: the Signet PRESSED DOWN (drift_settle positive); the Crown CRESTS UP (drift_settle
+  # NEGATIVE). Palette: GREEN-dominant, gold accent (the mirror of the Signet's gold-dominant — measured on baked frames). Register:
+  # verdant, serene, ASCENDING — no hit-stop. Wide 1920x640, 24f, fps 24, side_feather 120. SEED 0x4B8E1D — 0x1D odd → storm_sign=+1,
+  # MOOT (vertical: drift_settle + drift up, NO drift_x). FIT: ascent → contain (3:2 full-content, the pre-shipped vocab); bond +
+  # crest + haze → cover-fit (bond's two orbs + thread survive the 61% centre crop — proven on bake). SOLO-STAGGER: crest + bond the
+  # two bright xforms (the handoff); haze <0.5; ascent capped.
+  "kishkindhacrown": {
+    "seed": 0x4B8E1D, "fps": 24, "frames": 24, "one_shot": True, "layers_dir": "kishkindhacrown", "canvas": (1920, 640), "side_feather": 120,
+    "layers": [
+      # HAZE (xform) — the forest floor of light: kingdom haze settles LOW, dim + green (peak 0.40, NEVER >0.5), holds, out f18-24.
+      { "src": "kishkindhacrown_haze", "kind": "xform",
+        "opacity": [[1, 8, 0.0, 0.40, "out"], [8, 18, 0.40, 0.35, "lin"], [18, 24, 0.35, 0.0, "out"]],
+        "scale":   [[1, 8, 1.03, 1.0, "out"]] },
+      # CREST (xform) — THE CANOPY CRESTS UP (the Signet's MIRROR): drift_settle NEGATIVE (rises from below, crowning the host),
+      # attack f4-10 to 0.66, HOLD f10-16 (Mythic dwell), recede f16-24.
+      { "src": "kishkindhacrown_crest", "kind": "xform",
+        "opacity": [[4, 10, 0.0, 0.66, "io"], [10, 16, 0.66, 0.62, "lin"], [16, 24, 0.62, 0.0, "out"]],
+        "scale":   [[4, 12, 0.97, 1.0, "io"]],
+        "drift_settle": [4, 14, -110, "out"] },
+      # BOND (xform) — THE TWIN BOND gleams within the crest's heart (the two-as-one sign): gentle BLOOM, NO travel — attack f8-14
+      # to 0.60, hold f14-20, recede f20-24. Cover-fit (both orbs + the thread survive the centre crop).
+      { "src": "kishkindhacrown_bond", "kind": "xform",
+        "opacity": [[8, 14, 0.0, 0.60, "io"], [14, 20, 0.60, 0.56, "lin"], [20, 24, 0.56, 0.0, "out"]],
+        "scale":   [[8, 14, 0.92, 1.0, "io"]] },
+      # ASCENT (particle, CONTAIN — the whole braid) — the host RISING TOGETHER: braided pairs spiral UP through the crest (drift
+      # up), op_cap 0.44. Clamp: emit 10-20 + life <=5 -> last <=24.
+      { "src": "kishkindhacrown_ascent", "kind": "particles", "fit": "contain", "op_cap": 0.44, "drift": "up",
+        "emit_frames": [10, 20], "inner_radius": 0.50, "inner_boost": 1.0,
+        "speed_px_s": [12, 30], "jitter_deg": 8.0, "life_frames": [3, 5], "fade_frames": 2,
+        "lum_thresh": 44, "min_area": 2 },
+    ],
+  },
+
   # MOHINI TRAP — the illusion snare. Sanjivani Corruption's SQUARE sibling in the ILLUSION register (a live unit turned to the
   # captor's side, arriving at its NEW cell). 28f one-shot (the Sanjivani sibling length). R94 SILHOUETTE-LAW: illusion renders
   # as PHENOMENON, never as person — no figures/faces/eyes (the layer art obeys this; the compositor only moves light). Palette:
