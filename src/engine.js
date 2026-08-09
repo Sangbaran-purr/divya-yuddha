@@ -1715,7 +1715,8 @@ function playCard(g, pi, handIndex, targetUid=null, position=null, movePosition=
       // R4 (RESOLVED): your lowest power Unit gains +2; if destroyed this round it revives once at 1 power (aegis).
       const real=pl.units.filter(u=>!u.ghost);
       if (real.length){ const t=real.reduce((a,b)=>effPower(g,pi,a)<=effPower(g,pi,b)?a:b);
-        t.power+=2; t.aegis=true; log(g,`Amrita Kalasha blesses ${t.n}: +2, revives once if destroyed.`); }
+        t.power+=2; t.aegis=true; log(g,`Amrita Kalasha blesses ${t.n}: +2, revives once if destroyed.`);
+        emit(g,'buff',{targetUids:[t.uid],amount:2,abilityName:'Amrita Kalasha',text:'+2'}); }   // Crown-precedent artifact-family buff emit (Kishkindha Crown ~2859 emits a real 'buff' for its +1s); Amrita's blessing was emit-blind — an omission against the family pattern, not design. Behavior-neutral (rule #7): STEP-0 check-2 audit found NO engine-side consumer; quest readers are abilityName-gated ('Leap'/'Chaos Surge'), which this never matches.
       else log(g,'Amrita Kalasha: no Unit to bless.');
     }
     else if (c.id==='kavacha'){ designateShields(g, pi); log(g,'Dharma Kavacha raised \u2014 two Units now shielded.'); }
