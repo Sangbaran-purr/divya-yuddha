@@ -506,6 +506,16 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 .lp-cur b{ color:var(--gold); font-weight:700; font-family:Cinzel,serif; font-size:13px; }
 .lp-amsha{ color:var(--hi); }   /* Amsha in the brighter gold + the ✦ glyph → visually distinct from coins */
 .lp-amsha b{ color:var(--hi); }
+/* S-CONSOLE-DYC-2: the on-chain DYC chip — the torana coin + a handed number. ~24px coin, circle-clipped (the emblem
+   is on solid black; the clip + the near-black landing hide the corners). Delta flash: green gain / ember loss → back to gold. */
+.lp-dyc{ display:flex; align-items:center; gap:6px; margin-top:6px; }
+.lp-dyc[hidden]{ display:none; }
+.lp-dyc-coin{ width:24px; height:24px; border-radius:50%; flex:0 0 auto; box-shadow:0 0 0 1px var(--gold-dim-25); }
+.lp-dyc-amt{ font-family:Cinzel,serif; font-size:12.5px; font-weight:700; letter-spacing:.06em; color:var(--hi); }
+.lp-dyc-amt.dyc-up{ animation:dycUp .8s ease; }
+.lp-dyc-amt.dyc-down{ animation:dycDown .8s ease; }
+@keyframes dycUp{ 0%{ color:var(--green,#6fc257); } 100%{ color:var(--hi); } }
+@keyframes dycDown{ 0%{ color:#e0783a; } 100%{ color:var(--hi); } }
 .lp-sadhana{ display:block; width:100%; margin:0 0 12px; padding:10px 14px; border-radius:12px; background:rgba(0,0,0,.42); backdrop-filter:blur(6px); border:1px solid var(--gold-dim); cursor:pointer; text-align:left; }
 .lp-sadhana:active{ transform:scale(.99); }
 .lp-sad-head{ display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:7px; }
@@ -2105,6 +2115,12 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
         <div class="lp-wallet">
           <span class="lp-cur lp-coin" title="Coins">◉ <b id="lp-coins">0</b></span>
           <span class="lp-cur lp-amsha" title="Amsha">✦ <b id="lp-amsha">0</b></span>
+        </div>
+        <!-- S-CONSOLE-DYC-2: on-chain DYC balance HANDED by the rite conduit (localStorage 'dy_dyc'; a NEW element,
+             never .lp-wallet). The game renders a number handed to it — it never reads the chain. Hidden until handed. -->
+        <div class="lp-dyc" id="lp-dyc" hidden>
+          <img class="lp-dyc-coin" src="assets/img/dyc_coin_96.png?v=1" width="24" height="24" alt="" aria-hidden="true">
+          <b class="lp-dyc-amt" id="lp-dyc-amt">0 DYC</b>
         </div>
       </div>
     </div>
@@ -5462,10 +5478,42 @@ function recordMatchResult(){
                difficulty: matchDiff, mult };   // D2 §5: carry the tier + applied multiplier on the stamp for future telemetry segmentation
   if(lastEarn.leveledTo) levelRolloverPending=true;   // profile bar rolls over on next render
 }
+/* ═══════════ S-CONSOLE-DYC-2 — the DYC chip (DISPLAY-LAYER ONLY) ═══════════
+   THE WALL: the game NEVER reads the chain, holds no wallet, moves no DYC. It renders a number HANDED to it via
+   localStorage 'dy_dyc' (written by the rite chain-reader; the dyw:: shim maps the key when embedded). Absent/empty/
+   non-numeric → the chip is HIDDEN (never a fake zero; a real 0 shows "0 DYC"). A delta vs the persisted 'dy_dyc_last'
+   count-rolls + flashes (green gain / ember loss); first-ever shows plain. Standalone serve (no conduit) → hidden, no errors. */
+let dycRoll=null;
+function readHandedDyc(){ try{ const v=localStorage.getItem('dy_dyc'); if(v==null||v==='') return null; const n=Number(v); return isFinite(n)?n:null; }catch(e){ return null; } }
+function fmtDyc(n){ return n.toLocaleString(undefined,{maximumFractionDigits:2})+' DYC'; }
+function rollDyc(el, from, to){
+  if(dycRoll) cancelAnimationFrame(dycRoll);
+  let start=null; const dur=700;
+  function step(ts){ if(start===null) start=ts; const t=Math.min(1,(ts-start)/dur), e=1-Math.pow(1-t,3), v=from+(to-from)*e;
+    el.textContent=fmtDyc(v); if(t<1) dycRoll=requestAnimationFrame(step); else { el.textContent=fmtDyc(to); dycRoll=null; } }
+  dycRoll=requestAnimationFrame(step);
+}
+function renderDycChip(){
+  const el=$('lp-dyc'), amt=$('lp-dyc-amt'); if(!el||!amt) return;
+  const n=readHandedDyc();
+  if(n===null){ el.hidden=true; return; }        // absent/empty/NaN → hidden
+  el.hidden=false;
+  let lastRaw; try{ lastRaw=localStorage.getItem('dy_dyc_last'); }catch(e){ lastRaw=null; }
+  const last=(lastRaw==null||lastRaw==='')?null:Number(lastRaw);
+  amt.classList.remove('dyc-up','dyc-down');
+  if(last===null||!isFinite(last)||n===last){ amt.textContent=fmtDyc(n); }   // first-ever / unchanged → plain, no tick
+  else { void amt.offsetWidth; amt.classList.add(n>last?'dyc-up':'dyc-down'); rollDyc(amt, last, n); }   // delta → roll + flash
+  try{ localStorage.setItem('dy_dyc_last', String(n)); }catch(e){}
+}
+document.addEventListener('visibilitychange', function(){
+  if(document.visibilityState==='visible' && $('landing') && !$('landing').classList.contains('hidden')) renderDycChip();
+});
+
 function showLanding(){
   Story=null;   // leaving any story chapter
   ['hudwrap','gameover','factionselect','factionintro','fi-inspect','storyselect','cutscene','storyresult','brihaspati','objchip','settings','mulligan','bossvs','targeting','inspect','banner','realmpop','diffchip','collection','vault'].forEach(id=>{ const e=$(id); if(e) e.classList.add('hidden'); });   // TASK 30: + collection/vault
   renderProfile();
+  renderDycChip();           // S-CONSOLE-DYC-2: show the handed on-chain DYC balance (hidden if none handed)
   updateCollectionCta();     // TASK 30: owned/total on the Collection button
   maybeGlintRank();          // slice 4: one-time rank-promotion chip shimmer (consumes the persisted pending flag)
   updateStoryLandingCta();   // smart Story caption from dy_story
