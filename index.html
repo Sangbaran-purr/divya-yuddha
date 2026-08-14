@@ -5043,7 +5043,7 @@ function profileInitials(name){ const w=name.trim().split(/\s+/); const s=(w.len
    card costs) are present so later slices read from the same source of truth. ENGINE UNTOUCHED — everything below
    reads only the match result and the story-completion hook. */
 const META_CONFIG = {
-  schemaVersion: 6,   // v1: xp/wallet/rewards/daily/story · v2: + quests · v3: + sadhana/bonusAmsha/firstWinAwarded · v4 (slice 4): + rewards.rankSeen/rankGlintPending · v5 (D2): + settings.difficulty · v6 (TASK 30): + cards{id:{owned,revealed}} ownership/ceremony map. NOTE: v6 adds ONLY the cards map — wallet.amsha / daily.firstWinAwarded / sadhana.banked / story.bonusAmsha all keep their shipped v3–v5 shape (no lastFirstWinDate, no second retro path: the ledger is already idempotent).
+  schemaVersion: 7,   // v1: xp/wallet/rewards/daily/story · v2: + quests · v3: + sadhana/bonusAmsha/firstWinAwarded · v4 (slice 4): + rewards.rankSeen/rankGlintPending · v5 (D2): + settings.difficulty · v6 (TASK 30): + cards{id:{owned,revealed}} ownership/ceremony map · v7 (S-DECK-1): + decks{faction:[22 ids]} saved Forge decks (additive, empty {} default, validated at match-start). NOTE: v6/v7 add ONLY their new map — wallet.amsha / daily.firstWinAwarded / sadhana.banked / story.bonusAmsha all keep their shipped v3–v5 shape (no lastFirstWinDate, no second retro path: the ledger is already idempotent).
   DIFFICULTY_REWARD_MULT: { beginner:0.8, advanced:1.0, deathmatch:1.5 },   // D2 §2 — scales PvAI match XP/coins/Amsha/Sadhana income (ONE application point in recordMatchResult; story/PvP untouched)
   xp: {                                  // §1 awards (play-only, win or lose)
     matchComplete: 20, matchWin: 15,
@@ -5100,6 +5100,7 @@ function freshMeta(){ return {
   sadhana: { pin:null, banked:{} },                   // slice 3 — pinned card id + per-id banked progress (persists on pin-switch)
   settings: { difficulty:'advanced' },                // v5 (D2) — last chosen PvAI difficulty, preselected next match
   cards: {},                                          // v6 (TASK 30) — {id:{owned,revealed}}; filled by ensureCards(): launch grandfathered, wave sealed
+  decks: {},                                          // v7 (S-DECK-1) — {faction:[22 engine ids]} saved Forge decks; empty = auto-deck at match-start
 }; }
 function saveMeta(M){ try{ localStorage.setItem('dy_meta', JSON.stringify(M)); }catch(e){} }
 function loadMeta(){
@@ -5121,6 +5122,7 @@ function loadMeta(){
   if(!M.settings || typeof M.settings!=='object'){ M.settings={ difficulty:'advanced' }; changed=true; }   // v5 (D2): additive — older stores keep xp/wallet/quests/sadhana, gain default difficulty
   if(!META_CONFIG.DIFFICULTY_REWARD_MULT[M.settings.difficulty]){ M.settings.difficulty='advanced'; changed=true; }   // guard a corrupt/unknown persisted value
   if(ensureCards(M)) changed=true;   // v6 (TASK 30): additive ownership map — ALL launch grandfathered owned+revealed, ALL wave sealed. Older stores keep xp/wallet/quests/sadhana/story untouched. NO second retro path: story.bonusAmsha (v3) is already idempotent, so a v5→v6 store is never re-credited.
+  if(!M.decks || typeof M.decks!=='object'){ M.decks={}; changed=true; }   // v7 (S-DECK-1): additive saved-decks map — default empty {}; older stores keep everything else untouched.
   if(M.sadhana && M.sadhana.pin && !sadhanaPinnable(M.sadhana.pin)){ M.sadhana.pin=null; changed=true; }   // v6: retire a legacy per-faction pin ('wave_devas' …) — banked is KEPT (per-id carry-over, slice-3 preserve semantics)
   if(M.schemaVersion!==META_CONFIG.schemaVersion){ M.schemaVersion=META_CONFIG.schemaVersion; changed=true; }
   if(!M.daily || M.daily.day!==todayKey()){ M.daily={ day:todayKey(), firstMatchAwarded:false, firstWinAwarded:false }; changed=true; }   // day rollover → re-arm both daily-firsts
@@ -5514,20 +5516,60 @@ function readHandedWaveOwned(){
    Math.random Fisher-Yates here is allowed. Returns { p0Deck, p1Deck } of card NAMES (spec.deck is by name),
    or null when the picked faction owns no wave card → the caller runs today's plain newGame, untouched. */
 function shuffleUI(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+/* S-DECK-1 — validateDeck (pure). Checks IN ORDER; the reason string feeds the future Forge teacher line
+   (plain language, no jargon). Faction-pure + real + composition-exact + every wave id still owned. */
+function validateDeck(faction, ids){
+  if(!Array.isArray(ids) || ids.length!==22) return { valid:false, reason:'a deck needs exactly 22 cards' };            // (a)
+  if(new Set(ids).size!==ids.length)          return { valid:false, reason:'a card is listed twice' };                 // (b)
+  const src = DECKS[faction];
+  if(!src) return { valid:false, reason:'unknown faction' };
+  const byId = {}; for(const c of src) byId[c.id]=c;
+  for(const id of ids){ if(!byId[id]) return { valid:false, reason:'a card does not belong to this faction' }; }       // (c) faction-pure + real
+  const need = { hero:3, unit:12, astra:3, mantra:2, artifact:2 };                                                     // (d) composition EXACT vs c.t
+  const got  = { hero:0, unit:0, astra:0, mantra:0, artifact:0 };
+  for(const id of ids){ got[byId[id].t]++; }
+  const plural = { hero:'heroes', unit:'units', astra:'astras', mantra:'mantras', artifact:'artifacts' };
+  for(const t of ['hero','unit','astra','mantra','artifact']){
+    if(got[t]!==need[t]) return { valid:false, reason:`a deck needs exactly ${need[t]} ${plural[t]}` };
+  }
+  const wo = readHandedWaveOwned(); const ownedSet = new Set(wo ? wo.cards : []);                                      // (e) wave ids must be owned NOW; launch exempt
+  for(const id of ids){ if(byId[id].wave && !ownedSet.has(id)) return { valid:false, reason:'a card in this deck was sold' }; }
+  return { valid:true };
+}
+
+/* S-DECK-1 — the no-saved-deck default (the DESIGN-NOTE flip; owner rules on the S-DECK-1 report):
+   true  = INTERIM — the S-PLAY-1 merge (launch-22 + owned-wave-of-faction, 22+N), preserving the fighting cards
+           players just gained, until the Forge ships.
+   false = LAW-PURE — launch-22 (a saved Forge deck becomes the ONLY way owned wave cards enter a match). */
+const FORGE_NO_SAVED_MERGE = true;
+
 function buildWaveDeck(p0Faction, p1Faction){
-  const owned = readHandedWaveOwned();
-  if(!owned || !owned.cards || !owned.cards.length) return null;          // no handed ownership → untouched road
-  const ownedSet = new Set(owned.cards);                                  // def.ids across ALL owned factions
-  const src = DECKS[p0Faction] || DECKS.devas;
-  // FACTION-SCOPED (ruled): membership via the picked faction's OWN deck array — an owned id from another
-  // faction is simply not in DECKS[p0Faction], so it can never leak in.
-  const ownedWaveNames = src.filter(c=>c.wave && ownedSet.has(c.id)).map(c=>c.n);
-  if(!ownedWaveNames.length) return null;                                 // owns none OF THIS faction → plain match, untouched road
-  const launchNames = src.filter(c=>!c.wave).map(c=>c.n);                 // the faction's launch-22 names
-  const p0Deck = shuffleUI(launchNames.concat(ownedWaveNames));           // 22 + N, pre-shuffled (spec.deck injects ORDERED)
-  const aiSrc = DECKS[p1Faction] || DECKS.devas;                          // AI stays launch-22: explicit inject bypasses the wave pool even with wave1:true
-  const p1Deck = shuffleUI(aiSrc.filter(c=>!c.wave).map(c=>c.n));
-  return { p0Deck, p1Deck };
+  const src   = DECKS[p0Faction] || DECKS.devas;
+  const aiSrc = DECKS[p1Faction] || DECKS.devas;
+  const p1Deck = () => shuffleUI(aiSrc.filter(c=>!c.wave).map(c=>c.n));   // AI is ALWAYS launch-22 (owns nothing; explicit inject bypasses the wave pool even with wave1:true)
+
+  // 1) a saved Forge deck, valid against CURRENT ownership + the composition law → play it verbatim
+  const M = loadMeta();
+  const saved = M.decks && M.decks[p0Faction];
+  if(saved && validateDeck(p0Faction, saved).valid){
+    const byId = {}; for(const c of src) byId[c.id]=c;
+    const p0Deck = shuffleUI(saved.map(id=>byId[id].n));                  // id→name (spec.deck is by name), pre-shuffled
+    return { p0Deck, p1Deck: p1Deck() };
+  }
+
+  // 2) no valid saved deck → the ruled default, behind the one-line flip
+  if(FORGE_NO_SAVED_MERGE){
+    // INTERIM (S-PLAY-1, byte-identical): launch-22 + owned-wave-of-faction merge; null when there is nothing to add.
+    const owned = readHandedWaveOwned();
+    if(!owned || !owned.cards || !owned.cards.length) return null;        // no handed ownership → untouched road
+    const ownedSet = new Set(owned.cards);                               // def.ids across ALL owned factions (faction-scoped by the DECKS[p0Faction] filter below)
+    const ownedWaveNames = src.filter(c=>c.wave && ownedSet.has(c.id)).map(c=>c.n);
+    if(!ownedWaveNames.length) return null;                              // owns none OF THIS faction → plain match, untouched road
+    const launchNames = src.filter(c=>!c.wave).map(c=>c.n);
+    const p0Deck = shuffleUI(launchNames.concat(ownedWaveNames));        // 22 + N, pre-shuffled
+    return { p0Deck, p1Deck: p1Deck() };
+  }
+  return null;                                                            // LAW-PURE: no saved deck → plain launch-22 match
 }
 function fmtDyc(n){ return n.toLocaleString(undefined,{maximumFractionDigits:2})+' DYC'; }
 function rollDyc(el, from, to){
