@@ -76,7 +76,7 @@ const Q = new URLSearchParams(location.search);
 const SEED = Q.has('seed') ? (Number(Q.get('seed')) >>> 0) : 20260911;
 const F0 = Q.get('f0') || 'nagas', F1 = Q.get('f1') || 'vanaras';
 const ROAD = Q.get('road') === 'staked' ? 'staked' : 'free';   // BW3b — ?road=staked: the stand-in speaks VIEWS (web3 redactedview.js, ported)
-const VIEW2 = Q.get('view2') === '1';                              // BW3b — also carry the W3-VIEW-2 fields (passed + flags), synthesized from the engine
+const VIEW2 = Q.get('view2') !== '0';                              // W3-VIEW-2 shipped (web3 aed5424): views carry passed, board flags, myHandLocked; ?view2=0 strips them (an older server)
 const MATCH_ID = 'rehearsal-' + SEED + (ROAD === 'staked' ? '-staked' : '');
 const AI_FNS = ['aiTakeTurn', 'aiMove', 'aiMulliganPlan', 'aiScoreCard', 'aiPlacement'];
 
@@ -205,15 +205,16 @@ function buildView(room, mid, seat, lastMove, events) {
     ghosts: { mine: ghostCells(me), opp: ghostCells(opp) }, artifacts: { mine: pubArtifact(me.artifact), opp: pubArtifact(opp.artifact) },
     totals: [E.totalPower(g, 0), E.totalPower(g, 1)], roundHistory: (g.roundHistory || []).map(h => ({ round: h.round, t0: h.t0, t1: h.t1, winner: h.winner })),
     mulliganCount: g.mulliganCount != null ? g.mulliganCount : 3, myHandUids: me.hand.map(c => c.uid),
+    // W3-VIEW-2 (web3 aed5424) — passed · the BOARD flags (board uids only) · the own-hand lock (own seat, no uid)
+    passed: [!!g.players[0].passed, !!g.players[1].passed], flags: boardFlags(g), myHandLocked: me.hand.map(c => c.lockedRound === g.round),
   };
 }
-// what the HALL posts (R2): the server's view without the seat names; plus, with ?view2=1, the W3-VIEW-2 fields
+function boardFlags(g) { const out = {}; [0, 1].forEach(s => { const pl = g.players[s]; pl.units.concat(pl.heroes).forEach(u => { if (u.ghost) return;
+  out[u.uid] = { base: u.base, ward: !!u.ward, asleep: !!u.asleep, stolenBy: u.stolenBy != null ? u.stolenBy : -1 }; }); }); return out; }
+// what the HALL posts (R2): the server's view without the seat names; with ?view2=0, also without the W3-VIEW-2 fields
 function hallView(seat, lastMove, events) {
   const v = buildView(room, MATCH_ID, seat, lastMove, events); delete v.myName; delete v.oppName;
-  if (VIEW2) { const g = room.state, flags = {};
-    g.players.forEach(pl => pl.units.concat(pl.heroes).forEach(u => { flags[u.uid] = { base: u.base, ward: !!u.ward, asleep: !!u.asleep, stolenBy: u.stolenBy, lockedRound: u.lockedRound || 0 }; }));
-    g.players[seat].hand.forEach(c => { flags[c.uid] = { base: c.base, ward: false, asleep: false, stolenBy: -1, lockedRound: c.lockedRound || 0 }; });
-    v.passed = [!!g.players[0].passed, !!g.players[1].passed]; v.flags = flags; }
+  if (!VIEW2) { delete v.passed; delete v.flags; delete v.myHandLocked; }
   return v;
 }
 
@@ -453,7 +454,9 @@ T.audit = function () {
   for (const s of [0, 1]) {
     const o = 1 - s, hid = g.players[o].hand.concat(g.players[o].deck).filter(c => !played.has(c.uid)), hidU = new Set(hid.map(c => c.uid)), log = T.rx[s].join('\n');
     const cross = []; T.rx[s].forEach(l => (function w(v, k, path) { if (Array.isArray(v)) return v.forEach((x, i) => w(x, k, path + '[' + i + ']'));
-      if (v && typeof v === 'object') return Object.keys(v).forEach(kk => w(v[kk], kk === 'mine' || kk === 'opp' ? k : kk, path + '.' + kk));
+      if (v && typeof v === 'object') return Object.keys(v).forEach(kk => {   // W3-VIEW-2: the flags map is keyed BY uid — its keys are uids too (no sight road)
+        if (kk === 'flags' && v[kk] && typeof v[kk] === 'object' && !Array.isArray(v[kk])) Object.keys(v[kk]).forEach(u => { if (hidU.has(Number(u))) cross.push(path + '.flags[' + u + ']'); });
+        w(v[kk], kk === 'mine' || kk === 'opp' ? k : kk, path + '.' + kk); });
       if (typeof v === 'number' && k && (/uid/i.test(k) || k === 'shielded') && hidU.has(v)) cross.push(path); })(JSON.parse(l), null, ''));
     const elsewhere = cross.filter(p => !/\.view\.legal\.playable\[\d+\]\.targets\[\d+\]\.uid$/.test(p) && !/\.view\.oppHand/.test(p));
     // an id is only a leak if NO copy of it was ever public for that seat (decks carry duplicates: a played copy on the

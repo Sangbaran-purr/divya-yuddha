@@ -53,6 +53,7 @@ console.log('\n── 1 · the seat pin (index.html UI, comments stripped) ─�
     ['fillRow(…, 0|1, …)',           /fillRow\([^,]+,[^,]+,\s*[01]\s*,/g],
     ['boardCard(…, 0|1, …)',         /boardCard\([^,]+,\s*[01]\s*,/g],
     ['openInspect(…, 0|1, …)',       /openInspect\([^,]+,\s*[01]\s*[,)]/g],
+    ['stolenBy === 0|1',             /\bstolenBy\s*===?\s*[01]\b/g],   // G-SEAT-FIX-1: the blind spot the pin missed (was index.html:7958)
   ];
   let total = 0;
   for (const [label, re] of PATTERNS) {
@@ -231,8 +232,9 @@ if (!createRoom) {
 // The server's REAL room and its REAL buildView (web3 redactedview.js) produce each seat's view after every action; the
 // frame's viewToState reads it; an independent projection of the engine state (the oracle) must equal it. The adapter
 // is compiled with the card DATA only in scope — an engine call inside it would throw, so "no engine on the staked
-// road" is structural here. Run twice: views AS SHIPPED (passed derived from lastMove, flags absent → printed power, no
-// badges) and views CARRYING passed + flags (the W3-VIEW-2 fields, synthesized here from the engine until web3 ships).
+// road" is structural here. Run twice: views AS SHIPPED (web3 aed5424 - W3-VIEW-2 carries passed, the BOARD flags and
+// myHandLocked) and the same views STRIPPED of those three fields (an older server: passed derived from lastMove, printed
+// power, no badges, no lock). G-LOCK-READ-1 retired the engine-synthesized stand-in for the fields.
 console.log('\n── 4 · the staked road: viewToState vs the engine\'s public projection, every action, both seats ──');
 let buildView = null;
 try { buildView = require(path.join(MS, 'src', 'redactedview.js')).buildView; } catch (e) { buildView = null; }
@@ -242,38 +244,34 @@ if (!buildView || !createRoom) {
   const E = require(path.join(GAME, 'src', 'engine.js'));
   const ES = require(path.join(MS, 'src', 'engineguard.js')).loadGuardedEngine().engine;
   const adapterSrc = extractFn(UI, 'defById') + '\n' + extractFn(UI, 'viewToState') + '\n' + extractFn(UI, 'viewTargetSpec');
-  const mkAdapter = (me) => new Function('DECKS', 'CARD_BY_NAME',
-    'let ME=' + me + ', OPP=' + (1 - me) + ', DEF_BY_ID=null; const isViewState=(x)=>!!(x&&x._view);\n' + adapterSrc +
+  const mkAdapter = (me, src) => new Function('DECKS', 'CARD_BY_NAME',
+    'let ME=' + me + ', OPP=' + (1 - me) + ', DEF_BY_ID=null; const isViewState=(x)=>!!(x&&x._view);\n' + (src || adapterSrc) +
     '\nreturn { viewToState, viewTargetSpec };')(E.DECKS, CARD_BY_NAME_OF(E));
   function CARD_BY_NAME_OF(E) { const m = {}; for (const f in E.DECKS) for (const d of E.DECKS[f]) if (!m[d.n]) m[d.n] = d; return m; }
   const hall = (v) => { const c = Object.assign({}, v); delete c.myName; delete c.oppName; return c; };   // what the Hall posts (R2)
-  const W2 = (g, v) => {   // the W3-VIEW-2 fields, from the engine (public board facts)
-    const flags = {}; g.players.forEach(pl => pl.units.concat(pl.heroes).forEach(u => { flags[u.uid] = { base: u.base, ward: !!u.ward, asleep: !!u.asleep, stolenBy: u.stolenBy, lockedRound: u.lockedRound || 0 }; }));
-    g.players[v.seat].hand.forEach(c => { flags[c.uid] = { base: c.base, ward: false, asleep: false, stolenBy: -1, lockedRound: c.lockedRound || 0 }; });
-    return Object.assign({}, v, { passed: [!!g.players[0].passed, !!g.players[1].passed], flags });
-  };
+  const strip = (v) => { const c = Object.assign({}, v); delete c.passed; delete c.flags; delete c.myHandLocked; return c; };   // an older server
   // the ORACLE: what seat s may see, straight from the engine state — written independently of redactedview.js
-  function oracle(room, s) {
+  function oracle(room, s, lock) {
     const g = room.state, o = 1 - s;
     const u = (pi) => (x) => ({ uid: x.uid, id: x.id, power: x.ghost ? 1 : ES.effPower(g, pi, x), venom: x.venom || 0, bound: !!x.bound, ghost: !!x.ghost });
     const side = (pi) => { const pl = g.players[pi]; return { units: pl.units.map(u(pi)), heroes: pl.heroes.map(u(pi)), art: pl.artifact ? pl.artifact.id : null,
       discard: pl.discard.map(c => c.id), deck: pl.deck.length, rw: pl.roundWins, shielded: pl.units.filter(x => !x.ghost && ES.isShielded(g, pi, x)).map(x => x.uid).sort(), mull: room.mulliganedFor(pi) }; };
     return { round: g.round, turn: room.turn, over: g.over, winner: g.over ? g.winner : null, realm: g.realm, rh: g.roundHistory.map(h => [h.round, h.t0, h.t1, h.winner]),
       totals: [ES.totalPower(g, 0), ES.totalPower(g, 1)], me: side(s), opp: side(o),
-      hand: g.players[s].hand.map(c => [c.uid, c.id]), oppCount: g.players[o].hand.length, passed: [!!g.players[0].passed, !!g.players[1].passed] };
+      hand: g.players[s].hand.map(c => lock ? [c.uid, c.id, c.lockedRound === g.round] : [c.uid, c.id]), oppCount: g.players[o].hand.length, passed: [!!g.players[0].passed, !!g.players[1].passed] };
   }
-  function projectAdapter(G, s) {
+  function projectAdapter(G, s, lock) {
     const o = 1 - s;
     const u = (x) => ({ uid: x.uid, id: x.id, power: x.power, venom: x.venom || 0, bound: !!x.bound, ghost: !!x.ghost });
     const side = (pi) => { const pl = G.players[pi]; return { units: pl.units.map(u), heroes: pl.heroes.map(u), art: pl.artifact ? pl.artifact.id : null,
       discard: pl.discard.map(c => c.id), deck: pl.deck.length, rw: pl.roundWins, shielded: pl.shieldUids.slice().sort(), mull: pl.mulliganed }; };
     return { round: G.round, turn: G.turn, over: G.over, winner: G.winner, realm: G.realm, rh: G.roundHistory.map(h => [h.round, h.t0, h.t1, h.winner]),
-      totals: G.totals, me: side(s), opp: side(o), hand: G.players[s].hand.map(c => [c.uid, c.id]), oppCount: G.players[o].hand.length,
+      totals: G.totals, me: side(s), opp: side(o), hand: G.players[s].hand.map(c => lock ? [c.uid, c.id, c.lockedRound === G.round] : [c.uid, c.id]), oppCount: G.players[o].hand.length,
       passed: [G.players[0].passed, G.players[1].passed] };
   }
   const PAIRS = [['vanaras', 'nagas'], ['devas', 'asuras'], ['nagas', 'vanaras'], ['asuras', 'devas'], ['devas', 'nagas']];
   for (const carried of [false, true]) {
-    let matches = 0, checks = 0, first = null, flagChecks = 0, passedFlips = 0, events = 0, ghostsSeen = 0, discardUids = 0, discardTotal = 0;
+    let matches = 0, checks = 0, first = null, flagChecks = 0, passedFlips = 0, events = 0, ghostsSeen = 0, discardUids = 0, discardTotal = 0, lockViews = 0;
     for (let m = 0; m < 40 && !first; m++) {
       const [f0, f1] = PAIRS[m % PAIRS.length], seed = (0x51ED27 * (m + 3)) >>> 0;
       const room = createRoom(ES, { seed, seats: [{ address: '0x' + '1'.repeat(40), faction: f0 }, { address: '0x' + '2'.repeat(40), faction: f1 }] });
@@ -282,11 +280,11 @@ if (!buildView || !createRoom) {
       const push = (lastMove) => {
         const slice = (g.events || []).slice(cursor); cursor = (g.events || []).length; events += slice.length;
         for (const s of [0, 1]) {
-          let v = hall(buildView({ E: ES }, room, 'm-parity', s, lastMove, slice)); if (carried) v = W2(g, v);
+          let v = hall(buildView({ E: ES }, room, 'm-parity', s, lastMove, slice)); if (!carried) v = strip(v);
           st[s] = A[s].viewToState(v, st[s]);
-          const want = oracle(room, s), got = projectAdapter(st[s], s);
+          const want = oracle(room, s, carried), got = projectAdapter(st[s], s, carried);
           if (JSON.stringify(want) !== JSON.stringify(got)) { first = { m, seat: s, carried, lastMove, diff: Object.keys(want).filter(k => JSON.stringify(want[k]) !== JSON.stringify(got[k])) }; return false; }
-          checks++;
+          checks++; if (carried && g.players[s].hand.some(c => c.lockedRound === g.round)) lockViews++;
           st[s].players.forEach(pl => { ghostsSeen += pl.units.filter(x => x.ghost).length; discardTotal += pl.discard.length; discardUids += pl.discard.filter(x => x.uid != null).length; });
           if (carried) {   // present-when-carried: the flags row reaches the cards
             const ok2 = g.players.every((pl, pi) => pl.units.concat(pl.heroes).every(x => { const c = st[s].players[pi].units.concat(st[s].players[pi].heroes).find(y => y.uid === x.uid); return c && c.base === x.base && c.stolenBy === x.stolenBy && !!c.ward === !!x.ward && !!c.asleep === !!x.asleep; }));
@@ -316,9 +314,9 @@ if (!buildView || !createRoom) {
       }
       if (!first) matches++;
     }
-    ok('ADAPTER PARITY (' + (carried ? 'views CARRYING passed + flags' : 'views AS SHIPPED — passed derived, flags absent') + '): ' + matches + ' matches, ' + checks + ' seat-checks after every action — equal to the engine\'s public projection',
+    ok('ADAPTER PARITY (' + (carried ? 'views AS SHIPPED — passed, board flags, myHandLocked (web3 aed5424)' : 'views STRIPPED of the three fields — an older server, degraded') + '): ' + matches + ' matches, ' + checks + ' seat-checks after every action — equal to the engine\'s public projection',
        first === null && matches === 40, JSON.stringify(first));
-    if (carried) ok('  present-when-carried: the flags row (base · ward · asleep · stolenBy) reaches every board card (' + flagChecks + ' views)', flagChecks > 0 && first === null);
+    if (carried) ok('  present-when-carried: the board flags row (base · ward · asleep · stolenBy) reaches every board card (' + flagChecks + ' views); the own-hand lock equal to the engine in every view (' + lockViews + ' with a live Narada lock)', flagChecks > 0 && lockViews > 0 && first === null);
     else ok('  degraded-when-absent: no badge without its field; passed derived from lastMove matched the engine through ' + passedFlips + ' passes; ' + events + ' events, ' + ghostsSeen + ' ghost cells, discard uids inherited ' + discardUids + '/' + discardTotal, first === null && passedFlips > 0);
   }
   // GHOST CELLS, placed on purpose (the AI rarely makes one): Yama + two units down, one destroyed by the engine's own
@@ -346,6 +344,36 @@ if (!buildView || !createRoom) {
     ok('the seat law on the staked road: ME=0 and ME=1 each read their OWN hand in full and the other as a count; names are You / Opponent by ME',
        G0.players[0].name === 'You' && G0.players[1].name === 'Opponent' && G1.players[1].name === 'You' && G1.players[0].name === 'Opponent' &&
        G0.players[0].hand.every(c => c.uid != null && c.id) && G0.players[1].hand.every(c => c.hidden) && G1.players[1].hand.every(c => c.uid != null) && G1.players[0].hand.every(c => c.hidden));
+  }
+  // G-LOCK-READ-1 — THE LOCK, placed on purpose: seat 0's Narada locks seat 1's hand[0]. For its OWNER the card renders
+  //   🔒 (the hand row's own predicate, c.lockedRound === G.round) and is unplayable (the facade's staked answer,
+  //   G._legal.playable); the OPPONENT's adapter carries no lock for it anywhere. Two mutants must turn it red: an
+  //   adapter that ignores myHandLocked, and a view that hands seat 0 the other seat's lock bits.
+  {
+    const SC = { p0Deck: ['Narada', 'Chandra Dev', 'Yama', 'Marut', 'Gandharva', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Vishwakarma', 'Indra', 'Agni'],
+                 p1Deck: ['Asura Berserker', 'Kali Asura', 'Kalanemi', 'Bana Asura', 'Narakasura', 'Meghnad', 'Vibhishana', 'Ravana', 'Maricha', 'Tataka', 'Hiranyakashipu', 'Kumbhakarna'], mulligan: 0 };
+    const Es = Object.assign(Object.create(ES), { newGame: (o) => ES.newGame(Object.assign({}, o, { scenario: SC })) });
+    const room = createRoom(Es, { seed: 11, seats: [{ address: '0x' + '1'.repeat(40), faction: 'devas' }, { address: '0x' + '2'.repeat(40), faction: 'asuras' }] });
+    const g = room.state, go = (s, a) => { const vd = room.validate(s, a); if (!vd.ok) throw new Error('LOCK scenario refused: ' + vd.reason); room.apply(s, a); };
+    go(0, { type: 'mulligan', indices: [] }); go(1, { type: 'mulligan', indices: [] });
+    if (room.turn !== 0) go(1, { type: 'play', handIndex: g.players[1].hand.findIndex(c => c.t === 'unit' && c.id !== 'maricha'), targetIndex: null });
+    const nar = g.players[0].hand.findIndex(c => c.id === 'saraswati'), lockedUid = g.players[1].hand[0].uid;
+    go(0, { type: 'play', handIndex: nar, targetIndex: 0 });   // Narada's targets are seat 1's hand; index 0 = hand[0]
+    const v0 = hall(buildView({ E: ES }, room, 'm', 0, null, [])), v1 = hall(buildView({ E: ES }, room, 'm', 1, null, []));
+    const own = (G) => G.players[1].hand.find(c => c.uid === lockedUid);
+    const G1 = mkAdapter(1).viewToState(v1, null), G0 = mkAdapter(0).viewToState(v0, null);
+    const lockIcon = (G, c) => !!c && c.lockedRound === G.round;                                   // index.html's hand row: c.lockedRound===G.round → 🔒
+    const unplayable = (G, c) => !!G._legal && G.players[1].hand.indexOf(c) >= 0 && !G._legal.playable.some(p => p.i === G.players[1].hand.indexOf(c)) && G._legal.playable.length > 0;
+    const oppClean = (G) => G.players[1].hand.every(c => !c.lockedRound) && G.players[0].hand.every(c => !c.lockedRound) && !JSON.stringify(G.players[1].hand).includes('lockedRound":' + G.round);
+    const realOK = g.players[1].hand[0].lockedRound === g.round && room.turn === 1 && lockIcon(G1, own(G1)) && unplayable(G1, own(G1)) && oppClean(G0);
+    // mutant A — the adapter as it read before this rung (no myHandLocked): the owner's 🔒 must vanish
+    const srcA = adapterSrc.replace("lockedRound: (v.myHandLocked && v.myHandLocked[k]) ? v.round : 0", 'lockedRound: 0');
+    const mutA = srcA !== adapterSrc && !lockIcon(G1, own(mkAdapter(1, srcA).viewToState(v1, null)));
+    // mutant B — seat 0 handed seat 1's lock bits as its own: seat 0's adapter now shows a lock → the clean check goes red
+    const vB = Object.assign({}, v0, { myHandLocked: g.players[1].hand.map(c => c.lockedRound === g.round) });
+    const mutB = !oppClean(mkAdapter(0).viewToState(vB, null));
+    ok('THE LOCK (G-LOCK-READ-1): a Narada-locked hand card renders 🔒 and is unplayable for its OWNER (seat 1); the opponent\'s adapter carries no lock for it — mutants red: an adapter blind to myHandLocked (' + (mutA ? 'RED' : 'green?!') + '), the other seat\'s bits in seat 0\'s view (' + (mutB ? 'RED' : 'green?!') + ')',
+       realOK && mutA && mutB, JSON.stringify({ realOK, mutA, mutB, turn: room.turn, phase: room.phase }));
   }
 }
 
