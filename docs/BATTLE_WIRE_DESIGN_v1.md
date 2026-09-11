@@ -2,8 +2,9 @@
 # Status: SEALED - owner "Ok" 2026-09-11; §9 N1-N6 ruled as
 # proposed. Build authority for the BW rung series. AMENDMENTS
 # 2026-09-11a (BW1 STEP-0 corrections), 2026-09-11b (BW1 build
-# shapes), 2026-09-11c (wire:reject) and 2026-09-11d (BW3b staked
-# shapes, the wall, W3-VIEW-2 ordering) recorded in §10. Authority above this doc:
+# shapes), 2026-09-11c (wire:reject), 2026-09-11d (BW3b staked
+# shapes, the wall, W3-VIEW-2 ordering) and 2026-09-11e (the flags
+# cover the boards only; the hand lock) recorded in §10. Authority above this doc:
 # MULTIPLAYER_DESIGN.md v1.1 (the covenant, A1-A8, THE WALL) and
 # LOBBY_DESIGN.md v1.1 (§11 ruled copy, §13 L3 "the real battle
 # screen"). Source of facts: G-BATTLE-WIRE-SURVEY-1 (2026-09-11,
@@ -318,3 +319,15 @@ recorded). The engine's eight query functions are read through
 one facade (engine on free / vs-AI / story, view on staked; the
 29 call sites pinned). §5's game half is built as stated; engine
 0 lines. F1-F6, N1-N6 unchanged.
+2026-09-11e (W3-VIEW-2 STEP-0, owner-ruled R1 = B): 11d's flags
+scope is corrected. Narada's lock is a HAND fact (engine
+saraswati locks an opponent hand card; lockedRound is never read
+on the board), so "...and the viewer's own hand" is withdrawn:
+flags { "<uid>": { base, ward, asleep, stolenBy } } keys BOARD
+uids only - every non-ghost unit and every hero on either board,
+the same map on both seats' views; lockedRound leaves the row.
+The lock rides myHandLocked: [bool], parallel to myHand, own
+seat only, no uid - the myHandUids pattern. The uid law holds to
+the letter. The adapter's one-line read of myHandLocked rides the
+next game commit (BW3b's site-tail sequencing: game one-liner,
+sync, site). F1-F6, N1-N6 unchanged.
