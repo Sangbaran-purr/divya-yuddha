@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Wire Frame Rehearsal</title>
+<!--
+  BW1 — THE WIRE, IN A REAL BROWSER. docs/BATTLE_WIRE_DESIGN_v1.md, proof P2/P3/P4/P5.
+  NEVER SYNCED: the site's sync archives index.html, src/chapters.js, src/engine.js, assets/vendor — test/ is not in it.
+
+  Two REAL game frames (../index.html?wire=1) sit side by side: seat 0 on the left, seat 1 on the right. This page plays
+  the Hall's part — it is the frames' parent — and hosts a STAND-IN ENGINE AUTHORITY: a line-for-line port of the table
+  server's room (match.js validate/apply, the four guards) running the canonical src/engine.js (byte-identical to the
+  server's pinned copy). Like the server it assigns seq, relays every applied move to BOTH frames, can refuse an act
+  ({reject}), and moves FOR a seat on a clock (auto-keep in the mulligan, auto-pass in play).
+
+  The autopilot drives each frame through the frame's OWN input road (hand tap → PLAY, the placement / target resolvers,
+  PASS, the mulligan CONFIRM). It never calls an AI function; the AI functions in both frames are wrapped and counted.
+
+  Serve the game repo (python3 -m http.server 4599) and open http://localhost:4599/test/wire_frame.html
+  Query: ?seed=N&f0=nagas&f1=vanaras&auto=1   ·   window.T is the rehearsal API.
+-->
+<style>
+  :root{
+    --ground:#0c0a07; --panel:#17130c; --line:#3a2f1a; --ink:#e9dfc6; --dim:#9c8f72;
+    --gold:#d2ac52; --ok:#7cc46a; --bad:#e0694f; --warn:#e5b84a;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace; --sans:-apple-system,'Segoe UI',Roboto,sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--ground); color:var(--ink); font:13px/1.45 var(--sans); }
+  header{ display:flex; flex-wrap:wrap; gap:10px 18px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--line); background:var(--panel); position:sticky; top:0; z-index:2; }
+  h1{ margin:0; font:600 13px var(--sans); letter-spacing:.14em; text-transform:uppercase; color:var(--gold); }
+  .btns{ display:flex; flex-wrap:wrap; gap:6px; }
+  button{ background:#221b10; color:var(--ink); border:1px solid var(--line); border-radius:6px; padding:5px 10px; font:12px var(--sans); cursor:pointer; }
+  button:hover{ border-color:var(--gold); }
+  button:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  button.on{ border-color:var(--ok); color:var(--ok); }
+  .stat{ font:12px var(--mono); color:var(--dim); font-variant-numeric:tabular-nums; }
+  .stat b{ color:var(--ink); font-weight:600; }
+  .stat .ok{ color:var(--ok); } .stat .bad{ color:var(--bad); }
+  main{ display:grid; grid-template-columns:auto auto minmax(260px,1fr); gap:14px; padding:14px; align-items:start; }
+  @media (max-width:1100px){ main{ grid-template-columns:auto auto; } #logwrap{ grid-column:1 / -1; } }
+  .seat{ display:flex; flex-direction:column; gap:6px; }
+  .seat .cap{ font:600 11px var(--sans); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); display:flex; justify-content:space-between; gap:10px; }
+  .seat .cap b{ color:var(--gold); font-weight:600; }
+  .phone{ width:calc(390px * var(--s)); height:calc(780px * var(--s)); overflow:hidden; border:1px solid var(--line); border-radius:14px; background:#000; }
+  .phone iframe{ width:390px; height:780px; border:0; transform:scale(var(--s)); transform-origin:0 0; display:block; }
+  #logwrap{ border:1px solid var(--line); border-radius:10px; background:var(--panel); display:flex; flex-direction:column; min-height:300px; max-height:calc(780px * var(--s) + 22px); }
+  #logwrap .cap{ padding:8px 10px; border-bottom:1px solid var(--line); font:600 11px var(--sans); letter-spacing:.12em; text-transform:uppercase; color:var(--dim); }
+  #log{ margin:0; padding:8px 10px; overflow:auto; flex:1; font:11px/1.5 var(--mono); white-space:pre-wrap; word-break:break-word; }
+  #log .ok{ color:var(--ok); } #log .bad{ color:var(--bad); } #log .warn{ color:var(--warn); } #log .mv{ color:var(--dim); }
+</style>
+</head>
+<body style="--s:.82">
+<header>
+  <h1>Wire frame rehearsal</h1>
+  <div class="btns">
+    <button id="b-auto" type="button">Autopilot</button>
+    <button id="b-rej" type="button">Reject seat 1's next play</button>
+    <button id="b-clock" type="button">Clock seat 1's next turn</button>
+    <button id="b-probe" type="button">Bridge probe (both)</button>
+  </div>
+  <div class="stat" id="stat">loading…</div>
+</header>
+<main>
+  <div class="seat"><div class="cap"><span>seat 0 · <b>ME = 0</b></span><span id="c0"></span></div><div class="phone"><iframe id="f0" title="Seat 0 frame"></iframe></div></div>
+  <div class="seat"><div class="cap"><span>seat 1 · <b>ME = 1</b></span><span id="c1"></span></div><div class="phone"><iframe id="f1" title="Seat 1 frame"></iframe></div></div>
+  <div id="logwrap"><div class="cap">Relay log</div><pre id="log"></pre></div>
+</main>
+
+<!-- the stand-in authority's engine: the canonical file (byte-identical to the server's sha-pinned copy) -->
+<script src="../src/engine.js"></script>
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search);
+const SEED = Q.has('seed') ? (Number(Q.get('seed')) >>> 0) : 20260911;
+const F0 = Q.get('f0') || 'nagas', F1 = Q.get('f1') || 'vanaras';
+const MATCH_ID = 'rehearsal-' + SEED;
+const AI_FNS = ['aiTakeTurn', 'aiMove', 'aiMulliganPlan', 'aiScoreCard', 'aiPlacement'];
+
+// ── the frames run at Fast pace, silent; the previous settings come back when this page closes ──
+const KEEP = {}; ['dy_speed', 'dy_music', 'dy_sfx'].forEach(k => KEEP[k] = localStorage.getItem(k));
+localStorage.setItem('dy_speed', 'fast'); localStorage.setItem('dy_music', '0'); localStorage.setItem('dy_sfx', '0');
+addEventListener('pagehide', () => { for (const k in KEEP) { if (KEEP[k] == null) localStorage.removeItem(k); else localStorage.setItem(k, KEEP[k]); } });
+// P5 — nothing a wire match does may touch the player's progression store
+const STORE_BEFORE = { meta: localStorage.getItem('dy_meta'), profile: localStorage.getItem('dy_profile') };
+
+// ── the server's PRNG (rng.js), third copy — the headless test pins all copies byte-identical ──
+function seeded(seed) {
+  var s = seed >>> 0;
+  return function () {
+    s |= 0; s = (s + 0x6D2B79F5) | 0;
+    var t = Math.imul(s ^ (s >>> 15), 1 | s);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+// ── THE STAND-IN ROOM: match.js createRoom, ported line for line (validate = the four guards; apply = the relay) ──
+const E = { newGame, mulligan, playCard, pass, designateShield, doLeap, playableIndices, targetSpec, canLeap, adjacentUnits };
+function createRoom(seed, f0, f1) {
+  const g = E.newGame({ p0: 'seat0', p1: 'seat1', p0Faction: f0, p1Faction: f1, rng: seeded(seed) });
+  let phase = 'mulligan'; const mulliganed = [false, false]; let seq = 0;
+  function validate(seat, a) {
+    if (seat !== 0 && seat !== 1) return { ok: false, reason: 'bad seat' };
+    if (phase === 'over' || g.over) return { ok: false, reason: 'match is over' };
+    if (!a || typeof a.type !== 'string') return { ok: false, reason: 'malformed action' };
+    const pl = g.players[seat];
+    switch (a.type) {
+      case 'mulligan':
+        if (phase !== 'mulligan') return { ok: false, reason: 'not in the mulligan phase' };
+        if (mulliganed[seat]) return { ok: false, reason: 'you already mulliganed' };
+        if (!Array.isArray(a.indices)) return { ok: false, reason: 'mulligan needs an indices array' };
+        for (const ix of a.indices) if (typeof ix !== 'number' || ix < 0 || ix >= pl.hand.length) return { ok: false, reason: 'mulligan index out of range' };
+        return { ok: true };
+      case 'play': {
+        if (phase !== 'play') return { ok: false, reason: 'not in the play phase' };
+        if (g.turn !== seat) return { ok: false, reason: 'not your turn' };
+        if (E.playableIndices(g, seat).indexOf(a.handIndex) < 0) return { ok: false, reason: 'illegal play (card not playable now)' };
+        const spec = E.targetSpec(g, seat, pl.hand[a.handIndex]);
+        if (a.targetIndex != null && (!spec || !spec.options || a.targetIndex < 0 || a.targetIndex >= spec.options.length)) return { ok: false, reason: 'illegal target' };
+        return { ok: true };
+      }
+      case 'pass': case 'concede':
+        if (phase !== 'play') return { ok: false, reason: 'not in the play phase' };
+        if (g.turn !== seat) return { ok: false, reason: 'not your turn' };
+        return { ok: true };
+      case 'shield':
+        if (phase !== 'play' || g.turn !== seat) return { ok: false, reason: 'not your turn' };
+        if (typeof a.unitIndex !== 'number' || a.unitIndex < 0 || a.unitIndex >= pl.units.length) return { ok: false, reason: 'shield index out of range' };
+        return { ok: true };
+      case 'leap': {
+        if (phase !== 'play' || g.turn !== seat) return { ok: false, reason: 'not your turn' };
+        if (!E.canLeap(g, seat)) return { ok: false, reason: 'no legal leap available' };
+        const leaper = pl.units[a.leaperIndex], target = pl.units[a.targetIndex];
+        if (!leaper || !target) return { ok: false, reason: 'leap index out of range' };
+        if (!E.adjacentUnits(pl, target).some(u => u.uid === leaper.uid)) return { ok: false, reason: 'leap not adjacent' };
+        return { ok: true };
+      }
+      default: return { ok: false, reason: "unknown action '" + a.type + "'" };
+    }
+  }
+  function apply(seat, a) {
+    const pl = g.players[seat]; let mv;
+    if (a.type === 'mulligan') {
+      E.mulligan(g, seat, a.indices.map(ix => pl.hand[ix].uid)); mulliganed[seat] = true;
+      if (mulliganed[0] && mulliganed[1]) phase = 'play';
+      mv = { type: 'mulligan', seat, indices: a.indices.slice() };
+    } else if (a.type === 'play') {
+      const card = pl.hand[a.handIndex];
+      const spec = a.targetIndex != null ? E.targetSpec(g, seat, card) : null;
+      const targetUid = spec && spec.options ? spec.options[a.targetIndex].uid : null;
+      E.playCard(g, seat, a.handIndex, targetUid, a.position != null ? a.position : null, a.movePosition != null ? a.movePosition : null);
+      mv = { type: 'play', seat, handIndex: a.handIndex, targetIndex: a.targetIndex != null ? a.targetIndex : null, position: a.position != null ? a.position : null, movePosition: a.movePosition != null ? a.movePosition : null };
+    } else if (a.type === 'pass' || a.type === 'concede') {
+      E.pass(g, seat); mv = { type: 'pass', seat };
+    } else if (a.type === 'shield') {
+      E.designateShield(g, seat, pl.units[a.unitIndex].uid); mv = { type: 'shield', seat, unitIndex: a.unitIndex };
+    } else if (a.type === 'leap') {
+      E.doLeap(g, seat, pl.units[a.leaperIndex], pl.units[a.targetIndex], false); mv = { type: 'leap', seat, leaperIndex: a.leaperIndex, targetIndex: a.targetIndex };
+    }
+    if (g.over) phase = 'over';
+    seq += 1; return { seq, move: mv };
+  }
+  return { validate, apply, state: g, get phase() { return phase; }, seqNow: () => seq, mulliganedFor: s => mulliganed[s] };
+}
+
+// ── a state fingerprint (same shape as src/test_wire.js): everything but per-instance uids and the name labels ──
+const cardSig = c => c ? [c.id, c.power, c.base, c.venom || 0, !!c.bound, !!c.ghost, !!c.ward, c.lockedRound || 0].join(':') : '-';
+function fingerprint(g) {
+  return JSON.stringify({
+    round: g.round, turn: g.turn, over: g.over, winner: g.winner, realm: g.realm,
+    rh: (g.roundHistory || []).map(h => [h.winner, h.t0, h.t1]),
+    p: g.players.map(pl => ({ f: pl.faction, passed: !!pl.passed, rw: pl.roundWins, hand: pl.hand.map(cardSig), units: pl.units.map(cardSig),
+      heroes: pl.heroes.map(cardSig), discard: pl.discard.map(cardSig), deck: pl.deck.map(c => c.id), art: pl.artifact ? pl.artifact.id : null, shields: (pl.shieldUids || []).length })),
+  });
+}
+
+// ── the rehearsal state ──
+const frames = [document.getElementById('f0'), document.getElementById('f1')];
+const win = s => frames[s].contentWindow;
+const peek = (s, expr) => { try { return win(s).eval(expr); } catch (e) { return undefined; } };   // the frame's global lexical scope (G, Wire, ME …)
+const room = createRoom(SEED, F0, F1);
+const T = window.T = {
+  seed: SEED, factions: [F0, F1], room, fingerprint,
+  ready: [false, false], started: false, auto: Q.get('auto') === '1', paused: [false, false],
+  rejectNext: [null, null],          // [seat] = action type to refuse next (or 'any')
+  clockNext: [0, 0],                 // [seat] = ms of inactivity before the stand-in moves FOR that seat (one-shot)
+  lastMoveAt: 0, relayed: 0, moves: [], rejects: [], autoMoves: [], leaves: [], checks: 0, mismatches: [], lastChecked: [-1, -1],
+  aiCalls: [{}, {}], recordCalls: [0, 0], probes: [], plays: [0, 0], roundPlays: [0, 0], roundSeen: 1,
+};
+const logEl = document.getElementById('log');
+// not log(): the engine above owns the global log(g, msg)
+function rlog(msg, cls) { const d = document.createElement('div'); if (cls) d.className = cls; d.textContent = msg; logEl.appendChild(d); logEl.scrollTop = logEl.scrollHeight; }
+
+function post(seat, msg) { win(seat).postMessage(msg, location.origin); }
+function relay(seat, action, why) {
+  const r = room.apply(seat, action); T.relayed++; T.lastMoveAt = performance.now(); T.moves.push({ seq: r.seq, seat, type: r.move.type });
+  if (r.move.type === 'play') T.plays[seat]++, T.roundPlays[seat]++;
+  rlog('#' + r.seq + ' seat ' + seat + ' ' + JSON.stringify(r.move) + (why ? '  ← ' + why : ''), why ? 'warn' : 'mv');
+  for (const s of [0, 1]) post(s, { type: 'wire:move', matchId: MATCH_ID, seq: r.seq, move: r.move });
+  if (room.state.round !== T.roundSeen) { T.roundSeen = room.state.round; T.roundPlays = [0, 0]; }
+  if (room.state.over) {
+    const g = room.state; const res = { type: 'wire:result', matchId: MATCH_ID, winner: g.winner, roundWins: [g.players[0].roundWins, g.players[1].roundWins], forfeit: false };
+    rlog('RESULT winner=seat ' + g.winner + ' rounds ' + res.roundWins.join('–'), 'ok');
+    for (const s of [0, 1]) post(s, res);
+  }
+  return r;
+}
+
+addEventListener('message', ev => {
+  if (ev.origin !== location.origin) return;
+  const seat = frames.findIndex(f => f.contentWindow === ev.source); if (seat < 0) return;
+  const m = ev.data || {};
+  if (m.type === 'wire:ready') { T.ready[seat] = true; instrument(seat); rlog('seat ' + seat + ' ready'); if (T.ready[0] && T.ready[1]) start(); return; }
+  if (m.type === 'wire:leave') { T.leaves.push(seat); rlog('seat ' + seat + ' → wire:leave (RETURN TO THE HALL)', 'ok'); return; }
+  if (m.type !== 'wire:act') { rlog('seat ' + seat + ' sent unknown ' + m.type, 'bad'); return; }
+  if (m.matchId !== MATCH_ID) { rlog('seat ' + seat + ' act for a foreign match', 'bad'); return; }
+  // P3 — the frame never sends money: only type / matchId / action may cross, and the action is a move
+  const keys = Object.keys(m).sort().join(','), bad = /address|stake|escrow|key|signature|wallet/i.test(JSON.stringify(m));
+  if (keys !== 'action,matchId,type' || bad) rlog('seat ' + seat + ' act carried extra fields: ' + keys, 'bad');
+  const a = m.action, want = T.rejectNext[seat];
+  if (want && (want === 'any' || want === a.type)) {
+    T.rejectNext[seat] = null; T.paused[seat] = true;   // hold this seat's autopilot so it cannot re-send while we measure
+    const fpBefore = fingerprint(peek(seat, 'G')), seqBefore = peek(seat, 'Wire.seq'), roomBefore = fingerprint(room.state), roomSeq = room.seqNow();
+    post(seat, { type: 'wire:reject', matchId: MATCH_ID, reason: 'the rehearsal refuses this ' + a.type });
+    rlog('REJECT seat ' + seat + ' ' + JSON.stringify(a), 'warn');
+    const t0 = performance.now();
+    const settle = setInterval(() => {   // wait until the frame has applied everything relayed (the OTHER seat may still move)
+      const W = peek(seat, 'Wire');
+      if ((W.queue.length || peek(seat, 'choreoActive') || W.seq !== room.seqNow()) && performance.now() - t0 < 8000) return;
+      clearInterval(settle);
+      const between = T.moves.filter(m => m.seq > seqBefore);   // every move this FRAME took in since the reject (frame seq, not room seq)
+      const rec = { seat, action: a, pendingCleared: W.pending === false,
+        rejectedNeverApplied: !between.some(m => m.seat === seat) && (between.length ? true : fingerprint(room.state) === roomBefore),
+        frameEqualsAuthority: fingerprint(peek(seat, 'G')) === fingerprint(room.state),
+        frameUnchangedIfQuiet: between.length ? null : fingerprint(peek(seat, 'G')) === fpBefore && W.seq === seqBefore,
+        movesByOthersMeanwhile: between.length,
+        mullconfirmLive: a.type === 'mulligan' ? !win(seat).document.getElementById('mullconfirm').disabled : null,
+        toast: (win(seat).document.body.innerText.match(/The table refused that move[^\n]*/) || [''])[0] };
+      rec.pass = rec.pendingCleared && rec.rejectedNeverApplied && rec.frameEqualsAuthority && rec.frameUnchangedIfQuiet !== false && !!rec.toast;
+      T.rejects.push(rec); T.paused[seat] = false;
+      rlog('  reject → never applied ' + rec.rejectedNeverApplied + ', frame = authority ' + rec.frameEqualsAuthority + ', unchanged ' + rec.frameUnchangedIfQuiet + ', pending cleared ' + rec.pendingCleared + (rec.mullconfirmLive != null ? ', CONFIRM live ' + rec.mullconfirmLive : ''), rec.pass ? 'ok' : 'bad');
+    }, 100);
+    return;
+  }
+  const v = room.validate(seat, a);
+  if (!v.ok) { post(seat, { type: 'wire:reject', matchId: MATCH_ID, reason: v.reason }); rlog('server refused seat ' + seat + ': ' + v.reason, 'warn'); return; }
+  relay(seat, a);
+});
+
+// count every AI entry point and every progression write in each frame — both must stay at zero on the wire
+function instrument(seat) {
+  const W = win(seat);
+  AI_FNS.forEach(n => { const o = W[n]; if (typeof o !== 'function' || o.__counted) return; T.aiCalls[seat][n] = 0;
+    const w = function () { T.aiCalls[seat][n]++; return o.apply(this, arguments); }; w.__counted = true; W[n] = w; });
+  const r = W.recordMatchResult; if (typeof r === 'function' && !r.__counted) { const w = function () { T.recordCalls[seat]++; return r.apply(this, arguments); }; w.__counted = true; W.recordMatchResult = w; }
+}
+
+function start() {
+  if (T.started) return; T.started = true; T.lastMoveAt = performance.now();
+  for (const s of [0, 1]) post(s, { type: 'wire:start', matchId: MATCH_ID, seat: s, seed: SEED, p0Faction: F0, p1Faction: F1 });
+  rlog('wire:start → seed ' + SEED + ', seat 0 ' + F0 + ', seat 1 ' + F1 + ', realm ' + room.state.realm, 'ok');
+}
+
+// ── the stand-in's clock: moves FOR a seat that stays silent (one-shot per arming), exactly the server's two auto-moves ──
+setInterval(() => {
+  if (!T.started || room.state.over) return;
+  for (const s of [0, 1]) {
+    const ms = T.clockNext[s]; if (!ms) continue;
+    const due = performance.now() - T.lastMoveAt > ms;
+    let kind = null;
+    if (room.phase === 'mulligan' && !room.mulliganedFor(s) && due) kind = 'mulligan';
+    else if (room.phase === 'play' && room.state.turn === s && due) kind = 'pass';
+    if (!kind) continue;
+    T.clockNext[s] = 0;
+    const rec = { seat: s, type: kind, frameSentNothing: peek(s, 'Wire.pending') === false, rhBefore: peek(s, 'G').roundHistory.length };
+    rec.seq = relay(s, kind === 'mulligan' ? { type: 'mulligan', indices: [] } : { type: 'pass' }, kind === 'mulligan' ? 'the clock: auto-keep' : 'the clock: auto-pass').seq;
+    T.autoMoves.push(rec);
+    const t0 = performance.now();
+    const settle = setInterval(() => {   // the frame applies a move it never sent — its OWN seat's, relayed like any other
+      const W = peek(s, 'Wire'), G = peek(s, 'G');
+      if ((W.seq < rec.seq || W.queue.length || peek(s, 'choreoActive')) && performance.now() - t0 < 8000) return;
+      clearInterval(settle);
+      rec.appliedAsOwn = W.seq >= rec.seq && (kind === 'pass' ? (G.players[s].passed || G.roundHistory.length > rec.rhBefore) : G.players[s].mulliganed);
+      rec.mullModalClosed = kind === 'mulligan' ? win(s).document.getElementById('mulligan').classList.contains('hidden') : null;
+      rec.frameEqualsAuthority = W.seq === room.seqNow() ? fingerprint(G) === fingerprint(room.state) : null;
+      rec.pass = rec.frameSentNothing && rec.appliedAsOwn && rec.frameEqualsAuthority !== false && rec.mullModalClosed !== false;
+      T.paused[s] = false;
+      rlog('  clock ' + kind + ' → frame sent nothing ' + rec.frameSentNothing + ', applied as its own ' + rec.appliedAsOwn + ', frame = authority ' + rec.frameEqualsAuthority, rec.pass ? 'ok' : 'bad');
+    }, 100);
+  }
+}, 200);
+
+// ── lockstep at rest: whenever a frame has applied everything relayed, its mirror must equal the authority ──
+function checkLockstep() {
+  for (const s of [0, 1]) {
+    const G = peek(s, 'G'), W = peek(s, 'Wire'); if (!G || !W) continue;
+    if (W.queue.length || peek(s, 'choreoActive') || W.seq !== room.seqNow() || T.lastChecked[s] === W.seq) continue;
+    T.lastChecked[s] = W.seq; T.checks++;
+    if (fingerprint(G) !== fingerprint(room.state)) { T.mismatches.push({ seat: s, seq: W.seq }); rlog('MISMATCH seat ' + s + ' at seq ' + W.seq, 'bad'); }
+  }
+}
+
+// ── the autopilot: drives a frame through its own input road; never an AI function ──
+const rnd = seeded(SEED ^ 0xA5A5);
+function drive(s) {
+  if (!T.auto || T.paused[s]) return;
+  const W = win(s), D = W.document, G = peek(s, 'G'), Wire = peek(s, 'Wire'), ME = peek(s, 'ME'), OPP = 1 - ME;
+  if (!G || !Wire || G.over || Wire.pending || peek(s, 'choreoActive') || Wire.queue.length) return;
+  if (T.clockNext[s] && (room.phase === 'mulligan' ? !room.mulliganedFor(s) : room.state.turn === s)) { T.paused[s] = true; rlog('seat ' + s + ' goes silent — the clock will move for it', 'warn'); return; }
+  const mod = D.getElementById('mulligan');
+  if (mod && !mod.classList.contains('hidden')) {
+    const conf = D.getElementById('mullconfirm'); if (conf.disabled) return;
+    const cards = D.querySelectorAll('#mulligan .mull-card');
+    if (cards.length && !D.querySelector('#mulligan .mull-card.marked') && rnd() < 0.7) cards[Math.floor(rnd() * cards.length)].click();
+    conf.click(); return;
+  }
+  if (G.turn !== ME || G.players[ME].passed || !G.players[OPP].mulliganed) return;
+  if (!D.getElementById('banner').classList.contains('hidden')) return;   // let a round banner clear first
+  const me = G.players[ME], op = G.players[OPP], myT = W.totalPower(G, ME), opT = W.totalPower(G, OPP);
+  const idx = W.playableIndices(G, ME);
+  // a free Leap first, now and then (Vanara): the frame's own leap road
+  if (me.faction === 'vanaras' && W.canLeap(G, ME) && rnd() < 0.5) {
+    const U = me.units.filter(u => !u.ghost);
+    for (const a of U) { const n = W.adjacentUnits(me, a).filter(u => !u.ghost && W.effPower(G, ME, u) > W.effPower(G, ME, a)); if (n.length) { W.startLeap(); W.leapClick(a); W.leapClick(n[0]); return; } }
+  }
+  const limit = G.round === 1 ? 5 : G.round === 2 ? 4 : 99;
+  if (!idx.length || (op.passed && myT > opT) || T.roundPlays[s] >= limit) { D.getElementById('passbtn').click(); return; }
+  // prefer a unit/hero by printed power, with a little noise; astras/mantras/artifacts get their turn too
+  const pick = idx.map(i => ({ i, c: me.hand[i], w: (me.hand[i].p || 3) + rnd() * 4 })).sort((a, b) => b.w - a.w)[0];
+  const el = D.querySelector('#hand .hc[data-uid="' + pick.c.uid + '"]'); if (!el) return;
+  el.click();
+  const play = D.querySelector('#inspectFooter .ibtn-play'); if (!play) { W.closeInspect && W.closeInspect(); return; }
+  play.click();
+  if (peek(s, 'placeMode')) { W.resolvePlacement(Math.floor(rnd() * (me.units.filter(u => !u.ghost).length + 1))); return; }
+  const pp = peek(s, 'pendingPlay');
+  if (pp) { const opt = pp.spec.options[Math.floor(rnd() * pp.spec.options.length)];
+    const tel = D.querySelector('#field .bc[data-uid="' + opt.uid + '"]'); if (tel) tel.click(); if (peek(s, 'pendingPlay')) W.resolveTarget(opt.uid); }
+}
+setInterval(() => { if (!T.started) return; checkLockstep(); drive(0); drive(1); paint(); }, 350);
+
+// ── P3 in the browser: four forged deliveries into each frame; every one refused, nothing applied ──
+T.probe = function (s) {
+  const W = win(s), before = fingerprint(peek(s, 'G')), seq = peek(s, 'Wire.seq'), n0 = peek(s, 'Wire.refused.length');
+  const ME = peek(s, 'ME'), fake = { type: 'wire:move', matchId: MATCH_ID, seq: seq + 1, move: { type: 'pass', seat: 1 - ME } };
+  W.dispatchEvent(new W.MessageEvent('message', { data: fake, origin: 'https://evil.example', source: window }));      // wrong origin
+  W.dispatchEvent(new W.MessageEvent('message', { data: fake, origin: location.origin, source: W }));                  // wrong sender (not the parent)
+  post(s, Object.assign({}, fake, { matchId: 'some-other-table' }));                                                    // foreign matchId (real postMessage)
+  post(s, Object.assign({}, fake, { seq: seq + 2 }));                                                                   // out-of-order seq (real postMessage)
+  return new Promise(res => setTimeout(() => {
+    const refused = peek(s, 'Wire.refused').slice(n0);
+    const r = { seat: s, refused, untouched: fingerprint(peek(s, 'G')) === before, seqUntouched: peek(s, 'Wire.seq') === seq };
+    T.probes.push(r); rlog('PROBE seat ' + s + ': refused [' + refused.join(' · ') + '] untouched ' + r.untouched, refused.length === 4 && r.untouched ? 'ok' : 'bad'); res(r);
+  }, 150));
+};
+
+T.report = function () {
+  const G = s => peek(s, 'G');
+  return { seed: SEED, factions: [F0, F1], realm: room.state.realm, over: room.state.over, winner: room.state.winner, relayed: T.relayed,
+    frames: [0, 1].map(s => ({ seat: s, ME: peek(s, 'ME'), over: !!(G(s) && G(s).over), seq: peek(s, 'Wire.seq'), refused: peek(s, 'Wire.refused'),
+      result: (win(s).document.getElementById('goh') || {}).textContent, resultVisible: !win(s).document.getElementById('gameover').classList.contains('hidden'),
+      leaveBtn: !!win(s).document.getElementById('wire-leave'), mainMenuBtn: /MAIN MENU/.test((win(s).document.querySelector('#gameover .go-btns') || {}).textContent || ''),
+      earn: (win(s).document.getElementById('go-earn') || {}).textContent })),
+    checks: T.checks, mismatches: T.mismatches, rejects: T.rejects, autoMoves: T.autoMoves, probes: T.probes, leaves: T.leaves,
+    aiCalls: T.aiCalls, recordCalls: T.recordCalls,
+    storeUntouched: localStorage.getItem('dy_meta') === STORE_BEFORE.meta && localStorage.getItem('dy_profile') === STORE_BEFORE.profile };
+};
+
+function paint() {
+  const g = room.state, bad = T.mismatches.length;
+  document.getElementById('stat').innerHTML = 'seed <b>' + SEED + '</b> · ' + F0 + ' v ' + F1 + ' · realm <b>' + g.realm + '</b> · round <b>' + g.round + '</b> · seq <b>' + room.seqNow() + '</b>' +
+    ' · lockstep checks <b class="' + (bad ? 'bad' : 'ok') + '">' + T.checks + (bad ? ' / ' + bad + ' MISMATCH' : ' ✓') + '</b> · rejects <b>' + T.rejects.length + '</b> · clock moves <b>' + T.autoMoves.length + '</b>' + (g.over ? ' · <b class="ok">OVER — seat ' + g.winner + ' wins</b>' : '');
+  for (const s of [0, 1]) { const G = peek(s, 'G'); document.getElementById('c' + s).textContent = G ? (G.turn === s && !G.over ? 'to move' : '') : ''; }
+  document.getElementById('b-auto').classList.toggle('on', T.auto);
+}
+
+// ── buttons ──
+document.getElementById('b-auto').onclick = () => { T.auto = !T.auto; paint(); };
+document.getElementById('b-rej').onclick = () => { T.rejectNext[1] = 'play'; rlog('armed: seat 1\'s next play will be refused', 'warn'); };
+document.getElementById('b-clock').onclick = () => { T.clockNext[1] = 1500; rlog('armed: seat 1 goes silent on its next turn; the clock moves after 1.5s', 'warn'); };
+document.getElementById('b-probe').onclick = () => { T.probe(0); T.probe(1); };
+
+// fit two phones beside the log
+function fit() {
+  const w = innerWidth - 56 - (innerWidth > 1100 ? 300 : 0), h = innerHeight - document.querySelector('header').offsetHeight - 60;
+  document.body.style.setProperty('--s', Math.max(.35, Math.min(1, w / (2 * 392), h / 780)).toFixed(3));
+}
+addEventListener('resize', fit); fit();
+
+// load the two REAL game frames (seat order = frame order)
+frames[0].src = '../index.html?wire=1&seat=0'; frames[1].src = '../index.html?wire=1&seat=1';
+paint();
+</script>
+</body>
+</html>
