@@ -2,7 +2,8 @@
 # Status: SEALED - owner "Ok" 2026-09-11; §9 N1-N6 ruled as
 # proposed. Build authority for the BW rung series. AMENDMENTS
 # 2026-09-11a (BW1 STEP-0 corrections), 2026-09-11b (BW1 build
-# shapes) and 2026-09-11c (wire:reject) recorded in §10. Authority above this doc:
+# shapes), 2026-09-11c (wire:reject) and 2026-09-11d (BW3b staked
+# shapes, the wall, W3-VIEW-2 ordering) recorded in §10. Authority above this doc:
 # MULTIPLAYER_DESIGN.md v1.1 (the covenant, A1-A8, THE WALL) and
 # LOBBY_DESIGN.md v1.1 (§11 ruled copy, §13 L3 "the real battle
 # screen"). Source of facts: G-BATTLE-WIRE-SURVEY-1 (2026-09-11,
@@ -86,28 +87,40 @@ F6 REWARDS STAY OFF THE WIRE. showGameOver's recordMatchResult
 =====================================================
 ## 2. THE BRIDGE (the only new protocol; parent <-> frame)
 =====================================================
-As built (FREE road; STAKED fields land with BW3a as a dated
-amendment, never assumed).
+As built (FREE road 11b; STAKED road 11d).
 Parent (Hall) -> frame (game):
-  wire:start  { matchId, seat, seed, p0Faction, p1Faction }
-              — no names: the server's names are wallet short
-              forms and no address enters the frame (F1's wall);
-              the frame labels seats "You" / "Opponent".
-  wire:move   { matchId, seq, move } — move is the server's
-              relayed descriptor and carries seat (F4).
+  wire:start  { matchId, seat, seed, p0Faction, p1Faction }  FREE
+              { matchId, seat, view, p0Faction, p1Faction }  STAKED
+              — exactly one of seed / view; a message carrying
+              both or neither is refused loudly. No names: the
+              server's names are wallet short forms and no address
+              enters the frame (F1's wall); the frame labels seats
+              "You" / "Opponent". A staked resync / re-seat
+              re-posts wire:start with the resync view (events: []).
+  wire:move   { matchId, seq, move } — FREE only; move is the
+              server's relayed descriptor and carries seat (F4).
+  wire:view   { matchId, seq, view } — STAKED only; the redacted
+              view for this seat after one applied move (own,
+              opponent's, or the clock's), the events INSIDE
+              view.events. seq is numbered by the Hall, monotonic.
+              The final view (over: true) precedes wire:result.
+              THE WALL: the Hall strips view.myName / view.oppName
+              before posting; the frame refuses loudly any view
+              that still carries either key.
   wire:result { matchId, winner, roundWins, forfeit } — a draw
               is winner: null.
   wire:reject { matchId, reason } — sent only for the frame's
               OWN refused act; the frame's board is untouched
               (nothing was applied) and the act may be sent again.
-  (wire:view / wire:clock / wire:vanish / wire:returned are
-  BW2/BW3 words; listed as reserved, shapes ruled when built.)
+  (wire:clock / wire:vanish / wire:returned are reserved words;
+  shapes ruled when built.)
 Frame -> parent:
   wire:ready  {}            wire:act { matchId, action }
   wire:leave  { matchId }
 LAWS: wire:start establishes the matchId; every message after
 it carries the matchId; seq rides the ORDERED stream only
-(wire:move) and is monotonic; out-of-order, foreign-match and
+(wire:move on FREE, wire:view on STAKED; never both in one
+match) and is monotonic; out-of-order, foreign-match and
 wrong-origin messages are refused loudly; no message ever
 carries a key, address, stake or escrow id.
 
@@ -280,3 +293,28 @@ wire:reject { matchId, reason }, parent -> frame, sent only for
 the frame's own refused act. The frame has handled it since BW1
 (proven in BW1 P2); the 11b shape list omitted it. F1-F6, N1-N6
 unchanged.
+2026-09-11d (BW3b game half, owner-ruled R1-R5): §2 gains the
+STAKED shapes: wire:start { matchId, seat, view, p0Faction,
+p1Faction } - exactly one of seed (free) or view (staked);
+wire:view { matchId, seq, view } with the events inside
+view.events and seq numbered by the Hall, monotonic; a staked
+resync / re-seat re-posts wire:start with the resync view
+(events: []). THE WALL: the Hall strips myName / oppName before
+posting and the frame refuses loudly any view still carrying
+either key (proven by mutation); the Hall's wall scan widens to
+the short-form pattern 0x[0-9a-f]{4}…[0-9a-f]{4} in BW3b's site
+tail - until then the 40-hex scan was blind to short forms.
+The view adapter reads two additive server fields when present
+and degrades only when absent: passed [b0, b1] (absolute seats)
+and flags { "<uid>": { base, ward, asleep, stolenBy,
+lockedRound } } covering both boards, both hero rows and the
+viewer's own hand - all public board facts. THE ORDERING (R3):
+the degradation is NOT shipped live - W3-VIEW-2 (web3, audited
+like VIEW-1) ships passed + flags IMMEDIATELY after this rung and
+BEFORE BW3b's site tail; the staked road enters the frame only
+once the screen sees everything the text battle sees. Power
+colour and the Venom Strike label may stay degraded (cosmetic;
+recorded). The engine's eight query functions are read through
+one facade (engine on free / vs-AI / story, view on staked; the
+29 call sites pinned). §5's game half is built as stated; engine
+0 lines. F1-F6, N1-N6 unchanged.
