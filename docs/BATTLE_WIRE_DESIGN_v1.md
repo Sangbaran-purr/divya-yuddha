@@ -1,7 +1,8 @@
 # BATTLE_WIRE_DESIGN_v1 - The real battle screen plays the wire
 # Status: SEALED - owner "Ok" 2026-09-11; §9 N1-N6 ruled as
-# proposed. Build authority for the BW rung series. AMENDMENT
-# 2026-09-11a (BW1 STEP-0 corrections) recorded in §10. Authority above this doc:
+# proposed. Build authority for the BW rung series. AMENDMENTS
+# 2026-09-11a (BW1 STEP-0 corrections), 2026-09-11b (BW1 build
+# shapes) and 2026-09-11c (wire:reject) recorded in §10. Authority above this doc:
 # MULTIPLAYER_DESIGN.md v1.1 (the covenant, A1-A8, THE WALL) and
 # LOBBY_DESIGN.md v1.1 (§11 ruled copy, §13 L3 "the real battle
 # screen"). Source of facts: G-BATTLE-WIRE-SURVEY-1 (2026-09-11,
@@ -96,6 +97,9 @@ Parent (Hall) -> frame (game):
               relayed descriptor and carries seat (F4).
   wire:result { matchId, winner, roundWins, forfeit } — a draw
               is winner: null.
+  wire:reject { matchId, reason } — sent only for the frame's
+              OWN refused act; the frame's board is untouched
+              (nothing was applied) and the act may be sent again.
   (wire:view / wire:clock / wire:vanish / wire:returned are
   BW2/BW3 words; listed as reserved, shapes ruled when built.)
 Frame -> parent:
@@ -270,4 +274,9 @@ unchanged.
 the BW1 proofs exercised; names removed from wire:start (wall);
 seq scoped to the ordered stream; §3's actor expression corrected
 to the absolute seat under the resolver law. F1-F6, N1-N6
+unchanged.
+2026-09-11c (S-HALL-WIRE-1 STEP-0, owner-ruled): §2 gains
+wire:reject { matchId, reason }, parent -> frame, sent only for
+the frame's own refused act. The frame has handled it since BW1
+(proven in BW1 P2); the 11b shape list omitted it. F1-F6, N1-N6
 unchanged.
