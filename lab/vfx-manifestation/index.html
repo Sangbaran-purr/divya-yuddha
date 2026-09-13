@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="lab-stamp" content="aba8b1df45e1">
+<meta name="lab-stamp" content="a0e3350d2edc">
 <!-- runtime/ is the base: the copied VFX module's page-relative sheet URLs and its file-relative Pixi import both resolve inside it (see README) -->
 <base href="runtime/">
 <title>Manifestation Lab</title>
@@ -66,6 +66,8 @@
   button:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
   select{ font:600 13px "Crimson Pro", Georgia, serif; color:var(--ink); background:#241a0d; border:1px solid var(--gold-dim); border-radius:8px; min-height:40px; padding:6px 10px; }
   select:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  .tune input[type=range]{ flex:1 1 150px; min-height:40px; accent-color:var(--gold); }
+  .tune output{ align-self:center; min-width:9.5em; font-size:13px; color:var(--gold); font-variant-numeric:tabular-nums; }
   .grp label{ align-self:center; font:600 10px Cinzel, Georgia, serif; letter-spacing:.14em; color:var(--ink-dim); text-transform:uppercase; }
   .note{ font-size:12px; color:var(--ink-dim); font-style:italic; margin:0; }
   #readout{ display:grid; grid-template-columns:auto 1fr; gap:2px 12px; font-size:13px; font-variant-numeric:tabular-nums; }
@@ -142,6 +144,17 @@
         <option value="vanaras">Vanara</option>
       </select>
     </div>
+    <div class="grp tune">
+      <label for="tempo">Tempo</label>
+      <input id="tempo" type="range" min="0.5" max="1.5" step="0.05" value="1">
+      <output id="tempo-val" for="tempo">1.00× · 24 cells/s</output>
+    </div>
+    <div class="grp tune">
+      <label for="fizzle-ms">Fizzle</label>
+      <input id="fizzle-ms" type="range" min="300" max="1500" step="50" value="600">
+      <output id="fizzle-val" for="fizzle-ms">600 ms</output>
+    </div>
+    <p class="note">Tempo scales the clip's cells and AWAKEN, EMERGE, ACT and SETTLE; FIZZLE has its own length. Fast halves both. The Plan below shows the next play's timeline in ms.</p>
     <div class="grp" role="group" aria-label="Clock">
       <button id="clk-slow" type="button">Slow-mo ¼×</button>
       <button id="clk-pause" type="button">Pause</button>
@@ -177,16 +190,16 @@
     <p id="story-truth" class="truth"></p>
   </section>
 </main>
-<script src="../lib/boarddiff.js?v=aba8b1df45e1"></script>
-<script src="../lib/clashcontext.js?v=aba8b1df45e1"></script>
-<script src="../lib/director.js?v=aba8b1df45e1"></script>
-<script src="../lib/runner.js?v=aba8b1df45e1"></script>
-<script src="../lib/manifest.js?v=aba8b1df45e1"></script>
-<script src="../lib/stagemath.js?v=aba8b1df45e1"></script>
-<script src="../lib/dissolve.js?v=aba8b1df45e1"></script>
-<script src="../lib/actorstage.js?v=aba8b1df45e1"></script>
-<script src="../lib/playback.js?v=aba8b1df45e1"></script>
-<script src="vfx.js?v=aba8b1df45e1"></script>
-<script src="../lab.js?v=aba8b1df45e1"></script>
+<script src="../lib/boarddiff.js?v=a0e3350d2edc"></script>
+<script src="../lib/clashcontext.js?v=a0e3350d2edc"></script>
+<script src="../lib/director.js?v=a0e3350d2edc"></script>
+<script src="../lib/runner.js?v=a0e3350d2edc"></script>
+<script src="../lib/manifest.js?v=a0e3350d2edc"></script>
+<script src="../lib/stagemath.js?v=a0e3350d2edc"></script>
+<script src="../lib/dissolve.js?v=a0e3350d2edc"></script>
+<script src="../lib/actorstage.js?v=a0e3350d2edc"></script>
+<script src="../lib/playback.js?v=a0e3350d2edc"></script>
+<script src="vfx.js?v=a0e3350d2edc"></script>
+<script src="../lab.js?v=a0e3350d2edc"></script>
 </body>
 </html>

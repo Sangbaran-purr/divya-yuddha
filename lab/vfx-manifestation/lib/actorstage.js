@@ -10,7 +10,8 @@
    1/cellFps s of lab time straight through the phase's list, no easing between cells, no hold inside a phase (the hit-stop never
    freezes a native actor: the clip carries its own contact). A late frame never skips a cell at native rate (the stage catches up
    one cell per frame, and cells a phase ended before reaching play first in the next — EMERGE → ACT → FIZZLE is one clip); at
-   twice native rate (Fast) it may skip one cell at a time, never two. onCell() fires a cue on the frame a
+   twice native rate (Fast) it may skip one cell at a time, never two. The director says which: cellStep (LAB-4c) — 1 in Full at any
+   tempo, 2 in Fast. onCell() fires a cue on the frame a
    given cell is drawn (the contact). Every cell drawn is counted per play: stats().cellsDrawn. warm() uploads an atlas before
    its first play, so the first frames of a manifestation are not lost to a texture upload.
    THE DISSOLVE (LAB-4b): dissolve(actor, fx) turns FIZZLE into the faction's dissolve exit (lib/dissolve.js holds the maths and the
@@ -18,6 +19,7 @@
    threshold + edge glow) on WebGPU and WebGL, a per-frame noise mask (destination-in) and glow on Canvas 2D. Embers rise off the
    front: pooled sprites of one 64 px glow texture on the GPU, soft discs on #actorover on Canvas 2D (fewer). Faint smoke hangs
    behind the front on #actorunder. All of it is normal-blended, every particle ends by FIZZLE's end, and remove()/clear() drop them.
+   A FIZZLE longer than 600 ms (LAB-4c's slider) time-stretches the embers and smoke with the sweep: life ×, speed and spawn rate ÷.
    Browser: window.ActorStage. */
 (function (root) {
   'use strict';
@@ -99,12 +101,12 @@
     if (this.stat.liveRealT0 == null) { this.stat.liveRealT0 = perf(); this.stat.liveFrames = 0; }
     return a;
   };
-  P.setPhase = function (a, phase, dur, contactFrac, cellFps) {
+  P.setPhase = function (a, phase, dur, contactFrac, cellFps, cellStep) {
     if (!a) return;
     if (a.watch && a.watch.phase !== phase) this.fireWatch(a);          // the phase ended before its cell was drawn (a very slow frame): the cue still lands
     if (a.cellFps) a.backlog = a.backlog.concat((a.art.manifest.phases[a.phase] || []).slice(a.cellIx + 1));   // the clip's cells this phase never reached
     a.phase = phase; a.dur = Math.max(1, dur); a.pt = 0; a.lastT = this.now(); a.cellIx = -1;
-    a.cellFps = cellFps > 0 ? cellFps : null; if (a.cellFps) a.rate = Math.max(a.rate || 0, a.cellFps);
+    a.cellFps = cellFps > 0 ? cellFps : null; a.cellStep = cellStep > 0 ? cellStep : null; if (a.cellFps) a.rate = Math.max(a.rate || 0, a.cellFps);
     if (contactFrac != null) a.contact = contactFrac;
   };
   // fire fn on the frame the actor draws cell `index` of `phase` (at once if it already has)
@@ -147,7 +149,7 @@
     if (a.cellFps) {
       // NATIVE: the cells are the clock (no hit-stop hold); catch up one cell per frame, or two at twice native rate — never skip more
       a.pt += dt;
-      var step = a.cellFps > m.fps ? 2 : 1;
+      var step = a.cellStep || (a.cellFps > m.fps ? 2 : 1);
       if (a.backlog.length) { ci = a.backlog.splice(0, Math.min(step, a.backlog.length)).pop(); ix = -1; }       // the previous phase's unreached cells first, in order
       else {
         var target = Math.min(cells.length - 1, Math.floor(a.pt * a.cellFps / 1000 + 1e-6));
@@ -268,7 +270,7 @@
     var D = root.Dissolve, z = a.dz, pr = z.pr, q = a.pose, c = q.cell, self = this;
     var p = Math.min(1, Math.max(0, (t - z.t0) / z.dur)), dt = z.lastT == null ? 0 : Math.max(0, t - z.lastT) / 1000; z.lastT = t;
     z.p = p; z.th = D.threshold(p, pr); if (z.sweep.length < 2000) z.sweep.push(z.th);
-    var left = z.t0 + z.dur - t, gpu = z.path === 'shader', sil = a.art.silhouetteOf ? a.art.silhouetteOf(q.cellIndex) : null, flip = q.flipX ? -1 : 1, lifeK = Math.min(1, z.dur / 600);
+    var left = z.t0 + z.dur - t, gpu = z.path === 'shader', sil = a.art.silhouetteOf ? a.art.silhouetteOf(q.cellIndex) : null, flip = q.flipX ? -1 : 1, lifeK = z.dur / 600, slow = Math.max(1, lifeK);
     var at = function (u, v) { return { x: q.x + flip * (u * c.w - c.pivot.x) * q.scale, y: q.y + (v * c.h - c.pivot.y) * q.scale }; };
     var onFigure = function (u, v) {
       if (!(v >= 0 && v <= 1)) return false; if (!sil) return true;
@@ -279,26 +281,26 @@
         var R = z.r, u = R(), v = D.frontAt(z.nz, pr, u, z.th) + lift();
         if (!onFigure(u, v)) continue;
         var s = at(u, v);
-        if (kind === 'ember') self.parts.push({ kind: kind, owner: a, x: s.x, y: s.y, vx: (R() - 0.5) * 34, vy: -(pr.emberRise[0] + R() * (pr.emberRise[1] - pr.emberRise[0])),
+        if (kind === 'ember') self.parts.push({ kind: kind, owner: a, x: s.x, y: s.y, vx: (R() - 0.5) * 34 / slow, vy: -(pr.emberRise[0] + R() * (pr.emberRise[1] - pr.emberRise[0])) / slow,
           r: pr.emberSize[0] + R() * (pr.emberSize[1] - pr.emberSize[0]), t0: t, life: Math.min((pr.emberLife[0] + R() * (pr.emberLife[1] - pr.emberLife[0])) * lifeK, left),
-          ph: R() * 6.283, color: pr.emberColor, tint: D.tint(pr.emberColor), sprite: null });
-        else self.parts.push({ kind: kind, owner: a, x: s.x, y: s.y, vx: (R() - 0.5) * 14, vy: -(8 + R() * 16), r: (0.05 + R() * 0.06) * c.h * q.scale,
-          t0: t, life: Math.min((520 + R() * 280) * lifeK, left), ph: R() * 6.283, color: pr.smokeColor, alpha: pr.smokeAlpha, sprite: null });
+          ph: R() * 6.283, color: pr.emberColor, tint: D.tint(pr.emberColor), slow: slow, sprite: null });
+        else self.parts.push({ kind: kind, owner: a, x: s.x, y: s.y, vx: (R() - 0.5) * 14 / slow, vy: -(8 + R() * 16) / slow, r: (0.05 + R() * 0.06) * c.h * q.scale,
+          t0: t, life: Math.min((520 + R() * 280) * lifeK, left), ph: R() * 6.283, color: pr.smokeColor, alpha: pr.smokeAlpha, slow: slow, sprite: null });
         return true;
       }
       return false;
     };
     if (p < 1 && left > 40) {
-      z.emberAcc += dt * (gpu ? 150 : 60) * pr.embers;
+      z.emberAcc += dt * (gpu ? 150 : 60) * pr.embers / slow;
       while (z.emberAcc >= 1) { z.emberAcc -= 1; if (spawn('ember', function () { return -z.r() * pr.edgeWidth * 0.8; })) z.spawned++; }
-      if (pr.smoke) { z.smokeAcc += dt * 14; while (z.smokeAcc >= 1) { z.smokeAcc -= 1; if (spawn('smoke', function () { return 0.03 + z.r() * 0.1; })) z.puffs++; } }
+      if (pr.smoke) { z.smokeAcc += dt * 14 / slow; while (z.smokeAcc >= 1) { z.smokeAcc -= 1; if (spawn('smoke', function () { return 0.03 + z.r() * 0.1; })) z.puffs++; } }
     }
     var live = 0;
     this.parts = this.parts.filter(function (pt) {
       if (pt.owner !== a) return true;
       var age = t - pt.t0; if (age >= pt.life) { self.dropPart(pt); return false; }
-      pt.x += (pt.vx + Math.sin(pt.ph + age / 95) * (pt.kind === 'ember' ? 10 : 4)) * dt; pt.y += pt.vy * dt;
-      if (pt.kind === 'ember') { pt.vy *= Math.pow(0.6, dt); live++; }
+      pt.x += (pt.vx + Math.sin(pt.ph + age / (95 * pt.slow)) * (pt.kind === 'ember' ? 10 : 4) / pt.slow) * dt; pt.y += pt.vy * dt;
+      if (pt.kind === 'ember') { pt.vy *= Math.pow(0.6, dt / pt.slow); live++; }
       return true;
     });
     z.peak = Math.max(z.peak, live);

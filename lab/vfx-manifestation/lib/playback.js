@@ -40,7 +40,7 @@
             if (fx.exit === 'embers' && cl) env.embers(cl.cx, cl.cy);
             break;
           }
-          case 'actor-phase': { if (info.skipped) break; var a = ensureActor(); if (a) env.stage.setPhase(a, c.phase, c.dur, c.contactFrac, c.cellFps); break; }
+          case 'actor-phase': { if (info.skipped) break; var a = ensureActor(); if (a) env.stage.setPhase(a, c.phase, c.dur, c.contactFrac, c.cellFps, c.cellStep); break; }
           case 'contact': {
             if (info.skipped || !actor) break;
             var who = actor;

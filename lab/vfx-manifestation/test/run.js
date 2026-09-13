@@ -146,8 +146,30 @@ console.log('\n── T · the Director ──');
     ok('T11 · NATIVE TIMING from the real manifest (' + NT.emerge + ' EMERGE + ' + NT.act + ' ACT cells @ ' + NT.fps + ' fps, contact = ACT cell ' + NT.contact + '): EMERGE ' + (full.phases[1].t1 - full.phases[1].t0) + ' ms · ACT ' + (full.phases[2].t1 - full.phases[2].t0) + ' ms · total ' + full.total + ' ms; the actor phases carry the cells\' rate (24 cells/s Full, 48 Fast) and the contact cue lands at the first ms the contact cell is on stage (LAB-4a); Fast halves it; both seats; a card NOT ladder-exempt ignores native timing (the ladder applies, no cell rate)',
        okNative && notExempt.timing === 'grammar' && notExempt.total === 2500 && notExempt.cellFps === null && notExempt.cues.every((x) => x.cellFps == null && x.contactCell == null) && Math.abs(full.total - 3200) <= 60);
   }
+  {
+    const NT2 = { fps: MANIFEST.fps, emerge: MANIFEST.phases.emerge.length, act: MANIFEST.phases.act.length, contact: MANIFEST.contact };
+    const tuned = (seat, m, o) => DIR.plan(CTX[seat], Object.assign({ mode: m, ladderExempt: true, timing: NT2 }, o));
+    const len = (p, n) => { const x = p.phases.find((y) => y.name === n); return x.t1 - x.t0; };
+    const shown = [];
+    const okTempo = [0, 1].every((seat) => [[0.7, null], [0.8, 1200], [1.5, 300], [1, 1500]].every(([tp, fz]) => ['full', 'fast'].every((m) => {
+      const k = m === 'fast' ? 0.5 : 1, p = tuned(seat, m, { tempo: tp, fizzleMs: fz }), rate = 24 * tp / k, C = p.phases[2], Z = p.phases[3], S = p.phases[4], c = p.cues.find((x) => x.cue === 'contact');
+      const tl = p.timeline, line = DIR.formatPlan(p).split('\n')[2];
+      const n = /AWAKEN (\d+) · EMERGE (\d+) · ACT (\d+) · contact \+(\d+) \(at (\d+)\) · FIZZLE (\d+) · SETTLE (\d+) · total (\d+)/.exec(line);
+      if (seat === 0 && m === 'full') shown.push(tp + '×, FIZZLE ' + (fz == null ? 600 : fz) + ' → ' + line.replace('Timeline (ms): ', ''));
+      return Math.abs(p.cellFps - rate) < 1e-9 && p.cues.filter((x) => x.cue === 'actor-phase').every((x) => Math.abs(x.cellFps - rate) < 1e-9 && x.cellStep === (m === 'fast' ? 2 : 1)) &&
+        len(p, 'AWAKEN') === Math.round(400 / tp * k) && len(p, 'EMERGE') === Math.round(NT2.emerge * 1000 / (24 * tp) * k) && len(p, 'ACT') === Math.round(NT2.act * 1000 / (24 * tp) * k) &&
+        len(p, 'FIZZLE') === Math.round((fz == null ? 600 : fz) * k) && len(p, 'SETTLE') === Math.round(400 / tp * k) && p.fizzleMs === len(p, 'FIZZLE') &&
+        c.contactCell === NT2.contact && Math.floor((c.t - C.t0) * rate / 1000) === NT2.contact && S.t0 === Z.t1 && p.cues.find((x) => x.cue === 'settle').t === Z.t1 && p.cues.find((x) => x.cue === 'actor-gone').t === Z.t1 &&
+        tl.awaken + tl.emerge + tl.act + tl.fizzle + tl.settle === p.total && tl.total === p.total && !!n && +n[1] + +n[2] + +n[3] + +n[6] + +n[7] === +n[8] && +n[8] === p.total && +n[5] === c.t && +n[4] === c.t - C.t0;
+    })));
+    const LABJS3 = fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8');
+    ok('T12 · TEMPO AND FIZZLE (LAB-4c): tempo scales the clip\'s cells (24 × tempo cells/s) and AWAKEN, EMERGE, ACT and SETTLE with them; FIZZLE takes its own length; Fast halves both and may step 2 cells, Full 1; contact still lands on the contact cell and the board settles the moment FIZZLE ends; unset, the plan is today\'s field for field; a grammar plan scales too; the Plan readout\'s Timeline line sums to its total; the lab passes both sliders to every play — ' + shown.join(' | '),
+       okTempo && J(tuned(0, 'full', {})) === J(tuned(0, 'full', { tempo: 1, fizzleMs: 600 })) && tuned(0, 'full', {}).total === 3191 &&
+       DIR.plan(CTX[0], { mode: 'full', ladderExempt: true, tempo: 0.5 }).total === 6400 && DIR.plan(CTX[0], { mode: 'full', ladderExempt: true, fizzleMs: 1200 }).total === 3800 && DIR.plan(CTX[0], { mode: 'full', ladderExempt: true }).total === 3200 &&
+       /timing, tempo, fizzleMs \}\);/.test(LABJS3) && /el\('tempo'\)\.oninput/.test(LABJS3) && /el\('fizzle-ms'\)\.oninput/.test(LABJS3));
+  }
   const txt = DIR.formatPlan(P(0, 'full'));
-  ok('T10 · the Plan readout is the timeline as text: the header, every phase, every cue in time order with its numbers', /Meghnad · seat 0 → toward seat 1 · mode full/.test(txt) && /AWAKEN 0–400/.test(txt) && /2800 ms  settle Meghnad enters at 6, Indra 7→5 \(−2\)/.test(txt) && /queue buff · Chaos Surge \+1/.test(txt) && txt.split('\n').length === P(0, 'full').cues.length + 2, txt.split('\n').slice(0, 4).join(' | '));
+  ok('T10 · the Plan readout is the timeline as text: the header, every phase, every cue in time order with its numbers', /Meghnad · seat 0 → toward seat 1 · mode full/.test(txt) && /AWAKEN 0–400/.test(txt) && /2800 ms  settle Meghnad enters at 6, Indra 7→5 \(−2\)/.test(txt) && /queue buff · Chaos Surge \+1/.test(txt) && txt.split('\n').length === P(0, 'full').cues.length + 3 && /Timeline \(ms\): AWAKEN 400 · EMERGE 600 · ACT 1200 · contact \+696 \(at 1696\) · FIZZLE 600 · SETTLE 400 · total 3200 · tempo 1\.00×/.test(txt), txt.split('\n').slice(0, 4).join(' | '));
 }
 
 // ═══ U · THE RUNNER ═══
@@ -343,10 +365,10 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
     const key = MANIFEST.cells.map((c) => c.x + ',' + c.y), nameOf = (i) => (MANIFEST.cells[i] || {}).name;
     const CONTACT_CELL = nameOf(MANIFEST.phases.act[MANIFEST.contact]), LAST_ACT = MANIFEST.phases.act[MANIFEST.phases.act.length - 1];
     const BACKENDS = ['canvas2d', 'webgl', 'webgpu'];
-    const playCells = (backend, mode, hz, hitchMs) => {
+    const playCells = (backend, mode, hz, hitchMs, extra) => {
       const W = world(0, backend);
       let at = -1; const hs = W.stage.hitstop.bind(W.stage); W.stage.hitstop = (ms) => { at = W.calls.cells.length; return hs(ms); };
-      const plan = W.w.Director.plan(W.ctx, { mode, ladderExempt: true, timing: NT }), r = W.w.Runner.create(plan, W.pb.handlers, () => W.clock.t);
+      const plan = W.w.Director.plan(W.ctx, Object.assign({ mode, ladderExempt: true, timing: NT }, extra)), r = W.w.Runner.create(plan, W.pb.handlers, () => W.clock.t);
       const E = plan.phases.find((p) => p.name === 'EMERGE'), A = plan.phases.find((p) => p.name === 'ACT');
       let hitched = false; r.start({});
       while (!r.done && W.clock.t < 20000) {
@@ -364,20 +386,24 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
     const agrees = (x) => x.readout && x.readout.drawn === x.drawn && x.readout.total === x.total && x.readout.repeats === x.repeats && x.readout.contact === CONTACT_CELL;
     const show = (xs) => xs.map((x) => x.backend + ' ' + x.drawn + '/' + x.total + (x.hitch ? ' (' + x.hitch + ')' : '') + ' · repeats ' + x.repeats + ' · longest hold ' + x.longestRun + ' frames · contact ' + x.contact).join(' | ');
     const full = BACKENDS.map((b) => playCells(b, 'full', 60));
-    ok('S9 · FULL at 60 Hz, every backend\'s draw path (Canvas 2D drawImage · Pixi WebGL · Pixi WebGPU): all ' + MANIFEST.cells.length + ' cells drawn, in clip order, none repeated, none held past its 1/24 s (≤ 3 frames — no hold inside a phase, the hit-stop never freezes the actor), the contact fires on the frame ' + CONTACT_CELL + ' is drawn, FIZZLE holds the last ACT cell, the stage\'s own count (the readout) agrees, and the stage ends clean — ' + show(full),
-       full.every((x) => x.drawn === 43 && x.total === 43 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.longestRun <= 3 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && x.clean), J(full));
+    const t07 = BACKENDS.map((b) => Object.assign(playCells(b, 'full', 60, 0, { tempo: 0.7 }), { hitch: '0.7× tempo' }));
+    ok('S9 · FULL at 60 Hz, every backend\'s draw path (Canvas 2D drawImage · Pixi WebGL · Pixi WebGPU): all ' + MANIFEST.cells.length + ' cells drawn, in clip order, none repeated, none held past its 1/24 s (≤ 3 frames — no hold inside a phase, the hit-stop never freezes the actor), the contact fires on the frame ' + CONTACT_CELL + ' is drawn, FIZZLE holds the last ACT cell, the stage\'s own count (the readout) agrees, and the stage ends clean — ' + show(full) + ' — and at 0.7× tempo (16.8 cells/s, each cell ≤ 5 frames) still every cell, no skip: ' + show(t07),
+       full.every((x) => x.drawn === 43 && x.total === 43 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.longestRun <= 3 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && x.clean) &&
+       t07.every((x) => x.drawn === 43 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.longestRun <= 5 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && Math.abs(x.readout.cellFps - 16.8) < 1e-9 && x.clean), J(full.concat(t07)));
     const fast = BACKENDS.map((b) => playCells(b, 'fast', 60));
     ok('S10 · FAST at 60 Hz (the cells at twice their rate), every backend: at least 22 cells drawn (at least every other cell), in order, none repeated, ≥ 12 cells per second of EMERGE + ACT, contact on ' + CONTACT_CELL + ', the readout agrees — ' + show(fast) + ' · ' + fast.map((x) => x.perSecond.toFixed(1) + '/s').join(', '),
        fast.every((x) => x.drawn >= 22 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.perSecond >= 12 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && x.clean), J(fast));
-    const slow = BACKENDS.map((b) => Object.assign(playCells(b, 'full', 30), { hitch: '30 Hz' })).concat(BACKENDS.map((b) => Object.assign(playCells(b, 'full', 60, 250), { hitch: '250 ms stall in EMERGE' })));
-    ok('S11 · A SLOW DEVICE NEVER SKIPS A NATIVE CELL, every backend: Full at 30 Hz, and Full at 60 Hz with a 250 ms stall early in EMERGE, still draw all ' + MANIFEST.cells.length + ' cells in order with none repeated (the stage catches up one cell per frame, and a phase\'s unreached cells play first in the next) — ' + show(slow),
+    const slow = BACKENDS.map((b) => Object.assign(playCells(b, 'full', 30), { hitch: '30 Hz' })).concat(BACKENDS.map((b) => Object.assign(playCells(b, 'full', 60, 250), { hitch: '250 ms stall in EMERGE' })))
+      .concat(BACKENDS.map((b) => Object.assign(playCells(b, 'full', 30, 0, { tempo: 0.7 }), { hitch: '0.7× tempo at 30 Hz' })))
+      .concat(BACKENDS.map((b) => Object.assign(playCells(b, 'full', 60, 0, { tempo: 1.5 }), { hitch: '1.5× tempo at 60 Hz' })));
+    ok('S11 · A SLOW DEVICE NEVER SKIPS A NATIVE CELL, every backend: Full at 30 Hz, Full at 60 Hz with a 250 ms stall early in EMERGE, and Full at 0.7× tempo (30 Hz) and 1.5× tempo (60 Hz), still draw all ' + MANIFEST.cells.length + ' cells in order with none repeated (the stage catches up one cell per frame, and a phase\'s unreached cells play first in the next) — ' + show(slow),
        slow.every((x) => x.drawn === 43 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.contact === CONTACT_CELL && agrees(x) && x.clean), J(slow));
 
     // ── LAB-4b · THE DISSOLVE EXIT: the real presets, the real playback, every backend's draw path ──
     const FFXD = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DS = lib('dissolve');
-    const playExit = (backend, mode, override) => {
+    const playExit = (backend, mode, override, extra) => {
       const W = world(0, backend, (fac) => DS.pick(FFXD, fac, override || ''));
-      const plan = W.w.Director.plan(W.ctx, { mode, ladderExempt: true, timing: NT }), r = W.w.Runner.create(plan, W.pb.handlers, () => W.clock.t);
+      const plan = W.w.Director.plan(W.ctx, Object.assign({ mode, ladderExempt: true, timing: NT }, extra)), r = W.w.Runner.create(plan, W.pb.handlers, () => W.clock.t);
       const Z = plan.phases.find((p) => p.name === 'FIZZLE');
       let peakParts = 0, peakSprites = 0, sawFilter = false; r.start({});
       while (!r.done && W.clock.t < 20000) {
@@ -427,6 +453,14 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
        DRAWS.length > 50 && DRAWS.some((d) => d.kind === 'glow') && DRAWS.some((d) => d.kind === 'puff') && DRAWS.some((d) => d.kind === 'gpu-ember') &&
        DRAWS.every((d) => d.dw > 0 && d.dw <= d.size + 1e-9 && d.dh <= d.size + 1e-9) && !/globalCompositeOperation\s*=\s*'(lighter|screen|plus-lighter)'|blendMode\s*=\s*'(add|screen|lighter)'|BLEND_MODES\.ADD/.test(SRC) && (SRC.match(/blendMode = 'normal'/g) || []).length >= 2,
        J(DRAWS.filter((d) => !(d.dw > 0 && d.dw <= d.size + 1e-9)).slice(0, 5)));
+
+    const LONG = ['full', 'fast'].reduce((all, m) => all.concat(BACKENDS.map((b) => playExit(b, m, '', { fizzleMs: 1200 }))), []);
+    const longOk = (x) => !!x.exit && x.fizzleMs === (x.mode === 'full' ? 1200 : 600) && x.exit.dur === x.fizzleMs && x.exit.name === 'Asura' && x.exit.monotonic && x.exit.progress >= 0.95 &&
+      x.exit.frames >= Math.floor(x.fizzleMs / (1000 / 60)) - 2 && x.exit.embers > 0 && x.settleLag != null && x.settleLag >= 0 && x.settleLag < 17 && x.clean && !!x.done && x.done.equalsFinal &&
+      (x.backend === 'canvas2d' ? (() => { const m = monoMasks(x.masks); return m.pairs >= 30 && m.bad === 0 && share(x.masks[x.masks.length - 1].a, (v) => v === 0) > 0.99; })()
+                                : x.uniformT.length >= 30 && x.uniformT.every((v, i) => i === 0 || v >= x.uniformT[i - 1]));
+    ok('S16 · A LONG FIZZLE (LAB-4c: 1200 ms in Full, so 600 ms in Fast), every backend: the sweep stretches to the new length and stays monotonic (no Canvas 2D mask ever regains alpha, the GPU threshold only rises), everything is gone at the end, embers and smoke stretch with it, 0 actors / sprites / particles afterwards, and the board settles within a frame of FIZZLE\'s end, equal to the engine\'s AFTER — ' + showX(LONG),
+       LONG.every(longOk), J(LONG.map((x) => ({ b: x.backend, m: x.mode, exit: x.exit, fizzleMs: x.fizzleMs, settleLag: x.settleLag, clean: x.clean }))));
   }
 }
 
@@ -483,7 +517,7 @@ console.log('\n── P · the page ──');
 {
   const ids = ['field', 'divider', 'vfxcanvas', 'vfxflash', 'actorunder', 'actorcanvas', 'actorgpu', 'actorover', 'floatlayer', 'banner', 'replay-all', 'phase-awaken', 'phase-emerge', 'phase-act', 'phase-fizzle', 'phase-settle',
                'ctl-skip', 'ctl-ff', 'ctl-memory', 'mode-full', 'mode-fast', 'mode-reduced', 'seat-swap', 'be-webgpu', 'be-webgl', 'be-canvas', 'clk-slow', 'clk-pause', 'clk-step',
-               'ro-fps', 'ro-time', 'ro-renderer', 'ro-actor', 'ro-rung', 'ro-sprites', 'ro-decode', 'ro-mb', 'ro-errors', 'ro-stamp', 'ro-exit', 'exit-preset', 'plan'];
+               'ro-fps', 'ro-time', 'ro-renderer', 'ro-actor', 'ro-rung', 'ro-sprites', 'ro-decode', 'ro-mb', 'ro-errors', 'ro-stamp', 'ro-exit', 'exit-preset', 'tempo', 'fizzle-ms', 'tempo-val', 'fizzle-val', 'plan'];
   const missing = ids.filter((id) => PAGE.indexOf('id="' + id + '"') < 0);
   const order = ['../lib/boarddiff.js', '../lib/clashcontext.js', '../lib/director.js', '../lib/runner.js', '../lib/manifest.js', '../lib/stagemath.js', '../lib/dissolve.js', '../lib/actorstage.js', '../lib/playback.js', 'vfx.js', '../lab.js'].map((s) => PAGE.indexOf('<script src="' + s + '?v='));
   const fieldBlock = PAGE.slice(PAGE.indexOf('<div id="field"'), PAGE.indexOf('<div id="hand">'));

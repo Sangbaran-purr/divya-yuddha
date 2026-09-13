@@ -194,6 +194,25 @@ The copied runtime's own particle pool sits on its own canvas beneath the actor 
 
 **Presets.** `data/factionfx.json` holds one exit per faction: `name`, `portal`, `exit: "dissolve"`, and `dissolve: { edge, core, edgeWidth, charge, chargeAlpha, noise, noiseScale, embers, emberColor, emberSize, emberRise, smoke, smokeColor, smokeAlpha, seed }`. Every key is optional. Asura is tuned against the clip: front #e76dba, core #ffd9ee, pink embers, dark smoke. Deva (gold, no smoke), Naga (teal) and Vanara (orange) are defaults. The **Exit preset** dropdown previews any of them on Meghnad, and the **Exit** readout row shows the preset, the path, embers, smoke and whether the sweep stayed monotonic.
 
+## LAB-4c: tempo and FIZZLE tuning
+
+The manifestation plays a little fast. Rather than guess a value, the lab now has two sliders in the Mode panel. They shape every play from the moment they move; a play already running keeps its own timeline.
+
+| Slider | Range | Default | What it changes |
+|---|---|---|---|
+| Tempo | 0.5× – 1.5× | 1.00× | The clip's cells play at 24 × tempo cells/s, and AWAKEN, EMERGE, ACT and SETTLE stretch with them. At 0.8× the clip runs at 19.2 cells/s. |
+| Fizzle | 300 – 1500 ms | 600 ms | FIZZLE's length on its own. The dissolve's sweep, embers and smoke stretch to match: embers live longer and move and spawn more slowly. The sweep stays monotonic. |
+
+Fast keeps its 2× relation to whatever Full is set to.
+
+**No skipped cells at any tempo.** The director tells the stage how far it may step per frame (`cellStep`): 1 in Full, so every cell is drawn; 2 in Fast.
+
+**Reading the numbers.** The Plan panel prints the next play's timeline as soon as a slider or the mode moves:
+
+`Timeline (ms): AWAKEN 400 · EMERGE 583 · ACT 1208 · contact +459 (at 1442) · FIZZLE 600 · SETTLE 400 · total 3191 · tempo 1.00× · 24 cells/s`
+
+The board still settles the moment FIZZLE ends and still matches the engine's AFTER snapshot. The next rung writes the chosen tempo into Meghnad's manifest and the FIZZLE length into the Asura preset, as their defaults.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference
