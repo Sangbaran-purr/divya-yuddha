@@ -1,0 +1,102 @@
+{
+  "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
+  "source": {
+    "file": "index.html",
+    "gameCommit": "e2f4c196609ca654dc933c16897705d4d40fb7e8",
+    "startLine": 8876,
+    "endLine": 9611,
+    "lines": 736,
+    "sha256": "96ab5284d7246005841ed986298193daff0ac99172e6d950bb99905a910b0fff"
+  },
+  "injected": {
+    "page": [
+      "$",
+      "vfxT",
+      "reducedMotion",
+      "jankSample",
+      "CHOREO_SPEED",
+      "LEGACY_VFX"
+    ],
+    "clock": [
+      "requestAnimationFrame",
+      "cancelAnimationFrame",
+      "performance"
+    ],
+    "pageConstants": {
+      "CHOREO_SPEED": 1.3,
+      "LEGACY_VFX": false
+    }
+  },
+  "rung": "lo (pinned by the lab page: VFX.applyQuality('lo') before VFX.init())",
+  "effect": "Chaos Surge on the GPU path (sprSurge) — the module's own gpuInit→gpuLoadSurge loads exactly these sheets; plus cardLand, procedural (no assets)",
+  "knownRequests": "gpuLoadHero also asks for the hero-moment kit (vfx_ring_1, vfx_lightning_1 stills; vfx_smoke_1 sheet + MV). Not carried: those requests 404 and the module catches them (heroReady=false).",
+  "files": [
+    {
+      "from": "assets/vendor/pixi.min.mjs",
+      "to": "runtime/assets/vendor/pixi.min.mjs",
+      "bytes": 798434,
+      "sha256": "28fefb52eeb15bb3e087533456bafc53e91af70932af4dd046ff2938ec3edd0e",
+      "px": null
+    },
+    {
+      "from": "assets/vfx/game/sheets/vfx_surge_1.png",
+      "to": "runtime/assets/vfx/game/sheets/vfx_surge_1.png",
+      "bytes": 772316,
+      "sha256": "79b0c55b1825c856200ab20609f84b64a1411449e163099cba0869e054f67e39",
+      "px": {
+        "w": 3072,
+        "h": 1536
+      }
+    },
+    {
+      "from": "assets/vfx/game/sheets/vfx_surge_2.png",
+      "to": "runtime/assets/vfx/game/sheets/vfx_surge_2.png",
+      "bytes": 463521,
+      "sha256": "3b5402f933bc4f9977f878662f61a297533e1ae8b5fccc366ffcdc5cf028a917",
+      "px": {
+        "w": 3072,
+        "h": 1536
+      }
+    },
+    {
+      "from": "assets/vfx/game/sheets/mv/vfx_surge_1.png",
+      "to": "runtime/assets/vfx/game/sheets/mv/vfx_surge_1.png",
+      "bytes": 1447312,
+      "sha256": "bdd577bc3159e904e801457ed7c19292c6f8659af16d85f7a90fab05d8416da2",
+      "px": {
+        "w": 3072,
+        "h": 1536
+      }
+    },
+    {
+      "from": "assets/vfx/game/sheets/mv/vfx_surge_2.png",
+      "to": "runtime/assets/vfx/game/sheets/mv/vfx_surge_2.png",
+      "bytes": 670464,
+      "sha256": "4f7e0198ed5a66f966e4cb0c2b8293e44f00dd6c2c34a7f39a9fa62215d3edba",
+      "px": {
+        "w": 3072,
+        "h": 1536
+      }
+    },
+    {
+      "from": "assets/cards/Asuras_Unit_Meghnad_P6_rRare.png",
+      "to": "art/Asuras_Unit_Meghnad_P6_rRare.png",
+      "bytes": 414943,
+      "sha256": "fad0b6d442de55bd2a240baf27d0ffa46f4a91e610787afa9c247c3edf2b414a",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Devas_Hero_Indra_P7_rLegendary.png",
+      "to": "art/Devas_Hero_Indra_P7_rLegendary.png",
+      "bytes": 450059,
+      "sha256": "f7a8bccacff4cf54e828be728bc3413454d1ed719a352b908c2553b32012ef8c",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    }
+  ]
+}

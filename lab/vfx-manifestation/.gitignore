@@ -1,0 +1,11 @@
+# VFX-LAB · ruling A7 — Kling sources and matted frames are NEVER committed. Only packed atlases are.
+sources/
+clips/
+frames/
+matted/
+*.mp4
+*.mov
+*.mkv
+# ruling A6 — the matting venv lives here and is never committed
+tools/.venv/
+__pycache__/

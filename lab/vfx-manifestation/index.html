@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<!-- runtime/ is the base: the copied VFX module's page-relative sheet URLs and its file-relative Pixi import both resolve inside it (see README) -->
+<base href="runtime/">
+<title>Manifestation Lab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Crimson+Pro:wght@400;600&display=swap">
+<style>
+  :root{
+    --ground:#0a0704; --panel:#15100a; --line:#3a2d17; --gold:#d9b25c; --gold-dim:#8a6f3a; --ink:#eadfc8; --ink-dim:#a89a82;
+    --asura:#c2442f; --deva:#e0b84a; --down:#e2765f; --up:#8fd18a;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; background:var(--ground); color:var(--ink); font:15px/1.45 "Crimson Pro", Georgia, serif; }
+  body{ padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom); }
+  #app{ max-width:430px; margin:0 auto; padding:10px 10px 28px; display:flex; flex-direction:column; gap:10px; }
+  header{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
+  header h1{ margin:0; font:700 15px Cinzel, Georgia, serif; letter-spacing:.14em; color:var(--gold); text-transform:uppercase; }
+  header .rung{ font-size:12px; color:var(--ink-dim); }
+  #field{ position:relative; height:360px; border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    background:radial-gradient(120% 70% at 50% 50%, #2a1f10 0%, #120c06 70%); display:flex; flex-direction:column; }
+  .half{ position:relative; z-index:3; flex:1; display:flex; flex-direction:column; justify-content:center; gap:6px; padding:8px; }
+  .half.opp{ flex-direction:column-reverse; }
+  .divider{ height:1px; margin:0 12px; background:linear-gradient(90deg, transparent, var(--gold-dim), transparent); z-index:3; }
+  .half .tag{ position:absolute; left:10px; font:600 10px Cinzel, Georgia, serif; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-dim); }
+  .half.me .tag{ bottom:6px; } .half.opp .tag{ top:6px; }
+  .row{ display:flex; justify-content:center; gap:8px; min-height:92px; align-items:center; }
+  .bc{ position:relative; width:64px; height:90px; border-radius:6px; overflow:hidden; border:1px solid var(--line); background:#1d150b; }
+  .bc img{ width:100%; height:100%; object-fit:cover; display:block; }
+  .bc.noart{ display:flex; align-items:center; justify-content:center; padding:4px; text-align:center; font-size:11px; color:var(--ink-dim); }
+  .bc .pw{ position:absolute; right:3px; bottom:3px; min-width:20px; padding:0 4px; border-radius:9px; background:rgba(0,0,0,.72);
+    font:700 12px Cinzel, Georgia, serif; text-align:center; color:var(--ink); font-variant-numeric:tabular-nums; }
+  .bc .delta{ position:absolute; left:50%; top:4px; transform:translateX(-50%); padding:0 5px; border-radius:8px; background:rgba(0,0,0,.8); font:700 12px Cinzel, Georgia, serif; }
+  .bc .delta.down{ color:var(--down); } .bc .delta.up{ color:var(--up); }
+  .empty{ font-size:12px; color:#6f624d; font-style:italic; }
+  #vfxcanvas{ position:absolute; inset:0; z-index:5; pointer-events:none; }
+  #vfxflash{ position:absolute; inset:0; z-index:7; pointer-events:none; opacity:0; background:#fff4dc; }
+  #hand{ display:flex; gap:6px; align-items:center; min-height:30px; flex-wrap:wrap; }
+  #hand .label{ font:600 10px Cinzel, Georgia, serif; letter-spacing:.14em; color:var(--ink-dim); text-transform:uppercase; margin-right:2px; }
+  #hand .chip{ padding:2px 8px; border:1px solid var(--line); border-radius:12px; font-size:13px; color:var(--ink-dim); }
+  #hand .chip.hot{ border-color:var(--asura); color:var(--ink); }
+  section.panel{ border:1px solid var(--line); border-radius:10px; background:var(--panel); padding:10px; display:flex; flex-direction:column; gap:8px; }
+  .panel h2{ margin:0; font:700 11px Cinzel, Georgia, serif; letter-spacing:.16em; color:var(--gold-dim); text-transform:uppercase; }
+  .grp{ display:flex; flex-wrap:wrap; gap:6px; }
+  button{ font:600 13px "Crimson Pro", Georgia, serif; color:var(--ink); background:#241a0d; border:1px solid var(--gold-dim); border-radius:8px;
+    min-height:40px; padding:6px 12px; cursor:pointer; }
+  button.primary{ font:700 13px Cinzel, Georgia, serif; letter-spacing:.1em; color:var(--gold); border-color:var(--gold); background:#2c1f0b; flex:1 1 100%; }
+  button.on{ border-color:var(--gold); color:var(--gold); background:#33250d; }
+  button:disabled{ opacity:.42; cursor:not-allowed; }
+  button:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+  .stub{ font-size:12px; color:var(--ink-dim); font-style:italic; }
+  #readout{ display:grid; grid-template-columns:auto 1fr; gap:2px 12px; font-size:13px; font-variant-numeric:tabular-nums; }
+  #readout dt{ color:var(--ink-dim); } #readout dd{ margin:0; }
+  #readout dd.bad{ color:var(--down); }
+  #story{ font-size:14px; }
+  #story ol{ margin:0; padding-left:20px; }
+  #story li{ margin:2px 0; }
+  #story .truth{ color:var(--gold); }
+  code{ font-size:12px; color:var(--ink-dim); }
+  @media (prefers-reduced-motion: reduce){ button{ transition:none; } }
+</style>
+</head>
+<body>
+<main id="app">
+  <header><h1>Manifestation Lab</h1><span class="rung">LAB-1 · harness</span></header>
+
+  <div id="field" aria-label="Mock board">
+    <div class="half opp"><span class="tag" id="tag-opp">Opponent</span><div class="row heroes"></div><div class="row units"></div></div>
+    <div class="divider"></div>
+    <div class="half me"><span class="tag" id="tag-me">You</span><div class="row units"></div><div class="row heroes"></div></div>
+    <canvas id="vfxcanvas"></canvas>
+    <div id="vfxflash"></div>
+  </div>
+  <div id="hand"></div>
+
+  <section class="panel" aria-labelledby="h-replay">
+    <h2 id="h-replay">Replay</h2>
+    <div class="grp">
+      <button class="primary" id="replay-all" type="button">Replay Meghnad's play</button>
+    </div>
+    <div class="grp" aria-label="Phases">
+      <button id="phase-awaken" type="button" disabled>Awaken</button>
+      <button id="phase-emerge" type="button" disabled>Emerge</button>
+      <button id="phase-act" type="button" disabled>Act</button>
+      <button id="phase-outcome" type="button" disabled>Outcome</button>
+      <button id="phase-fizzle" type="button" disabled>Fizzle</button>
+    </div>
+    <p class="stub">The phase controls are stubs until the director (LAB-2) and the stage (LAB-3).</p>
+  </section>
+
+  <section class="panel" aria-labelledby="h-mode">
+    <h2 id="h-mode">Mode · side · renderer</h2>
+    <div class="grp" role="group" aria-label="Cinematic mode">
+      <button id="mode-full" type="button" class="on">Full</button>
+      <button id="mode-fast" type="button">Fast</button>
+      <button id="mode-reduced" type="button">Reduced</button>
+    </div>
+    <div class="grp">
+      <button id="seat-swap" type="button">Swap sides: Meghnad is yours</button>
+    </div>
+    <div class="grp" role="group" aria-label="Renderer">
+      <button id="be-webgpu" type="button">WebGPU</button>
+      <button id="be-webgl" type="button">WebGL</button>
+      <button id="be-canvas" type="button">Canvas 2D</button>
+    </div>
+    <div class="grp" role="group" aria-label="Clock">
+      <button id="clk-slow" type="button">Slow-mo ¼×</button>
+      <button id="clk-pause" type="button">Pause</button>
+      <button id="clk-step" type="button">Step 1 frame</button>
+    </div>
+  </section>
+
+  <section class="panel" aria-labelledby="h-readout">
+    <h2 id="h-readout">Readout</h2>
+    <dl id="readout">
+      <dt>FPS</dt><dd id="ro-fps">—</dd>
+      <dt>Clock</dt><dd id="ro-time">—</dd>
+      <dt>Renderer</dt><dd id="ro-renderer">—</dd>
+      <dt>Rung</dt><dd id="ro-rung">—</dd>
+      <dt>Sprites</dt><dd id="ro-sprites">—</dd>
+      <dt>Decode</dt><dd id="ro-decode">—</dd>
+      <dt>Memory</dt><dd id="ro-mb">—</dd>
+      <dt>Errors</dt><dd id="ro-errors">0</dd>
+    </dl>
+  </section>
+
+  <section class="panel" id="story" aria-labelledby="h-story">
+    <h2 id="h-story">What the engine said</h2>
+    <ol id="story-events"></ol>
+    <p id="story-truth" class="truth"></p>
+  </section>
+</main>
+<script src="../lib/boarddiff.js"></script>
+<script src="vfx.js"></script>
+<script src="../lab.js"></script>
+</body>
+</html>
