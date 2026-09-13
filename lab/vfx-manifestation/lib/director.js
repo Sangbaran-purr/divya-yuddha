@@ -8,6 +8,9 @@
    act, contact } (cell counts, and the contact cell's index inside ACT) — EMERGE and ACT last exactly as long as their cells
    at the clip's own frame rate, and contact lands on the contact cell. AWAKEN, FIZZLE and SETTLE keep the grammar's times.
    Fast halves everything (the cells play at twice their rate). Without native timing, the grammar table applies.
+   LAB-4a: a native plan's actor-phase cues carry cellFps (the cells' own rate: native in Full, twice native in Fast) — the stage
+   steps its cells on that clock, not on a phase length — and the contact cue carries contactCell and lands at the first ms the
+   contact cell is on stage (the stage fires it on the frame that cell is drawn).
    THE REPEAT RULE: a card's second and later manifestations in a match play Fast (Reduced stays Reduced). The caller passes
    how many times this card has already manifested (createMemory() keeps that count per match).
    A2: a play outside Hero/Unit gets no actor phases — SETTLE and the queue only (its existing effect VFX is not the lab's).
@@ -55,12 +58,14 @@
     var full = opts.ladderExempt ? PILOT_MS : (LADDER_MS[ctx.rarity] || LADDER_MS.R);
     var phases, total;
     var native = opts.ladderExempt && opts.timing && opts.timing.fps > 0 && opts.timing.emerge > 0 && opts.timing.act > 0 ? opts.timing : null;
-    var contactFrac = CONTACT;
+    var contactFrac = CONTACT, cellFps = null, contactMs = null;
     if ((mode === 'full' || mode === 'fast') && native) {
       var k = mode === 'fast' ? FAST : 1, ms = function (n) { return Math.round(n * 1000 / native.fps * k); };
       var spec = [['AWAKEN', Math.round(GRAMMAR[0][1] * k)], ['EMERGE', ms(native.emerge)], ['ACT', ms(native.act)], ['FIZZLE', Math.round(GRAMMAR[3][1] * k)], ['SETTLE', Math.round(GRAMMAR[4][1] * k)]];
       phases = []; var t0 = 0; spec.forEach(function (x) { phases.push({ name: x[0], t0: t0, t1: t0 + x[1] }); t0 += x[1]; }); total = t0;
       if (native.contact != null) contactFrac = Math.min(1, Math.max(0, native.contact / native.act));
+      cellFps = native.fps / k;                                                                  // the cells' own rate: native in Full, twice native in Fast
+      if (native.contact != null) contactMs = Math.ceil(native.contact * 1000 / cellFps);          // the first ms of ACT at which the contact cell is on stage
       ladder = 'exempt (A3 pilot) · native ' + native.fps + ' fps';
     }
     else if (mode === 'full' || mode === 'fast') { total = Math.round(mode === 'fast' ? full * FAST : full); phases = phasesOf(GRAMMAR, total); }
@@ -74,10 +79,13 @@
     if (actor) {
       var A = at('AWAKEN'), E = at('EMERGE'), C = at('ACT'), Z = at('FIZZLE'), S = at('SETTLE'), hit = HIT[mode];
       cue(A.t0, 'portal-open', { faction: ctx.faction, dur: A.t1 - A.t0 + (E.t1 - E.t0) });
-      cue(E.t0, 'actor-phase', { phase: 'emerge', dur: E.t1 - E.t0 });
-      cue(C.t0, 'actor-phase', { phase: 'act', dur: C.t1 - C.t0, contactFrac: contactFrac, towardSeat: towardSeat });
-      cue(C.t0 + Math.round((C.t1 - C.t0) * contactFrac), 'contact', { towardSeat: towardSeat, hitstopMs: hit.hitstopMs, flashMs: hit.flashMs, impulseMs: hit.impulseMs, impulsePx: hit.impulsePx });
-      cue(Z.t0, 'actor-phase', { phase: 'fizzle', dur: Z.t1 - Z.t0 });
+      var nat = function (o) { if (cellFps) o.cellFps = cellFps; return o; };
+      cue(E.t0, 'actor-phase', nat({ phase: 'emerge', dur: E.t1 - E.t0 }));
+      cue(C.t0, 'actor-phase', nat({ phase: 'act', dur: C.t1 - C.t0, contactFrac: contactFrac, towardSeat: towardSeat }));
+      var hitCue = { towardSeat: towardSeat, hitstopMs: hit.hitstopMs, flashMs: hit.flashMs, impulseMs: hit.impulseMs, impulsePx: hit.impulsePx };
+      if (contactMs != null) hitCue.contactCell = native.contact;
+      cue(contactMs != null ? C.t0 + Math.min(C.t1 - C.t0 - 1, contactMs) : C.t0 + Math.round((C.t1 - C.t0) * contactFrac), 'contact', hitCue);
+      cue(Z.t0, 'actor-phase', nat({ phase: 'fizzle', dur: Z.t1 - Z.t0 }));
       cue(Z.t0, 'exit-fx', { faction: ctx.faction });
       cue(S.t0, 'actor-gone', { state: true });
       var st = settleOf(ctx); cue(S.t0, 'settle', { state: true, changes: st.changes, floats: st.floats });
@@ -93,7 +101,7 @@
     var end = total + ctx.rest.length * gap;
     cue(end, 'done', { state: true });
     cues.sort(function (a, b) { return (a.t - b.t) || (a.seq - b.seq); });
-    return { version: 1, timing: native ? 'native' : 'grammar', cardId: ctx.cardId, cardName: ctx.cardName, seat: ctx.seat, towardSeat: towardSeat, faction: ctx.faction,
+    return { version: 1, timing: native ? 'native' : 'grammar', cellFps: cellFps, cardId: ctx.cardId, cardName: ctx.cardName, seat: ctx.seat, towardSeat: towardSeat, faction: ctx.faction,
              requestedMode: requested, mode: mode, repeat: repeat, prior: prior, actor: actor, ladder: ladder, total: total, end: end, phases: phases, cues: cues };
   }
 
@@ -105,7 +113,7 @@
     var lines = p.cues.map(function (c) {
       var extra = c.cue === 'settle' ? ' ' + c.changes.map(function (x) { return x.kind === 'power' ? x.n + ' ' + x.from + '→' + x.to + ' (' + (x.delta > 0 ? '+' : '−') + Math.abs(x.delta) + ')' : x.kind === 'enter' ? x.n + ' enters at ' + x.to : x.kind + ' ' + x.n; }).join(', ')
         : c.cue === 'queue' ? ' ' + c.event.type + (c.event.abilityName ? ' · ' + c.event.abilityName : '') + (c.event.amount != null ? ' ' + (c.event.amount > 0 ? '+' : '') + c.event.amount : '') + (c.event.text ? ' "' + c.event.text + '"' : '')
-        : c.cue === 'actor-phase' ? ' ' + c.phase + ' (' + c.dur + ' ms)' : c.cue === 'contact' ? ' hit-stop ' + c.hitstopMs + ' ms · flash ' + c.flashMs + ' ms · impulse ' + c.impulsePx + ' px toward seat ' + c.towardSeat
+        : c.cue === 'actor-phase' ? ' ' + c.phase + ' (' + c.dur + ' ms' + (c.cellFps ? ' · ' + c.cellFps + ' cells/s' : '') + ')' : c.cue === 'contact' ? (c.contactCell != null ? ' on ACT cell ' + c.contactCell + ' ·' : '') + ' hit-stop ' + c.hitstopMs + ' ms · flash ' + c.flashMs + ' ms · impulse ' + c.impulsePx + ' px toward seat ' + c.towardSeat
         : c.cue === 'portal-open' || c.cue === 'exit-fx' ? ' ' + c.faction : c.cue === 'card-pulse' ? ' ' + c.dur + ' ms' : '';
       return ('     ' + c.t).slice(-5) + ' ms  ' + c.cue + extra;
     });

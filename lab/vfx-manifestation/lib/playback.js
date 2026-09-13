@@ -40,13 +40,19 @@
             if (fx.exit === 'embers' && cl) env.embers(cl.cx, cl.cy);
             break;
           }
-          case 'actor-phase': { if (info.skipped) break; var a = ensureActor(); if (a) env.stage.setPhase(a, c.phase, c.dur, c.contactFrac); break; }
+          case 'actor-phase': { if (info.skipped) break; var a = ensureActor(); if (a) env.stage.setPhase(a, c.phase, c.dur, c.contactFrac, c.cellFps); break; }
           case 'contact': {
-            if (info.skipped || !actor || !actor.pose) break;
-            var q = actor.pose, h = actor.pl.height;
-            env.stage.hitstop(c.hitstopMs);
-            env.stage.flash(q.x, q.feetY - h * 0.55, h * 0.9, actor.pl.dirY, c.flashMs);
-            env.stage.impulse(actor.pl.dirY, c.impulsePx, c.impulseMs);
+            if (info.skipped || !actor) break;
+            var who = actor;
+            var hit = function () {
+              if (!who.pose) return;
+              var q = who.pose, h = who.pl.height;
+              env.stage.hitstop(c.hitstopMs);
+              env.stage.flash(q.x, q.feetY - h * 0.55, h * 0.9, who.pl.dirY, c.flashMs);
+              env.stage.impulse(who.pl.dirY, c.impulsePx, c.impulseMs);
+            };
+            // LAB-4a: a native actor's contact lands on its contact CELL — the stage fires it on the frame that cell is drawn
+            if (c.contactCell != null && env.stage.onCell) env.stage.onCell(who, 'act', c.contactCell, hit); else hit();
             break;
           }
           case 'exit-fx': {

@@ -1,4 +1,4 @@
-/* lab.js — VFX-LAB-2+3 · the harness page. Loaded after lib/* and runtime/vfx.js.
+/* lab.js — VFX-LAB-2+3 (+ LAB-4a: every URL stamped, the cells-drawn readout) · the harness page. Loaded after lib/* and runtime/vfx.js.
    The page is glue: the fixture → ClashContext → Director plan → Runner → Playback (stage + board). Every piece of logic lives
    in lib/ and is card-agnostic; the only card-specific data are the registry (data/manifestations.json), the faction energy
    (data/factionfx.json) and the actor manifest. Nothing here loads from the live game.
@@ -6,6 +6,10 @@
 (function () {
   'use strict';
   const el = (id) => document.getElementById(id);
+  // ── THE STAMP (LAB-4a): every lab URL carries ?v=<STAMP> — tools/stamp_lab.js writes the content hash into index.html and STAMP ──
+  const STAMP = (document.querySelector('meta[name="lab-stamp"]') || {}).content || 'unstamped';
+  const V = (u) => { const x = new URL(u, document.baseURI); x.searchParams.set('v', STAMP); return x.href; };
+  let stampNote = 'checking';
   const ART = { meghnad: '../art/Asuras_Unit_Meghnad_P6_rRare.png', indra: '../art/Devas_Hero_Indra_P7_rLegendary.png' };
   const FIXTURE = (seat) => '../fixtures/meghnad_seat' + seat + '.json';
   const VIEWER = 0;   // the board is read as seat 0; "swap sides" moves the ATTACKER
@@ -16,6 +20,7 @@
 
   // ── THE LAB CLOCK ──
   const clock = { t: 0, scale: 1, paused: false, stepQ: 0, cbs: [], nextId: 1, lastReal: null, frames: 0, fpsT0: 0, fps: 0 };
+  let readoutAt = null;
   const labPerformance = { now: () => clock.t };
   function labRaf(cb) { const id = clock.nextId++; clock.cbs.push({ id, cb }); return id; }
   function labCaf(id) { clock.cbs = clock.cbs.filter((x) => x.id !== id); }
@@ -34,7 +39,7 @@
       if (runner) { try { runner.tick(); } catch (e) { report(e); } }
     }
     try { stage.frame(clock.t, real); } catch (e) { report(e); }
-    readout();
+    if (readoutAt == null || real - readoutAt >= 250) { readoutAt = real; readout(); }   // text four times a second: the DOM work stays off the actor's frames
     window.requestAnimationFrame(tick);
   }
 
@@ -50,7 +55,7 @@
 
   // ── THE ACTOR STAGE ──
   const stage = new window.ActorStage({ field: el('field'), under: el('actorunder'), actorCanvas: el('actorcanvas'), gpuCanvas: el('actorgpu'), over: el('actorover'),
-    now: () => clock.t, pixiUrl: new URL('assets/vendor/pixi.min.mjs', document.baseURI).href });
+    now: () => clock.t, pixiUrl: V('assets/vendor/pixi.min.mjs') });
 
   // ── DATA ──
   let REG = {}, FFX = {}, copyMeta = null;
@@ -58,12 +63,12 @@
   async function actorFor(cardId) {
     if (actors[cardId]) return actors[cardId];
     const entry = REG[cardId]; if (!entry) return null;
-    const murl = new URL(entry.manifest, document.baseURI);
+    const murl = new URL(V(entry.manifest));
     const manifest = await fetch(murl).then((r) => r.json());
     const v = window.ActorManifest.validate(manifest);
     if (!v.ok) { report('manifest ' + cardId + ': ' + v.errors.join('; ')); return null; }
     const image = new Image(); image.decoding = 'async';
-    const t0 = performance.now(); image.src = new URL(manifest.atlas, murl).href; await image.decode();
+    const t0 = performance.now(); image.src = V(new URL(manifest.atlas, murl).href); await image.decode();
     actors[cardId] = { manifest, image, decodeMs: performance.now() - t0, url: image.src };
     stage.loadActor(cardId, actors[cardId]);
     return actors[cardId];
@@ -75,7 +80,7 @@
   const sideOf = (seat) => seat === VIEWER ? 'me' : 'opp';
   function cardEl(c) {
     const d = document.createElement('div'); d.className = 'bc'; d.dataset.uid = c.uid;
-    if (ART[c.id]) { const im = document.createElement('img'); im.src = ART[c.id]; im.alt = c.n; im.decoding = 'async'; d.appendChild(im); }
+    if (ART[c.id]) { const im = document.createElement('img'); im.src = V(ART[c.id]); im.alt = c.n; im.decoding = 'async'; d.appendChild(im); }
     else { d.classList.add('noart'); d.textContent = c.n; }
     const p = document.createElement('span'); p.className = 'pw'; p.textContent = c.eff; p.setAttribute('aria-label', c.n + ' power ' + c.eff); d.appendChild(p);
     return d;
@@ -123,7 +128,7 @@
   }
   async function load(seat) {
     stopRun();
-    attackerSeat = seat; F = await fetch(FIXTURE(seat)).then((r) => r.json());
+    attackerSeat = seat; F = await fetch(V(FIXTURE(seat))).then((r) => r.json());
     render(F.before, []); story();
     el('seat-swap').textContent = 'Swap sides: Meghnad is ' + (attackerSeat === VIEWER ? 'yours' : 'the opponent\'s');
   }
@@ -174,7 +179,7 @@
     el('ro-fps').textContent = String(clock.fps);
     el('ro-time').textContent = (clock.paused ? 'paused' : clock.scale + '×') + ' · ' + (clock.t / 1000).toFixed(2) + ' s · ' + mode + (runner && !runner.done ? ' · playing ' + Math.round(runner.t) + ' ms' + (runner.speed !== 1 ? ' at ' + runner.speed + '×' : '') : '');
     el('ro-renderer').textContent = 'effects ' + (g.renderer || 'none') + (g.enabled ? '' : ' (off → Canvas 2D)') + (g.texReady ? ' · surge ready' : '');
-    el('ro-actor').textContent = s.backend + ' · ' + s.cellPx + ' px cells · drawn ' + s.drawnPx + ' px · ' + (s.liveFps != null ? s.liveFps + ' fps now' : (s.fps ? s.fps + ' fps last run' : 'no run yet')) + ' · draw ' + s.drawMsAvg.toFixed(2) + ' ms/frame · live actors ' + stage.liveActors() + ' · GPU sprites ' + stage.liveSprites() + (lastDone ? (lastDone.equalsFinal ? ' · final board = engine AFTER ✓' : ' · final board ≠ AFTER ✖') : '');
+    el('ro-actor').textContent = s.backend + ' · ' + s.cellPx + ' px cells · drawn ' + s.drawnPx + ' px · cells drawn ' + (s.cellsDrawn ? s.cellsDrawn.drawn + '/' + s.cellsDrawn.total + (s.cellsDrawn.live ? ' so far' : '') + (s.cellsDrawn.cellFps ? ' at ' + s.cellsDrawn.cellFps + '/s' : '') + ' · repeats ' + s.cellsDrawn.repeats + (s.cellsDrawn.contact ? ' · contact on ' + s.cellsDrawn.contact : '') : '—') + ' · ' + (s.liveFps != null ? s.liveFps + ' fps now' : (s.fps ? s.fps + ' fps last run' : 'no run yet')) + ' · draw ' + s.drawMsAvg.toFixed(2) + ' ms/frame · live actors ' + stage.liveActors() + ' · GPU sprites ' + stage.liveSprites() + (lastDone ? (lastDone.equalsFinal ? ' · final board = engine AFTER ✓' : ' · final board ≠ AFTER ✖') : '');
     el('ro-rung').textContent = VFX.currentRung();
     el('ro-sprites').textContent = 'Canvas 2D ' + VFX.sprCount() + ' · GPU ' + (g.live != null ? g.live : 0);
     let fetchMs = 0, bytes = 0;
@@ -185,6 +190,7 @@
     const actorDecoded = a ? a.manifest.atlasSize.w * a.manifest.atlasSize.h * 4 : 0;
     el('ro-mb').textContent = 'transferred ' + mb(bytes) + ' · effect sheets ≈ ' + mb(decoded) + ' · actor atlas ≈ ' + mb(actorDecoded) + ' decoded';
     const e = el('ro-errors'); e.textContent = errors.length ? errors.length + ' — ' + errors[errors.length - 1] : '0'; e.className = errors.length ? 'bad' : '';
+    const rs = el('ro-stamp'); if (rs) { rs.textContent = STAMP + ' · ' + stampNote; rs.className = /STALE|unreadable/.test(stampNote) ? 'bad' : ''; }
   }
 
   // ── CONTROLS ──
@@ -214,9 +220,18 @@
   VFX.init(); VFX.resize();
   window.addEventListener('resize', () => { VFX.resize(); stage.resize(); });
   Promise.all([
-    fetch('COPY.json').then((r) => r.json()).then((j) => { copyMeta = j; }),
-    fetch('../data/manifestations.json').then((r) => r.json()).then((j) => { REG = j.cards || {}; }),
-    fetch('../data/factionfx.json').then((r) => r.json()).then((j) => { FFX = j; }),
+    fetch(V('COPY.json')).then((r) => r.json()).then((j) => { copyMeta = j; }),
+    fetch(V('../data/manifestations.json')).then((r) => r.json()).then((j) => { REG = j.cards || {}; }),
+    fetch(V('../data/factionfx.json')).then((r) => r.json()).then((j) => { FFX = j; }),
   ]).then(() => load(0)).then(() => { stage.useBackend('webgpu').catch(report); window.requestAnimationFrame(tick); }).catch(report);
-  window.__lab = { VFX, stage, clock, play, load, memory, errors, get runner() { return runner; }, get plan() { return lastPlan; }, get playback() { return playback; }, get done() { return lastDone; }, get fixture() { return F; } };
+  // is this page the served one? STAMP read past every cache; a cached page reloads itself once onto the served stamp
+  fetch(new URL('../STAMP', document.baseURI).href + '?t=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : null)).then((served) => {
+    served = served && served.trim();
+    if (!served) { stampNote = 'served STAMP unreadable'; return; }
+    if (served === STAMP) { stampNote = 'current'; return; }
+    const here = new URL(location.href);
+    if (here.searchParams.get('v') !== served) { here.searchParams.set('v', served); location.replace(here.href); return; }
+    stampNote = 'STALE — this page is ' + STAMP + ', the server has ' + served; report('stale lab page: ' + stampNote);
+  }).catch(() => { stampNote = 'served STAMP unreadable'; });
+  window.__lab = { STAMP, VFX, stage, clock, play, load, memory, errors, get runner() { return runner; }, get plan() { return lastPlan; }, get playback() { return playback; }, get done() { return lastDone; }, get fixture() { return F; } };
 })();

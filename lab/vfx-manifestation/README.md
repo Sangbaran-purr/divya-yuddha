@@ -142,6 +142,36 @@ The stage does the fizzle, with the Asura ember exit.
 
 **Native timing.** The manifest says `"timing": "native"` at 24 fps. The director, for a ladder-exempt card whose manifest supplies native timing, makes EMERGE and ACT exactly as long as their cells at that rate: 583 ms and 1208 ms. Contact lands on the contact cell, and the full manifestation totals 3191 ms. Fast halves it. A card that is not ladder-exempt keeps the ladder.
 
+## LAB-4a: the actor plays at its native frame rate, and every lab URL is stamped
+
+**The defect.** On Pages the manifestation read as a few stills, not the clip's 24 fps motion. Measured on the stage (the lab's `lib/` run with fixed frame intervals, all three draw paths alike), before the fix:
+
+| Frame rate | Full | Fast |
+|---|---|---|
+| 120 Hz | 43/43 | 42/43 |
+| 60 Hz | 43/43 | 39/43 |
+| 30 Hz | 41/43 | 26/43 |
+| 15 Hz | 27/43 | 14/43 |
+| 10 Hz | 18/43 | 9/43 |
+
+The stage already stepped one cell per 1/24 s. What broke the motion:
+- A slow frame skipped every cell it jumped over, so a device drawing slowly showed a handful of cells.
+- Contact landed one cell early (f068, not f069), and the 60 ms hit-stop froze the actor on that cell inside ACT. Every later ACT cell then ran late, and the end of ACT was cut.
+- The first play on a GPU backend lost its opening cells to the atlas upload.
+
+**The cells are the clock.** A native plan's actor phases carry `cellFps`: 24 cells/s in Full, 48 in Fast. The stage steps through the phase's cell list on that clock, not on the phase length:
+- No easing between cells, and no hold inside a phase. The hit-stop never freezes a native actor, because the clip carries its own contact. The flash and the camera impulse still fire.
+- Full never skips a cell. After a late frame the stage catches up one cell per frame. Fast may skip one cell at a time, never two, so it always shows at least every other cell.
+- Contact fires on the frame the contact cell (f069) is drawn.
+- FIZZLE holds the last ACT cell under the ember exit.
+- `warm()` uploads the atlas before the first play.
+
+**The readout.** The Actor row shows cells drawn per play, repeats and the cell the contact landed on. `stats().cellsDrawn` carries the same numbers.
+
+**The stamp.** `tools/stamp_lab.js` hashes every file the page loads (lab.js, lib/, runtime/, data/, fixtures/, art/, actors/) into `STAMP` and stamps `index.html`: a `lab-stamp` meta tag and `?v=` on every script. `lab.js` puts `?v=` on every fetch, image and module URL. At boot the page reads `STAMP` past the cache and reloads itself once onto the served stamp if the page it got was stale. The Stamp row shows it. Run the tool after changing any lab file; the suite fails if the stamp is out of date.
+
+The copied VFX module must stay byte-identical to the game, so its own URLs are not the lab's to stamp: its effect sheets keep the game's `?v=t104`, and its own Pixi import (`./assets/vendor/pixi.min.mjs`) is unstamped. The stage imports Pixi through a stamped URL.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

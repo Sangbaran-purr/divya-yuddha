@@ -9,9 +9,10 @@
 //   M · THE MANIFEST    the actor asset class (A4), and everything it must refuse — for the real Meghnad actor from the Kling clip
 //   K · THE SOURCES     A7: no clip and no raw frame is ever tracked; sources/ frames/ and the matting venv stay ignored
 //   S · THE STAGE       layer order, anchoring on both seats (never onto the enemy cards — A1), facing, cleanup after skip,
-//                       numbers only at SETTLE, normal blending, the performance readout
+//                       numbers only at SETTLE, normal blending, the performance readout; LAB-4a: the cells are the clock —
+//                       cells drawn per play on every backend's draw path, contact on its cell, no hold, no repeat, no skip
 //   R · THE RUNTIME     the lab's VFX module is the game's byte-for-byte; its injected names; it runs on them alone; the subset
-//   P · THE PAGE        the structure and every control; nothing loaded from the live game
+//   P · THE PAGE        the structure and every control; nothing loaded from the live game; every URL stamped (LAB-4a)
 //   G · THE RULE        no tracked change outside lab/ since the lab began (the ruling doc, A8, excepted); nothing outside
 //                       lab/ references it; the site's sync never archives it; Kling sources and frames are ignored
 //   D · THE RULING      the doc carries A1–A8
@@ -135,12 +136,14 @@ console.log('\n── T · the Director ──');
     const okNative = [0, 1].every((s) => ['full', 'fast'].every((m) => {
       const k = m === 'fast' ? 0.5 : 1, p = nat(s, m), [A, E, C, Z, S] = p.phases, c = p.cues.find((x) => x.cue === 'contact'), a = p.cues.find((x) => x.cue === 'actor-phase' && x.phase === 'act');
       return p.timing === 'native' && A.t1 - A.t0 === 400 * k && E.t1 - E.t0 === ms(NT.emerge, k) && C.t1 - C.t0 === ms(NT.act, k) && Z.t1 - Z.t0 === 600 * k && S.t1 - S.t0 === 400 * k &&
-             c.t === C.t0 + Math.round((C.t1 - C.t0) * NT.contact / NT.act) && Math.abs(a.contactFrac - NT.contact / NT.act) < 1e-9 && p.total === S.t1;
+             c.t === C.t0 + Math.ceil(NT.contact * 1000 / (NT.fps / k)) && c.contactCell === NT.contact && Math.floor((c.t - C.t0) * (NT.fps / k) / 1000) === NT.contact &&
+             p.cellFps === NT.fps / k && p.cues.filter((x) => x.cue === 'actor-phase').every((x) => x.cellFps === NT.fps / k) &&
+             Math.abs(a.contactFrac - NT.contact / NT.act) < 1e-9 && p.total === S.t1;
     }));
     const notExempt = DIR.plan(CTX[0], { mode: 'full', ladderExempt: false, timing: NT });
     const full = nat(0, 'full');
-    ok('T11 · NATIVE TIMING from the real manifest (' + NT.emerge + ' EMERGE + ' + NT.act + ' ACT cells @ ' + NT.fps + ' fps, contact = ACT cell ' + NT.contact + '): EMERGE ' + (full.phases[1].t1 - full.phases[1].t0) + ' ms · ACT ' + (full.phases[2].t1 - full.phases[2].t0) + ' ms · contact on the contact cell · total ' + full.total + ' ms; Fast halves it; both seats; a card NOT ladder-exempt ignores native timing (the ladder applies)',
-       okNative && notExempt.timing === 'grammar' && notExempt.total === 2500 && Math.abs(full.total - 3200) <= 60);
+    ok('T11 · NATIVE TIMING from the real manifest (' + NT.emerge + ' EMERGE + ' + NT.act + ' ACT cells @ ' + NT.fps + ' fps, contact = ACT cell ' + NT.contact + '): EMERGE ' + (full.phases[1].t1 - full.phases[1].t0) + ' ms · ACT ' + (full.phases[2].t1 - full.phases[2].t0) + ' ms · total ' + full.total + ' ms; the actor phases carry the cells\' rate (24 cells/s Full, 48 Fast) and the contact cue lands at the first ms the contact cell is on stage (LAB-4a); Fast halves it; both seats; a card NOT ladder-exempt ignores native timing (the ladder applies, no cell rate)',
+       okNative && notExempt.timing === 'grammar' && notExempt.total === 2500 && notExempt.cellFps === null && notExempt.cues.every((x) => x.cellFps == null && x.contactCell == null) && Math.abs(full.total - 3200) <= 60);
   }
   const txt = DIR.formatPlan(P(0, 'full'));
   ok('T10 · the Plan readout is the timeline as text: the header, every phase, every cue in time order with its numbers', /Meghnad · seat 0 → toward seat 1 · mode full/.test(txt) && /AWAKEN 0–400/.test(txt) && /2800 ms  settle Meghnad enters at 6, Indra 7→5 \(−2\)/.test(txt) && /queue buff · Chaos Surge \+1/.test(txt) && txt.split('\n').length === P(0, 'full').cues.length + 2, txt.split('\n').slice(0, 4).join(' | '));
@@ -265,15 +268,27 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
 
   if (!JSDOM) { fail += 3; console.log('  ✖ S5–S7 SKIPPED LOUDLY — jsdom not found under ' + path.join(WEB, 'tests') + ' (set DY_WEB). The stage runs did NOT happen.'); }
   else {
-    function world(seat) {
+    function world(seat, backend) {
       const dom = new JSDOM('<!doctype html><body><div id="field"><canvas id="actorunder"></canvas><canvas id="actorcanvas"></canvas><canvas id="actorgpu"></canvas><canvas id="actorover"></canvas></div></body>', { url: 'https://lab.test/', pretendToBeVisual: true, runScripts: 'outside-only' });
-      const w = dom.window, calls = { draw: 0, clear: 0, ops: new Set() };
-      const ctx = new Proxy({}, { get: (t, k) => k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : k === 'drawImage' ? () => { calls.draw++; } : k === 'clearRect' ? () => { calls.clear++; } : () => undefined,
+      const w = dom.window, calls = { draw: 0, clear: 0, ops: new Set(), cells: [] };
+      const ctx = new Proxy({}, { get: (t, k) => k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : k === 'drawImage' ? (img, sx, sy, sw, sh, dx, dy, dw, dh) => { calls.draw++; if (sw > 1 && dw === sw && dh === sh) calls.cells.push(sx + ',' + sy); } : k === 'clearRect' ? () => { calls.clear++; } : () => undefined,
                                   set: (t, k, v) => { if (k === 'globalCompositeOperation') calls.ops.add(v); return true; } });
       w.HTMLCanvasElement.prototype.getContext = () => ctx;
       ['boarddiff', 'clashcontext', 'director', 'runner', 'manifest', 'stagemath', 'actorstage', 'playback'].forEach((n) => w.eval(fs.readFileSync(path.join(LAB, 'lib', n + '.js'), 'utf8')));
       let t = 0;
       const stage = new w.ActorStage({ field: w.document.getElementById('field'), under: w.document.getElementById('actorunder'), actorCanvas: w.document.getElementById('actorcanvas'), gpuCanvas: w.document.getElementById('actorgpu'), over: w.document.getElementById('actorover'), now: () => t });
+      if (backend === 'webgl' || backend === 'webgpu') {
+        // the stage's Pixi draw path against a recording Pixi: a cell counts as drawn when the renderer renders a sprite showing it
+        const children = [], PIXI = {
+          Texture: function (o) { this.source = o && o.source; this.frame = o && o.frame; },
+          Rectangle: function (x, y) { this.x = x; this.y = y; },
+          Sprite: function (tex) { this.texture = tex; this.parent = null; this.anchor = { set() {} }; this.position = { set() {} }; this.scale = { set() {} }; this.destroy = () => {}; },
+        };
+        PIXI.Texture.from = (img) => ({ source: img });
+        const app = { stage: { children, addChild: (sp) => { sp.parent = app.stage; children.push(sp); }, removeChild: (sp) => { children.splice(children.indexOf(sp), 1); sp.parent = null; }, removeChildren: () => { children.splice(0).forEach((sp) => { sp.parent = null; }); } },
+          renderer: { name: backend, resize() {}, render: () => children.forEach((sp) => { const f = sp.texture && sp.texture.frame; if (f && sp.alpha > 0.01) calls.cells.push(f.x + ',' + f.y); }) }, destroy() {} };
+        stage.pixi = PIXI; stage.app = app; stage.backend = 'pixi'; stage.renderer = backend; stage.base = {};
+      }
       stage.loadActor('meghnad', { manifest: MANIFEST, image: { width: MANIFEST.atlasSize.w, height: MANIFEST.atlasSize.h } });
       const f = FX[seat], ctxw = w.ClashContext.fromBatch(f), boards = w.ClashContext.boards(ctxw, f.before, f.after), g = geo(seat);
       const rects = {}; rects[f.events[0].sourceUid] = g.card; rects[f.before.seats[f.defenderSeat].heroes[0].uid] = g.band;
@@ -318,6 +333,41 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
     ok('S8 · THE PERFORMANCE READOUT: the stage reports its backend, frames, draw ms per frame, fps over the manifestation and the cell size (' + J(st) + '); the page shows it (#ro-actor)',
        st.backend === 'canvas2d' && st.frames > 0 && typeof st.drawMsAvg === 'number' && st.drawMsAvg >= 0 && typeof st.fps === 'number' && st.cellPx === 512 && st.drawnPx > 0 &&
        PAGE.indexOf('<dd id="ro-actor">') >= 0 && /stage\.stats\(\)/.test(fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8')));
+
+    // ── LAB-4a · THE CELLS ARE THE CLOCK: what each backend's draw path really draws, per play ──
+    const NT = { fps: MANIFEST.fps, emerge: MANIFEST.phases.emerge.length, act: MANIFEST.phases.act.length, contact: MANIFEST.contact };
+    const key = MANIFEST.cells.map((c) => c.x + ',' + c.y), nameOf = (i) => (MANIFEST.cells[i] || {}).name;
+    const CONTACT_CELL = nameOf(MANIFEST.phases.act[MANIFEST.contact]), LAST_ACT = MANIFEST.phases.act[MANIFEST.phases.act.length - 1];
+    const BACKENDS = ['canvas2d', 'webgl', 'webgpu'];
+    const playCells = (backend, mode, hz, hitchMs) => {
+      const W = world(0, backend);
+      let at = -1; const hs = W.stage.hitstop.bind(W.stage); W.stage.hitstop = (ms) => { at = W.calls.cells.length; return hs(ms); };
+      const plan = W.w.Director.plan(W.ctx, { mode, ladderExempt: true, timing: NT }), r = W.w.Runner.create(plan, W.pb.handlers, () => W.clock.t);
+      const E = plan.phases.find((p) => p.name === 'EMERGE'), A = plan.phases.find((p) => p.name === 'ACT');
+      let hitched = false; r.start({});
+      while (!r.done && W.clock.t < 20000) {
+        const late = hitchMs && !hitched && W.clock.t >= E.t0 + 120; if (late) hitched = true;
+        W.clock.t += late ? hitchMs : 1000 / hz; r.tick(); W.stage.frame(W.clock.t, W.clock.t);
+      }
+      const ix = W.calls.cells.map((k) => key.indexOf(k)), runs = [];
+      ix.forEach((c) => { if (runs.length && runs[runs.length - 1][0] === c) runs[runs.length - 1][1]++; else runs.push([c, 1]); });
+      const seen = new Set(); let repeats = 0; runs.forEach(([c]) => { if (seen.has(c)) repeats++; seen.add(c); });
+      const inner = runs.filter(([c]) => c !== LAST_ACT).map((x) => x[1]);
+      return { backend, mode, hz, drawn: seen.size, total: MANIFEST.cells.length, repeats, inOrder: runs.every((x, i) => i === 0 || x[0] > runs[i - 1][0]), longestRun: Math.max(...inner),
+               endsOnLastAct: runs.length > 0 && runs[runs.length - 1][0] === LAST_ACT, unknown: ix.filter((c) => c < 0).length, contact: at >= 0 ? nameOf(ix[at]) : null,
+               readout: W.stage.stats().cellsDrawn, perSecond: seen.size / ((A.t1 - E.t0) / 1000), clean: clean(W) };
+    };
+    const agrees = (x) => x.readout && x.readout.drawn === x.drawn && x.readout.total === x.total && x.readout.repeats === x.repeats && x.readout.contact === CONTACT_CELL;
+    const show = (xs) => xs.map((x) => x.backend + ' ' + x.drawn + '/' + x.total + (x.hitch ? ' (' + x.hitch + ')' : '') + ' · repeats ' + x.repeats + ' · longest hold ' + x.longestRun + ' frames · contact ' + x.contact).join(' | ');
+    const full = BACKENDS.map((b) => playCells(b, 'full', 60));
+    ok('S9 · FULL at 60 Hz, every backend\'s draw path (Canvas 2D drawImage · Pixi WebGL · Pixi WebGPU): all ' + MANIFEST.cells.length + ' cells drawn, in clip order, none repeated, none held past its 1/24 s (≤ 3 frames — no hold inside a phase, the hit-stop never freezes the actor), the contact fires on the frame ' + CONTACT_CELL + ' is drawn, FIZZLE holds the last ACT cell, the stage\'s own count (the readout) agrees, and the stage ends clean — ' + show(full),
+       full.every((x) => x.drawn === 43 && x.total === 43 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.longestRun <= 3 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && x.clean), J(full));
+    const fast = BACKENDS.map((b) => playCells(b, 'fast', 60));
+    ok('S10 · FAST at 60 Hz (the cells at twice their rate), every backend: at least 22 cells drawn (at least every other cell), in order, none repeated, ≥ 12 cells per second of EMERGE + ACT, contact on ' + CONTACT_CELL + ', the readout agrees — ' + show(fast) + ' · ' + fast.map((x) => x.perSecond.toFixed(1) + '/s').join(', '),
+       fast.every((x) => x.drawn >= 22 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.perSecond >= 12 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && x.clean), J(fast));
+    const slow = BACKENDS.map((b) => Object.assign(playCells(b, 'full', 30), { hitch: '30 Hz' })).concat(BACKENDS.map((b) => Object.assign(playCells(b, 'full', 60, 250), { hitch: '250 ms stall in EMERGE' })));
+    ok('S11 · A SLOW DEVICE NEVER SKIPS A NATIVE CELL, every backend: Full at 30 Hz, and Full at 60 Hz with a 250 ms stall early in EMERGE, still draw all ' + MANIFEST.cells.length + ' cells in order with none repeated (the stage catches up one cell per frame, and a phase\'s unreached cells play first in the next) — ' + show(slow),
+       slow.every((x) => x.drawn === 43 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.contact === CONTACT_CELL && agrees(x) && x.clean), J(slow));
   }
 }
 
@@ -374,9 +424,9 @@ console.log('\n── P · the page ──');
 {
   const ids = ['field', 'divider', 'vfxcanvas', 'vfxflash', 'actorunder', 'actorcanvas', 'actorgpu', 'actorover', 'floatlayer', 'banner', 'replay-all', 'phase-awaken', 'phase-emerge', 'phase-act', 'phase-fizzle', 'phase-settle',
                'ctl-skip', 'ctl-ff', 'ctl-memory', 'mode-full', 'mode-fast', 'mode-reduced', 'seat-swap', 'be-webgpu', 'be-webgl', 'be-canvas', 'clk-slow', 'clk-pause', 'clk-step',
-               'ro-fps', 'ro-time', 'ro-renderer', 'ro-actor', 'ro-rung', 'ro-sprites', 'ro-decode', 'ro-mb', 'ro-errors', 'plan'];
+               'ro-fps', 'ro-time', 'ro-renderer', 'ro-actor', 'ro-rung', 'ro-sprites', 'ro-decode', 'ro-mb', 'ro-errors', 'ro-stamp', 'plan'];
   const missing = ids.filter((id) => PAGE.indexOf('id="' + id + '"') < 0);
-  const order = ['../lib/boarddiff.js', '../lib/clashcontext.js', '../lib/director.js', '../lib/runner.js', '../lib/manifest.js', '../lib/stagemath.js', '../lib/actorstage.js', '../lib/playback.js', 'vfx.js', '../lab.js'].map((s) => PAGE.indexOf('<script src="' + s + '">'));
+  const order = ['../lib/boarddiff.js', '../lib/clashcontext.js', '../lib/director.js', '../lib/runner.js', '../lib/manifest.js', '../lib/stagemath.js', '../lib/actorstage.js', '../lib/playback.js', 'vfx.js', '../lab.js'].map((s) => PAGE.indexOf('<script src="' + s + '?v='));
   const fieldBlock = PAGE.slice(PAGE.indexOf('<div id="field"'), PAGE.indexOf('<div id="hand">'));
   ok('P1 · the page: noindex, <base href="runtime/">, #field holding the effect and actor layers, the scripts in dependency order, every control (Play, the five phase replays, Skip, Fast-forward, match memory, mode, sides, renderer, clock) and every readout including Actor and Plan',
      /<meta name="robots" content="noindex, nofollow">/.test(PAGE) && /<base href="runtime\/">/.test(PAGE) && missing.length === 0 && order.every((i, k) => i > 0 && (k === 0 || i > order[k - 1])) &&
@@ -385,6 +435,14 @@ console.log('\n── P · the page ──');
   const readme = fs.readFileSync(path.join(LAB, 'README.md'), 'utf8');
   ok('P2 · nothing on the page loads from the live game (no ../../ path, no game asset URL in the page, lab.js or lib/); the README keeps the SETTLE note (index.html:8162–8171) and documents LAB-2+3',
      !/\.\.\/\.\.\//.test(code) && !/sangbaran-purr\.github\.io\/divya-yuddha\/(assets|index)/.test(code) && /index\.html:8162–8171/.test(readme) && /LAB-2\+3/.test(readme));
+  const STT = require(path.join(LAB, 'tools', 'stamp_lab.js')), st = STT.status(), LABJS = fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8');
+  const scripts = [...PAGE.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]);
+  const fetches = [...LABJS.matchAll(/fetch\(([^)]*)/g)].map((m) => m[1].trim());
+  ok('P3 · THE STAMP (LAB-4a): STAMP is the content hash of the ' + st.inputs + ' files the page loads (' + st.stamp + '); index.html carries it in <meta name="lab-stamp"> and on all ' + scripts.length + ' of its scripts; lab.js stamps every fetch (' + fetches.length + '), image, module and atlas URL through V(), and at boot reads STAMP with no-store and reloads onto a newer one',
+     st.file === st.stamp && st.pageCurrent && PAGE.indexOf('<meta name="lab-stamp" content="' + st.stamp + '">') > 0 && scripts.length === 10 && scripts.every((u) => u.endsWith('?v=' + st.stamp)) &&
+     fetches.length >= 6 && fetches.every((f) => /^V\(/.test(f) || f === 'murl' || /^new URL\('\.\.\/STAMP'/.test(f)) && /const murl = new URL\(V\(/.test(LABJS) &&
+     /im\.src = V\(/.test(LABJS) && /image\.src = V\(/.test(LABJS) && /pixiUrl: V\(/.test(LABJS) && /cache: 'no-store'/.test(LABJS) && /location\.replace/.test(LABJS),
+     J({ st, unstamped: scripts.filter((u) => !u.endsWith('?v=' + st.stamp)), fetches }));
 }
 
 // ═══ G · THE RULE ═══

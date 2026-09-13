@@ -6,6 +6,13 @@
    whole #field for a moment, board and all.
    The clock is injected (lab time): hit-stop freezes the actor's own animation, never the page. clear() is the cleanup
    guarantee — no actor, no effect, no transform survives it. stats() is the performance readout (real frames).
+   NATIVE CELLS (LAB-4a): when a phase arrives with cellFps (a native-timing actor), the CELLS are the clock — one cell per
+   1/cellFps s of lab time straight through the phase's list, no easing between cells, no hold inside a phase (the hit-stop never
+   freezes a native actor: the clip carries its own contact). A late frame never skips a cell at native rate (the stage catches up
+   one cell per frame, and cells a phase ended before reaching play first in the next — EMERGE → ACT → FIZZLE is one clip); at
+   twice native rate (Fast) it may skip one cell at a time, never two. onCell() fires a cue on the frame a
+   given cell is drawn (the contact). Every cell drawn is counted per play: stats().cellsDrawn. warm() uploads an atlas before
+   its first play, so the first frames of a manifestation are not lost to a texture upload.
    Browser: window.ActorStage. */
 (function (root) {
   'use strict';
@@ -19,7 +26,7 @@
     this.backend = 'canvas2d'; this.renderer = 'canvas2d'; this.pixi = null; this.app = null;
     this.assets = {}; this.actors = []; this.fx = []; this.frozenUntil = -1; this.impulseFx = null; this.nextId = 1;
     this.dpr = Math.min(2, root.devicePixelRatio || 1);
-    this.stat = { frames: 0, drawMsTotal: 0, drawN: 0, liveFrames: 0, liveRealT0: null, liveRealLast: null, fps: 0, cellPx: 0, drawnPx: 0 };
+    this.stat = { frames: 0, drawMsTotal: 0, drawN: 0, liveFrames: 0, liveRealT0: null, liveRealLast: null, fps: 0, cellPx: 0, drawnPx: 0, lastPlay: null, warmed: 0 };
     this.resize();
   }
   var P = ActorStage.prototype;
@@ -34,6 +41,11 @@
 
   // the actor's renderer: 'canvas' → Canvas 2D; 'webgpu' | 'webgl' → a Pixi app on its own canvas (Canvas 2D if that fails)
   P.useBackend = async function (pref) {
+    var r = await this.pickBackend(pref), self = this;
+    Object.keys(this.assets).forEach(function (id) { self.warm(id); });
+    return r;
+  };
+  P.pickBackend = async function (pref) {
     this.teardownGpu();
     if (pref === 'canvas') { this.backend = 'canvas2d'; this.renderer = 'canvas2d'; return this.renderer; }
     try {
@@ -55,19 +67,58 @@
   };
 
   // an actor's art: { manifest, image } (the image already decoded)
-  P.loadActor = function (cardId, art) { this.assets[cardId] = art; this.stat.cellPx = Math.max.apply(null, art.manifest.cells.map(function (c) { return Math.max(c.w, c.h); })); };
+  P.loadActor = function (cardId, art) { this.assets[cardId] = art; this.stat.cellPx = Math.max.apply(null, art.manifest.cells.map(function (c) { return Math.max(c.w, c.h); })); this.warm(cardId); };
+  // put the atlas on the GPU (or through the 2D rasteriser) once, invisibly, before any play needs it
+  P.warm = function (cardId) {
+    var art = this.assets[cardId]; if (!art || !art.image) return;
+    try {
+      if (this.backend === 'pixi' && this.app) {
+        var PIXI = this.pixi, base = this.base[cardId] || (this.base[cardId] = PIXI.Texture.from(art.image)), sp = new PIXI.Sprite(base);
+        sp.alpha = 0.001; sp.scale.set(1 / Math.max(1, art.image.width || 1)); sp.position.set(0, 0);
+        this.app.stage.addChild(sp); this.app.renderer.render(this.app.stage); this.app.stage.removeChild(sp); sp.destroy(); this.app.renderer.render(this.app.stage);
+      } else {
+        var g = this.canvas && this.canvas.getContext('2d');
+        if (g) { g.save(); g.globalAlpha = 0.001; g.drawImage(art.image, 0, 0, 1, 1, 0, 0, 1, 1); g.restore(); g.clearRect(0, 0, 1, 1); }
+      }
+      this.stat.warmed = (this.stat.warmed || 0) + 1;
+    } catch (e) {}
+  };
 
   // spawn = place it (StageMath.place output) at its card, in phase `phase`
   P.spawn = function (cardId, placement, faction) {
     var art = this.assets[cardId]; if (!art) return null;
-    var a = { id: this.nextId++, cardId: cardId, art: art, pl: placement, faction: faction, phase: 'emerge', dur: 1, pt: 0, lastT: this.now(), contact: 0.58, pose: null, sprite: null };
+    var a = { id: this.nextId++, cardId: cardId, art: art, pl: placement, faction: faction, phase: 'emerge', dur: 1, pt: 0, lastT: this.now(), contact: 0.58, pose: null, sprite: null,
+             cellFps: null, cellIx: -1, backlog: [], rate: null, drawn: [], lastDrawn: -1, watch: null, contactCell: null };
     this.actors.push(a);
     if (this.stat.liveRealT0 == null) { this.stat.liveRealT0 = perf(); this.stat.liveFrames = 0; }
     return a;
   };
-  P.setPhase = function (a, phase, dur, contactFrac) { if (!a) return; a.phase = phase; a.dur = Math.max(1, dur); a.pt = 0; a.lastT = this.now(); if (contactFrac != null) a.contact = contactFrac; };
+  P.setPhase = function (a, phase, dur, contactFrac, cellFps) {
+    if (!a) return;
+    if (a.watch && a.watch.phase !== phase) this.fireWatch(a);          // the phase ended before its cell was drawn (a very slow frame): the cue still lands
+    if (a.cellFps) a.backlog = a.backlog.concat((a.art.manifest.phases[a.phase] || []).slice(a.cellIx + 1));   // the clip's cells this phase never reached
+    a.phase = phase; a.dur = Math.max(1, dur); a.pt = 0; a.lastT = this.now(); a.cellIx = -1;
+    a.cellFps = cellFps > 0 ? cellFps : null; if (a.cellFps) a.rate = Math.max(a.rate || 0, a.cellFps);
+    if (contactFrac != null) a.contact = contactFrac;
+  };
+  // fire fn on the frame the actor draws cell `index` of `phase` (at once if it already has)
+  P.onCell = function (a, phase, index, fn) {
+    if (!a) return; a.watch = { phase: phase, index: index, fn: fn };
+    if (a.pose && a.phase === phase && a.pose.phaseIx >= index) this.fireWatch(a);
+  };
+  P.fireWatch = function (a) { var w = a.watch; a.watch = null; if (!w) return; a.contactCell = a.pose ? a.pose.cellIndex : null; w.fn(); };
+  P.noteCell = function (a, q) { if (q.cellIndex !== a.lastDrawn) { a.drawn.push(q.cellIndex); a.lastDrawn = q.cellIndex; } };
+  // one play's cell count: distinct cells drawn of the manifest's total, cells drawn again after another cell (a repeat —
+  // holding a cell across display frames is not one, and neither is the FIZZLE hold of the last ACT cell), cells never drawn
+  P.playOf = function (a, live) {
+    var m = a.art.manifest, seen = {}, repeats = 0, n = 0;
+    a.drawn.forEach(function (ci) { if (seen[ci]) repeats++; else { seen[ci] = true; n++; } });
+    var missing = []; m.cells.forEach(function (c, i) { if (!seen[i]) missing.push(c.name || String(i)); });
+    return { drawn: n, total: m.cells.length, repeats: repeats, missing: missing, contact: a.contactCell != null && m.cells[a.contactCell] ? (m.cells[a.contactCell].name || String(a.contactCell)) : null, cellFps: a.rate, live: !!live };
+  };
   P.remove = function (a) {
     if (!a) return;
+    if (this.actors.indexOf(a) >= 0) this.stat.lastPlay = this.playOf(a, false);
     if (a.sprite && a.sprite.parent) { try { a.sprite.parent.removeChild(a.sprite); a.sprite.destroy(); } catch (e) {} }
     this.actors = this.actors.filter(function (x) { return x !== a; });
     if (!this.actors.length) this.closeLiveWindow();
@@ -84,20 +135,35 @@
 
   // the pose of one actor at lab time t
   P.poseOf = function (a, t) {
-    var dt = t - a.lastT; a.lastT = t; if (t >= this.frozenUntil) a.pt += Math.max(0, dt);
-    var p = Math.min(1, a.pt / a.dur), m = a.art.manifest, cells = m.phases[a.phase] || m.phases.act;
-    var cell = m.cells[cells[Math.min(cells.length - 1, Math.floor(p * cells.length))]];
+    var dt = Math.max(0, t - a.lastT), m = a.art.manifest, cells = m.phases[a.phase] || m.phases.act, ix, ci = null; a.lastT = t;
+    if (a.cellFps) {
+      // NATIVE: the cells are the clock (no hit-stop hold); catch up one cell per frame, or two at twice native rate — never skip more
+      a.pt += dt;
+      var step = a.cellFps > m.fps ? 2 : 1;
+      if (a.backlog.length) { ci = a.backlog.splice(0, Math.min(step, a.backlog.length)).pop(); ix = -1; }       // the previous phase's unreached cells first, in order
+      else {
+        var target = Math.min(cells.length - 1, Math.floor(a.pt * a.cellFps / 1000 + 1e-6));
+        ix = a.cellIx < 0 ? 0 : Math.max(a.cellIx, Math.min(target, a.cellIx + step));
+        a.cellIx = ix;
+      }
+    } else {
+      if (t >= this.frozenUntil) a.pt += dt;
+      ix = Math.min(cells.length - 1, Math.floor(Math.min(1, a.pt / a.dur) * cells.length));
+    }
+    if (ci == null) ci = cells[ix];
+    var p = Math.min(1, a.pt / a.dur), cell = m.cells[ci];
     var pl = a.pl, alpha = 1, sc = 1, rise = 0, k = 0;
     if (a.phase === 'emerge') { var e = easeOut(p); alpha = e; sc = 0.72 + 0.28 * e; rise = (1 - e) * pl.height * 0.35; }
     else if (a.phase === 'act') { var c = a.contact; k = p < c ? easeIn(p / c) : 1 - 0.18 * easeOut((p - c) / (1 - c)); }
     else if (a.phase === 'fizzle') { k = 0.82; alpha = 1 - easeIn(p); sc = 1 + 0.06 * p; rise = -10 * p; }
-    return { cell: cell, x: pl.anchor.x + pl.travel.x * k, feetY: pl.anchor.y + pl.travel.y * k, y: pl.anchor.y + pl.travel.y * k + rise, scale: pl.scale * sc, alpha: alpha, flipX: pl.flipX };
+    return { cell: cell, cellIndex: ci, phaseIx: ix, x: pl.anchor.x + pl.travel.x * k, feetY: pl.anchor.y + pl.travel.y * k, y: pl.anchor.y + pl.travel.y * k + rise, scale: pl.scale * sc, alpha: alpha, flipX: pl.flipX };
   };
 
   P.frame = function (t, realNow) {
     var t0 = perf(), self = this, s = this.stat;
     this.fx = this.fx.filter(function (f) { return t - f.t0 < f.dur; });
     this.actors.forEach(function (a) { a.pose = self.poseOf(a, t); });
+    this.actors.forEach(function (a) { if (a.watch && a.pose && a.phase === a.watch.phase && a.pose.phaseIx >= a.watch.index) self.fireWatch(a); });
     var u = this.under && this.under.getContext('2d'), o = this.over && this.over.getContext('2d');
     [u, o].forEach(function (g) { if (g) { g.setTransform(self.dpr, 0, 0, self.dpr, 0, 0); g.clearRect(0, 0, self.w, self.h); } });
     // UNDER: the portal glow, then each actor's soft contact shadow
@@ -137,7 +203,7 @@
     this.actors.forEach(function (a) {
       var q = a.pose; if (!q) return; var c = q.cell;
       g.save(); g.globalAlpha = Math.max(0, Math.min(1, q.alpha)); g.translate(q.x, q.y); g.scale((q.flipX ? -1 : 1) * q.scale, q.scale);
-      g.drawImage(a.art.image, c.x, c.y, c.w, c.h, -c.pivot.x, -c.pivot.y, c.w, c.h); g.restore();
+      g.drawImage(a.art.image, c.x, c.y, c.w, c.h, -c.pivot.x, -c.pivot.y, c.w, c.h); g.restore(); self.noteCell(a, q);
     });
   };
   P.drawPixi = function () {
@@ -153,7 +219,7 @@
       a.sprite.texture = tex; a.sprite.anchor.set(c.pivot.x / c.w, c.pivot.y / c.h);
       a.sprite.position.set(q.x, q.y); a.sprite.scale.set((q.flipX ? -1 : 1) * q.scale, q.scale); a.sprite.alpha = Math.max(0, Math.min(1, q.alpha));
     });
-    try { app.renderer.render(app.stage); } catch (e) {}
+    try { app.renderer.render(app.stage); this.actors.forEach(function (a) { if (a.pose && a.sprite) self.noteCell(a, a.pose); }); } catch (e) {}
   };
 
   // THE CLEANUP GUARANTEE — no actor, sprite, effect or camera offset survives this
@@ -170,7 +236,8 @@
   P.liveSprites = function () { return this.app ? this.app.stage.children.length : 0; };                  // GPU sprites still attached (0 once cleared)
   P.stats = function () {
     var s = this.stat;
-    return { backend: this.renderer, frames: s.frames, drawMsAvg: s.drawN ? s.drawMsTotal / s.drawN : 0, fps: s.fps, liveFps: (s.liveRealT0 != null && s.liveRealLast > s.liveRealT0) ? Math.round(s.liveFrames * 1000 / (s.liveRealLast - s.liveRealT0)) : null, cellPx: s.cellPx, drawnPx: s.drawnPx };
+    return { backend: this.renderer, frames: s.frames, drawMsAvg: s.drawN ? s.drawMsTotal / s.drawN : 0, fps: s.fps, liveFps: (s.liveRealT0 != null && s.liveRealLast > s.liveRealT0) ? Math.round(s.liveFrames * 1000 / (s.liveRealLast - s.liveRealT0)) : null, cellPx: s.cellPx, drawnPx: s.drawnPx,
+             cellsDrawn: this.actors.length ? this.playOf(this.actors[0], true) : s.lastPlay };
   };
 
   root.ActorStage = ActorStage;
