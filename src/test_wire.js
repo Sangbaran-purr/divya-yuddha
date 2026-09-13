@@ -407,5 +407,226 @@ if (!COV || !buildView || !createRoom) {
   ok('BRIDGE AUDIT: ' + (rx[0].length + rx[1].length) + ' staked views over all ' + types.size + ' event types — ZERO hidden ids / uids / seed of the other seat, ZERO seat names or wallet short forms', leaks === 0 && names === 0 && types.size === 12, 'leaks ' + leaks + ', names ' + names);
 }
 
+// ═══ 6 · GL-2 — THE BATTLE-LOG RECORDER ═══
+// The SHIPPED recorder (index.html blogStart · blogCapture · blogRecord · blogClose · passedInAction, compiled here with
+// the SHIPPED src/narrator.js) is driven exactly as runAction drives it — capture, mutate, slice, record — on the free
+// mirror (the shipped wireApply), on the staked adapter (the shipped viewToState over the REAL buildView) and on the solo
+// road (the local engine + the mulligan hook), for both seats. Each is compared line for line with an ORACLE narrated
+// independently from the SERVER's own room: its own events, its own public zones, the wallet short forms it really
+// holds as seat names, and pass lines taken from the ACTIONS (a pass act is a pass) — not from state transitions, so a
+// dropped round-ending pass cannot hide behind the recorder's own rule.
+console.log('\n── 6 · GL-2 the recorder: free mirror · staked adapter · solo, both seats, against the server\'s own narration ──');
+{
+  const NARR = require(path.join(GAME, 'src', 'narrator.js'));
+  const code = stripComments(UI);
+  // ── the hook points, pinned in code (comments stripped) ──
+  // runAction(mutate, opts={}) — the default {} is not the body: read from the brace that follows the signature
+  const raAt = code.indexOf('function runAction(');
+  const ra = (() => { let d = 0; const j = code.indexOf('){', raAt) + 1; for (let q = j; q < code.length; q++) { if (code[q] === '{') d++; else if (code[q] === '}') { d--; if (d === 0) return code.slice(raAt, q + 1); } } return ''; })();
+  const iCap = ra.indexOf('const blogBefore=blogCapture(G);'), iMut = ra.indexOf('mutate();'), iSlice = ra.indexOf('const evs = G.events.slice(evStart);'), iRec = ra.indexOf('blogRecord(G, blogBefore, evs, opts.actor);');
+  ok('the hook: runAction captures the names BEFORE its mutate and records the batch on the line right after the slice, before any choreography',
+     iCap > 0 && iCap < iMut && iMut < iSlice && iRec > iSlice && ra.slice(iSlice, iRec).split('\n').length === 2 && iRec < ra.indexOf('choreoActive=true'));
+  const mull = code.slice(code.indexOf("$('mullconfirm').onclick="), code.indexOf('function applyFactionTheme'));
+  ok('the solo mulligan (resolved outside runAction) is captured before and recorded after, the same way',
+     mull.indexOf('blogCapture(G)') > 0 && mull.indexOf('blogCapture(G)') < mull.indexOf('mulligan(G,ME') && mull.indexOf('blogRecord(G, blogBefore, evs, ME)') > mull.indexOf('G.events.slice(evStart)'));
+  ok('reset at the three match starts (where seenLog resets): vs-AI → solo, the wire → its road + matchId, Story → off (R3)',
+     /seenLog=0; blogStart\('solo', null, G\)/.test(extractFn(code, 'startGame')) && /seenLog = 0;\s*blogStart\(Wire\.road, Wire\.matchId, G\)/.test(extractFn(code, 'startWireMatch')) && /seenLog=0; blogStart\('story', null, G\)/.test(extractFn(code, 'startStoryChapter')));
+  ok('the wire result face writes the closing line (a forfeit never reaches G.over)', /blogClose\(G, r\)/.test(extractFn(code, 'showWireResult')));
+  ok('the pass BANNER now announces the round-ending pass too, read by ABSOLUTE seat (the [ME, OPP] snapshot misread seat 1)',
+     /passedInAction\(G, pi, passedBefore, roundCountAtActionStart, actor\)/.test(extractFn(code, 'announcePassIfAny')) && ra.indexOf('const passedBefore=G.players.map(p=>!!p.passed);') >= 0 && (ra.match(/announcePassIfAny\(passedBefore, opts\.actor\)/g) || []).length === 2);
+  const tagN = HTML.indexOf('<script src="src/narrator.js'), tagMain = HTML.indexOf('let G=null');
+  ok('the page loads src/narrator.js (after chapters.js, before the battle script)', tagN > 0 && tagN < tagMain && HTML.indexOf('<script src="src/chapters.js') < tagN);
+
+  let createRoom6 = null, buildView6 = null, ES6 = null;
+  try { createRoom6 = require(path.join(MS, 'src', 'match.js')).createRoom; buildView6 = require(path.join(MS, 'src', 'redactedview.js')).buildView; ES6 = require(path.join(MS, 'src', 'engineguard.js')).loadGuardedEngine().engine; } catch (e) { createRoom6 = null; }
+  if (!createRoom6 || !buildView6) {
+    fail++; console.log('  ✖ SKIPPED LOUDLY — the web3 checkout is absent (' + MS + '). The recorder\'s road parity is NOT proven.');
+  } else {
+    const E = require(path.join(GAME, 'src', 'engine.js'));
+    // ── the shipped recorder, compiled with a spy on the narrator's inputs (THE WALL counters) ──
+    const REC_FNS = ['blogStart', 'blogPersist', 'blogNames', 'blogCapture', 'passedInAction', 'blogRecord', 'blogClose'];
+    const recSrc = REC_FNS.map(n => extractFn(UI, n)).join('\n');
+    const prefix = (UI.match(/const BLOG_PREFIX = '[^']*';/) || [''])[0];
+    const SPY = { players: [], texts: [] };
+    const spyNarr = Object.assign({}, NARR, { narrate: (recs, names) => { SPY.players.push(names && names.players); recs.forEach(r => { if (typeof r.text === 'string') SPY.texts.push(r.text); }); return NARR.narrate(recs, names); } });
+    const mkStore = (from) => { const m = new Map(from ? from.m : []); return { m, getItem: k => m.has(k) ? m.get(k) : null, setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k) }; };
+    const mkRec = (me, store, src) => new Function('NARRATOR', 'sessionStorage',
+      'let ME=' + me + ', OPP=' + (1 - me) + ', BLog=null; ' + prefix + '\n' + (src || recSrc) + '\nreturn { blogStart, blogCapture, blogRecord, blogClose, get: () => BLog };')(spyNarr, store);
+    // ── the shipped wireApply and viewToState, as sections 3 and 4 compile them ──
+    const wireApplyFactory = new Function('E', 'getG',
+      'const mulligan=E.mulligan, targetSpec=E.targetSpec, playCard=E.playCard, pass=E.pass, designateShield=E.designateShield, doLeap=E.doLeap;\n' +
+      'const Q = { targetSpec: E.targetSpec };\n' +
+      'return function(mv){ const G=getG(); return (' + extractFn(UI, 'wireApply').replace('function wireApply(mv){', 'function(mv){') + ')(mv); };');
+    const CBN = {}; for (const f in E.DECKS) for (const d of E.DECKS[f]) if (!CBN[d.n]) CBN[d.n] = d;
+    const adapterSrc = extractFn(UI, 'defById') + '\n' + extractFn(UI, 'viewToState');
+    const mkAdapter = (me) => new Function('DECKS', 'CARD_BY_NAME', 'let ME=' + me + ', OPP=' + (1 - me) + ', DEF_BY_ID=null;\n' + adapterSrc + '\nreturn viewToState;')(E.DECKS, CBN);
+    const hall = (v) => { const c = Object.assign({}, v); delete c.myName; delete c.oppName; return c; };
+    // ── the ORACLE's own public zones (the server's state; the viewer's own hand, never the other hand or a deck) ──
+    const pubMap = (g, me) => { const m = {}; g.players.forEach((pl, seat) => { const z = [pl.units, pl.heroes, pl.discard, pl.removedHeroes || [], pl.artifact ? [pl.artifact] : []]; if (seat === me) z.push(pl.hand);
+      z.forEach(a => (a || []).forEach(c => { if (c && !c.ghost && c.uid != null) m[c.uid] = { n: c.n, seat: seat }; })); }); return m; };
+    const J = (x) => JSON.stringify(x);
+    const lines = (R) => (R.get() ? R.get().lines : null);
+    const FACS = ['devas', 'asuras', 'vanaras', 'nagas'];
+    const GAP = (round) => NARR.resume([], { round })[0];
+    const tot = { matches: 0, actions: 0, oracleLines: 0, passes: 0, roundEnders: 0, freeBad: [], stakedBad: [], resyncBad: [], restoreBad: [], storeBad: [], errors: 0, forfeits: 0, forfeitBad: [], mulliganToasts: 0, stakedGapAtStart: 0 };
+    let replay0 = null;
+    for (let m = 0; m < 16; m++) {
+      const f0 = FACS[m % 4], f1 = FACS[Math.floor(m / 4) % 4], seed = (0x2545F491 * (m + 7)) >>> 0, mid = 'm-gl2-' + m;
+      const room = createRoom6(ES6, { seed, seats: [{ address: '0x' + '1'.repeat(40), faction: f0 }, { address: '0x' + '2'.repeat(40), faction: f1 }] });
+      const sg = room.state, SEATN = [sg.players[0].name, sg.players[1].name];
+      const OR = [[], []], orPlayed = {};
+      // the frames: free mirror + staked adapter, per seat; the resync frames join mid-match
+      const frames = [];
+      for (const me of [0, 1]) {
+        const G = E.newGame({ p0: me === 0 ? 'You' : 'Opponent', p1: me === 1 ? 'You' : 'Opponent', p0Faction: f0, p1Faction: f1, rng: wireSeeded(seed) });
+        const fr = { kind: 'free', me, g: G, store: mkStore(), R: null }; fr.R = mkRec(me, fr.store); fr.R.blogStart('free', mid, fr.g); fr.apply = wireApplyFactory(E, () => fr.g); frames.push(fr);
+        const st = { kind: 'staked', me, A: mkAdapter(me), store: mkStore(), R: null };
+        st.g = st.A(hall(buildView6({ E: ES6 }, room, mid, me, null, [])), null); st.R = mkRec(me, st.store); st.R.blogStart('staked', mid, st.g);
+        if (lines(st.R).length) tot.stakedGapAtStart++;
+        frames.push(st);
+      }
+      let cursor = sg.events.length, k = 0;
+      const K = 14 + (m % 5), FORFEIT = (m % 4 === 3) ? 26 + m : -1, cuts = [];
+      const moves = [];
+      const step = (seat, a) => {
+        const pre = [pubMap(sg, 0), pubMap(sg, 1)], preRh = sg.roundHistory.length, preOver = !!sg.over, preRound = sg.round, ev0 = sg.events.length;
+        const handCard = a.type === 'play' ? sg.players[seat].hand[a.handIndex] : null;
+        const r = room.apply(seat, a); moves.push(r.move);
+        const evs = sg.events.slice(ev0);
+        if (handCard) { const pe = evs.find(e => e.type === 'play'); if (pe && !orPlayed[pe.sourceUid]) orPlayed[pe.sourceUid] = { n: handCard.n, seat }; }
+        tot.mulliganToasts += evs.filter(e => e.type === 'toast' && e.abilityName === 'Mulligan').length;
+        const post = [pubMap(sg, 0), pubMap(sg, 1)];
+        const ended = sg.roundHistory.length > preRh;
+        if (a.type === 'pass') { tot.passes++; if (ended) tot.roundEnders++; }
+        const recs = NARR.assemble({ passes: a.type === 'pass' ? [{ round: preRound, seat }] : [], events: evs, roundEnds: sg.roundHistory.slice(preRh), result: (sg.over && !preOver) ? { round: sg.round, winner: sg.winner } : null });
+        for (const me of [0, 1]) OR[me].push(...NARR.narrate(recs, { me, players: SEATN, card: u => post[me][u] || pre[me][u] || orPlayed[u] || null }));
+        const lm = handCard ? { seat, type: 'play', id: handCard.id, n: handCard.n } : { seat, type: a.type };
+        const slice = sg.events.slice(cursor); cursor = sg.events.length;
+        for (const fr of frames) {
+          const before = fr.R.blogCapture(fr.g);
+          if (fr.kind === 'free') { const e0 = fr.g.events.length; fr.apply(r.move); fr.R.blogRecord(fr.g, before, fr.g.events.slice(e0), r.move.seat); }
+          else { const e0 = fr.g.events.length; fr.g = fr.A(hall(buildView6({ E: ES6 }, room, mid, fr.me, lm, slice)), fr.g); fr.R.blogRecord(fr.g, before, fr.g.events.slice(e0), lm.seat); }
+        }
+        k++; tot.actions++;
+        if (k === K) {   // THE STAKED RESYNC: a fresh frame from a view with events: [] — once with empty storage, once with the storage the tab kept
+          cuts.push([OR[0].length, OR[1].length]);
+          for (const me of [0, 1]) {
+            const kept = frames.find(f => f.kind === 'staked' && f.me === me);
+            for (const restored of [false, true]) {
+              const fr = { kind: 'staked', me, A: mkAdapter(me), store: restored ? mkStore(kept.store) : mkStore(), resync: restored ? 'restored' : 'empty', round: sg.round };
+              fr.g = fr.A(hall(buildView6({ E: ES6 }, room, mid, me, null, [])), null); fr.R = mkRec(me, fr.store); fr.R.blogStart('staked', mid, fr.g);
+              frames.push(fr);
+            }
+          }
+        }
+      };
+      for (const s of [m % 2, 1 - m % 2]) step(s, { type: 'mulligan', indices: sg.players[s].hand.map((_, i) => i).filter(i => (seed + i + s) % 4 === 0).slice(0, 3) });
+      let guard = 0;
+      while (!sg.over && guard++ < 500 && k !== FORFEIT) {
+        const s = room.turn, pl = sg.players[s];
+        if (ES6.canLeap(sg, s) && guard % 4 === 0) { const bl = ES6.bestLeap(sg, s); if (bl) { const a = { type: 'leap', leaperIndex: pl.units.indexOf(bl.leaper), targetIndex: pl.units.indexOf(bl.target) }; if (room.validate(s, a).ok) step(s, a); } }
+        const live = pl.units.findIndex(u => !u.ghost);
+        if (guard % 6 === 2 && live >= 0) { const a = { type: 'shield', unitIndex: live }; if (room.validate(s, a).ok) step(s, a); }
+        const d = ES6.aiMove(sg, s);
+        let a = (d && d.play != null && guard % 13 !== 6) ? { type: 'play', handIndex: d.play, targetIndex: null } : { type: 'pass' };
+        if (a.type === 'play') { const sp = ES6.targetSpec(sg, s, pl.hand[d.play]); if (sp && sp.options && sp.options.length) a.targetIndex = 0; }
+        if (!room.validate(s, a).ok) a = { type: 'pass' };
+        step(s, a);
+      }
+      if (m === 0) replay0 = { f0, f1, seed, moves: moves.slice(), oracle: [OR[0].slice(), OR[1].slice()] };
+      // ── the forfeit: the board cannot reach G.over, showWireResult closes the log (winner = seat 0; seat 1 left) ──
+      if (FORFEIT >= 0 && !sg.over) {
+        tot.forfeits++;
+        for (const fr of frames) {
+          const before = lines(fr.R).length;
+          fr.R.blogClose(fr.g, { winner: 0, forfeit: true, roundWins: [0, 0] }); fr.R.blogClose(fr.g, { winner: 0, forfeit: true, roundWins: [0, 0] });
+          fr.R.blogRecord(fr.g, fr.R.blogCapture(fr.g) || { names: {}, passed: [false, false], rh: 0, round: 1, over: false }, [], 0);
+          const L = lines(fr.R), want = fr.me === 0 ? 'Your opponent left the table.' : 'You left the table.';
+          if (L.length !== before + 1 || L[L.length - 1].text !== want || L[L.length - 1].kind !== 'forfeit') tot.forfeitBad.push(mid + ' ' + fr.kind + ' seat' + fr.me + ': ' + (L[L.length - 1] || {}).text);
+        }
+        const close = { round: sg.round, kind: 'forfeit' };
+        for (const me of [0, 1]) OR[me].push(...NARR.narrate([Object.assign(close, { winner: 0 })], { me }));
+      }
+      // ── compare every frame with the oracle ──
+      for (const fr of frames) {
+        const L = lines(fr.R), b = fr.R.get();
+        tot.errors += b.errors;
+        let want = OR[fr.me];
+        if (fr.resync) {
+          const cut = cuts[0][fr.me], gap = GAP(fr.round);
+          want = fr.resync === 'empty' ? [gap].concat(OR[fr.me].slice(cut)) : OR[fr.me].slice(0, cut).concat([gap], OR[fr.me].slice(cut));
+        }
+        if (J(L) !== J(want)) {
+          const i = want.findIndex((x, j) => J(x) !== J(L[j]));
+          const bucket = fr.resync === 'empty' ? tot.resyncBad : fr.resync === 'restored' ? tot.restoreBad : fr.kind === 'free' ? tot.freeBad : tot.stakedBad;
+          bucket.push(mid + ' seat' + fr.me + ' line ' + i + ': want "' + (want[i] || {}).text + '" got "' + (L[i] || {}).text + '" (' + L.length + '/' + want.length + ')');
+        }
+        if (fr.kind === 'staked') { const raw = fr.store.getItem('dy_blog:' + mid); if (!raw || J(JSON.parse(raw).lines) !== J(L) || fr.store.m.size !== 1) tot.storeBad.push(mid + ' seat' + fr.me + (fr.resync ? ' ' + fr.resync : '')); }
+        else if (fr.store.m.size !== 0) tot.storeBad.push(mid + ' free seat' + fr.me + ' wrote storage');
+      }
+      tot.oracleLines += OR[0].length + OR[1].length; tot.matches++;
+    }
+    console.log('    ' + tot.matches + ' matches (all 16 pairings), ' + tot.actions + ' server actions, ' + tot.oracleLines + ' oracle lines (both seats), ' + tot.passes + ' passes of which ' + tot.roundEnders + ' ended a round, ' + tot.mulliganToasts + ' mulligan redraws, ' + tot.forfeits + ' forfeits');
+    ok('FREE ROAD: the recorder on the shipped mirror equals the server\'s own narration, line for line, both seats (16 matches)', tot.freeBad.length === 0, tot.freeBad.slice(0, 2).join(' | '));
+    ok('STAKED ROAD: the recorder on the shipped adapter (real buildView, the adapter\'s card lookup) equals it too, both seats', tot.stakedBad.length === 0 && tot.stakedGapAtStart === 0, tot.stakedBad.slice(0, 2).join(' | ') + ' gapAtStart ' + tot.stakedGapAtStart);
+    ok('EVERY PASS is in the log — ' + tot.passes + ' pass acts, ' + tot.roundEnders + ' of them ROUND-ENDING, each a line on both roads (the oracle takes passes from the acts, the recorder from the state)', tot.roundEnders > 0 && tot.freeBad.length === 0 && tot.stakedBad.length === 0);
+    ok('STAKED RESYNC, storage empty (a view with events: [] past the opening): the gap line "' + NARR.GAP_TEXT + '" first, then every later line exactly', tot.resyncBad.length === 0, tot.resyncBad.slice(0, 2).join(' | '));
+    ok('STAKED RESYNC, storage restored: the kept lines, THEN the gap (continuity unproven: the view has no move counter), then every later line', tot.restoreBad.length === 0, tot.restoreBad.slice(0, 2).join(' | '));
+    ok('R4 persistence: the staked log lives in sessionStorage under dy_blog:<matchId> and equals the lines after every action; the free road writes nothing', tot.storeBad.length === 0, tot.storeBad.slice(0, 3).join(' | '));
+    ok('FORFEIT: the winner\'s log closes "Your opponent left the table.", the leaver\'s "You left the table." — once, on both roads (' + tot.forfeits + ' matches); nothing records after it', tot.forfeits > 0 && tot.forfeitBad.length === 0, tot.forfeitBad.slice(0, 2).join(' | '));
+    ok('the recorder never threw (errors 0 across every frame)', tot.errors === 0, 'errors ' + tot.errors);
+    // ── the round-ending pass, proven RED without its rule: the old announcement's transition-only reading ──
+    {
+      const mut = recSrc.replace(extractFn(UI, 'passedInAction'), 'function passedInAction(g, pi, before){ return !!before && !before[pi] && !!g.players[pi].passed; }');
+      const G = E.newGame({ p0: 'You', p1: 'Opponent', p0Faction: replay0.f0, p1Faction: replay0.f1, rng: wireSeeded(replay0.seed) });
+      const R = mkRec(0, mkStore(), mut), apply = wireApplyFactory(E, () => G); R.blogStart('free', 'm-mut', G);
+      replay0.moves.forEach(mv => { const b = R.blogCapture(G), e0 = G.events.length; apply(mv); R.blogRecord(G, b, G.events.slice(e0), mv.seat); });
+      const got = lines(R).filter(l => l.kind === 'pass').length, want = replay0.oracle[0].filter(l => l.kind === 'pass').length;
+      ok('MUTANT RED: a recorder reading only the false→true transition (the old banner rule) drops the round-enders — ' + got + ' pass lines vs ' + want, mut !== recSrc && got < want);
+    }
+    // ── the solo road: the local engine, the mulligan hook, the AI's own turns ──
+    {
+      let bad = [], passBad = [], n = 0;
+      for (let m = 0; m < 16; m++) {
+        const f0 = FACS[m % 4], f1 = FACS[Math.floor(m / 4) % 4];
+        const G = E.newGame({ p0: 'You', p1: 'Opponent', p0Faction: f0, p1Faction: f1, rng: wireSeeded(777 + m) });
+        const R = mkRec(0, mkStore()); R.blogStart('solo', null, G);
+        const OS = []; const played = {};
+        const oracleAct = (pre, preRh, preOver, preRound, ev0, passer) => {
+          const evs = G.events.slice(ev0), post = pubMap(G, 0);
+          evs.forEach(e => { if (e.type === 'play' && !played[e.sourceUid]) played[e.sourceUid] = { n: e.abilityName, seat: /^You plays /.test(e.text) ? 0 : 1 }; });
+          const recs = NARR.assemble({ passes: passer != null ? [{ round: preRound, seat: passer }] : [], events: evs, roundEnds: G.roundHistory.slice(preRh), result: (G.over && !preOver) ? { round: G.round, winner: G.winner } : null });
+          OS.push(...NARR.narrate(recs, { me: 0, players: ['You', 'Opponent'], card: u => post[u] || pre[u] || played[u] || null }));
+        };
+        { const b = R.blogCapture(G), pre = pubMap(G, 0), e0 = G.events.length;   // the mullconfirm shape: both mulligans, then one record
+          E.mulligan(G, 0, G.players[0].hand.slice(0, 2).map(c => c.uid)); E.mulligan(G, 1, E.aiMulliganPlan(G, 1));
+          R.blogRecord(G, b, G.events.slice(e0), 0); oracleAct(pre, 0, false, 1, e0, null); }
+        let guard = 0;
+        while (!G.over && guard++ < 600) {
+          const actor = G.turn, b = R.blogCapture(G), pre = pubMap(G, 0), preRh = G.roundHistory.length, preOver = !!G.over, preRound = G.round, e0 = G.events.length;
+          const d = E.aiMove(G, actor), willPass = !(d && d.play != null) && !G.players[actor].passed && !(d && d.unbind);
+          E.aiTakeTurn(G, actor);
+          R.blogRecord(G, b, G.events.slice(e0), actor);
+          const passedNow = !!G.players[actor].passed && !b.passed[actor] || (G.roundHistory.length > preRh && !b.passed[actor]);
+          oracleAct(pre, preRh, preOver, preRound, e0, passedNow ? actor : null);
+        }
+        const L = lines(R); n += L.length;
+        if (J(L) !== J(OS)) { const i = OS.findIndex((x, j) => J(x) !== J(L[j])); bad.push(f0 + '-' + f1 + ' line ' + i + ': "' + (OS[i] || {}).text + '" vs "' + (L[i] || {}).text + '"'); }
+        if (L.filter(l => l.kind === 'pass').length !== 2 * G.roundHistory.length || L[L.length - 1].kind !== 'result') passBad.push(f0 + '-' + f1);
+        if (R.get().errors) bad.push('errors ' + R.get().errors);
+      }
+      ok('SOLO ROAD: 16 AI matches with the mulligan hook — the recorder\'s lines equal an independent narration, both passes of every round present, the result last (' + n + ' lines)', bad.length === 0 && passBad.length === 0, bad.slice(0, 2).concat(passBad.slice(0, 2)).join(' | '));
+    }
+    // ── THE WALL: what the recorder handed the narrator, and what it kept ──
+    {
+      const seatish = /0x[0-9a-fA-F]{4}…[0-9a-fA-F]{4}|\{p[01]\}/;   // a wallet short form or a {p} token (the engine's own … ellipsis is not one)
+      const namesSeen = SPY.players.filter(p => p && p.some(x => x !== 'You' && x !== 'Opponent')).length;
+      const textsSeen = SPY.texts.filter(t => seatish.test(t)).length;
+      ok('THE WALL: every seat name the recorder handed the narrator was You / Opponent (' + SPY.players.length + ' calls, ' + namesSeen + ' otherwise); no event text it read carried an address or {p} token (' + textsSeen + ')', SPY.players.length > 0 && namesSeen === 0 && textsSeen === 0);
+      ok('story: the recorder is OFF (R3) — blogStart(\'story\') keeps no log', (() => { const R = mkRec(0, mkStore()); R.blogStart('story', null, E.newGame({ p0: 'You', p1: 'Opponent', p0Faction: 'devas', p1Faction: 'asuras' })); return R.get() === null; })());
+    }
+  }
+}
+
 console.log('\n' + (fail === 0 ? '✓ ALL ' + pass + ' WIRE CHECKS PASS' : '✖ ' + fail + ' FAILURES / ' + pass + ' passed'));
 process.exit(fail === 0 ? 0 : 1);

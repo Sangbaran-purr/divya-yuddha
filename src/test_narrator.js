@@ -9,7 +9,7 @@
 //                     web3 publicEvents over a server run under real-looking seat names), both seats: identical lines.
 //   4 · THE WALL      the staked lines speak only You / Opponent — no seat name, no address.
 //   5 · THE LINE SET  R2's example, the forfeit both ways, the R4 resume, the R1 headers, purity, the grammar copy.
-//   6 · UNTOUCHED     the engine and the page, byte-for-byte.
+//   6 · UNTOUCHED     the engine, and the page's generated engine block, byte-for-byte (GL-2 wires the page itself).
 // Skipped LOUDLY (a counted failure, never green-by-absence) where the web3 checkout is missing.
 const fs = require('fs'), path = require('path'), cp = require('child_process');
 const GAME = path.resolve(__dirname, '..');
@@ -257,8 +257,11 @@ console.log('\n── 5 · THE LINE SET ──');
 // ═══════════════════════════════ 6 · UNTOUCHED ═══════════════════════════════
 console.log('\n── 6 · UNTOUCHED ──');
 {
-  let clean = false; try { cp.execFileSync('git', ['diff', '--quiet', 'HEAD', '--', 'src/engine.js', 'index.html'], { cwd: GAME }); clean = true; } catch (e) { clean = false; }
-  ok('ENGINE SACRED: src/engine.js and index.html are byte-identical to HEAD (0 lines)', clean);
+  let clean = false; try { cp.execFileSync('git', ['diff', '--quiet', 'HEAD', '--', 'src/engine.js'], { cwd: GAME }); clean = true; } catch (e) { clean = false; }
+  const block = (h) => { const a = h.indexOf('<!-- ENGINE:START'), b = h.indexOf('<!-- ENGINE:END -->'); return a >= 0 && b > a ? h.slice(a, b) : null; };
+  let headBlock = null; try { headBlock = block(cp.execFileSync('git', ['show', 'HEAD:index.html'], { cwd: GAME, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })); } catch (e) { headBlock = null; }
+  const pageBlock = block(fs.readFileSync(path.join(GAME, 'index.html'), 'utf8'));
+  ok('ENGINE SACRED: src/engine.js and index.html\'s ENGINE block are byte-identical to HEAD (0 lines)', clean && headBlock !== null && headBlock === pageBlock);
 }
 
 if (global.__SAMPLE) {
