@@ -12,7 +12,7 @@
 <style>
   :root{
     --ground:#0a0704; --panel:#15100a; --line:#3a2d17; --gold:#d9b25c; --gold-dim:#8a6f3a; --ink:#eadfc8; --ink-dim:#a89a82;
-    --asura:#c2442f; --deva:#e0b84a; --down:#e2765f; --up:#8fd18a;
+    --asura:#c2442f; --down:#e2765f; --up:#8fd18a;
   }
   *{ box-sizing:border-box; }
   html,body{ margin:0; background:var(--ground); color:var(--ink); font:15px/1.45 "Crimson Pro", Georgia, serif; }
@@ -21,24 +21,35 @@
   header{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; }
   header h1{ margin:0; font:700 15px Cinzel, Georgia, serif; letter-spacing:.14em; color:var(--gold); text-transform:uppercase; }
   header .rung{ font-size:12px; color:var(--ink-dim); }
-  #field{ position:relative; height:360px; border:1px solid var(--line); border-radius:10px; overflow:hidden;
-    background:radial-gradient(120% 70% at 50% 50%, #2a1f10 0%, #120c06 70%); display:flex; flex-direction:column; }
-  .half{ position:relative; z-index:3; flex:1; display:flex; flex-direction:column; justify-content:center; gap:6px; padding:8px; }
-  .half.opp{ flex-direction:column-reverse; }
+  /* THE LAYERS, bottom to top: board rows (3) · VFX canvas (5) · VFX GPU (6, set by the module) · VFX flash (7) ·
+     actor under: portal + shadow (8) · the actor (9) · actor over: the directional flash (10) · floating numbers (12) · banner (13) */
+  #field{ position:relative; height:420px; border:1px solid var(--line); border-radius:10px; overflow:hidden;
+    background:radial-gradient(120% 70% at 50% 50%, #2a1f10 0%, #120c06 70%); display:flex; flex-direction:column; will-change:transform; }
+  .half{ position:relative; z-index:3; flex:1; display:flex; flex-direction:column; justify-content:space-between; gap:6px; padding:8px; }
   .divider{ height:1px; margin:0 12px; background:linear-gradient(90deg, transparent, var(--gold-dim), transparent); z-index:3; }
-  .half .tag{ position:absolute; left:10px; font:600 10px Cinzel, Georgia, serif; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-dim); }
+  .half .tag{ position:absolute; right:10px; font:600 10px Cinzel, Georgia, serif; letter-spacing:.14em; text-transform:uppercase; color:var(--ink-dim); }
   .half.me .tag{ bottom:6px; } .half.opp .tag{ top:6px; }
   .row{ display:flex; justify-content:center; gap:8px; min-height:92px; align-items:center; }
-  .bc{ position:relative; width:64px; height:90px; border-radius:6px; overflow:hidden; border:1px solid var(--line); background:#1d150b; }
+  .bc{ position:relative; width:64px; height:90px; border-radius:6px; overflow:hidden; border:1px solid var(--line); background:#1d150b; transition:box-shadow .2s; }
   .bc img{ width:100%; height:100%; object-fit:cover; display:block; }
   .bc.noart{ display:flex; align-items:center; justify-content:center; padding:4px; text-align:center; font-size:11px; color:var(--ink-dim); }
   .bc .pw{ position:absolute; right:3px; bottom:3px; min-width:20px; padding:0 4px; border-radius:9px; background:rgba(0,0,0,.72);
     font:700 12px Cinzel, Georgia, serif; text-align:center; color:var(--ink); font-variant-numeric:tabular-nums; }
-  .bc .delta{ position:absolute; left:50%; top:4px; transform:translateX(-50%); padding:0 5px; border-radius:8px; background:rgba(0,0,0,.8); font:700 12px Cinzel, Georgia, serif; }
-  .bc .delta.down{ color:var(--down); } .bc .delta.up{ color:var(--up); }
+  .bc.pulse{ box-shadow:0 0 0 2px var(--gold), 0 0 18px rgba(217,178,92,.6); }
   .empty{ font-size:12px; color:#6f624d; font-style:italic; }
   #vfxcanvas{ position:absolute; inset:0; z-index:5; pointer-events:none; }
   #vfxflash{ position:absolute; inset:0; z-index:7; pointer-events:none; opacity:0; background:#fff4dc; }
+  #actorunder{ position:absolute; inset:0; z-index:8; pointer-events:none; width:100%; height:100%; }
+  #actorcanvas{ position:absolute; inset:0; z-index:9; pointer-events:none; width:100%; height:100%; }
+  #actorgpu{ position:absolute; inset:0; z-index:9; pointer-events:none; width:100%; height:100%; }
+  #actorover{ position:absolute; inset:0; z-index:10; pointer-events:none; width:100%; height:100%; }
+  #floatlayer{ position:absolute; inset:0; z-index:12; pointer-events:none; }
+  #banner{ position:absolute; left:50%; top:50%; z-index:13; transform:translate(-50%,-50%); padding:4px 12px; border-radius:14px; background:rgba(0,0,0,.72);
+    border:1px solid var(--gold-dim); font:700 13px Cinzel, Georgia, serif; letter-spacing:.08em; color:var(--gold); opacity:0; transition:opacity .2s; pointer-events:none; white-space:nowrap; }
+  #banner.on{ opacity:1; }
+  .float{ position:absolute; transform:translate(-50%,0); font:700 20px Cinzel, Georgia, serif; text-shadow:0 2px 6px #000; animation:floatUp 1.1s ease-out forwards; }
+  .float.down{ color:var(--down); } .float.up{ color:var(--up); }
+  @keyframes floatUp{ 0%{ opacity:0; margin-top:6px; } 15%{ opacity:1; } 100%{ opacity:0; margin-top:-30px; } }
   #hand{ display:flex; gap:6px; align-items:center; min-height:30px; flex-wrap:wrap; }
   #hand .label{ font:600 10px Cinzel, Georgia, serif; letter-spacing:.14em; color:var(--ink-dim); text-transform:uppercase; margin-right:2px; }
   #hand .chip{ padding:2px 8px; border:1px solid var(--line); border-radius:12px; font-size:13px; color:var(--ink-dim); }
@@ -52,44 +63,54 @@
   button.on{ border-color:var(--gold); color:var(--gold); background:#33250d; }
   button:disabled{ opacity:.42; cursor:not-allowed; }
   button:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
-  .stub{ font-size:12px; color:var(--ink-dim); font-style:italic; }
+  .note{ font-size:12px; color:var(--ink-dim); font-style:italic; margin:0; }
   #readout{ display:grid; grid-template-columns:auto 1fr; gap:2px 12px; font-size:13px; font-variant-numeric:tabular-nums; }
   #readout dt{ color:var(--ink-dim); } #readout dd{ margin:0; }
   #readout dd.bad{ color:var(--down); }
+  #plan{ margin:0; font:12px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; color:var(--ink); white-space:pre-wrap; overflow-x:auto; max-height:320px; overflow-y:auto; }
   #story{ font-size:14px; }
   #story ol{ margin:0; padding-left:20px; }
-  #story li{ margin:2px 0; }
-  #story .truth{ color:var(--gold); }
-  code{ font-size:12px; color:var(--ink-dim); }
-  @media (prefers-reduced-motion: reduce){ button{ transition:none; } }
+  #story .truth{ color:var(--gold); margin:0; }
+  @media (prefers-reduced-motion: reduce){ .float{ animation:none; opacity:1; } }
 </style>
 </head>
 <body>
 <main id="app">
-  <header><h1>Manifestation Lab</h1><span class="rung">LAB-1 · harness</span></header>
+  <header><h1>Manifestation Lab</h1><span class="rung">LAB-2+3 · director + stage</span></header>
 
   <div id="field" aria-label="Mock board">
     <div class="half opp"><span class="tag" id="tag-opp">Opponent</span><div class="row heroes"></div><div class="row units"></div></div>
-    <div class="divider"></div>
+    <div class="divider" id="divider"></div>
     <div class="half me"><span class="tag" id="tag-me">You</span><div class="row units"></div><div class="row heroes"></div></div>
     <canvas id="vfxcanvas"></canvas>
     <div id="vfxflash"></div>
+    <canvas id="actorunder"></canvas>
+    <canvas id="actorcanvas"></canvas>
+    <canvas id="actorgpu"></canvas>
+    <canvas id="actorover"></canvas>
+    <div id="floatlayer"></div>
+    <div id="banner" role="status" aria-live="polite"></div>
   </div>
   <div id="hand"></div>
 
   <section class="panel" aria-labelledby="h-replay">
-    <h2 id="h-replay">Replay</h2>
+    <h2 id="h-replay">Manifest</h2>
     <div class="grp">
-      <button class="primary" id="replay-all" type="button">Replay Meghnad's play</button>
+      <button class="primary" id="replay-all" type="button">Play Meghnad</button>
     </div>
-    <div class="grp" aria-label="Phases">
-      <button id="phase-awaken" type="button" disabled>Awaken</button>
-      <button id="phase-emerge" type="button" disabled>Emerge</button>
-      <button id="phase-act" type="button" disabled>Act</button>
-      <button id="phase-outcome" type="button" disabled>Outcome</button>
-      <button id="phase-fizzle" type="button" disabled>Fizzle</button>
+    <div class="grp" aria-label="Replay one phase">
+      <button id="phase-awaken" type="button">Awaken</button>
+      <button id="phase-emerge" type="button">Emerge</button>
+      <button id="phase-act" type="button">Act</button>
+      <button id="phase-fizzle" type="button">Fizzle</button>
+      <button id="phase-settle" type="button">Settle</button>
     </div>
-    <p class="stub">The phase controls are stubs until the director (LAB-2) and the stage (LAB-3).</p>
+    <div class="grp">
+      <button id="ctl-skip" type="button">Skip</button>
+      <button id="ctl-ff" type="button">Fast-forward 3×</button>
+      <button id="ctl-memory" type="button">Reset match memory</button>
+    </div>
+    <p class="note" id="memory-note">Match memory: Meghnad has manifested 0 times. The second play in a match runs Fast.</p>
   </section>
 
   <section class="panel" aria-labelledby="h-mode">
@@ -120,12 +141,18 @@
       <dt>FPS</dt><dd id="ro-fps">—</dd>
       <dt>Clock</dt><dd id="ro-time">—</dd>
       <dt>Renderer</dt><dd id="ro-renderer">—</dd>
+      <dt>Actor</dt><dd id="ro-actor">—</dd>
       <dt>Rung</dt><dd id="ro-rung">—</dd>
       <dt>Sprites</dt><dd id="ro-sprites">—</dd>
       <dt>Decode</dt><dd id="ro-decode">—</dd>
       <dt>Memory</dt><dd id="ro-mb">—</dd>
       <dt>Errors</dt><dd id="ro-errors">0</dd>
     </dl>
+  </section>
+
+  <section class="panel" aria-labelledby="h-plan">
+    <h2 id="h-plan">Plan</h2>
+    <pre id="plan">Press Play to build the plan.</pre>
   </section>
 
   <section class="panel" id="story" aria-labelledby="h-story">
@@ -135,6 +162,13 @@
   </section>
 </main>
 <script src="../lib/boarddiff.js"></script>
+<script src="../lib/clashcontext.js"></script>
+<script src="../lib/director.js"></script>
+<script src="../lib/runner.js"></script>
+<script src="../lib/manifest.js"></script>
+<script src="../lib/stagemath.js"></script>
+<script src="../lib/actorstage.js"></script>
+<script src="../lib/playback.js"></script>
 <script src="vfx.js"></script>
 <script src="../lab.js"></script>
 </body>

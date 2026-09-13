@@ -1,0 +1,8 @@
+{
+  "about": "VFX-LAB-3 · faction energy for the portal and the exit. 'embers' reuses the shipped runtime's own ember recipe (the copied VFX module's cardLand: dust + embers). Only the Asura entry is exercised by the pilot; the others are placeholders until their first manifestation.",
+  "asuras":  { "portal": "rgba(255,96,48,0.85)",  "exit": "embers" },
+  "devas":   { "portal": "rgba(255,214,120,0.85)", "exit": "none" },
+  "nagas":   { "portal": "rgba(80,220,190,0.85)",  "exit": "none" },
+  "vanaras": { "portal": "rgba(255,170,80,0.85)",  "exit": "none" },
+  "default": { "portal": "rgba(255,230,180,0.8)",  "exit": "none" }
+}

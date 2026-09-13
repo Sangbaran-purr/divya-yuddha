@@ -1,0 +1,93 @@
+{
+  "cardId": "meghnad",
+  "class": "actor",
+  "version": 1,
+  "placeholder": true,
+  "source": "PLACEHOLDER \u2014 traced from art/Asuras_Unit_Meghnad_P6_rRare.png (the lab's card art copy) by tools/make_placeholder_actor.py; not a Kling performance (LAB-4 replaces it)",
+  "atlas": "atlas.webp",
+  "atlasSize": {
+    "w": 1157,
+    "h": 1020
+  },
+  "alpha": "straight",
+  "blend": "normal",
+  "mv": false,
+  "vignette": false,
+  "cellMax": 512,
+  "fps": 10,
+  "facing": "left",
+  "mirror": true,
+  "refHeight": 512,
+  "cells": [
+    {
+      "name": "rise",
+      "x": 2,
+      "y": 2,
+      "w": 381,
+      "h": 499,
+      "pivot": {
+        "x": 160.8,
+        "y": 489.7
+      }
+    },
+    {
+      "name": "stand",
+      "x": 385,
+      "y": 2,
+      "w": 373,
+      "h": 499,
+      "pivot": {
+        "x": 164.0,
+        "y": 494.5
+      }
+    },
+    {
+      "name": "windup",
+      "x": 760,
+      "y": 2,
+      "w": 395,
+      "h": 502,
+      "pivot": {
+        "x": 144.8,
+        "y": 473.8
+      }
+    },
+    {
+      "name": "strike",
+      "x": 2,
+      "y": 506,
+      "w": 406,
+      "h": 512,
+      "pivot": {
+        "x": 229.0,
+        "y": 511.2
+      }
+    },
+    {
+      "name": "recover",
+      "x": 410,
+      "y": 506,
+      "w": 371,
+      "h": 502,
+      "pivot": {
+        "x": 172.8,
+        "y": 500.9
+      }
+    }
+  ],
+  "phases": {
+    "emerge": [
+      0,
+      1
+    ],
+    "act": [
+      2,
+      3,
+      4
+    ],
+    "fizzle": [
+      4,
+      1
+    ]
+  }
+}

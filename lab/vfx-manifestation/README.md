@@ -2,7 +2,7 @@
 
 The experiment ground for **VFX_MANIFESTATION_v1** (`docs/VFX_MANIFESTATION_v1.md`, amended 2026-09-13).
 
-**Status:** LAB-1, the harness. The director, the stage and the actor assets come in later rungs (LAB-2 to LAB-5).
+**Status:** LAB-2+3, the director and the stage, with a placeholder actor. The real actor assets come in LAB-4.
 
 ## The experiment rule
 
@@ -31,7 +31,18 @@ The experiment ground for **VFX_MANIFESTATION_v1** (`docs/VFX_MANIFESTATION_v1.m
 | `lib/boarddiff.js` | The board difference: entered / left / changed cards between two snapshots. Pure. |
 | `fixtures/` | `make_fixture.js` runs `src/engine.js` read-only and writes the Meghnad-play fixture for both seats: the events in engine order, the board before and after, the log, and the diff. |
 | `tools/copy_runtime.js` | Re-copies the runtime and the asset subset from the game. |
-| `test/run.js` | The lab's own proofs: `node lab/vfx-manifestation/test/run.js`. |
+| `lib/clashcontext.js` | **LAB-2.** The ClashContext adapter: a play's batch plus the board before and after → honest fields only, and the board difference split into what the batch's events carry and what they don't. |
+| `lib/director.js` | **LAB-2.** Context → a deterministic timed plan (AWAKEN → EMERGE → ACT → FIZZLE → SETTLE, then the queue). Also the rarity ladder, the repeat rule, Reduced mode, and the text readout of the plan. |
+| `lib/runner.js` | **LAB-2.** Plays a plan against the clock: cues in order, skip, a single-phase replay, fast-forward. Cleanup runs exactly once. |
+| `lib/manifest.js` | **LAB-3.** Validates the actor asset class (A4). |
+| `lib/stagemath.js` | **LAB-3.** Where an actor stands, how big it is, where it reaches and which way it faces. It never touches the enemy cards (A1). |
+| `lib/actorstage.js` | **LAB-3.** The actor stage: portal, contact shadow, the actor drawn with normal blending (Canvas 2D or Pixi), hit-stop, directional flash, camera impulse, the cleanup guarantee, and the performance readout. |
+| `lib/playback.js` | **LAB-3.** Card-agnostic wiring from a plan's cues to the stage and the board. |
+| `data/manifestations.json` | The card registry: which cards manifest, and which (the pilot alone) are exempt from the ladder. |
+| `data/factionfx.json` | Faction energy for the portal and the exit. The Asura exit reuses the copied runtime's own ember recipe. |
+| `actors/meghnad/` | The placeholder actor: `atlas.webp` and `manifest.json`. |
+| `tools/make_placeholder_actor.py` | Traces the placeholder actor from the lab's card-art copy. |
+| `test/run.js` | The lab's own proofs, all rungs: `node lab/vfx-manifestation/test/run.js`. |
 
 **Why `<base href="runtime/">`:** the module builds sheet URLs relative to the page (`assets/vfx/…`) but imports Pixi relative to its own file (`./assets/vendor/…`). With the base set, both resolve inside `runtime/`, so the copy needs no path rewrite.
 
@@ -44,10 +55,53 @@ The experiment ground for **VFX_MANIFESTATION_v1** (`docs/VFX_MANIFESTATION_v1.m
 ```bash
 node lab/vfx-manifestation/tools/copy_runtime.js
 node lab/vfx-manifestation/fixtures/make_fixture.js
+python3 lab/vfx-manifestation/tools/make_placeholder_actor.py
 node lab/vfx-manifestation/test/run.js
 ```
 
 If the runtime-drift check goes red, the game's VFX module has changed since the copy. Decide whether to re-copy; don't hand-edit `runtime/vfx.js`.
+
+## LAB-2+3: the director and the stage
+
+**The machinery is card-agnostic, with Meghnad as the first data entry.** No code path names a card. A card manifests when it is a Hero or Unit (A2) and has a registry entry. Its look comes from its actor manifest, and its energy from its faction's entry.
+
+### The plan
+
+**The grammar.** A single actor, nothing depicted on the target (A1), then the queue:
+
+| Phase | What happens |
+|---|---|
+| AWAKEN | The portal opens at the card and the faction's embers rise. |
+| EMERGE | The actor rises from the card. |
+| ACT | The actor charges toward the enemy half and stops short of the enemy cards. At contact: a 60 ms hit-stop, a directional flash and a 5 px camera impulse toward the enemy side. |
+| FIZZLE | The actor fades out and throws the Asura exit embers. |
+| SETTLE | The un-evented board changes land, with their floating numbers. |
+
+After SETTLE, the rest of the batch plays in engine order: here the Chaos Surge toast, then its +1 buff.
+
+**Timings.**
+
+| Mode | Duration |
+|---|---|
+| Full | The rarity ladder (C 1.8 s · U/R 2.5 s · E/L 3.5 s · M 4.5 s). The pilot is exempt (A3) at 3.2 s. |
+| Fast | Half of Full. |
+| Reduced | No actor: a card pulse, then SETTLE (0.6 s). |
+
+**The repeat rule.** A card's second and later manifestations in a match play Fast. On the page, "Reset match memory" starts a new match.
+
+**The split that keeps the board honest.** The board difference, minus what the batch's own events carry, lands at SETTLE: Indra 7 → 5. What the events carry lands when each queued event plays: Meghnad's Chaos Surge +1. So nothing is double-counted or swallowed, and the final board equals the engine's AFTER snapshot. The readout confirms this after every play.
+
+### The stage
+
+**The placeholder actor.** Five posed cells traced from the card art, each with real alpha and a feet pivot. It is not a Kling performance; LAB-4 replaces it.
+
+**The actor.** It stands on its card's base. Its reach and size are clamped so that at no point of the ACT does it touch the enemy cards. It faces the open side of the field, and a left-facing manifest is mirrored when the charge leans right.
+
+**Layers, bottom to top:** board rows (3) · VFX canvas (5) · VFX GPU (6) · VFX flash (7) · actor under, the portal and shadow (8) · the actor (9) · actor over, the directional flash (10) · floating numbers (12) · banner (13).
+
+**Renderer.** The renderer control drives both the copied effects and the actor. WebGPU and WebGL draw the actor with Pixi; Canvas 2D draws it on `#actorcanvas`. The Actor readout shows the backend, cell size, drawn size, fps over the last manifestation, and draw ms per frame.
+
+**Cleanup.** Skip, a single-phase replay, a new play, a side swap or a backend switch always ends in `stage.clear()`. No actor, effect or camera offset survives it.
 
 ## Notes for the next rungs
 
