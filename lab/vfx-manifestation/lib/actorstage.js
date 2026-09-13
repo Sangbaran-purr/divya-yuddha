@@ -13,6 +13,11 @@
    twice native rate (Fast) it may skip one cell at a time, never two. onCell() fires a cue on the frame a
    given cell is drawn (the contact). Every cell drawn is counted per play: stats().cellsDrawn. warm() uploads an atlas before
    its first play, so the first frames of a manifestation are not lost to a texture upload.
+   THE DISSOLVE (LAB-4b): dissolve(actor, fx) turns FIZZLE into the faction's dissolve exit (lib/dissolve.js holds the maths and the
+   presets' defaults). The held cell erodes bottom-up behind a glowing front: a Pixi filter on the actor sprite (noise texture +
+   threshold + edge glow) on WebGPU and WebGL, a per-frame noise mask (destination-in) and glow on Canvas 2D. Embers rise off the
+   front: pooled sprites of one 64 px glow texture on the GPU, soft discs on #actorover on Canvas 2D (fewer). Faint smoke hangs
+   behind the front on #actorunder. All of it is normal-blended, every particle ends by FIZZLE's end, and remove()/clear() drop them.
    Browser: window.ActorStage. */
 (function (root) {
   'use strict';
@@ -25,8 +30,9 @@
     this.now = o.now || function () { return Date.now(); };
     this.backend = 'canvas2d'; this.renderer = 'canvas2d'; this.pixi = null; this.app = null;
     this.assets = {}; this.actors = []; this.fx = []; this.frozenUntil = -1; this.impulseFx = null; this.nextId = 1;
+    this.parts = []; this.pool = []; this.dz = null; this.cz = {}; this.tex = {}; this.nz = null;      // dissolve: particles, GPU sprite pool, GPU kit, mask kits, images, noise
     this.dpr = Math.min(2, root.devicePixelRatio || 1);
-    this.stat = { frames: 0, drawMsTotal: 0, drawN: 0, liveFrames: 0, liveRealT0: null, liveRealLast: null, fps: 0, cellPx: 0, drawnPx: 0, lastPlay: null, warmed: 0 };
+    this.stat = { frames: 0, drawMsTotal: 0, drawN: 0, liveFrames: 0, liveRealT0: null, liveRealLast: null, fps: 0, cellPx: 0, drawnPx: 0, lastPlay: null, lastExit: null, warmed: 0 };
     this.resize();
   }
   var P = ActorStage.prototype;
@@ -61,7 +67,7 @@
   };
   P.teardownGpu = function () {
     if (this.app) { try { this.app.destroy({ removeView: false }, { children: true, texture: false }); } catch (e) {} }
-    this.app = null; this.base = {};
+    this.app = null; this.base = {}; this.dz = null; this.pool = []; this.parts.forEach(function (pt) { pt.sprite = null; });
     if (this.gpuCanvas) { try { var g = this.gpuCanvas.getContext && this.gpuCanvas.getContext('2d'); if (g) g.clearRect(0, 0, this.gpuCanvas.width, this.gpuCanvas.height); } catch (e) {} }
     this.actors.forEach(function (a) { a.sprite = null; });
   };
@@ -119,6 +125,8 @@
   P.remove = function (a) {
     if (!a) return;
     if (this.actors.indexOf(a) >= 0) this.stat.lastPlay = this.playOf(a, false);
+    if (a.dz && this.actors.indexOf(a) >= 0) this.stat.lastExit = this.exitOf(a);
+    var stage = this; this.parts = this.parts.filter(function (pt) { if (pt.owner !== a) return true; stage.dropPart(pt); return false; });
     if (a.sprite && a.sprite.parent) { try { a.sprite.parent.removeChild(a.sprite); a.sprite.destroy(); } catch (e) {} }
     this.actors = this.actors.filter(function (x) { return x !== a; });
     if (!this.actors.length) this.closeLiveWindow();
@@ -155,7 +163,7 @@
     var pl = a.pl, alpha = 1, sc = 1, rise = 0, k = 0;
     if (a.phase === 'emerge') { var e = easeOut(p); alpha = e; sc = 0.72 + 0.28 * e; rise = (1 - e) * pl.height * 0.35; }
     else if (a.phase === 'act') { var c = a.contact; k = p < c ? easeIn(p / c) : 1 - 0.18 * easeOut((p - c) / (1 - c)); }
-    else if (a.phase === 'fizzle') { k = 0.82; alpha = 1 - easeIn(p); sc = 1 + 0.06 * p; rise = -10 * p; }
+    else if (a.phase === 'fizzle') { k = 0.82; if (!a.dz) { alpha = 1 - easeIn(p); sc = 1 + 0.06 * p; rise = -10 * p; } }   // a dissolving actor holds still: the erosion is the exit
     return { cell: cell, cellIndex: ci, phaseIx: ix, x: pl.anchor.x + pl.travel.x * k, feetY: pl.anchor.y + pl.travel.y * k, y: pl.anchor.y + pl.travel.y * k + rise, scale: pl.scale * sc, alpha: alpha, flipX: pl.flipX };
   };
 
@@ -164,6 +172,7 @@
     this.fx = this.fx.filter(function (f) { return t - f.t0 < f.dur; });
     this.actors.forEach(function (a) { a.pose = self.poseOf(a, t); });
     this.actors.forEach(function (a) { if (a.watch && a.pose && a.phase === a.watch.phase && a.pose.phaseIx >= a.watch.index) self.fireWatch(a); });
+    this.actors.forEach(function (a) { if (a.dz && a.pose) self.stepDissolve(a, t); });
     var u = this.under && this.under.getContext('2d'), o = this.over && this.over.getContext('2d');
     [u, o].forEach(function (g) { if (g) { g.setTransform(self.dpr, 0, 0, self.dpr, 0, 0); g.clearRect(0, 0, self.w, self.h); } });
     // UNDER: the portal glow, then each actor's soft contact shadow
@@ -177,7 +186,13 @@
       var q = a.pose; if (!q) return;
       var rx = q.cell.w * q.scale * 0.26, ry = Math.max(3, rx * 0.16);
       var g = u.createRadialGradient(q.x, q.feetY, 0, q.x, q.feetY, rx); g.addColorStop(0, 'rgba(0,0,0,0.55)'); g.addColorStop(1, 'rgba(0,0,0,0)');
-      u.globalAlpha = q.alpha; u.fillStyle = g; u.beginPath(); u.ellipse(q.x, q.feetY, rx, ry, 0, 0, Math.PI * 2); u.fill(); u.globalAlpha = 1;
+      u.globalAlpha = q.alpha * (a.dz ? 1 - (a.dz.p || 0) : 1); u.fillStyle = g; u.beginPath(); u.ellipse(q.x, q.feetY, rx, ry, 0, 0, Math.PI * 2); u.fill(); u.globalAlpha = 1;
+    });
+    // the dissolve's smoke, behind the actor
+    if (u) this.parts.forEach(function (pt) {
+      if (pt.kind !== 'smoke') return;
+      var k01 = Math.min(1, (t - pt.t0) / pt.life), sz = pt.r * 2 * (1 + 0.5 * k01);
+      u.globalAlpha = pt.alpha * Math.min(1, k01 / 0.3) * (1 - k01); u.drawImage(self.imageOf('puff', pt.color), pt.x - sz / 2, pt.y - sz / 2, sz, sz); u.globalAlpha = 1;
     });
     // THE ACTOR — normal blending, real alpha
     if (this.backend === 'pixi' && this.app) this.drawPixi(); else this.drawCanvas();
@@ -187,6 +202,12 @@
       var p = (t - f.t0) / f.dur, cy = f.y + f.dirY * f.r * 0.35;
       var g = o.createRadialGradient(f.x, cy, 0, f.x, cy, f.r); g.addColorStop(0, 'rgba(255,242,220,0.9)'); g.addColorStop(1, 'rgba(255,242,220,0)');
       o.globalAlpha = 0.6 * (1 - p); o.fillStyle = g; o.beginPath(); o.ellipse(f.x, cy, f.r * 0.7, f.r, 0, 0, Math.PI * 2); o.fill(); o.globalAlpha = 1;
+    });
+    // the dissolve's embers on Canvas 2D (on the GPU they are sprites)
+    if (o) this.parts.forEach(function (pt) {
+      if (pt.kind !== 'ember' || pt.sprite) return;
+      var k01 = Math.min(1, (t - pt.t0) / pt.life), sz = pt.r * 6;
+      o.globalAlpha = Math.min(1, k01 / 0.15) * Math.pow(1 - k01, 1.4); o.drawImage(self.imageOf('glow', pt.color), pt.x - sz / 2, pt.y - sz / 2, sz, sz); o.globalAlpha = 1;
     });
     // the camera impulse
     if (this.impulseFx) {
@@ -203,7 +224,10 @@
     this.actors.forEach(function (a) {
       var q = a.pose; if (!q) return; var c = q.cell;
       g.save(); g.globalAlpha = Math.max(0, Math.min(1, q.alpha)); g.translate(q.x, q.y); g.scale((q.flipX ? -1 : 1) * q.scale, q.scale);
-      g.drawImage(a.art.image, c.x, c.y, c.w, c.h, -c.pivot.x, -c.pivot.y, c.w, c.h); g.restore(); self.noteCell(a, q);
+      var off = a.dz && a.dz.path === 'mask' ? self.maskedCell(a, q) : null;
+      if (off) g.drawImage(off, 0, 0, c.w, c.h, -c.pivot.x, -c.pivot.y, c.w, c.h);
+      else g.drawImage(a.art.image, c.x, c.y, c.w, c.h, -c.pivot.x, -c.pivot.y, c.w, c.h);
+      g.restore(); self.noteCell(a, q);
     });
   };
   P.drawPixi = function () {
@@ -218,14 +242,134 @@
       if (!a.sprite) { a.sprite = new PIXI.Sprite(tex); a.sprite.blendMode = 'normal'; app.stage.addChild(a.sprite); }
       a.sprite.texture = tex; a.sprite.anchor.set(c.pivot.x / c.w, c.pivot.y / c.h);
       a.sprite.position.set(q.x, q.y); a.sprite.scale.set((q.flipX ? -1 : 1) * q.scale, q.scale); a.sprite.alpha = Math.max(0, Math.min(1, q.alpha));
+      if (a.dz && a.dz.path === 'shader') self.applyDissolve(a);
     });
     try { app.renderer.render(app.stage); this.actors.forEach(function (a) { if (a.pose && a.sprite) self.noteCell(a, a.pose); }); } catch (e) {}
+  };
+
+  // ── THE DISSOLVE ──
+  P.dissolve = function (a, fx) {
+    var D = root.Dissolve; if (!a || !D) return false;
+    var pr = D.resolve(fx), nzKey = pr.seed + ':' + Math.max(2, Math.round(pr.noiseScale));
+    if (!this.nz || this.nz.key !== nzKey) this.nz = D.noise(pr);
+    a.dz = { pr: pr, nz: this.nz, key: (fx && fx.key) || null, t0: this.now(), dur: Math.max(1, a.dur), r: D.rng((pr.seed * 7919 + a.id) >>> 0),
+             emberAcc: 0, smokeAcc: 0, spawned: 0, peak: 0, puffs: 0, sweep: [], p: 0, th: D.threshold(0, pr), lastT: null,
+             path: this.backend === 'pixi' && this.app ? 'shader' : 'mask' };
+    return true;
+  };
+  P.exitOf = function (a) {
+    var z = a.dz, s = z.sweep, mono = true;
+    for (var i = 1; i < s.length; i++) if (s[i] < s[i - 1]) { mono = false; break; }
+    return { name: z.pr.name, key: z.key, kind: 'dissolve', path: z.path, edge: z.pr.edge, dur: z.dur, embers: z.spawned, peak: z.peak, smoke: z.puffs,
+             frames: s.length, monotonic: mono, first: s[0], last: s[s.length - 1], progress: z.p };
+  };
+  // one frame of the dissolve: the sweep, embers and smoke off the front, the particles' motion, the GPU ember sprites
+  P.stepDissolve = function (a, t) {
+    var D = root.Dissolve, z = a.dz, pr = z.pr, q = a.pose, c = q.cell, self = this;
+    var p = Math.min(1, Math.max(0, (t - z.t0) / z.dur)), dt = z.lastT == null ? 0 : Math.max(0, t - z.lastT) / 1000; z.lastT = t;
+    z.p = p; z.th = D.threshold(p, pr); if (z.sweep.length < 2000) z.sweep.push(z.th);
+    var left = z.t0 + z.dur - t, gpu = z.path === 'shader', sil = a.art.silhouetteOf ? a.art.silhouetteOf(q.cellIndex) : null, flip = q.flipX ? -1 : 1, lifeK = Math.min(1, z.dur / 600);
+    var at = function (u, v) { return { x: q.x + flip * (u * c.w - c.pivot.x) * q.scale, y: q.y + (v * c.h - c.pivot.y) * q.scale }; };
+    var onFigure = function (u, v) {
+      if (!(v >= 0 && v <= 1)) return false; if (!sil) return true;
+      var i = Math.min(sil.cols - 1, Math.floor(u * sil.cols)); return sil.top[i] >= 0 && v >= sil.top[i] && v <= sil.bottom[i];
+    };
+    var spawn = function (kind, lift) {
+      for (var tries = 0; tries < 5; tries++) {
+        var R = z.r, u = R(), v = D.frontAt(z.nz, pr, u, z.th) + lift();
+        if (!onFigure(u, v)) continue;
+        var s = at(u, v);
+        if (kind === 'ember') self.parts.push({ kind: kind, owner: a, x: s.x, y: s.y, vx: (R() - 0.5) * 34, vy: -(pr.emberRise[0] + R() * (pr.emberRise[1] - pr.emberRise[0])),
+          r: pr.emberSize[0] + R() * (pr.emberSize[1] - pr.emberSize[0]), t0: t, life: Math.min((pr.emberLife[0] + R() * (pr.emberLife[1] - pr.emberLife[0])) * lifeK, left),
+          ph: R() * 6.283, color: pr.emberColor, tint: D.tint(pr.emberColor), sprite: null });
+        else self.parts.push({ kind: kind, owner: a, x: s.x, y: s.y, vx: (R() - 0.5) * 14, vy: -(8 + R() * 16), r: (0.05 + R() * 0.06) * c.h * q.scale,
+          t0: t, life: Math.min((520 + R() * 280) * lifeK, left), ph: R() * 6.283, color: pr.smokeColor, alpha: pr.smokeAlpha, sprite: null });
+        return true;
+      }
+      return false;
+    };
+    if (p < 1 && left > 40) {
+      z.emberAcc += dt * (gpu ? 150 : 60) * pr.embers;
+      while (z.emberAcc >= 1) { z.emberAcc -= 1; if (spawn('ember', function () { return -z.r() * pr.edgeWidth * 0.8; })) z.spawned++; }
+      if (pr.smoke) { z.smokeAcc += dt * 14; while (z.smokeAcc >= 1) { z.smokeAcc -= 1; if (spawn('smoke', function () { return 0.03 + z.r() * 0.1; })) z.puffs++; } }
+    }
+    var live = 0;
+    this.parts = this.parts.filter(function (pt) {
+      if (pt.owner !== a) return true;
+      var age = t - pt.t0; if (age >= pt.life) { self.dropPart(pt); return false; }
+      pt.x += (pt.vx + Math.sin(pt.ph + age / 95) * (pt.kind === 'ember' ? 10 : 4)) * dt; pt.y += pt.vy * dt;
+      if (pt.kind === 'ember') { pt.vy *= Math.pow(0.6, dt); live++; }
+      return true;
+    });
+    z.peak = Math.max(z.peak, live);
+    if (gpu && this.app) {
+      var kit = this.gpuKit(z), PIXI = this.pixi, app = this.app;
+      this.parts.forEach(function (pt) {
+        if (pt.owner !== a || pt.kind !== 'ember') return;
+        var sp = pt.sprite;
+        if (!sp) { sp = self.pool.pop() || new PIXI.Sprite(kit.glow); sp.anchor.set(0.5); sp.blendMode = 'normal'; pt.sprite = sp; }
+        if (!sp.parent) app.stage.addChild(sp);
+        var k01 = Math.min(1, (t - pt.t0) / pt.life);
+        sp.tint = pt.tint; sp.alpha = Math.min(1, k01 / 0.15) * Math.pow(1 - k01, 1.4); sp.position.set(pt.x, pt.y); sp.scale.set(pt.r * 6 / 64);
+      });
+    }
+  };
+  P.dropPart = function (pt) { var sp = pt.sprite; if (sp) { if (sp.parent) sp.parent.removeChild(sp); this.pool.push(sp); pt.sprite = null; } };
+  P.docOf = function () { return (this.canvas && this.canvas.ownerDocument) || root.document; };
+  P.imageOf = function (kind, color) { var id = kind + '|' + color, D = root.Dissolve; return this.tex[id] || (this.tex[id] = kind === 'glow' ? D.glowCanvas(this.docOf(), color) : D.puffCanvas(this.docOf(), color)); };
+  // the GPU kit: one glow texture for the ember pool, the uniforms, and the filter (rebuilt only when the noise changes)
+  P.gpuKit = function (z) {
+    var PIXI = this.pixi, D = root.Dissolve;
+    if (!this.dz) {
+      var v4 = function (a) { return { value: new Float32Array(a), type: 'vec4<f32>' }; };
+      this.dz = { glow: PIXI.Texture.from(D.glowCanvas(this.docOf(), '#ffffff')), noiseKey: null, filter: null,
+                  ug: new PIXI.UniformGroup({ uEdge: v4([1, 0.4, 0.8, 1]), uCore: v4([1, 1, 1, 1]), uParams: v4([0, 0.02, 0.06, 0.24]), uParams2: v4([0.6, 0.4, 0, 0]) }) };
+    }
+    var k = this.dz;
+    if (k.noiseKey !== z.nz.key) {
+      var tex = PIXI.Texture.from(D.noiseCanvas(this.docOf(), z.nz)), S = D.SHADER;
+      k.noise = tex; k.noiseKey = z.nz.key;
+      k.filter = new PIXI.Filter({
+        glProgram: PIXI.GlProgram.from({ vertex: S.glVertex, fragment: S.glFragment, name: 'lab-dissolve' }),
+        gpuProgram: PIXI.GpuProgram.from({ vertex: { source: S.wgsl, entryPoint: 'mainVertex' }, fragment: { source: S.wgsl, entryPoint: 'mainFragment' } }),
+        resources: { dissolveUniforms: k.ug, uNoise: tex.source, uNoiseSampler: tex.source && tex.source.style },
+        padding: 0, resolution: this.dpr,
+      });
+    }
+    return k;
+  };
+  P.applyDissolve = function (a) {
+    var D = root.Dissolve, z = a.dz, pr = z.pr, k = this.gpuKit(z), U = k.ug.uniforms, e = D.rgb(pr.edge), c = D.rgb(pr.core);
+    U.uEdge[0] = e[0]; U.uEdge[1] = e[1]; U.uEdge[2] = e[2]; U.uCore[0] = c[0]; U.uCore[1] = c[1]; U.uCore[2] = c[2];
+    U.uParams[0] = z.th; U.uParams[1] = pr.soft; U.uParams[2] = pr.edgeWidth; U.uParams[3] = pr.charge; U.uParams2[0] = pr.chargeAlpha; U.uParams2[1] = pr.noise;
+    if (k.ug.update) k.ug.update();
+    if (!a.sprite.filters || a.sprite.filters[0] !== k.filter) a.sprite.filters = [k.filter];
+  };
+  // the Canvas 2D path: the held cell, masked by this frame's erosion (destination-in), the front's glow over what is left (source-atop)
+  P.maskedCell = function (a, q) {
+    var D = root.Dissolve, z = a.dz, c = q.cell, id = q.cellIndex + '|' + z.nz.key + '|' + z.pr.noise, k = this.cz[id], doc = this.docOf();
+    if (!k) {
+      var mk = function (w, h) { var cv = doc.createElement('canvas'); cv.width = w; cv.height = h; return cv; };
+      var w2 = Math.max(1, Math.ceil(c.w / 2)), h2 = Math.max(1, Math.ceil(c.h / 2)), off = mk(c.w, c.h), mc = mk(w2, h2), gc = mk(w2, h2), mctx = mc.getContext('2d'), gctx = gc.getContext('2d');
+      var img = function (g2) { var im = g2 && g2.createImageData ? g2.createImageData(w2, h2) : null; return im && im.data ? im : { data: new Uint8ClampedArray(w2 * h2 * 4), width: w2, height: h2 }; };
+      k = this.cz[id] = { off: off, octx: off.getContext('2d'), mc: mc, gc: gc, mctx: mctx, gctx: gctx, w2: w2, h2: h2, grid: D.grid(z.nz, z.pr, w2, h2), mimg: img(mctx), gimg: img(gctx) };
+    }
+    D.paint(k.grid, z.th, z.pr, k.mimg.data, k.gimg.data);
+    k.mimg.__role = 'mask'; k.mimg.__cell = q.cellIndex; k.gimg.__role = 'glow';
+    k.mctx.putImageData(k.mimg, 0, 0); k.gctx.putImageData(k.gimg, 0, 0);
+    var o = k.octx; o.setTransform(1, 0, 0, 1, 0, 0);
+    o.globalCompositeOperation = 'source-over'; o.clearRect(0, 0, c.w, c.h); o.drawImage(a.art.image, c.x, c.y, c.w, c.h, 0, 0, c.w, c.h);
+    o.globalCompositeOperation = 'destination-in'; o.drawImage(k.mc, 0, 0, k.w2, k.h2, 0, 0, c.w, c.h);
+    o.globalCompositeOperation = 'source-atop'; o.drawImage(k.gc, 0, 0, k.w2, k.h2, 0, 0, c.w, c.h);
+    o.globalCompositeOperation = 'source-over';
+    return k.off;
   };
 
   // THE CLEANUP GUARANTEE — no actor, sprite, effect or camera offset survives this
   P.clear = function () {
     var self = this;
     this.actors.slice().forEach(function (a) { self.remove(a); });
+    this.parts.forEach(function (pt) { self.dropPart(pt); }); this.parts = [];
     this.actors = []; this.fx = []; this.impulseFx = null; this.frozenUntil = -1;
     this.field.style.transform = '';
     [this.under, this.canvas, this.over].forEach(function (c) { var g = c && c.getContext('2d'); if (g) { g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, c.width, c.height); } });
@@ -233,11 +377,13 @@
     this.closeLiveWindow();
   };
   P.liveActors = function () { return this.actors.length; };                                            // actors on stage (one per manifestation)
+  P.liveParticles = function () { return this.parts.length; };                                          // dissolve embers and smoke still alive
   P.liveSprites = function () { return this.app ? this.app.stage.children.length : 0; };                  // GPU sprites still attached (0 once cleared)
   P.stats = function () {
     var s = this.stat;
     return { backend: this.renderer, frames: s.frames, drawMsAvg: s.drawN ? s.drawMsTotal / s.drawN : 0, fps: s.fps, liveFps: (s.liveRealT0 != null && s.liveRealLast > s.liveRealT0) ? Math.round(s.liveFrames * 1000 / (s.liveRealLast - s.liveRealT0)) : null, cellPx: s.cellPx, drawnPx: s.drawnPx,
-             cellsDrawn: this.actors.length ? this.playOf(this.actors[0], true) : s.lastPlay };
+             cellsDrawn: this.actors.length ? this.playOf(this.actors[0], true) : s.lastPlay,
+             exit: this.actors.length && this.actors[0].dz ? this.exitOf(this.actors[0]) : s.lastExit };
   };
 
   root.ActorStage = ActorStage;

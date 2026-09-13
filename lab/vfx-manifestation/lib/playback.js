@@ -2,7 +2,7 @@
    about the page arrives through `env`, so the same wiring runs in the lab page and in a test.
    env = { stage (ActorStage), ctx (ClashContext), boards {entry, settle, final}, viewer,
            rectOf(uid) → field-local {x,y,w,h} | null, clientOf(uid) → client {cx,cy,w} | null, field {w,h}, bandOf(seat) → rect | null,
-           render(board, floats), pulse(uid, ms), actorFor(cardId) → {manifest,image} | null, factionFx(faction) → {portal, exit},
+           render(board, floats), pulse(uid, ms), actorFor(cardId) → {manifest,image} | null, factionFx(faction) → {name, portal, exit, dissolve},
            embers(clientX, clientY) (the existing ember recipe), queueFx(event, board, skipped), onDone(result) }
    A1 on every cue: the actor acts toward the enemy side and never reaches the enemy cards (StageMath); nothing is drawn on the
    target; the numbers land at SETTLE from the board difference, and the queued events land theirs after.
@@ -56,7 +56,10 @@
             break;
           }
           case 'exit-fx': {
-            if (info.skipped || !actor || !actor.pose) break;
+            if (info.skipped || !actor) break;
+            // LAB-4b: the faction's dissolve — the stage erodes the held cell over FIZZLE (the actor-phase cue just set its length)
+            if (fx.exit === 'dissolve' && env.stage.dissolve) { env.stage.dissolve(actor, fx); break; }
+            if (!actor.pose) break;
             if (fx.exit === 'embers') { var p = actor.pose, fr = env.fieldClient ? env.fieldClient() : { x: 0, y: 0 }; env.embers(fr.x + p.x, fr.y + p.feetY - actor.pl.height * 0.4); env.embers(fr.x + p.x, fr.y + p.feetY - actor.pl.height * 0.8); }
             break;
           }

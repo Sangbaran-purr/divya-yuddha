@@ -1,4 +1,4 @@
-/* lab.js — VFX-LAB-2+3 (+ LAB-4a: every URL stamped, the cells-drawn readout) · the harness page. Loaded after lib/* and runtime/vfx.js.
+/* lab.js — VFX-LAB-2+3 (+ LAB-4a: every URL stamped, the cells-drawn readout · LAB-4b: the dissolve exit and its preset preview) · the harness page. Loaded after lib/* and runtime/vfx.js.
    The page is glue: the fixture → ClashContext → Director plan → Runner → Playback (stage + board). Every piece of logic lives
    in lib/ and is card-agnostic; the only card-specific data are the registry (data/manifestations.json), the faction energy
    (data/factionfx.json) and the actor manifest. Nothing here loads from the live game.
@@ -46,6 +46,7 @@
   // ── MODE ──
   const MODES = { full: { speed: 1, reduced: false }, fast: { speed: 0.6, reduced: false }, reduced: { speed: 1, reduced: true } };
   let mode = 'full';
+  let exitPreset = '';   // LAB-4b: '' = the card's own faction; otherwise preview that faction's exit on this actor
 
   // ── THE COPIED RUNTIME (existing effects: the Asura embers, the Chaos Surge) ──
   const VFX = window.LabVFX.create({
@@ -70,6 +71,19 @@
     const image = new Image(); image.decoding = 'async';
     const t0 = performance.now(); image.src = V(new URL(manifest.atlas, murl).href); await image.decode();
     actors[cardId] = { manifest, image, decodeMs: performance.now() - t0, url: image.src };
+    // the dissolve's embers start only on the figure: each held cell's silhouette by column, read once from its alpha
+    const sil = {};
+    actors[cardId].silhouetteOf = (ci) => {
+      if (sil[ci] !== undefined) return sil[ci];
+      const c = manifest.cells[ci]; if (!c) return (sil[ci] = null);
+      try {
+        const cv = document.createElement('canvas'); cv.width = c.w; cv.height = c.h;
+        const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(image, c.x, c.y, c.w, c.h, 0, 0, c.w, c.h);
+        sil[ci] = window.Dissolve.silhouette(g.getImageData(0, 0, c.w, c.h).data, c.w, c.h, 24);
+      } catch (e) { sil[ci] = null; }
+      return sil[ci];
+    };
+    (manifest.phases.fizzle || []).forEach((ci) => actors[cardId].silhouetteOf(ci));
     stage.loadActor(cardId, actors[cardId]);
     return actors[cardId];
   }
@@ -155,7 +169,7 @@
       rectOf, clientOf, bandOf, render, fieldClient: () => { const r = fieldRect(); return { x: r.left, y: r.top }; },
       pulse: (uid, ms) => { const n = el('field').querySelector('.bc[data-uid="' + uid + '"]'); if (n) { n.classList.add('pulse'); setTimeout(() => n.classList.remove('pulse'), ms); } },
       actorFor: (id) => actors[id] || null,
-      factionFx: (fac) => FFX[fac] || FFX.default,
+      factionFx: (fac) => window.Dissolve.pick(FFX, fac, exitPreset),
       embers: (x, y) => VFX.cardLand(x, y),
       queueFx: (ev, board, skipped) => {
         if (skipped) return;
@@ -190,6 +204,9 @@
     const actorDecoded = a ? a.manifest.atlasSize.w * a.manifest.atlasSize.h * 4 : 0;
     el('ro-mb').textContent = 'transferred ' + mb(bytes) + ' · effect sheets ≈ ' + mb(decoded) + ' · actor atlas ≈ ' + mb(actorDecoded) + ' decoded';
     const e = el('ro-errors'); e.textContent = errors.length ? errors.length + ' — ' + errors[errors.length - 1] : '0'; e.className = errors.length ? 'bad' : '';
+    const x = s.exit, rx = el('ro-exit');
+    if (rx) rx.textContent = x ? x.name + ' dissolve · ' + (x.path === 'shader' ? 'GPU filter' : 'Canvas 2D mask') + ' · front ' + x.edge + ' · embers ' + x.embers + ' (peak ' + x.peak + ') · smoke ' + x.smoke + ' · ' + x.frames + ' frames, sweep ' + (x.monotonic ? 'monotonic ✓' : 'NOT monotonic ✖') + (x.progress < 1 ? ' · ' + Math.round(x.progress * 100) + '%' : '')
+      : (exitPreset ? 'preview: ' + ((FFX[exitPreset] || {}).name || exitPreset) + ' — press Play' : '—');
     const rs = el('ro-stamp'); if (rs) { rs.textContent = STAMP + ' · ' + stampNote; rs.className = /STALE|unreadable/.test(stampNote) ? 'bad' : ''; }
   }
 
@@ -202,6 +219,7 @@
   el('ctl-memory').onclick = () => { memory.reset(); el('memory-note').textContent = 'Match memory reset: the next play runs in the chosen mode.'; };
   ['full', 'fast', 'reduced'].forEach((m) => { el('mode-' + m).onclick = () => { mode = m; setOn(['mode-full', 'mode-fast', 'mode-reduced'], 'mode-' + m); }; });
   el('seat-swap').onclick = () => { load(1 - attackerSeat).catch(report); };
+  el('exit-preset').onchange = (e) => { exitPreset = e.target.value; };
   async function backend(which) {
     setOn(['be-webgpu', 'be-webgl', 'be-canvas'], 'be-' + which);
     stopRun();

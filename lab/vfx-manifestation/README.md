@@ -172,6 +172,28 @@ The stage already stepped one cell per 1/24 s. What broke the motion:
 
 The copied VFX module must stay byte-identical to the game, so its own URLs are not the lab's to stamp: its effect sheets keep the game's `?v=t104`, and its own Pixi import (`./assets/vendor/pixi.min.mjs`) is unstamped. The stage imports Pixi through a stamped URL.
 
+## LAB-4b: the dissolve exit (faction presets)
+
+The ember exit read grainy. FIZZLE is now a procedural dissolve matched to the Kling clip's own dissolve. The clip's tail frames 89–120 are dropped from the actor, but their contact sheet is in `frames/meghnad_tail_contact_sheet.jpg`. What the clip does:
+- magenta energy veins light up the legs and belly, then climb the figure
+- the body breaks up from the bottom into faint smoke and pink sparks
+- by about 0.75 s only a dark smoke streak is left
+
+**The maths (`lib/dissolve.js`).** Every point of the held cell gets an erosion value: its height from the feet, roughened by noise. Over FIZZLE a threshold sweeps from the feet to the head, and a pixel keeps `clamp((f − t) / soft)` of its alpha. That can only fall as the threshold rises, so a pixel never comes back. Just above the front the pixels take the faction's edge colour, hottest at the front itself. Further above, the noise's veins light up: the energy climbing ahead of the break-up.
+
+**Two draw paths, one field.**
+
+| Backend | The erosion | The embers |
+|---|---|---|
+| WebGPU, WebGL | A Pixi filter on the actor sprite (GLSL and WGSL): noise texture, threshold, edge glow | Pooled sprites of one 64 px glow texture, 150/s |
+| Canvas 2D | A half-resolution noise mask each frame (destination-in), the glow over what is left (source-atop), on an offscreen canvas | Soft discs on `#actorover`, 60/s |
+
+Faint dark smoke puffs hang behind the front on `#actorunder`. Embers and puffs are always drawn at or below their image's size, so there are no scaled-up pixels, and all blending is normal. Every particle ends by the end of FIZZLE: 600 ms in Full, 300 ms in Fast. Then the actor is removed and the board settles.
+
+The copied runtime's own particle pool sits on its own canvas beneath the actor and draws additive sheet sprites. It must stay byte-identical to the game, so the embers use the stage's own pool instead.
+
+**Presets.** `data/factionfx.json` holds one exit per faction: `name`, `portal`, `exit: "dissolve"`, and `dissolve: { edge, core, edgeWidth, charge, chargeAlpha, noise, noiseScale, embers, emberColor, emberSize, emberRise, smoke, smokeColor, smokeAlpha, seed }`. Every key is optional. Asura is tuned against the clip: front #e76dba, core #ffd9ee, pink embers, dark smoke. Deva (gold, no smoke), Naga (teal) and Vanara (orange) are defaults. The **Exit preset** dropdown previews any of them on Meghnad, and the **Exit** readout row shows the preset, the path, embers, smoke and whether the sweep stayed monotonic.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

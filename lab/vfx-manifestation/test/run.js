@@ -10,7 +10,8 @@
 //   K · THE SOURCES     A7: no clip and no raw frame is ever tracked; sources/ frames/ and the matting venv stay ignored
 //   S · THE STAGE       layer order, anchoring on both seats (never onto the enemy cards — A1), facing, cleanup after skip,
 //                       numbers only at SETTLE, normal blending, the performance readout; LAB-4a: the cells are the clock —
-//                       cells drawn per play on every backend's draw path, contact on its cell, no hold, no repeat, no skip
+//                       cells drawn per play on every backend's draw path, contact on its cell, no hold, no repeat, no skip;
+//                       LAB-4b: the dissolve exit on every backend, a pixel never reappears, the faction presets, no grain
 //   R · THE RUNTIME     the lab's VFX module is the game's byte-for-byte; its injected names; it runs on them alone; the subset
 //   P · THE PAGE        the structure and every control; nothing loaded from the live game; every URL stamped (LAB-4a)
 //   G · THE RULE        no tracked change outside lab/ since the lab began (the ruling doc, A8, excepted); nothing outside
@@ -268,13 +269,13 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
 
   if (!JSDOM) { fail += 3; console.log('  ✖ S5–S7 SKIPPED LOUDLY — jsdom not found under ' + path.join(WEB, 'tests') + ' (set DY_WEB). The stage runs did NOT happen.'); }
   else {
-    function world(seat, backend) {
+    function world(seat, backend, fxFn) {
       const dom = new JSDOM('<!doctype html><body><div id="field"><canvas id="actorunder"></canvas><canvas id="actorcanvas"></canvas><canvas id="actorgpu"></canvas><canvas id="actorover"></canvas></div></body>', { url: 'https://lab.test/', pretendToBeVisual: true, runScripts: 'outside-only' });
-      const w = dom.window, calls = { draw: 0, clear: 0, ops: new Set(), cells: [] };
-      const ctx = new Proxy({}, { get: (t, k) => k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : k === 'drawImage' ? (img, sx, sy, sw, sh, dx, dy, dw, dh) => { calls.draw++; if (sw > 1 && dw === sw && dh === sh) calls.cells.push(sx + ',' + sy); } : k === 'clearRect' ? () => { calls.clear++; } : () => undefined,
+      const w = dom.window, calls = { draw: 0, clear: 0, ops: new Set(), cells: [], masks: [], uniformT: [], glowDraws: [] };
+      const ctx = new Proxy({}, { get: (t, k) => k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : k === 'drawImage' ? (img, sx, sy, sw, sh, dx, dy, dw, dh) => { calls.draw++; if (img && img.__atlas && sw > 1 && dw === sw && dh === sh) calls.cells.push(sx + ',' + sy); if (img && (img.__labGlow || img.__labPuff) && dx === undefined) calls.glowDraws.push({ kind: img.__labGlow ? 'glow' : 'puff', size: img.__labGlow || img.__labPuff, dw: sw, dh: sh }); } : k === 'putImageData' ? (img) => { if (img && img.__role === 'mask') { const a = new Uint8Array(img.data.length / 4); for (let i = 0; i < a.length; i++) a[i] = img.data[i * 4 + 3]; calls.masks.push({ cell: img.__cell, a }); } } : k === 'clearRect' ? () => { calls.clear++; } : () => undefined,
                                   set: (t, k, v) => { if (k === 'globalCompositeOperation') calls.ops.add(v); return true; } });
       w.HTMLCanvasElement.prototype.getContext = () => ctx;
-      ['boarddiff', 'clashcontext', 'director', 'runner', 'manifest', 'stagemath', 'actorstage', 'playback'].forEach((n) => w.eval(fs.readFileSync(path.join(LAB, 'lib', n + '.js'), 'utf8')));
+      ['boarddiff', 'clashcontext', 'director', 'runner', 'manifest', 'stagemath', 'dissolve', 'actorstage', 'playback'].forEach((n) => w.eval(fs.readFileSync(path.join(LAB, 'lib', n + '.js'), 'utf8')));
       let t = 0;
       const stage = new w.ActorStage({ field: w.document.getElementById('field'), under: w.document.getElementById('actorunder'), actorCanvas: w.document.getElementById('actorcanvas'), gpuCanvas: w.document.getElementById('actorgpu'), over: w.document.getElementById('actorover'), now: () => t });
       if (backend === 'webgl' || backend === 'webgpu') {
@@ -282,20 +283,23 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
         const children = [], PIXI = {
           Texture: function (o) { this.source = o && o.source; this.frame = o && o.frame; },
           Rectangle: function (x, y) { this.x = x; this.y = y; },
-          Sprite: function (tex) { this.texture = tex; this.parent = null; this.anchor = { set() {} }; this.position = { set() {} }; this.scale = { set() {} }; this.destroy = () => {}; },
+          Sprite: function (tex) { this.texture = tex; this.parent = null; this.anchor = { set() {} }; this.position = { set() {} }; this.scale = { set: (x) => { this.sx = x; } }; this.destroy = () => {}; },
+          Filter: function (o) { this.options = o; },
+          GlProgram: { from: (o) => ({ gl: o }) }, GpuProgram: { from: (o) => ({ gpu: o }) },
+          UniformGroup: function (u) { this.uniforms = {}; for (const k in u) this.uniforms[k] = u[k].value; this.update = () => { calls.uniformT.push(this.uniforms.uParams[0]); }; },
         };
         PIXI.Texture.from = (img) => ({ source: img });
         const app = { stage: { children, addChild: (sp) => { sp.parent = app.stage; children.push(sp); }, removeChild: (sp) => { children.splice(children.indexOf(sp), 1); sp.parent = null; }, removeChildren: () => { children.splice(0).forEach((sp) => { sp.parent = null; }); } },
-          renderer: { name: backend, resize() {}, render: () => children.forEach((sp) => { const f = sp.texture && sp.texture.frame; if (f && sp.alpha > 0.01) calls.cells.push(f.x + ',' + f.y); }) }, destroy() {} };
+          renderer: { name: backend, resize() {}, render: () => children.forEach((sp) => { const f = sp.texture && sp.texture.frame; if (f && sp.alpha > 0.01) calls.cells.push(f.x + ',' + f.y); else if (!f && sp.sx != null) calls.glowDraws.push({ kind: 'gpu-ember', size: 64, dw: 64 * Math.abs(sp.sx), dh: 64 * Math.abs(sp.sx) }); }) }, destroy() {} };
         stage.pixi = PIXI; stage.app = app; stage.backend = 'pixi'; stage.renderer = backend; stage.base = {};
       }
-      stage.loadActor('meghnad', { manifest: MANIFEST, image: { width: MANIFEST.atlasSize.w, height: MANIFEST.atlasSize.h } });
+      stage.loadActor('meghnad', { manifest: MANIFEST, image: { __atlas: true, width: MANIFEST.atlasSize.w, height: MANIFEST.atlasSize.h } });
       const f = FX[seat], ctxw = w.ClashContext.fromBatch(f), boards = w.ClashContext.boards(ctxw, f.before, f.after), g = geo(seat);
       const rects = {}; rects[f.events[0].sourceUid] = g.card; rects[f.before.seats[f.defenderSeat].heroes[0].uid] = g.band;
       const renders = [], ember = [], done = [];
       const pb = w.Playback.create({ stage, ctx: ctxw, boards, viewer: 0, field: FIELD, rectOf: (u) => rects[u] || null, clientOf: (u) => rects[u] ? { cx: rects[u].x + 32, cy: rects[u].y + 45, w: 64 } : null,
         bandOf: (s) => s === f.defenderSeat ? g.band : g.card, render: (b, fl) => renders.push({ t, board: JSON.parse(J(b)), floats: fl }), pulse: () => {}, actorFor: (id) => id === 'meghnad' ? { manifest: MANIFEST } : null,
-        factionFx: () => ({ portal: 'rgba(255,96,48,0.85)', exit: 'embers' }), embers: (x, y) => ember.push([x, y, t]), queueFx: () => {}, onDone: (r) => done.push(r) });
+        factionFx: fxFn || (() => ({ portal: 'rgba(255,96,48,0.85)', exit: 'embers' })), embers: (x, y) => ember.push([x, y, t]), queueFx: () => {}, onDone: (r) => done.push(r) });
       return { w, stage, calls, pb, ctx: ctxw, boards, renders, ember, done, f, clock: { get t() { return t; }, set t(v) { t = v; } } };
     }
     const runWorld = (W, planOpts, stopAt, runOpts) => {
@@ -310,7 +314,7 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
       }
       return { plan, r, peak };
     };
-    const clean = (W) => W.stage.liveActors() === 0 && W.stage.liveSprites() === 0 && W.stage.actors.length === 0 && W.stage.fx.length === 0 && !W.stage.impulseFx && W.w.document.getElementById('field').style.transform === '';
+    const clean = (W) => W.stage.liveActors() === 0 && W.stage.liveSprites() === 0 && W.stage.actors.length === 0 && W.stage.fx.length === 0 && !W.stage.impulseFx && W.stage.liveParticles() === 0 && W.w.document.getElementById('field').style.transform === '';
     const results = [0, 1].map((seat) => {
       const A = world(seat), a = runWorld(A, { mode: 'full' });                  // the whole manifestation
       const S = a.plan.phases.find((p) => p.name === 'SETTLE');
@@ -368,6 +372,61 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
     const slow = BACKENDS.map((b) => Object.assign(playCells(b, 'full', 30), { hitch: '30 Hz' })).concat(BACKENDS.map((b) => Object.assign(playCells(b, 'full', 60, 250), { hitch: '250 ms stall in EMERGE' })));
     ok('S11 · A SLOW DEVICE NEVER SKIPS A NATIVE CELL, every backend: Full at 30 Hz, and Full at 60 Hz with a 250 ms stall early in EMERGE, still draw all ' + MANIFEST.cells.length + ' cells in order with none repeated (the stage catches up one cell per frame, and a phase\'s unreached cells play first in the next) — ' + show(slow),
        slow.every((x) => x.drawn === 43 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.contact === CONTACT_CELL && agrees(x) && x.clean), J(slow));
+
+    // ── LAB-4b · THE DISSOLVE EXIT: the real presets, the real playback, every backend's draw path ──
+    const FFXD = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DS = lib('dissolve');
+    const playExit = (backend, mode, override) => {
+      const W = world(0, backend, (fac) => DS.pick(FFXD, fac, override || ''));
+      const plan = W.w.Director.plan(W.ctx, { mode, ladderExempt: true, timing: NT }), r = W.w.Runner.create(plan, W.pb.handlers, () => W.clock.t);
+      const Z = plan.phases.find((p) => p.name === 'FIZZLE');
+      let peakParts = 0, peakSprites = 0, sawFilter = false; r.start({});
+      while (!r.done && W.clock.t < 20000) {
+        W.clock.t += 1000 / 60; r.tick(); W.stage.frame(W.clock.t, W.clock.t);
+        peakParts = Math.max(peakParts, W.stage.liveParticles()); peakSprites = Math.max(peakSprites, W.stage.liveSprites());
+        const a = W.stage.actors[0]; if (a && a.sprite && a.sprite.filters && a.sprite.filters.length) sawFilter = true;
+      }
+      const settle = W.renders.find((x) => x.floats && x.floats.length);
+      return { backend, mode, override: override || null, faction: W.ctx.faction, exit: W.stage.stats().exit, fizzleMs: Z.t1 - Z.t0, settleLag: settle ? settle.t - Z.t1 : null,
+               peakParts, peakSprites, sawFilter, masks: W.calls.masks, uniformT: W.calls.uniformT, glowDraws: W.calls.glowDraws, clean: clean(W), done: W.done[0] };
+    };
+    const EX = []; BACKENDS.forEach((b) => ['full', 'fast'].forEach((m) => EX.push(playExit(b, m))));
+    const exitOk = (x) => !!x.exit && x.exit.name === 'Asura' && x.exit.key === 'asuras' && x.exit.edge === FFXD.asuras.dissolve.edge && x.exit.path === (x.backend === 'canvas2d' ? 'mask' : 'shader') &&
+      x.fizzleMs === (x.mode === 'full' ? 600 : 300) && x.exit.dur === x.fizzleMs && x.exit.embers > 0 && x.exit.monotonic && x.exit.progress >= 0.9 && x.exit.frames >= Math.floor(x.fizzleMs / (1000 / 60)) - 2 &&
+      x.peakParts > 0 && x.settleLag != null && x.settleLag >= 0 && x.settleLag < 17 && x.clean && !!x.done && x.done.equalsFinal &&
+      (x.backend === 'canvas2d' ? x.masks.length > 0 : x.sawFilter && x.uniformT.length > 0 && x.peakSprites > 2);
+    const showX = (xs) => xs.map((x) => x.backend + ' ' + x.mode + ': ' + (x.exit ? x.exit.name + ' · ' + x.exit.path + ' · ' + x.fizzleMs + ' ms · ' + x.exit.frames + ' frames · embers ' + x.exit.embers + ' (peak ' + x.exit.peak + ') · smoke ' + x.exit.smoke + ' · settle +' + (x.settleLag == null ? '?' : Math.round(x.settleLag)) + ' ms' : 'no exit')).join(' | ');
+    const cvFull = EX.find((x) => x.backend === 'canvas2d' && x.mode === 'full'), glFull = EX.find((x) => x.backend === 'webgl' && x.mode === 'full');
+    ok('S12 · THE DISSOLVE EXIT on every backend, Full and Fast: Meghnad (faction "' + EX[0].faction + '") plays the Asura preset; the held cell erodes over FIZZLE (600 ms Full, 300 ms Fast) — a GPU filter on WebGPU and WebGL, a Canvas 2D mask — with embers off the front (fewer on Canvas 2D) and smoke behind it; afterwards 0 actors, 0 GPU sprites, 0 particles, no effect, no camera offset, and the board settles within a frame of FIZZLE\'s end, equal to the engine\'s AFTER — ' + showX(EX),
+       EX.every(exitOk) && EX[0].faction === 'asuras' && cvFull.exit.embers < glFull.exit.embers,
+       J(EX.map((x) => ({ b: x.backend, m: x.mode, exit: x.exit, fizzleMs: x.fizzleMs, settleLag: x.settleLag, clean: x.clean, peakParts: x.peakParts, peakSprites: x.peakSprites, sawFilter: x.sawFilter, masks: x.masks.length, uniforms: x.uniformT.length }))));
+
+    const monoMasks = (masks) => { let pairs = 0, bad = 0; for (let i = 1; i < masks.length; i++) { if (masks[i].cell !== masks[i - 1].cell) continue; pairs++; const A = masks[i - 1].a, B = masks[i].a; for (let j = 0; j < A.length; j++) if (B[j] > A[j]) { bad++; break; } } return { pairs, bad }; };
+    const share = (a, test) => { let n = 0; for (let j = 0; j < a.length; j++) if (test(a[j])) n++; return n / a.length; };
+    const cm = EX.filter((x) => x.backend === 'canvas2d').map((x) => Object.assign(monoMasks(x.masks), { mode: x.mode, first: share(x.masks[0].a, (v) => v === 255), last: share(x.masks[x.masks.length - 1].a, (v) => v === 0) }));
+    const gpuMono = EX.filter((x) => x.backend !== 'canvas2d').every((x) => x.uniformT.every((v, i) => i === 0 || v >= x.uniformT[i - 1]) && x.uniformT[x.uniformT.length - 1] > x.uniformT[0]);
+    const SH = DS.SHADER, R99 = DS.rng(99), PR = DS.resolve(FFXD.asuras);
+    const pure = Array.from({ length: 200 }, () => R99()).every((f) => { let prev = 2; for (let i = 0; i <= 50; i++) { const k = DS.keep(f, DS.threshold(i / 50, PR), PR); if (k > prev) return false; prev = k; } return prev === 0; });
+    ok('S13 · A PIXEL NEVER REAPPEARS: every Canvas 2D mask, frame after frame, only loses alpha (' + cm.map((m) => m.mode + ': ' + m.pairs + ' frame pairs, ' + m.bad + ' regressions, first frame ' + Math.round(m.first * 100) + '% whole, last ' + Math.round(m.last * 100) + '% gone').join(' · ') + '); the GPU filter\'s threshold only rises, frame after frame; both shaders erode with keep = clamp((f − t) / soft) over the same field; and the maths itself: 200 random points × 51 steps of the sweep never gain alpha and all end gone',
+       cm.every((m) => m.pairs >= 10 && m.bad === 0 && m.first > 0.99 && m.last > 0.99) && gpuMono && pure &&
+       /float f = \(1\.0 - vUv\.y\) \* \(1\.0 - uParams2\.y\) \+ nz\.r \* uParams2\.y;/.test(SH.glFragment) && /float keep = clamp\(d \/ uParams\.y, 0\.0, 1\.0\);/.test(SH.glFragment) && /finalColor = vec4\(col, src\.a\) \* keep;/.test(SH.glFragment) &&
+       /let f = \(1\.0 - fuv\.y\) \* \(1\.0 - P2\.y\) \+ nz\.r \* P2\.y;/.test(SH.wgsl) && /let keep = clamp\(d \/ P\.y, 0\.0, 1\.0\);/.test(SH.wgsl) && /return vec4<f32>\(col, src\.a\) \* keep;/.test(SH.wgsl), J(cm));
+
+    const FACTIONS = ['asuras', 'devas', 'nagas', 'vanaras', 'default'];
+    const presetsOk = FACTIONS.every((k) => FFXD[k] && FFXD[k].exit === 'dissolve' && typeof FFXD[k].name === 'string' && /^#[0-9a-f]{6}$/i.test(DS.resolve(FFXD[k]).edge));
+    const deva = playExit('canvas2d', 'full', 'devas'), naga = playExit('webgl', 'full', 'nagas');
+    const OPTS = [...PAGE.matchAll(/<option value="([a-z]*)"[^>]*>[^<]*<\/option>/g)].map((m) => m[1]), LABJS4 = fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8');
+    ok('S14 · THE FACTION PRESETS: data/factionfx.json holds a dissolve exit for all four factions and the default (colour, front width, ember density, smoke on/off; only Asura tuned); Meghnad\'s own faction picks Asura, the lab\'s preview override picks another (' + DS.pick(FFXD, 'asuras', 'nagas').name + '), an unknown override falls back to the card\'s faction and an unknown faction to the default; the page\'s Exit preset dropdown offers the card\'s faction and the four presets and lab.js routes every play\'s exit through it; a play previewed as Deva (Canvas 2D) and as Naga (WebGL) really dissolves in that preset — ' + deva.exit.name + ' ' + deva.exit.edge + ', smoke ' + deva.exit.smoke + ' · ' + naga.exit.name + ' ' + naga.exit.edge + ', smoke ' + naga.exit.smoke,
+       presetsOk && DS.pick(FFXD, 'asuras', '').name === 'Asura' && DS.pick(FFXD, 'asuras', 'nagas').name === 'Naga' && DS.pick(FFXD, 'asuras', 'nope').name === 'Asura' && DS.pick(FFXD, 'rishis', '').key === 'default' &&
+       J(OPTS) === J(['', 'asuras', 'devas', 'nagas', 'vanaras']) && /factionFx: \(fac\) => window\.Dissolve\.pick\(FFX, fac, exitPreset\)/.test(LABJS4) && /el\('exit-preset'\)\.onchange = \(e\) => \{ exitPreset = e\.target\.value; \}/.test(LABJS4) &&
+       deva.exit.name === 'Deva' && deva.exit.edge === FFXD.devas.dissolve.edge && deva.exit.smoke === 0 && naga.exit.name === 'Naga' && naga.exit.edge === FFXD.nagas.dissolve.edge && naga.exit.smoke > 0 && deva.clean && naga.clean,
+       J({ deva: deva.exit, naga: naga.exit, OPTS }));
+
+    const DRAWS = EX.concat([deva, naga]).reduce((all, x) => all.concat(x.glowDraws), []);
+    const SRC = fs.readFileSync(path.join(LAB, 'lib', 'actorstage.js'), 'utf8') + fs.readFileSync(path.join(LAB, 'lib', 'dissolve.js'), 'utf8');
+    ok('S15 · NO GRAIN, NO ADDITIVE: every ember and smoke puff is drawn from one soft high-res image at or below its own size (' + DRAWS.length + ' draws — Canvas 2D embers ≤ ' + DS.GLOW + ' px, puffs ≤ ' + DS.PUFF + ' px, GPU ember sprites at scale ≤ 1: never scaled-up pixels); nothing in the stage or the dissolve blends additively (normal blending; the mask composites destination-in / source-atop on its own offscreen canvas)',
+       DRAWS.length > 50 && DRAWS.some((d) => d.kind === 'glow') && DRAWS.some((d) => d.kind === 'puff') && DRAWS.some((d) => d.kind === 'gpu-ember') &&
+       DRAWS.every((d) => d.dw > 0 && d.dw <= d.size + 1e-9 && d.dh <= d.size + 1e-9) && !/globalCompositeOperation\s*=\s*'(lighter|screen|plus-lighter)'|blendMode\s*=\s*'(add|screen|lighter)'|BLEND_MODES\.ADD/.test(SRC) && (SRC.match(/blendMode = 'normal'/g) || []).length >= 2,
+       J(DRAWS.filter((d) => !(d.dw > 0 && d.dw <= d.size + 1e-9)).slice(0, 5)));
   }
 }
 
@@ -424,9 +483,9 @@ console.log('\n── P · the page ──');
 {
   const ids = ['field', 'divider', 'vfxcanvas', 'vfxflash', 'actorunder', 'actorcanvas', 'actorgpu', 'actorover', 'floatlayer', 'banner', 'replay-all', 'phase-awaken', 'phase-emerge', 'phase-act', 'phase-fizzle', 'phase-settle',
                'ctl-skip', 'ctl-ff', 'ctl-memory', 'mode-full', 'mode-fast', 'mode-reduced', 'seat-swap', 'be-webgpu', 'be-webgl', 'be-canvas', 'clk-slow', 'clk-pause', 'clk-step',
-               'ro-fps', 'ro-time', 'ro-renderer', 'ro-actor', 'ro-rung', 'ro-sprites', 'ro-decode', 'ro-mb', 'ro-errors', 'ro-stamp', 'plan'];
+               'ro-fps', 'ro-time', 'ro-renderer', 'ro-actor', 'ro-rung', 'ro-sprites', 'ro-decode', 'ro-mb', 'ro-errors', 'ro-stamp', 'ro-exit', 'exit-preset', 'plan'];
   const missing = ids.filter((id) => PAGE.indexOf('id="' + id + '"') < 0);
-  const order = ['../lib/boarddiff.js', '../lib/clashcontext.js', '../lib/director.js', '../lib/runner.js', '../lib/manifest.js', '../lib/stagemath.js', '../lib/actorstage.js', '../lib/playback.js', 'vfx.js', '../lab.js'].map((s) => PAGE.indexOf('<script src="' + s + '?v='));
+  const order = ['../lib/boarddiff.js', '../lib/clashcontext.js', '../lib/director.js', '../lib/runner.js', '../lib/manifest.js', '../lib/stagemath.js', '../lib/dissolve.js', '../lib/actorstage.js', '../lib/playback.js', 'vfx.js', '../lab.js'].map((s) => PAGE.indexOf('<script src="' + s + '?v='));
   const fieldBlock = PAGE.slice(PAGE.indexOf('<div id="field"'), PAGE.indexOf('<div id="hand">'));
   ok('P1 · the page: noindex, <base href="runtime/">, #field holding the effect and actor layers, the scripts in dependency order, every control (Play, the five phase replays, Skip, Fast-forward, match memory, mode, sides, renderer, clock) and every readout including Actor and Plan',
      /<meta name="robots" content="noindex, nofollow">/.test(PAGE) && /<base href="runtime\/">/.test(PAGE) && missing.length === 0 && order.every((i, k) => i > 0 && (k === 0 || i > order[k - 1])) &&
@@ -439,7 +498,7 @@ console.log('\n── P · the page ──');
   const scripts = [...PAGE.matchAll(/<script src="([^"]+)"><\/script>/g)].map((m) => m[1]);
   const fetches = [...LABJS.matchAll(/fetch\(([^)]*)/g)].map((m) => m[1].trim());
   ok('P3 · THE STAMP (LAB-4a): STAMP is the content hash of the ' + st.inputs + ' files the page loads (' + st.stamp + '); index.html carries it in <meta name="lab-stamp"> and on all ' + scripts.length + ' of its scripts; lab.js stamps every fetch (' + fetches.length + '), image, module and atlas URL through V(), and at boot reads STAMP with no-store and reloads onto a newer one',
-     st.file === st.stamp && st.pageCurrent && PAGE.indexOf('<meta name="lab-stamp" content="' + st.stamp + '">') > 0 && scripts.length === 10 && scripts.every((u) => u.endsWith('?v=' + st.stamp)) &&
+     st.file === st.stamp && st.pageCurrent && PAGE.indexOf('<meta name="lab-stamp" content="' + st.stamp + '">') > 0 && scripts.length === 11 && scripts.every((u) => u.endsWith('?v=' + st.stamp)) &&
      fetches.length >= 6 && fetches.every((f) => /^V\(/.test(f) || f === 'murl' || /^new URL\('\.\.\/STAMP'/.test(f)) && /const murl = new URL\(V\(/.test(LABJS) &&
      /im\.src = V\(/.test(LABJS) && /image\.src = V\(/.test(LABJS) && /pixiUrl: V\(/.test(LABJS) && /cache: 'no-store'/.test(LABJS) && /location\.replace/.test(LABJS),
      J({ st, unstamped: scripts.filter((u) => !u.endsWith('?v=' + st.stamp)), fetches }));

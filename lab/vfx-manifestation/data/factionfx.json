@@ -1,8 +1,13 @@
 {
-  "about": "VFX-LAB-3 · faction energy for the portal and the exit. 'embers' reuses the shipped runtime's own ember recipe (the copied VFX module's cardLand: dust + embers). Only the Asura entry is exercised by the pilot; the others are placeholders until their first manifestation.",
-  "asuras":  { "portal": "rgba(255,96,48,0.85)",  "exit": "embers" },
-  "devas":   { "portal": "rgba(255,214,120,0.85)", "exit": "none" },
-  "nagas":   { "portal": "rgba(80,220,190,0.85)",  "exit": "none" },
-  "vanaras": { "portal": "rgba(255,170,80,0.85)",  "exit": "none" },
-  "default": { "portal": "rgba(255,230,180,0.8)",  "exit": "none" }
+  "about": "VFX-LAB-4b · faction energy: the portal colour and the EXIT. exit \"dissolve\" is the procedural dissolve (lib/dissolve.js): the last ACT cell erodes bottom-up behind a glowing front in the faction's colour, embers rise from the front, faint smoke hangs behind it. Every key under \"dissolve\" is optional; lib/dissolve.js DEFAULTS fill the rest. Asura is tuned against the Kling clip's own dissolve (frames 89–120: magenta front ≈ rgb(231,109,186), hot pink-white core, pink sparks, dark smoke); Deva, Naga and Vanara are sane defaults to preview in the lab until their first manifestation. \"embers\" (the shipped runtime's cardLand) is still understood but no faction uses it.",
+  "asuras":  { "name": "Asura",  "portal": "rgba(255,96,48,0.85)",  "exit": "dissolve",
+               "dissolve": { "edge": "#e76dba", "core": "#ffd9ee", "edgeWidth": 0.06, "charge": 0.26, "chargeAlpha": 0.75, "noise": 0.42, "noiseScale": 6,
+                             "embers": 1, "emberColor": "#ff86d6", "emberSize": [1.1, 2.4], "emberRise": [36, 84], "smoke": true, "smokeColor": "#1b1a1d", "smokeAlpha": 0.2, "seed": 11 } },
+  "devas":   { "name": "Deva",   "portal": "rgba(255,214,120,0.85)", "exit": "dissolve",
+               "dissolve": { "edge": "#ffcf5a", "core": "#fff7dc", "chargeAlpha": 0.55, "embers": 0.8, "emberColor": "#ffe29a", "smoke": false, "seed": 23 } },
+  "nagas":   { "name": "Naga",   "portal": "rgba(80,220,190,0.85)",  "exit": "dissolve",
+               "dissolve": { "edge": "#34d9b8", "core": "#d6fff3", "embers": 0.7, "emberColor": "#7ff0d6", "smoke": true, "smokeColor": "#0d2721", "smokeAlpha": 0.22, "seed": 31 } },
+  "vanaras": { "name": "Vanara", "portal": "rgba(255,170,80,0.85)",  "exit": "dissolve",
+               "dissolve": { "edge": "#ff9a3c", "core": "#fff0d2", "embers": 1.1, "emberColor": "#ffc070", "smoke": true, "smokeColor": "#261a0e", "seed": 41 } },
+  "default": { "name": "Default", "portal": "rgba(255,230,180,0.8)", "exit": "dissolve", "dissolve": {} }
 }
