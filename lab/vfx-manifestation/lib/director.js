@@ -4,6 +4,10 @@
    DURATION: the rarity ladder (C 1.8 s · U/R 2.5 s · E/L 3.5 s · M 4.5 s) for every card; a card the registry marks
    ladderExempt (ruling A3: the pilot, Meghnad) plays the full grammar in 3.2 s. Fast = half of Full. Reduced = no actor:
    a card pulse, then SETTLE.
+   NATIVE TIMING (LAB-4): when a ladder-exempt card's actor manifest supplies native timing — opts.timing = { fps, emerge,
+   act, contact } (cell counts, and the contact cell's index inside ACT) — EMERGE and ACT last exactly as long as their cells
+   at the clip's own frame rate, and contact lands on the contact cell. AWAKEN, FIZZLE and SETTLE keep the grammar's times.
+   Fast halves everything (the cells play at twice their rate). Without native timing, the grammar table applies.
    THE REPEAT RULE: a card's second and later manifestations in a match play Fast (Reduced stays Reduced). The caller passes
    how many times this card has already manifested (createMemory() keeps that count per match).
    A2: a play outside Hero/Unit gets no actor phases — SETTLE and the queue only (its existing effect VFX is not the lab's).
@@ -50,7 +54,16 @@
     var ladder = opts.ladderExempt ? 'exempt (A3 pilot)' : 'rarity ' + (ctx.rarity || '?');
     var full = opts.ladderExempt ? PILOT_MS : (LADDER_MS[ctx.rarity] || LADDER_MS.R);
     var phases, total;
-    if (mode === 'full' || mode === 'fast') { total = Math.round(mode === 'fast' ? full * FAST : full); phases = phasesOf(GRAMMAR, total); }
+    var native = opts.ladderExempt && opts.timing && opts.timing.fps > 0 && opts.timing.emerge > 0 && opts.timing.act > 0 ? opts.timing : null;
+    var contactFrac = CONTACT;
+    if ((mode === 'full' || mode === 'fast') && native) {
+      var k = mode === 'fast' ? FAST : 1, ms = function (n) { return Math.round(n * 1000 / native.fps * k); };
+      var spec = [['AWAKEN', Math.round(GRAMMAR[0][1] * k)], ['EMERGE', ms(native.emerge)], ['ACT', ms(native.act)], ['FIZZLE', Math.round(GRAMMAR[3][1] * k)], ['SETTLE', Math.round(GRAMMAR[4][1] * k)]];
+      phases = []; var t0 = 0; spec.forEach(function (x) { phases.push({ name: x[0], t0: t0, t1: t0 + x[1] }); t0 += x[1]; }); total = t0;
+      if (native.contact != null) contactFrac = Math.min(1, Math.max(0, native.contact / native.act));
+      ladder = 'exempt (A3 pilot) · native ' + native.fps + ' fps';
+    }
+    else if (mode === 'full' || mode === 'fast') { total = Math.round(mode === 'fast' ? full * FAST : full); phases = phasesOf(GRAMMAR, total); }
     else if (mode === 'reduced') { total = 600; phases = phasesOf(REDUCED, total); }
     else { total = 300; phases = phasesOf(EFFECT_ONLY, total); }
     var at = function (name) { return phases.filter(function (p) { return p.name === name; })[0]; };
@@ -62,8 +75,8 @@
       var A = at('AWAKEN'), E = at('EMERGE'), C = at('ACT'), Z = at('FIZZLE'), S = at('SETTLE'), hit = HIT[mode];
       cue(A.t0, 'portal-open', { faction: ctx.faction, dur: A.t1 - A.t0 + (E.t1 - E.t0) });
       cue(E.t0, 'actor-phase', { phase: 'emerge', dur: E.t1 - E.t0 });
-      cue(C.t0, 'actor-phase', { phase: 'act', dur: C.t1 - C.t0, contactFrac: CONTACT, towardSeat: towardSeat });
-      cue(C.t0 + Math.round((C.t1 - C.t0) * CONTACT), 'contact', { towardSeat: towardSeat, hitstopMs: hit.hitstopMs, flashMs: hit.flashMs, impulseMs: hit.impulseMs, impulsePx: hit.impulsePx });
+      cue(C.t0, 'actor-phase', { phase: 'act', dur: C.t1 - C.t0, contactFrac: contactFrac, towardSeat: towardSeat });
+      cue(C.t0 + Math.round((C.t1 - C.t0) * contactFrac), 'contact', { towardSeat: towardSeat, hitstopMs: hit.hitstopMs, flashMs: hit.flashMs, impulseMs: hit.impulseMs, impulsePx: hit.impulsePx });
       cue(Z.t0, 'actor-phase', { phase: 'fizzle', dur: Z.t1 - Z.t0 });
       cue(Z.t0, 'exit-fx', { faction: ctx.faction });
       cue(S.t0, 'actor-gone', { state: true });
@@ -80,7 +93,7 @@
     var end = total + ctx.rest.length * gap;
     cue(end, 'done', { state: true });
     cues.sort(function (a, b) { return (a.t - b.t) || (a.seq - b.seq); });
-    return { version: 1, cardId: ctx.cardId, cardName: ctx.cardName, seat: ctx.seat, towardSeat: towardSeat, faction: ctx.faction,
+    return { version: 1, timing: native ? 'native' : 'grammar', cardId: ctx.cardId, cardName: ctx.cardName, seat: ctx.seat, towardSeat: towardSeat, faction: ctx.faction,
              requestedMode: requested, mode: mode, repeat: repeat, prior: prior, actor: actor, ladder: ladder, total: total, end: end, phases: phases, cues: cues };
   }
 

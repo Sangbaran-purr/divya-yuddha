@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 # tools/make_placeholder_actor.py — VFX-LAB-3. A PLACEHOLDER actor, cut from the card art, so the director and the stage run
 # end to end before any Kling frame exists. NOT a performance: one painted pose, hand-traced, turned into 5 posed cells.
+# LAB-4: the real Meghnad actor (tools/make_actor_from_clip.py) replaced it in actors/meghnad/; this tool stays as the pattern for
+# a card that has no clip yet, and writes to actors/_placeholder/<card>/ so it can never overwrite a real actor.
 #
 #   python3 lab/vfx-manifestation/tools/make_placeholder_actor.py
 #
@@ -13,7 +15,7 @@ from PIL import Image, ImageDraw, ImageFilter
 
 LAB = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(LAB, "art", "Asuras_Unit_Meghnad_P6_rRare.png")
-OUT = os.path.join(LAB, "actors", "meghnad")
+OUT = os.path.join(LAB, "actors", "_placeholder", "meghnad")   # LAB-4: the real actor lives in actors/meghnad/; the placeholder pattern writes beside it, never over it
 CELL_MAX = 512
 PAD = 2
 # the silhouette, traced on the 750×1050 art: horse head → mane → rider, plume → shoulder → cape → tail → hind legs → front legs

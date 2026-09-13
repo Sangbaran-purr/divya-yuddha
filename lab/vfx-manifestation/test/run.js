@@ -6,7 +6,8 @@
 //   C · THE CONTEXT     honest fields only; the board difference split into what the batch's events carry and what they don't
 //   T · THE DIRECTOR    the timed plan: both seats, every mode, the repeat rule, the ladder, SETTLE, the queue, determinism
 //   U · THE RUNNER      cues in order, skip, a single-phase replay, fast-forward — cleanup exactly once on every road
-//   M · THE MANIFEST    the actor asset class (A4), and everything it must refuse
+//   M · THE MANIFEST    the actor asset class (A4), and everything it must refuse — for the real Meghnad actor from the Kling clip
+//   K · THE SOURCES     A7: no clip and no raw frame is ever tracked; sources/ frames/ and the matting venv stay ignored
 //   S · THE STAGE       layer order, anchoring on both seats (never onto the enemy cards — A1), facing, cleanup after skip,
 //                       numbers only at SETTLE, normal blending, the performance readout
 //   R · THE RUNTIME     the lab's VFX module is the game's byte-for-byte; its injected names; it runs on them alone; the subset
@@ -90,7 +91,7 @@ console.log('\n── T · the Director ──');
   const exempt = { ladderExempt: !!REG.meghnad.ladderExempt };
   const P = (seat, mode, prior) => DIR.plan(CTX[seat], Object.assign({ mode, prior: prior || 0 }, exempt));
   const bounds = (p) => p.phases.map((x) => [x.name, x.t0, x.t1]);
-  ok('T1 · FULL, both seats: the pilot is ladder-exempt (A3) — AWAKEN 0–400 · EMERGE 400–1000 · ACT 1000–2200 · FIZZLE 2200–2800 · SETTLE 2800–3200, one actor, acting toward the other seat',
+  ok('T1 · FULL without native timing, both seats (the grammar table): the pilot is ladder-exempt (A3) — AWAKEN 0–400 · EMERGE 400–1000 · ACT 1000–2200 · FIZZLE 2200–2800 · SETTLE 2800–3200, one actor, acting toward the other seat',
      [0, 1].every((s) => { const p = P(s, 'full');
        return p.total === 3200 && p.actor && p.mode === 'full' && p.towardSeat === 1 - s && p.ladder === 'exempt (A3 pilot)' &&
               J(bounds(p)) === J([['AWAKEN', 0, 400], ['EMERGE', 400, 1000], ['ACT', 1000, 2200], ['FIZZLE', 2200, 2800], ['SETTLE', 2800, 3200]]); }));
@@ -127,6 +128,20 @@ console.log('\n── T · the Director ──');
      DIR.plan(syn('C'), { mode: 'full', ladderExempt: true }).total === 3200 && Object.keys(REG).filter((k) => REG[k].ladderExempt).join() === 'meghnad');
   const ap = DIR.plan(global.__astraCtx, { mode: 'full' });
   ok('T9 · A2: an out-of-scope play gets no actor — SETTLE and the queue only', !ap.actor && J(ap.phases.map((x) => x.name)) === J(['SETTLE']) && ap.cues.every((c) => visual.indexOf(c.cue) < 0));
+  {
+    const NT = { fps: MANIFEST.fps, emerge: MANIFEST.phases.emerge.length, act: MANIFEST.phases.act.length, contact: MANIFEST.contact };
+    const ms = (n, k) => Math.round(n * 1000 / NT.fps * k);
+    const nat = (s, m) => DIR.plan(CTX[s], { mode: m, ladderExempt: true, timing: NT });
+    const okNative = [0, 1].every((s) => ['full', 'fast'].every((m) => {
+      const k = m === 'fast' ? 0.5 : 1, p = nat(s, m), [A, E, C, Z, S] = p.phases, c = p.cues.find((x) => x.cue === 'contact'), a = p.cues.find((x) => x.cue === 'actor-phase' && x.phase === 'act');
+      return p.timing === 'native' && A.t1 - A.t0 === 400 * k && E.t1 - E.t0 === ms(NT.emerge, k) && C.t1 - C.t0 === ms(NT.act, k) && Z.t1 - Z.t0 === 600 * k && S.t1 - S.t0 === 400 * k &&
+             c.t === C.t0 + Math.round((C.t1 - C.t0) * NT.contact / NT.act) && Math.abs(a.contactFrac - NT.contact / NT.act) < 1e-9 && p.total === S.t1;
+    }));
+    const notExempt = DIR.plan(CTX[0], { mode: 'full', ladderExempt: false, timing: NT });
+    const full = nat(0, 'full');
+    ok('T11 · NATIVE TIMING from the real manifest (' + NT.emerge + ' EMERGE + ' + NT.act + ' ACT cells @ ' + NT.fps + ' fps, contact = ACT cell ' + NT.contact + '): EMERGE ' + (full.phases[1].t1 - full.phases[1].t0) + ' ms · ACT ' + (full.phases[2].t1 - full.phases[2].t0) + ' ms · contact on the contact cell · total ' + full.total + ' ms; Fast halves it; both seats; a card NOT ladder-exempt ignores native timing (the ladder applies)',
+       okNative && notExempt.timing === 'grammar' && notExempt.total === 2500 && Math.abs(full.total - 3200) <= 60);
+  }
   const txt = DIR.formatPlan(P(0, 'full'));
   ok('T10 · the Plan readout is the timeline as text: the header, every phase, every cue in time order with its numbers', /Meghnad · seat 0 → toward seat 1 · mode full/.test(txt) && /AWAKEN 0–400/.test(txt) && /2800 ms  settle Meghnad enters at 6, Indra 7→5 \(−2\)/.test(txt) && /queue buff · Chaos Surge \+1/.test(txt) && txt.split('\n').length === P(0, 'full').cues.length + 2, txt.split('\n').slice(0, 4).join(' | '));
 }
@@ -170,10 +185,21 @@ function webpSize(buf) {
 }
 {
   const v = MAN.validate(MANIFEST), atlas = fs.readFileSync(path.join(LAB, 'actors', 'meghnad', MANIFEST.atlas)), px = webpSize(atlas);
-  ok('M1 · the Meghnad manifest is a valid ACTOR asset: straight alpha, normal blend, no vignette, no motion vectors, ' + MANIFEST.cells.length + ' trimmed cells ≤ 512 px with pivots, emerge/act/fizzle phases; the atlas really is ' + (px ? px.w + '×' + px.h : '?') + ' (' + (atlas.length / 1024).toFixed(0) + ' KB)',
-     v.ok && !!px && px.w === MANIFEST.atlasSize.w && px.h === MANIFEST.atlasSize.h && MANIFEST.cells.length >= 3 && MANIFEST.cells.length <= 5 && Math.max(...MANIFEST.cells.map((c) => Math.max(c.w, c.h))) === 512, v.errors.join('; '));
-  ok('M2 · the placeholder says so: placeholder true, its source is the lab\'s card-art copy traced by the tool, not a Kling performance; the actor folder holds only the packed atlas and its manifest (A7)',
-     MANIFEST.placeholder === true && /art\/Asuras_Unit_Meghnad_P6_rRare\.png/.test(MANIFEST.source) && /not a Kling performance/.test(MANIFEST.source) &&
+  const wide = MANIFEST.cells.filter((c) => c.w > c.h).length, one = (k) => MANIFEST.cells.every((c) => c[k] === MANIFEST.cells[0][k]);
+  const pivSrc = MANIFEST.audit && MANIFEST.audit.pivotSrc, scale = MANIFEST.audit && MANIFEST.audit.scale;
+  ok('M1 · the Meghnad manifest is a valid ACTOR asset: straight alpha, normal blend, no vignette, no motion vectors, native ' + MANIFEST.fps + ' fps, ' + MANIFEST.cells.length + ' trimmed cells ≤ 512 px (' + wide + ' wider than tall — the horse\'s aspect, not square) with pivots; the atlas really is ' + (px ? px.w + '×' + px.h : '?') + ' (' + (atlas.length / 1024).toFixed(0) + ' KB), within the 4096 px texture ceiling',
+     v.ok && !!px && px.w === MANIFEST.atlasSize.w && px.h === MANIFEST.atlasSize.h && px.w <= 4096 && px.h <= 4096 && MANIFEST.cells.length >= 36 && MANIFEST.cells.length <= 48 &&
+     Math.max(...MANIFEST.cells.map((c) => Math.max(c.w, c.h))) === 512 && wide > MANIFEST.cells.length / 2 && MANIFEST.fps === 24 && MANIFEST.timing === 'native', v.errors.join('; '));
+  const cellsSrc = MANIFEST.cells.map((c) => c.src), E = MANIFEST.phases.emerge.map((i) => cellsSrc[i]), A = MANIFEST.phases.act.map((i) => cellsSrc[i]);
+  const au = MANIFEST.audit || {};
+  ok('M2 · the frames follow the audit: the idle head trimmed (the first kept frame is f' + cellsSrc[0] + '), EMERGE = the rear (f' + E[0] + '–f' + E[E.length - 1] + ', ' + E.length + ' cells), ACT = flare → thrust → settle (f' + A[0] + '–f' + A[A.length - 1] + ', ' + A.length + ' cells), contact = f' + A[MANIFEST.contact] + ' (the spear fully extended), Kling\'s dissolve dropped (nothing after f' + cellsSrc[cellsSrc.length - 1] + '); frames in order, no repeats; the fizzle holds the last settled cell',
+     cellsSrc[0] >= 29 && cellsSrc[cellsSrc.length - 1] <= 95 && cellsSrc.every((x, i) => i === 0 || x > cellsSrc[i - 1]) && E.every((x) => x <= A[0]) && E[0] >= au.emerge[0] && E[E.length - 1] <= au.emerge[1] && A[0] >= au.act[0] && A[A.length - 1] <= au.act[1] &&
+     A[MANIFEST.contact] === au.contactSrc && J(MANIFEST.phases.fizzle) === J([MANIFEST.cells.length - 1]) && MANIFEST.phases.emerge.length + MANIFEST.phases.act.length === MANIFEST.cells.length);
+  // origin (the cell's crop corner in the clip) + pivot ÷ scale must land on the one ground point, for every cell (≤ 1 clip px)
+  const pivOk = Array.isArray(pivSrc) && typeof scale === 'number' && MANIFEST.cells.every((c) => Array.isArray(c.origin) &&
+    Math.abs(c.origin[0] + c.pivot.x / scale - pivSrc[0]) <= 1 && Math.abs(c.origin[1] + c.pivot.y / scale - pivSrc[1]) <= 1);
+  ok('M3 · ONE ground pivot for every cell (the front hooves\' ground contact, f' + (pivSrc ? pivSrc.join(',') : '?') + ' in the clip): every cell\'s pivot maps back to the same clip point; the source is the named Kling clip, not the placeholder; the actor folder holds only the packed atlas and its manifest (A7)',
+     pivOk && MANIFEST.placeholder === false && /Kling clip kling_20260913_VIDEO_Create_a_p_5011_0\.mp4 \(sha256 1be6e5994111/.test(MANIFEST.source) &&
      J(fs.readdirSync(path.join(LAB, 'actors', 'meghnad')).sort()) === J(['atlas.webp', 'manifest.json']));
   const bad = [
     ['motion vectors', (m) => { m.mv = true; }, /mv must be false/],
@@ -188,9 +214,28 @@ function webpSize(buf) {
     ['facing "up"', (m) => { m.facing = 'up'; }, /facing must be/],
     ['no mirror and no variants', (m) => { delete m.mirror; }, /mirror:true or variants/],
     ['a cell outside the atlas', (m) => { m.cells[0].x = m.atlasSize.w; }, /outside the atlas/],
+    ['a contact outside ACT', (m) => { m.contact = m.phases.act.length; }, /contact must be a cell index inside the act phase/],
+    ['an unknown timing', (m) => { m.timing = 'stretched'; }, /timing must be/],
   ];
   const results = bad.map(([name, mutate, re]) => { const m = JSON.parse(J(MANIFEST)); mutate(m); const r = MAN.validate(m); return [name, !r.ok && r.errors.some((e) => re.test(e)), r.errors.join('; ')]; });
-  ok('M3 · validation refuses, each with its reason: ' + bad.map((b) => b[0]).join(' · '), results.every((x) => x[1]), J(results.filter((x) => !x[1])));
+  ok('M4 · validation refuses, each with its reason: ' + bad.map((b) => b[0]).join(' · '), results.every((x) => x[1]), J(results.filter((x) => !x[1])));
+}
+
+// ═══ K · THE SOURCES (A7) ═══
+console.log('\n── K · the sources rule (A7) ──');
+{
+  const tracked = git(['ls-files']).split('\n').filter(Boolean);
+  const GAME_MP4 = ['assets/video/intro_trailer.mp4'].concat(['aura_1', 'aura_2', 'smoke_1', 'smoke_2', 'surge_1', 'surge_2', 'venom_1', 'venom_2'].map((k) => 'assets/vfx/clips/vfx_' + k + '_clip.mp4')).sort();
+  const mp4Lab = tracked.filter((p) => p.indexOf('lab/') === 0 && /\.(mp4|mov|mkv|webm)$/i.test(p));
+  const mp4Assets = tracked.filter((p) => p.indexOf('assets/') === 0 && /\.(mp4|mov|mkv|webm)$/i.test(p)).sort();
+  ok('K1 · no video clip is tracked under lab/ (' + mp4Lab.length + '); under assets/ exactly the game\'s ' + GAME_MP4.length + ' pre-lab clips are tracked (8 effect clips + the intro trailer) and nothing new',
+     mp4Lab.length === 0 && J(mp4Assets) === J(GAME_MP4), J({ mp4Lab, extra: mp4Assets.filter((p) => GAME_MP4.indexOf(p) < 0), missing: GAME_MP4.filter((p) => mp4Assets.indexOf(p) < 0) }));
+  const raw = tracked.filter((p) => (p.indexOf('lab/') === 0 || p.indexOf('assets/') === 0) && (/(^|\/)(frames|matted|sources|clips_raw)\//.test(p) || /(^|\/)frame_\d+\.(png|jpe?g|webp)$/i.test(p) || /(^|\/)f\d{3}\.png$/.test(p)));
+  ok('K2 · no raw or matted frame, and nothing from sources/, is tracked anywhere under lab/ or assets/ (' + raw.length + ')', raw.length === 0, raw.slice(0, 5).join(', '));
+  const ignored = (p) => { try { cp.execFileSync('git', ['check-ignore', '-q', p], { cwd: GAME }); return true; } catch (e) { return false; } };
+  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx'];
+  const present = must.filter((p) => fs.existsSync(path.join(GAME, p)));
+  ok('K3 · sources/ (the clip and the Kling stills), frames/ (the matted frames and the contact sheet) and the rembg model inside tools/.venv are all git-ignored' + (present.length ? ' — ' + present.length + ' of them present on this machine' : ''), must.every(ignored), J(must.filter((p) => !ignored(p))));
 }
 
 // ═══ S · THE STAGE ═══

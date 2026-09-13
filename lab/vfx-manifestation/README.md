@@ -2,7 +2,7 @@
 
 The experiment ground for **VFX_MANIFESTATION_v1** (`docs/VFX_MANIFESTATION_v1.md`, amended 2026-09-13).
 
-**Status:** LAB-2+3, the director and the stage, with a placeholder actor. The real actor assets come in LAB-4.
+**Status:** LAB-4. The real Meghnad actor, from the Kling clip, plays on the director and the stage. The placeholder tool stays as the pattern for cards that have no clip yet.
 
 ## The experiment rule
 
@@ -40,8 +40,11 @@ The experiment ground for **VFX_MANIFESTATION_v1** (`docs/VFX_MANIFESTATION_v1.m
 | `lib/playback.js` | **LAB-3.** Card-agnostic wiring from a plan's cues to the stage and the board. |
 | `data/manifestations.json` | The card registry: which cards manifest, and which (the pilot alone) are exempt from the ladder. |
 | `data/factionfx.json` | Faction energy for the portal and the exit. The Asura exit reuses the copied runtime's own ember recipe. |
-| `actors/meghnad/` | The placeholder actor: `atlas.webp` and `manifest.json`. |
-| `tools/make_placeholder_actor.py` | Traces the placeholder actor from the lab's card-art copy. |
+| `actors/meghnad/` | **LAB-4.** The Meghnad actor from the Kling clip: `atlas.webp` and `manifest.json`. |
+| `tools/make_placeholder_actor.py` | Traces a placeholder actor from card art. Kept as the pattern for a card with no clip yet; it writes to `actors/_placeholder/<card>/`, never over a real actor. |
+| `tools/make_actor_from_clip.py` | **LAB-4.** A Kling clip on chroma green → an actor: key, despill, isolate, frame selection, one ground pivot, packed atlas and manifest, plus a contact sheet in `frames/`. Run with the lab venv. |
+| `tools/.venv/` | **Ignored.** The matting venv (A6): rembg with a pinned onnxruntime that loads on macOS 13.0, and its model in `tools/.venv/u2net/`. |
+| `sources/` · `frames/` | **Ignored (A7).** The Kling clip and the Kling source stills; the matted frames, matte stats and contact sheet. Never committed. |
 | `test/run.js` | The lab's own proofs, all rungs: `node lab/vfx-manifestation/test/run.js`. |
 
 **Why `<base href="runtime/">`:** the module builds sheet URLs relative to the page (`assets/vfx/…`) but imports Pixi relative to its own file (`./assets/vendor/…`). With the base set, both resolve inside `runtime/`, so the copy needs no path rewrite.
@@ -55,7 +58,7 @@ The experiment ground for **VFX_MANIFESTATION_v1** (`docs/VFX_MANIFESTATION_v1.m
 ```bash
 node lab/vfx-manifestation/tools/copy_runtime.js
 node lab/vfx-manifestation/fixtures/make_fixture.js
-python3 lab/vfx-manifestation/tools/make_placeholder_actor.py
+lab/vfx-manifestation/tools/.venv/bin/python lab/vfx-manifestation/tools/make_actor_from_clip.py   # needs sources/ and the venv
 node lab/vfx-manifestation/test/run.js
 ```
 
@@ -102,6 +105,42 @@ After SETTLE, the rest of the batch plays in engine order: here the Chaos Surge 
 **Renderer.** The renderer control drives both the copied effects and the actor. WebGPU and WebGL draw the actor with Pixi; Canvas 2D draws it on `#actorcanvas`. The Actor readout shows the backend, cell size, drawn size, fps over the last manifestation, and draw ms per frame.
 
 **Cleanup.** Skip, a single-phase replay, a new play, a side swap or a backend switch always ends in `stage.clear()`. No actor, effect or camera offset survives it.
+
+## LAB-4: the Meghnad actor from the Kling clip
+
+**The source.** `sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4` (ignored): 121 frames at 24 fps, 1916×1080, on a flat chroma green (RGB 0, 185, 62). The four Kling source stills from `assets/vfx/experimental/meghnad/` sit beside it.
+
+**Rebuild the actor** (needs the clip in `sources/` and the venv):
+
+```bash
+lab/vfx-manifestation/tools/.venv/bin/python lab/vfx-manifestation/tools/make_actor_from_clip.py
+```
+
+**The matte: green first.**
+1. **Key.** Alpha from green dominance, G − max(R, B), with a soft ramp.
+2. **Decontaminate.** Edge colours are un-mixed from the ground, then despilled so no pixel is greener than its strongest other channel.
+3. **Isolate.** The figure is the dark solid body (rider, horse, cape, spear shaft). Anything, even opaque light, more than 28 px from it is cut. That removes Kling's crossing lightning bolt and keeps the glow at the spear tip.
+4. **Clean up with rembg only on fringe.** rembg trims an edge band only if the band still holds near-pure ground pixels kept mostly opaque. On this clip it was needed on 0 of 43 frames. An independent check also found 0 green-dominant edge pixels on the audited frames.
+
+**The frames.** Evenly spaced, so the motion keeps its true pace at native fps:
+
+| Part | Frames | Kept |
+|---|---|---|
+| Idle head | f0–f33 | Dropped |
+| EMERGE: the rear | f34–f56 | 14 cells |
+| ACT: flare → thrust → settle | f57–f88 | 29 cells |
+| Contact: the spear fully extended | f69 | ACT cell 11 |
+| Kling's dissolve (pink energy from f90, smoke from f96) | f89–f120 | Dropped |
+
+The stage does the fizzle, with the Asura ember exit.
+
+**The cells (A4).**
+- Trimmed rectangles, most wider than tall (the horse's aspect), at most 512 px, with one scale for all.
+- One pivot for all: the front hooves' ground contact, at clip point (678.2, 1073.0).
+- WebP with real alpha, normal blending, no motion vectors.
+- The atlas is 4004×2168, inside the 4096 px phone texture ceiling.
+
+**Native timing.** The manifest says `"timing": "native"` at 24 fps. The director, for a ladder-exempt card whose manifest supplies native timing, makes EMERGE and ACT exactly as long as their cells at that rate: 583 ms and 1208 ms. Contact lands on the contact cell, and the full manifestation totals 3191 ms. Fast halves it. A card that is not ladder-exempt keeps the ladder.
 
 ## Notes for the next rungs
 

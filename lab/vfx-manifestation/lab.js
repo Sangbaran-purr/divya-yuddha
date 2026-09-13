@@ -137,10 +137,12 @@
     const boards = window.ClashContext.boards(ctx, F.before, F.after);
     const reg = REG[ctx.cardId] || {};
     const prior = opts.phase ? 0 : memory.count(ctx.cardId);
-    lastPlan = window.Director.plan(ctx, { mode, prior, ladderExempt: !!reg.ladderExempt });
+    const art = (ctx.scope === 'manifest' && reg.manifest) ? await actorFor(ctx.cardId) : null;
+    const mf = art && art.manifest;
+    const timing = mf && mf.timing === 'native' ? { fps: mf.fps, emerge: mf.phases.emerge.length, act: mf.phases.act.length, contact: mf.contact } : null;
+    lastPlan = window.Director.plan(ctx, { mode, prior, ladderExempt: !!reg.ladderExempt, timing });
     if (!opts.phase) memory.record(ctx.cardId);
     el('memory-note').textContent = 'Match memory: ' + ctx.cardName + ' has manifested ' + memory.count(ctx.cardId) + ' time' + (memory.count(ctx.cardId) === 1 ? '' : 's') + '. The second play in a match runs Fast.';
-    if (lastPlan.actor) await actorFor(ctx.cardId);
     lastDone = null;
     const f = fieldRect();
     playback = window.Playback.create({

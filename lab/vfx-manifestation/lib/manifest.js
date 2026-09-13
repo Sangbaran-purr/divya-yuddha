@@ -2,7 +2,7 @@
    vignette, trimmed rectangular cells with pivot data, cells at most 512 px, NO motion vectors. One manifest per card:
    { cardId, class:"actor", atlas, atlasSize{w,h}, alpha:"straight", blend:"normal", mv:false, vignette:false, cellMax:512,
      fps, facing:"left"|"right", mirror:true | variants:{left,right}, refHeight, cells:[{x,y,w,h,pivot{x,y}}],
-     phases:{ emerge:[cell…], act:[cell…], fizzle:[cell…] } }
+     phases:{ emerge:[cell…], act:[cell…], fizzle:[cell…] }, contact? (index inside act), timing? "native"|"grammar" }
    validate(m) → { ok, errors[] }. Browser: window.ActorManifest. Node: require. */
 (function (root) {
   'use strict';
@@ -37,6 +37,8 @@
       if (!Array.isArray(list) || !list.length) { e.push('phase ' + p + ' missing'); return; }
       list.forEach(function (ix) { if (!(Number.isInteger(ix) && cells && ix >= 0 && ix < cells.length)) e.push('phase ' + p + ' names cell ' + ix + ', which does not exist'); });
     });
+    if (m.timing != null && m.timing !== 'native' && m.timing !== 'grammar') e.push('timing must be "native" or "grammar"');
+    if (m.contact != null) { var act = m.phases && m.phases.act; if (!(Number.isInteger(m.contact) && Array.isArray(act) && m.contact >= 0 && m.contact < act.length)) e.push('contact must be a cell index inside the act phase'); }
     return { ok: e.length === 0, errors: e };
   }
   var OUT = { validate: validate, PHASES: PHASES };
