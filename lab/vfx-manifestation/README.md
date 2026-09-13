@@ -213,6 +213,23 @@ Fast keeps its 2× relation to whatever Full is set to.
 
 The board still settles the moment FIZZLE ends and still matches the engine's AFTER snapshot. The next rung writes the chosen tempo into Meghnad's manifest and the FIZZLE length into the Asura preset, as their defaults.
 
+## LAB-4d: the owner's tempo and FIZZLE, locked as defaults; the 55-frame repack
+
+**The ruling (2026-09-13).** Meghnad plays at tempo 0.6× with a 1500 ms FIZZLE, and those become the defaults every character inherits. The sliders stay.
+
+**Where the defaults live.** `ActorManifest.defaultsFor` resolves them the same way for any card:
+
+| Value | First | Then | Last |
+|---|---|---|---|
+| Tempo | the card's manifest (`actors/meghnad/manifest.json` → `tempo: 0.6`) | `data/manifestations.json` → `defaults.tempo` (0.6) | 1× |
+| FIZZLE | the faction's exit preset (`data/factionfx.json` → Asura `fizzle_ms: 1500`) | `defaults.fizzle_ms` (1500) | 600 ms |
+
+The lab's sliders start on these values and label them as defaults. Moving one overrides it for the session only, and the Plan readout shows the next play's timeline as soon as the page loads.
+
+**The repack.** At the slower tempo, 43 cells stepped visibly. `tools/make_actor_from_clip.py` now keeps every usable source frame in the window (f34–f88) and drops only true duplicates. The phases keep the lengths they had when the tempo was tuned: EMERGE 583 ms and ACT 1208 ms at tempo 1, written into the manifest as `phaseMs`. So the extra cells play in the same time, and EMERGE and ACT each get their own cell rate (count ÷ length × tempo). The clip's `fps: 24` stays as its source rate. Contact is still the frame where the spear is fully extended (f069), at its new index inside ACT.
+
+**The timeline at the defaults.** Full: AWAKEN 667 · EMERGE 972 · ACT 2013 · FIZZLE 1500 · SETTLE 667 · total 5819 ms. Fast: 333 · 486 · 1007 · 750 · 333 · total 2909 ms.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

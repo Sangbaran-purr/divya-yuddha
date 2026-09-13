@@ -2,8 +2,10 @@
    vignette, trimmed rectangular cells with pivot data, cells at most 512 px, NO motion vectors. One manifest per card:
    { cardId, class:"actor", atlas, atlasSize{w,h}, alpha:"straight", blend:"normal", mv:false, vignette:false, cellMax:512,
      fps, facing:"left"|"right", mirror:true | variants:{left,right}, refHeight, cells:[{x,y,w,h,pivot{x,y}}],
-     phases:{ emerge:[cell…], act:[cell…], fizzle:[cell…] }, contact? (index inside act), timing? "native"|"grammar" }
-   validate(m) → { ok, errors[] }. Browser: window.ActorManifest. Node: require. */
+     phases:{ emerge:[cell…], act:[cell…], fizzle:[cell…] }, contact? (index inside act), timing? "native"|"grammar",
+     tempo? (the card's default, 0.25–4 — LAB-4d), phaseMs? { emerge, act } (phase lengths at tempo 1) }
+   validate(m) → { ok, errors[] }. defaultsFor({ manifest, registry, preset, override }) → the tempo and FIZZLE length a play starts
+   from (LAB-4d). Browser: window.ActorManifest. Node: require. */
 (function (root) {
   'use strict';
   var PHASES = ['emerge', 'act', 'fizzle'];
@@ -38,10 +40,24 @@
       list.forEach(function (ix) { if (!(Number.isInteger(ix) && cells && ix >= 0 && ix < cells.length)) e.push('phase ' + p + ' names cell ' + ix + ', which does not exist'); });
     });
     if (m.timing != null && m.timing !== 'native' && m.timing !== 'grammar') e.push('timing must be "native" or "grammar"');
+    if (m.tempo != null && !(num(m.tempo) && m.tempo >= 0.25 && m.tempo <= 4)) e.push('tempo must be a number 0.25–4');
+    if (m.phaseMs != null && !(m.phaseMs && num(m.phaseMs.emerge) && num(m.phaseMs.act) && m.phaseMs.emerge > 0 && m.phaseMs.act > 0)) e.push('phaseMs must give emerge and act lengths in ms');
     if (m.contact != null) { var act = m.phases && m.phases.act; if (!(Number.isInteger(m.contact) && Array.isArray(act) && m.contact >= 0 && m.contact < act.length)) e.push('contact must be a cell index inside the act phase'); }
     return { ok: e.length === 0, errors: e };
   }
-  var OUT = { validate: validate, PHASES: PHASES };
+  // LAB-4d · THE DEFAULTS A PLAY STARTS FROM, card-agnostic: tempo = the card's manifest tempo, else the registry's defaults block
+  // (data/manifestations.json), else 1; FIZZLE = the exit preset's fizzle_ms, else the registry's defaults, else 600 ms. A session
+  // override (the lab's sliders) wins over both. `base` is the default without the override; `from` says where each value came from.
+  function defaultsFor(o) {
+    o = o || {};
+    var m = o.manifest || {}, d = (o.registry && o.registry.defaults) || {}, pr = o.preset || {}, ov = o.override || {};
+    var pos = function (v) { return typeof v === 'number' && isFinite(v) && v > 0; };
+    var t = pos(m.tempo) ? [m.tempo, 'manifest'] : pos(d.tempo) ? [d.tempo, 'defaults'] : [1, 'built-in'];
+    var z = pos(pr.fizzle_ms) ? [pr.fizzle_ms, 'preset'] : pos(d.fizzle_ms) ? [d.fizzle_ms, 'defaults'] : [600, 'built-in'];
+    return { tempo: pos(ov.tempo) ? ov.tempo : t[0], fizzleMs: pos(ov.fizzleMs) ? ov.fizzleMs : z[0], base: { tempo: t[0], fizzleMs: z[0] },
+             from: { tempo: pos(ov.tempo) ? 'slider' : t[1], fizzleMs: pos(ov.fizzleMs) ? 'slider' : z[1] } };
+  }
+  var OUT = { validate: validate, defaultsFor: defaultsFor, PHASES: PHASES };
   root.ActorManifest = OUT;
   if (typeof module !== 'undefined' && module.exports) module.exports = OUT;
 })(typeof window !== 'undefined' ? window : this);

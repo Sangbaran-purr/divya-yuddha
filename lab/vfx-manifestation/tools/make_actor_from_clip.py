@@ -18,7 +18,11 @@
 #   4 cleanup   if an edge band still holds ground-coloured pixels above FRINGE_LIMIT, rembg's mask trims that band only
 # THE FRAMES — per the audit: idle 0–33 dropped; EMERGE = the rear (34–56); ACT = flare → thrust → settle (57–88), contact
 #   = the frame the spear is fully extended (the leftmost spear tip in 66–82); Kling's own dissolve (89 on — pink energy
-#   from f90, smoke from f96) dropped: the stage does the fizzle. Near-duplicates are dropped down to EMERGE_N + ACT_N.
+#   from f90, smoke from f96) dropped: the stage does the fizzle. LAB-4d: EVERY usable frame in the window is kept — only a
+#   true duplicate (its picture repeats the last kept frame, mean |Δ| < DUP_MAE) is dropped — so the motion stays smooth at
+#   the owner's slower tempo. The phases keep the lengths the owner tuned against (PHASE_MS at tempo 1: EMERGE 583 ms, ACT
+#   1208 ms — LAB-4's 14 + 29 cells at 24 fps), so more cells play in the same time; TEMPO is the card's default (ruling
+#   2026-09-13: 0.6×), written into the manifest.
 # THE CELLS — one scale for every frame (the largest trimmed frame fits 512 px); one pivot for every frame: the ground
 #   contact under the front hooves, measured on a settled frame (the camera is locked, so that world point is fixed).
 import hashlib, json, math, os, sys
@@ -35,7 +39,9 @@ SHEET = os.path.join(LAB, "frames", CARD + "_contact_sheet.jpg")
 os.environ.setdefault("U2NET_HOME", os.path.join(LAB, "tools", ".venv", "u2net"))
 
 EMERGE_RANGE, ACT_RANGE = (34, 56), (57, 88)
-EMERGE_N, ACT_N = 14, 29
+DUP_MAE = 0.6                        # mean |Δ| (0–255, 240×135 grey) under which a frame repeats its predecessor: a true duplicate
+PHASE_MS = {"emerge": 583, "act": 1208}   # the phase lengths at tempo 1 the owner tuned against (LAB-4: 14 + 29 cells at 24 fps)
+TEMPO = 0.6                          # the card's default tempo (owner ruling 2026-09-13) — 0.6 × those lengths' pace
 CONTACT_SEARCH = (66, 82)
 SETTLED_FRAME = 84
 CELL_MAX, FPS, PAD = 512, 24, 2
@@ -97,17 +103,14 @@ def fringe_share(rgb, alpha, K):
     near_ground = np.linalg.norm(rgb.astype(np.float32) - K, axis=2) < 45
     return float(((alpha > 0.5) & near_ground & band).sum()) / float(band.sum()), band
 
-def pick(indices, n, grays, force=()):
-    # evenly spaced across the range, first and last kept: at native fps the motion keeps its true pace. The dropped frames are
-    # the in-between neighbours — the nearest duplicates. A forced frame (the contact) replaces its nearest pick.
-    idx = list(indices)
-    if len(idx) <= n: return idx
-    keep = sorted(set(idx[round(k * (len(idx) - 1) / (n - 1))] for k in range(n)))
-    for f in force:
-        if f in keep: continue
-        j = min(range(len(keep)), key=lambda k: abs(keep[k] - f))
-        keep[j] = f; keep = sorted(set(keep))
-    return keep
+def distinct(indices, grays, keep=()):
+    # every usable frame, in order; a frame whose picture repeats the last kept one is a true duplicate and dropped (never a forced one)
+    out, dropped = [], []
+    for i in indices:
+        if out and i not in keep and float(np.abs(grays[i].astype(np.float32) - grays[out[-1]].astype(np.float32)).mean()) < DUP_MAE:
+            dropped.append(i); continue
+        out.append(i)
+    return out, dropped
 
 def main():
     if not os.path.exists(CLIP): sys.exit("the source clip is not at " + CLIP)
@@ -130,10 +133,12 @@ def main():
         lum = frames[i].astype(np.float32) @ np.array([0.299, 0.587, 0.114], np.float32)
         xs = np.where(((al > SOLID) & (lum < DARK_LUM)).any(axis=0))[0]; tips[i] = int(xs.min()) if len(xs) else W
     lo = min(tips.values()); contact_src = min(i for i, x in tips.items() if x <= lo + 4)
-    emerge = pick(range(EMERGE_RANGE[0], EMERGE_RANGE[1] + 1), EMERGE_N, grays)
-    act = pick(range(ACT_RANGE[0], ACT_RANGE[1] + 1), ACT_N, grays, force=(contact_src,))
+    emerge, dup_e = distinct(range(EMERGE_RANGE[0], EMERGE_RANGE[1] + 1), grays)
+    act, dup_a = distinct(range(ACT_RANGE[0], ACT_RANGE[1] + 1), grays, keep=(contact_src,))
     kept = emerge + act
-    print("kept %d frames · EMERGE %s · ACT %s · contact f%d (spear tip x=%d)" % (len(kept), emerge, act, contact_src, tips[contact_src]))
+    diffs = [float(np.abs(grays[i].astype(np.float32) - grays[i - 1].astype(np.float32)).mean()) for i in range(EMERGE_RANGE[0] + 1, ACT_RANGE[1] + 1)]
+    print("kept %d frames · EMERGE %d (f%d–f%d) · ACT %d (f%d–f%d) · duplicates dropped %s · smallest neighbour |Δ| %.2f · contact f%d (spear tip x=%d)" % (
+        len(kept), len(emerge), emerge[0], emerge[-1], len(act), act[0], act[-1], dup_e + dup_a if dup_e + dup_a else "none", min(diffs), contact_src, tips[contact_src]))
 
     shares = {i: fringe_share(frames[i], matte(i)[0], K)[0] for i in kept}
     need = [i for i in kept if shares[i] > FRINGE_LIMIT]
@@ -201,12 +206,12 @@ def main():
         "source": "Kling clip %s (sha256 %s…, %d frames @ %d fps, %dx%d, chroma green) — kept f%d–f%d; matted by tools/make_actor_from_clip.py" % (os.path.basename(CLIP), sha[:12], len(frames), round(fps), W, H, kept[0], kept[-1]),
         "atlas": "atlas.webp", "atlasSize": {"w": AW, "h": AH},
         "alpha": "straight", "blend": "normal", "mv": False, "vignette": False, "cellMax": CELL_MAX,
-        "fps": FPS, "timing": "native", "facing": "left", "mirror": True,
+        "fps": FPS, "timing": "native", "tempo": TEMPO, "phaseMs": PHASE_MS, "facing": "left", "mirror": True,
         "refHeight": max(c.height for _, c, _, _ in cells),
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height, "pivot": {"x": round(px, 1), "y": round(py, 1)}, "origin": list(origins[i])} for i, c, cx, cy, px, py in placed],
         "phases": {"emerge": list(range(0, ne)), "act": list(range(ne, len(kept))), "fizzle": [len(kept) - 1]},
         "contact": act.index(contact_src),
-        "audit": {"idle": [0, EMERGE_RANGE[0] - 1], "emerge": list(EMERGE_RANGE), "act": list(ACT_RANGE), "droppedTail": [ACT_RANGE[1] + 1, len(frames) - 1], "contactSrc": contact_src, "pivotSrc": [round(PIV[0], 1), round(PIV[1], 1)], "scale": round(s, 5)},
+        "audit": {"idle": [0, EMERGE_RANGE[0] - 1], "emerge": list(EMERGE_RANGE), "act": list(ACT_RANGE), "droppedTail": [ACT_RANGE[1] + 1, len(frames) - 1], "duplicatesDropped": dup_e + dup_a, "contactSrc": contact_src, "pivotSrc": [round(PIV[0], 1), round(PIV[1], 1)], "scale": round(s, 5)},
     }
     with open(os.path.join(OUT, "manifest.json"), "w") as f: json.dump(manifest, f, indent=2); f.write("\n")
     with open(os.path.join(AUDIT, "matte_stats.json"), "w") as f: json.dump(stats, f, indent=1)
@@ -215,7 +220,7 @@ def main():
     tw = 300; th = int(round(tw * max(c.height for _, c, _, _ in cells) / max(c.width for _, c, _, _ in cells)))
     cols = 8; rows = (len(cells) + cols - 1) // cols
     sheet = Image.new("RGB", (cols * tw, rows * (th + 22) + 30), (18, 18, 18)); d = ImageDraw.Draw(sheet)
-    d.text((8, 8), "Meghnad actor · %d frames kept of %d · EMERGE %d · ACT %d · contact f%d · %d fps native · atlas %dx%d" % (len(kept), len(frames), ne, len(act), contact_src, FPS, AW, AH), fill=(235, 210, 150))
+    d.text((8, 8), "Meghnad actor · %d frames kept of %d · EMERGE %d in %d ms · ACT %d in %d ms (tempo 1; default %.1fx) · contact f%d · atlas %dx%d" % (len(kept), len(frames), ne, PHASE_MS["emerge"], len(act), PHASE_MS["act"], TEMPO, contact_src, AW, AH), fill=(235, 210, 150))
     chk = Image.new("RGB", (tw, th)); cd = ImageDraw.Draw(chk)
     for gx in range(0, tw, 12):
         for gy in range(0, th, 12): cd.rectangle([gx, gy, gx + 11, gy + 11], fill=(70, 70, 70) if (gx // 12 + gy // 12) % 2 else (100, 100, 100))

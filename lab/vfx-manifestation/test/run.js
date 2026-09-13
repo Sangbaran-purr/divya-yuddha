@@ -131,19 +131,20 @@ console.log('\n── T · the Director ──');
   const ap = DIR.plan(global.__astraCtx, { mode: 'full' });
   ok('T9 · A2: an out-of-scope play gets no actor — SETTLE and the queue only', !ap.actor && J(ap.phases.map((x) => x.name)) === J(['SETTLE']) && ap.cues.every((c) => visual.indexOf(c.cue) < 0));
   {
-    const NT = { fps: MANIFEST.fps, emerge: MANIFEST.phases.emerge.length, act: MANIFEST.phases.act.length, contact: MANIFEST.contact };
-    const ms = (n, k) => Math.round(n * 1000 / NT.fps * k);
+    const NT = { fps: MANIFEST.fps, emerge: MANIFEST.phases.emerge.length, act: MANIFEST.phases.act.length, contact: MANIFEST.contact, emergeMs: MANIFEST.phaseMs.emerge, actMs: MANIFEST.phaseMs.act };
+    const ms = (n, k) => Math.round(n * k);   // LAB-4d: the manifest's own phase lengths at tempo 1
+    const RA = NT.act * 1000 / NT.actMs, RE = NT.emerge * 1000 / NT.emergeMs;
     const nat = (s, m) => DIR.plan(CTX[s], { mode: m, ladderExempt: true, timing: NT });
     const okNative = [0, 1].every((s) => ['full', 'fast'].every((m) => {
       const k = m === 'fast' ? 0.5 : 1, p = nat(s, m), [A, E, C, Z, S] = p.phases, c = p.cues.find((x) => x.cue === 'contact'), a = p.cues.find((x) => x.cue === 'actor-phase' && x.phase === 'act');
-      return p.timing === 'native' && A.t1 - A.t0 === 400 * k && E.t1 - E.t0 === ms(NT.emerge, k) && C.t1 - C.t0 === ms(NT.act, k) && Z.t1 - Z.t0 === 600 * k && S.t1 - S.t0 === 400 * k &&
-             c.t === C.t0 + Math.ceil(NT.contact * 1000 / (NT.fps / k)) && c.contactCell === NT.contact && Math.floor((c.t - C.t0) * (NT.fps / k) / 1000) === NT.contact &&
-             p.cellFps === NT.fps / k && p.cues.filter((x) => x.cue === 'actor-phase').every((x) => x.cellFps === NT.fps / k) &&
+      return p.timing === 'native' && A.t1 - A.t0 === 400 * k && E.t1 - E.t0 === ms(NT.emergeMs, k) && C.t1 - C.t0 === ms(NT.actMs, k) && Z.t1 - Z.t0 === 600 * k && S.t1 - S.t0 === 400 * k &&
+             c.t === C.t0 + Math.ceil(NT.contact * 1000 / (RA / k)) && c.contactCell === NT.contact && Math.floor((c.t - C.t0) * (RA / k) / 1000 + 1e-6) === NT.contact &&
+             Math.abs(p.cellFps - RA / k) < 1e-9 && Math.abs(p.cellFpsEmerge - RE / k) < 1e-9 && p.cues.filter((x) => x.cue === 'actor-phase').every((x) => Math.abs(x.cellFps - (x.phase === 'emerge' ? RE : RA) / k) < 1e-9) &&
              Math.abs(a.contactFrac - NT.contact / NT.act) < 1e-9 && p.total === S.t1;
     }));
     const notExempt = DIR.plan(CTX[0], { mode: 'full', ladderExempt: false, timing: NT });
     const full = nat(0, 'full');
-    ok('T11 · NATIVE TIMING from the real manifest (' + NT.emerge + ' EMERGE + ' + NT.act + ' ACT cells @ ' + NT.fps + ' fps, contact = ACT cell ' + NT.contact + '): EMERGE ' + (full.phases[1].t1 - full.phases[1].t0) + ' ms · ACT ' + (full.phases[2].t1 - full.phases[2].t0) + ' ms · total ' + full.total + ' ms; the actor phases carry the cells\' rate (24 cells/s Full, 48 Fast) and the contact cue lands at the first ms the contact cell is on stage (LAB-4a); Fast halves it; both seats; a card NOT ladder-exempt ignores native timing (the ladder applies, no cell rate)',
+    ok('T11 · NATIVE TIMING from the real manifest (' + NT.emerge + ' EMERGE + ' + NT.act + ' ACT cells in ' + NT.emergeMs + ' + ' + NT.actMs + ' ms at tempo 1, contact = ACT cell ' + NT.contact + '): EMERGE ' + (full.phases[1].t1 - full.phases[1].t0) + ' ms · ACT ' + (full.phases[2].t1 - full.phases[2].t0) + ' ms · total ' + full.total + ' ms; the actor phases carry the cells\' rates (count ÷ phase length, EMERGE and ACT each their own; twice in Fast) and the contact cue lands at the first ms the contact cell is on stage (LAB-4a); Fast halves it; both seats; a card NOT ladder-exempt ignores native timing (the ladder applies, no cell rate)',
        okNative && notExempt.timing === 'grammar' && notExempt.total === 2500 && notExempt.cellFps === null && notExempt.cues.every((x) => x.cellFps == null && x.contactCell == null) && Math.abs(full.total - 3200) <= 60);
   }
   {
@@ -159,14 +160,39 @@ console.log('\n── T · the Director ──');
       return Math.abs(p.cellFps - rate) < 1e-9 && p.cues.filter((x) => x.cue === 'actor-phase').every((x) => Math.abs(x.cellFps - rate) < 1e-9 && x.cellStep === (m === 'fast' ? 2 : 1)) &&
         len(p, 'AWAKEN') === Math.round(400 / tp * k) && len(p, 'EMERGE') === Math.round(NT2.emerge * 1000 / (24 * tp) * k) && len(p, 'ACT') === Math.round(NT2.act * 1000 / (24 * tp) * k) &&
         len(p, 'FIZZLE') === Math.round((fz == null ? 600 : fz) * k) && len(p, 'SETTLE') === Math.round(400 / tp * k) && p.fizzleMs === len(p, 'FIZZLE') &&
-        c.contactCell === NT2.contact && Math.floor((c.t - C.t0) * rate / 1000) === NT2.contact && S.t0 === Z.t1 && p.cues.find((x) => x.cue === 'settle').t === Z.t1 && p.cues.find((x) => x.cue === 'actor-gone').t === Z.t1 &&
+        c.contactCell === NT2.contact && Math.floor((c.t - C.t0) * rate / 1000 + 1e-6) === NT2.contact && S.t0 === Z.t1 && p.cues.find((x) => x.cue === 'settle').t === Z.t1 && p.cues.find((x) => x.cue === 'actor-gone').t === Z.t1 &&
         tl.awaken + tl.emerge + tl.act + tl.fizzle + tl.settle === p.total && tl.total === p.total && !!n && +n[1] + +n[2] + +n[3] + +n[6] + +n[7] === +n[8] && +n[8] === p.total && +n[5] === c.t && +n[4] === c.t - C.t0;
     })));
     const LABJS3 = fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8');
     ok('T12 · TEMPO AND FIZZLE (LAB-4c): tempo scales the clip\'s cells (24 × tempo cells/s) and AWAKEN, EMERGE, ACT and SETTLE with them; FIZZLE takes its own length; Fast halves both and may step 2 cells, Full 1; contact still lands on the contact cell and the board settles the moment FIZZLE ends; unset, the plan is today\'s field for field; a grammar plan scales too; the Plan readout\'s Timeline line sums to its total; the lab passes both sliders to every play — ' + shown.join(' | '),
-       okTempo && J(tuned(0, 'full', {})) === J(tuned(0, 'full', { tempo: 1, fizzleMs: 600 })) && tuned(0, 'full', {}).total === 3191 &&
+       okTempo && J(tuned(0, 'full', {})) === J(tuned(0, 'full', { tempo: 1, fizzleMs: 600 })) && tuned(0, 'full', {}).total === 400 + Math.round(NT2.emerge * 1000 / 24) + Math.round(NT2.act * 1000 / 24) + 600 + 400 &&
        DIR.plan(CTX[0], { mode: 'full', ladderExempt: true, tempo: 0.5 }).total === 6400 && DIR.plan(CTX[0], { mode: 'full', ladderExempt: true, fizzleMs: 1200 }).total === 3800 && DIR.plan(CTX[0], { mode: 'full', ladderExempt: true }).total === 3200 &&
        /timing, tempo, fizzleMs \}\);/.test(LABJS3) && /el\('tempo'\)\.oninput/.test(LABJS3) && /el\('fizzle-ms'\)\.oninput/.test(LABJS3));
+  }
+  {
+    const REGJ = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'manifestations.json'), 'utf8')), FFXJ = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DS4 = lib('dissolve');
+    const NTM = { fps: MANIFEST.fps, emerge: MANIFEST.phases.emerge.length, act: MANIFEST.phases.act.length, contact: MANIFEST.contact, emergeMs: MANIFEST.phaseMs.emerge, actMs: MANIFEST.phaseMs.act };
+    const dflt = MAN.defaultsFor({ manifest: MANIFEST, registry: REGJ, preset: DS4.pick(FFXJ, CTX[0].faction, '') });
+    const bare = Object.assign({}, MANIFEST); delete bare.tempo;
+    const inherit = MAN.defaultsFor({ manifest: bare, registry: REGJ, preset: DS4.pick(FFXJ, 'devas', '') });
+    const builtin = MAN.defaultsFor({ manifest: bare, registry: {}, preset: {} });
+    const over = MAN.defaultsFor({ manifest: MANIFEST, registry: REGJ, preset: DS4.pick(FFXJ, 'asuras', ''), override: { tempo: 0.9, fizzleMs: 700 } });
+    const planD = (m) => DIR.plan(CTX[0], { mode: m, ladderExempt: true, timing: NTM, tempo: dflt.tempo, fizzleMs: dflt.fizzleMs });
+    const FULLD = planD('full'), FASTD = planD('fast'), tlOf = (p) => [p.timeline.awaken, p.timeline.emerge, p.timeline.act, p.timeline.fizzle, p.timeline.settle, p.timeline.total];
+    const RAD = NTM.act * 1000 / NTM.actMs * dflt.tempo, cD = FULLD.cues.find((x) => x.cue === 'contact'), CD = FULLD.phases[2];
+    const LABJS5 = fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8'), PAGE5 = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
+    ok('T13 · THE OWNER\'S DEFAULTS (LAB-4d, ruling 2026-09-13): Meghnad\'s manifest carries tempo ' + MANIFEST.tempo + ' and the Asura preset fizzle_ms ' + FFXJ.asuras.fizzle_ms + '; data/manifestations.json carries the card-agnostic defaults ' + JSON.stringify(REGJ.defaults) + ' that a card without its own tempo and a preset without its own fizzle_ms inherit (the built-ins 1× / 600 ms only when neither exists); a slider override wins for the session; the lab resolves them through ActorManifest.defaultsFor and its sliders start on them; and the plan they give is the ruling\'s timeline — Full ' + DIR.formatPlan(FULLD).split('\n')[2].replace('Timeline (ms): ', '') + ' · Fast ' + tlOf(FASTD).join(' / ') + ' ms',
+       MANIFEST.tempo === 0.6 && FFXJ.asuras.fizzle_ms === 1500 && REGJ.defaults.tempo === 0.6 && REGJ.defaults.fizzle_ms === 1500 &&
+       dflt.tempo === 0.6 && dflt.fizzleMs === 1500 && dflt.from.tempo === 'manifest' && dflt.from.fizzleMs === 'preset' &&
+       inherit.tempo === 0.6 && inherit.from.tempo === 'defaults' && inherit.fizzleMs === 1500 && inherit.from.fizzleMs === 'defaults' &&
+       builtin.tempo === 1 && builtin.fizzleMs === 600 && builtin.from.tempo === 'built-in' && over.tempo === 0.9 && over.fizzleMs === 700 && over.from.tempo === 'slider' && over.base.tempo === 0.6 && over.base.fizzleMs === 1500 &&
+       J(tlOf(FULLD)) === J([667, 972, 2013, 1500, 667, 5819]) && J(tlOf(FASTD)) === J([333, 486, 1007, 750, 333, 2909]) &&
+       cD.contactCell === NTM.contact && MANIFEST.cells[MANIFEST.phases.act[NTM.contact]].src === MANIFEST.audit.contactSrc && MANIFEST.audit.contactSrc === 69 && Math.floor((cD.t - CD.t0) * RAD / 1000 + 1e-6) === NTM.contact &&
+       FULLD.cues.filter((x) => x.cue === 'actor-phase').every((x) => x.cellStep === 1) && FASTD.cues.filter((x) => x.cue === 'actor-phase').every((x) => x.cellStep === 2) &&
+       /window\.ActorManifest\.defaultsFor\(/.test(LABJS5) && /REG_DEFAULTS = j\.defaults/.test(LABJS5) && /if \(tempoOverride == null\) el\('tempo'\)\.value = t\.base\.tempo;/.test(LABJS5) && /if \(fizzleOverride == null\) el\('fizzle-ms'\)\.value = t\.base\.fizzleMs;/.test(LABJS5) &&
+       /el\('tempo'\)\.oninput = \(e\) => \{ tempoOverride = \+e\.target\.value;/.test(LABJS5) && /el\('fizzle-ms'\)\.oninput = \(e\) => \{ fizzleOverride = \+e\.target\.value;/.test(LABJS5) &&
+       /<input id="tempo" type="range" min="0\.5" max="1\.5" step="0\.05" value="0\.6">/.test(PAGE5) && /<input id="fizzle-ms" type="range" min="300" max="1500" step="50" value="1500">/.test(PAGE5),
+       J({ dflt, inherit, builtin, over, full: tlOf(FULLD), fast: tlOf(FASTD) }));
   }
   const txt = DIR.formatPlan(P(0, 'full'));
   ok('T10 · the Plan readout is the timeline as text: the header, every phase, every cue in time order with its numbers', /Meghnad · seat 0 → toward seat 1 · mode full/.test(txt) && /AWAKEN 0–400/.test(txt) && /2800 ms  settle Meghnad enters at 6, Indra 7→5 \(−2\)/.test(txt) && /queue buff · Chaos Surge \+1/.test(txt) && txt.split('\n').length === P(0, 'full').cues.length + 3 && /Timeline \(ms\): AWAKEN 400 · EMERGE 600 · ACT 1200 · contact \+696 \(at 1696\) · FIZZLE 600 · SETTLE 400 · total 3200 · tempo 1\.00×/.test(txt), txt.split('\n').slice(0, 4).join(' | '));
@@ -214,7 +240,7 @@ function webpSize(buf) {
   const wide = MANIFEST.cells.filter((c) => c.w > c.h).length, one = (k) => MANIFEST.cells.every((c) => c[k] === MANIFEST.cells[0][k]);
   const pivSrc = MANIFEST.audit && MANIFEST.audit.pivotSrc, scale = MANIFEST.audit && MANIFEST.audit.scale;
   ok('M1 · the Meghnad manifest is a valid ACTOR asset: straight alpha, normal blend, no vignette, no motion vectors, native ' + MANIFEST.fps + ' fps, ' + MANIFEST.cells.length + ' trimmed cells ≤ 512 px (' + wide + ' wider than tall — the horse\'s aspect, not square) with pivots; the atlas really is ' + (px ? px.w + '×' + px.h : '?') + ' (' + (atlas.length / 1024).toFixed(0) + ' KB), within the 4096 px texture ceiling',
-     v.ok && !!px && px.w === MANIFEST.atlasSize.w && px.h === MANIFEST.atlasSize.h && px.w <= 4096 && px.h <= 4096 && MANIFEST.cells.length >= 36 && MANIFEST.cells.length <= 48 &&
+     v.ok && !!px && px.w === MANIFEST.atlasSize.w && px.h === MANIFEST.atlasSize.h && px.w <= 4096 && px.h <= 4096 && MANIFEST.cells.length >= 36 && MANIFEST.cells.length <= 60 && MANIFEST.tempo === 0.6 && !!MANIFEST.phaseMs && MANIFEST.phaseMs.emerge === 583 && MANIFEST.phaseMs.act === 1208 && Array.isArray(MANIFEST.audit.duplicatesDropped) &&
      Math.max(...MANIFEST.cells.map((c) => Math.max(c.w, c.h))) === 512 && wide > MANIFEST.cells.length / 2 && MANIFEST.fps === 24 && MANIFEST.timing === 'native', v.errors.join('; '));
   const cellsSrc = MANIFEST.cells.map((c) => c.src), E = MANIFEST.phases.emerge.map((i) => cellsSrc[i]), A = MANIFEST.phases.act.map((i) => cellsSrc[i]);
   const au = MANIFEST.audit || {};
@@ -242,6 +268,8 @@ function webpSize(buf) {
     ['a cell outside the atlas', (m) => { m.cells[0].x = m.atlasSize.w; }, /outside the atlas/],
     ['a contact outside ACT', (m) => { m.contact = m.phases.act.length; }, /contact must be a cell index inside the act phase/],
     ['an unknown timing', (m) => { m.timing = 'stretched'; }, /timing must be/],
+    ['a tempo of 0', (m) => { m.tempo = 0; }, /tempo must be/],
+    ['a phase length of 0', (m) => { m.phaseMs = { emerge: 583, act: 0 }; }, /phaseMs must give/],
   ];
   const results = bad.map(([name, mutate, re]) => { const m = JSON.parse(J(MANIFEST)); mutate(m); const r = MAN.validate(m); return [name, !r.ok && r.errors.some((e) => re.test(e)), r.errors.join('; ')]; });
   ok('M4 · validation refuses, each with its reason: ' + bad.map((b) => b[0]).join(' · '), results.every((x) => x[1]), J(results.filter((x) => !x[1])));
@@ -361,8 +389,8 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
        PAGE.indexOf('<dd id="ro-actor">') >= 0 && /stage\.stats\(\)/.test(fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8')));
 
     // ── LAB-4a · THE CELLS ARE THE CLOCK: what each backend's draw path really draws, per play ──
-    const NT = { fps: MANIFEST.fps, emerge: MANIFEST.phases.emerge.length, act: MANIFEST.phases.act.length, contact: MANIFEST.contact };
-    const key = MANIFEST.cells.map((c) => c.x + ',' + c.y), nameOf = (i) => (MANIFEST.cells[i] || {}).name;
+    const NT = { fps: MANIFEST.fps, emerge: MANIFEST.phases.emerge.length, act: MANIFEST.phases.act.length, contact: MANIFEST.contact, emergeMs: MANIFEST.phaseMs.emerge, actMs: MANIFEST.phaseMs.act };
+    const key = MANIFEST.cells.map((c) => c.x + ',' + c.y), nameOf = (i) => (MANIFEST.cells[i] || {}).name, NCELL = MANIFEST.cells.length, RATE_E = NT.emerge * 1000 / NT.emergeMs;
     const CONTACT_CELL = nameOf(MANIFEST.phases.act[MANIFEST.contact]), LAST_ACT = MANIFEST.phases.act[MANIFEST.phases.act.length - 1];
     const BACKENDS = ['canvas2d', 'webgl', 'webgpu'];
     const playCells = (backend, mode, hz, hitchMs, extra) => {
@@ -386,10 +414,11 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
     const agrees = (x) => x.readout && x.readout.drawn === x.drawn && x.readout.total === x.total && x.readout.repeats === x.repeats && x.readout.contact === CONTACT_CELL;
     const show = (xs) => xs.map((x) => x.backend + ' ' + x.drawn + '/' + x.total + (x.hitch ? ' (' + x.hitch + ')' : '') + ' · repeats ' + x.repeats + ' · longest hold ' + x.longestRun + ' frames · contact ' + x.contact).join(' | ');
     const full = BACKENDS.map((b) => playCells(b, 'full', 60));
-    const t07 = BACKENDS.map((b) => Object.assign(playCells(b, 'full', 60, 0, { tempo: 0.7 }), { hitch: '0.7× tempo' }));
-    ok('S9 · FULL at 60 Hz, every backend\'s draw path (Canvas 2D drawImage · Pixi WebGL · Pixi WebGPU): all ' + MANIFEST.cells.length + ' cells drawn, in clip order, none repeated, none held past its 1/24 s (≤ 3 frames — no hold inside a phase, the hit-stop never freezes the actor), the contact fires on the frame ' + CONTACT_CELL + ' is drawn, FIZZLE holds the last ACT cell, the stage\'s own count (the readout) agrees, and the stage ends clean — ' + show(full) + ' — and at 0.7× tempo (16.8 cells/s, each cell ≤ 5 frames) still every cell, no skip: ' + show(t07),
-       full.every((x) => x.drawn === 43 && x.total === 43 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.longestRun <= 3 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && x.clean) &&
-       t07.every((x) => x.drawn === 43 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.longestRun <= 5 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && Math.abs(x.readout.cellFps - 16.8) < 1e-9 && x.clean), J(full.concat(t07)));
+    const t07 = BACKENDS.map((b) => Object.assign(playCells(b, 'full', 60, 0, { tempo: 0.7 }), { hitch: '0.7× tempo' }))
+      .concat(BACKENDS.map((b) => Object.assign(playCells(b, 'full', 60, 0, { tempo: 0.6 }), { hitch: '0.6× — the default' })));
+    ok('S9 · FULL at 60 Hz, every backend\'s draw path (Canvas 2D drawImage · Pixi WebGL · Pixi WebGPU): all ' + MANIFEST.cells.length + ' cells drawn, in clip order, none repeated, none held past its 1/24 s (≤ 3 frames — no hold inside a phase, the hit-stop never freezes the actor), the contact fires on the frame ' + CONTACT_CELL + ' is drawn, FIZZLE holds the last ACT cell, the stage\'s own count (the readout) agrees, and the stage ends clean — ' + show(full) + ' — and at 0.7× and at the default 0.6× tempo (each cell ≤ 5 frames) still every cell, no skip: ' + show(t07),
+       full.every((x) => x.drawn === NCELL && x.total === NCELL && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.longestRun <= 3 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && x.clean) &&
+       t07.every((x) => x.drawn === NCELL && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.longestRun <= 5 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && Math.abs(x.readout.cellFps - RATE_E * (x.hitch.indexOf('0.6') === 0 ? 0.6 : 0.7)) < 1e-9 && x.clean), J(full.concat(t07)));
     const fast = BACKENDS.map((b) => playCells(b, 'fast', 60));
     ok('S10 · FAST at 60 Hz (the cells at twice their rate), every backend: at least 22 cells drawn (at least every other cell), in order, none repeated, ≥ 12 cells per second of EMERGE + ACT, contact on ' + CONTACT_CELL + ', the readout agrees — ' + show(fast) + ' · ' + fast.map((x) => x.perSecond.toFixed(1) + '/s').join(', '),
        fast.every((x) => x.drawn >= 22 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.perSecond >= 12 && x.contact === CONTACT_CELL && x.endsOnLastAct && agrees(x) && x.clean), J(fast));
@@ -397,7 +426,7 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
       .concat(BACKENDS.map((b) => Object.assign(playCells(b, 'full', 30, 0, { tempo: 0.7 }), { hitch: '0.7× tempo at 30 Hz' })))
       .concat(BACKENDS.map((b) => Object.assign(playCells(b, 'full', 60, 0, { tempo: 1.5 }), { hitch: '1.5× tempo at 60 Hz' })));
     ok('S11 · A SLOW DEVICE NEVER SKIPS A NATIVE CELL, every backend: Full at 30 Hz, Full at 60 Hz with a 250 ms stall early in EMERGE, and Full at 0.7× tempo (30 Hz) and 1.5× tempo (60 Hz), still draw all ' + MANIFEST.cells.length + ' cells in order with none repeated (the stage catches up one cell per frame, and a phase\'s unreached cells play first in the next) — ' + show(slow),
-       slow.every((x) => x.drawn === 43 && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.contact === CONTACT_CELL && agrees(x) && x.clean), J(slow));
+       slow.every((x) => x.drawn === NCELL && x.repeats === 0 && x.inOrder && x.unknown === 0 && x.contact === CONTACT_CELL && agrees(x) && x.clean), J(slow));
 
     // ── LAB-4b · THE DISSOLVE EXIT: the real presets, the real playback, every backend's draw path ──
     const FFXD = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DS = lib('dissolve');
@@ -454,12 +483,12 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
        DRAWS.every((d) => d.dw > 0 && d.dw <= d.size + 1e-9 && d.dh <= d.size + 1e-9) && !/globalCompositeOperation\s*=\s*'(lighter|screen|plus-lighter)'|blendMode\s*=\s*'(add|screen|lighter)'|BLEND_MODES\.ADD/.test(SRC) && (SRC.match(/blendMode = 'normal'/g) || []).length >= 2,
        J(DRAWS.filter((d) => !(d.dw > 0 && d.dw <= d.size + 1e-9)).slice(0, 5)));
 
-    const LONG = ['full', 'fast'].reduce((all, m) => all.concat(BACKENDS.map((b) => playExit(b, m, '', { fizzleMs: 1200 }))), []);
-    const longOk = (x) => !!x.exit && x.fizzleMs === (x.mode === 'full' ? 1200 : 600) && x.exit.dur === x.fizzleMs && x.exit.name === 'Asura' && x.exit.monotonic && x.exit.progress >= 0.95 &&
+    const LONG = ['full', 'fast'].reduce((all, m) => all.concat(BACKENDS.map((b) => playExit(b, m, '', { fizzleMs: 1500 }))), []);
+    const longOk = (x) => !!x.exit && x.fizzleMs === (x.mode === 'full' ? 1500 : 750) && x.exit.dur === x.fizzleMs && x.exit.name === 'Asura' && x.exit.monotonic && x.exit.progress >= 0.95 &&
       x.exit.frames >= Math.floor(x.fizzleMs / (1000 / 60)) - 2 && x.exit.embers > 0 && x.settleLag != null && x.settleLag >= 0 && x.settleLag < 17 && x.clean && !!x.done && x.done.equalsFinal &&
       (x.backend === 'canvas2d' ? (() => { const m = monoMasks(x.masks); return m.pairs >= 30 && m.bad === 0 && share(x.masks[x.masks.length - 1].a, (v) => v === 0) > 0.99; })()
                                 : x.uniformT.length >= 30 && x.uniformT.every((v, i) => i === 0 || v >= x.uniformT[i - 1]));
-    ok('S16 · A LONG FIZZLE (LAB-4c: 1200 ms in Full, so 600 ms in Fast), every backend: the sweep stretches to the new length and stays monotonic (no Canvas 2D mask ever regains alpha, the GPU threshold only rises), everything is gone at the end, embers and smoke stretch with it, 0 actors / sprites / particles afterwards, and the board settles within a frame of FIZZLE\'s end, equal to the engine\'s AFTER — ' + showX(LONG),
+    ok('S16 · A LONG FIZZLE (LAB-4d: the Asura default, 1500 ms in Full, so 750 ms in Fast), every backend: the sweep stretches to the new length and stays monotonic (no Canvas 2D mask ever regains alpha, the GPU threshold only rises), everything is gone at the end, embers and smoke stretch with it, 0 actors / sprites / particles afterwards, and the board settles within a frame of FIZZLE\'s end, equal to the engine\'s AFTER — ' + showX(LONG),
        LONG.every(longOk), J(LONG.map((x) => ({ b: x.backend, m: x.mode, exit: x.exit, fizzleMs: x.fizzleMs, settleLag: x.settleLag, clean: x.clean }))));
   }
 }

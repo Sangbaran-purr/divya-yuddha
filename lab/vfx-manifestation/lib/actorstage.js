@@ -115,7 +115,8 @@
     if (a.pose && a.phase === phase && a.pose.phaseIx >= index) this.fireWatch(a);
   };
   P.fireWatch = function (a) { var w = a.watch; a.watch = null; if (!w) return; a.contactCell = a.pose ? a.pose.cellIndex : null; w.fn(); };
-  P.noteCell = function (a, q) { if (q.cellIndex !== a.lastDrawn) { a.drawn.push(q.cellIndex); a.lastDrawn = q.cellIndex; } };
+  P.noteCell = function (a, q) { if (!(q.alpha > 0.01)) return; if (q.cellIndex !== a.lastDrawn) {   // a cell counts only when it is visibly drawn
+ a.drawn.push(q.cellIndex); a.lastDrawn = q.cellIndex; } };
   // one play's cell count: distinct cells drawn of the manifest's total, cells drawn again after another cell (a repeat —
   // holding a cell across display frames is not one, and neither is the FIZZLE hold of the last ACT cell), cells never drawn
   P.playOf = function (a, live) {
@@ -163,7 +164,7 @@
     if (ci == null) ci = cells[ix];
     var p = Math.min(1, a.pt / a.dur), cell = m.cells[ci];
     var pl = a.pl, alpha = 1, sc = 1, rise = 0, k = 0;
-    if (a.phase === 'emerge') { var e = easeOut(p); alpha = e; sc = 0.72 + 0.28 * e; rise = (1 - e) * pl.height * 0.35; }
+    if (a.phase === 'emerge') { var e = easeOut(Math.max(p, 0.5 / cells.length));   /* LAB-4d: never fully transparent — the first cell is really drawn */ alpha = e; sc = 0.72 + 0.28 * e; rise = (1 - e) * pl.height * 0.35; }
     else if (a.phase === 'act') { var c = a.contact; k = p < c ? easeIn(p / c) : 1 - 0.18 * easeOut((p - c) / (1 - c)); }
     else if (a.phase === 'fizzle') { k = 0.82; if (!a.dz) { alpha = 1 - easeIn(p); sc = 1 + 0.06 * p; rise = -10 * p; } }   // a dissolving actor holds still: the erosion is the exit
     return { cell: cell, cellIndex: ci, phaseIx: ix, x: pl.anchor.x + pl.travel.x * k, feetY: pl.anchor.y + pl.travel.y * k, y: pl.anchor.y + pl.travel.y * k + rise, scale: pl.scale * sc, alpha: alpha, flipX: pl.flipX };

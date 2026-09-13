@@ -1,5 +1,6 @@
 {
-  "about": "VFX-LAB-2+3 · the card registry. A card manifests only if it has an entry here (and is a Hero or Unit, A2). ladderExempt: true takes the card off the rarity duration ladder — ruling A3 grants that to the pilot alone.",
+  "about": "VFX-LAB-2+3 · the card registry. A card manifests only if it has an entry here (and is a Hero or Unit, A2). ladderExempt: true takes the card off the rarity duration ladder — ruling A3 grants that to the pilot alone. LAB-4d · defaults: the tuning every card inherits unless it carries its own — tempo (a card's manifest may set its own) and fizzle_ms (a faction's exit preset may set its own). Owner ruling 2026-09-13: 0.6× and 1500 ms.",
+  "defaults": { "tempo": 0.6, "fizzle_ms": 1500 },
   "cards": {
     "meghnad": { "manifest": "../actors/meghnad/manifest.json", "ladderExempt": true, "ruling": "A3 — the pilot" }
   }

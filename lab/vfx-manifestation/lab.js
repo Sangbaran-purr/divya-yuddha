@@ -1,4 +1,4 @@
-/* lab.js — VFX-LAB-2+3 (+ LAB-4a: every URL stamped, the cells-drawn readout · LAB-4b: the dissolve exit and its preset preview · LAB-4c: the tempo and FIZZLE sliders) · the harness page. Loaded after lib/* and runtime/vfx.js.
+/* lab.js — VFX-LAB-2+3 (+ LAB-4a: every URL stamped, the cells-drawn readout · LAB-4b: the dissolve exit and its preset preview · LAB-4c: the tempo and FIZZLE sliders · LAB-4d: they start from the data's defaults) · the harness page. Loaded after lib/* and runtime/vfx.js.
    The page is glue: the fixture → ClashContext → Director plan → Runner → Playback (stage + board). Every piece of logic lives
    in lib/ and is card-agnostic; the only card-specific data are the registry (data/manifestations.json), the faction energy
    (data/factionfx.json) and the actor manifest. Nothing here loads from the live game.
@@ -46,7 +46,7 @@
   // ── MODE ──
   const MODES = { full: { speed: 1, reduced: false }, fast: { speed: 0.6, reduced: false }, reduced: { speed: 1, reduced: true } };
   let mode = 'full';
-  let tempo = 1, fizzleMs = 600;   // LAB-4c: the tuning sliders — they shape every play from the moment they move
+  let tempoOverride = null, fizzleOverride = null;   // LAB-4c/4d: a slider moved this session overrides the data's defaults; untouched, the defaults play
   let exitPreset = '';   // LAB-4b: '' = the card's own faction; otherwise preview that faction's exit on this actor
 
   // ── THE COPIED RUNTIME (existing effects: the Asura embers, the Chaos Surge) ──
@@ -60,7 +60,7 @@
     now: () => clock.t, pixiUrl: V('assets/vendor/pixi.min.mjs') });
 
   // ── DATA ──
-  let REG = {}, FFX = {}, copyMeta = null;
+  let REG = {}, REG_DEFAULTS = {}, FFX = {}, copyMeta = null;
   const actors = {};
   async function actorFor(cardId) {
     if (actors[cardId]) return actors[cardId];
@@ -149,13 +149,28 @@
   }
 
   // ── PLAY ──
-  function timingOf(mf) { return mf && mf.timing === 'native' ? { fps: mf.fps, emerge: mf.phases.emerge.length, act: mf.phases.act.length, contact: mf.contact } : null; }
+  function timingOf(mf) {
+    return mf && mf.timing === 'native' ? { fps: mf.fps, emerge: mf.phases.emerge.length, act: mf.phases.act.length, contact: mf.contact, emergeMs: mf.phaseMs && mf.phaseMs.emerge, actMs: mf.phaseMs && mf.phaseMs.act } : null;
+  }
+  // LAB-4d: the tempo and FIZZLE a play starts from — the card's manifest, its exit preset, the registry's defaults — unless a slider moved
+  function tuningFor(ctx, mf) {
+    return window.ActorManifest.defaultsFor({ manifest: mf, registry: { defaults: REG_DEFAULTS }, preset: window.Dissolve.pick(FFX, ctx.faction, exitPreset), override: { tempo: tempoOverride, fizzleMs: fizzleOverride } });
+  }
+  // the sliders show what will play: an untouched slider sits on the default and says so
+  function syncSliders(t) {
+    if (tempoOverride == null) el('tempo').value = t.base.tempo;
+    if (fizzleOverride == null) el('fizzle-ms').value = t.base.fizzleMs;
+    el('tempo-val').textContent = t.tempo.toFixed(2) + '×' + (t.from.tempo === 'slider' ? ' (default ' + t.base.tempo.toFixed(2) + '×)' : ' · default, from the ' + t.from.tempo);
+    el('fizzle-val').textContent = t.fizzleMs + ' ms' + (t.from.fizzleMs === 'slider' ? ' (default ' + t.base.fizzleMs + ')' : ' · default, from the ' + t.from.fizzleMs);
+    return t;
+  }
   // the plan the next play would run, printed as soon as a slider or the mode moves (a play already running keeps its timeline)
   async function previewPlan() {
     if (!F) return;
     const ctx = window.ClashContext.fromBatch(F), reg = REG[ctx.cardId] || {};
     const art = (ctx.scope === 'manifest' && reg.manifest) ? await actorFor(ctx.cardId) : null;
-    const p = window.Director.plan(ctx, { mode, prior: memory.count(ctx.cardId), ladderExempt: !!reg.ladderExempt, timing: timingOf(art && art.manifest), tempo, fizzleMs });
+    const mf = art && art.manifest, { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
+    const p = window.Director.plan(ctx, { mode, prior: memory.count(ctx.cardId), ladderExempt: !!reg.ladderExempt, timing: timingOf(mf), tempo, fizzleMs });
     el('plan').textContent = (runner && !runner.done ? '(the play running now keeps its own timeline — these values apply from the next play)' : '(the next play — press Play Meghnad)') + '\n\n' + window.Director.formatPlan(p);
   }
   function stopRun() { if (runner && !runner.done) runner.finish(); runner = null; }
@@ -168,7 +183,7 @@
     const prior = opts.phase ? 0 : memory.count(ctx.cardId);
     const art = (ctx.scope === 'manifest' && reg.manifest) ? await actorFor(ctx.cardId) : null;
     const mf = art && art.manifest;
-    const timing = timingOf(mf);
+    const timing = timingOf(mf), { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
     lastPlan = window.Director.plan(ctx, { mode, prior, ladderExempt: !!reg.ladderExempt, timing, tempo, fizzleMs });
     if (!opts.phase) memory.record(ctx.cardId);
     el('memory-note').textContent = 'Match memory: ' + ctx.cardName + ' has manifested ' + memory.count(ctx.cardId) + ' time' + (memory.count(ctx.cardId) === 1 ? '' : 's') + '. The second play in a match runs Fast.';
@@ -230,8 +245,9 @@
   ['full', 'fast', 'reduced'].forEach((m) => { el('mode-' + m).onclick = () => { mode = m; setOn(['mode-full', 'mode-fast', 'mode-reduced'], 'mode-' + m); previewPlan().catch(report); }; });
   el('seat-swap').onclick = () => { load(1 - attackerSeat).catch(report); };
   el('exit-preset').onchange = (e) => { exitPreset = e.target.value; };
-  el('tempo').oninput = (e) => { tempo = +e.target.value; el('tempo-val').textContent = tempo.toFixed(2) + '× · ' + Math.round(24 * tempo * 10) / 10 + ' cells/s'; previewPlan().catch(report); };
-  el('fizzle-ms').oninput = (e) => { fizzleMs = +e.target.value; el('fizzle-val').textContent = fizzleMs + ' ms'; previewPlan().catch(report); };
+  el('tempo').oninput = (e) => { tempoOverride = +e.target.value; previewPlan().catch(report); };
+  el('fizzle-ms').oninput = (e) => { fizzleOverride = +e.target.value; previewPlan().catch(report); };
+  el('exit-preset').addEventListener('change', () => { previewPlan().catch(report); });   // another faction's preset may bring its own fizzle_ms
   async function backend(which) {
     setOn(['be-webgpu', 'be-webgl', 'be-canvas'], 'be-' + which);
     stopRun();
@@ -251,7 +267,7 @@
   window.addEventListener('resize', () => { VFX.resize(); stage.resize(); });
   Promise.all([
     fetch(V('COPY.json')).then((r) => r.json()).then((j) => { copyMeta = j; }),
-    fetch(V('../data/manifestations.json')).then((r) => r.json()).then((j) => { REG = j.cards || {}; }),
+    fetch(V('../data/manifestations.json')).then((r) => r.json()).then((j) => { REG = j.cards || {}; REG_DEFAULTS = j.defaults || {}; }),
     fetch(V('../data/factionfx.json')).then((r) => r.json()).then((j) => { FFX = j; }),
   ]).then(() => load(0)).then(() => { stage.useBackend('webgpu').catch(report); window.requestAnimationFrame(tick); previewPlan().catch(report); }).catch(report);
   // is this page the served one? STAMP read past every cache; a cached page reloads itself once onto the served stamp
