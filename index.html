@@ -235,8 +235,8 @@ header{ padding:8px 12px; border-bottom:1px solid var(--line); display:flex; ali
 #logdrawer.open #loglast{ display:none; }
 #logbody{ max-height:0; overflow-y:auto; transition:max-height .25s ease; padding:0 12px; font-size:12px; line-height:1.5; color:var(--ink-dim); }
 #logdrawer.open #logbody{ max-height:32vh; padding:2px 12px 8px; }
-#logbody .me{ color:#e8d49a; } #logbody .foe{ color:#c9a88a; } #logbody .sys{ color:#a68c3c; font-style:italic; }
-#logbody::-webkit-scrollbar{ width:4px; } #logbody::-webkit-scrollbar-thumb{ background:#33280f; }
+#logbody .me, #bl-body .me{ color:#e8d49a; } #logbody .foe, #bl-body .foe{ color:#c9a88a; } #logbody .sys, #bl-body .sys{ color:#a68c3c; font-style:italic; }
+#logbody::-webkit-scrollbar, #bl-body::-webkit-scrollbar{ width:4px; } #logbody::-webkit-scrollbar-thumb, #bl-body::-webkit-scrollbar-thumb{ background:#33280f; }
 
 /* controls */
 #controls{ display:flex; gap:10px; align-items:center; z-index:5; position:relative;
@@ -358,6 +358,19 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
 #gameover h2{ font-family:Cinzel,serif; color:var(--gold); font-size:22px; letter-spacing:2px; margin-bottom:6px; }
 #gameover p{ color:var(--ink-dim); font-size:13px; margin-bottom:14px; }
 #gameover button{ background:#241a08; color:var(--gold); border:1.5px solid var(--gold-dim); border-radius:8px; padding:10px 22px; font-size:13px; cursor:pointer; }
+/* GL-3 — THE BATTLE-LOG PANEL over the result face: the .overlay/.modal shell (80vh), #logbody's line colours and thin
+   scrollbar, one scrolling column under a fixed title and a fixed close control — readable at 390px, no motion. */
+#battlelog{ z-index:96; }   /* above the battle HUD's score column (#hudwrap z-95 — the story cutscene's precedent), so no score chip sits on a line */
+#battlelog .modal{ display:flex; flex-direction:column; overflow:hidden; padding:16px 14px 12px; }
+#battlelog h3{ text-align:center; margin-bottom:8px; }
+#bl-body{ flex:1 1 auto; min-height:0; overflow-y:auto; overscroll-behavior:contain; -webkit-overflow-scrolling:touch; scrollbar-width:thin; scrollbar-color:#33280f transparent;
+  text-align:left; font-size:13px; line-height:1.55; color:var(--ink-dim); padding:0 4px 6px; }
+#bl-body > div{ padding:1px 0; overflow-wrap:anywhere; }
+#bl-body .bl-hdr{ font-family:Cinzel,serif; color:var(--gold); font-size:11px; letter-spacing:2px; text-align:center; font-style:normal; margin:12px 0 4px; }
+#bl-body .bl-hdr:first-child{ margin-top:2px; }
+#bl-body .bl-gap{ text-align:center; font-style:italic; color:var(--ink-dim); margin:10px 0; }
+#bl-body .bl-err{ text-align:center; font-style:italic; font-size:11px; color:var(--ink-dim); border-top:1px solid #33280f; margin-top:12px; padding-top:8px; }
+#battlelog .cancel{ align-self:center; }
 .hidden{ display:none !important; }
 
 /* ===== faction theming — Devas gold / Asuras crimson ===== */
@@ -2158,6 +2171,11 @@ button{ font-family:Cinzel,serif; letter-spacing:1px; }
     <button onclick="startGame()">REMATCH ⚔</button>
     <button class="go-alt" onclick="showLanding()">MAIN MENU</button>
   </div>
+</div></div>
+<div class="overlay hidden" id="battlelog" role="dialog" aria-modal="true" aria-labelledby="bl-title"><div class="modal">
+  <h3 id="bl-title">BATTLE LOG</h3>
+  <div id="bl-body"></div>
+  <button class="cancel" id="bl-close" type="button">CLOSE</button>
 </div></div>
 
 <div class="overlay hidden" id="mulligan">
@@ -4920,7 +4938,7 @@ function startGame(p0Faction, p1Faction){
   matchRecorded=false;              // arm the one-shot match-result counter for this new match
   goStampDone=false; lastEarn=null; // slice 4: re-arm the earnings-stamp one-shot for the new match
   knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; shieldMode=false; hideBoardTargetBar();
-  ['gameover','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','mulligan','realmpop'].forEach(id=>$(id).classList.add('hidden'));
+  ['gameover','battlelog','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','mulligan','realmpop'].forEach(id=>$(id).classList.add('hidden'));
   $('hudwrap').classList.remove('hidden');
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme();
@@ -7505,7 +7523,7 @@ function startStoryChapter(id){
   G=newGame({ p0:'You', p1:'Opponent', p0Faction:ch.playerFaction, p1Faction:ch.opponentFaction, realm:ch.realm||undefined, rng:storyRng(storySeedN++), scenario:ch.scenario }); seenLog=0; blogStart('story', null, G);   // GL-2 (R3): story is out of the battle log's scope — the recorder is off
   G.players[ME].manualShield=true; matchRecorded=true;   // matchRecorded=true is belt-and-suspenders; showGameOver also early-returns for story (no PvAI telemetry)
   knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; shieldMode=false; hideBoardTargetBar();
-  ['gameover','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','storyselect','cutscene','storyresult','mulligan','bossvs','realmpop','diffchip'].forEach(id=>$(id).classList.add('hidden'));   // diffchip: story never shows the PvAI difficulty chip
+  ['gameover','battlelog','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','storyselect','cutscene','storyresult','mulligan','bossvs','realmpop','diffchip'].forEach(id=>$(id).classList.add('hidden'));   // diffchip: story never shows the PvAI difficulty chip
   $('hudwrap').classList.remove('hidden');
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers(); battleStageStart();   // T42
@@ -8283,6 +8301,47 @@ function blogRecord(g, before, evs, actor){
     blogPersist();
   } catch (e) { BLog.errors++; }   // the match must never stall on its log; the count is there to be asserted and shown
 }
+/* ── GL-3 (GAME-LOG-1) — THE BATTLE-LOG PANEL. The recorder's lines, shown on the result screen. ──
+   A quiet VIEW BATTLE LOG button in #gameover .go-btns on the vs-AI face and the wire face (showWireResult rewrites that
+   container, so both faces call syncBattleLogButton after drawing it); never on story (R3 — no log is kept there). The
+   panel is its own .overlay above the result face; closing it only hides the panel, so the face and its buttons are
+   exactly as they were. Lines are shown AS RECORDED under the narrator's "— Round N —" headers: fixLogGrammar already ran
+   once inside the narrator and must never run again (a second pass turns "You pass." into "You pas."). Banner events
+   stay as recorded (sealed with GL-1). A non-zero recorder error count adds one quiet foot line; nothing else is hidden. */
+function syncBattleLogButton(){
+  const btns = document.querySelector('#gameover .go-btns'); if (!btns) return;
+  let b = document.getElementById('go-log');
+  if (!BLog || Story){ if (b) b.remove(); return; }
+  if (!b){ b = document.createElement('button'); b.id = 'go-log'; b.type = 'button'; b.className = 'go-alt'; b.textContent = 'VIEW BATTLE LOG'; b.onclick = openBattleLog; }
+  if (btns.lastElementChild !== b) btns.appendChild(b);
+}
+function renderBattleLog(){
+  const body = $('bl-body'); if (!body) return;
+  body.textContent = '';
+  const raw = (BLog && Array.isArray(BLog.lines)) ? BLog.lines : [];
+  let errors = BLog ? (BLog.errors || 0) : 0, lines = raw;
+  try { lines = NARRATOR.withRoundHeaders(raw); } catch (e) { errors++; }
+  lines.forEach(l => {
+    if (!l) return;
+    const d = document.createElement('div');
+    d.className = l.kind === 'header' ? 'bl-hdr' : l.kind === 'gap' ? 'bl-gap' : (l.side === 'me' || l.side === 'foe') ? l.side : 'sys';
+    d.textContent = String(l.text);   // AS RECORDED — no second grammar pass
+    body.appendChild(d);
+  });
+  if (errors > 0){ const e = document.createElement('div'); e.className = 'bl-err'; e.textContent = 'Some moments could not be recorded.'; body.appendChild(e); }
+}
+function openBattleLog(){
+  try { renderBattleLog(); } catch (e) {}
+  const ov = $('battlelog'); if (!ov) return;
+  ov.classList.remove('hidden');
+  const body = $('bl-body'); if (body) body.scrollTop = 0;   // read from the first round down
+  const c = $('bl-close'); if (c) { try { c.focus({ preventScroll: true }); } catch (e) {} }
+}
+function closeBattleLog(){
+  const ov = $('battlelog'); if (ov) ov.classList.add('hidden');
+  const b = document.getElementById('go-log'); if (b) { try { b.focus({ preventScroll: true }); } catch (e) {} }
+}
+if ($('bl-close')) $('bl-close').onclick = closeBattleLog;   // closing only hides the panel: the result face beneath is untouched
 // the closing line for a board that cannot reach its own end: a forfeit (either seat's shape), or a result with moves missing
 function blogClose(g, r){
   if (!BLog || BLog.closed || !r || !g || g.over) return;
@@ -10242,7 +10301,7 @@ function startWireMatch(st){
   matchRecorded = true;   // R7 — the second lock: even a stray showGameOver can never record a wire match
   goStampDone = true; lastEarn = null;
   knownUids=new Set(); lastPowers={}; lastRoundLen=0; pendingFly=null; inspectContext=null; lastTotals={o:null,p:null}; leapMode=null; placeMode=null; shieldMode=false; hideBoardTargetBar();
-  ['gameover','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','mulligan','realmpop'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
+  ['gameover','battlelog','targeting','inspect','banner','factionselect','factionintro','fi-inspect','landing','mulligan','realmpop'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
   const ww=$('wirewait'); if(ww) ww.remove();
   $('diffchip').classList.add('hidden');
   $('hudwrap').classList.remove('hidden');
@@ -10295,6 +10354,7 @@ function showWireResult(){
   const btns = document.querySelector('#gameover .go-btns');
   if (btns) btns.innerHTML = '<button id="wire-leave">RETURN TO THE HALL</button>';
   const lv = $('wire-leave'); if (lv) lv.onclick = () => wirePost({ type:'wire:leave', matchId: Wire.matchId });
+  syncBattleLogButton();   // GL-3 — the rewrite above removed it: add the battle-log button back
   $('gameover').classList.remove('hidden');
   Audio2.setRound3(false); Audio2.stopMusic(2);
   if (w===ME) Audio2.fileSfx('sfx_victory'); else if (w===OPP) Audio2.fileSfx('sfx_defeat'); else Audio2.sfx('roundloss');
@@ -10342,6 +10402,7 @@ function showGameOver(){
   if(!goStampDone){ goStampDone=true;   // slice 4: earnings stamp — the ACTUAL awards from recordMatchResult, once per match
     if(lastEarn) renderEarnStamp($('go-earn'), $('go-extra'), lastEarn);
   }
+  syncBattleLogButton();   // GL-3 — VIEW BATTLE LOG on the vs-AI face (story never reaches here: R3)
   $('gameover').classList.remove('hidden');
   Audio2.setRound3(false);
   Audio2.stopMusic(2);   // fade battle music to SILENCE (no crossfade to menu) — result screen plays over silence; menu resumes on return to faction-select
