@@ -16,6 +16,16 @@
    Everything here is normal-blended.
    Presets: data/factionfx.json, one entry per faction ({ name, portal, exit: "dissolve", dissolve: {…} }); DEFAULTS fill whatever a
    preset leaves out. pick() chooses the faction's entry, or the lab's preview override.
+   THE TUNING KNOBS (LAB-6a, a template gap — one set of preset fields every faction tunes with; every default reproduces the exit as
+   it was, so a preset that does not name them is unchanged):
+     ember_density   motes per second, × the path's base rate          (alias of embers)
+     mote_life       [min, max] ms a mote lives, written for a 1500 ms FIZZLE and scaled with the real one; still ends by FIZZLE's end
+     mote_size · mote_rise · mote_spread · mote_color   radius px · upward px/s · sideways px/s · colour
+     mote_zone       0 = motes rise off the front; > 0 = from the whole body still standing, up to this far above the front (units of f)
+     front_width · front_soft   the glow band above the front · the erosion's own softness   (aliases of edgeWidth · soft)
+     sweep_frac      the share of FIZZLE the erosion takes (1 = all of it); after it the motes and the haze hang and fade in the rest
+     haze            { color, alpha, rate, life, size, rise } — soft bright puffs behind the figure (normal blend), or null
+     canvas_cap · gpu_cap   the most motes alive at once on the Canvas 2D path / the GPU path
    Browser: window.Dissolve. Node: require. */
 (function (root) {
   'use strict';
@@ -28,7 +38,13 @@
     emberSize: [1.1, 2.4], emberRise: [36, 80], emberLife: [380, 640],   // px radius · px/s upward · ms (clamped to FIZZLE's end)
     smoke: true, smokeColor: '#1c1a1e', smokeAlpha: 0.18,                // faint dark puffs behind the front
     seed: 7,
+    emberZone: 0, emberSpread: 34, lifeRef: 600,                          // LAB-6a: motes off the front · sideways px/s · the FIZZLE emberLife is written for
+    sweep: 1, haze: null, canvasCap: 120, gpuCap: 400,                    // LAB-6a: the erosion's share of FIZZLE · the haze · live-mote caps
   };
+  // the tuning names (snake_case, like fizzle_ms) → the fields the stage reads
+  var ALIAS = { ember_density: 'embers', mote_life: 'emberLife', mote_size: 'emberSize', mote_rise: 'emberRise', mote_spread: 'emberSpread', mote_color: 'emberColor',
+                mote_zone: 'emberZone', front_width: 'edgeWidth', front_soft: 'soft', sweep_frac: 'sweep', canvas_cap: 'canvasCap', gpu_cap: 'gpuCap' };
+  var HAZE = { color: '#ffe7a0', alpha: 0.12, rate: 10, life: [600, 900], size: [0.1, 0.18], rise: [6, 18] };
   var N = 128, GLOW = 64, PUFF = 128;
 
   function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
@@ -46,6 +62,9 @@
   function resolve(fx) {
     var src = (fx && fx.dissolve) || {}, d = {};
     for (var k in DEFAULTS) d[k] = src[k] != null ? src[k] : DEFAULTS[k];
+    for (var a in ALIAS) if (src[a] != null) d[ALIAS[a]] = src[a];
+    if (src.mote_life != null) d.lifeRef = 1500;                          // mote_life is written for a 1500 ms FIZZLE
+    if (d.haze) { var h = {}; for (var hk in HAZE) h[hk] = d.haze[hk] != null ? d.haze[hk] : HAZE[hk]; d.haze = h; }
     d.name = (fx && fx.name) || 'Default'; d.key = (fx && fx.key) || null;
     return d;
   }
@@ -203,7 +222,7 @@
     ].join('\n'),
   };
 
-  var OUT = { DEFAULTS: DEFAULTS, N: N, GLOW: GLOW, PUFF: PUFF, rng: rng, rgb: rgb, tint: tint, resolve: resolve, pick: pick, noise: noise, sample: sample, field: field,
+  var OUT = { DEFAULTS: DEFAULTS, ALIAS: ALIAS, HAZE: HAZE, N: N, GLOW: GLOW, PUFF: PUFF, rng: rng, rgb: rgb, tint: tint, resolve: resolve, pick: pick, noise: noise, sample: sample, field: field,
               threshold: threshold, keep: keep, frontAt: frontAt, grid: grid, paint: paint, silhouette: silhouette, glowCanvas: glowCanvas, puffCanvas: puffCanvas,
               noiseCanvas: noiseCanvas, SHADER: SHADER };
   root.Dissolve = OUT;

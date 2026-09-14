@@ -20,6 +20,8 @@
    front: pooled sprites of one 64 px glow texture on the GPU, soft discs on #actorover on Canvas 2D (fewer). Faint smoke hangs
    behind the front on #actorunder. All of it is normal-blended, every particle ends by FIZZLE's end, and remove()/clear() drop them.
    A FIZZLE longer than 600 ms (LAB-4c's slider) time-stretches the embers and smoke with the sweep: life ×, speed and spawn rate ÷.
+   LAB-6a: a preset may end the erosion early (sweep_frac) so its motes and haze hang in the rest of FIZZLE, raise its motes from the
+   whole standing body (mote_zone), cap the motes alive (canvas_cap / gpu_cap), and add a soft bright haze (puffs, normal blend).
    MEMORY (LAB-5, ruling A5): an actor's decoded atlas lives only for its play. loadActor() at play counts its RGBA bytes;
    unloadActor() after SETTLE destroys the GPU texture, closes the decoded bitmap and drops the mask kits — never under a live actor.
    decodedBytes() is the live figure (0 between plays); stats().peakDecoded is the most ever held at once.
@@ -213,8 +215,8 @@
     });
     // the dissolve's smoke, behind the actor
     if (u) this.parts.forEach(function (pt) {
-      if (pt.kind !== 'smoke') return;
-      var k01 = Math.min(1, (t - pt.t0) / pt.life), sz = pt.r * 2 * (1 + 0.5 * k01);
+      if (pt.kind !== 'smoke' && pt.kind !== 'haze') return;
+      var k01 = Math.min(1, (t - pt.t0) / pt.life), sz = Math.min(128, pt.r * 2 * (1 + 0.5 * k01));   // never above the puff image's own size
       u.globalAlpha = pt.alpha * Math.min(1, k01 / 0.3) * (1 - k01); u.drawImage(self.imageOf('puff', pt.color), pt.x - sz / 2, pt.y - sz / 2, sz, sz); u.globalAlpha = 1;
     });
     // THE ACTOR — normal blending, real alpha
@@ -276,7 +278,7 @@
     var pr = D.resolve(fx), nzKey = pr.seed + ':' + Math.max(2, Math.round(pr.noiseScale));
     if (!this.nz || this.nz.key !== nzKey) this.nz = D.noise(pr);
     a.dz = { pr: pr, nz: this.nz, key: (fx && fx.key) || null, t0: this.now(), dur: Math.max(1, a.dur), r: D.rng((pr.seed * 7919 + a.id) >>> 0),
-             emberAcc: 0, smokeAcc: 0, spawned: 0, peak: 0, puffs: 0, sweep: [], p: 0, th: D.threshold(0, pr), lastT: null,
+             emberAcc: 0, smokeAcc: 0, hazeAcc: 0, spawned: 0, peak: 0, puffs: 0, hazes: 0, liveE: 0, capped: 0, sweepDoneT: null, afterSweep: 0, sweep: [], p: 0, ps: 0, th: D.threshold(0, pr), lastT: null,
              path: this.backend === 'pixi' && this.app ? 'shader' : 'mask' };
     return true;
   };
@@ -284,14 +286,18 @@
     var z = a.dz, s = z.sweep, mono = true;
     for (var i = 1; i < s.length; i++) if (s[i] < s[i - 1]) { mono = false; break; }
     return { name: z.pr.name, key: z.key, kind: 'dissolve', path: z.path, edge: z.pr.edge, dur: z.dur, embers: z.spawned, peak: z.peak, smoke: z.puffs,
+             haze: z.hazes, cap: z.path === 'shader' ? z.pr.gpuCap : z.pr.canvasCap, capped: z.capped, sweepFrac: z.pr.sweep, sweepDoneAt: z.sweepDoneT == null ? null : Math.round(z.sweepDoneT - z.t0), afterSweep: z.afterSweep,
              frames: s.length, monotonic: mono, first: s[0], last: s[s.length - 1], progress: z.p };
   };
   // one frame of the dissolve: the sweep, embers and smoke off the front, the particles' motion, the GPU ember sprites
   P.stepDissolve = function (a, t) {
     var D = root.Dissolve, z = a.dz, pr = z.pr, q = a.pose, c = q.cell, self = this;
     var p = Math.min(1, Math.max(0, (t - z.t0) / z.dur)), dt = z.lastT == null ? 0 : Math.max(0, t - z.lastT) / 1000; z.lastT = t;
-    z.p = p; z.th = D.threshold(p, pr); if (z.sweep.length < 2000) z.sweep.push(z.th);
+    var ps = Math.min(1, p / Math.max(0.05, pr.sweep));                 // the erosion's own progress: done at sweep_frac of FIZZLE
+    z.p = p; z.ps = ps; z.th = D.threshold(ps, pr); if (z.sweep.length < 2000) z.sweep.push(z.th);
+    if (ps >= 1 && z.sweepDoneT == null) z.sweepDoneT = t;
     var left = z.t0 + z.dur - t, gpu = z.path === 'shader', sil = a.art.silhouetteOf ? a.art.silhouetteOf(q.cellIndex) : null, flip = q.flipX ? -1 : 1, lifeK = z.dur / 600, slow = Math.max(1, lifeK);
+    var lifeE = z.dur / (pr.lifeRef || 600), slowE = Math.max(1, lifeE), cap = gpu ? pr.gpuCap : pr.canvasCap;
     var at = function (u, v) { return { x: q.x + flip * (u * c.w - c.pivot.x) * q.scale, y: q.y + (v * c.h - c.pivot.y) * q.scale }; };
     var onFigure = function (u, v) {
       if (!(v >= 0 && v <= 1)) return false; if (!sil) return true;
@@ -302,18 +308,22 @@
         var R = z.r, u = R(), v = D.frontAt(z.nz, pr, u, z.th) + lift();
         if (!onFigure(u, v)) continue;
         var s = at(u, v);
-        if (kind === 'ember') self.parts.push({ kind: kind, owner: a, x: s.x, y: s.y, vx: (R() - 0.5) * 34 / slow, vy: -(pr.emberRise[0] + R() * (pr.emberRise[1] - pr.emberRise[0])) / slow,
-          r: pr.emberSize[0] + R() * (pr.emberSize[1] - pr.emberSize[0]), t0: t, life: Math.min((pr.emberLife[0] + R() * (pr.emberLife[1] - pr.emberLife[0])) * lifeK, left),
-          ph: R() * 6.283, color: pr.emberColor, tint: D.tint(pr.emberColor), slow: slow, sprite: null });
+        if (kind === 'ember') self.parts.push({ kind: kind, owner: a, x: s.x, y: s.y, vx: (R() - 0.5) * pr.emberSpread / slowE, vy: -(pr.emberRise[0] + R() * (pr.emberRise[1] - pr.emberRise[0])) / slowE,
+          r: pr.emberSize[0] + R() * (pr.emberSize[1] - pr.emberSize[0]), t0: t, life: Math.min((pr.emberLife[0] + R() * (pr.emberLife[1] - pr.emberLife[0])) * lifeE, left),
+          ph: R() * 6.283, color: pr.emberColor, tint: D.tint(pr.emberColor), slow: slowE, sprite: null });
+        else if (kind === 'haze') { var hz = pr.haze; self.parts.push({ kind: kind, owner: a, x: s.x, y: s.y, vx: (R() - 0.5) * 10 / slowE, vy: -(hz.rise[0] + R() * (hz.rise[1] - hz.rise[0])) / slowE,
+          r: (hz.size[0] + R() * (hz.size[1] - hz.size[0])) * c.h * q.scale, t0: t, life: Math.min((hz.life[0] + R() * (hz.life[1] - hz.life[0])) * (z.dur / 1500), left), ph: R() * 6.283, color: hz.color, alpha: hz.alpha, slow: slowE, sprite: null }); }
         else self.parts.push({ kind: kind, owner: a, x: s.x, y: s.y, vx: (R() - 0.5) * 14 / slow, vy: -(8 + R() * 16) / slow, r: (0.05 + R() * 0.06) * c.h * q.scale,
           t0: t, life: Math.min((520 + R() * 280) * lifeK, left), ph: R() * 6.283, color: pr.smokeColor, alpha: pr.smokeAlpha, slow: slow, sprite: null });
         return true;
       }
       return false;
     };
-    if (p < 1 && left > 40) {
-      z.emberAcc += dt * (gpu ? 150 : 60) * pr.embers / slow;
-      while (z.emberAcc >= 1) { z.emberAcc -= 1; if (spawn('ember', function () { return -z.r() * pr.edgeWidth * 0.8; })) z.spawned++; }
+    if (ps < 1 && left > 40) {
+      z.emberAcc += dt * (gpu ? 150 : 60) * pr.embers / slowE;
+      var liftE = pr.emberZone > 0 ? function () { return -z.r() * pr.emberZone; } : function () { return -z.r() * pr.edgeWidth * 0.8; };
+      while (z.emberAcc >= 1) { z.emberAcc -= 1; if (z.liveE >= cap) { z.capped++; continue; } if (spawn('ember', liftE)) { z.spawned++; z.liveE++; } }
+      if (pr.haze) { z.hazeAcc += dt * pr.haze.rate / slowE; while (z.hazeAcc >= 1) { z.hazeAcc -= 1; if (spawn('haze', function () { return -z.r() * Math.max(pr.emberZone, pr.edgeWidth); })) z.hazes++; } }
       if (pr.smoke) { z.smokeAcc += dt * 14 / slow; while (z.smokeAcc >= 1) { z.smokeAcc -= 1; if (spawn('smoke', function () { return 0.03 + z.r() * 0.1; })) z.puffs++; } }
     }
     var live = 0;
@@ -324,7 +334,7 @@
       if (pt.kind === 'ember') { pt.vy *= Math.pow(0.6, dt / pt.slow); live++; }
       return true;
     });
-    z.peak = Math.max(z.peak, live);
+    z.peak = Math.max(z.peak, live); z.liveE = live; if (z.sweepDoneT != null && t > z.sweepDoneT) z.afterSweep = Math.max(z.afterSweep, live);
     if (gpu && this.app) {
       var kit = this.gpuKit(z), PIXI = this.pixi, app = this.app;
       this.parts.forEach(function (pt) {

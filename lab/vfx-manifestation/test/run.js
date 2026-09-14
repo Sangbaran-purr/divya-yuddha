@@ -424,7 +424,7 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
         const ctx = new Proxy({}, { get: (t, k) => k === 'createRadialGradient' ? () => ({ addColorStop() {} }) : k === 'drawImage' ? (img, sx, sy, sw, sh, dx, dy, dw, dh) => { calls.draw++; if (img && img.__atlas && sw > 1 && dw === sw && dh === sh) calls.cells.push(sx + ',' + sy); if (img && (img.__labGlow || img.__labPuff) && dx === undefined) calls.glowDraws.push({ kind: img.__labGlow ? 'glow' : 'puff', size: img.__labGlow || img.__labPuff, dw: sw, dh: sh }); } : k === 'putImageData' ? (img) => { if (img && img.__role === 'mask') { const a = new Uint8Array(img.data.length / 4); for (let i = 0; i < a.length; i++) a[i] = img.data[i * 4 + 3]; calls.masks.push({ cell: img.__cell, a }); } } : k === 'clearRect' ? () => { calls.clear++; } : () => undefined,
                                     set: (t, k, v) => { if (k === 'globalCompositeOperation') calls.ops.add(v); return true; } });
         w.HTMLCanvasElement.prototype.getContext = () => ctx;
-        ['boarddiff', 'clashcontext', 'director', 'runner', 'manifest', 'stagemath', 'dissolve', 'actorstage', 'playback'].forEach((n) => w.eval(fs.readFileSync(path.join(LAB, 'lib', n + '.js'), 'utf8')));
+        ['boarddiff', 'clashcontext', 'director', 'runner', 'manifest', 'stagemath', 'dissolve', 'actorstage', 'playback'].forEach((n) => w.eval((wopts && wopts.libs && wopts.libs[n]) || fs.readFileSync(path.join(LAB, 'lib', n + '.js'), 'utf8')));
         let t = 0;
         const stage = new w.ActorStage({ field: w.document.getElementById('field'), under: w.document.getElementById('actorunder'), actorCanvas: w.document.getElementById('actorcanvas'), gpuCanvas: w.document.getElementById('actorgpu'), over: w.document.getElementById('actorover'), now: () => t });
         const installPixi = (backend) => {
@@ -533,8 +533,8 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
 
       // ── LAB-4b · THE DISSOLVE EXIT: the real presets, the real playback, every backend's draw path ──
       const FFXD = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DS = lib('dissolve');
-      const playExit = (backend, mode, override, extra) => {
-        const W = world(0, backend, (fac) => DS.pick(FFXD, fac, override || ''));
+      const playExit = (backend, mode, override, extra, libs, table) => {
+        const W = world(0, backend, (fac) => DS.pick(table || FFXD, fac, override || ''), libs ? { libs } : undefined);
         const plan = W.w.Director.plan(W.ctx, Object.assign({ mode, ladderExempt: CARD.exempt, timing: NT }, extra)), r = W.w.Runner.create(plan, W.pb.handlers, () => W.clock.t);
         const Z = plan.phases.find((p) => p.name === 'FIZZLE');
         let peakParts = 0, peakSprites = 0, sawFilter = false; r.start({});
@@ -593,6 +593,37 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
                                   : x.uniformT.length >= 30 && x.uniformT.every((v, i) => i === 0 || v >= x.uniformT[i - 1]));
       ok(CARD.tag + 'S16 · A LONG FIZZLE (LAB-4d: the ' + CARD.name + ' default, 1500 ms in Full, so 750 ms in Fast), every backend: the sweep stretches to the new length and stays monotonic (no Canvas 2D mask ever regains alpha, the GPU threshold only rises), everything is gone at the end, embers and smoke stretch with it, 0 actors / sprites / particles afterwards, and the board settles within a frame of FIZZLE\'s end, equal to the engine\'s AFTER — ' + showX(LONG),
          LONG.every(longOk), J(LONG.map((x) => ({ b: x.backend, m: x.mode, exit: x.exit, fizzleMs: x.fizzleMs, settleLag: x.settleLag, clean: x.clean }))));
+
+      // ── LAB-6a · THE DEVA EXIT, TUNED — and every other exit exactly as it was ──
+      if (CARD.faction === 'devas') {
+        const pr = DS.resolve(FFXD.devas), asu = DS.resolve(FFXD.asuras), raw = FFXD.devas.dissolve;
+        const rate = (x, ms) => x.embers * 150 / Math.max(1, ms / x.lifeRef), lifeAt = (x, ms) => x.emberLife.map((v) => v * ms / x.lifeRef);
+        const TUNE = BACKENDS.map((b) => playExit(b, 'full', '', { tempo: 0.6, fizzleMs: 1500 })).concat(BACKENDS.map((b) => playExit(b, 'fast', '', { tempo: 0.6, fizzleMs: 1500 })));
+        const asuraSame = playExit('webgl', 'full', 'asuras', { tempo: 0.6, fizzleMs: 1500 });
+        const cv = TUNE.find((x) => x.backend === 'canvas2d' && x.mode === 'full'), gl = TUNE.find((x) => x.backend === 'webgl' && x.mode === 'full');
+        const tuneOk = (x) => !!x.exit && x.exit.name === 'Deva' && x.exit.monotonic && x.exit.smoke === 0 && x.exit.haze > 0 && x.exit.sweepDoneAt != null && Math.abs(x.exit.sweepDoneAt - x.fizzleMs * pr.sweep) <= 20 &&
+          x.exit.afterSweep > 0 && x.exit.peak <= x.exit.cap && x.exit.cap === (x.backend === 'canvas2d' ? pr.canvasCap : pr.gpuCap) && x.clean && !!x.done && x.done.equalsFinal && x.settleLag >= 0 && x.settleLag < 17 &&
+          (x.backend === 'canvas2d' ? (() => { const m = monoMasks(x.masks); return m.pairs >= 10 && m.bad === 0; })() : x.uniformT.every((v, i) => i === 0 || v >= x.uniformT[i - 1]));
+        ok(CARD.tag + 'S19 · LAB-6a · THE DEVA EXIT, TUNED TO INDRA\'S TAIL: the preset uses the tuning knobs (ember_density ' + raw.ember_density + ' · mote_life ' + J(raw.mote_life) + ' ms · front_width ' + raw.front_width + ' · haze ' + J(raw.haze) + ' · sweep_frac ' + raw.sweep_frac + ' · mote_zone ' + raw.mote_zone + ' · canvas_cap ' + raw.canvas_cap + '); at the inherited 1500 ms FIZZLE its motes spawn ' + (rate(pr, 1500) / rate(asu, 1500)).toFixed(1) + '× Asura\'s rate and live ' + J(lifeAt(pr, 1500)) + ' ms (mean ' + Math.round((lifeAt(pr, 1500)[0] + lifeAt(pr, 1500)[1]) / 2) + ') against Asura\'s ' + J(lifeAt(asu, 1500).map(Math.round)) + ' (mean ' + Math.round((lifeAt(asu, 1500)[0] + lifeAt(asu, 1500)[1]) / 2) + '), still ending by FIZZLE\'s end; the front is wider and softer (' + pr.edgeWidth + ' / ' + pr.soft + ' against ' + asu.edgeWidth + ' / ' + asu.soft + '); motes rise from the whole standing body; no smoke, a light gold haze (alpha ' + pr.haze.alpha + '); on every backend, Full and Fast: the sweep ends at ' + Math.round(pr.sweep * 100) + '% of FIZZLE and stays monotonic, motes outlive it inside FIZZLE, the live motes never pass the cap (Canvas 2D peak ' + cv.exit.peak + ' of ' + pr.canvasCap + ', WebGL ' + gl.exit.peak + ' of ' + pr.gpuCap + '), 0 actors / sprites / particles afterwards, the board settles within a frame, equal to the engine\'s AFTER — ' + TUNE.map((x) => x.backend + ' ' + x.mode + ': motes ' + x.exit.embers + ' (peak ' + x.exit.peak + ', after the sweep ' + x.exit.afterSweep + ') · haze ' + x.exit.haze + ' · sweep done ' + x.exit.sweepDoneAt + ' ms').join(' | '),
+           ['ember_density', 'mote_life', 'front_width', 'haze'].every((k) => raw[k] != null) && raw.smoke === false && rate(pr, 1500) >= 3 * rate(asu, 1500) && (lifeAt(pr, 1500)[0] + lifeAt(pr, 1500)[1]) > (lifeAt(asu, 1500)[0] + lifeAt(asu, 1500)[1]) &&
+           pr.edgeWidth > asu.edgeWidth && pr.soft > asu.soft && pr.emberZone > 0 && pr.sweep < 1 && pr.haze.alpha <= 0.2 && /^#[0-9a-f]{6}$/i.test(pr.haze.color) &&
+           TUNE.every(tuneOk) && gl.exit.embers >= 3 * asuraSame.exit.embers && cv.exit.embers < gl.exit.embers,
+           J(TUNE.map((x) => ({ b: x.backend, m: x.mode, exit: x.exit, settleLag: x.settleLag, clean: x.clean }))));
+      } else if (CARD.faction === 'asuras') {
+        const WAS = JSON.parse(git(['show', 'deacd95:lab/vfx-manifestation/data/factionfx.json']));
+        const OLD = { actorstage: git(['show', 'deacd95:lab/vfx-manifestation/lib/actorstage.js']), dissolve: git(['show', 'deacd95:lab/vfx-manifestation/lib/dissolve.js']) };
+        const pairs = [];
+        BACKENDS.forEach((b) => ['full', 'fast'].forEach((m) => {
+          const now = playExit(b, m, '', { tempo: 0.6, fizzleMs: 1500 }), then = playExit(b, m, '', { tempo: 0.6, fizzleMs: 1500 }, OLD, WAS);
+          const sig = (x) => J({ exit: x.exit && { embers: x.exit.embers, peak: x.exit.peak, smoke: x.exit.smoke, frames: x.exit.frames, monotonic: x.exit.monotonic, first: x.exit.first, last: x.exit.last },
+                                  masks: x.masks.map((q) => sha256(Buffer.from(q.a))).join(','), uniformT: x.uniformT, draws: x.glowDraws, sounds: x.sounds, settleLag: x.settleLag });
+          pairs.push({ b, m, same: sig(now) === sig(then), embers: now.exit.embers, smoke: now.exit.smoke, haze: now.exit.haze });
+        }));
+        const a = DS.resolve(FFXD.asuras);
+        ok(CARD.tag + 'S19 · LAB-6a · MEGHNAD\'S ASURA EXIT IS UNCHANGED: the Asura preset entry is byte-identical to LAB-6 (deacd95), it names no tuning knob, it resolves to the neutral defaults (sweep 1, motes off the front, spread 34, no haze, caps never reached); and replayed through LAB-6\'s own actorstage.js and dissolve.js, on every backend in Full and Fast, its exit is the same draw for draw — every mote count, mask, threshold, particle draw and sound — ' + pairs.map((x) => x.b + ' ' + x.m + ': ' + (x.same ? 'identical' : 'DIFFERENT') + ' (embers ' + x.embers + ', smoke ' + x.smoke + ')').join(' | '),
+           J(FFXD.asuras) === J(WAS.asuras) && Object.keys(DS.ALIAS).concat(['haze']).every((k) => FFXD.asuras.dissolve[k] === undefined) &&
+           a.sweep === 1 && a.emberZone === 0 && a.emberSpread === 34 && a.lifeRef === 600 && a.haze === null && pairs.every((x) => x.same && x.haze === 0), J(pairs));
+      }
 
       // ── LAB-5 · SOUND ──
       const SND = BACKENDS.map((b) => playExit(b, 'full', '', { tempo: 0.6, fizzleMs: 1500 }));

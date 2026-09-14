@@ -401,6 +401,46 @@ The actor is the same size on both seats: card height × 2.1, so each card's sca
 5. **An action that points up.** Indra's bolt fires up the frame. The manifest records it as `aim: "up"` (validated in `lib/manifest.js`); the stage does not act on it. A vertical mirror for the top seat was built and then removed by the owner's ruling below.
 6. **The fixture builder, the page and the tests** were written around one card. `buildIndra`, the Play buttons, the story text, the hand chip and the readouts now follow the current card. The suite runs every stage check and the gate for each card, with a GATE line per card and one for both.
 
+## LAB-6a: the Deva exit, tuned to Indra's own tail
+
+On Pages, Indra "vanished" instead of fizzling: the Deva preset was untuned. It is now tuned against his clip's own tail, f98–f120 (`frames/indra_tail_contact_sheet.jpg`, git-ignored). Measured there as gold-dust pixels:
+- from f098 the figure breaks into **dense bright gold dust over the whole body**, peaking at f106–f108 (about 0.35 s in)
+- the column hangs, then drifts up as a plume and thins
+- nearly gone by f118 (about 0.85 s)
+- no dark smoke
+
+**The tuning knobs (a template gap).** The dissolve had only one emitter at the front, a sweep that always took all of FIZZLE, and no cap or haze. These optional preset fields let any faction tune the same way. Each default reproduces the exit as it was, so a preset that doesn't name them is unchanged:
+
+| Field | What it does |
+|---|---|
+| `ember_density` | motes per second, × the path's base rate |
+| `mote_life` | [min, max] ms a mote lives, written for a 1500 ms FIZZLE and scaled with the real one; still ends by FIZZLE's end |
+| `mote_size` · `mote_rise` · `mote_spread` · `mote_color` | radius px · upward px/s · sideways px/s · colour |
+| `mote_zone` | 0 = motes rise off the front; above 0 = from the whole body still standing, up to that far above the front |
+| `front_width` · `front_soft` | the glow band above the front · the erosion's own softness |
+| `sweep_frac` | the share of FIZZLE the erosion takes; after it the motes and haze hang and fade |
+| `haze` | `{ color, alpha, rate, life, size, rise }`: soft bright puffs behind the figure, normal blend, or null |
+| `canvas_cap` · `gpu_cap` | the most motes alive at once on the Canvas 2D path / the GPU path |
+
+**The Deva preset** (`data/factionfx.json`):
+- front width 0.24 and softness 0.08, against Asura's 0.06 and 0.02
+- gold veins lit across the standing body at full strength (charge 0.6)
+- the erosion over 70% of FIZZLE
+- motes at density 8 (20× Asura's rate at 1500 ms), small bright gold (#ffe08a, 0.6–1.5 px), from the whole standing body, living 1100–1700 ms, rising 8–40 px/s with 26 px/s spread
+- a light gold haze (#ffd978, alpha 0.18, 30 puffs/s)
+- no smoke; caps 140 on Canvas 2D and 700 on the GPU
+- FIZZLE stays the inherited 1500 ms
+
+**What it does at 390 px** (headless Chrome, Full):
+- **Sweep:** ends at 1067 ms. At 40% of FIZZLE the upper body glows gold while the lower half has broken into dense dust; by 80% the body is gone and a bright gold column hangs and drifts up.
+- **Motes:** they keep rising and fading through the last 433 ms.
+- **WebGPU:** 402 motes alive at 40% and 506 at 80%, under its cap of 700.
+- **Canvas 2D:** holds at its cap of 140 (232 further spawns refused), so the path stays measurable.
+- A first, lighter tuning (density 3.2, erosion over 55%) still read as a vanish: by 40% the body was gone under a sparse sprinkle.
+- **After:** 0 actors, sprites and particles.
+
+**Meghnad's Asura exit is unchanged.** Its preset entry is byte-identical, and the suite replays it through LAB-6's own `actorstage.js` and `dissolve.js`. On every renderer, in Full and Fast, it matches draw for draw.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference
