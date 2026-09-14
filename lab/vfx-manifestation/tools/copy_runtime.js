@@ -11,7 +11,8 @@
 //                       constants the wrapper defaults to, and each copied file's source, sha256, size and pixel size
 //   runtime/assets/...  the Pixi copy + the sheets of ONE existing effect (the GPU Chaos Surge, lo rung: surge_1/surge_2
 //                       colour + motion vectors — exactly what the module's own init loads for it)
-//   art/...             the Meghnad and Indra card art
+//   art/...             the card art of every card in data/manifestations.json (its "art" field — LAB-7: read from the
+//                       registry, so a new character needs no edit here)
 // WHY runtime/ holds both the module and its assets: the module builds sheet URLs relative to the PAGE ('assets/vfx/…')
 // but imports Pixi relative to its own FILE ('./assets/vendor/…'). The lab page sets <base href="runtime/">, so both
 // resolve inside runtime/ and the copy needs no path rewrite at all.
@@ -63,9 +64,12 @@ const ASSETS = [
   ['assets/vfx/game/sheets/vfx_surge_2.png', 'runtime/assets/vfx/game/sheets/vfx_surge_2.png'],
   ['assets/vfx/game/sheets/mv/vfx_surge_1.png', 'runtime/assets/vfx/game/sheets/mv/vfx_surge_1.png'],
   ['assets/vfx/game/sheets/mv/vfx_surge_2.png', 'runtime/assets/vfx/game/sheets/mv/vfx_surge_2.png'],
-  ['assets/cards/Asuras_Unit_Meghnad_P6_rRare.png', 'art/Asuras_Unit_Meghnad_P6_rRare.png'],
-  ['assets/cards/Devas_Hero_Indra_P7_rLegendary.png', 'art/Devas_Hero_Indra_P7_rLegendary.png'],
-];
+].concat(registryArt());
+// the card art, one per registry entry, in registry order (LAB-7: the list was typed by hand per card)
+function registryArt() {
+  const cards = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'manifestations.json'), 'utf8')).cards;
+  return Object.keys(cards).filter((k) => cards[k].art).map((k) => ['assets/cards/' + cards[k].art, 'art/' + cards[k].art]);
+}
 
 function wrap(r, consts) {
   return [

@@ -1877,6 +1877,12 @@
         10.0,
         45.0
       ],
+      "keyColour": [
+        0,
+        185,
+        68
+      ],
+      "keyChannel": "G",
       "contact": "bolt-edge",
       "pivot": "feet",
       "feather": 8,

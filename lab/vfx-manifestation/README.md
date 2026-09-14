@@ -441,6 +441,60 @@ On Pages, Indra "vanished" instead of fizzling: the Deva preset was untuned. It 
 
 **Meghnad's Asura exit is unchanged.** Its preset entry is byte-identical, and the suite replays it through LAB-6's own `actorstage.js` and `dissolve.js`. On every renderer, in Full and Fast, it matches draw for draw.
 
+## LAB-7: Bali, the third character, by the template
+
+LAB-7 tests whether the template is now code-free. It is not quite: the code changes it needed are listed at the end as **template gaps**. The known one, the key colour, is closed for good.
+
+### The clip and the frames
+
+`sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4`: 121 frames at 24 fps, 1916×1080, chroma **blue** (corners RGB 0, 69, 197), git-ignored. The identity master `bali-isolated-kling-source-v1.png`, found under `assets/vfx/experimental/bali/`, was moved into `sources/` as Indra's was. Contact sheets are in `frames/bali_*.jpg`.
+
+| Range | Frames | Kept |
+|---|---|---|
+| Idle | f0–f27 | dropped |
+| EMERGE: the wind-up, mace hoisted overhead in a body turn | f28–f56 | 29 cells |
+| ACT: the slam, ground burst, shockwave ring, crouched hold | f57–f93 | 37 cells |
+| Kling's dissolve | f94–f120 | dropped (the tail also drifts green) |
+
+- **Cells:** all 66 usable frames are kept; no true duplicates (smallest neighbour difference 2.60).
+- **Contact:** **f064**, by the new "ground-impact" rule: the first frame with 2000 px or more of matter in the 60 px ground band, outside the standing feet's columns. The band reads 0–808 px through f063 (the falling mace's edge) and 35,909 px at f064, when the mace lands and the burst starts.
+- **Pivot:** the centre between the two feet on the standing frame f028, clip (970, 1053). All cells share one scale, 0.267.
+- **Facing:** left. No aim.
+
+**The matte, by measurement.** Bali's fur and cloth are mid-tone and sit far from the blue, and the ring and mace glow are bright, so the "bright" matte applies, keyed on blue. The mace head leaves the top edge at f52–f62, feathered over 8 px. The brightest core of the ground burst stays in the matte as pale plumes with a faint lavender tint (blue left in thin smoke); the thinner dust keys out. At f091–f093 Bali's head already flares white: Kling's dissolve starts inside the audited ACT. Both are for the owner's eye; trimming ACT to f090 would be a one-number change in the pack tool's entry.
+
+### The atlases (A5)
+
+| Rung | Atlas | On disk | Decoded |
+|---|---|---|---|
+| 512 px | 4068×1614 | 1.44 MB | 25.0 MB |
+| 256 px | 2031×812 | 0.50 MB | 6.3 MB (25.1%) |
+
+### The manifest, the data and the fixture (no new values)
+
+- `actors/bali/manifest.json`: `cardId: "hanuman"`, facing left, no `tempo` (inherits 0.6×), phase lengths at the tuned seconds per source frame: EMERGE 735 ms, ACT 1397 ms at tempo 1.
+- `data/manifestations.json`: `hanuman` = Bali, Hero, Legendary (from the engine), Vanara, exit = the faction's preset. The Vanara preset sets no `fizzle_ms`, so FIZZLE inherits 1500 ms.
+- **What Bali does on play.** The engine's Bali is id `hanuman` (the card was renamed, its id was not): a P9 Legendary Hero with a passive, "Each Vanara Unit of printed power 4+ you play gains +1 on entry". `fixtures/bali_seat0.json` and `bali_seat1.json`: the Vanara seat plays Bali first on an empty board. One event (`play`); the board difference is Bali entering the heroes row at 9 and nothing else, because the passive only touches Units played later. SETTLE lands no number.
+- **The page.** Play Bali sits beside the others; the hand chip, story text and readouts follow.
+
+At the defaults Bali plays **Full** AWAKEN 667 · EMERGE 1225 · ACT 2328 (contact at 441) · FIZZLE 1500 · SETTLE 667 = **6387 ms**; **Fast** 3193 ms. The Legendary ladder would give 3500 ms.
+
+### The Vanara exit (for the owner's ruling; no tune this rung)
+
+Kling's own tail, f094–f120 (`frames/bali_tail_contact_sheet.jpg`, git-ignored), is an **earth** exit, not orange wind: the body turns to a pale gold dust silhouette (f094–f105), then collapses into falling stone chunks with a dust plume low to the ground (f106–f120). The mace breaks up with the body. From f104 a green drift enters bottom right, so the tail can't be matted as-is. The Vanara preset stays default, byte-identical to LAB-6a (suite check S19).
+
+### Template gaps (code the third character needed)
+
+1. **The key colour (closed for good).** The pack tool detected the ground colour from the corners but did its key arithmetic on the green channel. It now keys on the detected colour's strongest channel, or on a per-card `key_colour`, and the manifest's source line names the real colour. Meghnad's and Indra's atlases re-pack byte-identical; their manifests gain only `keyColour` and `keyChannel` in `audit.recipe`.
+2. **A contact rule for a weapon that lands.** Neither "spear-tip" nor "bolt-edge" fits a mace slam, so "ground-impact" was added.
+3. **Engine id ≠ card name.** Bali's engine id is `hanuman`. The pack tool gained `engine_id` (the manifest's `cardId`), and the registry is keyed by engine id.
+4. **The page's per-card code.** The Play buttons, the art map and the fixture names were written per card. `lab.js` now builds them from the registry (`fixture`, `art`, `name`).
+5. **The art copy.** `tools/copy_runtime.js` had a hand list of card art; it now reads each registry entry's `art`.
+6. **The fixture builder.** It was Indra-only; a hero's fixture is now one `HERO_ENTRIES` entry (still a line of data in a `.js` file).
+7. **The tests.** The stage suite's card list now comes from the registry. The per-card fixture, context, plan and actor checks (F, C, T, M) are still written per card, as parameterised checks.
+
+With these closed, a fourth character with a chroma clip and an existing contact rule needs: a pack-tool `CARDS` entry, a registry entry, a `HERO_ENTRIES` entry and its F/C/T/M check lines.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

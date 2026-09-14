@@ -10,9 +10,10 @@
   const STAMP = (document.querySelector('meta[name="lab-stamp"]') || {}).content || 'unstamped';
   const V = (u) => { const x = new URL(u, document.baseURI); x.searchParams.set('v', STAMP); return x.href; };
   let stampNote = 'checking';
-  const ART = { meghnad: '../art/Asuras_Unit_Meghnad_P6_rRare.png', indra: '../art/Devas_Hero_Indra_P7_rLegendary.png' };
-  const FIXTURE = (card, seat) => '../fixtures/' + card + '_seat' + seat + '.json';
-  let currentCard = 'meghnad';   // LAB-6: the card whose play the board shows — Play Meghnad / Play Indra
+  // LAB-7: a card's art, fixture and Play button all come from its registry entry (data/manifestations.json) — keyed by engine id
+  const ART = (id) => (REG[id] && REG[id].art ? '../art/' + REG[id].art : null);
+  const FIXTURE = (card, seat) => '../fixtures/' + ((REG[card] && REG[card].fixture) || card) + '_seat' + seat + '.json';
+  let currentCard = 'meghnad';   // LAB-6: the card whose play the board shows — one Play button per registry card
   const VIEWER = 0;   // the board is read as seat 0; "swap sides" moves the ATTACKER
   const errors = [];
   function report(e) { errors.push(String(e && (e.message || e))); }
@@ -141,7 +142,7 @@
   const sideOf = (seat) => seat === VIEWER ? 'me' : 'opp';
   function cardEl(c) {
     const d = document.createElement('div'); d.className = 'bc'; d.dataset.uid = c.uid;
-    if (ART[c.id]) { const im = document.createElement('img'); im.src = V(ART[c.id]); im.alt = c.n; im.decoding = 'async'; d.appendChild(im); }
+    if (ART(c.id)) { const im = document.createElement('img'); im.src = V(ART(c.id)); im.alt = c.n; im.decoding = 'async'; d.appendChild(im); }
     else { d.classList.add('noart'); d.textContent = c.n; }
     const p = document.createElement('span'); p.className = 'pw'; p.textContent = c.eff; p.setAttribute('aria-label', c.n + ' power ' + c.eff); d.appendChild(p);
     return d;
@@ -195,7 +196,7 @@
     attackerSeat = seat; F = await fetch(V(FIXTURE(currentCard, seat))).then((r) => r.json());
     render(F.before, []); story(); prefetchHands();
     el('seat-swap').textContent = 'Swap sides: ' + F.action.card + ' is ' + (attackerSeat === VIEWER ? 'yours' : 'the opponent\'s');
-    ['replay-all', 'replay-indra'].forEach((id) => el(id).classList.toggle('on', (id === 'replay-indra') === (currentCard === 'indra')));
+    el('card-buttons').querySelectorAll('button').forEach((b) => b.classList.toggle('on', b.dataset.card === currentCard));
   }
   // LAB-6: a Play button for each card; switching card sets its fixture with the card as YOURS (Swap sides still moves it)
   async function playCard(card) { if (card !== currentCard) await load(VIEWER, card); await play({}); }
@@ -356,8 +357,14 @@
 
   // ── CONTROLS ──
   function setOn(ids, on) { ids.forEach((id) => el(id).classList.toggle('on', id === on)); }
-  el('replay-all').onclick = () => { playCard('meghnad').catch(report); };
-  el('replay-indra').onclick = () => { playCard('indra').catch(report); };
+  // LAB-7: one Play button per registry card that has an actor, in registry order (the buttons were typed per card)
+  function cardButtons() {
+    const box = el('card-buttons'); box.textContent = '';
+    Object.keys(REG).filter((id) => REG[id].manifest).forEach((id) => {
+      const b = document.createElement('button'); b.className = 'primary'; b.type = 'button'; b.id = 'play-' + id; b.dataset.card = id;
+      b.textContent = 'Play ' + (REG[id].name || id); b.onclick = () => { playCard(id).catch(report); }; box.appendChild(b);
+    });
+  }
   ['awaken', 'emerge', 'act', 'fizzle', 'settle'].forEach((p) => { el('phase-' + p).onclick = () => { play({ phase: p.toUpperCase() }).catch(report); }; });
   el('ctl-skip').onclick = () => { if (runner && !runner.done) runner.skip(); };
   el('ctl-ff').onclick = () => { if (runner && !runner.done) runner.fastForward(runner.speed === 3 ? 1 : 3); };
@@ -396,7 +403,7 @@
     fetch(V('COPY.json')).then((r) => r.json()).then((j) => { copyMeta = j; }),
     fetch(V('../data/manifestations.json')).then((r) => r.json()).then((j) => { REG = j.cards || {}; REG_DEFAULTS = j.defaults || {}; }),
     fetch(V('../data/factionfx.json')).then((r) => r.json()).then((j) => { FFX = j; }),
-  ]).then(() => load(0, 'meghnad')).then(() => { stage.useBackend('webgpu').then(() => prefetchHands()).catch(report); window.requestAnimationFrame(tick); previewPlan().catch(report); }).catch(report);   // the rung depends on the renderer: prefetch again once it is up
+  ]).then(() => { cardButtons(); return load(0, 'meghnad'); }).then(() => { stage.useBackend('webgpu').then(() => prefetchHands()).catch(report); window.requestAnimationFrame(tick); previewPlan().catch(report); }).catch(report);   // the rung depends on the renderer: prefetch again once it is up
   // is this page the served one? STAMP read past every cache; a cached page reloads itself once onto the served stamp
   fetch(new URL('../STAMP', document.baseURI).href + '?t=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : null)).then((served) => {
     served = served && served.trim();

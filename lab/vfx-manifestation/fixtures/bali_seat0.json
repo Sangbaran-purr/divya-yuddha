@@ -1,0 +1,479 @@
+{
+  "fixture": "bali_play",
+  "ruling": "VFX-LAB-7 — the third character, by the template; A1 (the board is the truth): the Hero enters and nothing else changes (Bali is engine id \"hanuman\"; his passive changes no card on an empty board)",
+  "engine": {
+    "file": "src/engine.js",
+    "sha256": "3613706f3b736b3e367bfc063575902037b9b05e02ed1de9422bad7ee46520b9"
+  },
+  "seed": 2,
+  "attackerSeat": 0,
+  "defenderSeat": 1,
+  "realm": "mrityulok",
+  "scenario": {
+    "p0": "{p0}",
+    "p1": "{p1}",
+    "p0Faction": "vanaras",
+    "p1Faction": "asuras",
+    "p0Deck": [
+      "Bali",
+      "Sugriva",
+      "Angad",
+      "Nala",
+      "Neela",
+      "Jambavan",
+      "Kesari",
+      "Tara",
+      "Dwivida",
+      "Mainda",
+      "Sharabha",
+      "Vanara Scout"
+    ],
+    "p1Deck": [
+      "Meghnad",
+      "Asura Berserker",
+      "Kali Asura",
+      "Kalanemi",
+      "Bana Asura",
+      "Narakasura",
+      "Vibhishana",
+      "Ravana",
+      "Maricha",
+      "Tataka",
+      "Hiranyakashipu",
+      "Kumbhakarna"
+    ],
+    "mulligan": 0
+  },
+  "setup": [],
+  "action": {
+    "seat": 0,
+    "type": "play",
+    "card": "Bali",
+    "handIndex": 0,
+    "targetUid": null
+  },
+  "before": {
+    "round": 1,
+    "turn": 0,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "vanaras",
+        "units": [],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 1,
+            "id": "hanuman",
+            "n": "Bali",
+            "t": "hero",
+            "r": "L",
+            "power": 9
+          },
+          {
+            "uid": 2,
+            "id": "sugriva",
+            "n": "Sugriva",
+            "t": "hero",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 3,
+            "id": "angad",
+            "n": "Angad",
+            "t": "hero",
+            "r": "E",
+            "power": 7
+          },
+          {
+            "uid": 4,
+            "id": "nala",
+            "n": "Nala",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          },
+          {
+            "uid": 5,
+            "id": "neela",
+            "n": "Neela",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 6,
+            "id": "jambavan",
+            "n": "Jambavan",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 7,
+            "id": "kesari",
+            "n": "Kesari",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 8,
+            "id": "tara",
+            "n": "Tara",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 9,
+            "id": "dwivida",
+            "n": "Dwivida",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 10,
+            "id": "mainda",
+            "n": "Mainda",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "asuras",
+        "units": [],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 13,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 14,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 15,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 16,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 17,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 18,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 19,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 20,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 7
+          },
+          {
+            "uid": 21,
+            "id": "maricha",
+            "n": "Maricha",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 22,
+            "id": "tataka",
+            "n": "Tataka",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "events": [
+    {
+      "round": 1,
+      "seq": 0,
+      "type": "play",
+      "sourceUid": 1,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Bali",
+      "text": "{p0} plays Bali"
+    }
+  ],
+  "log": [
+    "{p0} plays Bali — The Unrivalled King."
+  ],
+  "after": {
+    "round": 1,
+    "turn": 1,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "vanaras",
+        "units": [],
+        "heroes": [
+          {
+            "uid": 1,
+            "id": "hanuman",
+            "n": "Bali",
+            "t": "hero",
+            "r": "L",
+            "power": 9,
+            "base": 9,
+            "eff": 9,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 2,
+            "id": "sugriva",
+            "n": "Sugriva",
+            "t": "hero",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 3,
+            "id": "angad",
+            "n": "Angad",
+            "t": "hero",
+            "r": "E",
+            "power": 7
+          },
+          {
+            "uid": 4,
+            "id": "nala",
+            "n": "Nala",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          },
+          {
+            "uid": 5,
+            "id": "neela",
+            "n": "Neela",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 6,
+            "id": "jambavan",
+            "n": "Jambavan",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 7,
+            "id": "kesari",
+            "n": "Kesari",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 8,
+            "id": "tara",
+            "n": "Tara",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 9,
+            "id": "dwivida",
+            "n": "Dwivida",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 10,
+            "id": "mainda",
+            "n": "Mainda",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "asuras",
+        "units": [],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 13,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 14,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 15,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 16,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 17,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 18,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 19,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 20,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 7
+          },
+          {
+            "uid": 21,
+            "id": "maricha",
+            "n": "Maricha",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 22,
+            "id": "tataka",
+            "n": "Tataka",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "diff": {
+    "entered": [
+      {
+        "uid": 1,
+        "id": "hanuman",
+        "n": "Bali",
+        "seat": 0,
+        "zone": "heroes",
+        "power": 9,
+        "eff": 9
+      }
+    ],
+    "left": [],
+    "changed": []
+  }
+}

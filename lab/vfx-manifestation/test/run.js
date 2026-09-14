@@ -38,6 +38,9 @@ const MANIFEST = JSON.parse(fs.readFileSync(path.join(LAB, 'actors', 'meghnad', 
 // LAB-6 · the second character, built by the template
 const IFX = [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', 'indra_seat' + s + '.json'), 'utf8')));
 const IMAN = JSON.parse(fs.readFileSync(path.join(LAB, 'actors', 'indra', 'manifest.json'), 'utf8'));
+// LAB-7 · the third character — engine id "hanuman", card name Bali, fixture and actor folder "bali"
+const BFX = [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', 'bali_seat' + s + '.json'), 'utf8')));
+const BMAN = JSON.parse(fs.readFileSync(path.join(LAB, 'actors', 'bali', 'manifest.json'), 'utf8'));
 let JSDOM = null; try { ({ JSDOM } = require(require.resolve('jsdom', { paths: [path.join(WEB, 'tests')] }))); } catch (e) { JSDOM = null; }
 
 // ═══ F · THE FIXTURE ═══
@@ -69,11 +72,20 @@ console.log('── F · the fixture: the real engine, both seats ──');
      IFX.every((f) => J(f.events.map((e) => [e.type, e.abilityName || null, e.text || null])) === J([['play', 'Indra', '{p' + f.attackerSeat + '} plays Indra']]) && f.diff.changed.length === 0 && f.diff.left.length === 0 &&
        f.diff.entered.length === 1 && f.diff.entered[0].id === 'indra' && f.diff.entered[0].seat === f.attackerSeat && f.diff.entered[0].zone === 'heroes' && f.diff.entered[0].eff === 7 && f.events[0].sourceUid === f.diff.entered[0].uid &&
        f.before.seats[f.attackerSeat].faction === 'devas'), J(IFX.map((f) => [f.events, f.diff])));
+  const { buildBali } = require(path.join(LAB, 'fixtures', 'make_fixture.js'));
+  for (const seat of [0, 1]) {
+    ok('F' + (9 + seat) + ' · LAB-7 · the Bali seat-' + seat + ' fixture is what a fresh engine run produces today (every field), on the engine it names',
+       J(BFX[seat]) === J(buildBali(seat)) && BFX[seat].engine.sha256 === liveEngineSha, 'differs from a fresh run');
+  }
+  ok('F11 · LAB-7 · Bali\'s play, both seats: ONE event (play Bali); the board difference is Bali — engine id "hanuman" — entering the Vanara seat\'s heroes at 9; nothing changed, nothing left, no number (his passive, +1 to each Vanara Unit of printed power 4+ played later, changes no card on this board)',
+     BFX.every((f) => J(f.events.map((e) => [e.type, e.abilityName || null, e.text || null])) === J([['play', 'Bali', '{p' + f.attackerSeat + '} plays Bali']]) && f.diff.changed.length === 0 && f.diff.left.length === 0 &&
+       f.diff.entered.length === 1 && f.diff.entered[0].id === 'hanuman' && f.diff.entered[0].n === 'Bali' && f.diff.entered[0].seat === f.attackerSeat && f.diff.entered[0].zone === 'heroes' && f.diff.entered[0].eff === 9 &&
+       f.events[0].sourceUid === f.diff.entered[0].uid && f.before.seats[f.attackerSeat].faction === 'vanaras'), J(BFX.map((f) => [f.events, f.diff])));
 }
 
 // ═══ C · THE CONTEXT ═══
 console.log('\n── C · the ClashContext adapter ──');
-const CTX = FX.map((f) => CC.fromBatch(f)), ICTX = IFX.map((f) => CC.fromBatch(f));
+const CTX = FX.map((f) => CC.fromBatch(f)), ICTX = IFX.map((f) => CC.fromBatch(f)), BCTX = BFX.map((f) => CC.fromBatch(f));
 {
   ok('C1 · honest fields only, both seats: sourceUid, cardId, cardName, cardType, rarity, faction, seat, scope, boardDiff, rest — no "action", no "lethal", no "shielded"',
      CTX.every((c, s) => J(Object.keys(c).sort()) === J(['boardDiff', 'cardId', 'cardName', 'cardType', 'faction', 'rarity', 'rest', 'scope', 'seat', 'sourceUid']) &&
@@ -104,6 +116,11 @@ const CTX = FX.map((f) => CC.fromBatch(f)), ICTX = IFX.map((f) => CC.fromBatch(f
        return c.cardId === 'indra' && c.cardType === 'hero' && c.rarity === 'L' && c.faction === 'devas' && c.seat === IFX[s].attackerSeat && c.scope === 'manifest' && c.rest.length === 0 &&
               c.boardDiff.length === 1 && c.boardDiff[0].kind === 'enter' && c.boardDiff[0].to === 7 && c.boardDiff[0].evented === 0 && c.boardDiff[0].settleTo === 7 &&
               J(CC.project(b.entry)) === J(CC.project(IFX[s].after)) && J(b.settle) === J(IFX[s].after) && J(b.final) === J(IFX[s].after); }), J(I));
+  ok('C7 · LAB-7 · Bali\'s context, both seats: a Vanara Legendary Hero on the Vanara seat, in scope, card id "hanuman" (the registry key) named Bali; one ENTER at 9 with nothing evented, no rest of batch; ENTRY = SETTLE = FINAL = the engine\'s AFTER',
+     BCTX.every((c, s) => { const b = CC.boards(c, BFX[s].before, BFX[s].after);
+       return c.cardId === 'hanuman' && !!REG[c.cardId] && c.cardName === 'Bali' && c.cardType === 'hero' && c.rarity === 'L' && c.faction === 'vanaras' && c.seat === BFX[s].attackerSeat && c.scope === 'manifest' && c.rest.length === 0 &&
+              c.boardDiff.length === 1 && c.boardDiff[0].kind === 'enter' && c.boardDiff[0].to === 9 && c.boardDiff[0].evented === 0 &&
+              J(CC.project(b.entry)) === J(CC.project(BFX[s].after)) && J(b.settle) === J(BFX[s].after) && J(b.final) === J(BFX[s].after); }), J(BCTX));
 }
 
 // ═══ T · THE DIRECTOR ═══
@@ -215,21 +232,25 @@ console.log('\n── T · the Director ──');
   }
   {
     const REGI = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'manifestations.json'), 'utf8')), FFXI = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DSI = lib('dissolve');
+    // LAB-7: the same plan check for each non-exempt card the template built — T14 Indra, T15 Bali
+    [['T14', 'LAB-6', 'indra', IMAN, ICTX], ['T15', 'LAB-7', 'hanuman', BMAN, BCTX]].forEach(([TN, RUNG, KEY, IMAN, ICTX]) => {
+    const NAME = REGI.cards[KEY].name, TO = ICTX[0].boardDiff[0].to, FAC = ICTX[0].faction;
     const ntI = { fps: IMAN.fps, emerge: IMAN.phases.emerge.length, act: IMAN.phases.act.length, contact: IMAN.contact, emergeMs: IMAN.phaseMs.emerge, actMs: IMAN.phaseMs.act };
-    const dI = MAN.defaultsFor({ manifest: IMAN, registry: REGI, preset: DSI.pick(FFXI, ICTX[0].faction, '') });
-    const planI = (seat, m) => DIR.plan(ICTX[seat], { mode: m, prior: 0, ladderExempt: !!(REGI.cards.indra || {}).ladderExempt, timing: ntI, tempo: dI.tempo, fizzleMs: dI.fizzleMs });
+    const dI = MAN.defaultsFor({ manifest: IMAN, registry: REGI, preset: DSI.pick(FFXI, FAC, '') });
+    const planI = (seat, m) => DIR.plan(ICTX[seat], { mode: m, prior: 0, ladderExempt: !!(REGI.cards[KEY] || {}).ladderExempt, timing: ntI, tempo: dI.tempo, fizzleMs: dI.fizzleMs });
     const want = (k) => [Math.round(400 / dI.tempo * k), Math.round(ntI.emergeMs / dI.tempo * k), Math.round(ntI.actMs / dI.tempo * k), Math.round(dI.fizzleMs * k), Math.round(400 / dI.tempo * k)];
     const tl = (p) => [p.timeline.awaken, p.timeline.emerge, p.timeline.act, p.timeline.fizzle, p.timeline.settle, p.timeline.total];
     const ladderOnly = DIR.plan(ICTX[0], { mode: 'full' });
     const okI = [0, 1].every((seat) => ['full', 'fast'].every((m) => {
       const k = m === 'fast' ? 0.5 : 1, p = planI(seat, m), w = want(k), C = p.phases[2], c = p.cues.find((x) => x.cue === 'contact'), st = p.cues.filter((x) => x.cue === 'settle'), RA = ntI.act * 1000 / ntI.actMs * dI.tempo / k;
       return p.timing === 'native' && p.actor && p.towardSeat === 1 - seat && J(tl(p).slice(0, 5)) === J(w) && p.total === w.reduce((a, b) => a + b, 0) && p.ladderMs === 3500 && /^rarity L \(the ladder would give 3500 ms\) · native 24 fps$/.test(p.ladder) &&
-             c.contactCell === ntI.contact && Math.floor((c.t - C.t0) * RA / 1000 + 1e-6) === ntI.contact && st.length === 1 && J(st[0].floats) === J([]) && J(st[0].changes.map((x) => [x.kind, x.n, x.to])) === J([['enter', 'Indra', 7]]) &&
+             c.contactCell === ntI.contact && Math.floor((c.t - C.t0) * RA / 1000 + 1e-6) === ntI.contact && st.length === 1 && J(st[0].floats) === J([]) && J(st[0].changes.map((x) => [x.kind, x.n, x.to])) === J([['enter', NAME, TO]]) &&
              !p.cues.some((x) => x.cue === 'queue') && p.cues[p.cues.length - 1].cue === 'done' && p.cues.filter((x) => x.cue === 'actor-phase').every((x) => x.cellStep === (m === 'fast' ? 2 : 1));
     }));
-    ok('T14 · LAB-6 · INDRA\'S PLAN, both seats, Full and Fast: native timing from its manifest (' + ntI.emerge + ' EMERGE + ' + ntI.act + ' ACT cells in ' + ntI.emergeMs + ' + ' + ntI.actMs + ' ms at tempo 1) with the defaults INHERITED — tempo ' + dI.tempo + ' from the ' + dI.from.tempo + ', FIZZLE ' + dI.fizzleMs + ' ms from the ' + dI.from.fizzleMs + ' (the Deva preset sets none, the manifest no tempo); contact on its contact cell; SETTLE lands Indra\'s entry with no number and there is no queue — Full ' + tl(planI(0, 'full')).join(' / ') + ' ms, Fast ' + tl(planI(0, 'fast')).join(' / ') + ' ms; the Legendary ladder alone would give ' + ladderOnly.total + ' ms',
-       okI && IMAN.tempo === undefined && dI.tempo === 0.6 && dI.from.tempo === 'defaults' && dI.fizzleMs === 1500 && dI.from.fizzleMs === 'defaults' && FFXI.devas.fizzle_ms === undefined && ladderOnly.total === 3500 && ladderOnly.timing === 'grammar' && !(REGI.cards.indra || {}).ladderExempt,
+    ok(TN + ' · ' + RUNG + ' · ' + NAME.toUpperCase() + '\'S PLAN, both seats, Full and Fast: native timing from its manifest (' + ntI.emerge + ' EMERGE + ' + ntI.act + ' ACT cells in ' + ntI.emergeMs + ' + ' + ntI.actMs + ' ms at tempo 1) with the defaults INHERITED — tempo ' + dI.tempo + ' from the ' + dI.from.tempo + ', FIZZLE ' + dI.fizzleMs + ' ms from the ' + dI.from.fizzleMs + ' (the ' + FAC + ' preset sets none, the manifest no tempo); contact on its contact cell; SETTLE lands ' + NAME + '\'s entry with no number and there is no queue — Full ' + tl(planI(0, 'full')).join(' / ') + ' ms, Fast ' + tl(planI(0, 'fast')).join(' / ') + ' ms; the Legendary ladder alone would give ' + ladderOnly.total + ' ms',
+       okI && IMAN.tempo === undefined && dI.tempo === 0.6 && dI.from.tempo === 'defaults' && dI.fizzleMs === 1500 && dI.from.fizzleMs === 'defaults' && FFXI[FAC].fizzle_ms === undefined && ladderOnly.total === 3500 && ladderOnly.timing === 'grammar' && !(REGI.cards[KEY] || {}).ladderExempt,
        J({ full: tl(planI(0, 'full')), fast: tl(planI(0, 'fast')), dI }));
+    });
   }
   const txt = DIR.formatPlan(P(0, 'full'));
   ok('T10 · the Plan readout is the timeline as text: the header, every phase, every cue in time order with its numbers', /Meghnad · seat 0 → toward seat 1 · mode full/.test(txt) && /AWAKEN 0–400/.test(txt) && /2800 ms  settle Meghnad enters at 6, Indra 7→5 \(−2\)/.test(txt) && /queue buff · Chaos Surge \+1/.test(txt) && txt.split('\n').length === P(0, 'full').cues.length + 3 && /Timeline \(ms\): AWAKEN 400 · EMERGE 600 · ACT 1200 · contact \+696 \(at 1696\) · FIZZLE 600 · SETTLE 400 · total 3200 · tempo 1\.00×/.test(txt), txt.split('\n').slice(0, 4).join(' | '));
@@ -329,21 +350,36 @@ function webpSize(buf) {
   }
 }
 
-{
-  const v = MAN.validate(IMAN), atl = fs.readFileSync(path.join(LAB, 'actors', 'indra', IMAN.atlas)), px = webpSize(atl);
-  const a256 = fs.readFileSync(path.join(LAB, 'actors', 'indra', 'atlas_256.webp')), p256 = webpSize(a256), R = (IMAN.rungs || [])[0] || {};
+// LAB-7: the template's actor check, once per character (M6 Indra, M7 Bali)
+const templateActor = (S) => {
+  const IMAN = S.M, v = MAN.validate(IMAN), atl = fs.readFileSync(path.join(LAB, 'actors', S.folder, IMAN.atlas)), px = webpSize(atl);
+  const a256 = fs.readFileSync(path.join(LAB, 'actors', S.folder, 'atlas_256.webp')), p256 = webpSize(a256), R = (IMAN.rungs || [])[0] || {};
   const au = IMAN.audit || {}, src = IMAN.cells.map((c) => c.src), E = IMAN.phases.emerge.map((i) => src[i]), A = IMAN.phases.act.map((i) => src[i]);
   const per = au.recipe && au.recipe.msPerSourceFrame, d512 = MAN.decodedBytes(IMAN), d256 = MAN.decodedBytes(MAN.forRung(IMAN, 256));
   const pivOk = Array.isArray(au.pivotSrc) && IMAN.cells.every((c) => Array.isArray(c.origin) && Math.abs(c.origin[0] + c.pivot.x / au.scale - au.pivotSrc[0]) <= 1 && Math.abs(c.origin[1] + c.pivot.y / au.scale - au.pivotSrc[1]) <= 1);
-  ok('M6 · LAB-6 · INDRA BY THE TEMPLATE: a valid actor from the named Kling clip — ' + IMAN.cells.length + ' cells, every usable frame f' + src[0] + '–f' + src[src.length - 1] + ' in order (EMERGE ' + E.length + ' = f' + E[0] + '–f' + E[E.length - 1] + ', ACT ' + A.length + ' = f' + A[0] + '–f' + A[A.length - 1] + ', true duplicates dropped ' + J(au.duplicatesDropped) + '), the idle head and Kling\'s dissolve dropped; contact f' + A[IMAN.contact] + ' (the bolt fully out to the frame edge); ONE feet pivot for every cell (clip ' + J(au.pivotSrc) + '); facing ' + IMAN.facing + ', aim ' + IMAN.aim + '; phase lengths from the frame ranges at Meghnad\'s tuned pace (' + J(IMAN.phaseMs) + ' ms), NO tempo on the card (inherited); matte "' + (au.recipe && au.recipe.matte) + '" with an ' + (au.recipe && au.recipe.feather) + ' px edge feather; atlases ' + (px ? px.w + '×' + px.h : '?') + ' (' + (atl.length / 1024).toFixed(0) + ' KB, ' + (d512 / 1048576).toFixed(1) + ' MB decoded) and ' + (p256 ? p256.w + '×' + p256.h : '?') + ' (' + (a256.length / 1024).toFixed(0) + ' KB, ' + (d256 / 1048576).toFixed(1) + ' MB — ' + (100 * d256 / d512).toFixed(1) + '%); the folder holds only the two atlases and the manifest',
+  ok(S.label + ': a valid actor from the named Kling clip — ' + IMAN.cells.length + ' cells, every usable frame f' + src[0] + '–f' + src[src.length - 1] + ' in order (EMERGE ' + E.length + ' = f' + E[0] + '–f' + E[E.length - 1] + ', ACT ' + A.length + ' = f' + A[0] + '–f' + A[A.length - 1] + ', true duplicates dropped ' + J(au.duplicatesDropped) + '), the idle head and Kling\'s dissolve dropped; contact f' + A[IMAN.contact] + ' (' + S.contactNote + '); ONE feet pivot for every cell (clip ' + J(au.pivotSrc) + '); facing ' + IMAN.facing + ', aim ' + IMAN.aim + '; phase lengths from the frame ranges at Meghnad\'s tuned pace (' + J(IMAN.phaseMs) + ' ms), NO tempo on the card (inherited); matte "' + (au.recipe && au.recipe.matte) + '" with an ' + (au.recipe && au.recipe.feather) + ' px edge feather; atlases ' + (px ? px.w + '×' + px.h : '?') + ' (' + (atl.length / 1024).toFixed(0) + ' KB, ' + (d512 / 1048576).toFixed(1) + ' MB decoded) and ' + (p256 ? p256.w + '×' + p256.h : '?') + ' (' + (a256.length / 1024).toFixed(0) + ' KB, ' + (d256 / 1048576).toFixed(1) + ' MB — ' + (100 * d256 / d512).toFixed(1) + '%); the folder holds only the two atlases and the manifest',
      v.ok && !!px && px.w === IMAN.atlasSize.w && px.h === IMAN.atlasSize.h && px.w <= 4096 && px.h <= 4096 && !!p256 && p256.w === R.atlasSize.w && p256.h === R.atlasSize.h && d256 * 4 <= d512 * 1.02 &&
-     IMAN.placeholder === false && /Kling clip kling_20260914_VIDEO_Preserve_I_5205_0\.mp4 \(sha256 4c78b5fba361/.test(IMAN.source) && IMAN.cardId === 'indra' && IMAN.fps === 24 && IMAN.timing === 'native' &&
-     IMAN.tempo === undefined && IMAN.aim === 'up' && IMAN.facing === 'right' && Math.max(...IMAN.cells.map((c) => Math.max(c.w, c.h))) === 512 &&
-     src[0] === 36 && src[src.length - 1] === 97 && src.every((x, i) => i === 0 || x > src[i - 1]) && J(au.emerge) === J([36, 52]) && J(au.act) === J([53, 97]) && J(au.droppedTail) === J([98, 120]) &&
-     E.length + A.length === IMAN.cells.length && E[E.length - 1] < A[0] && A[IMAN.contact] === au.contactSrc && au.contactSrc >= 53 && au.contactSrc <= 60 && J(IMAN.phases.fizzle) === J([IMAN.cells.length - 1]) &&
+     IMAN.placeholder === false && IMAN.source.indexOf('Kling clip ' + S.clip + ' (sha256 ' + S.sha) === 0 && IMAN.source.indexOf(', chroma ' + S.chroma + ')') > 0 && IMAN.cardId === S.cardId && IMAN.fps === 24 && IMAN.timing === 'native' &&
+     IMAN.tempo === undefined && (S.aim ? IMAN.aim === S.aim : IMAN.aim == null) && IMAN.facing === S.facing && Math.max(...IMAN.cells.map((c) => Math.max(c.w, c.h))) === 512 &&
+     src[0] === S.emerge[0] && src[src.length - 1] === S.act[1] && src.every((x, i) => i === 0 || x > src[i - 1]) && J(au.emerge) === J(S.emerge) && J(au.act) === J(S.act) && J(au.droppedTail) === J([S.act[1] + 1, 120]) &&
+     E.length + A.length === IMAN.cells.length && E[E.length - 1] < A[0] && A[IMAN.contact] === au.contactSrc && au.contactSrc >= S.contactIn[0] && au.contactSrc <= S.contactIn[1] && J(IMAN.phases.fizzle) === J([IMAN.cells.length - 1]) &&
      pivOk && !!per && IMAN.phaseMs.emerge === Math.round((au.emerge[1] - au.emerge[0] + 1) * 583 / 23) && IMAN.phaseMs.act === Math.round((au.act[1] - au.act[0] + 1) * 1208 / 32) &&
-     au.recipe.matte === 'bright' && au.recipe.feather === 8 && au.recipe.contact === 'bolt-edge' && au.recipe.pivot === 'feet' && MANIFEST.audit.recipe && MANIFEST.audit.recipe.matte === 'dark-body' &&
-     J(fs.readdirSync(path.join(LAB, 'actors', 'indra')).sort()) === J(['atlas.webp', 'atlas_256.webp', 'manifest.json']) && !MAN.validate(Object.assign({}, IMAN, { aim: 'sideways' })).ok, v.errors.join('; '));
+     au.recipe.matte === 'bright' && au.recipe.feather === 8 && au.recipe.contact === S.contact && au.recipe.keyChannel === S.keyChannel && au.recipe.pivot === 'feet' && MANIFEST.audit.recipe && MANIFEST.audit.recipe.matte === 'dark-body' &&
+     J(fs.readdirSync(path.join(LAB, 'actors', S.folder)).sort()) === J(['atlas.webp', 'atlas_256.webp', 'manifest.json']) && !MAN.validate(Object.assign({}, IMAN, { aim: 'sideways' })).ok, v.errors.join('; '));
+};
+templateActor({ label: 'M6 · LAB-6 · INDRA BY THE TEMPLATE', M: IMAN, folder: 'indra', cardId: 'indra', clip: 'kling_20260914_VIDEO_Preserve_I_5205_0.mp4', sha: '4c78b5fba361', chroma: 'green',
+  emerge: [36, 52], act: [53, 97], contactIn: [53, 60], contact: 'bolt-edge', contactNote: 'the bolt fully out to the frame edge', aim: 'up', facing: 'right', keyChannel: 'G' });
+templateActor({ label: 'M7 · LAB-7 · BALI BY THE TEMPLATE (engine id "hanuman", chroma BLUE)', M: BMAN, folder: 'bali', cardId: 'hanuman', clip: 'kling_20260914_VIDEO_Preserve_B_5645_0.mp4', sha: 'e67eec3588e7', chroma: 'blue',
+  emerge: [28, 56], act: [57, 93], contactIn: [60, 68], contact: 'ground-impact', contactNote: 'the mace head reaches the ground band clear of the feet', aim: null, facing: 'left', keyChannel: 'B' });
+{
+  const at = (rev, p) => cp.execFileSync('git', ['show', rev + ':lab/vfx-manifestation/' + p], { cwd: GAME, maxBuffer: 64 * 1024 * 1024 });
+  const atlases = ['meghnad', 'indra'].map((c) => [c, ['atlas.webp', 'atlas_256.webp'].every((f) => at('41ea143', 'actors/' + c + '/' + f).equals(fs.readFileSync(path.join(LAB, 'actors', c, f))))]);
+  const strip = (m) => { const x = JSON.parse(J(m)); delete x.audit.recipe.keyColour; delete x.audit.recipe.keyChannel; return J(x); };
+  const manifests = [['meghnad', MANIFEST], ['indra', IMAN]].map(([c, m]) => [c, strip(m) === J(JSON.parse(at('41ea143', 'actors/' + c + '/manifest.json').toString('utf8')))]);
+  const TOOL = fs.readFileSync(path.join(LAB, 'tools', 'make_actor_from_clip.py'), 'utf8');
+  ok('M8 · LAB-7 · THE KEY COLOUR, closed for good (the one known template gap): the pack tool reads the key colour from the frame corners (or a per-card "key_colour" entry) and keys on that colour\'s strongest channel — Meghnad and Indra key on G (' + J(MANIFEST.audit.recipe.keyColour) + ', ' + J(IMAN.audit.recipe.keyColour) + '), Bali on B (' + J(BMAN.audit.recipe.keyColour) + '); no green-only channel arithmetic is left in the tool; re-packed after the change, Meghnad\'s and Indra\'s atlases (both rungs) are byte-identical to LAB-6a (41ea143) and their manifests differ only by the two recorded recipe fields',
+     atlases.every((x) => x[1]) && manifests.every((x) => x[1]) && MANIFEST.audit.recipe.keyChannel === 'G' && IMAN.audit.recipe.keyChannel === 'G' && BMAN.audit.recipe.keyChannel === 'B' && J(BMAN.audit.recipe.keyColour) === J([0, 69, 197]) &&
+     /def key_channels\(K\):/.test(TOOL) && /CFG\.get\("key_colour"\)/.test(TOOL) && !/g - np\.maximum\(r, b\)|fg\[\.\.\., 1\] = np\.minimum|chroma green\)/.test(TOOL), J({ atlases, manifests }));
 }
 
 // ═══ K · THE SOURCES (A7) ═══
@@ -358,11 +394,11 @@ console.log('\n── K · the sources rule (A7) ──');
   const raw = tracked.filter((p) => (p.indexOf('lab/') === 0 || p.indexOf('assets/') === 0) && (/(^|\/)(frames|matted|sources|clips_raw)\//.test(p) || /(^|\/)frame_\d+\.(png|jpe?g|webp)$/i.test(p) || /(^|\/)f\d{3}\.png$/.test(p)));
   ok('K2 · no raw or matted frame, and nothing from sources/, is tracked anywhere under lab/ or assets/ (' + raw.length + ')', raw.length === 0, raw.slice(0, 5).join(', '));
   const ignored = (p) => { try { cp.execFileSync('git', ['check-ignore', '-q', p], { cwd: GAME }); return true; } catch (e) { return false; } };
-  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg'];
+  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg'];
   const present = must.filter((p) => fs.existsSync(path.join(GAME, p)));
   const strayDir = path.join(GAME, 'assets', 'vfx', 'experimental'), stray = [];
   (function walk(d) { if (!fs.existsSync(d)) return; fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else if (/\.(png|jpe?g|webp|mp4|mov)$/i.test(n)) stray.push(rel(q)); }); })(strayDir);
-  ok('K3 · sources/ (the Kling clips and stills — Meghnad\'s and, LAB-6, Indra\'s clip and identity master), frames/ (the matted frames and the contact sheets) and the rembg model inside tools/.venv are all git-ignored' + (present.length ? ' — ' + present.length + ' of them present on this machine' : '') + '; and no Kling source is left lying under assets/vfx/experimental/ (' + stray.length + ')',
+  ok('K3 · sources/ (the Kling clips and stills — Meghnad\'s and, LAB-6 and LAB-7, Indra\'s and Bali\'s clips and identity masters), frames/ (the matted frames and the contact sheets) and the rembg model inside tools/.venv are all git-ignored' + (present.length ? ' — ' + present.length + ' of them present on this machine' : '') + '; and no Kling source is left lying under assets/vfx/experimental/ (' + stray.length + ')',
      must.every(ignored) && stray.length === 0, J({ notIgnored: must.filter((p) => !ignored(p)), stray }));
 }
 
@@ -410,12 +446,19 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
   if (!JSDOM) { fail += 3; console.log('  ✖ S5–S7 SKIPPED LOUDLY — jsdom not found under ' + path.join(WEB, 'tests') + ' (set DY_WEB). The stage runs did NOT happen.'); }
   else {
     // LAB-6: every stage check and the gate run for EACH card the template produced
-    const CARDS = [
-      { id: 'meghnad', name: 'Meghnad', tag: '[Meghnad] ', M: MANIFEST, FX, exempt: true, faction: 'asuras', presetName: 'Asura',
-        expectFloats: (seat) => [{ uid: FX[seat].before.seats[FX[seat].defenderSeat].heroes[0].uid, delta: -2 }], numbersText: 'exactly Indra −2 from the board difference' },
-      { id: 'indra', name: 'Indra', tag: '[Indra] ', M: IMAN, FX: IFX, exempt: false, faction: 'devas', presetName: 'Deva',
-        expectFloats: () => [], numbersText: 'no number at all — Indra only enters, so SETTLE lands the board with him on it and nothing floats' },
-    ];
+    // LAB-7: the cards come from the registry — every entry with an actor — so a new character needs no edit here (it was a hand list)
+    const FFX0 = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8'));
+    const CARDS = Object.keys(REG).filter((id) => REG[id].manifest).map((id) => {
+      const e = REG[id], FXc = [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', (e.fixture || id) + '_seat' + s + '.json'), 'utf8')));
+      const M = JSON.parse(fs.readFileSync(path.join(LAB, 'runtime', e.manifest), 'utf8')), faction = FXc[0].before.seats[FXc[0].attackerSeat].faction, name = e.name || id;
+      const settles = (seat) => CC.fromBatch(FXc[seat]).boardDiff.filter((d) => d.kind === 'power' && d.settleDelta);
+      return { id, name, tag: '[' + name + '] ', M, FX: FXc, exempt: !!e.ladderExempt, faction, presetName: FFX0[faction].name,
+        expectFloats: (seat) => settles(seat).map((d) => ({ uid: d.uid, delta: d.settleDelta })),
+        numbersText: settles(0).length ? 'exactly ' + settles(0).map((d) => d.n + ' ' + (d.settleDelta < 0 ? '−' : '+') + Math.abs(d.settleDelta)).join(', ') + ' from the board difference'
+                                       : 'no number at all — ' + name + ' only enters, so SETTLE lands the board with him on it and nothing floats' };
+    });
+    ok('S4b · LAB-7 · the stage suite and its gate run for EVERY registry card with an actor, built from data/manifestations.json: ' + CARDS.map((c) => c.name + ' (' + c.id + ', ' + c.faction + ', the ' + c.presetName + ' exit' + (c.exempt ? ', ladder-exempt' : '') + ')').join(' · '),
+       J(CARDS.map((c) => c.id)) === J(['meghnad', 'indra', 'hanuman']) && CARDS.every((c) => c.M.cardId === c.id && c.FX.every((f) => f.diff.entered.some((x) => x.id === c.id))) && J(CARDS[0].expectFloats(0)) === J([{ uid: FX[0].before.seats[FX[0].defenderSeat].heroes[0].uid, delta: -2 }]), J(CARDS.map((c) => [c.id, c.faction, c.expectFloats(0)])));
     const ALLGATES = [];
     const stageSuite = (CARD) => {
       function world(seat, backend, fxFn, wopts) {
@@ -623,6 +666,11 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
         ok(CARD.tag + 'S19 · LAB-6a · MEGHNAD\'S ASURA EXIT IS UNCHANGED: the Asura preset entry is byte-identical to LAB-6 (deacd95), it names no tuning knob, it resolves to the neutral defaults (sweep 1, motes off the front, spread 34, no haze, caps never reached); and replayed through LAB-6\'s own actorstage.js and dissolve.js, on every backend in Full and Fast, its exit is the same draw for draw — every mote count, mask, threshold, particle draw and sound — ' + pairs.map((x) => x.b + ' ' + x.m + ': ' + (x.same ? 'identical' : 'DIFFERENT') + ' (embers ' + x.embers + ', smoke ' + x.smoke + ')').join(' | '),
            J(FFXD.asuras) === J(WAS.asuras) && Object.keys(DS.ALIAS).concat(['haze']).every((k) => FFXD.asuras.dissolve[k] === undefined) &&
            a.sweep === 1 && a.emberZone === 0 && a.emberSpread === 34 && a.lifeRef === 600 && a.haze === null && pairs.every((x) => x.same && x.haze === 0), J(pairs));
+      } else {
+        // LAB-7: a faction whose exit this rung does not tune keeps its preset exactly as LAB-6a left it
+        const WAS6a = JSON.parse(git(['show', '41ea143:lab/vfx-manifestation/data/factionfx.json']));
+        ok(CARD.tag + 'S19 · LAB-7 · THE ' + CARD.presetName.toUpperCase() + ' EXIT STAYS THE DEFAULT (no tune this rung; the owner rules on Kling\'s earth exit): the ' + CARD.presetName + ' preset entry is byte-identical to LAB-6a (41ea143) and names no tuning knob — ' + J(FFXD[CARD.faction]),
+           J(FFXD[CARD.faction]) === J(WAS6a[CARD.faction]) && Object.keys(DS.ALIAS).concat(['haze']).every((k) => FFXD[CARD.faction].dissolve[k] === undefined), J(FFXD[CARD.faction]));
       }
 
       // ── LAB-5 · SOUND ──
@@ -774,14 +822,16 @@ const COPY = JSON.parse(fs.readFileSync(path.join(LAB, 'runtime', 'COPY.json'), 
   const walk = (d) => fs.readdirSync(d, { withFileTypes: true }).flatMap((x) => x.isDirectory() ? walk(path.join(d, x.name)) : [path.join(d, x.name)]);
   const onDisk = walk(path.join(LAB, 'runtime', 'assets')).map((p) => path.relative(LAB, p)).sort();
   const same = (f) => { const a = fs.readFileSync(path.join(GAME, f.from)), b = fs.readFileSync(path.join(LAB, f.to)); return a.equals(b) && sha256(b) === f.sha256; };
-  ok('R4 · the runtime asset subset is exact: the Pixi copy + ONE effect\'s sheets (Chaos Surge, lo rung), the art only Meghnad and Indra — each byte-identical to the game\'s',
-     J(onDisk) === J(exact.slice().sort()) && COPY.files.length === 7 && COPY.files.every(same) && J(fs.readdirSync(path.join(LAB, 'art')).sort()) === J(['Asuras_Unit_Meghnad_P6_rRare.png', 'Devas_Hero_Indra_P7_rLegendary.png']), J(onDisk));
+  const ARTS = Object.keys(REG).filter((k) => REG[k].art).map((k) => REG[k].art);
+  ok('R4 · the runtime asset subset is exact: the Pixi copy + ONE effect\'s sheets (Chaos Surge, lo rung), and the card art of exactly the registry\'s cards, read from the registry by tools/copy_runtime.js (' + ARTS.join(', ') + ') — each byte-identical to the game\'s',
+     J(onDisk) === J(exact.slice().sort()) && COPY.files.length === exact.length + ARTS.length && COPY.files.every(same) && J(fs.readdirSync(path.join(LAB, 'art')).sort()) === J(ARTS.slice().sort()) &&
+     J(T.ASSETS.slice(exact.length).map((x) => x[1])) === J(ARTS.map((x) => 'art/' + x)), J(onDisk));
 }
 
 // ═══ P · THE PAGE ═══
 console.log('\n── P · the page ──');
 {
-  const ids = ['field', 'divider', 'vfxcanvas', 'vfxflash', 'actorunder', 'actorcanvas', 'actorgpu', 'actorover', 'floatlayer', 'banner', 'replay-all', 'replay-indra', 'phase-awaken', 'phase-emerge', 'phase-act', 'phase-fizzle', 'phase-settle',
+  const ids = ['field', 'divider', 'vfxcanvas', 'vfxflash', 'actorunder', 'actorcanvas', 'actorgpu', 'actorover', 'floatlayer', 'banner', 'card-buttons', 'phase-awaken', 'phase-emerge', 'phase-act', 'phase-fizzle', 'phase-settle',
                'ctl-skip', 'ctl-ff', 'ctl-memory', 'mode-full', 'mode-fast', 'mode-reduced', 'seat-swap', 'be-webgpu', 'be-webgl', 'be-canvas', 'clk-slow', 'clk-pause', 'clk-step',
                'ro-fps', 'ro-time', 'ro-renderer', 'ro-actor', 'ro-rung', 'ro-sprites', 'ro-decode', 'ro-mb', 'ro-errors', 'ro-stamp', 'ro-exit', 'exit-preset', 'tempo', 'fizzle-ms', 'tempo-val', 'fizzle-val', 'quality', 'mock-match', 'ro-quality', 'ro-sound', 'ro-layout', 'ro-mock', 'plan'];
   const missing = ids.filter((id) => PAGE.indexOf('id="' + id + '"') < 0);
@@ -789,7 +839,7 @@ console.log('\n── P · the page ──');
   const fieldBlock = PAGE.slice(PAGE.indexOf('<div id="field"'), PAGE.indexOf('<div id="hand">'));
   ok('P1 · the page: noindex, <base href="runtime/">, #field holding the effect and actor layers, the scripts in dependency order, every control (Play, the five phase replays, Skip, Fast-forward, match memory, mode, sides, renderer, clock) and every readout including Actor and Plan',
      /<meta name="robots" content="noindex, nofollow">/.test(PAGE) && /<base href="runtime\/">/.test(PAGE) && missing.length === 0 && order.every((i, k) => i > 0 && (k === 0 || i > order[k - 1])) &&
-     ['vfxcanvas', 'actorunder', 'actorcanvas', 'actorgpu', 'actorover', 'floatlayer'].every((id) => fieldBlock.indexOf('id="' + id + '"') > 0) && !/type="button" disabled/.test(PAGE), 'missing: ' + missing.join(', '));
+     ['vfxcanvas', 'actorunder', 'actorcanvas', 'actorgpu', 'actorover', 'floatlayer'].every((id) => fieldBlock.indexOf('id="' + id + '"') > 0) && !/type="button" disabled/.test(PAGE) && /Object\.keys\(REG\)\.filter\(\(id\) => REG\[id\]\.manifest\)\.forEach/.test(fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8')), 'missing: ' + missing.join(', '));
   const code = PAGE + ['lab.js'].concat(fs.readdirSync(path.join(LAB, 'lib')).map((n) => 'lib/' + n)).map((p) => fs.readFileSync(path.join(LAB, p), 'utf8')).join('\n');
   const readme = fs.readFileSync(path.join(LAB, 'README.md'), 'utf8');
   ok('P2 · nothing on the page loads from the live game (no ../../ path, no game asset URL in the page, lab.js or lib/); the README keeps the SETTLE note (index.html:8162–8171) and documents LAB-2+3',

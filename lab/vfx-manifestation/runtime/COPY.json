@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "e2f4c196609ca654dc933c16897705d4d40fb7e8",
+    "gameCommit": "41ea1430fbeb1184ac3315c3d9e0f4767274b87c",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -96,6 +96,16 @@
       "px": {
         "w": 750,
         "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Vanaras_Hero_Bali_P9_rLegendary.png",
+      "to": "art/Vanaras_Hero_Bali_P9_rLegendary.png",
+      "bytes": 3204670,
+      "sha256": "509c690ad4e18cd22e0296b5f2d6ff4125c6ce0e64d5c0709f62b85c87d7c258",
+      "px": {
+        "w": 1024,
+        "h": 1536
       }
     }
   ]

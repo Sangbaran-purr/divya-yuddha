@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# tools/make_actor_from_clip.py — VFX-LAB-4. A Kling performance on a flat chroma-green ground → an ACTOR (ruling A4):
+# tools/make_actor_from_clip.py — VFX-LAB-4. A Kling performance on a flat chroma ground (green, blue — any key colour, LAB-7) → an ACTOR (ruling A4):
 # matted with real alpha, trimmed rectangular cells at 512 px with one ground pivot, WebP with alpha, NO motion vectors.
 #
 #   lab/vfx-manifestation/tools/.venv/bin/python lab/vfx-manifestation/tools/make_actor_from_clip.py [card]      (meghnad · indra)
@@ -9,7 +9,10 @@
 # per source frame Meghnad's EMERGE and ACT were tuned at), so a new card needs no new numbers. A card without "tempo" inherits the
 # registry's defaults (data/manifestations.json). Two mattes: "dark-body" (Meghnad: a dark rider and horse, bright lightning cut off
 # the figure) and "bright" (Indra: a white-and-gold figure whose bolt IS the action — see key_bright). Contact rules: "spear-tip" (the
-# leftmost solid spear tip) and "bolt-edge" (the frame after the bolt first reaches the frame's edge). Pivot rules: "front-left" (the
+# leftmost solid spear tip), "bolt-edge" (the frame after the bolt first reaches the frame's edge) and "ground-impact" (LAB-7: the
+# frame the weapon reaches the ground band clear of the standing feet). THE KEY COLOUR (LAB-7): auto-detected from the frame's corners
+# (the ground's strongest channel is the key — green, blue, …), or pinned per card with "key_colour": [r, g, b]. "engine_id" names the
+# card's id in the engine when it differs from the card's name (Bali is "hanuman"). Pivot rules: "front-left" (the
 # horse's front hooves) and "feet" (the centre of the ground contact).
 #
 # Run it with the lab venv: rembg (A6, amended) lives there and nowhere else. Its model lives in tools/.venv/u2net/.
@@ -70,6 +73,9 @@ CARDS = {
     "indra":   {"label": "Indra", "clip": "kling_20260914_VIDEO_Preserve_I_5205_0.mp4", "emerge": (36, 52), "act": (53, 97), "tempo": None,
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("bolt-edge", (53, 60)), "settled": 70, "pivot": "feet",
                 "facing": "right", "aim": "up", "feather": 8},
+    "bali":    {"label": "Bali", "clip": "kling_20260914_VIDEO_Preserve_B_5645_0.mp4", "emerge": (28, 56), "act": (57, 93), "tempo": None,
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("ground-impact", (57, 72)), "settled": 28, "pivot": "feet",
+                "facing": "left", "aim": None, "feather": 8, "engine_id": "hanuman"},
 }
 CFG = None
 def configure(card):
@@ -94,13 +100,19 @@ def ground_colour(rgb):
     c = np.concatenate([rgb[:40, :40].reshape(-1, 3), rgb[:40, -40:].reshape(-1, 3), rgb[-40:, :40].reshape(-1, 3), rgb[-40:, -40:].reshape(-1, 3)])
     return np.median(c, axis=0).astype(np.float32)
 
+def key_channels(K):
+    # LAB-7: the key is the ground's strongest channel (1 on green, 2 on blue, …) and the other two, in order
+    kc = int(np.argmax(K)); o = [c for c in (0, 1, 2) if c != kc]
+    return kc, o[0], o[1]
+
 def key(rgb, K):
-    a = rgb.astype(np.float32); r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    gdom = g - np.maximum(r, b)
-    alpha = 1.0 - np.clip((gdom - KEY_T0) / (KEY_T1 - KEY_T0), 0, 1)
+    kc, o1, o2 = key_channels(K)
+    a = rgb.astype(np.float32)
+    dom = a[..., kc] - np.maximum(a[..., o1], a[..., o2])                   # key dominance (on green: G − max(R, B))
+    alpha = 1.0 - np.clip((dom - KEY_T0) / (KEY_T1 - KEY_T0), 0, 1)
     am = np.maximum(alpha, 0.05)[..., None]
     fg = np.clip((a - (1.0 - alpha)[..., None] * K) / am, 0, 255)          # un-mix the ground from edge colours
-    fg[..., 1] = np.minimum(fg[..., 1], np.maximum(fg[..., 0], fg[..., 2]))  # despill: never greener than its strongest other channel
+    fg[..., kc] = np.minimum(fg[..., kc], np.maximum(fg[..., o1], fg[..., o2]))   # despill: never more key-coloured than its strongest other channel
     return alpha, fg
 
 def isolate(alpha, rgb):
@@ -125,18 +137,19 @@ def isolate(alpha, rgb):
     return out, dropped
 
 def key_bright(rgb, K):
-    # the "bright" matte (LAB-6): the green key, strict (T0/T1 low, so green-tinted sparkle keys out); then, next to solid matter,
-    # every pixel keeps at least the alpha its colour UN-MIXES to — the largest a with F = (C − (1−a)K)/a not green-dominant — so the
-    # bolt's thin yellow-white edges and the hand's glow keep their alpha where the plain key would drop them; then decontam + despill.
-    a = rgb.astype(np.float32); r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    ak = 1.0 - np.clip((g - np.maximum(r, b) - KEY_T0) / (KEY_T1 - KEY_T0), 0, 1)
+    # the "bright" matte (LAB-6): the key, strict (T0/T1 low, so key-tinted sparkle keys out); then, next to solid matter, every pixel
+    # keeps at least the alpha its colour UN-MIXES to — the largest a with F = (C − (1−a)K)/a not key-dominant — so thin light (a bolt's
+    # edges, a mace's glow, a shockwave ring) keeps its alpha where the plain key would drop it; then decontam + despill. Any key colour (LAB-7).
+    kc, o1, o2 = key_channels(K)
+    a = rgb.astype(np.float32)
+    ak = 1.0 - np.clip((a[..., kc] - np.maximum(a[..., o1], a[..., o2]) - KEY_T0) / (KEY_T1 - KEY_T0), 0, 1)
     d = a - K
-    au = np.maximum(np.clip(-(d[..., 1] - d[..., 0]) / max(1.0, float(K[1] - K[0])), 0, 1), np.clip(-(d[..., 1] - d[..., 2]) / max(1.0, float(K[1] - K[2])), 0, 1))
+    au = np.maximum(np.clip(-(d[..., kc] - d[..., o1]) / max(1.0, float(K[kc] - K[o1])), 0, 1), np.clip(-(d[..., kc] - d[..., o2]) / max(1.0, float(K[kc] - K[o2])), 0, 1))
     near = cv2.dilate((ak > SOLID).astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * RESCUE_R + 1, 2 * RESCUE_R + 1))).astype(bool)
     alpha = np.where(near, np.maximum(ak, au), ak)
     am = np.maximum(alpha, 0.05)[..., None]
     fg = np.clip((a - (1.0 - alpha)[..., None] * K) / am, 0, 255)
-    fg[..., 1] = np.minimum(fg[..., 1], np.maximum(fg[..., 0], fg[..., 2]))
+    fg[..., kc] = np.minimum(fg[..., kc], np.maximum(fg[..., o1], fg[..., o2]))
     return alpha, fg
 
 def isolate_bright(alpha):
@@ -187,9 +200,9 @@ def main(card="meghnad"):
     if not os.path.exists(CLIP): sys.exit("the source clip is not at " + CLIP)
     frames, fps = decode(CLIP)
     H, W = frames[0].shape[:2]
-    K = ground_colour(frames[0])
+    K = np.array(CFG["key_colour"], np.float32) if isinstance(CFG.get("key_colour"), (list, tuple)) else ground_colour(frames[0])
     sha = hashlib.sha256(open(CLIP, "rb").read()).hexdigest()
-    print("clip %d frames @ %.0f fps · %dx%d · ground RGB %s" % (len(frames), fps, W, H, K.astype(int).tolist()))
+    print("clip %d frames @ %.0f fps · %dx%d · ground RGB %s · key channel %s (%s)" % (len(frames), fps, W, H, K.astype(int).tolist(), "RGB"[key_channels(K)[0]], "pinned" if isinstance(CFG.get("key_colour"), (list, tuple)) else "auto from the corners"))
     grays = {i: cv2.resize(cv2.cvtColor(f, cv2.COLOR_RGB2GRAY), (240, 135)) for i, f in enumerate(frames)}
 
     mattes = {}
@@ -208,7 +221,7 @@ def main(card="meghnad"):
             xs = np.where(((al > SOLID) & (lum < DARK_LUM)).any(axis=0))[0]; tips[i] = int(xs.min()) if len(xs) else W
         lo = min(tips.values()); contact_src = min(i for i, x in tips.items() if x <= lo + 4)
         contact_note = "spear tip x=%d" % tips[contact_src]
-    else:
+    elif CFG["contact"][0] == "bolt-edge":
         # the bolt reaches the frame's edge: bright matter kept by the matte in the top rows or the right columns. Contact is the frame
         # after the first such frame — the beam has filled out to the edge.
         edge = {}
@@ -220,6 +233,16 @@ def main(card="meghnad"):
         peak = max(edge.values()); first = min(i for i, v in edge.items() if v >= 0.25 * peak)   # a grazing tip is not the bolt reaching the edge
         contact_src = first + 1
         contact_note = "the bolt reaches the frame edge (at least a quarter of its peak edge contact) first at f%d (edge px %s)" % (first, {k: edge[k] for k in sorted(edge)})
+    else:
+        # "ground-impact" (LAB-7): the frame the weapon reaches the ground band — matter within 60 px of the settled frame's ground line,
+        # clear of the standing feet's columns (±80 px), first reaching 2000 px
+        al_s, _, _ = matte(SETTLED_FRAME); ys_s, xs_s = np.where(al_s > 0.5); gy = int(ys_s.max())
+        stand = xs_s[ys_s >= gy - 14]; fx0, fx1 = max(0, int(stand.min()) - 80), int(stand.max()) + 80
+        hits = {}
+        for i in range(CONTACT_SEARCH[0], CONTACT_SEARCH[1] + 1):
+            band = matte(i)[0][gy - 60:, :] > 0.5; band[:, fx0:fx1] = False; hits[i] = int(band.sum())
+        contact_src = min(i for i, v in hits.items() if v >= 2000)
+        contact_note = "the weapon reaches the ground band clear of the feet (columns %d–%d kept out) first at f%d (hits %s)" % (fx0, fx1, contact_src, {k: hits[k] for k in sorted(hits)})
     emerge, dup_e = distinct(range(EMERGE_RANGE[0], EMERGE_RANGE[1] + 1), grays)
     act, dup_a = distinct(range(ACT_RANGE[0], ACT_RANGE[1] + 1), grays, keep=(contact_src,))
     kept = emerge + act
@@ -313,8 +336,8 @@ def main(card="meghnad"):
     atlas_h.save(os.path.join(OUT, "atlas_256.webp"), "WEBP", quality=90, method=6, exact=True)
     ne = len(emerge)
     manifest = {
-        "cardId": CARD, "class": "actor", "version": 2, "placeholder": False,
-        "source": "Kling clip %s (sha256 %s…, %d frames @ %d fps, %dx%d, chroma green) — kept f%d–f%d; matted by tools/make_actor_from_clip.py" % (os.path.basename(CLIP), sha[:12], len(frames), round(fps), W, H, kept[0], kept[-1]),
+        "cardId": CFG.get("engine_id") or CARD, "class": "actor", "version": 2, "placeholder": False,
+        "source": "Kling clip %s (sha256 %s…, %d frames @ %d fps, %dx%d, chroma %s) — kept f%d–f%d; matted by tools/make_actor_from_clip.py" % (os.path.basename(CLIP), sha[:12], len(frames), round(fps), W, H, {"R": "red", "G": "green", "B": "blue"}["RGB"[key_channels(K)[0]]], kept[0], kept[-1]),
         "atlas": "atlas.webp", "atlasSize": {"w": AW, "h": AH},
         "alpha": "straight", "blend": "normal", "mv": False, "vignette": False, "cellMax": CELL_MAX,
         "fps": FPS, "timing": "native", "tempo": TEMPO, "phaseMs": PHASE_MS, "facing": CFG["facing"], "mirror": True,
@@ -328,7 +351,7 @@ def main(card="meghnad"):
     }
     if TEMPO is None: del manifest["tempo"]          # the card inherits the registry's defaults (data/manifestations.json)
     if CFG["aim"]: manifest = dict(sum(([(k, v)] + ([("aim", CFG["aim"])] if k == "facing" else []) for k, v in manifest.items()), []))
-    manifest["audit"]["recipe"] = {"matte": CFG["matte"], "key": list(CFG["key"]), "contact": CFG["contact"][0], "pivot": CFG["pivot"], "feather": CFG["feather"],
+    manifest["audit"]["recipe"] = {"matte": CFG["matte"], "key": list(CFG["key"]), "keyColour": [int(round(v)) for v in K.tolist()], "keyChannel": "RGB"[key_channels(K)[0]], "contact": CFG["contact"][0], "pivot": CFG["pivot"], "feather": CFG["feather"],
                                    "msPerSourceFrame": {k: round(v, 4) for k, v in MS_PER_SRC.items()}}
     with open(os.path.join(OUT, "manifest.json"), "w") as f: json.dump(manifest, f, indent=2); f.write("\n")
     with open(os.path.join(AUDIT, "matte_stats.json"), "w") as f: json.dump(stats, f, indent=1)

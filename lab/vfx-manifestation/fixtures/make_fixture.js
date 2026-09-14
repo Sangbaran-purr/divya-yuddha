@@ -2,7 +2,7 @@
 'use strict';
 // fixtures/make_fixture.js — VFX-LAB-1. The Meghnad-play fixture, produced by the REAL engine (src/engine.js, READ-ONLY).
 //
-//   node lab/vfx-manifestation/fixtures/make_fixture.js        → writes meghnad_seat0.json and meghnad_seat1.json, indra_seat0.json and indra_seat1.json
+//   node lab/vfx-manifestation/fixtures/make_fixture.js        → writes meghnad_seat0.json and meghnad_seat1.json, indra_seat0.json and indra_seat1.json, bali_seat0.json and bali_seat1.json
 //
 // The situation (legal, reachable, ruled pilot A3): Realm pinned to Mrityulok (no realm touches Hero power), no mulligan,
 // fixed decklists. The Deva seat moves first and plays Indra (a Hero, printed 7); the Asura seat then plays Meghnad
@@ -68,36 +68,46 @@ function build(attackerSeat) {
   throw new Error('no seed in 1..999 gave the Deva seat the first move');
 }
 
-function buildIndra(devaSeat) {
-  const asuraSeat = 1 - devaSeat;
+// LAB-7: one builder for every "a Hero enters on an empty board" fixture — the card's seat moves first and plays it; nothing else
+// happens (the no-number SETTLE path). Indra's fixture is this builder's output, field for field, as it was.
+const VANARA_DECK = ['Bali', 'Sugriva', 'Angad', 'Nala', 'Neela', 'Jambavan', 'Kesari', 'Tara', 'Dwivida', 'Mainda', 'Sharabha', 'Vanara Scout'];
+function buildHeroEntry(spec, seat) {
+  const other = 1 - seat;
   for (let seed = 1; seed < 1000; seed++) {
     const E = freshEngine();
-    const decks = devaSeat === 0 ? [DEVA_DECK, ASURA_DECK] : [ASURA_DECK, DEVA_DECK];
-    const opts = { rng: seeded(seed), p0: '{p0}', p1: '{p1}', realm: 'mrityulok', p0Faction: devaSeat === 0 ? 'devas' : 'asuras', p1Faction: devaSeat === 1 ? 'devas' : 'asuras',
+    const decks = seat === 0 ? [spec.deck, spec.oppDeck] : [spec.oppDeck, spec.deck];
+    const opts = { rng: seeded(seed), p0: '{p0}', p1: '{p1}', realm: 'mrityulok', p0Faction: seat === 0 ? spec.faction : spec.oppFaction, p1Faction: seat === 1 ? spec.faction : spec.oppFaction,
                    scenario: { p0Deck: decks[0], p1Deck: decks[1], p0Hand: HAND(decks[0]), p1Hand: HAND(decks[1]), mulligan: 0 } };
     const g = E.newGame(opts);
-    if (g.turn !== devaSeat) continue;                                        // the Deva seat must move first: Indra is the opening play
+    if (g.turn !== seat) continue;                                            // the card's seat must move first: it is the opening play
     const before = snapshot(E, g), ev0 = g.events.length, log0 = g.log.length;
-    const ih = g.players[devaSeat].hand.findIndex((c) => c.id === 'indra');
-    E.playCard(g, devaSeat, ih);
+    const ih = g.players[seat].hand.findIndex((c) => c.n === spec.card);       // by NAME: an engine id may differ (Bali is id "hanuman")
+    E.playCard(g, seat, ih);
     const after = snapshot(E, g);
     return {
-      fixture: 'indra_play', ruling: 'VFX-LAB-6 — the second character, by the template; A1 (the board is the truth): the Hero enters and nothing else changes',
+      fixture: spec.fixture, ruling: spec.ruling,
       engine: { file: 'src/engine.js', sha256: engineSha() },
-      seed, attackerSeat: devaSeat, defenderSeat: asuraSeat, realm: 'mrityulok',
+      seed, attackerSeat: seat, defenderSeat: other, realm: 'mrityulok',
       scenario: { p0: opts.p0, p1: opts.p1, p0Faction: opts.p0Faction, p1Faction: opts.p1Faction, p0Deck: decks[0], p1Deck: decks[1], mulligan: 0 },
-      setup: [], action: { seat: devaSeat, type: 'play', card: 'Indra', handIndex: ih, targetUid: null },
+      setup: [], action: { seat, type: 'play', card: spec.card, handIndex: ih, targetUid: null },
       before, events: g.events.slice(ev0), log: g.log.slice(log0).map((l) => l.msg), after,
       diff: boardDiff(before, after),
     };
   }
-  throw new Error('no seed in 1..999 gave the Deva seat the first move');
+  throw new Error('no seed in 1..999 gave the ' + spec.faction + ' seat the first move');
 }
+const HERO_ENTRIES = {
+  indra: { card: 'Indra', faction: 'devas', deck: DEVA_DECK, oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'indra_play',
+           ruling: 'VFX-LAB-6 — the second character, by the template; A1 (the board is the truth): the Hero enters and nothing else changes' },
+  bali:  { card: 'Bali', faction: 'vanaras', deck: VANARA_DECK, oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'bali_play',
+           ruling: 'VFX-LAB-7 — the third character, by the template; A1 (the board is the truth): the Hero enters and nothing else changes (Bali is engine id "hanuman"; his passive changes no card on an empty board)' },
+};
+const buildIndra = (seat) => buildHeroEntry(HERO_ENTRIES.indra, seat), buildBali = (seat) => buildHeroEntry(HERO_ENTRIES.bali, seat);
 
-module.exports = { build, buildIndra, snapshot, ASURA_DECK, DEVA_DECK };
+module.exports = { build, buildIndra, buildBali, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK };
 
 if (require.main === module) {
-  for (const [name, make] of [['meghnad', build], ['indra', buildIndra]]) for (const seat of [0, 1]) {
+  for (const [name, make] of [['meghnad', build], ['indra', buildIndra], ['bali', buildBali]]) for (const seat of [0, 1]) {
     const f = make(seat), out = path.join(__dirname, name + '_seat' + seat + '.json');
     fs.writeFileSync(out, JSON.stringify(f, null, 2) + '\n');
     console.log('wrote ' + path.relative(GAME, out) + ' — seed ' + f.seed + ', ' + f.events.length + ' events (' + f.events.map((e) => e.type).join(', ') + '), changed: ' +
