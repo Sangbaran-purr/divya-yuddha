@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="lab-stamp" content="5f0d67864298">
+<meta name="lab-stamp" content="61c1d2b425fd">
 <!-- runtime/ is the base: the copied VFX module's page-relative sheet URLs and its file-relative Pixi import both resolve inside it (see README) -->
 <base href="runtime/">
 <title>Manifestation Lab</title>
@@ -61,6 +61,7 @@
   button{ font:600 13px "Crimson Pro", Georgia, serif; color:var(--ink); background:#241a0d; border:1px solid var(--gold-dim); border-radius:8px;
     min-height:40px; padding:6px 12px; cursor:pointer; }
   button.primary{ font:700 13px Cinzel, Georgia, serif; letter-spacing:.1em; color:var(--gold); border-color:var(--gold); background:#2c1f0b; flex:1 1 100%; }
+  .grp.cards button.primary{ flex:1 1 40%; }
   button.on{ border-color:var(--gold); color:var(--gold); background:#33250d; }
   button:disabled{ opacity:.42; cursor:not-allowed; }
   button:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
@@ -101,8 +102,9 @@
 
   <section class="panel" aria-labelledby="h-replay">
     <h2 id="h-replay">Manifest</h2>
-    <div class="grp">
+    <div class="grp cards">
       <button class="primary" id="replay-all" type="button">Play Meghnad</button>
+      <button class="primary" id="replay-indra" type="button">Play Indra</button>
     </div>
     <div class="grp" aria-label="Replay one phase">
       <button id="phase-awaken" type="button">Awaken</button>
@@ -205,17 +207,17 @@
     <p id="story-truth" class="truth"></p>
   </section>
 </main>
-<script src="../lib/boarddiff.js?v=5f0d67864298"></script>
-<script src="../lib/clashcontext.js?v=5f0d67864298"></script>
-<script src="../lib/director.js?v=5f0d67864298"></script>
-<script src="../lib/runner.js?v=5f0d67864298"></script>
-<script src="../lib/manifest.js?v=5f0d67864298"></script>
-<script src="../lib/stagemath.js?v=5f0d67864298"></script>
-<script src="../lib/dissolve.js?v=5f0d67864298"></script>
-<script src="../lib/labaudio.js?v=5f0d67864298"></script>
-<script src="../lib/actorstage.js?v=5f0d67864298"></script>
-<script src="../lib/playback.js?v=5f0d67864298"></script>
-<script src="vfx.js?v=5f0d67864298"></script>
-<script src="../lab.js?v=5f0d67864298"></script>
+<script src="../lib/boarddiff.js?v=61c1d2b425fd"></script>
+<script src="../lib/clashcontext.js?v=61c1d2b425fd"></script>
+<script src="../lib/director.js?v=61c1d2b425fd"></script>
+<script src="../lib/runner.js?v=61c1d2b425fd"></script>
+<script src="../lib/manifest.js?v=61c1d2b425fd"></script>
+<script src="../lib/stagemath.js?v=61c1d2b425fd"></script>
+<script src="../lib/dissolve.js?v=61c1d2b425fd"></script>
+<script src="../lib/labaudio.js?v=61c1d2b425fd"></script>
+<script src="../lib/actorstage.js?v=61c1d2b425fd"></script>
+<script src="../lib/playback.js?v=61c1d2b425fd"></script>
+<script src="vfx.js?v=61c1d2b425fd"></script>
+<script src="../lab.js?v=61c1d2b425fd"></script>
 </body>
 </html>

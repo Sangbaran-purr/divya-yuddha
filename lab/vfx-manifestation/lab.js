@@ -1,4 +1,4 @@
-/* lab.js — VFX-LAB-2+3 (+ LAB-4a: every URL stamped, the cells-drawn readout · LAB-4b: the dissolve exit and its preset preview · LAB-4c: the tempo and FIZZLE sliders · LAB-4d: they start from the data's defaults · LAB-5: memory ladder, sound, fallbacks, mock match) · the harness page. Loaded after lib/* and runtime/vfx.js.
+/* lab.js — VFX-LAB-2+3 (+ LAB-4a: every URL stamped, the cells-drawn readout · LAB-4b: the dissolve exit and its preset preview · LAB-4c: the tempo and FIZZLE sliders · LAB-4d: they start from the data's defaults · LAB-5: memory ladder, sound, fallbacks, mock match · LAB-6: a second card, Indra, by the template) · the harness page. Loaded after lib/* and runtime/vfx.js.
    The page is glue: the fixture → ClashContext → Director plan → Runner → Playback (stage + board). Every piece of logic lives
    in lib/ and is card-agnostic; the only card-specific data are the registry (data/manifestations.json), the faction energy
    (data/factionfx.json) and the actor manifest. Nothing here loads from the live game.
@@ -11,7 +11,8 @@
   const V = (u) => { const x = new URL(u, document.baseURI); x.searchParams.set('v', STAMP); return x.href; };
   let stampNote = 'checking';
   const ART = { meghnad: '../art/Asuras_Unit_Meghnad_P6_rRare.png', indra: '../art/Devas_Hero_Indra_P7_rLegendary.png' };
-  const FIXTURE = (seat) => '../fixtures/meghnad_seat' + seat + '.json';
+  const FIXTURE = (card, seat) => '../fixtures/' + card + '_seat' + seat + '.json';
+  let currentCard = 'meghnad';   // LAB-6: the card whose play the board shows — Play Meghnad / Play Indra
   const VIEWER = 0;   // the board is read as seat 0; "swap sides" moves the ATTACKER
   const errors = [];
   function report(e) { errors.push(String(e && (e.message || e))); }
@@ -158,7 +159,7 @@
     }
     const hand = el('hand'); hand.textContent = '';
     const lab = document.createElement('span'); lab.className = 'label'; lab.textContent = 'Your hand'; hand.appendChild(lab);
-    board.seats[VIEWER].hand.slice(0, 6).forEach((c) => { const s = document.createElement('span'); s.className = 'chip' + (c.id === 'meghnad' ? ' hot' : ''); s.textContent = c.n; hand.appendChild(s); });
+    board.seats[VIEWER].hand.slice(0, 6).forEach((c) => { const s = document.createElement('span'); s.className = 'chip' + (c.id === currentCard ? ' hot' : ''); s.textContent = c.n; hand.appendChild(s); });
     (floats || []).forEach((f) => {
       const r = rectOf(f.uid); if (!r) return;
       const d = document.createElement('div'); d.className = 'float ' + (f.delta < 0 ? 'down' : 'up'); d.textContent = (f.delta > 0 ? '+' : '−') + Math.abs(f.delta);
@@ -183,15 +184,21 @@
   function story(stage2) {
     const ol = el('story-events'); ol.textContent = '';
     F.events.forEach((e) => { const li = document.createElement('li'); li.textContent = e.type + (e.abilityName ? ' · ' + e.abilityName : '') + (e.text ? ' · "' + e.text + '"' : '') + (e.amount != null ? ' · ' + e.amount : ''); ol.appendChild(li); });
-    const ch = F.diff.changed.map((c) => c.n + ' ' + c.eff.from + ' → ' + c.eff.to).join(', ');
-    el('story-truth').textContent = 'The board difference: ' + ch + '. No event carried this; the engine only logged "' + F.log.find((l) => /bolt/.test(l)) + '". It lands at SETTLE.';
+    const ch = F.diff.changed.map((c) => c.n + ' ' + c.eff.from + ' → ' + c.eff.to).join(', '), en = F.diff.entered.map((c) => c.n + ' enters at ' + c.eff).join(', ');
+    el('story-truth').textContent = F.diff.changed.length
+      ? 'The board difference: ' + ch + '. No event carried this; the engine only logged "' + (F.log.find((l) => /bolt|strikes/.test(l)) || F.log[F.log.length - 1]) + '". It lands at SETTLE.'
+      : 'The board difference: ' + en + ', and nothing else. No power changes, so SETTLE lands no numbers: the card is simply on the board.';
   }
-  async function load(seat) {
+  async function load(seat, card) {
     stopRun();
-    attackerSeat = seat; F = await fetch(V(FIXTURE(seat))).then((r) => r.json());
+    if (card) currentCard = card;
+    attackerSeat = seat; F = await fetch(V(FIXTURE(currentCard, seat))).then((r) => r.json());
     render(F.before, []); story(); prefetchHands();
-    el('seat-swap').textContent = 'Swap sides: Meghnad is ' + (attackerSeat === VIEWER ? 'yours' : 'the opponent\'s');
+    el('seat-swap').textContent = 'Swap sides: ' + F.action.card + ' is ' + (attackerSeat === VIEWER ? 'yours' : 'the opponent\'s');
+    ['replay-all', 'replay-indra'].forEach((id) => el(id).classList.toggle('on', (id === 'replay-indra') === (currentCard === 'indra')));
   }
+  // LAB-6: a Play button for each card; switching card sets its fixture with the card as YOURS (Swap sides still moves it)
+  async function playCard(card) { if (card !== currentCard) await load(VIEWER, card); await play({}); }
 
   // ── PLAY ──
   function timingOf(mf) {
@@ -215,7 +222,7 @@
     const ctx = window.ClashContext.fromBatch(F), reg = REG[ctx.cardId] || {};
     const mf = (ctx.scope === 'manifest' && reg.manifest) ? await manifestFor(ctx.cardId) : null, { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
     const p = window.Director.plan(ctx, { mode, prior: memory.count(ctx.cardId), ladderExempt: !!reg.ladderExempt, timing: timingOf(mf), tempo, fizzleMs });
-    el('plan').textContent = (runner && !runner.done ? '(the play running now keeps its own timeline — these values apply from the next play)' : '(the next play — press Play Meghnad)') + '\n\n' + window.Director.formatPlan(p);
+    el('plan').textContent = (runner && !runner.done ? '(the play running now keeps its own timeline — these values apply from the next play)' : '(the next play — press Play ' + F.action.card + ')') + '\n\n' + window.Director.formatPlan(p);
   }
   function stopRun() { if (runner && !runner.done) runner.skip(); runner = null; }   // LAB-5: an interrupted play lands on AFTER, nothing left behind
   async function play(opts) {
@@ -300,7 +307,9 @@
   let mockT0 = 0;
   function mark(what, t0) { mockLog.push({ what, from: Math.round(t0 - mockT0), to: Math.round(clock.t - mockT0) }); showMock(false); }
   async function mockMatch() {
-    if (mockRunning) return; mockRunning = true; mockLog = []; memory.reset(); stopRun(); mockT0 = clock.t;
+    if (mockRunning) return; mockRunning = true;
+    if (currentCard !== 'meghnad') await load(VIEWER, 'meghnad');   // the mock match is Meghnad's
+    mockLog = []; memory.reset(); stopRun(); mockT0 = clock.t;
     try {
       let t = clock.t; render(F.before, []); await play({}); await runEnd(); mark('Meghnad manifests — ' + lastPlan.mode, t);
       await opponentTurn(0);
@@ -319,7 +328,7 @@
   // ── READOUT ──
   function mb(n) { return (n / 1048576).toFixed(2) + ' MB'; }
   function readout() {
-    const g = VFX.gpu, s = stage.stats(), a = actors.meghnad;
+    const g = VFX.gpu, s = stage.stats();
     el('ro-fps').textContent = String(clock.fps);
     el('ro-time').textContent = (clock.paused ? 'paused' : clock.scale + '×') + ' · ' + (clock.t / 1000).toFixed(2) + ' s · ' + mode + (runner && !runner.done ? ' · playing ' + Math.round(runner.t) + ' ms' + (runner.speed !== 1 ? ' at ' + runner.speed + '×' : '') : '');
     el('ro-renderer').textContent = 'effects ' + (g.renderer || 'none') + (g.enabled ? '' : ' (off → Canvas 2D)') + (g.texReady ? ' · surge ready' : '');
@@ -332,7 +341,7 @@
     let decoded = 0;
     if (copyMeta && g.texReady) copyMeta.files.filter((f) => /sheets\//.test(f.to) && f.px).forEach((f) => { decoded += f.px.w * f.px.h * 4; });
     el('ro-mb').textContent = 'actor ' + mb(s.decodedBytes) + ' decoded now (' + s.actorsLoaded + ' loaded · peak ' + mb(s.peakDecoded) + ' · ' + s.loads + ' decodes, ' + s.unloads + ' releases) · compressed in cache ' + mb(prefetchedBytes()) + ' · effect sheets ≈ ' + mb(decoded) + ' · transferred ' + mb(bytes);
-    const mq = manifests.meghnad, pq = mq ? rungFor(mq) : null, rq = el('ro-quality');
+    const mq = manifests[currentCard], pq = mq ? rungFor(mq) : null, rq = el('ro-quality');
     if (rq) rq.textContent = pq ? pq.rung + ' px · ' + pq.why + ' (DPR ' + (window.devicePixelRatio || 1) + (navigator.deviceMemory ? ' · ' + navigator.deviceMemory + ' GB hint' : ' · no memory hint') + ')' : '—';
     const so = audio.settings(), lg = audio.log[audio.log.length - 1], rso = el('ro-sound');
     if (rso) rso.textContent = (so.sfxOn ? 'game sound on · ' + Math.round(so.sfxVol * 100) + '%' : 'game sound OFF (muted in the game\'s settings)') + ' · ' + audio.state + (lg ? ' · last: ' + lg.name + ' → ' + lg.outcome : '');
@@ -347,7 +356,8 @@
 
   // ── CONTROLS ──
   function setOn(ids, on) { ids.forEach((id) => el(id).classList.toggle('on', id === on)); }
-  el('replay-all').onclick = () => { play({}).catch(report); };
+  el('replay-all').onclick = () => { playCard('meghnad').catch(report); };
+  el('replay-indra').onclick = () => { playCard('indra').catch(report); };
   ['awaken', 'emerge', 'act', 'fizzle', 'settle'].forEach((p) => { el('phase-' + p).onclick = () => { play({ phase: p.toUpperCase() }).catch(report); }; });
   el('ctl-skip').onclick = () => { if (runner && !runner.done) runner.skip(); };
   el('ctl-ff').onclick = () => { if (runner && !runner.done) runner.fastForward(runner.speed === 3 ? 1 : 3); };
@@ -386,7 +396,7 @@
     fetch(V('COPY.json')).then((r) => r.json()).then((j) => { copyMeta = j; }),
     fetch(V('../data/manifestations.json')).then((r) => r.json()).then((j) => { REG = j.cards || {}; REG_DEFAULTS = j.defaults || {}; }),
     fetch(V('../data/factionfx.json')).then((r) => r.json()).then((j) => { FFX = j; }),
-  ]).then(() => load(0)).then(() => { stage.useBackend('webgpu').then(() => prefetchHands()).catch(report); window.requestAnimationFrame(tick); previewPlan().catch(report); }).catch(report);   // the rung depends on the renderer: prefetch again once it is up
+  ]).then(() => load(0, 'meghnad')).then(() => { stage.useBackend('webgpu').then(() => prefetchHands()).catch(report); window.requestAnimationFrame(tick); previewPlan().catch(report); }).catch(report);   // the rung depends on the renderer: prefetch again once it is up
   // is this page the served one? STAMP read past every cache; a cached page reloads itself once onto the served stamp
   fetch(new URL('../STAMP', document.baseURI).href + '?t=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : null)).then((served) => {
     served = served && served.trim();
@@ -396,5 +406,5 @@
     if (here.searchParams.get('v') !== served) { here.searchParams.set('v', served); location.replace(here.href); return; }
     stampNote = 'STALE — this page is ' + STAMP + ', the server has ' + served; report('stale lab page: ' + stampNote);
   }).catch(() => { stampNote = 'served STAMP unreadable'; });
-  window.__lab = { STAMP, VFX, stage, audio, mockMatch, release, rungFor, manifests, prefetched, get actors() { return actors; }, get layout() { return layout; }, get mockLog() { return mockLog; }, clock, play, load, memory, errors, get runner() { return runner; }, get plan() { return lastPlan; }, get playback() { return playback; }, get done() { return lastDone; }, get fixture() { return F; } };
+  window.__lab = { STAMP, VFX, stage, audio, mockMatch, playCard, get card() { return currentCard; }, release, rungFor, manifests, prefetched, get actors() { return actors; }, get layout() { return layout; }, get mockLog() { return mockLog; }, clock, play, load, memory, errors, get runner() { return runner; }, get plan() { return lastPlan; }, get playback() { return playback; }, get done() { return lastDone; }, get fixture() { return F; } };
 })();

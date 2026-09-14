@@ -2,7 +2,15 @@
 # tools/make_actor_from_clip.py — VFX-LAB-4. A Kling performance on a flat chroma-green ground → an ACTOR (ruling A4):
 # matted with real alpha, trimmed rectangular cells at 512 px with one ground pivot, WebP with alpha, NO motion vectors.
 #
-#   lab/vfx-manifestation/tools/.venv/bin/python lab/vfx-manifestation/tools/make_actor_from_clip.py
+#   lab/vfx-manifestation/tools/.venv/bin/python lab/vfx-manifestation/tools/make_actor_from_clip.py [card]      (meghnad · indra)
+#
+# LAB-6 · THE TEMPLATE: every card is one entry in CARDS below — its clip, its audited frame ranges, its matte, its contact rule,
+# its pivot rule, its facing and aim. The phase lengths come from the frame ranges at the owner's tuned pace (MS_PER_SRC: the seconds
+# per source frame Meghnad's EMERGE and ACT were tuned at), so a new card needs no new numbers. A card without "tempo" inherits the
+# registry's defaults (data/manifestations.json). Two mattes: "dark-body" (Meghnad: a dark rider and horse, bright lightning cut off
+# the figure) and "bright" (Indra: a white-and-gold figure whose bolt IS the action — see key_bright). Contact rules: "spear-tip" (the
+# leftmost solid spear tip) and "bolt-edge" (the frame after the bolt first reaches the frame's edge). Pivot rules: "front-left" (the
+# horse's front hooves) and "feet" (the centre of the ground contact).
 #
 # Run it with the lab venv: rembg (A6, amended) lives there and nowhere else. Its model lives in tools/.venv/u2net/.
 #   IN (never committed, A7):   sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4
@@ -51,6 +59,29 @@ DARK_LUM = 150.0                     # the body is darker than this; the lightni
 GLOW_R = 28                          # px (source) — translucent light allowed this close to the solid body
 FRINGE_LIMIT = 0.002                 # share of edge-band pixels that are near-pure ground yet kept mostly opaque → rembg is called in
 
+# LAB-6 · THE TEMPLATE
+MS_PER_SRC = {"emerge": 583 / 23, "act": 1208 / 32}   # the owner-tuned pace (LAB-4d): Meghnad's EMERGE 583 ms over f34–f56, ACT 1208 ms over f57–f88
+RESCUE_R = 10                        # px (source) — "bright" matte: thin light next to solid matter keeps the alpha its colour un-mixes to
+SPECK = 150                          # px (source) — "bright" matte: an isolated fleck smaller than this, off the figure, is sparkle or noise
+CARDS = {
+    "meghnad": {"label": "Meghnad", "clip": "kling_20260913_VIDEO_Create_a_p_5011_0.mp4", "emerge": (34, 56), "act": (57, 88), "tempo": 0.6,
+                "matte": "dark-body", "key": (28.0, 85.0), "contact": ("spear-tip", (66, 82)), "settled": 84, "pivot": "front-left",
+                "facing": "left", "aim": None, "feather": 0},
+    "indra":   {"label": "Indra", "clip": "kling_20260914_VIDEO_Preserve_I_5205_0.mp4", "emerge": (36, 52), "act": (53, 97), "tempo": None,
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("bolt-edge", (53, 60)), "settled": 70, "pivot": "feet",
+                "facing": "right", "aim": "up", "feather": 8},
+}
+CFG = None
+def configure(card):
+    global CARD, CLIP, OUT, AUDIT, SHEET, EMERGE_RANGE, ACT_RANGE, PHASE_MS, TEMPO, CONTACT_SEARCH, SETTLED_FRAME, KEY_T0, KEY_T1, CFG
+    if card not in CARDS: sys.exit("unknown card %r — one of %s" % (card, ", ".join(CARDS)))
+    CFG = CARDS[card]; CARD = card
+    CLIP = os.path.join(LAB, "sources", CFG["clip"])
+    OUT = os.path.join(LAB, "actors", CARD); AUDIT = os.path.join(LAB, "frames", CARD); SHEET = os.path.join(LAB, "frames", CARD + "_contact_sheet.jpg")
+    EMERGE_RANGE, ACT_RANGE = CFG["emerge"], CFG["act"]
+    PHASE_MS = {k: int(round((CFG[k][1] - CFG[k][0] + 1) * MS_PER_SRC[k])) for k in ("emerge", "act")}
+    TEMPO = CFG["tempo"]; CONTACT_SEARCH = CFG["contact"][1]; SETTLED_FRAME = CFG["settled"]; KEY_T0, KEY_T1 = CFG["key"]
+
 def decode(path):
     cap = cv2.VideoCapture(path); frames = []
     while True:
@@ -93,6 +124,45 @@ def isolate(alpha, rgb):
     out[(dist > GLOW_R)] = 0.0                                               # nothing floats off the figure
     return out, dropped
 
+def key_bright(rgb, K):
+    # the "bright" matte (LAB-6): the green key, strict (T0/T1 low, so green-tinted sparkle keys out); then, next to solid matter,
+    # every pixel keeps at least the alpha its colour UN-MIXES to — the largest a with F = (C − (1−a)K)/a not green-dominant — so the
+    # bolt's thin yellow-white edges and the hand's glow keep their alpha where the plain key would drop them; then decontam + despill.
+    a = rgb.astype(np.float32); r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    ak = 1.0 - np.clip((g - np.maximum(r, b) - KEY_T0) / (KEY_T1 - KEY_T0), 0, 1)
+    d = a - K
+    au = np.maximum(np.clip(-(d[..., 1] - d[..., 0]) / max(1.0, float(K[1] - K[0])), 0, 1), np.clip(-(d[..., 1] - d[..., 2]) / max(1.0, float(K[1] - K[2])), 0, 1))
+    near = cv2.dilate((ak > SOLID).astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * RESCUE_R + 1, 2 * RESCUE_R + 1))).astype(bool)
+    alpha = np.where(near, np.maximum(ak, au), ak)
+    am = np.maximum(alpha, 0.05)[..., None]
+    fg = np.clip((a - (1.0 - alpha)[..., None] * K) / am, 0, 255)
+    fg[..., 1] = np.minimum(fg[..., 1], np.maximum(fg[..., 0], fg[..., 2]))
+    return alpha, fg
+
+def isolate_bright(alpha):
+    # flecks smaller than SPECK px that touch nothing large are sparkle or noise: cut. Everything larger stays — the bolt and its
+    # branches may run far from the body.
+    mask = (alpha > 0.3).astype(np.uint8)
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(mask, 8)
+    if n <= 1: return alpha, 0
+    big = np.isin(lab, [k for k in range(1, n) if stats[k, cv2.CC_STAT_AREA] >= SPECK])
+    near = cv2.dilate(big.astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (13, 13))).astype(bool)
+    out, dropped = alpha.copy(), 0
+    for k in range(1, n):
+        if stats[k, cv2.CC_STAT_AREA] >= SPECK: continue
+        comp = lab == k
+        if not near[comp & ~big].any() or True:
+            touching = cv2.dilate(comp.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool) & big
+            if not touching.any(): out[comp] = 0.0; dropped += 1
+    return out, dropped
+
+def feather(alpha, px):
+    # the action may run off the frame (Indra's bolt leaves at the top and the right): its cut edge fades over the last px pixels
+    if not px: return alpha
+    h, w = alpha.shape; yy = np.arange(h, dtype=np.float32)[:, None]; xx = np.arange(w, dtype=np.float32)[None, :]
+    ramp = np.minimum(np.minimum(np.clip((yy + 0.5) / px, 0, 1), np.clip((h - 0.5 - yy) / px, 0, 1)), np.minimum(np.clip((xx + 0.5) / px, 0, 1), np.clip((w - 0.5 - xx) / px, 0, 1)))
+    return alpha * ramp
+
 def edge_band(alpha, w=4):
     k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * w + 1, 2 * w + 1))
     return (cv2.dilate((alpha > 0.02).astype(np.uint8), k) & (1 - cv2.erode((alpha > 0.98).astype(np.uint8), k))).astype(bool)
@@ -112,7 +182,8 @@ def distinct(indices, grays, keep=()):
         out.append(i)
     return out, dropped
 
-def main():
+def main(card="meghnad"):
+    configure(card)
     if not os.path.exists(CLIP): sys.exit("the source clip is not at " + CLIP)
     frames, fps = decode(CLIP)
     H, W = frames[0].shape[:2]
@@ -124,21 +195,37 @@ def main():
     mattes = {}
     def matte(i):
         if i not in mattes:
-            al, fg = key(frames[i], K); al, dropped = isolate(al, frames[i]); mattes[i] = (al, fg, dropped)
+            if CFG["matte"] == "bright": al, fg = key_bright(frames[i], K); al, dropped = isolate_bright(al)
+            else: al, fg = key(frames[i], K); al, dropped = isolate(al, frames[i])
+            mattes[i] = (feather(al, CFG["feather"]), fg, dropped)
         return mattes[i]
-    # contact: the leftmost solid spear tip in the search window (earliest within 4 px of the extreme)
-    tips = {}
-    for i in range(CONTACT_SEARCH[0], CONTACT_SEARCH[1] + 1):
-        al, _, _ = matte(i)
-        lum = frames[i].astype(np.float32) @ np.array([0.299, 0.587, 0.114], np.float32)
-        xs = np.where(((al > SOLID) & (lum < DARK_LUM)).any(axis=0))[0]; tips[i] = int(xs.min()) if len(xs) else W
-    lo = min(tips.values()); contact_src = min(i for i, x in tips.items() if x <= lo + 4)
+    if CFG["contact"][0] == "spear-tip":
+        # contact: the leftmost solid spear tip in the search window (earliest within 4 px of the extreme)
+        tips = {}
+        for i in range(CONTACT_SEARCH[0], CONTACT_SEARCH[1] + 1):
+            al, _, _ = matte(i)
+            lum = frames[i].astype(np.float32) @ np.array([0.299, 0.587, 0.114], np.float32)
+            xs = np.where(((al > SOLID) & (lum < DARK_LUM)).any(axis=0))[0]; tips[i] = int(xs.min()) if len(xs) else W
+        lo = min(tips.values()); contact_src = min(i for i, x in tips.items() if x <= lo + 4)
+        contact_note = "spear tip x=%d" % tips[contact_src]
+    else:
+        # the bolt reaches the frame's edge: bright matter kept by the matte in the top rows or the right columns. Contact is the frame
+        # after the first such frame — the beam has filled out to the edge.
+        edge = {}
+        for i in range(CONTACT_SEARCH[0], CONTACT_SEARCH[1] + 1):
+            al, _ = key_bright(frames[i], K); al, _ = isolate_bright(al)          # the matte BEFORE the edge feather: the frame's own edge rows
+            lum = frames[i].astype(np.float32) @ np.array([0.299, 0.587, 0.114], np.float32)
+            lit = (al > 0.5) & (lum > 170)
+            edge[i] = int(lit[:3, :].sum() + lit[:, -3:].sum())
+        peak = max(edge.values()); first = min(i for i, v in edge.items() if v >= 0.25 * peak)   # a grazing tip is not the bolt reaching the edge
+        contact_src = first + 1
+        contact_note = "the bolt reaches the frame edge (at least a quarter of its peak edge contact) first at f%d (edge px %s)" % (first, {k: edge[k] for k in sorted(edge)})
     emerge, dup_e = distinct(range(EMERGE_RANGE[0], EMERGE_RANGE[1] + 1), grays)
     act, dup_a = distinct(range(ACT_RANGE[0], ACT_RANGE[1] + 1), grays, keep=(contact_src,))
     kept = emerge + act
     diffs = [float(np.abs(grays[i].astype(np.float32) - grays[i - 1].astype(np.float32)).mean()) for i in range(EMERGE_RANGE[0] + 1, ACT_RANGE[1] + 1)]
-    print("kept %d frames · EMERGE %d (f%d–f%d) · ACT %d (f%d–f%d) · duplicates dropped %s · smallest neighbour |Δ| %.2f · contact f%d (spear tip x=%d)" % (
-        len(kept), len(emerge), emerge[0], emerge[-1], len(act), act[0], act[-1], dup_e + dup_a if dup_e + dup_a else "none", min(diffs), contact_src, tips[contact_src]))
+    print("kept %d frames · EMERGE %d (f%d–f%d) · ACT %d (f%d–f%d) · duplicates dropped %s · smallest neighbour |Δ| %.2f · contact f%d (%s)" % (
+        len(kept), len(emerge), emerge[0], emerge[-1], len(act), act[0], act[-1], dup_e + dup_a if dup_e + dup_a else "none", min(diffs), contact_src, contact_note))
 
     shares = {i: fringe_share(frames[i], matte(i)[0], K)[0] for i in kept}
     need = [i for i in kept if shares[i] > FRINGE_LIMIT]
@@ -167,12 +254,19 @@ def main():
         rgba[i] = img
         Image.fromarray(img, "RGBA").save(os.path.join(AUDIT, "f%03d.png" % i))
 
-    # the pivot: ground contact under the front hooves (the horse faces left), on a settled frame
+    # the pivot, on a settled frame: "front-left" = ground contact under the front hooves (the horse faces left); "feet" = the centre of
+    # the ground contact between both feet
     al, _, _ = matte(SETTLED_FRAME)
     ys, xs = np.where(al > 0.5)
     ground = int(ys.max()); band = xs[ys >= ground - 14]
-    left = band[band <= np.percentile(band, 50)]
-    PIV = (float(np.mean(left)), float(ground))
+    if CFG["pivot"] == "front-left":
+        left = band[band <= np.percentile(band, 50)]; PIV = (float(np.mean(left)), float(ground))
+    else:
+        # "feet": halfway between the two feet — the lowest matter left and right of the stance's centre (the robe's hem joins them, so the
+        # ground band alone finds only the lower foot)
+        top = int(ys.min()); low = ys >= ground - int(0.12 * (ground - top)); lx, ly = xs[low], ys[low]; mid = (lx.min() + lx.max()) / 2.0
+        feet = [float(np.mean(lx[side][ly[side] >= ly[side].max() - 6])) for side in (lx < mid, lx >= mid)]
+        PIV = (float((feet[0] + feet[1]) / 2), float(ground))
     # trim every kept frame; one scale for all
     boxes = {}
     for i in kept:
@@ -223,7 +317,7 @@ def main():
         "source": "Kling clip %s (sha256 %s…, %d frames @ %d fps, %dx%d, chroma green) — kept f%d–f%d; matted by tools/make_actor_from_clip.py" % (os.path.basename(CLIP), sha[:12], len(frames), round(fps), W, H, kept[0], kept[-1]),
         "atlas": "atlas.webp", "atlasSize": {"w": AW, "h": AH},
         "alpha": "straight", "blend": "normal", "mv": False, "vignette": False, "cellMax": CELL_MAX,
-        "fps": FPS, "timing": "native", "tempo": TEMPO, "phaseMs": PHASE_MS, "facing": "left", "mirror": True,
+        "fps": FPS, "timing": "native", "tempo": TEMPO, "phaseMs": PHASE_MS, "facing": CFG["facing"], "mirror": True,
         "refHeight": max(c.height for _, c, _, _ in cells),
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height, "pivot": {"x": round(px, 1), "y": round(py, 1)}, "origin": list(origins[i])} for i, c, cx, cy, px, py in placed],
         "rungs": [{"cellMax": CELL_MAX // R, "atlas": "atlas_256.webp", "atlasSize": {"w": HW, "h": HH}, "refHeight": max(c.height for _, c, _, _ in half),
@@ -232,6 +326,10 @@ def main():
         "contact": act.index(contact_src),
         "audit": {"idle": [0, EMERGE_RANGE[0] - 1], "emerge": list(EMERGE_RANGE), "act": list(ACT_RANGE), "droppedTail": [ACT_RANGE[1] + 1, len(frames) - 1], "duplicatesDropped": dup_e + dup_a, "contactSrc": contact_src, "pivotSrc": [round(PIV[0], 1), round(PIV[1], 1)], "scale": round(s, 5)},
     }
+    if TEMPO is None: del manifest["tempo"]          # the card inherits the registry's defaults (data/manifestations.json)
+    if CFG["aim"]: manifest = dict(sum(([(k, v)] + ([("aim", CFG["aim"])] if k == "facing" else []) for k, v in manifest.items()), []))
+    manifest["audit"]["recipe"] = {"matte": CFG["matte"], "key": list(CFG["key"]), "contact": CFG["contact"][0], "pivot": CFG["pivot"], "feather": CFG["feather"],
+                                   "msPerSourceFrame": {k: round(v, 4) for k, v in MS_PER_SRC.items()}}
     with open(os.path.join(OUT, "manifest.json"), "w") as f: json.dump(manifest, f, indent=2); f.write("\n")
     with open(os.path.join(AUDIT, "matte_stats.json"), "w") as f: json.dump(stats, f, indent=1)
 
@@ -239,7 +337,7 @@ def main():
     tw = 300; th = int(round(tw * max(c.height for _, c, _, _ in cells) / max(c.width for _, c, _, _ in cells)))
     cols = 8; rows = (len(cells) + cols - 1) // cols
     sheet = Image.new("RGB", (cols * tw, rows * (th + 22) + 30), (18, 18, 18)); d = ImageDraw.Draw(sheet)
-    d.text((8, 8), "Meghnad actor · %d frames kept of %d · EMERGE %d in %d ms · ACT %d in %d ms (tempo 1; default %.1fx) · contact f%d · atlas %dx%d" % (len(kept), len(frames), ne, PHASE_MS["emerge"], len(act), PHASE_MS["act"], TEMPO, contact_src, AW, AH), fill=(235, 210, 150))
+    d.text((8, 8), CFG["label"] + " actor · %d frames kept of %d · EMERGE %d in %d ms · ACT %d in %d ms (tempo 1; default %s) · contact f%d · atlas %dx%d" % (len(kept), len(frames), ne, PHASE_MS["emerge"], len(act), PHASE_MS["act"], ("%.1fx" % TEMPO) if TEMPO else "inherited", contact_src, AW, AH), fill=(235, 210, 150))
     chk = Image.new("RGB", (tw, th)); cd = ImageDraw.Draw(chk)
     for gx in range(0, tw, 12):
         for gy in range(0, th, 12): cd.rectangle([gx, gy, gx + 11, gy + 11], fill=(70, 70, 70) if (gx // 12 + gy // 12) % 2 else (100, 100, 100))
@@ -257,4 +355,4 @@ def main():
     print("rung 256: atlas %dx%d · %.1f KB · decoded %.1f MB (%.1f%% of the 512 rung) · cells max %dpx" % (HW, HH, os.path.getsize(os.path.join(OUT, "atlas_256.webp")) / 1024, HW * HH * 4 / 1048576, 100.0 * HW * HH / (AW * AH), max(max(c.width, c.height) for _, c, _, _ in half)))
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1] if len(sys.argv) > 1 else "meghnad")

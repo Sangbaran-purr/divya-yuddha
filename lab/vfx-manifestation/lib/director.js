@@ -19,6 +19,9 @@
    cell count. The cells then play at count ÷ length × tempo (EMERGE and ACT each at their own rate), so a repack with more cells
    plays smoother in the same time. The defaults a play starts from (the manifest's tempo, the preset's fizzle_ms, the
    registry's defaults block) are resolved by ActorManifest.defaultsFor — the director only takes numbers.
+   LAB-6 (a template gap): native timing applies to ANY card whose manifest supplies it, not only the ladder-exempt pilot — the
+   second character (Indra, Legendary) plays its clip at the owner's tuned defaults. The plan still reports what the rarity ladder
+   would give (ladderMs); whether the ladder should govern native actors from the expansion on is the owner's ruling (A3).
    THE REPEAT RULE: a card's second and later manifestations in a match play Fast (Reduced stays Reduced). The caller passes
    how many times this card has already manifested (createMemory() keeps that count per match).
    A2: a play outside Hero/Unit gets no actor phases — SETTLE and the queue only (its existing effect VFX is not the lab's).
@@ -65,7 +68,7 @@
     var ladder = opts.ladderExempt ? 'exempt (A3 pilot)' : 'rarity ' + (ctx.rarity || '?');
     var full = opts.ladderExempt ? PILOT_MS : (LADDER_MS[ctx.rarity] || LADDER_MS.R);
     var phases, total;
-    var native = opts.ladderExempt && opts.timing && opts.timing.fps > 0 && opts.timing.emerge > 0 && opts.timing.act > 0 ? opts.timing : null;
+    var native = opts.timing && opts.timing.fps > 0 && opts.timing.emerge > 0 && opts.timing.act > 0 ? opts.timing : null;
     var contactFrac = CONTACT, cellFps = null, cellFpsEmerge = null, contactMs = null;
     var tempo = opts.tempo > 0 ? Math.min(4, Math.max(0.25, +opts.tempo)) : 1, fizzleMs = opts.fizzleMs > 0 ? Math.round(+opts.fizzleMs) : null, tuned = tempo !== 1 || fizzleMs != null;
     if ((mode === 'full' || mode === 'fast') && native) {
@@ -77,7 +80,7 @@
       if (native.contact != null) contactFrac = Math.min(1, Math.max(0, native.contact / native.act));
       cellFps = rateA / k; cellFpsEmerge = rateE / k;                                            // the cells' own rates (ACT, EMERGE): × tempo in Full, twice that in Fast
       if (native.contact != null) contactMs = Math.ceil(native.contact * 1000 / cellFps);          // the first ms of ACT at which the contact cell is on stage
-      ladder = 'exempt (A3 pilot) · native ' + native.fps + ' fps';
+      ladder = (opts.ladderExempt ? 'exempt (A3 pilot)' : 'rarity ' + (ctx.rarity || '?') + ' (the ladder would give ' + (LADDER_MS[ctx.rarity] || LADDER_MS.R) + ' ms)') + ' · native ' + native.fps + ' fps';
     }
     else if ((mode === 'full' || mode === 'fast') && tuned) {
       var kk = mode === 'fast' ? FAST : 1, sc = full / PILOT_MS * kk / tempo, t1 = 0; phases = [];
@@ -120,7 +123,7 @@
     var span = function (n) { var x = at(n); return x ? x.t1 - x.t0 : 0; }, hitAt = cues.filter(function (c) { return c.cue === 'contact'; })[0];
     var timeline = actor ? { awaken: span('AWAKEN'), emerge: span('EMERGE'), act: span('ACT'), contact: hitAt ? hitAt.t - at('ACT').t0 : null, contactAt: hitAt ? hitAt.t : null,
                              fizzle: span('FIZZLE'), settle: span('SETTLE'), total: total } : null;
-    return { version: 1, timing: native ? 'native' : 'grammar', cellFps: cellFps, cellFpsEmerge: cellFpsEmerge, tempo: tempo, fizzleMs: actor ? span('FIZZLE') : null, timeline: timeline, cardId: ctx.cardId, cardName: ctx.cardName, seat: ctx.seat, towardSeat: towardSeat, faction: ctx.faction,
+    return { version: 1, timing: native ? 'native' : 'grammar', ladderMs: LADDER_MS[ctx.rarity] || LADDER_MS.R, cellFps: cellFps, cellFpsEmerge: cellFpsEmerge, tempo: tempo, fizzleMs: actor ? span('FIZZLE') : null, timeline: timeline, cardId: ctx.cardId, cardName: ctx.cardName, seat: ctx.seat, towardSeat: towardSeat, faction: ctx.faction,
              requestedMode: requested, mode: mode, repeat: repeat, prior: prior, actor: actor, ladder: ladder, total: total, end: end, phases: phases, cues: cues };
   }
 

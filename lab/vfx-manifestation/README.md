@@ -332,6 +332,75 @@ The browser adds a live layout readout (layout offsets sampled every frame, so t
 - The mock match tempo, judged by eye.
 - Memory pressure on low-end devices (does the page stay alive through repeated plays?).
 
+## LAB-6: Indra, the second character, built by the template
+
+LAB-6 tests whether the recipe (identity master → one Kling clip → pack tool → manifest entry) makes a second character without new code. It didn't quite: every code change it needed is listed below as a **template gap**. Each is card-agnostic, so a third character should need only data.
+
+### The clip and the frames
+
+`sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4`: 121 frames at 24 fps, 1916×1080, chroma green, git-ignored. Contact sheets are in `frames/indra_*.jpg`.
+
+| Range | Frames | Kept |
+|---|---|---|
+| Idle | f0–f35 | dropped |
+| EMERGE: stance, lightning charging in the raised hand | f36–f52 | 17 cells |
+| ACT: the Vajra bolt fires off the top-right of the frame and holds | f53–f97 | 45 cells |
+| Kling's dissolve | f98–f120 | dropped (the stage's Deva preset does the exit) |
+
+- **Cells:** all 62 usable frames are kept. There are no true duplicates; the smallest neighbour difference is 1.32 against the 0.6 cut-off.
+- **Contact:** **f055**. The bolt first reaches the frame edge with a quarter or more of its full edge contact at f054, so f055 is the frame after, when the beam has filled.
+- **Pivot:** the centre between the two feet at clip (1102, 1061). All cells share one scale, 0.313.
+
+**Keeping the bolt.** The "bright" matte is a strict green key, so green-tinted sparkle keys out. Next to solid matter, each pixel also keeps the alpha its colour un-mixes to, so the thin yellow-white bolt edges and the hand glow survive. Then decontam and despill. Flecks under 150 px that touch nothing large are cut, and the bolt's cut edge at the frame border fades over 8 px. Faint cyan glints stay near the hand at f054–f055; they are lightning sparks, not green. rembg was not needed.
+
+### The atlases (A5)
+
+| Rung | Atlas | On disk | Decoded |
+|---|---|---|---|
+| 512 px | 4011×2003 | 1.64 MB | 30.6 MB |
+| 256 px | 2020×1010 | 0.59 MB | 7.8 MB (25.4%) |
+
+### The manifest and the data (no new values)
+
+`actors/indra/manifest.json`:
+- `facing: "right"`, `aim: "up"`
+- **No `tempo`:** Indra inherits the registry's 0.6×.
+- **Phase lengths** from the frame ranges at the pace Meghnad was tuned at (seconds per source frame): EMERGE 431 ms, ACT 1699 ms at tempo 1.
+
+`data/manifestations.json` names Indra (Hero, Legendary, Deva, exit = its faction's preset). The Deva preset sets no `fizzle_ms`, so FIZZLE inherits the registry's 1500 ms: a gold dissolve with no smoke.
+
+**The fixture.** `fixtures/indra_seat0.json` and `indra_seat1.json`, from the real engine: the Deva seat moves first on an empty board and plays Indra. One event (`play`); the board difference is Indra entering at 7 and nothing else. SETTLE lands no number.
+
+**The page.** **Play Indra** sits beside Play Meghnad and loads Indra's fixture with Indra as your card. Swap sides still moves it; the mock match stays Meghnad's.
+
+### The timeline, and the rarity ladder (for the owner's ruling)
+
+At the inherited defaults Indra plays: **Full** AWAKEN 667 · EMERGE 718 · ACT 2832 · FIZZLE 1500 · SETTLE 667 = **6384 ms**; **Fast** 3191 ms.
+
+The Legendary rung of the duration ladder (A3) would give **3500 ms**. Native timing now plays the clip for any card, and the plan reports what the ladder would have given. Whether the ladder should govern native actors from the expansion onward is the owner's ruling.
+
+### Owner ruling 2026-09-14: actors are always upright
+
+Every actor stands upright on both seats, and a seat swap mirrors horizontally only. The vertical-mirror code path was removed, not disabled. On the top seat an up-aimed action like Indra's bolt fires up and off the board. The contact flash and camera impulse still point at the true target, because they read the seat's direction toward the enemy, not the drawing. A downward clip per seat stays a possible later art-only option.
+
+### Owner ruling 2026-09-14: the same size on both seats
+
+The actor is the same size on both seats: card height × 2.1, so each card's scale is fixed. Placement gives way; scale never does. The "room above" shrink on the top seat is removed, and so is the matching shrink on the player's seat.
+
+- **The top seat.** The feet start at the card's base. If the figure would leave the board's top edge, it moves down by exactly the overflow, into the free middle band; it may overlap its own card and row. The A1 clamp then keeps the feet short of the enemy cards by moving him. If the board edge and A1 cannot both hold, A1 wins.
+- **The player's seat.** If the enemy row is too close, the figure moves down instead of shrinking.
+- **The reach toward the enemy** takes whatever room is left.
+- **Fast** places the same way.
+
+### Template gaps (code the second character needed)
+
+1. **The pack tool was Meghnad-only.** Clip, frame ranges, key, contact rule, pivot rule, facing and phase lengths were constants. They are now one `CARDS` entry per card, and phase lengths derive from the frame ranges at the tuned pace. Meghnad's atlases re-pack **byte-identical**; its manifest gains only `audit.recipe`.
+2. **One matte for one kind of figure.** The "dark-body" matte cuts bright light off a dark figure, which would have cut away Indra's white-and-gold body and his bolt. Added the "bright" matte (above) and an edge feather for action that leaves the frame.
+3. **Contact and pivot rules.** Added "bolt-edge" beside "spear-tip", and "feet" (the centre between both feet) beside "front-left" (the hooves).
+4. **Native timing only for the ladder-exempt pilot.** A non-exempt card's clip would have played on the ladder's grammar, with contact at 58% instead of its contact cell. Native timing now applies to any card whose manifest supplies it (`lib/director.js`).
+5. **An action that points up.** Indra's bolt fires up the frame. The manifest records it as `aim: "up"` (validated in `lib/manifest.js`); the stage does not act on it. A vertical mirror for the top seat was built and then removed by the owner's ruling below.
+6. **The fixture builder, the page and the tests** were written around one card. `buildIndra`, the Play buttons, the story text, the hand chip and the readouts now follow the current card. The suite runs every stage check and the gate for each card, with a GATE line per card and one for both.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

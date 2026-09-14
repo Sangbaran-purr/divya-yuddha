@@ -50,7 +50,7 @@
               var q = who.pose, h = who.pl.height;
               env.stage.hitstop(c.hitstopMs);
               if (env.sound) env.sound('contact');   // LAB-5: the strike, on the frame the contact cell is drawn
-              env.stage.flash(q.x, q.feetY - h * 0.55, h * 0.9, who.pl.dirY, c.flashMs);
+              env.stage.flash(q.x, q.feetY - h * 0.55, h * 0.9, who.pl.dirY, c.flashMs);   // the flash and the impulse point at the true target (dirY), whatever way the action is drawn
               env.stage.impulse(who.pl.dirY, c.impulsePx, c.impulseMs);
             };
             // LAB-4a: a native actor's contact lands on its contact CELL — the stage fires it on the frame that cell is drawn

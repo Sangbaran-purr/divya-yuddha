@@ -4,7 +4,8 @@
      fps, facing:"left"|"right", mirror:true | variants:{left,right}, refHeight, cells:[{x,y,w,h,pivot{x,y}}],
      phases:{ emerge:[cell…], act:[cell…], fizzle:[cell…] }, contact? (index inside act), timing? "native"|"grammar",
      tempo? (the card's default, 0.25–4 — LAB-4d), phaseMs? { emerge, act } (phase lengths at tempo 1),
-     rungs? [{ cellMax, atlas, atlasSize, refHeight, cells }] (LAB-5: the same cells packed smaller — the quality ladder) }
+     rungs? [{ cellMax, atlas, atlasSize, refHeight, cells }] (LAB-5: the same cells packed smaller — the quality ladder),
+     aim? "up" (LAB-6: the action points up its frame — descriptive only; every actor is drawn upright on both seats, owner ruling 2026-09-14) }
    validate(m) → { ok, errors[] }. defaultsFor({ manifest, registry, preset, override }) → the tempo and FIZZLE length a play starts
    from (LAB-4d). forRung(m, cellMax) → the manifest drawn from that rung's atlas; decodedBytes(m) → its RGBA size; pickRung({…})
    → which rung a device gets (LAB-5). Browser: window.ActorManifest. Node: require. */
@@ -42,6 +43,7 @@
       list.forEach(function (ix) { if (!(Number.isInteger(ix) && cells && ix >= 0 && ix < cells.length)) e.push('phase ' + p + ' names cell ' + ix + ', which does not exist'); });
     });
     if (m.timing != null && m.timing !== 'native' && m.timing !== 'grammar') e.push('timing must be "native" or "grammar"');
+    if (m.aim != null && m.aim !== 'up') e.push('aim must be "up" or absent');
     if (m.tempo != null && !(num(m.tempo) && m.tempo >= 0.25 && m.tempo <= 4)) e.push('tempo must be a number 0.25–4');
     if (m.phaseMs != null && !(m.phaseMs && num(m.phaseMs.emerge) && num(m.phaseMs.act) && m.phaseMs.emerge > 0 && m.phaseMs.act > 0)) e.push('phaseMs must give emerge and act lengths in ms');
     if (m.rungs != null) {

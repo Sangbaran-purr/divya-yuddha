@@ -1,7 +1,8 @@
 {
-  "about": "VFX-LAB-2+3 · the card registry. A card manifests only if it has an entry here (and is a Hero or Unit, A2). ladderExempt: true takes the card off the rarity duration ladder — ruling A3 grants that to the pilot alone. LAB-4d · defaults: the tuning every card inherits unless it carries its own — tempo (a card's manifest may set its own) and fizzle_ms (a faction's exit preset may set its own). Owner ruling 2026-09-13: 0.6× and 1500 ms.",
+  "about": "VFX-LAB-2+3 · the card registry. A card manifests only if it has an entry here (and is a Hero or Unit, A2). ladderExempt: true takes the card off the rarity duration ladder — ruling A3 grants that to the pilot alone. LAB-4d · defaults: the tuning every card inherits unless it carries its own — tempo (a card's manifest may set its own) and fizzle_ms (a faction's exit preset may set its own). Owner ruling 2026-09-13: 0.6× and 1500 ms. LAB-6: a card entry may also name itself (name, type, rarity, faction) and its exit ('faction' = its faction's preset in data/factionfx.json) — documentation only; a play reads type, rarity and faction from the board.",
   "defaults": { "tempo": 0.6, "fizzle_ms": 1500 },
   "cards": {
-    "meghnad": { "manifest": "../actors/meghnad/manifest.json", "ladderExempt": true, "ruling": "A3 — the pilot" }
+    "meghnad": { "manifest": "../actors/meghnad/manifest.json", "ladderExempt": true, "ruling": "A3 — the pilot" },
+    "indra":   { "manifest": "../actors/indra/manifest.json", "name": "Indra", "type": "hero", "rarity": "L", "faction": "devas", "exit": "faction", "ruling": "LAB-6 — the second character, built by the template; tempo and FIZZLE inherited from defaults; the rarity ladder (A3) awaits the owner's ruling" }
   }
 }

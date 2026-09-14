@@ -2,7 +2,7 @@
 'use strict';
 // fixtures/make_fixture.js — VFX-LAB-1. The Meghnad-play fixture, produced by the REAL engine (src/engine.js, READ-ONLY).
 //
-//   node lab/vfx-manifestation/fixtures/make_fixture.js        → writes meghnad_seat0.json and meghnad_seat1.json
+//   node lab/vfx-manifestation/fixtures/make_fixture.js        → writes meghnad_seat0.json and meghnad_seat1.json, indra_seat0.json and indra_seat1.json
 //
 // The situation (legal, reachable, ruled pilot A3): Realm pinned to Mrityulok (no realm touches Hero power), no mulligan,
 // fixed decklists. The Deva seat moves first and plays Indra (a Hero, printed 7); the Asura seat then plays Meghnad
@@ -11,6 +11,8 @@
 // and as seat 1 — so the lab can prove the manifestation from either side.
 // Each fixture holds the engine's events for that one play IN ENGINE ORDER, the board BEFORE and AFTER, the log lines
 // the play wrote, and the board difference. The Hero's −2 is in the board difference and the log — in no event.
+// LAB-6: buildIndra(seat) — the second character's fixture. The Deva seat (as seat 0 and as seat 1) moves first on an empty board
+// and plays Indra: the Hero enters, and nothing else happens (no damage, no buff — the no-number SETTLE path).
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const LAB = path.resolve(__dirname, '..'), GAME = path.resolve(LAB, '..', '..');
 const ENGINE = path.join(GAME, 'src', 'engine.js');
@@ -66,13 +68,39 @@ function build(attackerSeat) {
   throw new Error('no seed in 1..999 gave the Deva seat the first move');
 }
 
-module.exports = { build, snapshot, ASURA_DECK, DEVA_DECK };
+function buildIndra(devaSeat) {
+  const asuraSeat = 1 - devaSeat;
+  for (let seed = 1; seed < 1000; seed++) {
+    const E = freshEngine();
+    const decks = devaSeat === 0 ? [DEVA_DECK, ASURA_DECK] : [ASURA_DECK, DEVA_DECK];
+    const opts = { rng: seeded(seed), p0: '{p0}', p1: '{p1}', realm: 'mrityulok', p0Faction: devaSeat === 0 ? 'devas' : 'asuras', p1Faction: devaSeat === 1 ? 'devas' : 'asuras',
+                   scenario: { p0Deck: decks[0], p1Deck: decks[1], p0Hand: HAND(decks[0]), p1Hand: HAND(decks[1]), mulligan: 0 } };
+    const g = E.newGame(opts);
+    if (g.turn !== devaSeat) continue;                                        // the Deva seat must move first: Indra is the opening play
+    const before = snapshot(E, g), ev0 = g.events.length, log0 = g.log.length;
+    const ih = g.players[devaSeat].hand.findIndex((c) => c.id === 'indra');
+    E.playCard(g, devaSeat, ih);
+    const after = snapshot(E, g);
+    return {
+      fixture: 'indra_play', ruling: 'VFX-LAB-6 — the second character, by the template; A1 (the board is the truth): the Hero enters and nothing else changes',
+      engine: { file: 'src/engine.js', sha256: engineSha() },
+      seed, attackerSeat: devaSeat, defenderSeat: asuraSeat, realm: 'mrityulok',
+      scenario: { p0: opts.p0, p1: opts.p1, p0Faction: opts.p0Faction, p1Faction: opts.p1Faction, p0Deck: decks[0], p1Deck: decks[1], mulligan: 0 },
+      setup: [], action: { seat: devaSeat, type: 'play', card: 'Indra', handIndex: ih, targetUid: null },
+      before, events: g.events.slice(ev0), log: g.log.slice(log0).map((l) => l.msg), after,
+      diff: boardDiff(before, after),
+    };
+  }
+  throw new Error('no seed in 1..999 gave the Deva seat the first move');
+}
+
+module.exports = { build, buildIndra, snapshot, ASURA_DECK, DEVA_DECK };
 
 if (require.main === module) {
-  for (const seat of [0, 1]) {
-    const f = build(seat), out = path.join(__dirname, 'meghnad_seat' + seat + '.json');
+  for (const [name, make] of [['meghnad', build], ['indra', buildIndra]]) for (const seat of [0, 1]) {
+    const f = make(seat), out = path.join(__dirname, name + '_seat' + seat + '.json');
     fs.writeFileSync(out, JSON.stringify(f, null, 2) + '\n');
     console.log('wrote ' + path.relative(GAME, out) + ' — seed ' + f.seed + ', ' + f.events.length + ' events (' + f.events.map((e) => e.type).join(', ') + '), changed: ' +
-      f.diff.changed.map((c) => c.n + ' ' + (c.eff ? c.eff.from + '→' + c.eff.to : '')).join('; '));
+      f.diff.changed.map((c) => c.n + ' ' + (c.eff ? c.eff.from + '→' + c.eff.to : '')).join('; ') + ' · entered: ' + f.diff.entered.map((c) => c.n + ' ' + c.eff).join('; '));
   }
 }
