@@ -4,7 +4,7 @@
 //
 // Pages caches what it serves; a push must never show a stale lab. So every URL the lab page loads carries ?v=<STAMP>, the way
 // the site's sync binds the game frame to game/STAMP. The lab's STAMP is a content hash (sha256, 12 hex) of every file the page
-// loads — lab.js, lib/, runtime/ (the copied VFX module, Pixi and the effect sheets), data/, fixtures/, art/ and the packed actors
+// loads — lab.js, lib/, runtime/ (the copied VFX module, Pixi and the effect sheets), data/, fixtures/, art/, the packed actors and audio/
 // (a folder or file whose name starts with "_" or "." is not loaded, so not hashed). index.html and STAMP are not inputs: they
 // carry the stamp.
 //   write (default): STAMP ← the hash; index.html ← <meta name="lab-stamp"> and ?v= on every <script src>. lab.js reads the
@@ -14,8 +14,8 @@
 // Run it after changing any lab file, before committing.
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const LAB = path.resolve(__dirname, '..');
-const DIRS = ['lib', 'runtime', 'data', 'fixtures', 'art', 'actors'];
-const LOADED = /\.(js|mjs|json|png|webp|jpe?g)$/i;
+const DIRS = ['lib', 'runtime', 'data', 'fixtures', 'art', 'actors', 'audio'];
+const LOADED = /\.(js|mjs|json|png|webp|jpe?g|mp3)$/i;
 
 function walk(rel, out) {
   for (const n of fs.readdirSync(path.join(LAB, rel)).sort()) {

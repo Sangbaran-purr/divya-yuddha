@@ -7,7 +7,7 @@
 # Run it with the lab venv: rembg (A6, amended) lives there and nowhere else. Its model lives in tools/.venv/u2net/.
 #   IN (never committed, A7):   sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4
 #   AUDIT (never committed):    frames/meghnad/f###.png (the kept frames, matted) · frames/meghnad_contact_sheet.jpg
-#   OUT (committed):            actors/meghnad/atlas.webp + manifest.json
+#   OUT (committed):            actors/meghnad/atlas.webp + atlas_256.webp (LAB-5: the quality rung) + manifest.json
 #
 # THE MATTE — green FIRST, rembg only where the key leaves fringe:
 #   1 key       alpha from green dominance (G − max(R, B)) with a soft ramp, calibrated on the clip's own ground colour
@@ -200,6 +200,23 @@ def main():
     for i, c, cx, cy, px, py in placed: atlas.paste(c, (cx, cy), c)
     os.makedirs(OUT, exist_ok=True)
     atlas.save(os.path.join(OUT, "atlas.webp"), "WEBP", quality=90, method=6, exact=True)
+    # LAB-5 · THE QUALITY RUNG: the same cells at half size (256 px max), resized from the source crops (not from the 512 atlas, so no
+    # neighbour bleeds in), packed on their own atlas, same order, same pivot point. The page picks the rung by device.
+    R = 2
+    half = []
+    for i in kept:
+        x0, y0, x1, y1 = boxes[i]
+        crop = Image.fromarray(rgba[i][y0:y1, x0:x1], "RGBA")
+        w, h = max(1, round((x1 - x0) * s / R)), max(1, round((y1 - y0) * s / R))
+        half.append((i, crop.resize((w, h), Image.LANCZOS), (PIV[0] - x0) * s / R, (PIV[1] - y0) * s / R))
+    x, y, rowh, placed_h = PAD, PAD, 0, []
+    for i, c, px, py in half:
+        if x + c.width + PAD > 2048: x, y, rowh = PAD, y + rowh + PAD, 0
+        placed_h.append((i, c, x, y, px, py)); x += c.width + PAD; rowh = max(rowh, c.height)
+    HW = max(p[2] + p[1].width for p in placed_h) + PAD; HH = max(p[3] + p[1].height for p in placed_h) + PAD
+    atlas_h = Image.new("RGBA", (HW, HH), (0, 0, 0, 0))
+    for i, c, cx, cy, px, py in placed_h: atlas_h.paste(c, (cx, cy), c)
+    atlas_h.save(os.path.join(OUT, "atlas_256.webp"), "WEBP", quality=90, method=6, exact=True)
     ne = len(emerge)
     manifest = {
         "cardId": CARD, "class": "actor", "version": 2, "placeholder": False,
@@ -209,6 +226,8 @@ def main():
         "fps": FPS, "timing": "native", "tempo": TEMPO, "phaseMs": PHASE_MS, "facing": "left", "mirror": True,
         "refHeight": max(c.height for _, c, _, _ in cells),
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height, "pivot": {"x": round(px, 1), "y": round(py, 1)}, "origin": list(origins[i])} for i, c, cx, cy, px, py in placed],
+        "rungs": [{"cellMax": CELL_MAX // R, "atlas": "atlas_256.webp", "atlasSize": {"w": HW, "h": HH}, "refHeight": max(c.height for _, c, _, _ in half),
+                   "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height, "pivot": {"x": min(c.width, round(px, 1)), "y": min(c.height, round(py, 1))}} for i, c, cx, cy, px, py in placed_h]}],
         "phases": {"emerge": list(range(0, ne)), "act": list(range(ne, len(kept))), "fizzle": [len(kept) - 1]},
         "contact": act.index(contact_src),
         "audit": {"idle": [0, EMERGE_RANGE[0] - 1], "emerge": list(EMERGE_RANGE), "act": list(ACT_RANGE), "droppedTail": [ACT_RANGE[1] + 1, len(frames) - 1], "duplicatesDropped": dup_e + dup_a, "contactSrc": contact_src, "pivotSrc": [round(PIV[0], 1), round(PIV[1], 1)], "scale": round(s, 5)},
@@ -235,6 +254,7 @@ def main():
     sheet.save(SHEET, quality=88)
     used = sum(1 for x in stats if x["rembg"])
     print("atlas %dx%d · %.1f KB · decoded %.1f MB · cells max %dpx · rembg edge cleanup on %d of %d frames · wrote %s" % (AW, AH, os.path.getsize(os.path.join(OUT, "atlas.webp")) / 1024, AW * AH * 4 / 1048576, max(max(c.width, c.height) for _, c, _, _ in cells), used, len(kept), os.path.relpath(SHEET, LAB)))
+    print("rung 256: atlas %dx%d · %.1f KB · decoded %.1f MB (%.1f%% of the 512 rung) · cells max %dpx" % (HW, HH, os.path.getsize(os.path.join(OUT, "atlas_256.webp")) / 1024, HW * HH * 4 / 1048576, 100.0 * HW * HH / (AW * AH), max(max(c.width, c.height) for _, c, _, _ in half)))
 
 if __name__ == "__main__":
     main()

@@ -20,6 +20,9 @@
    front: pooled sprites of one 64 px glow texture on the GPU, soft discs on #actorover on Canvas 2D (fewer). Faint smoke hangs
    behind the front on #actorunder. All of it is normal-blended, every particle ends by FIZZLE's end, and remove()/clear() drop them.
    A FIZZLE longer than 600 ms (LAB-4c's slider) time-stretches the embers and smoke with the sweep: life ×, speed and spawn rate ÷.
+   MEMORY (LAB-5, ruling A5): an actor's decoded atlas lives only for its play. loadActor() at play counts its RGBA bytes;
+   unloadActor() after SETTLE destroys the GPU texture, closes the decoded bitmap and drops the mask kits — never under a live actor.
+   decodedBytes() is the live figure (0 between plays); stats().peakDecoded is the most ever held at once.
    Browser: window.ActorStage. */
 (function (root) {
   'use strict';
@@ -34,7 +37,7 @@
     this.assets = {}; this.actors = []; this.fx = []; this.frozenUntil = -1; this.impulseFx = null; this.nextId = 1;
     this.parts = []; this.pool = []; this.dz = null; this.cz = {}; this.tex = {}; this.nz = null;      // dissolve: particles, GPU sprite pool, GPU kit, mask kits, images, noise
     this.dpr = Math.min(2, root.devicePixelRatio || 1);
-    this.stat = { frames: 0, drawMsTotal: 0, drawN: 0, liveFrames: 0, liveRealT0: null, liveRealLast: null, fps: 0, cellPx: 0, drawnPx: 0, lastPlay: null, lastExit: null, warmed: 0 };
+    this.stat = { frames: 0, drawMsTotal: 0, drawN: 0, liveFrames: 0, liveRealT0: null, liveRealLast: null, fps: 0, cellPx: 0, drawnPx: 0, lastPlay: null, lastExit: null, warmed: 0, peakDecoded: 0, loads: 0, unloads: 0 };
     this.resize();
   }
   var P = ActorStage.prototype;
@@ -75,7 +78,24 @@
   };
 
   // an actor's art: { manifest, image } (the image already decoded)
-  P.loadActor = function (cardId, art) { this.assets[cardId] = art; this.stat.cellPx = Math.max.apply(null, art.manifest.cells.map(function (c) { return Math.max(c.w, c.h); })); this.warm(cardId); };
+  P.loadActor = function (cardId, art) {
+    this.assets[cardId] = art; art.bytes = art.manifest.atlasSize ? art.manifest.atlasSize.w * art.manifest.atlasSize.h * 4 : 0;
+    this.stat.cellPx = Math.max.apply(null, art.manifest.cells.map(function (c) { return Math.max(c.w, c.h); }));
+    this.stat.loads++; this.stat.peakDecoded = Math.max(this.stat.peakDecoded, this.decodedBytes());
+    this.warm(cardId);
+  };
+  // after SETTLE: the GPU texture destroyed, the decoded bitmap closed, the mask kits dropped (refused while an actor of the card is live)
+  P.unloadActor = function (cardId) {
+    var art = this.assets[cardId]; if (!art) return false;
+    if (this.actors.some(function (a) { return a.cardId === cardId; })) return false;
+    var base = this.base && this.base[cardId];
+    if (base) { try { base.destroy(true); } catch (e) {} delete this.base[cardId]; }
+    if (art.image && typeof art.image.close === 'function') { try { art.image.close(); } catch (e) {} }
+    var cz = this.cz; Object.keys(cz).forEach(function (k) { if (k.indexOf(cardId + '#') === 0) delete cz[k]; });
+    delete this.assets[cardId]; this.stat.unloads++;
+    return true;
+  };
+  P.decodedBytes = function () { var n = 0, A = this.assets; Object.keys(A).forEach(function (k) { n += A[k].bytes || 0; }); return n; };
   // put the atlas on the GPU (or through the 2D rasteriser) once, invisibly, before any play needs it
   P.warm = function (cardId) {
     var art = this.assets[cardId]; if (!art || !art.image) return;
@@ -350,7 +370,7 @@
   };
   // the Canvas 2D path: the held cell, masked by this frame's erosion (destination-in), the front's glow over what is left (source-atop)
   P.maskedCell = function (a, q) {
-    var D = root.Dissolve, z = a.dz, c = q.cell, id = q.cellIndex + '|' + z.nz.key + '|' + z.pr.noise, k = this.cz[id], doc = this.docOf();
+    var D = root.Dissolve, z = a.dz, c = q.cell, id = a.cardId + '#' + q.cellIndex + '|' + z.nz.key + '|' + z.pr.noise, k = this.cz[id], doc = this.docOf();
     if (!k) {
       var mk = function (w, h) { var cv = doc.createElement('canvas'); cv.width = w; cv.height = h; return cv; };
       var w2 = Math.max(1, Math.ceil(c.w / 2)), h2 = Math.max(1, Math.ceil(c.h / 2)), off = mk(c.w, c.h), mc = mk(w2, h2), gc = mk(w2, h2), mctx = mc.getContext('2d'), gctx = gc.getContext('2d');
@@ -386,7 +406,8 @@
     var s = this.stat;
     return { backend: this.renderer, frames: s.frames, drawMsAvg: s.drawN ? s.drawMsTotal / s.drawN : 0, fps: s.fps, liveFps: (s.liveRealT0 != null && s.liveRealLast > s.liveRealT0) ? Math.round(s.liveFrames * 1000 / (s.liveRealLast - s.liveRealT0)) : null, cellPx: s.cellPx, drawnPx: s.drawnPx,
              cellsDrawn: this.actors.length ? this.playOf(this.actors[0], true) : s.lastPlay,
-             exit: this.actors.length && this.actors[0].dz ? this.exitOf(this.actors[0]) : s.lastExit };
+             exit: this.actors.length && this.actors[0].dz ? this.exitOf(this.actors[0]) : s.lastExit,
+             decodedBytes: this.decodedBytes(), actorsLoaded: Object.keys(this.assets).length, peakDecoded: s.peakDecoded, loads: s.loads, unloads: s.unloads };
   };
 
   root.ActorStage = ActorStage;

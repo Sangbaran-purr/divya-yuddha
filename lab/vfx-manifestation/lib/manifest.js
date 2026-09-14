@@ -3,9 +3,11 @@
    { cardId, class:"actor", atlas, atlasSize{w,h}, alpha:"straight", blend:"normal", mv:false, vignette:false, cellMax:512,
      fps, facing:"left"|"right", mirror:true | variants:{left,right}, refHeight, cells:[{x,y,w,h,pivot{x,y}}],
      phases:{ emerge:[cell…], act:[cell…], fizzle:[cell…] }, contact? (index inside act), timing? "native"|"grammar",
-     tempo? (the card's default, 0.25–4 — LAB-4d), phaseMs? { emerge, act } (phase lengths at tempo 1) }
+     tempo? (the card's default, 0.25–4 — LAB-4d), phaseMs? { emerge, act } (phase lengths at tempo 1),
+     rungs? [{ cellMax, atlas, atlasSize, refHeight, cells }] (LAB-5: the same cells packed smaller — the quality ladder) }
    validate(m) → { ok, errors[] }. defaultsFor({ manifest, registry, preset, override }) → the tempo and FIZZLE length a play starts
-   from (LAB-4d). Browser: window.ActorManifest. Node: require. */
+   from (LAB-4d). forRung(m, cellMax) → the manifest drawn from that rung's atlas; decodedBytes(m) → its RGBA size; pickRung({…})
+   → which rung a device gets (LAB-5). Browser: window.ActorManifest. Node: require. */
 (function (root) {
   'use strict';
   var PHASES = ['emerge', 'act', 'fizzle'];
@@ -42,6 +44,23 @@
     if (m.timing != null && m.timing !== 'native' && m.timing !== 'grammar') e.push('timing must be "native" or "grammar"');
     if (m.tempo != null && !(num(m.tempo) && m.tempo >= 0.25 && m.tempo <= 4)) e.push('tempo must be a number 0.25–4');
     if (m.phaseMs != null && !(m.phaseMs && num(m.phaseMs.emerge) && num(m.phaseMs.act) && m.phaseMs.emerge > 0 && m.phaseMs.act > 0)) e.push('phaseMs must give emerge and act lengths in ms');
+    if (m.rungs != null) {
+      if (!Array.isArray(m.rungs)) e.push('rungs must be a list');
+      else m.rungs.forEach(function (r, k) {
+        var tag = 'rung ' + k;
+        if (!r || !num(r.cellMax) || !(r.cellMax < 512) || r.cellMax < 64) { e.push(tag + ' cellMax must be below 512'); return; }
+        if (typeof r.atlas !== 'string' || !r.atlas) e.push(tag + ' atlas missing');
+        if (!r.atlasSize || !num(r.atlasSize.w) || !num(r.atlasSize.h)) e.push(tag + ' atlasSize missing');
+        if (!num(r.refHeight) || r.refHeight <= 0) e.push(tag + ' refHeight missing');
+        if (!Array.isArray(r.cells) || !cells || r.cells.length !== cells.length) { e.push(tag + ' must hold every cell, in order'); return; }
+        r.cells.forEach(function (c, i) {
+          if (!c || !num(c.x) || !num(c.y) || !num(c.w) || !num(c.h) || c.w <= 0 || c.h <= 0) { e.push(tag + ' cell ' + i + ' rect invalid'); return; }
+          if (c.w > r.cellMax || c.h > r.cellMax) e.push(tag + ' cell ' + i + ' exceeds ' + r.cellMax + ' px');
+          if (r.atlasSize && (c.x < 0 || c.y < 0 || c.x + c.w > r.atlasSize.w || c.y + c.h > r.atlasSize.h)) e.push(tag + ' cell ' + i + ' outside its atlas');
+          if (!c.pivot || !num(c.pivot.x) || !num(c.pivot.y) || c.pivot.x < 0 || c.pivot.y < 0 || c.pivot.x > c.w || c.pivot.y > c.h) e.push(tag + ' cell ' + i + ' pivot missing or outside its cell');
+        });
+      });
+    }
     if (m.contact != null) { var act = m.phases && m.phases.act; if (!(Number.isInteger(m.contact) && Array.isArray(act) && m.contact >= 0 && m.contact < act.length)) e.push('contact must be a cell index inside the act phase'); }
     return { ok: e.length === 0, errors: e };
   }
@@ -57,7 +76,30 @@
     return { tempo: pos(ov.tempo) ? ov.tempo : t[0], fizzleMs: pos(ov.fizzleMs) ? ov.fizzleMs : z[0], base: { tempo: t[0], fizzleMs: z[0] },
              from: { tempo: pos(ov.tempo) ? 'slider' : t[1], fizzleMs: pos(ov.fizzleMs) ? 'slider' : z[1] } };
   }
-  var OUT = { validate: validate, defaultsFor: defaultsFor, PHASES: PHASES };
+  // LAB-5 · THE QUALITY LADDER. forRung: the manifest as drawn from one rung (512 = the manifest itself). Cells shrink with the rung and
+  // refHeight with them, so placement keeps the actor the same size on the board.
+  function forRung(m, cellMax) {
+    if (!m || !(cellMax < (m.cellMax || 512)) || !Array.isArray(m.rungs)) return m;
+    var r = m.rungs.filter(function (x) { return x && x.cellMax === cellMax; })[0]; if (!r) return m;
+    var out = {}; for (var k in m) out[k] = m[k];
+    out.atlas = r.atlas; out.atlasSize = r.atlasSize; out.cells = r.cells; out.refHeight = r.refHeight; out.cellMax = r.cellMax; out.rung = r.cellMax;
+    return out;
+  }
+  function rungsOf(m) { return [m && m.cellMax || 512].concat(((m && m.rungs) || []).map(function (r) { return r.cellMax; })); }
+  function decodedBytes(m) { return m && m.atlasSize ? m.atlasSize.w * m.atlasSize.h * 4 : 0; }
+  // which rung a device gets. 512 only for a GPU renderer on a high-density screen with no low-memory hint; 256 otherwise — a DPR-1
+  // screen draws the actor at ~175 px, which 256 px cells already cover, and Canvas 2D takes 256 until a phone proves 512 holds 30 fps.
+  function pickRung(o) {
+    o = o || {}; var avail = o.available || [512], has = function (r) { return avail.indexOf(r) >= 0; };
+    var ov = +o.override;
+    if ((ov === 512 || ov === 256) && has(ov)) return { rung: ov, why: 'lab override' };
+    if (!has(256)) return { rung: 512, why: 'only the 512 rung is packed' };
+    if (o.backend === 'canvas2d' || !o.backend) return { rung: 256, why: 'Canvas 2D — the 256 rung is its default until a phone measures 512 at 30 fps or more' };
+    if (typeof o.deviceMemory === 'number' && o.deviceMemory < 4) return { rung: 256, why: 'memory hint ' + o.deviceMemory + ' GB' };
+    if (!(o.dpr >= 2)) return { rung: 256, why: 'devicePixelRatio ' + (o.dpr || 1) + ' — 256 px cells cover the drawn size' };
+    return { rung: 512, why: 'GPU (' + o.backend + ') · devicePixelRatio ' + o.dpr + (typeof o.deviceMemory === 'number' ? ' · ' + o.deviceMemory + ' GB' : ' · no memory hint') };
+  }
+  var OUT = { validate: validate, defaultsFor: defaultsFor, forRung: forRung, rungsOf: rungsOf, decodedBytes: decodedBytes, pickRung: pickRung, PHASES: PHASES };
   root.ActorManifest = OUT;
   if (typeof module !== 'undefined' && module.exports) module.exports = OUT;
 })(typeof window !== 'undefined' ? window : this);

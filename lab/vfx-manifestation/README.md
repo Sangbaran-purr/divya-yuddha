@@ -230,6 +230,108 @@ The lab's sliders start on these values and label them as defaults. Moving one o
 
 **The timeline at the defaults.** Full: AWAKEN 667 · EMERGE 972 · ACT 2013 · FIZZLE 1500 · SETTLE 667 · total 5819 ms. Fast: 333 · 486 · 1007 · 750 · 333 · total 2909 ms.
 
+## LAB-5: certification — the memory ladder, sound, fallbacks, the gate
+
+LAB-5 checks that Meghnad's manifestation is safe and complete enough to be the template for every Hero and Unit. Exporting it to the live game is a separate, later ruling.
+
+### Memory (A5)
+
+An actor's atlas is decoded only for the play that shows it, and released after SETTLE:
+
+1. **In the hand.** When a card with a manifestation enters a hand, the page fetches its manifest (small JSON) and the **compressed** atlas for its rung, and keeps the bytes. Nothing is decoded, so there is no network stall at the first play.
+2. **At play.** Only a play that shows the actor decodes the atlas (`createImageBitmap`). A Reduced play never does.
+3. **After SETTLE.** The stage destroys the GPU texture, closes the decoded bitmap and drops its mask canvases. The page lets go of the bitmap and keeps the compressed bytes. Between plays the decoded actor memory is 0.
+
+**The quality ladder.** The pack tool now writes a 256 px atlas beside the 512, resized from the same source crops:
+
+| Rung | Atlas | On disk | Decoded |
+|---|---|---|---|
+| 512 px | 4087×3032 | 2.22 MB | 47.3 MB |
+| 256 px | 1974×1523 | 0.80 MB | 11.5 MB (24.3% of the 512) |
+
+The page picks by device (`ActorManifest.pickRung`):
+- **512** only for a GPU renderer on a screen with devicePixelRatio 2 or more and no memory hint under 4 GB.
+- **256** otherwise. On a DPR-1 screen the actor is drawn about 175 px tall, which 256 px cells already cover.
+- **Canvas 2D** gets 256 until a phone shows 512 holding 30 fps or more.
+
+The **Actor quality** dropdown overrides the pick. The Memory, Quality and Decode rows show decoded MB right now, the peak, decodes and releases, the compressed cache, the rung and why it was picked, and whether the decode came from the hand.
+
+**A5 watch.** One actor at the 256 rung is 11.5 MB decoded, about the ~10 MB per-match budget. The 512 rung's 47.3 MB is held only for the ~6 s of a play, never more than one actor at a time. Whether that is acceptable is the export ruling's call.
+
+### Sound
+
+Two sounds play through the game's own audio pattern, copied into `lib/labaudio.js`. The game's `Audio2` is only read, never changed:
+- one AudioContext, created on the first gesture
+- files decoded once
+- a fresh buffer source per trigger
+- the game's own sound switch and volume (`dy_sfx`, `dy_sfxvol`), read on every play, exactly as the game reads them
+
+On the same origin as the game, muting sound in the game's settings mutes the lab too.
+
+| Moment | Sound | Placeholder |
+|---|---|---|
+| The contact cell is drawn (f069) | the strike | `audio/sfx_unit_clash.mp3` (the game's placement clash) |
+| FIZZLE starts | the ember exit | `audio/sfx_chaos_surge.mp3` (the game's Asura surge) |
+
+Both are byte-identical copies of the game's files. **A bespoke strike sound (spear impact) and dissolve sound would suit this better when the actor ships.**
+
+### Reduced motion, no GPU
+
+If the device asks for reduced motion, or Reduced is picked, a play shows no actor: a card pulse, then SETTLE with the numbers. No sprite, particle or sound, and 0 MB decoded. The Canvas 2D actor path runs on a phone through the same readout (fps, draw ms per frame).
+
+### The mock match
+
+**Mock match** plays Meghnad (Full), an opponent play (its existing effect only), Meghnad again (Fast, by the repeat rule), then another opponent play. The gaps are the game's own:
+
+| Gap | Length | Source |
+|---|---|---|
+| AI think | 2.35 s | midpoint of `aiThinkTime()`'s 1.2–3.5 s |
+| Opponent showcase | 2.21 s | `showcaseCard()`: 1.4 s + 0.3 s out, × 1.3 |
+| Landing | 0.91 s | 0.7 s × 1.3 |
+| Your turn | 2 s | nominal, not measured |
+
+The board is reset to the fixture before each Meghnad play, so tempo can be judged without a real second batch. Measured in the lab: Meghnad Full 6.89 s including its queued Chaos Surge, Fast 3.55 s, **23.4 s for the whole sequence**. The Plan panel prints the timeline.
+
+### A finding for the export ruling: the wire's thinking clock
+
+- **The clock is the server's.** The Hall draws the thinking clock from **server** deadlines (LOBBY_DESIGN §8b; `mp/matchclient.js` receives `clock { deadline, thinkMs, warnMs }` and only draws it). The Hall's config gives 120 s, warning at 90 s.
+- **Moves wait for animation.** In the frame, `wireDrain()` applies relayed moves one at a time, and only while no animation is running (`if (!Wire || choreoActive || …) return`).
+- **Both screens see it.** Both seats play the manifestation in lockstep (BATTLE_WIRE_DESIGN §3).
+
+So when a Full manifestation plays (5.8 s, about 6.9 s with its queued events):
+- The next move waits behind it on both screens. A move that comes back from the server during it applies only after SETTLE.
+- If the server starts the next mover's deadline when it relays the move, **roughly 6–7 s of that player's 120 s passes while they watch** (about 3.5 s at Fast). That's a few percent of the clock, but it's taken from the defender on every Full manifestation.
+- The server code isn't in these repositories. The clock start is inferred from the client and the design docs, and should be confirmed against the server's match code.
+
+**Options for the ruling:**
+- the server adds an allowance per manifestation to the deadline
+- the clock starts on the client's acknowledgment that the animation has finished
+- manifestations run at Fast on the wire
+- accept the cost
+
+No change now.
+
+### The acceptance gate
+
+The lab suite ends with one `GATE: PASS/FAIL` line listing:
+- the right card on the right seat, both sides
+- the outcome equal to the engine's AFTER on every play (both seats × three renderers × Full / Fast / Reduced)
+- nothing stale after Skip in any phase, a renderer switch mid-play, or the page hiding mid-play (the lab now lands an interrupted play on AFTER)
+- no board layout shift in any phase
+- memory back to 0 after every path
+- the stamp current
+
+The browser adds a live layout readout (layout offsets sampled every frame, so the camera shake, a transform, doesn't count).
+
+### Only a phone can measure these (owner device)
+
+- Canvas 2D fps and draw ms at 512 and at 256 (Quality override). This decides whether Canvas 2D can keep 256 as its default.
+- WebGPU / WebGL fps at 512 on a mid-range phone, and the rung the auto-pick chooses there (DPR and `deviceMemory` hint).
+- Decode time at play (the Decode row), from the hand-prefetched bytes.
+- The sounds' mix against the game's music on the phone speaker.
+- The mock match tempo, judged by eye.
+- Memory pressure on low-end devices (does the page stay alive through repeated plays?).
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

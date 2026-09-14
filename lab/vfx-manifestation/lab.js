@@ -1,4 +1,4 @@
-/* lab.js — VFX-LAB-2+3 (+ LAB-4a: every URL stamped, the cells-drawn readout · LAB-4b: the dissolve exit and its preset preview · LAB-4c: the tempo and FIZZLE sliders · LAB-4d: they start from the data's defaults) · the harness page. Loaded after lib/* and runtime/vfx.js.
+/* lab.js — VFX-LAB-2+3 (+ LAB-4a: every URL stamped, the cells-drawn readout · LAB-4b: the dissolve exit and its preset preview · LAB-4c: the tempo and FIZZLE sliders · LAB-4d: they start from the data's defaults · LAB-5: memory ladder, sound, fallbacks, mock match) · the harness page. Loaded after lib/* and runtime/vfx.js.
    The page is glue: the fixture → ClashContext → Director plan → Runner → Playback (stage + board). Every piece of logic lives
    in lib/ and is card-agnostic; the only card-specific data are the registry (data/manifestations.json), the faction energy
    (data/factionfx.json) and the actor manifest. Nothing here loads from the live game.
@@ -39,6 +39,7 @@
       if (runner) { try { runner.tick(); } catch (e) { report(e); } }
     }
     try { stage.frame(clock.t, real); } catch (e) { report(e); }
+    if (runner && !runner.done && runner.t > 30) { try { measureLayout(); } catch (e) { report(e); } }
     if (readoutAt == null || real - readoutAt >= 250) { readoutAt = real; readout(); }   // text four times a second: the DOM work stays off the actor's frames
     window.requestAnimationFrame(tick);
   }
@@ -59,22 +60,64 @@
   const stage = new window.ActorStage({ field: el('field'), under: el('actorunder'), actorCanvas: el('actorcanvas'), gpuCanvas: el('actorgpu'), over: el('actorover'),
     now: () => clock.t, pixiUrl: V('assets/vendor/pixi.min.mjs') });
 
+  // ── SOUND (LAB-5): the game's audio pattern, copied — unlocked by the first gesture, the game's own sound switch and volume ──
+  const audio = window.LabAudio.create({ files: { contact: V('../audio/sfx_unit_clash.mp3'), exit: V('../audio/sfx_chaos_surge.mp3') }, now: () => clock.t });
+  let audioUnlocked = false;
+  function unlockAudioOnce() { if (audioUnlocked) return; audioUnlocked = true; audio.unlock(); ['pointerdown', 'click', 'touchstart', 'keydown'].forEach((ev) => window.removeEventListener(ev, unlockAudioOnce)); }
+  ['pointerdown', 'click', 'touchstart', 'keydown'].forEach((ev) => window.addEventListener(ev, unlockAudioOnce));
+
   // ── DATA ──
   let REG = {}, REG_DEFAULTS = {}, FFX = {}, copyMeta = null;
-  const actors = {};
-  async function actorFor(cardId) {
-    if (actors[cardId]) return actors[cardId];
+  // ── THE ACTORS (LAB-5, ruling A5): a manifest is small JSON, cached. An atlas is fetched COMPRESSED when its card enters a hand (the
+  // prefetch — no network stall at the first play), DECODED only when a play shows its actor, and RELEASED after SETTLE ──
+  const actors = {}, manifests = {}, prefetched = {};
+  let qualityOverride = '', lastDecode = null;
+  async function manifestFor(cardId) {
+    if (manifests[cardId]) return manifests[cardId];
     const entry = REG[cardId]; if (!entry) return null;
     const murl = new URL(V(entry.manifest));
     const manifest = await fetch(murl).then((r) => r.json());
     const v = window.ActorManifest.validate(manifest);
     if (!v.ok) { report('manifest ' + cardId + ': ' + v.errors.join('; ')); return null; }
-    const image = new Image(); image.decoding = 'async';
-    const t0 = performance.now(); image.src = V(new URL(manifest.atlas, murl).href); await image.decode();
-    actors[cardId] = { manifest, image, decodeMs: performance.now() - t0, url: image.src };
+    manifest.__url = murl.href;
+    return (manifests[cardId] = manifest);
+  }
+  function backendName() { return stage.backend === 'pixi' && stage.app ? String(stage.renderer).split(' ')[0] : 'canvas2d'; }
+  // the quality rung this device plays (512 or 256), or the lab's override
+  function rungFor(mf) {
+    return window.ActorManifest.pickRung({ backend: backendName(), dpr: window.devicePixelRatio || 1, deviceMemory: navigator.deviceMemory, override: qualityOverride, available: window.ActorManifest.rungsOf(mf) });
+  }
+  // the compressed atlas of that rung, fetched once and kept as bytes — never decoded here
+  async function prefetch(cardId) {
+    const mf = await manifestFor(cardId); if (!mf) return null;
+    const rung = rungFor(mf).rung, key = cardId + '@' + rung;
+    if (!prefetched[key]) {
+      const p = fetch(V(new URL(window.ActorManifest.forRung(mf, rung).atlas, mf.__url).href)).then((r) => r.blob()).then((blob) => ({ blob, bytes: blob.size, rung }));
+      p.then((v) => { p.done = v; }).catch(report);
+      prefetched[key] = p;
+    }
+    return prefetched[key];
+  }
+  function prefetchHands() {
+    if (!F) return;
+    [0, 1].forEach((seat) => F.before.seats[seat].hand.forEach((c) => { if (REG[c.id] && REG[c.id].manifest) prefetch(c.id).catch(report); }));
+  }
+  function prefetchedBytes() { let n = 0; Object.keys(prefetched).forEach((k) => { if (prefetched[k].done) n += prefetched[k].done.bytes; }); return n; }
+  // at play, for a play that shows the actor: decode the prefetched bytes (fetching now only if no hand prefetch happened)
+  async function actorFor(cardId) {
+    if (actors[cardId]) return actors[cardId];
+    const mf = await manifestFor(cardId); if (!mf) return null;
+    const pick = rungFor(mf), had = !!prefetched[cardId + '@' + pick.rung];
+    const pre = await prefetch(cardId), t0 = performance.now();
+    let image;
+    if (window.createImageBitmap) image = await createImageBitmap(pre.blob);
+    else { image = new Image(); image.decoding = 'async'; const u = URL.createObjectURL(pre.blob); image.src = u; await image.decode(); URL.revokeObjectURL(u); }
+    const manifest = window.ActorManifest.forRung(mf, pick.rung);
+    lastDecode = { ms: Math.round(performance.now() - t0), rung: pick.rung, source: had ? 'prefetched from the hand' : 'fetched at play' };
+    const art = actors[cardId] = { manifest, image, rung: pick.rung, decodeMs: lastDecode.ms };
     // the dissolve's embers start only on the figure: each held cell's silhouette by column, read once from its alpha
     const sil = {};
-    actors[cardId].silhouetteOf = (ci) => {
+    art.silhouetteOf = (ci) => {
       if (sil[ci] !== undefined) return sil[ci];
       const c = manifest.cells[ci]; if (!c) return (sil[ci] = null);
       try {
@@ -84,10 +127,12 @@
       } catch (e) { sil[ci] = null; }
       return sil[ci];
     };
-    (manifest.phases.fizzle || []).forEach((ci) => actors[cardId].silhouetteOf(ci));
-    stage.loadActor(cardId, actors[cardId]);
-    return actors[cardId];
+    (manifest.phases.fizzle || []).forEach((ci) => art.silhouetteOf(ci));
+    stage.loadActor(cardId, art);
+    return art;
   }
+  // after SETTLE: the stage destroys the GPU texture and closes the bitmap; the page lets go of it (the compressed bytes stay cached)
+  function release(cardId) { if (stage.unloadActor(cardId)) delete actors[cardId]; }
 
   // ── THE BOARD ──
   let F = null, attackerSeat = 0, runner = null, playback = null, lastPlan = null, lastDone = null;
@@ -144,7 +189,7 @@
   async function load(seat) {
     stopRun();
     attackerSeat = seat; F = await fetch(V(FIXTURE(seat))).then((r) => r.json());
-    render(F.before, []); story();
+    render(F.before, []); story(); prefetchHands();
     el('seat-swap').textContent = 'Swap sides: Meghnad is ' + (attackerSeat === VIEWER ? 'yours' : 'the opponent\'s');
   }
 
@@ -168,12 +213,11 @@
   async function previewPlan() {
     if (!F) return;
     const ctx = window.ClashContext.fromBatch(F), reg = REG[ctx.cardId] || {};
-    const art = (ctx.scope === 'manifest' && reg.manifest) ? await actorFor(ctx.cardId) : null;
-    const mf = art && art.manifest, { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
+    const mf = (ctx.scope === 'manifest' && reg.manifest) ? await manifestFor(ctx.cardId) : null, { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
     const p = window.Director.plan(ctx, { mode, prior: memory.count(ctx.cardId), ladderExempt: !!reg.ladderExempt, timing: timingOf(mf), tempo, fizzleMs });
     el('plan').textContent = (runner && !runner.done ? '(the play running now keeps its own timeline — these values apply from the next play)' : '(the next play — press Play Meghnad)') + '\n\n' + window.Director.formatPlan(p);
   }
-  function stopRun() { if (runner && !runner.done) runner.finish(); runner = null; }
+  function stopRun() { if (runner && !runner.done) runner.skip(); runner = null; }   // LAB-5: an interrupted play lands on AFTER, nothing left behind
   async function play(opts) {
     opts = opts || {};
     stopRun();
@@ -181,10 +225,10 @@
     const boards = window.ClashContext.boards(ctx, F.before, F.after);
     const reg = REG[ctx.cardId] || {};
     const prior = opts.phase ? 0 : memory.count(ctx.cardId);
-    const art = (ctx.scope === 'manifest' && reg.manifest) ? await actorFor(ctx.cardId) : null;
-    const mf = art && art.manifest;
+    const mf = (ctx.scope === 'manifest' && reg.manifest) ? await manifestFor(ctx.cardId) : null;
     const timing = timingOf(mf), { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
     lastPlan = window.Director.plan(ctx, { mode, prior, ladderExempt: !!reg.ladderExempt, timing, tempo, fizzleMs });
+    const art = lastPlan.actor && mf ? await actorFor(ctx.cardId) : null;   // A5: an atlas is decoded only for a play that shows its actor
     if (!opts.phase) memory.record(ctx.cardId);
     el('memory-note').textContent = 'Match memory: ' + ctx.cardName + ' has manifested ' + memory.count(ctx.cardId) + ' time' + (memory.count(ctx.cardId) === 1 ? '' : 's') + '. The second play in a match runs Fast.';
     lastDone = null;
@@ -193,7 +237,7 @@
       stage, ctx, boards, viewer: VIEWER, field: { w: f.width, h: f.height },
       rectOf, clientOf, bandOf, render, fieldClient: () => { const r = fieldRect(); return { x: r.left, y: r.top }; },
       pulse: (uid, ms) => { const n = el('field').querySelector('.bc[data-uid="' + uid + '"]'); if (n) { n.classList.add('pulse'); setTimeout(() => n.classList.remove('pulse'), ms); } },
-      actorFor: (id) => actors[id] || null,
+      actorFor: (id) => actors[id] || null, release, sound: (name) => audio.play(name),
       factionFx: (fac) => window.Dissolve.pick(FFX, fac, exitPreset),
       embers: (x, y) => VFX.cardLand(x, y),
       queueFx: (ev, board, skipped) => {
@@ -208,7 +252,68 @@
     runner = window.Runner.create(lastPlan, playback.handlers, () => clock.t);
     const ph = opts.phase ? lastPlan.phases.find((p) => p.name === opts.phase) : null;
     if (opts.phase && !ph) { el('plan').textContent = window.Director.formatPlan(lastPlan) + '\n\n(' + opts.phase + ' is not in a ' + lastPlan.mode + ' plan)'; return; }
+    layout = { base: null, maxShift: 0, samples: 0, worst: '' };
     runner.start(ph ? { from: ph.t0, to: ph.t1 } : {});
+  }
+
+  // ── LAYOUT SHIFT (LAB-5): every board card's LAYOUT box (offsets — the camera impulse is a transform and does not count), sampled each
+  // frame of a play after its card enters, against the play's first sample ──
+  let layout = { base: null, maxShift: 0, samples: 0, worst: '' }, layoutPeak = 0;
+  function layoutSnap() {
+    const out = {};
+    el('field').querySelectorAll('.bc').forEach((n) => { out[n.dataset.uid] = [n.offsetLeft, n.offsetTop, n.offsetWidth, n.offsetHeight]; });
+    ['field', 'hand'].forEach((id) => { const n = el(id); out['#' + id] = [n.offsetLeft, n.offsetTop, n.offsetWidth, n.offsetHeight]; });
+    return out;
+  }
+  function measureLayout() {
+    const now = layoutSnap(); layout.samples++;
+    if (!layout.base) { layout.base = now; return; }
+    Object.keys(now).forEach((k) => { const b = layout.base[k]; if (!b) return; for (let i = 0; i < 4; i++) { const d = Math.abs(now[k][i] - b[i]); if (d > layout.maxShift) { layout.maxShift = d; layout.worst = k; } } });
+    layoutPeak = Math.max(layoutPeak, layout.maxShift);
+  }
+
+  // ── A HIDDEN PAGE (LAB-5): a tab switch or a locked phone mid-play lands the play at once — the board on AFTER, nothing left behind ──
+  let hiddenSkips = 0;
+  document.addEventListener('visibilitychange', () => { if (document.hidden && runner && !runner.done) { runner.skip(); hiddenSkips++; } });
+
+  // ── MOCK MATCH (LAB-5): the manifestation in the rhythm of a match, with the game's own gaps — the owner judges tempo here ──
+  const MOCK = {
+    thinkMs: Math.round((1200 + 3500) / 2),        // the game's aiThinkTime() clamps to 1200–3500 ms: its midpoint
+    showcaseMs: Math.round((1400 + 300) * 1.3),    // showcaseCard(): the card held 1400 ms, then 300 ms out, × CHOREO_SPEED 1.3
+    landMs: Math.round(700 * 1.3),                 // the card lands and settles (callout 700 ms × 1.3)
+    yourTurnMs: 2000,                              // your own decision time — a nominal pause, not measured
+  };
+  let mockRunning = false, mockLog = [];
+  const labWait = (ms) => new Promise((res) => { const until = clock.t + ms; const step = () => (clock.t >= until ? res() : labRaf(step)); labRaf(step); });
+  const runEnd = () => new Promise((res) => { const step = () => (!runner || runner.done ? res() : labRaf(step)); labRaf(step); });
+  function oppPlay(k) {
+    const def = F.defenderSeat, hand = F.before.seats[def].hand, c = hand[k % hand.length];
+    const board = JSON.parse(JSON.stringify(F.after)), card = { uid: 'mock-' + k + '-' + c.uid, id: c.id, n: c.n, eff: c.p != null ? c.p : (c.eff != null ? c.eff : 3) };
+    board.seats[def].units.push(card);
+    return { board, card };
+  }
+  async function opponentTurn(k) {
+    let t = clock.t; banner('The opponent is thinking…', MOCK.thinkMs); await labWait(MOCK.thinkMs); mark('the opponent thinks (the game: 1.2–3.5 s)', t);
+    t = clock.t; const o = oppPlay(k); banner(o.card.n + ' — played', MOCK.showcaseMs); await labWait(MOCK.showcaseMs);
+    render(o.board, []); const c = clientOf(o.card.uid); if (c) VFX.cardLand(c.cx, c.cy); await labWait(MOCK.landMs); mark('the opponent plays ' + o.card.n + ' (showcase, then its landing)', t);
+  }
+  let mockT0 = 0;
+  function mark(what, t0) { mockLog.push({ what, from: Math.round(t0 - mockT0), to: Math.round(clock.t - mockT0) }); showMock(false); }
+  async function mockMatch() {
+    if (mockRunning) return; mockRunning = true; mockLog = []; memory.reset(); stopRun(); mockT0 = clock.t;
+    try {
+      let t = clock.t; render(F.before, []); await play({}); await runEnd(); mark('Meghnad manifests — ' + lastPlan.mode, t);
+      await opponentTurn(0);
+      t = clock.t; await labWait(MOCK.yourTurnMs); mark('your turn (a nominal 2 s)', t);
+      t = clock.t; render(F.before, []); await play({}); await runEnd(); mark('Meghnad again — ' + lastPlan.mode + ' (the repeat rule)', t);
+      await opponentTurn(1);
+    } finally { mockRunning = false; showMock(true); }
+  }
+  function showMock(done) {
+    const total = mockLog.length ? mockLog[mockLog.length - 1].to : 0;
+    el('plan').textContent = 'MOCK MATCH' + (done ? ' — done' : ' — playing') + ' · the gaps are the game\'s: AI think ' + MOCK.thinkMs + ' ms (midpoint of 1200–3500), showcase ' + MOCK.showcaseMs + ' ms (1400 + 300, × 1.3), landing ' + MOCK.landMs + ' ms; your turn ' + MOCK.yourTurnMs + ' ms (nominal)\n\n' +
+      mockLog.map((m) => ('    ' + (m.from / 1000).toFixed(2)).slice(-6) + ' s → ' + (m.to / 1000).toFixed(2) + ' s   ' + ((m.to - m.from) / 1000).toFixed(2) + ' s   ' + m.what).join('\n') + '\n\nmock match total ' + (total / 1000).toFixed(2) + ' s';
+    el('ro-mock').textContent = mockLog.length ? mockLog.length + ' steps · ' + (total / 1000).toFixed(2) + ' s' + (done ? '' : ' so far') : '—';
   }
 
   // ── READOUT ──
@@ -223,11 +328,16 @@
     el('ro-sprites').textContent = 'Canvas 2D ' + VFX.sprCount() + ' · GPU ' + (g.live != null ? g.live : 0);
     let fetchMs = 0, bytes = 0;
     try { performance.getEntriesByType('resource').forEach((r) => { if (/\/lab\/vfx-manifestation\//.test(r.name)) { fetchMs += r.duration; bytes += (r.transferSize || r.encodedBodySize || 0); } }); } catch (e) {}
-    el('ro-decode').textContent = 'fetch ' + Math.round(fetchMs) + ' ms · bake ' + Math.round(VFX.bakeMs()) + ' ms' + (a ? ' · actor atlas decode ' + Math.round(a.decodeMs) + ' ms' : '');
+    el('ro-decode').textContent = 'fetch ' + Math.round(fetchMs) + ' ms · bake ' + Math.round(VFX.bakeMs()) + ' ms' + (lastDecode ? ' · last actor decode ' + lastDecode.ms + ' ms (' + lastDecode.rung + ' px, ' + lastDecode.source + ')' : '');
     let decoded = 0;
     if (copyMeta && g.texReady) copyMeta.files.filter((f) => /sheets\//.test(f.to) && f.px).forEach((f) => { decoded += f.px.w * f.px.h * 4; });
-    const actorDecoded = a ? a.manifest.atlasSize.w * a.manifest.atlasSize.h * 4 : 0;
-    el('ro-mb').textContent = 'transferred ' + mb(bytes) + ' · effect sheets ≈ ' + mb(decoded) + ' · actor atlas ≈ ' + mb(actorDecoded) + ' decoded';
+    el('ro-mb').textContent = 'actor ' + mb(s.decodedBytes) + ' decoded now (' + s.actorsLoaded + ' loaded · peak ' + mb(s.peakDecoded) + ' · ' + s.loads + ' decodes, ' + s.unloads + ' releases) · compressed in cache ' + mb(prefetchedBytes()) + ' · effect sheets ≈ ' + mb(decoded) + ' · transferred ' + mb(bytes);
+    const mq = manifests.meghnad, pq = mq ? rungFor(mq) : null, rq = el('ro-quality');
+    if (rq) rq.textContent = pq ? pq.rung + ' px · ' + pq.why + ' (DPR ' + (window.devicePixelRatio || 1) + (navigator.deviceMemory ? ' · ' + navigator.deviceMemory + ' GB hint' : ' · no memory hint') + ')' : '—';
+    const so = audio.settings(), lg = audio.log[audio.log.length - 1], rso = el('ro-sound');
+    if (rso) rso.textContent = (so.sfxOn ? 'game sound on · ' + Math.round(so.sfxVol * 100) + '%' : 'game sound OFF (muted in the game\'s settings)') + ' · ' + audio.state + (lg ? ' · last: ' + lg.name + ' → ' + lg.outcome : '');
+    const rl = el('ro-layout');
+    if (rl) rl.textContent = (layout.samples ? 'largest board shift ' + layout.maxShift + ' px over ' + layout.samples + ' frames of the last play' + (layout.maxShift ? ' (' + layout.worst + ')' : ' ✓') + ' · worst this session ' + layoutPeak + ' px' : '—') + (hiddenSkips ? ' · page hidden mid-play ' + hiddenSkips + '× → landed on AFTER' : '');
     const e = el('ro-errors'); e.textContent = errors.length ? errors.length + ' — ' + errors[errors.length - 1] : '0'; e.className = errors.length ? 'bad' : '';
     const x = s.exit, rx = el('ro-exit');
     if (rx) rx.textContent = x ? x.name + ' dissolve · ' + (x.path === 'shader' ? 'GPU filter' : 'Canvas 2D mask') + ' · front ' + x.edge + ' · embers ' + x.embers + ' (peak ' + x.peak + ') · smoke ' + x.smoke + ' · ' + x.frames + ' frames, sweep ' + (x.monotonic ? 'monotonic ✓' : 'NOT monotonic ✖') + (x.progress < 1 ? ' · ' + Math.round(x.progress * 100) + '%' : '')
@@ -244,6 +354,8 @@
   el('ctl-memory').onclick = () => { memory.reset(); el('memory-note').textContent = 'Match memory reset: the next play runs in the chosen mode.'; };
   ['full', 'fast', 'reduced'].forEach((m) => { el('mode-' + m).onclick = () => { mode = m; setOn(['mode-full', 'mode-fast', 'mode-reduced'], 'mode-' + m); previewPlan().catch(report); }; });
   el('seat-swap').onclick = () => { load(1 - attackerSeat).catch(report); };
+  el('quality').onchange = (e) => { qualityOverride = e.target.value; prefetchHands(); };
+  el('mock-match').onclick = () => { mockMatch().catch(report); };
   el('exit-preset').onchange = (e) => { exitPreset = e.target.value; };
   el('tempo').oninput = (e) => { tempoOverride = +e.target.value; previewPlan().catch(report); };
   el('fizzle-ms').oninput = (e) => { fizzleOverride = +e.target.value; previewPlan().catch(report); };
@@ -253,6 +365,7 @@
     stopRun();
     try { if (which === 'canvas') { if (VFX.gpu.enabled) VFX.gpu.toggle(); } else await VFX.gpu.__forceBackend(which); } catch (e) { report(e); }
     try { await stage.useBackend(which); } catch (e) { report(e); }
+    prefetchHands();   // the rung may change with the renderer
   }
   el('be-webgpu').onclick = () => backend('webgpu');
   el('be-webgl').onclick = () => backend('webgl');
@@ -262,6 +375,10 @@
   el('clk-step').onclick = () => { if (!clock.paused) { clock.paused = true; el('clk-pause').classList.add('on'); el('clk-pause').textContent = 'Resume'; } clock.stepQ++; };
 
   // ── BOOT ──
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {   // LAB-5: the device asks for reduced motion → no actor
+    mode = 'reduced'; setOn(['mode-full', 'mode-fast', 'mode-reduced'], 'mode-reduced');
+    el('memory-note').textContent = 'This device asks for reduced motion: plays run Reduced (a card pulse, then the numbers). Pick Full or Fast to override.';
+  }
   VFX.applyQuality('lo');   // the rung whose sheets the lab carries (before init, so the GPU loads lo)
   VFX.init(); VFX.resize();
   window.addEventListener('resize', () => { VFX.resize(); stage.resize(); });
@@ -269,7 +386,7 @@
     fetch(V('COPY.json')).then((r) => r.json()).then((j) => { copyMeta = j; }),
     fetch(V('../data/manifestations.json')).then((r) => r.json()).then((j) => { REG = j.cards || {}; REG_DEFAULTS = j.defaults || {}; }),
     fetch(V('../data/factionfx.json')).then((r) => r.json()).then((j) => { FFX = j; }),
-  ]).then(() => load(0)).then(() => { stage.useBackend('webgpu').catch(report); window.requestAnimationFrame(tick); previewPlan().catch(report); }).catch(report);
+  ]).then(() => load(0)).then(() => { stage.useBackend('webgpu').then(() => prefetchHands()).catch(report); window.requestAnimationFrame(tick); previewPlan().catch(report); }).catch(report);   // the rung depends on the renderer: prefetch again once it is up
   // is this page the served one? STAMP read past every cache; a cached page reloads itself once onto the served stamp
   fetch(new URL('../STAMP', document.baseURI).href + '?t=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : null)).then((served) => {
     served = served && served.trim();
@@ -279,5 +396,5 @@
     if (here.searchParams.get('v') !== served) { here.searchParams.set('v', served); location.replace(here.href); return; }
     stampNote = 'STALE — this page is ' + STAMP + ', the server has ' + served; report('stale lab page: ' + stampNote);
   }).catch(() => { stampNote = 'served STAMP unreadable'; });
-  window.__lab = { STAMP, VFX, stage, clock, play, load, memory, errors, get runner() { return runner; }, get plan() { return lastPlan; }, get playback() { return playback; }, get done() { return lastDone; }, get fixture() { return F; } };
+  window.__lab = { STAMP, VFX, stage, audio, mockMatch, release, rungFor, manifests, prefetched, get actors() { return actors; }, get layout() { return layout; }, get mockLog() { return mockLog; }, clock, play, load, memory, errors, get runner() { return runner; }, get plan() { return lastPlan; }, get playback() { return playback; }, get done() { return lastDone; }, get fixture() { return F; } };
 })();

@@ -3,7 +3,8 @@
    env = { stage (ActorStage), ctx (ClashContext), boards {entry, settle, final}, viewer,
            rectOf(uid) → field-local {x,y,w,h} | null, clientOf(uid) → client {cx,cy,w} | null, field {w,h}, bandOf(seat) → rect | null,
            render(board, floats), pulse(uid, ms), actorFor(cardId) → {manifest,image} | null, factionFx(faction) → {name, portal, exit, dissolve},
-           embers(clientX, clientY) (the existing ember recipe), queueFx(event, board, skipped), onDone(result) }
+           embers(clientX, clientY) (the existing ember recipe), queueFx(event, board, skipped), onDone(result),
+           sound?(name) — 'contact' on the contact cell, 'exit' as FIZZLE starts (LAB-5), release?(cardId) — after SETTLE (LAB-5) }
    A1 on every cue: the actor acts toward the enemy side and never reaches the enemy cards (StageMath); nothing is drawn on the
    target; the numbers land at SETTLE from the board difference, and the queued events land theirs after.
    Browser: window.Playback. Node: require (with a stub env). */
@@ -48,6 +49,7 @@
               if (!who.pose) return;
               var q = who.pose, h = who.pl.height;
               env.stage.hitstop(c.hitstopMs);
+              if (env.sound) env.sound('contact');   // LAB-5: the strike, on the frame the contact cell is drawn
               env.stage.flash(q.x, q.feetY - h * 0.55, h * 0.9, who.pl.dirY, c.flashMs);
               env.stage.impulse(who.pl.dirY, c.impulsePx, c.impulseMs);
             };
@@ -58,8 +60,9 @@
           case 'exit-fx': {
             if (info.skipped || !actor) break;
             // LAB-4b: the faction's dissolve — the stage erodes the held cell over FIZZLE (the actor-phase cue just set its length)
-            if (fx.exit === 'dissolve' && env.stage.dissolve) { env.stage.dissolve(actor, fx); break; }
+            if (fx.exit === 'dissolve' && env.stage.dissolve) { env.stage.dissolve(actor, fx); if (env.sound) env.sound('exit'); break; }   // LAB-5: the ember exit's sound as FIZZLE starts
             if (!actor.pose) break;
+            if (fx.exit === 'embers' && env.sound) env.sound('exit');
             if (fx.exit === 'embers') { var p = actor.pose, fr = env.fieldClient ? env.fieldClient() : { x: 0, y: 0 }; env.embers(fr.x + p.x, fr.y + p.feetY - actor.pl.height * 0.4); env.embers(fr.x + p.x, fr.y + p.feetY - actor.pl.height * 0.8); }
             break;
           }
@@ -80,7 +83,11 @@
           }
         }
       },
-      cleanup: function () { env.stage.clear(); actor = null; },
+      cleanup: function () {
+        env.stage.clear(); actor = null;
+        // LAB-5 (A5): after SETTLE the actor's decoded atlas goes — the page drops its bitmap too; between plays 0 actor MB
+        if (env.release) env.release(ctx.cardId); else if (env.stage.unloadActor) env.stage.unloadActor(ctx.cardId);
+      },
       error: function (e) { if (env.onError) env.onError(e); },
     };
     return { handlers: handlers, log: log, get actor() { return actor; }, get board() { return working; }, placement: placement };

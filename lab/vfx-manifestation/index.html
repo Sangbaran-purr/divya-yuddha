@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="lab-stamp" content="b6cf6e2bae48">
+<meta name="lab-stamp" content="5f0d67864298">
 <!-- runtime/ is the base: the copied VFX module's page-relative sheet URLs and its file-relative Pixi import both resolve inside it (see README) -->
 <base href="runtime/">
 <title>Manifestation Lab</title>
@@ -116,6 +116,9 @@
       <button id="ctl-ff" type="button">Fast-forward 3×</button>
       <button id="ctl-memory" type="button">Reset match memory</button>
     </div>
+    <div class="grp">
+      <button id="mock-match" type="button">Mock match — Meghnad, opponent, Meghnad again, opponent</button>
+    </div>
     <p class="note" id="memory-note">Match memory: Meghnad has manifested 0 times. The second play in a match runs Fast.</p>
   </section>
 
@@ -144,6 +147,14 @@
         <option value="vanaras">Vanara</option>
       </select>
     </div>
+    <div class="grp">
+      <label for="quality">Actor quality</label>
+      <select id="quality">
+        <option value="" selected>Auto — by device</option>
+        <option value="512">512 px cells</option>
+        <option value="256">256 px cells</option>
+      </select>
+    </div>
     <div class="grp tune">
       <label for="tempo">Tempo</label>
       <input id="tempo" type="range" min="0.5" max="1.5" step="0.05" value="0.6">
@@ -170,10 +181,14 @@
       <dt>Renderer</dt><dd id="ro-renderer">—</dd>
       <dt>Actor</dt><dd id="ro-actor">—</dd>
       <dt>Exit</dt><dd id="ro-exit">—</dd>
+      <dt>Sound</dt><dd id="ro-sound">—</dd>
+      <dt>Layout</dt><dd id="ro-layout">—</dd>
+      <dt>Mock</dt><dd id="ro-mock">—</dd>
       <dt>Rung</dt><dd id="ro-rung">—</dd>
       <dt>Sprites</dt><dd id="ro-sprites">—</dd>
       <dt>Decode</dt><dd id="ro-decode">—</dd>
       <dt>Memory</dt><dd id="ro-mb">—</dd>
+      <dt>Quality</dt><dd id="ro-quality">—</dd>
       <dt>Errors</dt><dd id="ro-errors">0</dd>
       <dt>Stamp</dt><dd id="ro-stamp">—</dd>
     </dl>
@@ -190,16 +205,17 @@
     <p id="story-truth" class="truth"></p>
   </section>
 </main>
-<script src="../lib/boarddiff.js?v=b6cf6e2bae48"></script>
-<script src="../lib/clashcontext.js?v=b6cf6e2bae48"></script>
-<script src="../lib/director.js?v=b6cf6e2bae48"></script>
-<script src="../lib/runner.js?v=b6cf6e2bae48"></script>
-<script src="../lib/manifest.js?v=b6cf6e2bae48"></script>
-<script src="../lib/stagemath.js?v=b6cf6e2bae48"></script>
-<script src="../lib/dissolve.js?v=b6cf6e2bae48"></script>
-<script src="../lib/actorstage.js?v=b6cf6e2bae48"></script>
-<script src="../lib/playback.js?v=b6cf6e2bae48"></script>
-<script src="vfx.js?v=b6cf6e2bae48"></script>
-<script src="../lab.js?v=b6cf6e2bae48"></script>
+<script src="../lib/boarddiff.js?v=5f0d67864298"></script>
+<script src="../lib/clashcontext.js?v=5f0d67864298"></script>
+<script src="../lib/director.js?v=5f0d67864298"></script>
+<script src="../lib/runner.js?v=5f0d67864298"></script>
+<script src="../lib/manifest.js?v=5f0d67864298"></script>
+<script src="../lib/stagemath.js?v=5f0d67864298"></script>
+<script src="../lib/dissolve.js?v=5f0d67864298"></script>
+<script src="../lib/labaudio.js?v=5f0d67864298"></script>
+<script src="../lib/actorstage.js?v=5f0d67864298"></script>
+<script src="../lib/playback.js?v=5f0d67864298"></script>
+<script src="vfx.js?v=5f0d67864298"></script>
+<script src="../lab.js?v=5f0d67864298"></script>
 </body>
 </html>
