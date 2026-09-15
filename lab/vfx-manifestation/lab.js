@@ -222,9 +222,11 @@
     if (!F) return;
     const ctx = window.ClashContext.fromBatch(F), reg = REG[ctx.cardId] || {};
     const mf = (ctx.scope === 'manifest' && reg.manifest) ? await manifestFor(ctx.cardId) : null, { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
-    const p = window.Director.plan(ctx, { mode, prior: memory.count(ctx.cardId), ladderExempt: !!reg.ladderExempt, timing: timingOf(mf), tempo, fizzleMs });
+    const p = window.Director.plan(ctx, { mode, prior: memory.count(ctx.cardId), ladderExempt: !!reg.ladderExempt, timing: timingOf(mf), tempo, fizzleMs, exit: exitFor(reg, mf, ctx) });
     el('plan').textContent = (runner && !runner.done ? '(the play running now keeps its own timeline — these values apply from the next play)' : '(the next play — press Play ' + F.action.card + ')') + '\n\n' + window.Director.formatPlan(p);
   }
+  // LAB-8: the registry's exit ("native" = the clip's own) — the Exit preset dropdown still previews the procedural dissolve on any card
+  function exitFor(reg, mf, ctx) { const x = window.ActorManifest.exitMode({ entry: reg, manifest: mf, override: exitPreset }); if (x.error) report(ctx.cardName + ': ' + x.why); return x.exit; }
   function stopRun() { if (runner && !runner.done) runner.skip(); runner = null; }   // LAB-5: an interrupted play lands on AFTER, nothing left behind
   async function play(opts) {
     opts = opts || {};
@@ -235,7 +237,7 @@
     const prior = opts.phase ? 0 : memory.count(ctx.cardId);
     const mf = (ctx.scope === 'manifest' && reg.manifest) ? await manifestFor(ctx.cardId) : null;
     const timing = timingOf(mf), { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
-    lastPlan = window.Director.plan(ctx, { mode, prior, ladderExempt: !!reg.ladderExempt, timing, tempo, fizzleMs });
+    lastPlan = window.Director.plan(ctx, { mode, prior, ladderExempt: !!reg.ladderExempt, timing, tempo, fizzleMs, exit: exitFor(reg, mf, ctx) });
     const art = lastPlan.actor && mf ? await actorFor(ctx.cardId) : null;   // A5: an atlas is decoded only for a play that shows its actor
     if (!opts.phase) memory.record(ctx.cardId);
     el('memory-note').textContent = 'Match memory: ' + ctx.cardName + ' has manifested ' + memory.count(ctx.cardId) + ' time' + (memory.count(ctx.cardId) === 1 ? '' : 's') + '. The second play in a match runs Fast.';
@@ -351,7 +353,7 @@
     const e = el('ro-errors'); e.textContent = errors.length ? errors.length + ' — ' + errors[errors.length - 1] : '0'; e.className = errors.length ? 'bad' : '';
     const x = s.exit, rx = el('ro-exit');
     if (rx) rx.textContent = x ? x.name + ' dissolve · ' + (x.path === 'shader' ? 'GPU filter' : 'Canvas 2D mask') + ' · front ' + x.edge + ' · embers ' + x.embers + ' (peak ' + x.peak + ') · smoke ' + x.smoke + ' · ' + x.frames + ' frames, sweep ' + (x.monotonic ? 'monotonic ✓' : 'NOT monotonic ✖') + (x.progress < 1 ? ' · ' + Math.round(x.progress * 100) + '%' : '')
-      : (exitPreset ? 'preview: ' + ((FFX[exitPreset] || {}).name || exitPreset) + ' — press Play' : '—');
+      : lastPlan && lastPlan.exit === 'native' ? 'native — the clip carries its own exit, no FIZZLE (pick an Exit preset to preview the procedural dissolve)' : (exitPreset ? 'preview: ' + ((FFX[exitPreset] || {}).name || exitPreset) + ' — press Play' : '—');
     const rs = el('ro-stamp'); if (rs) { rs.textContent = STAMP + ' · ' + stampNote; rs.className = /STALE|unreadable/.test(stampNote) ? 'bad' : ''; }
   }
 
@@ -362,7 +364,7 @@
     const box = el('card-buttons'); box.textContent = '';
     Object.keys(REG).filter((id) => REG[id].manifest).forEach((id) => {
       const b = document.createElement('button'); b.className = 'primary'; b.type = 'button'; b.id = 'play-' + id; b.dataset.card = id;
-      b.textContent = 'Play ' + (REG[id].name || id); b.onclick = () => { playCard(id).catch(report); }; box.appendChild(b);
+      b.textContent = 'Play ' + (REG[id].label || REG[id].name || id); b.onclick = () => { playCard(id).catch(report); }; box.appendChild(b);
     });
   }
   ['awaken', 'emerge', 'act', 'fizzle', 'settle'].forEach((p) => { el('phase-' + p).onclick = () => { play({ phase: p.toUpperCase() }).catch(report); }; });

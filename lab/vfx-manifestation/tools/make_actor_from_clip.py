@@ -14,6 +14,11 @@
 # (the ground's strongest channel is the key — green, blue, …), or pinned per card with "key_colour": [r, g, b]. "engine_id" names the
 # card's id in the engine when it differs from the card's name (Bali is "hanuman"). Pivot rules: "front-left" (the
 # horse's front hooves) and "feet" (the centre of the ground contact).
+# LAB-8 · Varuna, the first NATIVE EXIT: "contact": ("nova", f) names the audited frame the burst begins (the stage flashes radially from
+# the actor's centre); "exit": "native" packs no fizzle phase — ACT runs to the clip's end — and "fade_tail": n bakes a linear alpha ramp
+# (100% → 0%) into the last n cells so the clip's own exit dissipates instead of popping. The atlas levers, in the owner's order, when a
+# pack is over the 4096 px ceiling: "thin_alternate": (a, b) drops every other frame in fa–fb; "cell_px": N packs cells below the 512 px
+# ceiling (the manifest keeps cellMax 512 and records cellPx).
 #
 # Run it with the lab venv: rembg (A6, amended) lives there and nowhere else. Its model lives in tools/.venv/u2net/.
 #   IN (never committed, A7):   sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4
@@ -76,16 +81,21 @@ CARDS = {
     "bali":    {"label": "Bali", "clip": "kling_20260914_VIDEO_Preserve_B_5645_0.mp4", "emerge": (28, 56), "act": (57, 93), "tempo": None,
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("ground-impact", (57, 72)), "settled": 28, "pivot": "feet",
                 "facing": "left", "aim": None, "feather": 8, "engine_id": "hanuman"},
+    "varuna":  {"label": "Varuna", "clip": "varuna/varuna_green.mp4", "emerge": (0, 85), "act": (86, 120), "tempo": None,
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 86), "settled": 0, "pivot": "feet",
+                "facing": "right", "aim": None, "feather": 8, "engine_id": "varuna",
+                "exit": "native", "fade_tail": 10, "cell_px": 512, "thin_alternate": None},
 }
 CFG = None
 def configure(card):
-    global CARD, CLIP, OUT, AUDIT, SHEET, EMERGE_RANGE, ACT_RANGE, PHASE_MS, TEMPO, CONTACT_SEARCH, SETTLED_FRAME, KEY_T0, KEY_T1, CFG
+    global CARD, CLIP, OUT, AUDIT, SHEET, EMERGE_RANGE, ACT_RANGE, PHASE_MS, TEMPO, CONTACT_SEARCH, SETTLED_FRAME, KEY_T0, KEY_T1, CFG, CELL_MAX
     if card not in CARDS: sys.exit("unknown card %r — one of %s" % (card, ", ".join(CARDS)))
     CFG = CARDS[card]; CARD = card
     CLIP = os.path.join(LAB, "sources", CFG["clip"])
     OUT = os.path.join(LAB, "actors", CARD); AUDIT = os.path.join(LAB, "frames", CARD); SHEET = os.path.join(LAB, "frames", CARD + "_contact_sheet.jpg")
     EMERGE_RANGE, ACT_RANGE = CFG["emerge"], CFG["act"]
     PHASE_MS = {k: int(round((CFG[k][1] - CFG[k][0] + 1) * MS_PER_SRC[k])) for k in ("emerge", "act")}
+    CELL_MAX = CFG.get("cell_px") or 512
     TEMPO = CFG["tempo"]; CONTACT_SEARCH = CFG["contact"][1]; SETTLED_FRAME = CFG["settled"]; KEY_T0, KEY_T1 = CFG["key"]
 
 def decode(path):
@@ -233,6 +243,10 @@ def main(card="meghnad"):
         peak = max(edge.values()); first = min(i for i, v in edge.items() if v >= 0.25 * peak)   # a grazing tip is not the bolt reaching the edge
         contact_src = first + 1
         contact_note = "the bolt reaches the frame edge (at least a quarter of its peak edge contact) first at f%d (edge px %s)" % (first, {k: edge[k] for k in sorted(edge)})
+    elif CFG["contact"][0] == "nova":
+        # "nova" (LAB-8): the audited frame the burst begins — the radial flash is the stage's; the frame is named, not measured
+        contact_src = CFG["contact"][1]
+        contact_note = "nova: the burst begins at the audited frame f%d" % contact_src
     else:
         # "ground-impact" (LAB-7): the frame the weapon reaches the ground band — matter within 60 px of the settled frame's ground line,
         # clear of the standing feet's columns (±80 px), first reaching 2000 px
@@ -245,6 +259,8 @@ def main(card="meghnad"):
         contact_note = "the weapon reaches the ground band clear of the feet (columns %d–%d kept out) first at f%d (hits %s)" % (fx0, fx1, contact_src, {k: hits[k] for k in sorted(hits)})
     emerge, dup_e = distinct(range(EMERGE_RANGE[0], EMERGE_RANGE[1] + 1), grays)
     act, dup_a = distinct(range(ACT_RANGE[0], ACT_RANGE[1] + 1), grays, keep=(contact_src,))
+    thin, thinned = CFG.get("thin_alternate"), []        # LAB-8 lever 1: every other frame in the named range
+    if thin: thinned = [i for i in act if thin[0] <= i <= thin[1] and (i - thin[0]) % 2 == 1 and i != contact_src and i != act[-1]]; act = [i for i in act if i not in thinned]
     kept = emerge + act
     diffs = [float(np.abs(grays[i].astype(np.float32) - grays[i - 1].astype(np.float32)).mean()) for i in range(EMERGE_RANGE[0] + 1, ACT_RANGE[1] + 1)]
     print("kept %d frames · EMERGE %d (f%d–f%d) · ACT %d (f%d–f%d) · duplicates dropped %s · smallest neighbour |Δ| %.2f · contact f%d (%s)" % (
@@ -298,6 +314,13 @@ def main(card="meghnad"):
         x0, y0 = min(x0, int(math.floor(PIV[0]))), min(y0, int(math.floor(PIV[1])))
         x1, y1 = max(x1, int(math.ceil(PIV[0])) + 1), max(y1, int(math.ceil(PIV[1])) + 1)
         boxes[i] = (x0, y0, x1, y1)
+    # LAB-8 · the fade tail (native exit): a linear alpha ramp over the last n cells, 100% → 0%, after the trim so every cell keeps its rectangle
+    fade = []
+    if CFG.get("fade_tail"):
+        n = CFG["fade_tail"]
+        for k, i in enumerate(kept[-n:]):
+            f_ = 1.0 - k / float(n - 1); al8 = np.round(rgba[i][..., 3].astype(np.float32) * f_).astype(np.uint8)
+            rgba[i][..., 3] = al8; rgba[i][..., :3][al8 == 0] = 0; fade.append([i, round(f_, 4)])
     s = CELL_MAX / max(max(b[2] - b[0], b[3] - b[1]) for b in boxes.values())
     cells, origins = [], {}
     for i in kept:
@@ -312,7 +335,7 @@ def main(card="meghnad"):
         if x + c.width + PAD > ROW_W: x, y, rowh = PAD, y + rowh + PAD, 0
         placed.append((i, c, x, y, px, py)); x += c.width + PAD; rowh = max(rowh, c.height)
     AW = max(p[2] + p[1].width for p in placed) + PAD; AH = max(p[3] + p[1].height for p in placed) + PAD
-    if AW > 4096 or AH > 4096: sys.exit("atlas %dx%d exceeds 4096" % (AW, AH))
+    if AW > 4096 or AH > 4096: sys.exit("atlas %dx%d exceeds 4096 (%d cells at %d px) — LAB-8 levers: thin_alternate, then cell_px" % (AW, AH, len(cells), CELL_MAX))
     atlas = Image.new("RGBA", (AW, AH), (0, 0, 0, 0))
     for i, c, cx, cy, px, py in placed: atlas.paste(c, (cx, cy), c)
     os.makedirs(OUT, exist_ok=True)
@@ -339,17 +362,26 @@ def main(card="meghnad"):
         "cardId": CFG.get("engine_id") or CARD, "class": "actor", "version": 2, "placeholder": False,
         "source": "Kling clip %s (sha256 %s…, %d frames @ %d fps, %dx%d, chroma %s) — kept f%d–f%d; matted by tools/make_actor_from_clip.py" % (os.path.basename(CLIP), sha[:12], len(frames), round(fps), W, H, {"R": "red", "G": "green", "B": "blue"}["RGB"[key_channels(K)[0]]], kept[0], kept[-1]),
         "atlas": "atlas.webp", "atlasSize": {"w": AW, "h": AH},
-        "alpha": "straight", "blend": "normal", "mv": False, "vignette": False, "cellMax": CELL_MAX,
+        "alpha": "straight", "blend": "normal", "mv": False, "vignette": False, "cellMax": 512,
         "fps": FPS, "timing": "native", "tempo": TEMPO, "phaseMs": PHASE_MS, "facing": CFG["facing"], "mirror": True,
         "refHeight": max(c.height for _, c, _, _ in cells),
-        "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height, "pivot": {"x": round(px, 1), "y": round(py, 1)}, "origin": list(origins[i])} for i, c, cx, cy, px, py in placed],
-        "rungs": [{"cellMax": CELL_MAX // R, "atlas": "atlas_256.webp", "atlasSize": {"w": HW, "h": HH}, "refHeight": max(c.height for _, c, _, _ in half),
+        "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height, "pivot": {"x": min(c.width, round(px, 1)), "y": min(c.height, round(py, 1))}, "origin": list(origins[i])} for i, c, cx, cy, px, py in placed],
+        "rungs": [{"cellMax": 512 // R, "atlas": "atlas_256.webp", "atlasSize": {"w": HW, "h": HH}, "refHeight": max(c.height for _, c, _, _ in half),
                    "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height, "pivot": {"x": min(c.width, round(px, 1)), "y": min(c.height, round(py, 1))}} for i, c, cx, cy, px, py in placed_h]}],
         "phases": {"emerge": list(range(0, ne)), "act": list(range(ne, len(kept))), "fizzle": [len(kept) - 1]},
         "contact": act.index(contact_src),
-        "audit": {"idle": [0, EMERGE_RANGE[0] - 1], "emerge": list(EMERGE_RANGE), "act": list(ACT_RANGE), "droppedTail": [ACT_RANGE[1] + 1, len(frames) - 1], "duplicatesDropped": dup_e + dup_a, "contactSrc": contact_src, "pivotSrc": [round(PIV[0], 1), round(PIV[1], 1)], "scale": round(s, 5)},
+        "audit": {"idle": [0, EMERGE_RANGE[0] - 1], "emerge": list(EMERGE_RANGE), "act": list(ACT_RANGE), "droppedTail": [ACT_RANGE[1] + 1, len(frames) - 1] if ACT_RANGE[1] < len(frames) - 1 else None, "duplicatesDropped": dup_e + dup_a, "contactSrc": contact_src, "pivotSrc": [round(PIV[0], 1), round(PIV[1], 1)], "scale": round(s, 5)},
     }
     if TEMPO is None: del manifest["tempo"]          # the card inherits the registry's defaults (data/manifestations.json)
+    # LAB-8 · the native exit, the nova rule, the real cell size, the levers — written only for a card that names them
+    if CFG.get("exit") == "native":
+        del manifest["phases"]["fizzle"]; manifest["exit"] = "native"
+        if manifest["phases"]["act"][-1] != len(kept) - 1: sys.exit("a native-exit pack must end ACT on its last cell")
+    if CFG["contact"][0] == "nova": manifest["contactRule"] = "nova"
+    if "cell_px" in CFG:
+        manifest["cellPx"] = max(max(c.width, c.height) for _, c, _, _ in cells); manifest["rungs"][0]["cellPx"] = max(max(c.width, c.height) for _, c, _, _ in half)
+        manifest["audit"]["atlasLever"] = (["alternate frames dropped in f%d–f%d: %s" % (thin[0], thin[1], ", ".join("f%03d" % i for i in thinned))] if thin else []) + (["cells at %d px" % CELL_MAX] if CELL_MAX != 512 else []) or "none"
+    if CFG.get("fade_tail"): manifest["audit"]["fadeTail"] = fade
     if CFG["aim"]: manifest = dict(sum(([(k, v)] + ([("aim", CFG["aim"])] if k == "facing" else []) for k, v in manifest.items()), []))
     manifest["audit"]["recipe"] = {"matte": CFG["matte"], "key": list(CFG["key"]), "keyColour": [int(round(v)) for v in K.tolist()], "keyChannel": "RGB"[key_channels(K)[0]], "contact": CFG["contact"][0], "pivot": CFG["pivot"], "feather": CFG["feather"],
                                    "msPerSourceFrame": {k: round(v, 4) for k, v in MS_PER_SRC.items()}}

@@ -134,7 +134,7 @@
   // fire fn on the frame the actor draws cell `index` of `phase` (at once if it already has)
   P.onCell = function (a, phase, index, fn) {
     if (!a) return; a.watch = { phase: phase, index: index, fn: fn };
-    if (a.pose && a.phase === phase && a.pose.phaseIx >= index) this.fireWatch(a);
+    if (a.pose && a.phase === phase && a.pose.phase === phase && a.pose.phaseIx >= index) this.fireWatch(a);   // LAB-8: never on a pose left over from the previous phase
   };
   P.fireWatch = function (a) { var w = a.watch; a.watch = null; if (!w) return; a.contactCell = a.pose ? a.pose.cellIndex : null; w.fn(); };
   P.noteCell = function (a, q) { if (!(q.alpha > 0.01)) return; if (q.cellIndex !== a.lastDrawn) {   // a cell counts only when it is visibly drawn
@@ -156,6 +156,15 @@
     this.actors = this.actors.filter(function (x) { return x !== a; });
     if (!this.actors.length) this.closeLiveWindow();
   };
+  // LAB-8 · THE NATIVE EXIT ON A SLOW DEVICE: with no FIZZLE after ACT, cells a late device has not reached would be lost at SETTLE (the
+  // fade tail with them). finish(a) keeps such an actor drawing its unreached cells into SETTLE, one per frame — the rule every other
+  // phase already follows — and removes it on the frame after its last cell is drawn. An actor that is not behind, or not native, goes now.
+  P.finish = function (a) {
+    if (!a || !a.cellFps || a.phase === 'fizzle') return false;
+    var list = a.art.manifest.phases[a.phase] || [];
+    if (!a.backlog.length && a.cellIx >= list.length - 1 && a.lastDrawn === list[list.length - 1]) return false;
+    a.finishing = true; a.cellStep = 1; return true;
+  };
   P.closeLiveWindow = function () {
     var s = this.stat; if (s.liveRealT0 != null && s.liveRealLast != null && s.liveRealLast > s.liveRealT0) s.fps = Math.round(s.liveFrames * 1000 / (s.liveRealLast - s.liveRealT0));
     s.liveRealT0 = null; s.liveRealLast = null;
@@ -163,7 +172,7 @@
 
   P.hitstop = function (ms) { this.frozenUntil = this.now() + ms; };
   P.portal = function (x, y, radius, color, dur) { this.fx.push({ kind: 'portal', x: x, y: y, r: radius, color: color, t0: this.now(), dur: Math.max(1, dur) }); };
-  P.flash = function (x, y, radius, dirY, dur) { this.fx.push({ kind: 'flash', x: x, y: y, r: radius, dirY: dirY, t0: this.now(), dur: Math.max(1, dur) }); };
+  P.flash = function (x, y, radius, dirY, dur, shape) { this.fx.push({ kind: 'flash', x: x, y: y, r: radius, dirY: dirY, radial: shape === 'radial', t0: this.now(), dur: Math.max(1, dur) }); };   // LAB-8: shape 'radial' = the nova
   P.impulse = function (dirY, px, dur) { this.impulseFx = { dirY: dirY, px: px, t0: this.now(), dur: Math.max(1, dur) }; };
 
   // the pose of one actor at lab time t
@@ -189,14 +198,15 @@
     if (a.phase === 'emerge') { var e = easeOut(Math.max(p, 0.5 / cells.length));   /* LAB-4d: never fully transparent — the first cell is really drawn */ alpha = e; sc = 0.72 + 0.28 * e; rise = (1 - e) * pl.height * 0.35; }
     else if (a.phase === 'act') { var c = a.contact; k = p < c ? easeIn(p / c) : 1 - 0.18 * easeOut((p - c) / (1 - c)); }
     else if (a.phase === 'fizzle') { k = 0.82; if (!a.dz) { alpha = 1 - easeIn(p); sc = 1 + 0.06 * p; rise = -10 * p; } }   // a dissolving actor holds still: the erosion is the exit
-    return { cell: cell, cellIndex: ci, phaseIx: ix, x: pl.anchor.x + pl.travel.x * k, feetY: pl.anchor.y + pl.travel.y * k, y: pl.anchor.y + pl.travel.y * k + rise, scale: pl.scale * sc, alpha: alpha, flipX: pl.flipX };
+    return { cell: cell, cellIndex: ci, phaseIx: ix, phase: a.phase, x: pl.anchor.x + pl.travel.x * k, feetY: pl.anchor.y + pl.travel.y * k, y: pl.anchor.y + pl.travel.y * k + rise, scale: pl.scale * sc, alpha: alpha, flipX: pl.flipX };
   };
 
   P.frame = function (t, realNow) {
     var t0 = perf(), self = this, s = this.stat;
     this.fx = this.fx.filter(function (f) { return t - f.t0 < f.dur; });
-    this.actors.forEach(function (a) { a.pose = self.poseOf(a, t); });
-    this.actors.forEach(function (a) { if (a.watch && a.pose && a.phase === a.watch.phase && a.pose.phaseIx >= a.watch.index) self.fireWatch(a); });
+    this.actors.filter(function (a) { var l = a.finishing && a.art.manifest.phases[a.phase]; return l && !a.backlog.length && a.cellIx >= l.length - 1 && a.lastDrawn === l[l.length - 1]; }).forEach(function (a) { self.remove(a); });   // LAB-8: finished
+    this.actors.forEach(function (a) { if (a.finishing) { var l = a.art.manifest.phases[a.phase] || []; a.pt = Math.max(a.pt, (Math.min(l.length - 1, a.cellIx + 1)) * 1000 / a.cellFps); } a.pose = self.poseOf(a, t); });
+    this.actors.forEach(function (a) { if (a.watch && a.pose && a.phase === a.watch.phase && a.pose.phase === a.watch.phase && a.pose.phaseIx >= a.watch.index) self.fireWatch(a); });
     this.actors.forEach(function (a) { if (a.dz && a.pose) self.stepDissolve(a, t); });
     var u = this.under && this.under.getContext('2d'), o = this.over && this.over.getContext('2d');
     [u, o].forEach(function (g) { if (g) { g.setTransform(self.dpr, 0, 0, self.dpr, 0, 0); g.clearRect(0, 0, self.w, self.h); } });
@@ -226,7 +236,7 @@
       if (f.kind !== 'flash') return;
       var p = (t - f.t0) / f.dur, cy = f.y + f.dirY * f.r * 0.35;
       var g = o.createRadialGradient(f.x, cy, 0, f.x, cy, f.r); g.addColorStop(0, 'rgba(255,242,220,0.9)'); g.addColorStop(1, 'rgba(255,242,220,0)');
-      o.globalAlpha = 0.6 * (1 - p); o.fillStyle = g; o.beginPath(); o.ellipse(f.x, cy, f.r * 0.7, f.r, 0, 0, Math.PI * 2); o.fill(); o.globalAlpha = 1;
+      o.globalAlpha = 0.6 * (1 - p); o.fillStyle = g; o.beginPath(); o.ellipse(f.x, cy, f.radial ? f.r : f.r * 0.7, f.r, 0, 0, Math.PI * 2); o.fill(); o.globalAlpha = 1;
     });
     // the dissolve's embers on Canvas 2D (on the GPU they are sprites)
     if (o) this.parts.forEach(function (pt) {

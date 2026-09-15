@@ -495,6 +495,65 @@ Kling's own tail, f094–f120 (`frames/bali_tail_contact_sheet.jpg`, git-ignored
 
 With these closed, a fourth character with a chroma clip and an existing contact rule needs: a pack-tool `CARDS` entry, a registry entry, a `HERO_ENTRIES` entry and its F/C/T/M check lines.
 
+## LAB-8: Varuna, the fourth character and the first native exit
+
+Varuna's clip ends in its own exit: the orb bursts over his body, he turns to water and the mist drifts away. LAB-8 plays that exit instead of the procedural dissolve.
+
+**This is an owner trial of ruling B.** Fallback A, if the trial fails: re-pack ACT as f000–f085, keep the nova contact, and play the procedural Deva dissolve. The lab can show fallback A now: pick **Deva** in the Exit preset dropdown and Varuna dissolves procedurally.
+
+### The clip and the frames
+
+`sources/varuna/varuna_green.mp4`: 121 frames at 24 fps, 5.04 s, 1916×1080 (not 1920), chroma green, git-ignored. The key colour comes from frame 0 only (corners RGB 0, 180, 66). Late corners carry mist: f120 bottom-right reads (68, 190, 115). The identity master `varuna-isolated-kling-source-v1.png`, and seventeen more masters for later characters that arrived during the build (Agni, Angad, Anjana, Garuda, Kartikeya, Kulika, Mahabali, Mahishi, Makardhwaja, Padmavati, Rahu, Shesha, Shukracharya, Sugriva, Takshaka, Vasuki, Vritra), were moved from `assets/vfx/experimental/` into `sources/<name>/` (A7). K3 now checks every master in `sources/` is ignored, whatever its name.
+
+| Range | Frames | Kept |
+|---|---|---|
+| EMERGE: the orb gathers in his raised hand, the water ring spins up around him | f000–f085 | 86 cells |
+| ACT: the orb bursts over his body, he turns to water, the mist drifts and thins | f086–f120 | 35 cells |
+
+- **Cells:** all 121 frames; no true duplicates (smallest neighbour difference 1.67), nothing trimmed.
+- **Contact:** **f086**, ACT cell 0, by the new "nova" rule. The audit names the frame the burst begins; nothing is measured.
+- **Pivot:** the centre between the feet on the standing frame f000, clip (959, 1055). One scale for every cell, 0.267 (the widest frame, the full-width ring, sets it).
+- **Facing:** right (the orb is raised in his right-of-frame hand). No aim.
+- **Matte:** "bright", by measurement. His skin is pale teal and his robe white; the ring, orb and mist are bright cyan-white. 8 px edge feather.
+
+### The atlases (A5)
+
+| Rung | Atlas | On disk | Decoded |
+|---|---|---|---|
+| 512 px | 4095×3194 | 3.64 MB | 49.9 MB |
+| 256 px | 2043×1614 | 1.27 MB | 12.6 MB (25.2%) |
+
+**Atlas lever: none.** The first pack with the real matte fitted the 4096 px ceiling, so no frames were dropped in f100–f120 and the cells stay at 512 px. The manifest keeps `cellMax: 512` as the A4 ceiling and records Varuna's real size: **`cellPx: 512`** (256 rung: 256). Decoded, Varuna is the heaviest actor so far (Meghnad 47.3 MB); the gate still holds one actor at a time and 0 MB between plays.
+
+### The native exit
+
+- **Registry:** `"exit": "native"` on Varuna's entry. Any other value (`"faction"`, absent) keeps the procedural faction dissolve, so Meghnad, Indra and Bali are unchanged.
+- **Guard:** a play takes the native exit only when the registry asks for it and the manifest is a valid native-exit pack: `exit: "native"`, no fizzle phase, ACT ending on the last cell (`ActorManifest.exitMode`, `validate`). Otherwise the lab flags it and plays the procedural dissolve.
+- **The plan:** AWAKEN → EMERGE → ACT → SETTLE. No FIZZLE, no exit cue, no exit sound; the actor holds its last cell until SETTLE.
+- **The fade tail:** the pack tool bakes a linear alpha ramp into the last 10 cells, f111 100% → f120 0%, so the mist dissipates instead of popping off.
+- **The nova:** at contact the flash is radial and starts at the actor's centre (half his height above the feet). The camera impulse still aims at the true target, so the A1 clamp and the upright law are untouched.
+
+**Runtime at the inherited 0.6× (standard template pace):** **Full** AWAKEN 667 · EMERGE 3633 · ACT 2202 (contact at its first frame) · SETTLE 667 = **7169 ms**, native exit, no FIZZLE. **Fast** 3584 ms. The Epic ladder would give 3500 ms.
+
+**The fixture.** `fixtures/varuna_seat0.json` and `varuna_seat1.json`, from the real engine. Varuna is a Hero (P6 Epic, passive: the opponent cannot play more than one Astra per round), so the Hero builder makes his fixture from a Varuna deck in his `HERO_ENTRIES` entry. One event (`play`); the board difference is Varuna entering the heroes row at 6 and nothing else. The Meghnad, Indra and Bali fixtures are byte-identical. The page's button reads **Play Varuna (Deva Hero, Epic)**, from the registry's new `label`.
+
+### Known defects (for the owner's trial)
+
+1. **Mist crosses the left and right frame edges** (46 frames touch an edge, most from f055; after about f105 the drifting mist is cut by the frame). The 8 px feather softens it, but hard cut lines may show at the sides of the cloud.
+2. **The clip does not end empty.** Mist is still on screen at f120; the fade tail makes it vanish.
+3. **The width is 1916, not 1920.**
+4. **A faint lilac rim** on the thinnest mist (the green despill leaves magenta in near-transparent white), most visible f100–f115.
+
+### Template gaps (code the fourth character needed)
+
+1. **The native exit** (as ruled): the registry field, the manifest guard, the director dropping FIZZLE, the fade tail in the pack tool, and suite branches for a play with no FIZZLE.
+2. **The nova contact rule** (as ruled): a named contact frame in the pack tool; a radial flash in the playback and the stage.
+3. **A real cell size below the ceiling** (as ruled): `cell_px` and `thin_alternate` levers in the pack tool, `cellPx` in the manifest, and S8 checking the declared size. Not needed for Varuna.
+4. **A pivot on the edge of its box.** At f040 and f059 the feet were the lowest matter in the frame, so rounding put the pivot 0.1 px outside the cell. The 512 cells now clamp their pivot as the 256 rung already did; Meghnad, Indra and Bali re-pack byte-identical.
+5. **The button label:** an optional registry `label` for the Play button.
+6. **Contact on ACT's first cell.** A contact cue on ACT cell 0 arrives the same tick ACT starts, so the stage matched it against the last EMERGE pose and fired one cell early (f085). The stage now fires a contact only on a pose drawn in the watched phase. Meghnad, Indra and Bali contact later in ACT and are unchanged.
+7. **A slow device with no FIZZLE.** On a device that falls behind (30 Hz at tempo 1), the unreached cells used to play out in FIZZLE; with a native exit they would be cut at SETTLE, fade tail and all (105 of 121 drawn). A native-exit actor that is behind now finishes its remaining cells into SETTLE, one per frame, and goes on the frame after its last cell; the play's end still clears everything. **Owner ruling (2026-09-15): keep as built.** The actor finishes its remaining cells one per frame into SETTLE, with no skip-stepping. The bounded loss is accepted: at tempo 1 on a 30 Hz device SETTLE is too short to finish, and the play ends before f117–f120 (the last four fade-tail cells, at 33% alpha or less), so the thinnest mist cuts off. At the locked 0.6× default a 30 Hz device is not behind and draws all 121 cells. Suite check S11 allows exactly that loss and no more.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

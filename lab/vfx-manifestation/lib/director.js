@@ -24,6 +24,8 @@
    would give (ladderMs); whether the ladder should govern native actors from the expansion on is the owner's ruling (A3).
    THE REPEAT RULE: a card's second and later manifestations in a match play Fast (Reduced stays Reduced). The caller passes
    how many times this card has already manifested (createMemory() keeps that count per match).
+   LAB-8 · THE NATIVE EXIT: opts.exit === 'native' (with native timing) drops FIZZLE — no fizzle phase, no exit-fx cue: the clip carries its
+   own exit and the actor holds its last cell until SETTLE. Without native timing the grammar keeps its FIZZLE.
    A2: a play outside Hero/Unit gets no actor phases — SETTLE and the queue only (its existing effect VFX is not the lab's).
    Browser: window.Director. Node: require. */
 (function (root) {
@@ -69,13 +71,14 @@
     var full = opts.ladderExempt ? PILOT_MS : (LADDER_MS[ctx.rarity] || LADDER_MS.R);
     var phases, total;
     var native = opts.timing && opts.timing.fps > 0 && opts.timing.emerge > 0 && opts.timing.act > 0 ? opts.timing : null;
-    var contactFrac = CONTACT, cellFps = null, cellFpsEmerge = null, contactMs = null;
+    var contactFrac = CONTACT, cellFps = null, cellFpsEmerge = null, contactMs = null, exit = 'procedural';
     var tempo = opts.tempo > 0 ? Math.min(4, Math.max(0.25, +opts.tempo)) : 1, fizzleMs = opts.fizzleMs > 0 ? Math.round(+opts.fizzleMs) : null, tuned = tempo !== 1 || fizzleMs != null;
     if ((mode === 'full' || mode === 'fast') && native) {
       var k = mode === 'fast' ? FAST : 1, rate = native.fps * tempo;
       var rateE = native.emergeMs > 0 ? native.emerge * 1000 / native.emergeMs * tempo : rate, rateA = native.actMs > 0 ? native.act * 1000 / native.actMs * tempo : rate;
       var ms = function (n) { return Math.round(n * 1000 / rate * k); }, beat = function (g) { return Math.round(g / tempo * k); };
       var spec = [['AWAKEN', beat(GRAMMAR[0][1])], ['EMERGE', native.emergeMs > 0 ? beat(native.emergeMs) : ms(native.emerge)], ['ACT', native.actMs > 0 ? beat(native.actMs) : ms(native.act)], ['FIZZLE', Math.round((fizzleMs != null ? fizzleMs : GRAMMAR[3][1]) * k)], ['SETTLE', beat(GRAMMAR[4][1])]];
+      if (opts.exit === 'native') { exit = 'native'; spec = spec.filter(function (x) { return x[0] !== 'FIZZLE'; }); }   // LAB-8
       phases = []; var t0 = 0; spec.forEach(function (x) { phases.push({ name: x[0], t0: t0, t1: t0 + x[1] }); t0 += x[1]; }); total = t0;
       if (native.contact != null) contactFrac = Math.min(1, Math.max(0, native.contact / native.act));
       cellFps = rateA / k; cellFpsEmerge = rateE / k;                                            // the cells' own rates (ACT, EMERGE): × tempo in Full, twice that in Fast
@@ -104,8 +107,7 @@
       var hitCue = { towardSeat: towardSeat, hitstopMs: hit.hitstopMs, flashMs: hit.flashMs, impulseMs: hit.impulseMs, impulsePx: hit.impulsePx };
       if (contactMs != null) hitCue.contactCell = native.contact;
       cue(contactMs != null ? C.t0 + Math.min(C.t1 - C.t0 - 1, contactMs) : C.t0 + Math.round((C.t1 - C.t0) * contactFrac), 'contact', hitCue);
-      cue(Z.t0, 'actor-phase', nat({ phase: 'fizzle', dur: Z.t1 - Z.t0 }));
-      cue(Z.t0, 'exit-fx', { faction: ctx.faction });
+      if (Z) { cue(Z.t0, 'actor-phase', nat({ phase: 'fizzle', dur: Z.t1 - Z.t0 })); cue(Z.t0, 'exit-fx', { faction: ctx.faction }); }   // LAB-8: none on a native exit
       cue(S.t0, 'actor-gone', { state: true });
       var st = settleOf(ctx); cue(S.t0, 'settle', { state: true, changes: st.changes, floats: st.floats });
     } else if (mode === 'reduced' && inScope) {
@@ -123,7 +125,7 @@
     var span = function (n) { var x = at(n); return x ? x.t1 - x.t0 : 0; }, hitAt = cues.filter(function (c) { return c.cue === 'contact'; })[0];
     var timeline = actor ? { awaken: span('AWAKEN'), emerge: span('EMERGE'), act: span('ACT'), contact: hitAt ? hitAt.t - at('ACT').t0 : null, contactAt: hitAt ? hitAt.t : null,
                              fizzle: span('FIZZLE'), settle: span('SETTLE'), total: total } : null;
-    return { version: 1, timing: native ? 'native' : 'grammar', ladderMs: LADDER_MS[ctx.rarity] || LADDER_MS.R, cellFps: cellFps, cellFpsEmerge: cellFpsEmerge, tempo: tempo, fizzleMs: actor ? span('FIZZLE') : null, timeline: timeline, cardId: ctx.cardId, cardName: ctx.cardName, seat: ctx.seat, towardSeat: towardSeat, faction: ctx.faction,
+    return { version: 1, timing: native ? 'native' : 'grammar', exit: actor ? exit : null, ladderMs: LADDER_MS[ctx.rarity] || LADDER_MS.R, cellFps: cellFps, cellFpsEmerge: cellFpsEmerge, tempo: tempo, fizzleMs: actor ? span('FIZZLE') : null, timeline: timeline, cardId: ctx.cardId, cardName: ctx.cardName, seat: ctx.seat, towardSeat: towardSeat, faction: ctx.faction,
              requestedMode: requested, mode: mode, repeat: repeat, prior: prior, actor: actor, ladder: ladder, total: total, end: end, phases: phases, cues: cues };
   }
 
@@ -140,7 +142,7 @@
       return ('     ' + c.t).slice(-5) + ' ms  ' + c.cue + extra;
     });
     var tl = p.timeline;
-    var tline = 'Timeline (ms): ' + (tl ? 'AWAKEN ' + tl.awaken + ' · EMERGE ' + tl.emerge + ' · ACT ' + tl.act + ' · contact +' + tl.contact + ' (at ' + tl.contactAt + ') · FIZZLE ' + tl.fizzle + ' · SETTLE ' + tl.settle + ' · total ' + tl.total
+    var tline = 'Timeline (ms): ' + (tl ? 'AWAKEN ' + tl.awaken + ' · EMERGE ' + tl.emerge + ' · ACT ' + tl.act + ' · contact +' + tl.contact + ' (at ' + tl.contactAt + ') · ' + (p.exit === 'native' ? 'no FIZZLE (native exit)' : 'FIZZLE ' + tl.fizzle) + ' · SETTLE ' + tl.settle + ' · total ' + tl.total
       : p.phases.map(function (x) { return x.name + ' ' + (x.t1 - x.t0); }).join(' · ') + ' · total ' + p.total) + ' · tempo ' + (p.tempo != null ? p.tempo : 1).toFixed(2) + '×' + (p.cellFps ? ' · ' + (p.cellFpsEmerge && Math.abs(p.cellFpsEmerge - p.cellFps) > 1e-6 ? 'EMERGE ' + Math.round(p.cellFpsEmerge * 100) / 100 + ' · ACT ' + Math.round(p.cellFps * 100) / 100 : Math.round(p.cellFps * 100) / 100) + ' cells/s' : '');
     return [head, ph, tline].concat(lines).join('\n');
   }

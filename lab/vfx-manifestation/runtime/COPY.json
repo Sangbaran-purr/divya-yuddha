@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "41ea1430fbeb1184ac3315c3d9e0f4767274b87c",
+    "gameCommit": "c03be7f409da1c9972ab3d41eafa71df7e7dde10",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -106,6 +106,16 @@
       "px": {
         "w": 1024,
         "h": 1536
+      }
+    },
+    {
+      "from": "assets/cards/Devas_Hero_Varuna_P6_rEpic.png",
+      "to": "art/Devas_Hero_Varuna_P6_rEpic.png",
+      "bytes": 433540,
+      "sha256": "9ad94d99b0795cfb53df52dd3ada56eba27dd2b667e84d766f69ab8c667e6b75",
+      "px": {
+        "w": 750,
+        "h": 1050
       }
     }
   ]

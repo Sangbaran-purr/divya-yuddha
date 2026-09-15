@@ -5,7 +5,9 @@
      phases:{ emerge:[cell…], act:[cell…], fizzle:[cell…] }, contact? (index inside act), timing? "native"|"grammar",
      tempo? (the card's default, 0.25–4 — LAB-4d), phaseMs? { emerge, act } (phase lengths at tempo 1),
      rungs? [{ cellMax, atlas, atlasSize, refHeight, cells }] (LAB-5: the same cells packed smaller — the quality ladder),
-     aim? "up" (LAB-6: the action points up its frame — descriptive only; every actor is drawn upright on both seats, owner ruling 2026-09-14) }
+     aim? "up" (LAB-6: the action points up its frame — descriptive only; every actor is drawn upright on both seats, owner ruling 2026-09-14),
+     exit? "native" (LAB-8: the clip carries its own exit — no fizzle phase, ACT ends on the last cell), contactRule? (LAB-8, runtime: "nova" = a
+     radial contact flash from the actor's centre), cellPx? (LAB-8: the real cell size when a pack needed cells below the 512 ceiling) }
    validate(m) → { ok, errors[] }. defaultsFor({ manifest, registry, preset, override }) → the tempo and FIZZLE length a play starts
    from (LAB-4d). forRung(m, cellMax) → the manifest drawn from that rung's atlas; decodedBytes(m) → its RGBA size; pickRung({…})
    → which rung a device gets (LAB-5). Browser: window.ActorManifest. Node: require. */
@@ -39,6 +41,7 @@
     if (!num(m.refHeight) || m.refHeight <= 0) e.push('refHeight missing');
     PHASES.forEach(function (p) {
       var list = m.phases && m.phases[p];
+      if (p === 'fizzle' && m.exit === 'native') { if (list != null) e.push('a native-exit actor has no fizzle phase (the clip carries its own exit)'); return; }   // LAB-8
       if (!Array.isArray(list) || !list.length) { e.push('phase ' + p + ' missing'); return; }
       list.forEach(function (ix) { if (!(Number.isInteger(ix) && cells && ix >= 0 && ix < cells.length)) e.push('phase ' + p + ' names cell ' + ix + ', which does not exist'); });
     });
@@ -64,7 +67,21 @@
       });
     }
     if (m.contact != null) { var act = m.phases && m.phases.act; if (!(Number.isInteger(m.contact) && Array.isArray(act) && m.contact >= 0 && m.contact < act.length)) e.push('contact must be a cell index inside the act phase'); }
+    // LAB-8 · the native exit guard, the contact rule, the real cell size
+    if (m.exit != null && m.exit !== 'native') e.push('exit must be "native" or absent (absent = the procedural faction dissolve)');
+    if (m.exit === 'native') { var actL = m.phases && m.phases.act; if (!(Array.isArray(actL) && cells && actL.length && actL[actL.length - 1] === cells.length - 1)) e.push('a native-exit actor must end ACT on its last cell'); }
+    if (m.contactRule != null && ['spear-tip', 'bolt-edge', 'ground-impact', 'nova'].indexOf(m.contactRule) < 0) e.push('contactRule must be spear-tip, bolt-edge, ground-impact or nova');
+    if (m.cellPx != null && !(Number.isInteger(m.cellPx) && m.cellPx >= 256 && m.cellPx <= 512 && (cells || []).every(function (c) { return !c || (c.w <= m.cellPx && c.h <= m.cellPx); }))) e.push('cellPx must be the real cell size, 256–512, holding every cell');
     return { ok: e.length === 0, errors: e };
+  }
+  // LAB-8 · THE EXIT A PLAY TAKES: "native" only when the registry entry asks for it AND the manifest is a valid native-exit pack; the lab's
+  // Exit preset preview (override) still plays the procedural dissolve, so the fallback can be compared; anything else is procedural.
+  function exitMode(o) {
+    o = o || {}; var m = o.manifest;
+    if (!(o.entry && o.entry.exit === 'native')) return { exit: 'procedural', why: 'the registry names no native exit' };
+    if (o.override) return { exit: 'procedural', why: 'Exit preset preview: ' + o.override };
+    if (m && m.exit === 'native' && validate(m).ok) return { exit: 'native', why: 'the registry asks for it and the manifest is a native-exit pack' };
+    return { exit: 'procedural', why: 'the registry asks for a native exit but the manifest is not a native-exit pack', error: true };
   }
   // LAB-4d · THE DEFAULTS A PLAY STARTS FROM, card-agnostic: tempo = the card's manifest tempo, else the registry's defaults block
   // (data/manifestations.json), else 1; FIZZLE = the exit preset's fizzle_ms, else the registry's defaults, else 600 ms. A session
@@ -101,7 +118,7 @@
     if (!(o.dpr >= 2)) return { rung: 256, why: 'devicePixelRatio ' + (o.dpr || 1) + ' — 256 px cells cover the drawn size' };
     return { rung: 512, why: 'GPU (' + o.backend + ') · devicePixelRatio ' + o.dpr + (typeof o.deviceMemory === 'number' ? ' · ' + o.deviceMemory + ' GB' : ' · no memory hint') };
   }
-  var OUT = { validate: validate, defaultsFor: defaultsFor, forRung: forRung, rungsOf: rungsOf, decodedBytes: decodedBytes, pickRung: pickRung, PHASES: PHASES };
+  var OUT = { validate: validate, exitMode: exitMode, defaultsFor: defaultsFor, forRung: forRung, rungsOf: rungsOf, decodedBytes: decodedBytes, pickRung: pickRung, PHASES: PHASES };
   root.ActorManifest = OUT;
   if (typeof module !== 'undefined' && module.exports) module.exports = OUT;
 })(typeof window !== 'undefined' ? window : this);
