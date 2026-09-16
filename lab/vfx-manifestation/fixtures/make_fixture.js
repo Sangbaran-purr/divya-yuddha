@@ -111,6 +111,8 @@ const HERO_ENTRIES = {
           ruling: 'LAB-11 - a WAVE-1 hero, reached by NAME through the scenario deck: the draft filter hides wave cards from the random pool, but CARD_BY_NAME is built from every deck, so naming her is enough and no shim exists or is needed. A1 (the board is the truth): the Hero enters and nothing else changes (her copy fires at ROUND END, not on play)' },
   vritra: { card: 'Vritra', faction: 'asuras', deck: ['Vritra'].concat(ASURA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'vritra_play',
           ruling: 'LAB-11 - a WAVE-1 hero, reached by NAME through the scenario deck, no shim (see Mahishi). A1: the Hero enters and nothing else changes (his bind needs an enemy Unit; on an empty board it finds none)' },
+  garuda: { card: 'Garuda', faction: 'devas', deck: ['Garuda'].concat(DEVA_DECK.slice(0, 11)), oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'garuda_play',
+          ruling: 'LAB-12 - a WAVE-1 hero, reached by NAME through the scenario deck, no shim (the LAB-11 finding). A1 (the board is the truth): the Hero enters and nothing else changes - his cleanse strips Venom from friendly Units, and on an empty board there are none to strip' },
   varuna: { card: 'Varuna', faction: 'devas', deck: ['Varuna', 'Narada', 'Chandra Dev', 'Yama', 'Marut', 'Gandharva', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Vishwakarma', 'Agni'], oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'varuna_play',
            ruling: 'VFX-LAB-8 — the fourth character, the first native exit; A1 (the board is the truth): the Hero enters and nothing else changes (his passive limits the opponent\'s Astras; it changes no card on an empty board)' },
 };

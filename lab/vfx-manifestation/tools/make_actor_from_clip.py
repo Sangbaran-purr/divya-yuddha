@@ -111,6 +111,10 @@ CARDS = {
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 72), "settled": 0, "pivot": "feet",
                 "facing": "left", "aim": None, "feather": 8, "feather_bottom": 16, "engine_id": "vritra",
                 "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
+    "garuda":  {"label": "Garuda", "clip": "garuda/garuda_green.mp4", "emerge": (0, 39), "act": (40, 116), "tempo": None,   # LAB-12: ACT opens on the wing snap; only the empty frames f117-f120 are dropped - his dust tail is clean
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 41), "settled": 0, "pivot": "feet",
+                "facing": "left", "aim": None, "feather": 8, "engine_id": "garuda",
+                "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
 }
 CFG = None
 def configure(card):

@@ -759,6 +759,66 @@ Neither card carries a `travelScale` line: both are nova, and the LAB-9a nova sp
 
 S11 holds with room on both (their EMERGE cell counts predict zero lost cells at 30 Hz / tempo 1, against the LAB-8 bound of four). S21 holds: no frame moves either actor more than 3 px inside ACT, both seats, both rungs. A5 holds: one actor decoded at a time, 0 MB between plays.
 
+## LAB-12: Garuda — the hoverer, and an edge cut we chose not to feather
+
+The ninth actor and the third Wave-1 hero, by the template. He was expected to be the atlas stress case: his wingspan fills the frame, his wings cross the top edge repeatedly, and he hovers for the whole clip. Two of those three turned out to matter, and not the one we expected.
+
+### The pack
+
+| | |
+|---|---|
+| EMERGE | f000–f039 (40 cells) — the hover and the wind-up |
+| ACT | f040–f116 (77 cells) |
+| Contact | **f041, ACT cell 1 — nova** |
+| Exit | native, fade tail f107–f116 |
+| Dropped | f117–f120 — **empty frames only**, no content trim |
+| Pivot | **talon tips**, settled f000 → (944, 1063) |
+| Atlas | 4049×2757, 3282 KB, **42.6 MB** decoded · 256 rung 2034×1388, 1147 KB, **10.8 MB** |
+| Full / Fast | 7869 / 3934 ms |
+
+**The flap is the attack, and it is radial.** His wings snap explosively outward at f040–f042, shedding feathers up, left, right and down together — the feather spread stays 940–970 px on *both* sides of his centre through the whole stroke. Nothing in the clip drives toward an opponent, so a directed gust rule would have misread it; **nova** is right. Contact sits on **f041**, the single largest picture change in the clip (Δ 25.61 against 23.63 at f040 and 22.90 at f042) — the burst's birth, not its brightness peak at f062, following the Mahishi and Varuna precedent.
+
+**His tail is clean.** Matter runs 14.4k at f110 → 598 at f115 → 38 at f116 → 0. There is no Bali-blob class here and no content trim: the only dropped frames are the four empty ones.
+
+### The top edge: accepted, because the guard cannot be satisfied
+
+**42 of 121 frames put matter on row 0**, in three runs — f025–f042, f056–f070, f087–f095. At worst, more than half his span is cut:
+
+| f030 | f031 | f032 | f029 | f028 |
+|---|---|---|---|---|
+| 58.2% | 55.2% | 54.1% | 52.2% | 51.8% |
+
+The bottom-feather mechanism that protects Agni, Mahabali, Mahishi and Vritra requires the character **core** never to enter the band. Measured against the top edge on every frame, **Garuda's core sits on row 0 in 40 frames** — those are his wings, connected to his body, not stray feathers. A band deep enough to matter would fade the wings mid-stroke, in a third of the clip, exactly when they are the subject. **So the cut is accepted.** It is Kling's framing, not ours: the wings genuinely leave frame in the source, and the actor is honest to the clip. The standard 8 px feather, whose ramp is built from **all four edges**, remains his entire edge softening.
+
+**The same is true at the bottom, and it exposes a guard limitation worth recording.** His core touches the *bottom* edge in **48 frames** (f004–f020, f039–f051 and others) — so he carries no bottom feather either. But the tool's bottom guard measures `core_gap` on the **settled frame alone**, and f000 happens to be one of the frames where his core clears the edge by 20 px. Had a bottom feather been asked for, that single-frame guard would have **passed** and then faded his robe in 48 other frames. The guard is sound for a standing figure whose stance does not change; it is single-frame, and a card that moves through the edge can defeat it. Not fixed here — recorded.
+
+### The hover pivot
+
+**"Feet" resolves to his talon tips, and the existing rule finds them unmodified** — no new mechanism. On the settled frame f000 it returns **(944, 1063)**, which sits exactly on his claw tips, centred between both feet. His talons therefore land on the card's ground line like any other hero's feet.
+
+**f000 is the only safe settled frame**, and the reasoning matters more than the number:
+
+- from **f002** his robe sash hangs *below* the talons (lowest matter y1075 against their 1063), so the rule would anchor to cloth;
+- from about **f045** shed feathers drift below him — at f060 the lowest matter spans 1060 px of loose feathers, and a late settled frame would pin his pivot to something floating.
+
+**No `hoverLift` knob was added.** The hover reads from the clip's own motion: his talon line rises 1063 → 991 (f080) → 963 (f090), about 100 source px ≈ 23 board px at cellPx 448. He visibly lifts off during the play, so buying an offset would have paid for something the animation already gives. And as with Vritra, one pivot measured on one frame and reused cannot drift while he hovers.
+
+### The atlas was never the problem — memory was
+
+The premise going in was that his wingspan would break the 4096 ceiling. It does the opposite: a very wide trimmed box (1916 px) forces the *scale* down, which keeps cell area small. He fits at every rung, 512 included (16.3 Mpx estimated, ~3979 rows).
+
+The binding constraint is **A5**, whose budget line is drawn against the **256 rung** (~10 MB per match; the pilot sits at 11.5 MB). At cellPx 512 he would put **15.5 MB** on that rung — about 50% over. **cellPx 448** was ruled, and the real pack came in better than the estimate: **10.8 MB** on the 256 rung, the lowest figure of any card in the lab, under the pilot's own, while the 512 rung holds 42.6 MB for the ~8 s of a play.
+
+**The duration lever exists and is deliberately unused.** At 77 ACT cells he runs **7.87 s Full**, longer than Varuna's 7.2 s and Vritra's 6.96 s. Thinning alternate frames across the hover hold f072–f095 would bring him to 7.11 s and 10.5 MB, but that stretch is a live wing-beat (Δ 7–12 per frame), not a still hold, so thinning would show. 7.87 s is accepted for a Legendary.
+
+### Accepted defects
+
+- **The top-edge cut** (42 frames, worst f030 at 58.2% of his span) — unfeatherable, see above.
+- **The bottom-edge cut** (48 frames) — same reason, and the single-frame guard that would have hidden it is recorded above.
+- **He is symmetric** (mirror IoU 0.76–0.85 about his own centre), so his `facing: left` is cosmetic: mirroring him for the far seat is visually neutral. Recorded so nobody later reads the value as a claim about which way he looks.
+
+S11 predicted zero lost cells for a 40-cell EMERGE and the suite confirms it: all 117 cells draw in order, none repeated, at 30 Hz and under a 250 ms stall. S21 holds at 3 px. A5 returns to 0 MB between plays.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

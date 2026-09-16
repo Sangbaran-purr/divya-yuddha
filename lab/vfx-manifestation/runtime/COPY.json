@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "ad940f9e492ede80f47c042f7948cc2f557abef6",
+    "gameCommit": "c13ac059fcb7a77ab106d91b3bba77b7e6840ab6",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -163,6 +163,16 @@
       "to": "art/Asuras_Hero_Vritra_P6_rLegendary.png",
       "bytes": 465500,
       "sha256": "ca1ee71b56de9e1023e020495a06dcc9b8a17506bde566821d4de898f0720dea",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Devas_Hero_Garuda_P7_rLegendary.png",
+      "to": "art/Devas_Hero_Garuda_P7_rLegendary.png",
+      "bytes": 498961,
+      "sha256": "bc647ef0f4322b1eacc9a5ba8ae360eb5678d3bf75ece8a337c5f8871a90ba70",
       "px": {
         "w": 750,
         "h": 1050

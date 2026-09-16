@@ -1,0 +1,480 @@
+{
+  "fixture": "garuda_play",
+  "ruling": "LAB-12 - a WAVE-1 hero, reached by NAME through the scenario deck, no shim (the LAB-11 finding). A1 (the board is the truth): the Hero enters and nothing else changes - his cleanse strips Venom from friendly Units, and on an empty board there are none to strip",
+  "engine": {
+    "file": "src/engine.js",
+    "sha256": "3613706f3b736b3e367bfc063575902037b9b05e02ed1de9422bad7ee46520b9"
+  },
+  "seed": 1,
+  "attackerSeat": 1,
+  "defenderSeat": 0,
+  "realm": "mrityulok",
+  "scenario": {
+    "p0": "{p0}",
+    "p1": "{p1}",
+    "p0Faction": "asuras",
+    "p1Faction": "devas",
+    "p0Deck": [
+      "Meghnad",
+      "Asura Berserker",
+      "Kali Asura",
+      "Kalanemi",
+      "Bana Asura",
+      "Narakasura",
+      "Vibhishana",
+      "Ravana",
+      "Maricha",
+      "Tataka",
+      "Hiranyakashipu",
+      "Kumbhakarna"
+    ],
+    "p1Deck": [
+      "Garuda",
+      "Indra",
+      "Narada",
+      "Chandra Dev",
+      "Yama",
+      "Marut",
+      "Gandharva",
+      "Deva Soldier",
+      "Kubera",
+      "Urvashi",
+      "Brihaspati",
+      "Vishwakarma"
+    ],
+    "mulligan": 0
+  },
+  "setup": [],
+  "action": {
+    "seat": 1,
+    "type": "play",
+    "card": "Garuda",
+    "handIndex": 0,
+    "targetUid": null
+  },
+  "before": {
+    "round": 1,
+    "turn": 1,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "asuras",
+        "units": [],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 1,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 2,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 3,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 4,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 5,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 6,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 7,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 8,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 7
+          },
+          {
+            "uid": 9,
+            "id": "maricha",
+            "n": "Maricha",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 10,
+            "id": "tataka",
+            "n": "Tataka",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "devas",
+        "units": [],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 13,
+            "id": "garuda",
+            "n": "Garuda",
+            "t": "hero",
+            "r": "L",
+            "power": 7
+          },
+          {
+            "uid": 14,
+            "id": "indra",
+            "n": "Indra",
+            "t": "hero",
+            "r": "L",
+            "power": 7
+          },
+          {
+            "uid": 15,
+            "id": "saraswati",
+            "n": "Narada",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 16,
+            "id": "surya",
+            "n": "Chandra Dev",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 17,
+            "id": "yama",
+            "n": "Yama",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 18,
+            "id": "marut",
+            "n": "Marut",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 19,
+            "id": "gandharva",
+            "n": "Gandharva",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 20,
+            "id": "soldier",
+            "n": "Deva Soldier",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 21,
+            "id": "kubera",
+            "n": "Kubera",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 22,
+            "id": "urvashi",
+            "n": "Urvashi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "events": [
+    {
+      "round": 1,
+      "seq": 0,
+      "type": "play",
+      "sourceUid": 13,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Garuda",
+      "text": "{p1} plays Garuda"
+    }
+  ],
+  "log": [
+    "{p1} plays Garuda — King of All Birds.",
+    "Garuda spreads his wings — no venom to devour."
+  ],
+  "after": {
+    "round": 1,
+    "turn": 0,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "asuras",
+        "units": [],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 1,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 2,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 3,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 4,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 5,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 6,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 7,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 8,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 7
+          },
+          {
+            "uid": 9,
+            "id": "maricha",
+            "n": "Maricha",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 10,
+            "id": "tataka",
+            "n": "Tataka",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "devas",
+        "units": [],
+        "heroes": [
+          {
+            "uid": 13,
+            "id": "garuda",
+            "n": "Garuda",
+            "t": "hero",
+            "r": "L",
+            "power": 7,
+            "base": 7,
+            "eff": 7,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 14,
+            "id": "indra",
+            "n": "Indra",
+            "t": "hero",
+            "r": "L",
+            "power": 7
+          },
+          {
+            "uid": 15,
+            "id": "saraswati",
+            "n": "Narada",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 16,
+            "id": "surya",
+            "n": "Chandra Dev",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 17,
+            "id": "yama",
+            "n": "Yama",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 18,
+            "id": "marut",
+            "n": "Marut",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 19,
+            "id": "gandharva",
+            "n": "Gandharva",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 20,
+            "id": "soldier",
+            "n": "Deva Soldier",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 21,
+            "id": "kubera",
+            "n": "Kubera",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 22,
+            "id": "urvashi",
+            "n": "Urvashi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "diff": {
+    "entered": [
+      {
+        "uid": 13,
+        "id": "garuda",
+        "n": "Garuda",
+        "seat": 1,
+        "zone": "heroes",
+        "power": 7,
+        "eff": 7
+      }
+    ],
+    "left": [],
+    "changed": []
+  }
+}
