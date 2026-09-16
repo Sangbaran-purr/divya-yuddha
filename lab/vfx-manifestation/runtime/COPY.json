@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "c03be7f409da1c9972ab3d41eafa71df7e7dde10",
+    "gameCommit": "3833de035d1aff2db66e0baeb1d1dfaba74f7e02",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -113,6 +113,36 @@
       "to": "art/Devas_Hero_Varuna_P6_rEpic.png",
       "bytes": 433540,
       "sha256": "9ad94d99b0795cfb53df52dd3ada56eba27dd2b667e84d766f69ab8c667e6b75",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Devas_Hero_Agni_P5_rEpic.png",
+      "to": "art/Devas_Hero_Agni_P5_rEpic.png",
+      "bytes": 385650,
+      "sha256": "d9003b06024c8e6373e9114d0549731a90930e5ccc419bf0ba73e13cca469d52",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Asuras_Hero_Mahabali_P8_rLegendary.png",
+      "to": "art/Asuras_Hero_Mahabali_P8_rLegendary.png",
+      "bytes": 439576,
+      "sha256": "61bf6db608b8ef1c25795098ea45943aa40e9974a04bc9d7703e3254ff865f5c",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Asuras_Hero_Shukracharya_P5_rEpic.png",
+      "to": "art/Asuras_Hero_Shukracharya_P5_rEpic.png",
+      "bytes": 382328,
+      "sha256": "cd2fc718eeff51e7b0679ba82b065fd08c91c1ae8272688da1b2766c43fe6ce7",
       "px": {
         "w": 750,
         "h": 1050

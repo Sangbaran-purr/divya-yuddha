@@ -101,15 +101,22 @@ const HERO_ENTRIES = {
            ruling: 'VFX-LAB-6 — the second character, by the template; A1 (the board is the truth): the Hero enters and nothing else changes' },
   bali:  { card: 'Bali', faction: 'vanaras', deck: VANARA_DECK, oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'bali_play',
            ruling: 'VFX-LAB-7 — the third character, by the template; A1 (the board is the truth): the Hero enters and nothing else changes (Bali is engine id "hanuman"; his passive changes no card on an empty board)' },
+  agni: { card: 'Agni', faction: 'devas', deck: ['Agni'].concat(DEVA_DECK.slice(0, 11)), oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'agni_play',
+          ruling: 'VFX-LAB-9 — a launch character by the template, native exit; A1 (the board is the truth): the Hero enters and nothing else changes (his trigger waits for a Mantra)' },
+  mahabali: { card: 'Mahabali', faction: 'asuras', deck: ['Mahabali'].concat(ASURA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'mahabali_play',
+          ruling: 'VFX-LAB-9 — a launch character by the template, native exit; A1: the Hero enters and nothing else changes (his passive waits for a voluntary Pass)' },
+  shukracharya: { card: 'Shukracharya', faction: 'asuras', deck: ['Shukracharya'].concat(ASURA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'shukracharya_play',
+          ruling: 'VFX-LAB-9 — a launch character by the template, native exit; the engine id is "shukra" (the registry keys him by it, the folder and fixture stay "shukracharya"); his revive needs a fallen Unit in the discard, so on an empty board the Hero enters and nothing else changes' },
   varuna: { card: 'Varuna', faction: 'devas', deck: ['Varuna', 'Narada', 'Chandra Dev', 'Yama', 'Marut', 'Gandharva', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Vishwakarma', 'Agni'], oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'varuna_play',
            ruling: 'VFX-LAB-8 — the fourth character, the first native exit; A1 (the board is the truth): the Hero enters and nothing else changes (his passive limits the opponent\'s Astras; it changes no card on an empty board)' },
 };
-const buildIndra = (seat) => buildHeroEntry(HERO_ENTRIES.indra, seat), buildBali = (seat) => buildHeroEntry(HERO_ENTRIES.bali, seat), buildVaruna = (seat) => buildHeroEntry(HERO_ENTRIES.varuna, seat);
+const forEntry = (key) => (seat) => buildHeroEntry(HERO_ENTRIES[key], seat);   // LAB-9: one builder per registry entry
+const buildIndra = forEntry('indra'), buildBali = forEntry('bali'), buildVaruna = forEntry('varuna');
 
-module.exports = { build, buildIndra, buildBali, buildVaruna, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK };
+module.exports = { build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK };
 
 if (require.main === module) {
-  for (const [name, make] of [['meghnad', build], ['indra', buildIndra], ['bali', buildBali], ['varuna', buildVaruna]]) for (const seat of [0, 1]) {
+  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]))) for (const seat of [0, 1]) {
     const f = make(seat), out = path.join(__dirname, name + '_seat' + seat + '.json');
     fs.writeFileSync(out, JSON.stringify(f, null, 2) + '\n');
     console.log('wrote ' + path.relative(GAME, out) + ' — seed ' + f.seed + ', ' + f.events.length + ' events (' + f.events.map((e) => e.type).join(', ') + '), changed: ' +

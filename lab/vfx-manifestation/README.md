@@ -554,6 +554,80 @@ Varuna's clip ends in its own exit: the orb bursts over his body, he turns to wa
 6. **Contact on ACT's first cell.** A contact cue on ACT cell 0 arrives the same tick ACT starts, so the stage matched it against the last EMERGE pose and fired one cell early (f085). The stage now fires a contact only on a pose drawn in the watched phase. Meghnad, Indra and Bali contact later in ACT and are unchanged.
 7. **A slow device with no FIZZLE.** On a device that falls behind (30 Hz at tempo 1), the unreached cells used to play out in FIZZLE; with a native exit they would be cut at SETTLE, fade tail and all (105 of 121 drawn). A native-exit actor that is behind now finishes its remaining cells into SETTLE, one per frame, and goes on the frame after its last cell; the play's end still clears everything. **Owner ruling (2026-09-15): keep as built.** The actor finishes its remaining cells one per frame into SETTLE, with no skip-stepping. The bounded loss is accepted: at tempo 1 on a 30 Hz device SETTLE is too short to finish, and the play ends before f117–f120 (the last four fade-tail cells, at 33% alpha or less), so the thinnest mist cuts off. At the locked 0.6× default a 30 Hz device is not behind and draws all 121 cells. Suite check S11 allows exactly that loss and no more.
 
+## LAB-9: Agni, Mahabali and Shukracharya — three launch characters, all native exit
+
+Three more characters by the template, all on the native exit ruling B confirmed in LAB-8. Only two things needed code: a bottom-edge feather (with a guard) and a per-card contact strength. Everything else was data.
+
+### The clips and the audit
+
+| Card | Engine id | Card | Clip | EMERGE | ACT | Contact (nova) | Cells kept |
+|---|---|---|---|---|---|---|---|
+| Agni | `agni` | Deva Hero, Epic (P5) | `sources/agni/agni_green.mp4` | f000–f085 | f086–f120 | **f098**, ACT cell 12 — the engulfing burst begins | 121 of 121, no duplicates |
+| Mahabali | `mahabali` | Asura Hero, Legendary (P8) | `sources/mahabali/mahabali_green.mp4` | f000–f093 | f094–f120 | **f096**, ACT cell 2 — the flame engulfment | 112 of 121; 9 true duplicates dropped from his very still idle (f001, f017, f019, f021, f023, f025, f027, f029, f031) |
+| Shukracharya | **`shukra`** | Asura Hero, Epic (P5) | `sources/shukracharya/shukracharya_green.mp4` | f000–f063 | f064–f120 | **f064**, ACT cell 0 — the cast at his hand | 111 of 121 after the tail thinning |
+
+All three: 121 frames at 24 fps, 1916×1080, chroma green keyed from frame 0's corners, the bright matte, an 8 px side feather, a feet pivot, native exit with no FIZZLE, and a 10-cell fade tail. Shukracharya's engine id is `shukra` (the Bali case): the registry keys him by it, while his folder and fixture stay `shukracharya`. Mahabali's throne is part of the actor, so his pivot is the throne's base.
+
+### The atlases and the levers (A5)
+
+| Card | cellPx | Lever | 512 rung | On disk | Decoded | 256 rung |
+|---|---|---|---|---|---|---|
+| Agni | **384** | cells below the ceiling | 4047x3215 | 3.56 MB | 49.6 MB | 2042x1618, 1.26 MB, 12.6 MB |
+| Mahabali | **512** | none | 4088x3595 | 4.30 MB | 56.1 MB | 2048x1821, 1.28 MB, 14.2 MB |
+| Shukracharya | **448** | alternate frames dropped in f100–f120, then cells below the ceiling | 4078x3571 | 4.36 MB | 55.6 MB | 2016x1796, 1.50 MB, 13.8 MB |
+
+Agni is the widest performance (the fire ring spans the frame), so 512 px cells would have packed about 5984 rows against the 4096 ceiling; 448 was still over, and 384 fits. Shukracharya needed the thinning lever first, as ruled, and then 448. Mahabali fits at 512 because his idle is still enough that nine frames dedupe away.
+
+### The bottom-edge feather (new)
+
+Agni's and Mahabali's fire pools sit on the clip's own bottom edge, so the frame cuts them with a hard line. A per-card `feather_bottom` fades that edge, the same mechanism as the side feather. **The guard:** the band may never reach the character's core, measured on the standing frame (f000) with the matte read *before* the side feather.
+
+| Card | Band | The standing core stops | The clip's fire reaches the edge from |
+|---|---|---|---|
+| Agni | **22 px** (asked 24) | 24 px above the edge | f096 |
+| Mahabali | **24 px** (asked 24) | 26 px above the edge | f083 |
+
+Shukracharya has no bottom feather: his mist never pools on the edge.
+
+**A bug this found.** The first guard measured the matte *after* the 8 px side feather, whose own ramp fades the bottom rows — so it read the character's edge as 7 px from the frame and narrowed both bands to 5 px, about 1 px at cell scale. Reading the unfeathered standing frame gives the real gaps above.
+
+### The soft contact (new)
+
+A self-cast is not a strike. A manifest may now carry `contactStrength { flash, impulse }`, which scales the contact flash's length and radius and the camera impulse; an absent field means 1 and 1, so every earlier card is untouched. Shukracharya carries **{"flash": 0.5, "impulse": 0}**: half the flash, and no camera move at all (playback skips the impulse entirely at 0). The nova rule itself is unchanged.
+
+### The timelines, at the inherited 0.6x
+
+| Card | AWAKEN | EMERGE | ACT | SETTLE | Full | Fast | The ladder would give |
+|---|---|---|---|---|---|---|---|
+| Agni | 667 | 3633 | 2202 | 667 | **7169 ms** | 3584 ms | 3500 ms |
+| Mahabali | 667 | 3972 | 1698 | 667 | **7004 ms** | 3501 ms | 3500 ms |
+| Shukracharya | 667 | 2703 | 3587 | 667 | **7624 ms** | 3811 ms | 3500 ms |
+
+No FIZZLE on any of them: the clip carries its own exit, and the fade tail carries the last 10 cells to nothing.
+
+### Agni's split, and the slow-device bound (owner ruling, 2026-09-16)
+
+Agni's first split (ACT from f098) lost **nine** cells on a 30 Hz device at tempo 1, where the LAB-8 bound allows four, all at 33% alpha or less. EMERGE cells run at 39.4/s and ACT cells at 26.5/s, both fixed by the template's pace, so moving one frame from EMERGE to ACT buys about 12 ms — it takes a dozen moved frames to win back a single cell. Measured with the suite's own loop: ACT from f090 still loses 6, from f092 loses 7; only **ACT from f086** meets the bound.
+
+The owner ruled the split to f086 — where the ring is already collapsing, its brightness falling from 55k at f084 toward its 29k minimum at f091 — with contact unchanged at f098, now ACT cell 12. The bound itself was not widened and there is no skip-stepping.
+
+**Verified:** at 30 Hz and tempo 1 exactly four cells are lost (f117, f118, f119, f120 — at 33.3%, 22.2%, 11.1% and 0% alpha, all inside the fade tail); at the locked 0.6x default all 121 cells draw, at 30 Hz and at 60 Hz alike.
+
+### Known defects (accepted by the owner)
+
+1. **Mahabali's magenta smoke rim.** The green despill leaves magenta in the thinnest smoke, along its top edge, from about f100. The same artifact as Varuna's lilac rim.
+2. **Mahabali's floating crown fragments.** After the body is gone, a few gold crown pieces survive the matte above the fire (f105 onward) and drift alone.
+3. **Agni's plume takes a yellow-green cast** from about f104: despill cannot separate yellow fire from a green key, so the thinning column reads chartreuse.
+4. **Agni's and Mahabali's fire pools** are cut by the clip's bottom edge; the feather softens the cut but cannot invent what the frame never filmed.
+5. **Shukracharya's mist column arrives late** (f093 onward), so his ACT is a long, quiet dissolution after the cast at f064 — by design for a self-cast, but it is the slowest of the three.
+
+### Template gaps (code these three needed)
+
+1. **The bottom-edge feather and its guard** (as ruled), plus the guard bug above.
+2. **`contactStrength`** (as ruled): validated in `lib/manifest.js`, applied in `lib/playback.js`, written by the pack tool, and checked by the suite.
+3. **The exit readout read the stage, not the plan.** `stage.stats().exit` keeps the last dissolve it recorded, so a native-exit play that followed a procedural one (Bali, then Varuna or these three) showed that card's dissolve in the readout — "Vanara dissolve · GPU filter" over a play that ran no dissolve at all. The readout now reads the plan first: a native exit says so. The plan, the phases and the stage were always correct; only the lab page's readout lied. `stage.stats().exit` was stale in the same way — it kept the last dissolve it had recorded — so a play now clears it as it spawns, and that field agrees with the readout.
+4. Nothing else. The three cards are otherwise three `CARDS` entries, three registry entries and three `HERO_ENTRIES` lines — data only.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

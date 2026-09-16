@@ -47,13 +47,15 @@
             var who = actor;
             var hit = function () {
               if (!who.pose) return;
-              var q = who.pose, h = who.pl.height;
+              var q = who.pose, h = who.pl.height, mf = who.art && who.art.manifest;
+              // LAB-9: the card's contact strength scales the flash (its length and its radius) and the camera impulse; a self-cast may set impulse 0
+              var st = (root.ActorManifest || require('./manifest.js')).contactStrength(mf), flashMs = Math.max(1, Math.round(c.flashMs * st.flash)), px = c.impulsePx * st.impulse;
               env.stage.hitstop(c.hitstopMs);
               if (env.sound) env.sound('contact');   // LAB-5: the strike, on the frame the contact cell is drawn
               // LAB-8 · contact rule "nova": a radial flash from the actor's centre; every other rule: the directional flash toward the target
-              if (who.art && who.art.manifest && who.art.manifest.contactRule === 'nova') env.stage.flash(q.x, q.feetY - h * 0.5, h * 0.9, 0, c.flashMs, 'radial');
-              else env.stage.flash(q.x, q.feetY - h * 0.55, h * 0.9, who.pl.dirY, c.flashMs);   // the flash and the impulse point at the true target (dirY), whatever way the action is drawn
-              env.stage.impulse(who.pl.dirY, c.impulsePx, c.impulseMs);
+              if (mf && mf.contactRule === 'nova') env.stage.flash(q.x, q.feetY - h * 0.5, h * 0.9 * st.flash, 0, flashMs, 'radial');
+              else env.stage.flash(q.x, q.feetY - h * 0.55, h * 0.9 * st.flash, who.pl.dirY, flashMs);   // the flash and the impulse point at the true target (dirY), whatever way the action is drawn
+              if (px > 0) env.stage.impulse(who.pl.dirY, px, c.impulseMs);   // LAB-9: impulse 0 = no camera move at all
             };
             // LAB-4a: a native actor's contact lands on its contact CELL — the stage fires it on the frame that cell is drawn
             if (c.contactCell != null && env.stage.onCell) env.stage.onCell(who, 'act', c.contactCell, hit); else hit();

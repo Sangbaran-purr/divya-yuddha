@@ -44,6 +44,12 @@ const BMAN = JSON.parse(fs.readFileSync(path.join(LAB, 'actors', 'bali', 'manife
 // LAB-8 · the fourth character, the first native exit
 const VFXF = [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', 'varuna_seat' + s + '.json'), 'utf8')));
 const VMAN = JSON.parse(fs.readFileSync(path.join(LAB, 'actors', 'varuna', 'manifest.json'), 'utf8'));
+// LAB-9 · three launch characters, all native exit (Shukracharya's engine id is "shukra"; his folder and fixture stay "shukracharya")
+const NINE = [['agni', 'agni'], ['mahabali', 'mahabali'], ['shukra', 'shukracharya']].map(([key, folder]) => ({
+  key, folder, M: JSON.parse(fs.readFileSync(path.join(LAB, 'actors', folder, 'manifest.json'), 'utf8')),
+  FX: [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', folder + '_seat' + s + '.json'), 'utf8'))),
+}));
+const AMAN = NINE[0].M, MMAN = NINE[1].M, SMAN = NINE[2].M;
 let JSDOM = null; try { ({ JSDOM } = require(require.resolve('jsdom', { paths: [path.join(WEB, 'tests')] }))); } catch (e) { JSDOM = null; }
 
 // ═══ F · THE FIXTURE ═══
@@ -93,6 +99,23 @@ console.log('── F · the fixture: the real engine, both seats ──');
      VFXF.every((f) => J(f.events.map((e) => [e.type, e.abilityName || null, e.text || null])) === J([['play', 'Varuna', '{p' + f.attackerSeat + '} plays Varuna']]) && f.diff.changed.length === 0 && f.diff.left.length === 0 &&
        f.diff.entered.length === 1 && f.diff.entered[0].id === 'varuna' && f.diff.entered[0].zone === 'heroes' && f.diff.entered[0].eff === 6 && f.diff.entered[0].seat === f.attackerSeat &&
        f.events[0].sourceUid === f.diff.entered[0].uid && f.before.seats[f.attackerSeat].faction === 'devas' && f.scenario['p' + f.attackerSeat + 'Deck'][0] === 'Varuna'), J(VFXF.map((f) => [f.events, f.diff])));
+  // LAB-9 · the three launch characters' fixtures, from the same Hero builder
+  const { forEntry } = require(path.join(LAB, 'fixtures', 'make_fixture.js'));
+  const NINE_F = [['agni', 'Agni', 'agni', 'devas', 5], ['mahabali', 'Mahabali', 'mahabali', 'asuras', 8], ['shukracharya', 'Shukracharya', 'shukra', 'asuras', 5]];
+  NINE_F.forEach(([entry, name, id, faction, power], k) => {
+    const FXn = NINE[k].FX;
+    for (const seat of [0, 1]) {
+      ok('F' + (15 + k * 2 + seat) + ' · LAB-9 · the ' + name + ' seat-' + seat + ' fixture is what a fresh engine run produces today (every field), on the engine it names',
+         J(FXn[seat]) === J(forEntry(entry)(seat)) && FXn[seat].engine.sha256 === liveEngineSha, 'differs from a fresh run');
+    }
+  });
+  ok('F21 · LAB-9 · each launch character\'s play, both seats: ONE event; the board difference is the Hero entering his own seat\'s heroes row at his printed power — Agni 5 (devas), Mahabali 8 (asuras), Shukracharya 5 (asuras, engine id "shukra"); nothing changed, nothing left, no number (Agni\'s trigger waits for a Mantra, Mahabali\'s passive for a voluntary Pass, Shukracharya\'s revive for a fallen Unit in the discard)',
+     NINE_F.every(([entry, name, id, faction, power], k) => NINE[k].FX.every((f) =>
+       J(f.events.map((e) => [e.type, e.abilityName || null, e.text || null])) === J([['play', name, '{p' + f.attackerSeat + '} plays ' + name]]) &&
+       f.diff.changed.length === 0 && f.diff.left.length === 0 && f.diff.entered.length === 1 && f.diff.entered[0].id === id && f.diff.entered[0].n === name &&
+       f.diff.entered[0].zone === 'heroes' && f.diff.entered[0].eff === power && f.diff.entered[0].seat === f.attackerSeat &&
+       f.events[0].sourceUid === f.diff.entered[0].uid && f.before.seats[f.attackerSeat].faction === faction && f.scenario['p' + f.attackerSeat + 'Deck'][0] === name)),
+     J(NINE.map((n) => n.FX.map((f) => [f.events, f.diff.entered]))));
 }
 
 // ═══ C · THE CONTEXT ═══
@@ -138,8 +161,15 @@ const CTX = FX.map((f) => CC.fromBatch(f)), ICTX = IFX.map((f) => CC.fromBatch(f
        return c.cardId === 'varuna' && !!REG[c.cardId] && c.cardType === 'hero' && c.rarity === 'E' && c.faction === 'devas' && c.seat === VFXF[s].attackerSeat && c.scope === 'manifest' && c.rest.length === 0 &&
               c.boardDiff.length === 1 && c.boardDiff[0].kind === 'enter' && c.boardDiff[0].to === 6 && c.boardDiff[0].evented === 0 &&
               J(CC.project(b.entry)) === J(CC.project(VFXF[s].after)) && J(b.settle) === J(VFXF[s].after) && J(b.final) === J(VFXF[s].after); }), J(VCTX));
+  ok('C9 · LAB-9 · the three launch characters\' contexts, both seats: each is a Hero of his own faction and rarity, in scope, keyed by his ENGINE id (Shukracharya is "shukra"); one ENTER with nothing evented, no rest of batch; ENTRY = SETTLE = FINAL = the engine\'s AFTER',
+     NINE.every((n, k) => n.FX.map((f) => CC.fromBatch(f)).every((c, s) => { const b = CC.boards(c, n.FX[s].before, n.FX[s].after);
+       return c.cardId === n.key && !!REG[c.cardId] && c.cardType === 'hero' && c.rarity === ['E', 'L', 'E'][k] && c.faction === ['devas', 'asuras', 'asuras'][k] && c.scope === 'manifest' && c.rest.length === 0 &&
+              c.boardDiff.length === 1 && c.boardDiff[0].kind === 'enter' && c.boardDiff[0].evented === 0 &&
+              J(CC.project(b.entry)) === J(CC.project(n.FX[s].after)) && J(b.settle) === J(n.FX[s].after) && J(b.final) === J(n.FX[s].after); })),
+     J(NINE.map((n) => n.FX.map((f) => CC.fromBatch(f).cardId))));
 }
 
+const LADDER = {};   // (label helper — the plan reports the ladder itself)
 // ═══ T · THE DIRECTOR ═══
 console.log('\n── T · the Director ──');
 {
@@ -291,6 +321,26 @@ console.log('\n── T · the Director ──');
        modes.varuna.exit === 'native' && modes.preview.exit === 'procedural' && modes.indra.exit === 'procedural' && modes.meghnad.exit === 'procedural' && modes.notPacked.exit === 'procedural' && modes.notPacked.error === true,
        J({ full: full.timeline, fast: fast.timeline, modes }));
   }
+  {
+    // LAB-9 · the three launch characters' plans: the same native exit, each with his own audited contact cell
+    const REG9 = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'manifestations.json'), 'utf8')), FFX9 = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DS9 = lib('dissolve');
+    NINE.forEach((n, k) => {
+      const CTXn = n.FX.map((f) => CC.fromBatch(f)), M9 = n.M;
+      const nt = { fps: M9.fps, emerge: M9.phases.emerge.length, act: M9.phases.act.length, contact: M9.contact, emergeMs: M9.phaseMs.emerge, actMs: M9.phaseMs.act };
+      const d9 = MAN.defaultsFor({ manifest: M9, registry: REG9, preset: DS9.pick(FFX9, CTXn[0].faction, '') }), ex = MAN.exitMode({ entry: REG9.cards[n.key], manifest: M9 });
+      const planN = (seat, m) => DIR.plan(CTXn[seat], { mode: m, prior: 0, timing: nt, tempo: d9.tempo, fizzleMs: d9.fizzleMs, exit: ex.exit });
+      const okp = [0, 1].every((seat) => ['full', 'fast'].every((m) => {
+        const kk = m === 'fast' ? 0.5 : 1, p = planN(seat, m), C = p.phases.find((x) => x.name === 'ACT'), S = p.phases.find((x) => x.name === 'SETTLE'), c = p.cues.find((x) => x.cue === 'contact');
+        return p.exit === 'native' && p.phases.map((x) => x.name).join(',') === 'AWAKEN,EMERGE,ACT,SETTLE' && p.timeline.fizzle === 0 && !p.cues.some((x) => x.cue === 'exit-fx' || (x.cue === 'actor-phase' && x.phase === 'fizzle')) &&
+               c.contactCell === M9.contact && C.t1 === S.t0 && p.cues.find((x) => x.cue === 'actor-gone').t === S.t0 &&
+               J([p.timeline.awaken, p.timeline.emerge, p.timeline.act, p.timeline.settle]) === J([Math.round(400 / d9.tempo * kk), Math.round(nt.emergeMs / d9.tempo * kk), Math.round(nt.actMs / d9.tempo * kk), Math.round(400 / d9.tempo * kk)]);
+      }));
+      const full = planN(0, 'full'), fast = planN(0, 'fast'), st = MAN.contactStrength(M9);
+      ok('T' + (17 + k) + ' · LAB-9 · ' + REG9.cards[n.key].name.toUpperCase() + '\'S PLAN, both seats, Full and Fast: native timing (' + nt.emerge + ' EMERGE + ' + nt.act + ' ACT cells in ' + nt.emergeMs + ' + ' + nt.actMs + ' ms at tempo 1), tempo ' + d9.tempo + ' and the native exit inherited from the registry — no FIZZLE, no exit cue, the actor gone at SETTLE; contact on ACT cell ' + M9.contact + ' = f' + String(M9.cells[M9.phases.act[M9.contact]].src).padStart(3, '0') + ' with strength ' + J(st) + ' — Full ' + [full.timeline.awaken, full.timeline.emerge, full.timeline.act, full.timeline.settle].join(' / ') + ' = ' + full.total + ' ms, Fast ' + fast.total + ' ms; the ' + (LADDER[M9.cardId] || '') + 'ladder would give ' + full.ladderMs + ' ms',
+         okp && ex.exit === 'native' && M9.tempo === undefined && d9.tempo === 0.6 && d9.from.tempo === 'defaults' && Math.abs(fast.total - full.total / 2) <= 3,
+         J({ timeline: full.timeline, contact: M9.contact, exit: ex }));
+    });
+  }
   const txt = DIR.formatPlan(P(0, 'full'));
   ok('T10 · the Plan readout is the timeline as text: the header, every phase, every cue in time order with its numbers', /Meghnad · seat 0 → toward seat 1 · mode full/.test(txt) && /AWAKEN 0–400/.test(txt) && /2800 ms  settle Meghnad enters at 6, Indra 7→5 \(−2\)/.test(txt) && /queue buff · Chaos Surge \+1/.test(txt) && txt.split('\n').length === P(0, 'full').cues.length + 3 && /Timeline \(ms\): AWAKEN 400 · EMERGE 600 · ACT 1200 · contact \+696 \(at 1696\) · FIZZLE 600 · SETTLE 400 · total 3200 · tempo 1\.00×/.test(txt), txt.split('\n').slice(0, 4).join(' | '));
 }
@@ -424,6 +474,25 @@ templateActor({ label: 'M9 · LAB-8 · VARUNA BY THE TEMPLATE (engine id "varuna
      VMAN.cellMax === 512 && VMAN.cellPx === Math.max(...VMAN.cells.map((c) => Math.max(c.w, c.h))) && VMAN.audit.atlasLever === 'none' && VMAN.mv === false && VMAN.vignette === false && VMAN.blend === 'normal' && VMAN.alpha === 'straight' &&
      [MANIFEST, IMAN, BMAN].every((m) => m.exit === undefined && m.contactRule === undefined && m.cellPx === undefined && Array.isArray(m.phases.fizzle)), J({ errors: v.errors, withFizzle: withFizzle.errors, shortAct: shortAct.errors, lever: VMAN.audit.atlasLever }));
 }
+templateActor({ label: 'M11 · LAB-9 · AGNI BY THE TEMPLATE (native exit, nova on the burst)', M: AMAN, folder: 'agni', cardId: 'agni', clip: 'agni_green.mp4', sha: '07e0abc7ee58', chroma: 'green',
+  emerge: [0, 85], act: [86, 120], contactIn: [98, 98], contact: 'nova', contactNote: 'nova: the engulfing burst begins, the audited frame', aim: null, facing: 'left', keyChannel: 'G' });
+templateActor({ label: 'M12 · LAB-9 · MAHABALI BY THE TEMPLATE (the throne is part of the actor)', M: MMAN, folder: 'mahabali', cardId: 'mahabali', clip: 'mahabali_green.mp4', sha: '7968a5d9652c', chroma: 'green',
+  emerge: [0, 93], act: [94, 120], contactIn: [96, 96], contact: 'nova', contactNote: 'nova: the flame engulfment, the audited frame', aim: null, facing: 'right', keyChannel: 'G' });
+templateActor({ label: 'M13 · LAB-9 · SHUKRACHARYA BY THE TEMPLATE (engine id "shukra", a SELF-CAST)', M: SMAN, folder: 'shukracharya', cardId: 'shukra', clip: 'shukracharya_green.mp4', sha: 'fab80598f0fd', chroma: 'green',
+  emerge: [0, 63], act: [64, 120], contactIn: [64, 64], contact: 'nova', contactNote: 'nova: the cast at his hand, the audited frame', aim: null, facing: 'left', keyChannel: 'G' });
+{
+  // LAB-9 · the soft contact, the bottom feather and the atlas levers
+  const soft = MAN.contactStrength(SMAN), plain = MAN.contactStrength(AMAN);
+  const badS = MAN.validate(Object.assign({}, SMAN, { contactStrength: { flash: 0.5 } })), badS2 = MAN.validate(Object.assign({}, SMAN, { contactStrength: { flash: 9, impulse: 0 } }));
+  const fb = NINE.map((n) => [n.folder, (n.M.audit || {}).featherBottom || null]);
+  const lever = NINE.map((n) => [n.folder, n.M.cellPx, n.M.audit.atlasLever, n.M.atlasSize]);
+  ok('M14 · LAB-9 · THE SOFT CONTACT, THE BOTTOM FEATHER AND THE ATLAS LEVERS: Shukracharya\'s self-cast carries contactStrength ' + J(soft) + ' (half flash, no impulse) and every other card inherits ' + J(plain) + ' (validate refuses a partial or out-of-range strength); Agni and Mahabali carry a guarded bottom-edge feather ' + J(fb.map((x) => x[1] && [x[0], x[1].px + ' px', 'core gap ' + x[1].coreGapMin + ' px'])) + ' and Shukracharya none; the levers each pack needed: ' + J(lever),
+     soft.flash === 0.5 && soft.impulse === 0 && plain.flash === 1 && plain.impulse === 1 && !badS.ok && !badS2.ok &&
+     [AMAN, MMAN].every((m) => { const f = m.audit.featherBottom; return !!f && f.px > 0 && f.px < f.coreGapMin && f.coreGapMin > 0; }) && !(SMAN.audit || {}).featherBottom &&
+     NINE.every((n) => n.M.cellPx === Math.max.apply(null, n.M.cells.map((c) => Math.max(c.w, c.h))) && n.M.cellMax === 512 && n.M.atlasSize.w <= 4096 && n.M.atlasSize.h <= 4096 && MAN.validate(n.M).ok && n.M.exit === 'native' && n.M.contactRule === 'nova') &&
+     [MANIFEST, IMAN, BMAN, VMAN].every((m) => m.contactStrength === undefined && !(m.audit || {}).featherBottom),
+     J({ soft, fb, lever }));
+}
 {
   const at = (rev, p) => cp.execFileSync('git', ['show', rev + ':lab/vfx-manifestation/' + p], { cwd: GAME, maxBuffer: 64 * 1024 * 1024 });
   const atlases = ['meghnad', 'indra'].map((c) => [c, ['atlas.webp', 'atlas_256.webp'].every((f) => at('41ea143', 'actors/' + c + '/' + f).equals(fs.readFileSync(path.join(LAB, 'actors', c, f))))]);
@@ -447,7 +516,7 @@ console.log('\n── K · the sources rule (A7) ──');
   const raw = tracked.filter((p) => (p.indexOf('lab/') === 0 || p.indexOf('assets/') === 0) && (/(^|\/)(frames|matted|sources|clips_raw)\//.test(p) || /(^|\/)frame_\d+\.(png|jpe?g|webp)$/i.test(p) || /(^|\/)f\d{3}\.png$/.test(p)));
   ok('K2 · no raw or matted frame, and nothing from sources/, is tracked anywhere under lab/ or assets/ (' + raw.length + ')', raw.length === 0, raw.slice(0, 5).join(', '));
   const ignored = (p) => { try { cp.execFileSync('git', ['check-ignore', '-q', p], { cwd: GAME }); return true; } catch (e) { return false; } };
-  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg', 'lab/vfx-manifestation/sources/varuna/varuna_green.mp4', 'lab/vfx-manifestation/sources/varuna/varuna-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/varuna/f086.png', 'lab/vfx-manifestation/frames/varuna_contact_sheet.jpg'].concat(fs.readdirSync(path.join(LAB, 'sources')).filter((n) => fs.existsSync(path.join(LAB, 'sources', n, n + '-isolated-kling-source-v1.png'))).map((n) => 'lab/vfx-manifestation/sources/' + n + '/' + n + '-isolated-kling-source-v1.png'));   // every identity master staged in sources/
+  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg', 'lab/vfx-manifestation/sources/varuna/varuna_green.mp4', 'lab/vfx-manifestation/sources/varuna/varuna-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/varuna/f086.png', 'lab/vfx-manifestation/frames/varuna_contact_sheet.jpg', 'lab/vfx-manifestation/sources/agni/agni_green.mp4', 'lab/vfx-manifestation/sources/mahabali/mahabali_green.mp4', 'lab/vfx-manifestation/sources/shukracharya/shukracharya_green.mp4'].concat(fs.readdirSync(path.join(LAB, 'sources')).filter((n) => fs.existsSync(path.join(LAB, 'sources', n, n + '-isolated-kling-source-v1.png'))).map((n) => 'lab/vfx-manifestation/sources/' + n + '/' + n + '-isolated-kling-source-v1.png'));   // every identity master staged in sources/
   const present = must.filter((p) => fs.existsSync(path.join(GAME, p)));
   const strayDir = path.join(GAME, 'assets', 'vfx', 'experimental'), stray = [];
   (function walk(d) { if (!fs.existsSync(d)) return; fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else if (/\.(png|jpe?g|webp|mp4|mov)$/i.test(n)) stray.push(rel(q)); }); })(strayDir);
@@ -490,7 +559,7 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
      topEdge.height === H_FIXED && Math.abs(topEdge.shift - (H_FIXED - base({ y: 10, h: 90 }))) < 1e-9 && Math.abs(SM.extentAt(topEdge, 0).top) < 1e-9 && topEdge.travel.y > 0 && !SM.touchesBand(topEdge, { x: 163, y: 320, w: 64, h: 90 }) &&
      tight.height === H_FIXED && tight.anchor.y === 170 - SM.GAP && tight.travel.y === 0 && !SM.touchesBand(tight, { x: 163, y: 170, w: 64, h: 90 }) &&
      lowBand.height === H_FIXED && Math.abs(SM.extentAt(lowBand, 0).top - (10 + 150 + SM.GAP)) < 1e-9 && lowBand.shift > 0 && lowBand.travel.y === 0 && !SM.touchesBand(lowBand, { x: 163, y: 10, w: 64, h: 150 }) &&
-     !/flipY/.test(STAGE_SRC) && !/Math\.min\(want|room \* 0\.84|\* 0\.95\)/.test(STAGE_SRC) && /env\.stage\.flash\(q\.x, q\.feetY - h \* 0\.55, h \* 0\.9, who\.pl\.dirY, c\.flashMs\)/.test(STAGE_SRC) && /env\.stage\.impulse\(who\.pl\.dirY, c\.impulsePx, c\.impulseMs\)/.test(STAGE_SRC),
+     !/flipY/.test(STAGE_SRC) && !/Math\.min\(want|room \* 0\.84|\* 0\.95\)/.test(STAGE_SRC) && /env\.stage\.flash\(q\.x, q\.feetY - h \* 0\.55, h \* 0\.9 \* st\.flash, who\.pl\.dirY, flashMs\)/.test(STAGE_SRC) && /env\.stage\.impulse\(who\.pl\.dirY, px, c\.impulseMs\)/.test(STAGE_SRC),
      J({ seats: [0, 1].map((s) => placeI(s)), topEdge, tight, lowBand }));
   const src = fs.readFileSync(path.join(LAB, 'lib', 'actorstage.js'), 'utf8');
   ok('S4 · NORMAL BLENDING (A4): the actor is drawn source-over from its atlas cells (Canvas 2D) or as a blendMode "normal" sprite (Pixi); no additive, screen or brightness-to-alpha anywhere in the stage',
@@ -511,9 +580,10 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
                                        : 'no number at all — ' + name + ' only enters, so SETTLE lands the board with him on it and nothing floats' };
     });
     ok('S4b · LAB-7 · the stage suite and its gate run for EVERY registry card with an actor, built from data/manifestations.json: ' + CARDS.map((c) => c.name + ' (' + c.id + ', ' + c.faction + ', ' + (c.exit === 'native' ? 'the native exit' : 'the ' + c.presetName + ' exit') + (c.exempt ? ', ladder-exempt' : '') + ')').join(' · '),
-       J(CARDS.map((c) => c.id)) === J(['meghnad', 'indra', 'hanuman', 'varuna']) && J(CARDS.map((c) => c.exit)) === J(['procedural', 'procedural', 'procedural', 'native']) && CARDS.every((c) => c.M.cardId === c.id && c.FX.every((f) => f.diff.entered.some((x) => x.id === c.id))) && J(CARDS[0].expectFloats(0)) === J([{ uid: FX[0].before.seats[FX[0].defenderSeat].heroes[0].uid, delta: -2 }]), J(CARDS.map((c) => [c.id, c.faction, c.expectFloats(0)])));
+       J(CARDS.map((c) => c.id)) === J(['meghnad', 'indra', 'hanuman', 'varuna', 'agni', 'mahabali', 'shukra']) && J(CARDS.map((c) => c.exit)) === J(['procedural', 'procedural', 'procedural', 'native', 'native', 'native', 'native']) && CARDS.every((c) => c.M.cardId === c.id && c.FX.every((f) => f.diff.entered.some((x) => x.id === c.id))) && J(CARDS[0].expectFloats(0)) === J([{ uid: FX[0].before.seats[FX[0].defenderSeat].heroes[0].uid, delta: -2 }]), J(CARDS.map((c) => [c.id, c.faction, c.expectFloats(0)])));
     const ALLGATES = [];
     const stageSuite = (CARD) => {
+      const CARD_ST = MAN.contactStrength(CARD.M);   // LAB-9: a self-cast softens its flash and may forbid the camera impulse entirely
       function world(seat, backend, fxFn, wopts) {
         const dom = new JSDOM('<!doctype html><body><div id="field"><canvas id="actorunder"></canvas><canvas id="actorcanvas"></canvas><canvas id="actorgpu"></canvas><canvas id="actorover"></canvas></div></body>', { url: 'https://lab.test/', pretendToBeVisual: true, runScripts: 'outside-only' });
         const w = dom.window, calls = { draw: 0, clear: 0, ops: new Set(), cells: [], masks: [], uniformT: [], glowDraws: [], sounds: [], pulses: [], texDestroyed: 0, bitmapClosed: 0 };
@@ -574,8 +644,8 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
           phase: { peak: cp2.peak, clean: clean(C), renders: C.renders.length },
         };
       });
-      ok(CARD.tag + 'S5 · A FULL MANIFESTATION on the stage, both seats: one live actor (never two; liveActors counts actors, liveSprites counts GPU sprites), the ACT\'s hit-stop, flash and camera impulse fire, the Asura exit throws embers, the actor is drawn from its cells; afterwards nothing survives (no actor, effect or camera offset) and the final board equals the engine\'s AFTER',
-         results.every((x) => x.full.peak.actors === 1 && x.full.peak.frozen && x.full.peak.flash && x.full.peak.transform && x.full.embers >= 3 && x.full.draws > 50 && x.full.clean && x.full.done && x.full.done.equalsFinal && x.full.ops.every((o) => o === 'source-over')), J(results.map((x) => x.full)));
+      ok(CARD.tag + 'S5 · A FULL MANIFESTATION on the stage, both seats: one live actor (never two; liveActors counts actors, liveSprites counts GPU sprites), the ACT\'s hit-stop and flash fire' + (CARD_ST.impulse > 0 ? ' and so does the camera impulse' : ' and the camera NEVER moves (contactStrength impulse 0 — a self-cast)') + ', the Asura exit throws embers, the actor is drawn from its cells; afterwards nothing survives (no actor, effect or camera offset) and the final board equals the engine\'s AFTER',
+         results.every((x) => x.full.peak.actors === 1 && x.full.peak.frozen && x.full.peak.flash && x.full.peak.transform === (CARD_ST.impulse > 0) && x.full.embers >= 3 && x.full.draws > 50 && x.full.clean && x.full.done && x.full.done.equalsFinal && x.full.ops.every((o) => o === 'source-over')), J(results.map((x) => x.full)));
       ok(CARD.tag + 'S6 · NUMBERS ONLY AT SETTLE, both seats: ' + CARD.numbersText,
          results.every((x) => { const e = CARD.expectFloats(x.seat), sr = x.full.settleRender;
            return e.length ? x.full.firstFloatT != null && x.full.firstFloatT >= x.full.settleT0 && J(x.full.floats) === J(e)
@@ -659,8 +729,8 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
       const cvFull = EX.find((x) => x.backend === 'canvas2d' && x.mode === 'full'), glFull = EX.find((x) => x.backend === 'webgl' && x.mode === 'full');
       const nativeOk = (x) => !x.exit && x.fizzleMs === 0 && !x.phases.some((p) => p.name === 'FIZZLE') && x.peakParts === 0 && !x.sawFilter && x.masks.length === 0 && x.uniformT.length === 0 &&
         x.settleLag != null && x.settleLag >= 0 && x.settleLag < 17 && x.clean && !!x.done && x.done.equalsFinal && x.sounds.every((q) => q.n !== 'exit');
-      if (CARD.exit === 'native') ok(CARD.tag + 'S12 · LAB-8 · THE NATIVE EXIT on every backend, Full and Fast: no FIZZLE phase and no procedural dissolve — no mask, no filter, no threshold, no ember, no smoke, no exit sound; the clip\'s own exit (its fade tail) plays out in ACT and the board settles within a frame of ACT\'s end, equal to the engine\'s AFTER; afterwards 0 actors, sprites and particles — ' + EX.map((x) => x.backend + ' ' + x.mode + ': settle +' + Math.round(x.settleLag) + ' ms').join(' | '),
-         EX.every(nativeOk), J(EX.map((x) => ({ b: x.backend, m: x.mode, exit: x.exit, fizzleMs: x.fizzleMs, settleLag: x.settleLag, clean: x.clean, peakParts: x.peakParts, masks: x.masks.length, uniforms: x.uniformT.length }))));
+      if (CARD.exit === 'native') ok(CARD.tag + 'S12 · LAB-8 · THE NATIVE EXIT on every backend, Full and Fast: no FIZZLE phase and no procedural dissolve — no mask, no filter, no threshold, no ember, no smoke, no exit sound; the clip\'s own exit (its fade tail) plays out in ACT and the board settles within a frame of ACT\'s end, equal to the engine\'s AFTER; afterwards 0 actors, sprites and particles; and a play starts with no exit recorded, so stats().exit never reports the previous card\'s dissolve — ' + EX.map((x) => x.backend + ' ' + x.mode + ': settle +' + Math.round(x.settleLag) + ' ms').join(' | '),
+         EX.every(nativeOk) && /this\.stat\.lastExit = null;/.test(fs.readFileSync(path.join(LAB, 'lib', 'actorstage.js'), 'utf8')), J(EX.map((x) => ({ b: x.backend, m: x.mode, exit: x.exit, fizzleMs: x.fizzleMs, settleLag: x.settleLag, clean: x.clean, peakParts: x.peakParts, masks: x.masks.length, uniforms: x.uniformT.length }))));
       else ok(CARD.tag + 'S12 · THE DISSOLVE EXIT on every backend, Full and Fast: ' + CARD.name + ' (faction "' + EX[0].faction + '") plays the ' + CARD.presetName + ' preset; the held cell erodes over FIZZLE (600 ms Full, 300 ms Fast) — a GPU filter on WebGPU and WebGL, a Canvas 2D mask — with embers off the front (fewer on Canvas 2D)' + (FFXD[CARD.faction].dissolve.smoke === false ? ' and no smoke (the preset sets none)' : ' and smoke behind it') + '; afterwards 0 actors, 0 GPU sprites, 0 particles, no effect, no camera offset, and the board settles within a frame of FIZZLE\'s end, equal to the engine\'s AFTER — ' + showX(EX),
          EX.every(exitOk) && EX[0].faction === CARD.faction && cvFull.exit.embers < glFull.exit.embers,
          J(EX.map((x) => ({ b: x.backend, m: x.mode, exit: x.exit, fizzleMs: x.fizzleMs, settleLag: x.settleLag, clean: x.clean, peakParts: x.peakParts, peakSprites: x.peakSprites, sawFilter: x.sawFilter, masks: x.masks.length, uniforms: x.uniformT.length }))));
@@ -751,15 +821,19 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
       if (CARD.M.contactRule === 'nova') {
         const NOVA = [0, 1].reduce((all, seat) => all.concat(BACKENDS.map((b) => {
           const W = world(seat, b), got = [], f0 = W.stage.flash.bind(W.stage), i0 = W.stage.impulse.bind(W.stage);
-          W.stage.flash = (x, y, r, dirY, dur, shape) => { const a = W.stage.actors[0], q = a && a.pose; f0(x, y, r, dirY, dur, shape); got.push({ kind: 'flash', x, y, dirY, shape, cx: q && q.x, cy: q && q.feetY - a.pl.height * 0.5, cell: q && q.cellIndex, radial: W.stage.fx[W.stage.fx.length - 1].radial }); };
+          W.stage.flash = (x, y, r, dirY, dur, shape) => { const a = W.stage.actors[0], q = a && a.pose; f0(x, y, r, dirY, dur, shape); got.push({ kind: 'flash', x, y, r: r, dur: dur, h: a && a.pl.height, dirY, shape, cx: q && q.x, cy: q && q.feetY - a.pl.height * 0.5, cell: q && q.cellIndex, radial: W.stage.fx[W.stage.fx.length - 1].radial }); };
           W.stage.impulse = (dirY, px, dur) => { i0(dirY, px, dur); got.push({ kind: 'impulse', dirY }); };
           const R = runWorld(W, { mode: 'full', timing: NT, tempo: 0.6 });
-          return { seat, b, got, dirY: R.plan.cues.find((x) => x.cue === 'contact') ? (seat === 0 ? -1 : 1) : null, clean: clean(W) };
+          const cc = R.plan.cues.find((x) => x.cue === 'contact');
+          return { seat, b, got, flashMs: cc.flashMs, impulsePx: cc.impulsePx, clean: clean(W) };
         })), []);
         const CI = CARD.M.phases.act[CARD.M.contact];
-        ok(CARD.tag + 'S20 · LAB-8 · THE NOVA: on both seats and every backend the contact flash is RADIAL (round, no lean) and starts at the ACTOR\'S CENTRE — the pose\'s x and half its height above the feet — on the frame the contact cell (' + nameOf(CI) + ') is drawn; the camera impulse still aims at the true target (up from the player\'s seat, down from the top seat — the A1 clamp untouched)',
+        const ST = MAN.contactStrength(CARD.M);
+        ok(CARD.tag + 'S20 · LAB-8/9 · THE NOVA' + (ST.flash === 1 && ST.impulse === 1 ? '' : ', SOFTENED ' + J(ST)) + ': on both seats and every backend the contact flash is RADIAL (round, no lean) and starts at the ACTOR\'S CENTRE — the pose\'s x and half its height above the feet — on the frame the contact cell (' + nameOf(CI) + ') is drawn, its length and radius scaled by contactStrength.flash (' + ST.flash + '); the camera impulse is scaled by contactStrength.impulse (' + ST.impulse + (ST.impulse === 0 ? ' — a self-cast moves the camera not at all' : ' — it still aims at the true target, up from the player\'s seat and down from the top seat, the A1 clamp untouched') + ')',
            NOVA.every((x) => { const fl = x.got.filter((g) => g.kind === 'flash'), im = x.got.filter((g) => g.kind === 'impulse');
-             return fl.length === 1 && fl[0].shape === 'radial' && fl[0].radial === true && fl[0].dirY === 0 && fl[0].x === fl[0].cx && Math.abs(fl[0].y - fl[0].cy) < 1e-9 && fl[0].cell === CI && im.length === 1 && im[0].dirY === (x.seat === 0 ? -1 : 1) && x.clean; }),
+             return fl.length === 1 && fl[0].shape === 'radial' && fl[0].radial === true && fl[0].dirY === 0 && fl[0].x === fl[0].cx && Math.abs(fl[0].y - fl[0].cy) < 1e-9 && fl[0].cell === CI &&
+               Math.abs(fl[0].r - fl[0].h * 0.9 * ST.flash) < 1e-9 && fl[0].dur === Math.max(1, Math.round(x.flashMs * ST.flash)) &&
+               im.length === (ST.impulse > 0 ? 1 : 0) && (ST.impulse === 0 || (im[0].dirY === (x.seat === 0 ? -1 : 1))) && x.clean; }),
            J(NOVA.map((x) => [x.seat, x.b, x.got])));
       }
 
@@ -928,9 +1002,10 @@ console.log('\n── P · the page ──');
   const missing = ids.filter((id) => PAGE.indexOf('id="' + id + '"') < 0);
   const order = ['../lib/boarddiff.js', '../lib/clashcontext.js', '../lib/director.js', '../lib/runner.js', '../lib/manifest.js', '../lib/stagemath.js', '../lib/dissolve.js', '../lib/labaudio.js', '../lib/actorstage.js', '../lib/playback.js', 'vfx.js', '../lab.js'].map((s) => PAGE.indexOf('<script src="' + s + '?v='));
   const fieldBlock = PAGE.slice(PAGE.indexOf('<div id="field"'), PAGE.indexOf('<div id="hand">'));
-  ok('P1 · the page: noindex, <base href="runtime/">, #field holding the effect and actor layers, the scripts in dependency order, every control (Play, the five phase replays, Skip, Fast-forward, match memory, mode, sides, renderer, clock) and every readout including Actor and Plan',
+  ok('P1 · the page: noindex, <base href="runtime/">, #field holding the effect and actor layers, the scripts in dependency order, every control (Play, the five phase replays, Skip, Fast-forward, match memory, mode, sides, renderer, clock) and every readout including Actor and Plan; the exit readout reads the PLAN (a native exit says so) and never the stage\'s last dissolve',
      /<meta name="robots" content="noindex, nofollow">/.test(PAGE) && /<base href="runtime\/">/.test(PAGE) && missing.length === 0 && order.every((i, k) => i > 0 && (k === 0 || i > order[k - 1])) &&
-     ['vfxcanvas', 'actorunder', 'actorcanvas', 'actorgpu', 'actorover', 'floatlayer'].every((id) => fieldBlock.indexOf('id="' + id + '"') > 0) && !/type="button" disabled/.test(PAGE) && /Object\.keys\(REG\)\.filter\(\(id\) => REG\[id\]\.manifest\)\.forEach/.test(fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8')), 'missing: ' + missing.join(', '));
+     ['vfxcanvas', 'actorunder', 'actorcanvas', 'actorgpu', 'actorover', 'floatlayer'].every((id) => fieldBlock.indexOf('id="' + id + '"') > 0) && !/type="button" disabled/.test(PAGE) && /Object\.keys\(REG\)\.filter\(\(id\) => REG\[id\]\.manifest\)\.forEach/.test(fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8'))
+     && /rx\.textContent = \(lastPlan && lastPlan\.exit === 'native'\) \? NATIVE_EXIT_NOTE/.test(fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8')), 'missing: ' + missing.join(', '));
   const code = PAGE + ['lab.js'].concat(fs.readdirSync(path.join(LAB, 'lib')).map((n) => 'lib/' + n)).map((p) => fs.readFileSync(path.join(LAB, p), 'utf8')).join('\n');
   const readme = fs.readFileSync(path.join(LAB, 'README.md'), 'utf8');
   ok('P2 · nothing on the page loads from the live game (no ../../ path, no game asset URL in the page, lab.js or lib/); the README keeps the SETTLE note (index.html:8162–8171) and documents LAB-2+3',

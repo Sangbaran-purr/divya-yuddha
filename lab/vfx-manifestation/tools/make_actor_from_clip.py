@@ -19,6 +19,10 @@
 # (100% → 0%) into the last n cells so the clip's own exit dissipates instead of popping. The atlas levers, in the owner's order, when a
 # pack is over the 4096 px ceiling: "thin_alternate": (a, b) drops every other frame in fa–fb; "cell_px": N packs cells below the 512 px
 # ceiling (the manifest keeps cellMax 512 and records cellPx).
+# LAB-9: "feather_bottom": px fades the clip's BOTTOM edge only, where fire pools on the frame's cut edge (Agni, Mahabali). The band is
+# GUARDED: the character's core (its largest solid part — feet, throne base) must never enter it, measured over every frame up to contact,
+# and the band is narrowed to fit if it would. "contact_strength": {"flash": f, "impulse": i} scales the stage's contact flash and camera
+# impulse for a card whose action is a self-cast, not a strike (Shukracharya: half flash, no impulse); absent means 1 and 1.
 #
 # Run it with the lab venv: rembg (A6, amended) lives there and nowhere else. Its model lives in tools/.venv/u2net/.
 #   IN (never committed, A7):   sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4
@@ -85,6 +89,19 @@ CARDS = {
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 86), "settled": 0, "pivot": "feet",
                 "facing": "right", "aim": None, "feather": 8, "engine_id": "varuna",
                 "exit": "native", "fade_tail": 10, "cell_px": 512, "thin_alternate": None},
+    "agni":    {"label": "Agni", "clip": "agni/agni_green.mp4", "emerge": (0, 85), "act": (86, 120), "tempo": None,   # LAB-9 owner ruling: ACT starts as the ring collapses, so a 30 Hz device at tempo 1 keeps to the LAB-8 bound
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 98), "settled": 0, "pivot": "feet",
+                "facing": "left", "aim": None, "feather": 8, "feather_bottom": 24, "engine_id": "agni",
+                "exit": "native", "fade_tail": 10, "cell_px": 384, "thin_alternate": None},
+    "mahabali": {"label": "Mahabali", "clip": "mahabali/mahabali_green.mp4", "emerge": (0, 93), "act": (94, 120), "tempo": None,
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 96), "settled": 0, "pivot": "feet",
+                "facing": "right", "aim": None, "feather": 8, "feather_bottom": 24, "engine_id": "mahabali",
+                "exit": "native", "fade_tail": 10, "cell_px": 512, "thin_alternate": None},
+    "shukracharya": {"label": "Shukracharya", "clip": "shukracharya/shukracharya_green.mp4", "emerge": (0, 63), "act": (64, 120), "tempo": None,
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 64), "settled": 0, "pivot": "feet",
+                "facing": "left", "aim": None, "feather": 8, "engine_id": "shukra",
+                "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": (100, 120),
+                "contact_strength": {"flash": 0.5, "impulse": 0}},
 }
 CFG = None
 def configure(card):
@@ -186,6 +203,21 @@ def feather(alpha, px):
     ramp = np.minimum(np.minimum(np.clip((yy + 0.5) / px, 0, 1), np.clip((h - 0.5 - yy) / px, 0, 1)), np.minimum(np.clip((xx + 0.5) / px, 0, 1), np.clip((w - 0.5 - xx) / px, 0, 1)))
     return alpha * ramp
 
+def feather_bottom(alpha, px):
+    # LAB-9: the clip's own bottom edge, where a fire pool is cut off by the frame — faded over the last px rows only
+    if not px: return alpha
+    h = alpha.shape[0]; yy = np.arange(h, dtype=np.float32)[:, None]
+    return alpha * np.clip((h - 0.5 - yy) / px, 0, 1)
+
+def core_gap(alpha):
+    # rows between the character's core (its largest solid part) and the frame's bottom edge
+    solid = (alpha > SOLID).astype(np.uint8)
+    n, lab, stats, _ = cv2.connectedComponentsWithStats(solid, 8)
+    if n <= 1: return alpha.shape[0]
+    main = 1 + int(np.argmax(stats[1:, cv2.CC_STAT_AREA]))
+    ys = np.where((lab == main).any(axis=1))[0]
+    return alpha.shape[0] - 1 - int(ys.max())
+
 def edge_band(alpha, w=4):
     k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * w + 1, 2 * w + 1))
     return (cv2.dilate((alpha > 0.02).astype(np.uint8), k) & (1 - cv2.erode((alpha > 0.98).astype(np.uint8), k))).astype(bool)
@@ -266,6 +298,21 @@ def main(card="meghnad"):
     print("kept %d frames · EMERGE %d (f%d–f%d) · ACT %d (f%d–f%d) · duplicates dropped %s · smallest neighbour |Δ| %.2f · contact f%d (%s)" % (
         len(kept), len(emerge), emerge[0], emerge[-1], len(act), act[0], act[-1], dup_e + dup_a if dup_e + dup_a else "none", min(diffs), contact_src, contact_note))
 
+    # LAB-9 · THE BOTTOM FEATHER AND ITS GUARD: the band must stay clear of the character's core on every frame up to contact (after contact
+    # what sits on the bottom edge is the fire the band is meant to fade). The band is narrowed to fit, and what it ended as is recorded.
+    BOTTOM, bottom_note, gaps = CFG.get("feather_bottom") or 0, "none", {}
+    if BOTTOM:
+        def raw_matte(i):
+            if CFG["matte"] == "bright": al, _ = key_bright(frames[i], K); al, _ = isolate_bright(al)
+            else: al, _ = key(frames[i], K); al, _ = isolate(al, frames[i])
+            return al                                                    # NO side feather: its own 8 px ramp would read as the core's edge
+        gaps = {SETTLED_FRAME: core_gap(raw_matte(SETTLED_FRAME))}       # the character standing: the ground contact the pivot itself uses
+        room = gaps[SETTLED_FRAME] - 2
+        if BOTTOM > room: BOTTOM = max(0, room)
+        pooled = [i for i in kept if i > SETTLED_FRAME and (raw_matte(i)[-1:, :] > 0.5).any()]
+        bottom_note = "%d px (the standing core stops %d px above the edge on f%03d; asked %d; from f%s the clip's own fire reaches the edge and the band fades that, as intended)" % (
+            BOTTOM, gaps[SETTLED_FRAME], SETTLED_FRAME, CFG["feather_bottom"], ("%03d" % pooled[0]) if pooled else "—")
+    print("bottom feather: %s" % bottom_note)
     shares = {i: fringe_share(frames[i], matte(i)[0], K)[0] for i in kept}
     need = [i for i in kept if shares[i] > FRINGE_LIMIT]
     print("fringe share per kept frame (limit %.3f%%): max %.3f%% · over the limit: %s" % (FRINGE_LIMIT * 100, max(shares.values()) * 100, need if need else "none — rembg not needed"))
@@ -287,6 +334,7 @@ def main(card="meghnad"):
             share_after, _ = fringe_share(frames[i], al, K)
         else:
             share_after = share
+        al = feather_bottom(al, BOTTOM)
         stats.append({"src": i, "fringeBefore": round(share, 5), "fringeAfter": round(share_after, 5), "rembg": used, "detachedDropped": dropped})
         img = np.dstack([np.clip(fg, 0, 255).astype(np.uint8), (np.clip(al, 0, 1) * 255).astype(np.uint8)])
         img[..., :3][img[..., 3] == 0] = 0
@@ -378,6 +426,8 @@ def main(card="meghnad"):
         del manifest["phases"]["fizzle"]; manifest["exit"] = "native"
         if manifest["phases"]["act"][-1] != len(kept) - 1: sys.exit("a native-exit pack must end ACT on its last cell")
     if CFG["contact"][0] == "nova": manifest["contactRule"] = "nova"
+    if CFG.get("contact_strength"): manifest["contactStrength"] = dict(CFG["contact_strength"])
+    if BOTTOM: manifest["audit"]["featherBottom"] = {"px": BOTTOM, "asked": CFG["feather_bottom"], "coreGapMin": min(gaps.values()), "guardFrame": SETTLED_FRAME}
     if "cell_px" in CFG:
         manifest["cellPx"] = max(max(c.width, c.height) for _, c, _, _ in cells); manifest["rungs"][0]["cellPx"] = max(max(c.width, c.height) for _, c, _, _ in half)
         manifest["audit"]["atlasLever"] = (["alternate frames dropped in f%d–f%d: %s" % (thin[0], thin[1], ", ".join("f%03d" % i for i in thinned))] if thin else []) + (["cells at %d px" % CELL_MAX] if CELL_MAX != 512 else []) or "none"

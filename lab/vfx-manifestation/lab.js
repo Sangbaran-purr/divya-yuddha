@@ -12,6 +12,8 @@
   let stampNote = 'checking';
   // LAB-7: a card's art, fixture and Play button all come from its registry entry (data/manifestations.json) — keyed by engine id
   const ART = (id) => (REG[id] && REG[id].art ? '../art/' + REG[id].art : null);
+  // LAB-9: the readout must read the PLAN, not the stage's last dissolve — a native-exit play after a procedural one would otherwise show the old exit
+  const NATIVE_EXIT_NOTE = 'native — the clip carries its own exit, no FIZZLE (pick an Exit preset to preview the procedural dissolve)';
   const FIXTURE = (card, seat) => '../fixtures/' + ((REG[card] && REG[card].fixture) || card) + '_seat' + seat + '.json';
   let currentCard = 'meghnad';   // LAB-6: the card whose play the board shows — one Play button per registry card
   const VIEWER = 0;   // the board is read as seat 0; "swap sides" moves the ATTACKER
@@ -352,8 +354,8 @@
     if (rl) rl.textContent = (layout.samples ? 'largest board shift ' + layout.maxShift + ' px over ' + layout.samples + ' frames of the last play' + (layout.maxShift ? ' (' + layout.worst + ')' : ' ✓') + ' · worst this session ' + layoutPeak + ' px' : '—') + (hiddenSkips ? ' · page hidden mid-play ' + hiddenSkips + '× → landed on AFTER' : '');
     const e = el('ro-errors'); e.textContent = errors.length ? errors.length + ' — ' + errors[errors.length - 1] : '0'; e.className = errors.length ? 'bad' : '';
     const x = s.exit, rx = el('ro-exit');
-    if (rx) rx.textContent = x ? x.name + ' dissolve · ' + (x.path === 'shader' ? 'GPU filter' : 'Canvas 2D mask') + ' · front ' + x.edge + ' · embers ' + x.embers + ' (peak ' + x.peak + ') · smoke ' + x.smoke + ' · ' + x.frames + ' frames, sweep ' + (x.monotonic ? 'monotonic ✓' : 'NOT monotonic ✖') + (x.progress < 1 ? ' · ' + Math.round(x.progress * 100) + '%' : '')
-      : lastPlan && lastPlan.exit === 'native' ? 'native — the clip carries its own exit, no FIZZLE (pick an Exit preset to preview the procedural dissolve)' : (exitPreset ? 'preview: ' + ((FFX[exitPreset] || {}).name || exitPreset) + ' — press Play' : '—');
+    if (rx) rx.textContent = (lastPlan && lastPlan.exit === 'native') ? NATIVE_EXIT_NOTE : x ? x.name + ' dissolve · ' + (x.path === 'shader' ? 'GPU filter' : 'Canvas 2D mask') + ' · front ' + x.edge + ' · embers ' + x.embers + ' (peak ' + x.peak + ') · smoke ' + x.smoke + ' · ' + x.frames + ' frames, sweep ' + (x.monotonic ? 'monotonic ✓' : 'NOT monotonic ✖') + (x.progress < 1 ? ' · ' + Math.round(x.progress * 100) + '%' : '')
+      : (exitPreset ? 'preview: ' + ((FFX[exitPreset] || {}).name || exitPreset) + ' — press Play' : '—');
     const rs = el('ro-stamp'); if (rs) { rs.textContent = STAMP + ' · ' + stampNote; rs.className = /STALE|unreadable/.test(stampNote) ? 'bad' : ''; }
   }
 

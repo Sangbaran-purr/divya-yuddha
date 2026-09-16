@@ -117,6 +117,7 @@
   // spawn = place it (StageMath.place output) at its card, in phase `phase`
   P.spawn = function (cardId, placement, faction) {
     var art = this.assets[cardId]; if (!art) return null;
+    this.stat.lastExit = null;   // LAB-9: this play has recorded no exit yet — stats().exit must never report the previous card's dissolve
     var a = { id: this.nextId++, cardId: cardId, art: art, pl: placement, faction: faction, phase: 'emerge', dur: 1, pt: 0, lastT: this.now(), contact: 0.58, pose: null, sprite: null,
              cellFps: null, cellIx: -1, backlog: [], rate: null, drawn: [], lastDrawn: -1, watch: null, contactCell: null };
     this.actors.push(a);
