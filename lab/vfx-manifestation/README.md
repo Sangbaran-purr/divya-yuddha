@@ -628,6 +628,30 @@ The owner ruled the split to f086 — where the ring is already collapsing, its 
 3. **The exit readout read the stage, not the plan.** `stage.stats().exit` keeps the last dissolve it recorded, so a native-exit play that followed a procedural one (Bali, then Varuna or these three) showed that card's dissolve in the readout — "Vanara dissolve · GPU filter" over a play that ran no dissolve at all. The readout now reads the plan first: a native exit says so. The plan, the phases and the stage were always correct; only the lab page's readout lied. `stage.stats().exit` was stale in the same way — it kept the last dissolve it had recorded — so a play now clears it as it spawns, and that field agrees with the readout.
 4. Nothing else. The three cards are otherwise three `CARDS` entries, three registry entries and three `HERO_ENTRIES` lines — data only.
 
+## LAB-9a: the ACT teleport, fixed
+
+**The symptom**, on the live page: all three LAB-9 actors appeared, then jerked sideways exactly as the strike sounded.
+
+**The cause** was in `poseOf`'s ACT branch, not in any atlas. The actor eases across its charge travel and arrives at contact: `k = p < c ? easeIn(p / c) : 1 - 0.18 * easeOut(...)`, where `c` is the contact cell's fraction of ACT. A card whose contact is **ACT cell 0** has `c = 0`, so `p < c` is never true and `k` starts at 1 — the entire travel landed on the first ACT frame, the same frame as the contact cue and its sound.
+
+**Measured before the fix** (board px moved in one frame, the player's seat): Varuna **31.05** and Shukracharya **31.05** (contact on cell 0); Mahabali **7.09** and Indra **7.08** (contact on cell 2, the whole travel crushed into ~126 ms); Agni 1.35 — his LAB-9 re-split had moved contact to cell 12 and incidentally cured him. The pivots were never involved: their world drift is at most 0.36 source px across every card and both rungs, with no cell-to-cell jump, and the camera impulse never fired in the replays.
+
+**The two fixes — lib only, no card repacked** (the atlases and pivots were correct):
+
+1. **An ease floor.** The charge now eases over at least 35% of ACT whatever cell the contact lands on (`Math.max(0.35, a.contact)` in `lib/actorstage.js`).
+2. **A nova performs where it stands.** `lib/playback.js` gives a `contactRule: "nova"` card zero travel — a radial burst has nothing to charge at. Legacy charging cards keep their travel.
+
+**After, worst frame-to-frame motion inside ACT:**
+
+| Card | Rule | Boundary jump | Seat 0 | Seat 1 |
+|---|---|---|---|---|
+| Meghnad | legacy | 0.03 | 1.35 | 2.48 |
+| Indra | legacy | 0.04 | 1.03 | 1.89 |
+| Bali | legacy | 0.03 | 1.23 | 2.28 |
+| Varuna · Agni · Mahabali · Shukracharya | nova | **0** | **0** | **0** |
+
+**The suite pins it** (S21, both seats, both rungs): no frame moves an actor more than **3 px** inside ACT. Three and not two because the top seat's charge travel is **1.85× longer** than the player's seat — 57.3 px against 31.1 — so the same smooth ease peaks near 2.5 px a frame there. A surge is the 7 px class and a teleport the 31 px class; the bar catches either instantly.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

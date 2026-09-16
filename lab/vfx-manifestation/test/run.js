@@ -610,12 +610,13 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
           stage.pixi = PIXI; stage.app = app; stage.backend = 'pixi'; stage.renderer = backend; stage.base = {};
         };
         if (backend === 'webgl' || backend === 'webgpu') installPixi(backend);
-        if (!(wopts && wopts.noLoad)) stage.loadActor(CARD.id, { manifest: CARD.M, image: { __atlas: true, width: CARD.M.atlasSize.w, height: CARD.M.atlasSize.h, close: () => { calls.bitmapClosed++; } } });
+        const MW = (wopts && wopts.manifest) || CARD.M;   // LAB-9a: a world may be driven at either rung
+        if (!(wopts && wopts.noLoad)) stage.loadActor(CARD.id, { manifest: MW, image: { __atlas: true, width: MW.atlasSize.w, height: MW.atlasSize.h, close: () => { calls.bitmapClosed++; } } });
         const f = CARD.FX[seat], ctxw = w.ClashContext.fromBatch(f), boards = w.ClashContext.boards(ctxw, f.before, f.after), g = geo(seat);
         const rects = {}, tgt = f.before.seats[f.defenderSeat].heroes[0]; rects[f.events[0].sourceUid] = g.card; if (tgt) rects[tgt.uid] = g.band;
         const renders = [], ember = [], done = [];
         const pb = w.Playback.create({ stage, ctx: ctxw, boards, viewer: 0, field: FIELD, rectOf: (u) => rects[u] || null, clientOf: (u) => rects[u] ? { cx: rects[u].x + 32, cy: rects[u].y + 45, w: 64 } : null,
-          bandOf: (s) => s === f.defenderSeat ? g.band : g.card, render: (b, fl) => renders.push({ t, board: JSON.parse(J(b)), floats: fl }), pulse: (u, ms) => calls.pulses.push([u, ms, t]), sound: (n) => calls.sounds.push({ n, t, cell: stage.actors[0] && stage.actors[0].pose ? stage.actors[0].pose.cellIndex : null, phase: stage.actors[0] ? stage.actors[0].phase : null }), actorFor: (id) => id === CARD.id ? { manifest: CARD.M } : null,
+          bandOf: (s) => s === f.defenderSeat ? g.band : g.card, render: (b, fl) => renders.push({ t, board: JSON.parse(J(b)), floats: fl }), pulse: (u, ms) => calls.pulses.push([u, ms, t]), sound: (n) => calls.sounds.push({ n, t, cell: stage.actors[0] && stage.actors[0].pose ? stage.actors[0].pose.cellIndex : null, phase: stage.actors[0] ? stage.actors[0].phase : null }), actorFor: (id) => id === CARD.id ? { manifest: MW } : null,
           factionFx: fxFn || (() => ({ portal: 'rgba(255,96,48,0.85)', exit: 'embers' })), embers: (x, y) => ember.push([x, y, t]), queueFx: () => {}, onDone: (r) => done.push(r) });
         return { w, stage, calls, pb, ctx: ctxw, boards, renders, ember, done, f, installPixi, clock: { get t() { return t; }, set t(v) { t = v; } } };
       }
@@ -816,6 +817,29 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
         ok(CARD.tag + 'S19 · LAB-7 · THE ' + CARD.presetName.toUpperCase() + ' EXIT STAYS THE DEFAULT (no tune this rung; the owner rules on Kling\'s earth exit): the ' + CARD.presetName + ' preset entry is byte-identical to LAB-6a (41ea143) and names no tuning knob — ' + J(FFXD[CARD.faction]),
            J(FFXD[CARD.faction]) === J(WAS6a[CARD.faction]) && Object.keys(DS.ALIAS).concat(['haze']).every((k) => FFXD[CARD.faction].dissolve[k] === undefined), J(FFXD[CARD.faction]));
       }
+
+      // ── LAB-9a · NO TELEPORT INSIDE ACT ──
+      const poseRun = (seat, rung) => {
+        const MR = rung === 512 ? CARD.M : MAN.forRung(CARD.M, 256);
+        const W = world(seat, 'canvas2d', undefined, { manifest: MR });
+        const plan = W.w.Director.plan(W.ctx, { mode: 'full', ladderExempt: CARD.exempt, timing: NT, tempo: 0.6, fizzleMs: 1500 });
+        const r = W.w.Runner.create(plan, W.pb.handlers, () => W.clock.t);
+        r.start({});
+        let maxAct = 0, atBoundary = 0, prev = null, prevPhase = null;
+        while (!r.done && W.clock.t < 30000) {
+          W.clock.t += 1000 / 60; r.tick(); W.stage.frame(W.clock.t, W.clock.t);
+          const a = W.stage.actors[0], q = a && a.pose;
+          if (!q) continue;
+          if (prev && a.phase === 'act') { const d = Math.hypot(q.x - prev.x, q.y - prev.y); maxAct = Math.max(maxAct, d); if (prevPhase === 'emerge') atBoundary = Math.max(atBoundary, d); }
+          prev = { x: q.x, y: q.y }; prevPhase = a.phase;
+        }
+        return { seat, rung, maxAct: +maxAct.toFixed(2), atBoundary: +atBoundary.toFixed(2) };
+      };
+      const POSE = [0, 1].reduce((all, s2) => all.concat([512, 256].map((rg) => poseRun(s2, rg))), []);
+      const STAGE9A = fs.readFileSync(path.join(LAB, 'lib', 'actorstage.js'), 'utf8'), PLAY9A = fs.readFileSync(path.join(LAB, 'lib', 'playback.js'), 'utf8');
+      ok(CARD.tag + 'S21 · LAB-9a · NO TELEPORT INSIDE ACT, both seats and both rungs: the actor never moves more than 3 px between frames inside ACT and never jumps at the EMERGE→ACT boundary — the charge eases over at least 35% of ACT whatever cell the contact lands on (3 px, not 2: the top seat\'s charge travel is 1.85x the player\'s seat\'s — 57.3 px against 31.1 — so the same smooth ease peaks near 2.5 px a frame there; a surge is the 7 px class and a teleport the 31 px class, and both trip this instantly)' + (CARD.M.contactRule === 'nova' ? ', and a "nova" performs where it stands (no travel at all)' : '') + ' — ' + POSE.map((p) => 'seat ' + p.seat + ' @ ' + p.rung + ' px: max ' + p.maxAct + ', boundary ' + p.atBoundary).join(' | '),
+         POSE.every((p) => p.maxAct <= 3 && p.atBoundary <= 3) && /var c = Math\.max\(0\.35, a\.contact\);/.test(STAGE9A) &&
+         (CARD.M.contactRule !== 'nova' || /contactRule === 'nova'\) pl\.travel = \{ x: 0, y: 0 \};/.test(PLAY9A)), J(POSE));
 
       // ── LAB-8 · THE NOVA CONTACT RULE ──
       if (CARD.M.contactRule === 'nova') {

@@ -21,7 +21,9 @@
     function placement() {
       var art = env.actorFor(ctx.cardId), card = env.rectOf(ctx.sourceUid);
       if (!art || !card) return null;
-      return SM.place({ card: card, side: side, fieldW: env.field.w, fieldH: env.field.h, band: env.bandOf(1 - ctx.seat), refHeight: art.manifest.refHeight, facing: art.manifest.facing });
+      var pl = SM.place({ card: card, side: side, fieldW: env.field.w, fieldH: env.field.h, band: env.bandOf(1 - ctx.seat), refHeight: art.manifest.refHeight, facing: art.manifest.facing });
+      if (art.manifest.contactRule === 'nova') pl.travel = { x: 0, y: 0 };   // LAB-9a: a nova bursts where it stands; only a charging action travels
+      return pl;
     }
     function ensureActor() {
       if (actor) return actor;
