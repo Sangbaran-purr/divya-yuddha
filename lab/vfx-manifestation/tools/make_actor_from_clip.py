@@ -12,7 +12,8 @@
 # leftmost solid spear tip), "bolt-edge" (the frame after the bolt first reaches the frame's edge) and "ground-impact" (LAB-7: the
 # frame the weapon reaches the ground band clear of the standing feet). THE KEY COLOUR (LAB-7): auto-detected from the frame's corners
 # (the ground's strongest channel is the key — green, blue, …), or pinned per card with "key_colour": [r, g, b]. "engine_id" names the
-# card's id in the engine when it differs from the card's name (Bali is "hanuman"). Pivot rules: "front-left" (the
+# card's id in the engine when it differs from the card's name (Bali is "hanuman"). "travel_scale": 0-1 scales the charge across the board
+# (LAB-10: 0 keeps the actor where it stands; absent means 1). Pivot rules: "front-left" (the
 # horse's front hooves) and "feet" (the centre of the ground contact).
 # LAB-8 · Varuna, the first NATIVE EXIT: "contact": ("nova", f) names the audited frame the burst begins (the stage flashes radially from
 # the actor's centre); "exit": "native" packs no fizzle phase — ACT runs to the clip's end — and "fade_tail": n bakes a linear alpha ramp
@@ -79,12 +80,12 @@ CARDS = {
     "meghnad": {"label": "Meghnad", "clip": "kling_20260913_VIDEO_Create_a_p_5011_0.mp4", "emerge": (34, 56), "act": (57, 88), "tempo": 0.6,
                 "matte": "dark-body", "key": (28.0, 85.0), "contact": ("spear-tip", (66, 82)), "settled": 84, "pivot": "front-left",
                 "facing": "left", "aim": None, "feather": 0},
-    "indra":   {"label": "Indra", "clip": "kling_20260914_VIDEO_Preserve_I_5205_0.mp4", "emerge": (36, 52), "act": (53, 97), "tempo": None,
+    "indra":   {"label": "Indra", "clip": "kling_20260914_VIDEO_Preserve_I_5205_0.mp4", "emerge": (36, 52), "act": (53, 120), "tempo": None,   # LAB-10: the clip's own gold-dust ending, restored
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("bolt-edge", (53, 60)), "settled": 70, "pivot": "feet",
-                "facing": "right", "aim": "up", "feather": 8},
-    "bali":    {"label": "Bali", "clip": "kling_20260914_VIDEO_Preserve_B_5645_0.mp4", "emerge": (28, 56), "act": (57, 93), "tempo": None,
+                "facing": "right", "aim": "up", "feather": 8, "exit": "native", "fade_tail": 10, "travel_scale": 0},
+    "bali":    {"label": "Bali", "clip": "kling_20260914_VIDEO_Preserve_B_5645_0.mp4", "emerge": (28, 56), "act": (57, 109), "tempo": None,   # LAB-10: the earth exit, stopped at f109 to leave out the clip's green blob (f110-f120)
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("ground-impact", (57, 72)), "settled": 28, "pivot": "feet",
-                "facing": "left", "aim": None, "feather": 8, "engine_id": "hanuman"},
+                "facing": "left", "aim": None, "feather": 8, "engine_id": "hanuman", "exit": "native", "fade_tail": 10, "travel_scale": 0},
     "varuna":  {"label": "Varuna", "clip": "varuna/varuna_green.mp4", "emerge": (0, 85), "act": (86, 120), "tempo": None,
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 86), "settled": 0, "pivot": "feet",
                 "facing": "right", "aim": None, "feather": 8, "engine_id": "varuna",
@@ -427,6 +428,7 @@ def main(card="meghnad"):
         if manifest["phases"]["act"][-1] != len(kept) - 1: sys.exit("a native-exit pack must end ACT on its last cell")
     if CFG["contact"][0] == "nova": manifest["contactRule"] = "nova"
     if CFG.get("contact_strength"): manifest["contactStrength"] = dict(CFG["contact_strength"])
+    if CFG.get("travel_scale") is not None: manifest["travelScale"] = CFG["travel_scale"]   # LAB-10: 0 = performs where it stands; absent = 1, the charge as it always was
     if BOTTOM: manifest["audit"]["featherBottom"] = {"px": BOTTOM, "asked": CFG["feather_bottom"], "coreGapMin": min(gaps.values()), "guardFrame": SETTLED_FRAME}
     if "cell_px" in CFG:
         manifest["cellPx"] = max(max(c.width, c.height) for _, c, _, _ in cells); manifest["rungs"][0]["cellPx"] = max(max(c.width, c.height) for _, c, _, _ in half)

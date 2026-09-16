@@ -8,7 +8,8 @@
      aim? "up" (LAB-6: the action points up its frame — descriptive only; every actor is drawn upright on both seats, owner ruling 2026-09-14),
      exit? "native" (LAB-8: the clip carries its own exit — no fizzle phase, ACT ends on the last cell), contactRule? (LAB-8, runtime: "nova" = a
      radial contact flash from the actor's centre), cellPx? (LAB-8: the real cell size when a pack needed cells below the 512 ceiling),
-     contactStrength? { flash, impulse } (LAB-9: scales the contact's flash and the camera impulse — a self-cast is not a strike; absent = 1 and 1) }
+     contactStrength? { flash, impulse } (LAB-9: scales the contact's flash and the camera impulse — a self-cast is not a strike; absent = 1 and 1),
+     travelScale? 0–1 (LAB-10: scales the actor's charge across the board — 0 performs where it stands; absent = 1, the charge as it always was) }
    validate(m) → { ok, errors[] }. defaultsFor({ manifest, registry, preset, override }) → the tempo and FIZZLE length a play starts
    from (LAB-4d). forRung(m, cellMax) → the manifest drawn from that rung's atlas; decodedBytes(m) → its RGBA size; pickRung({…})
    → which rung a device gets (LAB-5). Browser: window.ActorManifest. Node: require. */
@@ -74,6 +75,7 @@
     if (m.contactRule != null && ['spear-tip', 'bolt-edge', 'ground-impact', 'nova'].indexOf(m.contactRule) < 0) e.push('contactRule must be spear-tip, bolt-edge, ground-impact or nova');
     if (m.contactStrength != null && !(typeof m.contactStrength === 'object' && ['flash', 'impulse'].every(function (k) { var v = m.contactStrength[k]; return typeof v === 'number' && isFinite(v) && v >= 0 && v <= 4; })))
       e.push('contactStrength must give flash and impulse, each a number 0–4');
+    if (m.travelScale != null && !(typeof m.travelScale === 'number' && isFinite(m.travelScale) && m.travelScale >= 0 && m.travelScale <= 1)) e.push('travelScale must be a number 0–1');
     if (m.cellPx != null && !(Number.isInteger(m.cellPx) && m.cellPx >= 256 && m.cellPx <= 512 && (cells || []).every(function (c) { return !c || (c.w <= m.cellPx && c.h <= m.cellPx); }))) e.push('cellPx must be the real cell size, 256–512, holding every cell');
     return { ok: e.length === 0, errors: e };
   }
@@ -122,8 +124,10 @@
     return { rung: 512, why: 'GPU (' + o.backend + ') · devicePixelRatio ' + o.dpr + (typeof o.deviceMemory === 'number' ? ' · ' + o.deviceMemory + ' GB' : ' · no memory hint') };
   }
   // LAB-9 · how hard a contact lands: a card may soften (or sharpen) its flash and impulse; a card that names nothing lands as it always did
+  // LAB-10 · how far the actor charges: a card may perform where it stands (0) or charge as it always did (absent, or 1)
+  function travelScale(m) { return m && typeof m.travelScale === 'number' ? m.travelScale : 1; }
   function contactStrength(m) { var s = m && m.contactStrength; return { flash: s && typeof s.flash === 'number' ? s.flash : 1, impulse: s && typeof s.impulse === 'number' ? s.impulse : 1 }; }
-  var OUT = { validate: validate, exitMode: exitMode, contactStrength: contactStrength, defaultsFor: defaultsFor, forRung: forRung, rungsOf: rungsOf, decodedBytes: decodedBytes, pickRung: pickRung, PHASES: PHASES };
+  var OUT = { validate: validate, exitMode: exitMode, contactStrength: contactStrength, travelScale: travelScale, defaultsFor: defaultsFor, forRung: forRung, rungsOf: rungsOf, decodedBytes: decodedBytes, pickRung: pickRung, PHASES: PHASES };
   root.ActorManifest = OUT;
   if (typeof module !== 'undefined' && module.exports) module.exports = OUT;
 })(typeof window !== 'undefined' ? window : this);

@@ -278,25 +278,24 @@ console.log('\n── T · the Director ──');
        J({ dflt, inherit, builtin, over, full: tlOf(FULLD), fast: tlOf(FASTD) }));
   }
   {
+    // LAB-10 · Indra and Bali now play their clips' own endings: the same native-exit plan as the launch characters, each keeping its own contact rule
     const REGI = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'manifestations.json'), 'utf8')), FFXI = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DSI = lib('dissolve');
-    // LAB-7: the same plan check for each non-exempt card the template built — T14 Indra, T15 Bali
-    [['T14', 'LAB-6', 'indra', IMAN, ICTX], ['T15', 'LAB-7', 'hanuman', BMAN, BCTX]].forEach(([TN, RUNG, KEY, IMAN, ICTX]) => {
-    const NAME = REGI.cards[KEY].name, TO = ICTX[0].boardDiff[0].to, FAC = ICTX[0].faction;
-    const ntI = { fps: IMAN.fps, emerge: IMAN.phases.emerge.length, act: IMAN.phases.act.length, contact: IMAN.contact, emergeMs: IMAN.phaseMs.emerge, actMs: IMAN.phaseMs.act };
-    const dI = MAN.defaultsFor({ manifest: IMAN, registry: REGI, preset: DSI.pick(FFXI, FAC, '') });
-    const planI = (seat, m) => DIR.plan(ICTX[seat], { mode: m, prior: 0, ladderExempt: !!(REGI.cards[KEY] || {}).ladderExempt, timing: ntI, tempo: dI.tempo, fizzleMs: dI.fizzleMs });
-    const want = (k) => [Math.round(400 / dI.tempo * k), Math.round(ntI.emergeMs / dI.tempo * k), Math.round(ntI.actMs / dI.tempo * k), Math.round(dI.fizzleMs * k), Math.round(400 / dI.tempo * k)];
-    const tl = (p) => [p.timeline.awaken, p.timeline.emerge, p.timeline.act, p.timeline.fizzle, p.timeline.settle, p.timeline.total];
-    const ladderOnly = DIR.plan(ICTX[0], { mode: 'full' });
-    const okI = [0, 1].every((seat) => ['full', 'fast'].every((m) => {
-      const k = m === 'fast' ? 0.5 : 1, p = planI(seat, m), w = want(k), C = p.phases[2], c = p.cues.find((x) => x.cue === 'contact'), st = p.cues.filter((x) => x.cue === 'settle'), RA = ntI.act * 1000 / ntI.actMs * dI.tempo / k;
-      return p.timing === 'native' && p.actor && p.towardSeat === 1 - seat && J(tl(p).slice(0, 5)) === J(w) && p.total === w.reduce((a, b) => a + b, 0) && p.ladderMs === 3500 && /^rarity L \(the ladder would give 3500 ms\) · native 24 fps$/.test(p.ladder) &&
-             c.contactCell === ntI.contact && Math.floor((c.t - C.t0) * RA / 1000 + 1e-6) === ntI.contact && st.length === 1 && J(st[0].floats) === J([]) && J(st[0].changes.map((x) => [x.kind, x.n, x.to])) === J([['enter', NAME, TO]]) &&
-             !p.cues.some((x) => x.cue === 'queue') && p.cues[p.cues.length - 1].cue === 'done' && p.cues.filter((x) => x.cue === 'actor-phase').every((x) => x.cellStep === (m === 'fast' ? 2 : 1));
-    }));
-    ok(TN + ' · ' + RUNG + ' · ' + NAME.toUpperCase() + '\'S PLAN, both seats, Full and Fast: native timing from its manifest (' + ntI.emerge + ' EMERGE + ' + ntI.act + ' ACT cells in ' + ntI.emergeMs + ' + ' + ntI.actMs + ' ms at tempo 1) with the defaults INHERITED — tempo ' + dI.tempo + ' from the ' + dI.from.tempo + ', FIZZLE ' + dI.fizzleMs + ' ms from the ' + dI.from.fizzleMs + ' (the ' + FAC + ' preset sets none, the manifest no tempo); contact on its contact cell; SETTLE lands ' + NAME + '\'s entry with no number and there is no queue — Full ' + tl(planI(0, 'full')).join(' / ') + ' ms, Fast ' + tl(planI(0, 'fast')).join(' / ') + ' ms; the Legendary ladder alone would give ' + ladderOnly.total + ' ms',
-       okI && IMAN.tempo === undefined && dI.tempo === 0.6 && dI.from.tempo === 'defaults' && dI.fizzleMs === 1500 && dI.from.fizzleMs === 'defaults' && FFXI[FAC].fizzle_ms === undefined && ladderOnly.total === 3500 && ladderOnly.timing === 'grammar' && !(REGI.cards[KEY] || {}).ladderExempt,
-       J({ full: tl(planI(0, 'full')), fast: tl(planI(0, 'fast')), dI }));
+    [['T14', 'indra', IMAN, ICTX], ['T15', 'hanuman', BMAN, BCTX]].forEach(([TN, KEY, M10, C10]) => {
+      const NAME = REGI.cards[KEY].name, FAC = C10[0].faction, TO = C10[0].boardDiff[0].to, RULE = (M10.audit.recipe || {}).contact;
+      const nt = { fps: M10.fps, emerge: M10.phases.emerge.length, act: M10.phases.act.length, contact: M10.contact, emergeMs: M10.phaseMs.emerge, actMs: M10.phaseMs.act };
+      const d10 = MAN.defaultsFor({ manifest: M10, registry: REGI, preset: DSI.pick(FFXI, FAC, '') }), ex = MAN.exitMode({ entry: REGI.cards[KEY], manifest: M10 });
+      const plan10 = (seat, m) => DIR.plan(C10[seat], { mode: m, prior: 0, timing: nt, tempo: d10.tempo, fizzleMs: d10.fizzleMs, exit: ex.exit });
+      const okN = [0, 1].every((seat) => ['full', 'fast'].every((m) => {
+        const k = m === 'fast' ? 0.5 : 1, p = plan10(seat, m), C = p.phases.find((x) => x.name === 'ACT'), S = p.phases.find((x) => x.name === 'SETTLE'), c = p.cues.find((x) => x.cue === 'contact'), st = p.cues.filter((x) => x.cue === 'settle');
+        return p.exit === 'native' && p.phases.map((x) => x.name).join(',') === 'AWAKEN,EMERGE,ACT,SETTLE' && p.timeline.fizzle === 0 &&
+               !p.cues.some((x) => x.cue === 'exit-fx' || (x.cue === 'actor-phase' && x.phase === 'fizzle')) && c.contactCell === M10.contact && C.t1 === S.t0 &&
+               p.cues.find((x) => x.cue === 'actor-gone').t === S.t0 && st.length === 1 && J(st[0].floats) === J([]) && J(st[0].changes.map((x) => [x.kind, x.n, x.to])) === J([['enter', NAME, TO]]) &&
+               J([p.timeline.awaken, p.timeline.emerge, p.timeline.act, p.timeline.settle]) === J([Math.round(400 / d10.tempo * k), Math.round(nt.emergeMs / d10.tempo * k), Math.round(nt.actMs / d10.tempo * k), Math.round(400 / d10.tempo * k)]);
+      }));
+      const full = plan10(0, 'full'), fast = plan10(0, 'fast');
+      ok(TN + ' · LAB-10 · ' + NAME.toUpperCase() + '\'S PLAN, both seats, Full and Fast: the clip\'s own ending, so the registry asks for the native exit and the plan carries NO FIZZLE — AWAKEN, EMERGE, ACT, SETTLE (' + nt.emerge + ' EMERGE + ' + nt.act + ' ACT cells in ' + nt.emergeMs + ' + ' + nt.actMs + ' ms at tempo 1); the contact keeps its own rule (' + RULE + ') on ACT cell ' + M10.contact + ' = f' + String(M10.cells[M10.phases.act[M10.contact]].src).padStart(3, '0') + '; tempo ' + d10.tempo + ' inherited; he performs where he stands (travelScale ' + MAN.travelScale(M10) + '); SETTLE lands his entry at ' + TO + ' with no number — Full ' + [full.timeline.awaken, full.timeline.emerge, full.timeline.act, full.timeline.settle].join(' / ') + ' = ' + full.total + ' ms, Fast ' + fast.total + ' ms; the rarity ladder would give ' + full.ladderMs + ' ms',
+         okN && ex.exit === 'native' && M10.tempo === undefined && d10.tempo === 0.6 && d10.from.tempo === 'defaults' && MAN.travelScale(M10) === 0 && M10.exit === 'native' && M10.phases.fizzle === undefined && Math.abs(fast.total - full.total / 2) <= 3,
+         J({ full: full.timeline, exit: ex, travelScale: MAN.travelScale(M10) }));
     });
   }
   {
@@ -315,10 +314,10 @@ console.log('\n── T · the Director ──');
     const grammar = DIR.plan(VCTX[0], { mode: 'full', exit: 'native' }), full = planV(0, 'full'), fast = planV(0, 'fast');
     const iT = { fps: IMAN.fps, emerge: IMAN.phases.emerge.length, act: IMAN.phases.act.length, contact: IMAN.contact, emergeMs: IMAN.phaseMs.emerge, actMs: IMAN.phaseMs.act };
     const same = J(DIR.plan(ICTX[0], { mode: 'full', timing: iT, tempo: 0.6, fizzleMs: 1500 })) === J(DIR.plan(ICTX[0], { mode: 'full', timing: iT, tempo: 0.6, fizzleMs: 1500, exit: 'procedural' }));
-    const modes = { varuna: exV, preview: MAN.exitMode({ entry: REGV.cards.varuna, manifest: VMAN, override: 'devas' }), indra: MAN.exitMode({ entry: REGV.cards.indra, manifest: IMAN }), meghnad: MAN.exitMode({ entry: REGV.cards.meghnad, manifest: MANIFEST }), notPacked: MAN.exitMode({ entry: REGV.cards.varuna, manifest: IMAN }) };
-    ok('T16 · LAB-8 · VARUNA\'S PLAN, THE NATIVE EXIT, both seats, Full and Fast: the registry asks for exit "native" and the manifest is a native-exit pack, so the plan has NO FIZZLE — AWAKEN, EMERGE, ACT, SETTLE; no exit-fx and no fizzle phase cue; the actor goes at SETTLE, holding its last cell until then; contact on ACT cell 0 (f086) the moment ACT starts; tempo ' + dV.tempo + ' inherited — Full ' + [full.timeline.awaken, full.timeline.emerge, full.timeline.act, full.timeline.settle].join(' / ') + ' = ' + full.total + ' ms, Fast ' + fast.total + ' ms. Guards: without native timing the grammar keeps its FIZZLE (' + names(grammar) + '); an Exit preset preview plays the procedural dissolve (' + modes.preview.exit + '); Indra and Meghnad stay procedural and their plans are identical with or without the exit option; a registry that asks for a native exit on a pack that is not one is refused (' + modes.notPacked.exit + ', flagged)',
+    const modes = { varuna: exV, preview: MAN.exitMode({ entry: REGV.cards.varuna, manifest: VMAN, override: 'devas' }), indra: MAN.exitMode({ entry: REGV.cards.indra, manifest: IMAN }), meghnad: MAN.exitMode({ entry: REGV.cards.meghnad, manifest: MANIFEST }), notPacked: MAN.exitMode({ entry: REGV.cards.varuna, manifest: MANIFEST }) };
+    ok('T16 · LAB-8 · VARUNA\'S PLAN, THE NATIVE EXIT, both seats, Full and Fast: the registry asks for exit "native" and the manifest is a native-exit pack, so the plan has NO FIZZLE — AWAKEN, EMERGE, ACT, SETTLE; no exit-fx and no fizzle phase cue; the actor goes at SETTLE, holding its last cell until then; contact on ACT cell 0 (f086) the moment ACT starts; tempo ' + dV.tempo + ' inherited — Full ' + [full.timeline.awaken, full.timeline.emerge, full.timeline.act, full.timeline.settle].join(' / ') + ' = ' + full.total + ' ms, Fast ' + fast.total + ' ms. Guards: without native timing the grammar keeps its FIZZLE (' + names(grammar) + '); an Exit preset preview plays the procedural dissolve (' + modes.preview.exit + '); Meghnad, the last procedural card, stays procedural and his plan is identical with or without the exit option (LAB-10 sent Indra native too); a registry that asks for a native exit on a pack that is not one is refused (' + modes.notPacked.exit + ', flagged)',
        okV && full.total >= 7000 && full.total <= 7400 && Math.abs(fast.total - full.total / 2) <= 3 && /FIZZLE/.test(names(grammar)) && grammar.exit === 'procedural' && same &&
-       modes.varuna.exit === 'native' && modes.preview.exit === 'procedural' && modes.indra.exit === 'procedural' && modes.meghnad.exit === 'procedural' && modes.notPacked.exit === 'procedural' && modes.notPacked.error === true,
+       modes.varuna.exit === 'native' && modes.preview.exit === 'procedural' && modes.indra.exit === 'native' && modes.meghnad.exit === 'procedural' && modes.notPacked.exit === 'procedural' && modes.notPacked.error === true,
        J({ full: full.timeline, fast: fast.timeline, modes }));
   }
   {
@@ -457,22 +456,22 @@ const templateActor = (S) => {
      J(fs.readdirSync(path.join(LAB, 'actors', S.folder)).sort()) === J(['atlas.webp', 'atlas_256.webp', 'manifest.json']) && !MAN.validate(Object.assign({}, IMAN, { aim: 'sideways' })).ok, v.errors.join('; '));
 };
 templateActor({ label: 'M6 · LAB-6 · INDRA BY THE TEMPLATE', M: IMAN, folder: 'indra', cardId: 'indra', clip: 'kling_20260914_VIDEO_Preserve_I_5205_0.mp4', sha: '4c78b5fba361', chroma: 'green',
-  emerge: [36, 52], act: [53, 97], contactIn: [53, 60], contact: 'bolt-edge', contactNote: 'the bolt fully out to the frame edge', aim: 'up', facing: 'right', keyChannel: 'G' });
+  emerge: [36, 52], act: [53, 120], contactIn: [53, 60], contact: 'bolt-edge', contactNote: 'the bolt fully out to the frame edge', aim: 'up', facing: 'right', keyChannel: 'G' });
 templateActor({ label: 'M7 · LAB-7 · BALI BY THE TEMPLATE (engine id "hanuman", chroma BLUE)', M: BMAN, folder: 'bali', cardId: 'hanuman', clip: 'kling_20260914_VIDEO_Preserve_B_5645_0.mp4', sha: 'e67eec3588e7', chroma: 'blue',
-  emerge: [28, 56], act: [57, 93], contactIn: [60, 68], contact: 'ground-impact', contactNote: 'the mace head reaches the ground band clear of the feet', aim: null, facing: 'left', keyChannel: 'B' });
+  emerge: [28, 56], act: [57, 109], contactIn: [60, 68], contact: 'ground-impact', contactNote: 'the mace head reaches the ground band clear of the feet', aim: null, facing: 'left', keyChannel: 'B' });
 templateActor({ label: 'M9 · LAB-8 · VARUNA BY THE TEMPLATE (engine id "varuna", the first native exit)', M: VMAN, folder: 'varuna', cardId: 'varuna', clip: 'varuna_green.mp4', sha: 'c0a66fb3c2ca', chroma: 'green',
   emerge: [0, 85], act: [86, 120], contactIn: [86, 86], contact: 'nova', contactNote: 'nova: the orb burst begins, the audited frame', aim: null, facing: 'right', keyChannel: 'G' });
 {
   const v = MAN.validate(VMAN), n = VMAN.cells.length, ft = (VMAN.audit || {}).fadeTail || [];
   const withFizzle = MAN.validate(Object.assign({}, VMAN, { phases: Object.assign({}, VMAN.phases, { fizzle: [n - 1] }) }));
   const shortAct = MAN.validate(Object.assign({}, VMAN, { phases: Object.assign({}, VMAN.phases, { act: VMAN.phases.act.slice(0, -1) }) }));
-  const badRule = MAN.validate(Object.assign({}, VMAN, { contactRule: 'sideways' })), badPx = MAN.validate(Object.assign({}, VMAN, { cellPx: 300 })), procNoFizzle = MAN.validate(Object.assign({}, IMAN, { phases: { emerge: IMAN.phases.emerge, act: IMAN.phases.act } }));
-  ok('M10 · LAB-8 · THE NATIVE-EXIT PACK: exit "native" with no fizzle phase and ACT ending on the last cell (the guard refuses a fizzle phase, an ACT that stops short, and a procedural actor without its fizzle phase); contact rule "nova" on ACT cell 0 = f086; the fade tail bakes a linear alpha ramp into the last 10 cells (' + ft.map((x) => 'f' + x[0] + ' ' + Math.round(x[1] * 100) + '%').join(' · ') + '); cellMax stays the A4 ceiling 512 with cellPx ' + VMAN.cellPx + ' recorded (256 rung: cellPx ' + (VMAN.rungs[0] || {}).cellPx + '); atlas lever: ' + J(VMAN.audit.atlasLever) + '; straight alpha, normal blend, no motion vectors, no vignette; Meghnad, Indra and Bali carry none of the new fields',
+  const badRule = MAN.validate(Object.assign({}, VMAN, { contactRule: 'sideways' })), badPx = MAN.validate(Object.assign({}, VMAN, { cellPx: 300 })), procNoFizzle = MAN.validate(Object.assign({}, MANIFEST, { phases: { emerge: MANIFEST.phases.emerge, act: MANIFEST.phases.act } }))   // LAB-10: Meghnad is the procedural card now;
+  ok('M10 · LAB-8 · THE NATIVE-EXIT PACK: exit "native" with no fizzle phase and ACT ending on the last cell (the guard refuses a fizzle phase, an ACT that stops short, and a procedural actor without its fizzle phase); contact rule "nova" on ACT cell 0 = f086; the fade tail bakes a linear alpha ramp into the last 10 cells (' + ft.map((x) => 'f' + x[0] + ' ' + Math.round(x[1] * 100) + '%').join(' · ') + '); cellMax stays the A4 ceiling 512 with cellPx ' + VMAN.cellPx + ' recorded (256 rung: cellPx ' + (VMAN.rungs[0] || {}).cellPx + '); atlas lever: ' + J(VMAN.audit.atlasLever) + '; straight alpha, normal blend, no motion vectors, no vignette; Meghnad — the last procedural card after LAB-10 — carries none of the new fields',
      v.ok && VMAN.exit === 'native' && VMAN.phases.fizzle === undefined && VMAN.phases.act[VMAN.phases.act.length - 1] === n - 1 && !withFizzle.ok && !shortAct.ok && !badRule.ok && !badPx.ok && !procNoFizzle.ok &&
      VMAN.contactRule === 'nova' && VMAN.contact === 0 && VMAN.cells[VMAN.phases.act[0]].src === 86 &&
      ft.length === 10 && J(ft.map((x) => x[0])) === J(VMAN.cells.slice(-10).map((c) => c.src)) && ft.every((x, k) => Math.abs(x[1] - (1 - k / 9)) < 1e-4) &&
      VMAN.cellMax === 512 && VMAN.cellPx === Math.max(...VMAN.cells.map((c) => Math.max(c.w, c.h))) && VMAN.audit.atlasLever === 'none' && VMAN.mv === false && VMAN.vignette === false && VMAN.blend === 'normal' && VMAN.alpha === 'straight' &&
-     [MANIFEST, IMAN, BMAN].every((m) => m.exit === undefined && m.contactRule === undefined && m.cellPx === undefined && Array.isArray(m.phases.fizzle)), J({ errors: v.errors, withFizzle: withFizzle.errors, shortAct: shortAct.errors, lever: VMAN.audit.atlasLever }));
+     [MANIFEST].every((m) => m.exit === undefined && m.contactRule === undefined && m.cellPx === undefined && Array.isArray(m.phases.fizzle)), J({ errors: v.errors, withFizzle: withFizzle.errors, shortAct: shortAct.errors, lever: VMAN.audit.atlasLever }));
 }
 templateActor({ label: 'M11 · LAB-9 · AGNI BY THE TEMPLATE (native exit, nova on the burst)', M: AMAN, folder: 'agni', cardId: 'agni', clip: 'agni_green.mp4', sha: '07e0abc7ee58', chroma: 'green',
   emerge: [0, 85], act: [86, 120], contactIn: [98, 98], contact: 'nova', contactNote: 'nova: the engulfing burst begins, the audited frame', aim: null, facing: 'left', keyChannel: 'G' });
@@ -495,13 +494,28 @@ templateActor({ label: 'M13 · LAB-9 · SHUKRACHARYA BY THE TEMPLATE (engine id 
 }
 {
   const at = (rev, p) => cp.execFileSync('git', ['show', rev + ':lab/vfx-manifestation/' + p], { cwd: GAME, maxBuffer: 64 * 1024 * 1024 });
-  const atlases = ['meghnad', 'indra'].map((c) => [c, ['atlas.webp', 'atlas_256.webp'].every((f) => at('41ea143', 'actors/' + c + '/' + f).equals(fs.readFileSync(path.join(LAB, 'actors', c, f))))]);
+  const atlases = ['meghnad'].map((c) => [c, ['atlas.webp', 'atlas_256.webp'].every((f) => at('41ea143', 'actors/' + c + '/' + f).equals(fs.readFileSync(path.join(LAB, 'actors', c, f))))]);   // LAB-10: Meghnad alone is the anchor — Indra was re-packed for his own ending
   const strip = (m) => { const x = JSON.parse(J(m)); delete x.audit.recipe.keyColour; delete x.audit.recipe.keyChannel; return J(x); };
-  const manifests = [['meghnad', MANIFEST], ['indra', IMAN]].map(([c, m]) => [c, strip(m) === J(JSON.parse(at('41ea143', 'actors/' + c + '/manifest.json').toString('utf8')))]);
+  const manifests = [['meghnad', MANIFEST]].map(([c, m]) => [c, strip(m) === J(JSON.parse(at('41ea143', 'actors/' + c + '/manifest.json').toString('utf8')))]);
   const TOOL = fs.readFileSync(path.join(LAB, 'tools', 'make_actor_from_clip.py'), 'utf8');
-  ok('M8 · LAB-7 · THE KEY COLOUR, closed for good (the one known template gap): the pack tool reads the key colour from the frame corners (or a per-card "key_colour" entry) and keys on that colour\'s strongest channel — Meghnad and Indra key on G (' + J(MANIFEST.audit.recipe.keyColour) + ', ' + J(IMAN.audit.recipe.keyColour) + '), Bali on B (' + J(BMAN.audit.recipe.keyColour) + '); no green-only channel arithmetic is left in the tool; re-packed after the change, Meghnad\'s and Indra\'s atlases (both rungs) are byte-identical to LAB-6a (41ea143) and their manifests differ only by the two recorded recipe fields',
+  ok('M8 · LAB-7 · THE KEY COLOUR, closed for good (the one known template gap): the pack tool reads the key colour from the frame corners (or a per-card "key_colour" entry) and keys on that colour\'s strongest channel — Meghnad and Indra key on G (' + J(MANIFEST.audit.recipe.keyColour) + ', ' + J(IMAN.audit.recipe.keyColour) + '), Bali on B (' + J(BMAN.audit.recipe.keyColour) + '); no green-only channel arithmetic is left in the tool; re-packed after the change, Meghnad\'s atlases (both rungs) are byte-identical to LAB-6a (41ea143) and his manifest differs only by the two recorded recipe fields (LAB-10 re-packed Indra for the clip\'s own ending, so he is no longer an anchor)',
      atlases.every((x) => x[1]) && manifests.every((x) => x[1]) && MANIFEST.audit.recipe.keyChannel === 'G' && IMAN.audit.recipe.keyChannel === 'G' && BMAN.audit.recipe.keyChannel === 'B' && J(BMAN.audit.recipe.keyColour) === J([0, 69, 197]) &&
      /def key_channels\(K\):/.test(TOOL) && /CFG\.get\("key_colour"\)/.test(TOOL) && !/g - np\.maximum\(r, b\)|fg\[\.\.\., 1\] = np\.minimum|chroma green\)/.test(TOOL), J({ atlases, manifests }));
+}
+
+{
+  // LAB-10 · THE PRESETS, PINNED BY DATA: with Indra native, no card plays the tuned Deva dissolve by default any more, so its numbers are pinned here
+  const FFXP = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DSP = lib('dissolve');
+  const D = FFXP.devas.dissolve, V = FFXP.vanaras.dissolve;
+  const devaWant = { edge: '#ffc94a', core: '#fff6d8', front_width: 0.24, front_soft: 0.08, charge: 0.6, chargeAlpha: 1, noise: 0.5, noiseScale: 9,
+                     sweep_frac: 0.7, ember_density: 8, mote_color: '#ffe08a', mote_spread: 26, mote_zone: 0.6, canvas_cap: 140, gpu_cap: 700, smoke: false, seed: 23 };
+  const devaArr = { mote_size: [0.6, 1.5], mote_life: [1100, 1700], mote_rise: [8, 40] };
+  const hazeWant = { color: '#ffd978', alpha: 0.18, rate: 30 };
+  const tunedInVanara = Object.keys(DSP.ALIAS).concat(['haze']).filter((k) => V[k] !== undefined);
+  const devaOk = Object.keys(devaWant).every((k) => D[k] === devaWant[k]) && Object.keys(devaArr).every((k) => J(D[k]) === J(devaArr[k])) && !!D.haze && Object.keys(hazeWant).every((k) => D.haze[k] === hazeWant[k]);
+  ok('M15 · LAB-10 · THE FACTION EXIT PRESETS, PINNED BY DATA: LAB-6a tuned the Deva dissolve against Indra\'s own tail, and LAB-10 sends Indra out natively — so no card plays that preset by default any more and its numbers are pinned here instead (front ' + D.front_width + '/' + D.front_soft + ', charge ' + D.charge + ', sweep ' + D.sweep_frac + ', motes density ' + D.ember_density + ' colour ' + D.mote_color + ' size ' + J(D.mote_size) + ' life ' + J(D.mote_life) + ' rise ' + J(D.mote_rise) + ' spread ' + D.mote_spread + ' zone ' + D.mote_zone + ', haze ' + D.haze.color + ' at ' + D.haze.alpha + ' × ' + D.haze.rate + '/s, caps ' + D.canvas_cap + '/' + D.gpu_cap + ', no smoke, seed ' + D.seed + '); the Vanara preset names NO tuning knob and stays at the defaults for a future Vanara card (edge ' + V.edge + ', core ' + V.core + ', embers ' + V.embers + ', smoke ' + V.smoke + ', seed ' + V.seed + '); the lab\'s Exit preset dropdown still plays either over any card',
+     devaOk && V.edge === '#ff9a3c' && V.core === '#fff0d2' && V.embers === 1.1 && V.emberColor === '#ffc070' && V.smoke === true && V.smokeColor === '#261a0e' && V.seed === 41 && tunedInVanara.length === 0,
+     J({ deva: D, vanara: V, tunedInVanara }));
 }
 
 // ═══ K · THE SOURCES (A7) ═══
@@ -580,7 +594,7 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
                                        : 'no number at all — ' + name + ' only enters, so SETTLE lands the board with him on it and nothing floats' };
     });
     ok('S4b · LAB-7 · the stage suite and its gate run for EVERY registry card with an actor, built from data/manifestations.json: ' + CARDS.map((c) => c.name + ' (' + c.id + ', ' + c.faction + ', ' + (c.exit === 'native' ? 'the native exit' : 'the ' + c.presetName + ' exit') + (c.exempt ? ', ladder-exempt' : '') + ')').join(' · '),
-       J(CARDS.map((c) => c.id)) === J(['meghnad', 'indra', 'hanuman', 'varuna', 'agni', 'mahabali', 'shukra']) && J(CARDS.map((c) => c.exit)) === J(['procedural', 'procedural', 'procedural', 'native', 'native', 'native', 'native']) && CARDS.every((c) => c.M.cardId === c.id && c.FX.every((f) => f.diff.entered.some((x) => x.id === c.id))) && J(CARDS[0].expectFloats(0)) === J([{ uid: FX[0].before.seats[FX[0].defenderSeat].heroes[0].uid, delta: -2 }]), J(CARDS.map((c) => [c.id, c.faction, c.expectFloats(0)])));
+       J(CARDS.map((c) => c.id)) === J(['meghnad', 'indra', 'hanuman', 'varuna', 'agni', 'mahabali', 'shukra']) && J(CARDS.map((c) => c.exit)) === J(['procedural', 'native', 'native', 'native', 'native', 'native', 'native']) && CARDS.every((c) => c.M.cardId === c.id && c.FX.every((f) => f.diff.entered.some((x) => x.id === c.id))) && J(CARDS[0].expectFloats(0)) === J([{ uid: FX[0].before.seats[FX[0].defenderSeat].heroes[0].uid, delta: -2 }]), J(CARDS.map((c) => [c.id, c.faction, c.expectFloats(0)])));
     const ALLGATES = [];
     const stageSuite = (CARD) => {
       const CARD_ST = MAN.contactStrength(CARD.M);   // LAB-9: a self-cast softens its flash and may forbid the camera impulse entirely
@@ -837,9 +851,10 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
       };
       const POSE = [0, 1].reduce((all, s2) => all.concat([512, 256].map((rg) => poseRun(s2, rg))), []);
       const STAGE9A = fs.readFileSync(path.join(LAB, 'lib', 'actorstage.js'), 'utf8'), PLAY9A = fs.readFileSync(path.join(LAB, 'lib', 'playback.js'), 'utf8');
-      ok(CARD.tag + 'S21 · LAB-9a · NO TELEPORT INSIDE ACT, both seats and both rungs: the actor never moves more than 3 px between frames inside ACT and never jumps at the EMERGE→ACT boundary — the charge eases over at least 35% of ACT whatever cell the contact lands on (3 px, not 2: the top seat\'s charge travel is 1.85x the player\'s seat\'s — 57.3 px against 31.1 — so the same smooth ease peaks near 2.5 px a frame there; a surge is the 7 px class and a teleport the 31 px class, and both trip this instantly)' + (CARD.M.contactRule === 'nova' ? ', and a "nova" performs where it stands (no travel at all)' : '') + ' — ' + POSE.map((p) => 'seat ' + p.seat + ' @ ' + p.rung + ' px: max ' + p.maxAct + ', boundary ' + p.atBoundary).join(' | '),
+      ok(CARD.tag + 'S21 · LAB-9a · NO TELEPORT INSIDE ACT, both seats and both rungs: the actor never moves more than 3 px between frames inside ACT and never jumps at the EMERGE→ACT boundary — the charge eases over at least 35% of ACT whatever cell the contact lands on, and a card that performs in place (travelScale 0) never charges at all (under half a pixel — what is left is EMERGE\'s rise easing handing over) (3 px, not 2: the top seat\'s charge travel is 1.85x the player\'s seat\'s — 57.3 px against 31.1 — so the same smooth ease peaks near 2.5 px a frame there; a surge is the 7 px class and a teleport the 31 px class, and both trip this instantly)' + (CARD.M.contactRule === 'nova' ? ', and a "nova" performs where it stands (no travel at all)' : '') + ' — ' + POSE.map((p) => 'seat ' + p.seat + ' @ ' + p.rung + ' px: max ' + p.maxAct + ', boundary ' + p.atBoundary).join(' | '),
          POSE.every((p) => p.maxAct <= 3 && p.atBoundary <= 3) && /var c = Math\.max\(0\.35, a\.contact\);/.test(STAGE9A) &&
-         (CARD.M.contactRule !== 'nova' || /contactRule === 'nova'\) pl\.travel = \{ x: 0, y: 0 \};/.test(PLAY9A)), J(POSE));
+         /contactRule === 'nova' \? 0 :/.test(PLAY9A) && /pl\.travel = \{ x: pl\.travel\.x \* ts, y: pl\.travel\.y \* ts \};/.test(PLAY9A) &&
+         (MAN.travelScale(CARD.M) > 0 || POSE.every((p) => p.maxAct <= 0.5)), J(POSE));
 
       // ── LAB-8 · THE NOVA CONTACT RULE ──
       if (CARD.M.contactRule === 'nova') {

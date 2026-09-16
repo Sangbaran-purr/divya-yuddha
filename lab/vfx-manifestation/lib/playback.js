@@ -22,7 +22,9 @@
       var art = env.actorFor(ctx.cardId), card = env.rectOf(ctx.sourceUid);
       if (!art || !card) return null;
       var pl = SM.place({ card: card, side: side, fieldW: env.field.w, fieldH: env.field.h, band: env.bandOf(1 - ctx.seat), refHeight: art.manifest.refHeight, facing: art.manifest.facing });
-      if (art.manifest.contactRule === 'nova') pl.travel = { x: 0, y: 0 };   // LAB-9a: a nova bursts where it stands; only a charging action travels
+      // LAB-10: the card says how far it charges (travelScale, default 1); LAB-9a: a nova bursts where it stands whatever it says
+      var ts = art.manifest.contactRule === 'nova' ? 0 : (root.ActorManifest || require('./manifest.js')).travelScale(art.manifest);
+      if (ts !== 1) pl.travel = { x: pl.travel.x * ts, y: pl.travel.y * ts };
       return pl;
     }
     function ensureActor() {

@@ -652,6 +652,53 @@ The owner ruled the split to f086 — where the ring is already collapsing, its 
 
 **The suite pins it** (S21, both seats, both rungs): no frame moves an actor more than **3 px** inside ACT. Three and not two because the top seat's charge travel is **1.85× longer** than the player's seat — 57.3 px against 31.1 — so the same smooth ease peaks near 2.5 px a frame there. A surge is the 7 px class and a teleport the 31 px class; the bar catches either instantly.
 
+## LAB-10: Indra and Bali — in place, native exits
+
+The owner extended ruling B to the two legacy characters: both now play their clip's own ending instead of the procedural faction dissolve, and neither charges across the board any more.
+
+### The restored endings
+
+| | Before | Now | Contact | Cells | Fade tail |
+|---|---|---|---|---|---|
+| Indra | ACT f053–f097, Deva dissolve | **ACT f053–f120**, native | f055, bolt-edge, ACT cell 2 | 62 → **85** | f111–f120 |
+| Bali | ACT f057–f093, Vanara dissolve | **ACT f057–f109**, native | f064, ground-impact, ACT cell 7 | 66 → **82** | f100–f109 |
+
+Both contacts keep their own rule and their own frame; every restored frame falls after contact, so the cell indices never moved.
+
+**Indra's tail** is his own gold-dust dissolution: the body breaks up from f102, thins through f113 and is nearly empty by f119. No green survives the despill anywhere in it.
+
+**Bali's tail** is the earth exit: gold dust from f094, then stone chunks falling through dust. It stops at **f109** — from about f110 the clip carries a teal-green blob at the bottom right (green content, not a key failure: the corners stay blue to f120), so f110–f120 stay out. The dust-to-chunks read survives intact.
+
+### The atlases (A5) — no lever needed
+
+| Card | 512 rung | On disk | Decoded | 256 rung |
+|---|---|---|---|---|
+| Indra | 4035x2624 | 2.13 MB | 40.4 MB | 2032x1322, 0.76 MB, 10.2 MB |
+| Bali | 4068x1830 | 1.74 MB | 28.4 MB | 2031x921, 0.60 MB, 7.1 MB |
+
+### In place: `travelScale`
+
+Zero travel was keyed to `contactRule: "nova"` in LAB-9a, but Indra and Bali keep their directional rules. A manifest **`travelScale`** (0–1, **absent = 1**) now scales the charge, validated beside `contactStrength` and applied in `lib/playback.js`. Indra and Bali carry **0**; a nova is still forced to 0 whatever it says; **Meghnad names nothing, so he keeps his charge** — the grandfathered pilot is untouched.
+
+### The timelines, at the inherited 0.6x
+
+| Card | AWAKEN | EMERGE | ACT | SETTLE | Full | Fast | The ladder would give |
+|---|---|---|---|---|---|---|---|
+| Indra | 667 | 718 | 4278 | 667 | **6330 ms** | 3164 ms | 3500 ms |
+| Bali | 667 | 1225 | 3335 | 667 | **5894 ms** | 2947 ms | 3500 ms |
+
+### Accepted defects
+
+1. **Indra's dust takes a chartreuse cast** from about f108 — the same yellow-against-a-green-key artifact as Agni's plume.
+2. **Indra's dhoti survives as a pale ribbon** to about f116, after the body itself has gone.
+3. **Bali's tail is cut at f109** to exclude the clip's green blob; his ending therefore stops while a little dust and a few chunks are still falling, and the fade tail carries them out.
+
+### Two consequences, recorded
+
+- **M8 narrows to Meghnad.** He is now the only card whose atlases are pinned byte-identical to LAB-6a; Indra's changed by design this rung.
+- **The Deva preset lost its live exerciser**, since Indra was the card that played it by default. Its LAB-6a numbers are now pinned by data in **M15**, together with the fact that the **Vanara preset names no tuning knob at all** and stays at its defaults for a future Vanara card.
+- **Open ruling 2 (the Vanara earth-exit tuning) is closed as moot**: Bali exits natively with the clip's own earth ending, so the preset never needed tuning for him.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference
