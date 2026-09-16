@@ -107,6 +107,10 @@ const HERO_ENTRIES = {
           ruling: 'VFX-LAB-9 — a launch character by the template, native exit; A1: the Hero enters and nothing else changes (his passive waits for a voluntary Pass)' },
   shukracharya: { card: 'Shukracharya', faction: 'asuras', deck: ['Shukracharya'].concat(ASURA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'shukracharya_play',
           ruling: 'VFX-LAB-9 — a launch character by the template, native exit; the engine id is "shukra" (the registry keys him by it, the folder and fixture stay "shukracharya"); his revive needs a fallen Unit in the discard, so on an empty board the Hero enters and nothing else changes' },
+  mahishi: { card: 'Mahishi', faction: 'asuras', deck: ['Mahishi'].concat(ASURA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'mahishi_play',
+          ruling: 'LAB-11 - a WAVE-1 hero, reached by NAME through the scenario deck: the draft filter hides wave cards from the random pool, but CARD_BY_NAME is built from every deck, so naming her is enough and no shim exists or is needed. A1 (the board is the truth): the Hero enters and nothing else changes (her copy fires at ROUND END, not on play)' },
+  vritra: { card: 'Vritra', faction: 'asuras', deck: ['Vritra'].concat(ASURA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'vritra_play',
+          ruling: 'LAB-11 - a WAVE-1 hero, reached by NAME through the scenario deck, no shim (see Mahishi). A1: the Hero enters and nothing else changes (his bind needs an enemy Unit; on an empty board it finds none)' },
   varuna: { card: 'Varuna', faction: 'devas', deck: ['Varuna', 'Narada', 'Chandra Dev', 'Yama', 'Marut', 'Gandharva', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Vishwakarma', 'Agni'], oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'varuna_play',
            ruling: 'VFX-LAB-8 — the fourth character, the first native exit; A1 (the board is the truth): the Hero enters and nothing else changes (his passive limits the opponent\'s Astras; it changes no card on an empty board)' },
 };

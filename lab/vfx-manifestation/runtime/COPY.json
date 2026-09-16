@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "3833de035d1aff2db66e0baeb1d1dfaba74f7e02",
+    "gameCommit": "ad940f9e492ede80f47c042f7948cc2f557abef6",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -143,6 +143,26 @@
       "to": "art/Asuras_Hero_Shukracharya_P5_rEpic.png",
       "bytes": 382328,
       "sha256": "cd2fc718eeff51e7b0679ba82b065fd08c91c1ae8272688da1b2766c43fe6ce7",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Asuras_Hero_Mahishi_P5_rLegendary.png",
+      "to": "art/Asuras_Hero_Mahishi_P5_rLegendary.png",
+      "bytes": 439458,
+      "sha256": "b9922d540bdb411a870773daefce3e8cc7876e274d7a914587d7994b1e2d3016",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Asuras_Hero_Vritra_P6_rLegendary.png",
+      "to": "art/Asuras_Hero_Vritra_P6_rLegendary.png",
+      "bytes": 465500,
+      "sha256": "ca1ee71b56de9e1023e020495a06dcc9b8a17506bde566821d4de898f0720dea",
       "px": {
         "w": 750,
         "h": 1050

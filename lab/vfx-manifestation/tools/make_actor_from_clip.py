@@ -103,6 +103,14 @@ CARDS = {
                 "facing": "left", "aim": None, "feather": 8, "engine_id": "shukra",
                 "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": (100, 120),
                 "contact_strength": {"flash": 0.5, "impulse": 0}},
+    "mahishi": {"label": "Mahishi", "clip": "mahishi/mahishi_green.mp4", "emerge": (33, 55), "act": (56, 115), "tempo": None,   # LAB-11: the idle f000-f032 dropped (no idle padding: AWAKEN is the anticipation); stopped at f115, past which the red powder is gone and only khaki ground residue is left
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 56), "settled": 36, "pivot": "feet",
+                "facing": "left", "aim": None, "feather": 8, "feather_bottom": 12, "engine_id": "mahishi",
+                "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
+    "vritra":  {"label": "Vritra", "clip": "vritra/vritra_green.mp4", "emerge": (0, 71), "act": (72, 112), "tempo": None,   # LAB-11: ACT opens on the top of the rear (the roar IS the strike); stopped at f112, past which the drifting chunks carry ground halos
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 72), "settled": 0, "pivot": "feet",
+                "facing": "left", "aim": None, "feather": 8, "feather_bottom": 16, "engine_id": "vritra",
+                "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
 }
 CFG = None
 def configure(card):

@@ -699,6 +699,66 @@ Zero travel was keyed to `contactRule: "nova"` in LAB-9a, but Indra and Bali kee
 - **The Deva preset lost its live exerciser**, since Indra was the card that played it by default. Its LAB-6a numbers are now pinned by data in **M15**, together with the fact that the **Vanara preset names no tuning knob at all** and stays at its defaults for a future Vanara card.
 - **Open ruling 2 (the Vanara earth-exit tuning) is closed as moot**: Bali exits natively with the clip's own earth ending, so the preset never needed tuning for him.
 
+## LAB-11: Mahishi and Vritra — two Wave-1 heroes, and no shim needed
+
+Two Asura Legendaries, both native exits, both nova. The rung was proposed as a Wave-1 *shim* task; the shim was never built, because STEP-0 found there was nothing to bridge.
+
+### The finding: Wave-1 cards need no shim
+
+Wave-1 card definitions live in `src/engine.js` alongside every launch card, carrying `wave:1`. The flag is read in exactly one place — `mkPlayer` filters the **random draft pool**:
+
+```js
+const src = wave1 ? rawSrc : rawSrc.filter(c => !c.wave);
+```
+
+But `CARD_BY_NAME` is built from **every** deck, wave cards included, and `opts.scenario` deck injection resolves cards **by name** through that index. So a scenario that names `'Mahishi'` reaches her without any flag: the draft filter never runs on an injected deck. Both heroes were probed live before the rung — one `play` event each, no throw, inert on an empty board.
+
+The lab therefore passes **no wave flag anywhere**, and **F27** pins that: it walks every `.js`/`.json`/`.html`/`.py` file under `lab/` and fails if any of them mentions the flag (the suite itself is exempt — it has to name what it forbids). **F26** is the companion guard rail: the fixtures name every card as a plain string, pass no option a launch card would not, and produce one `play` event whose board difference is the Hero entering at engine power.
+
+**Engine powers, corrected against the balance ladder** (the frames on disk already match): **Mahishi P5** — R64 took her P7→P6, R76 P6→P5. **Vritra P6** — R65 took him P8→P7, R80 P7→P6.
+
+### The two packs
+
+| | Mahishi | Vritra |
+|---|---|---|
+| EMERGE | f033–f055 (23 cells) | f000–f071 (71 cells) |
+| ACT | f056–f115 (59 cells) | f072–f112 (41 cells) |
+| Contact | f056, ACT cell 0, **nova** | f072, ACT cell 0, **nova** |
+| Exit | native, fade tail f106–f115 | native, fade tail f103–f112 |
+| Tail dropped | f116–f120 | f113–f120 |
+| Pivot | feet, settled f036 → (941.7, 1065) | **coil base**, settled f000 → (962.8, 1057) |
+| Bottom feather | 12 px (core gap 16 px) | 16 px (core gap 24 px) |
+| Atlas | 4067×3184, 2.59 MB, 49.4 MB decoded | 4044×3175, 3.17 MB, 49.0 MB decoded |
+| Full / Fast | 6081 / 3040 ms | 6956 / 3477 ms |
+
+**Mahishi's idle is dropped** (f000–f032) under the no-idle-padding law: AWAKEN already supplies the anticipation beat, so the clip's static head is dead weight in the atlas. Her ACT opens on **f056 — the frame the fire arc goes radial**, where the bounding box leaps 300 px left in a single frame. It is not her brightest frame (that is f059) but it is where the ring is *born*, and a nova flash wants the birth, not the peak.
+
+**Vritra's ACT opens on the top of the rear (f072)**, where his head reaches its highest point before settling back. The roar *is* the strike, so the nova is the shockwave; the fire that erupts at his coil base from f090 is his **exit**, not his attack.
+
+### The serpent reading of "feet"
+
+A coiled serpent has no feet. `pivot: "feet"` resolves for Vritra to the **coil base** — the ground line under the coil's horizontal span — measured once on the settled frame f000 at source **(962.8, 1057)**. This joins Mahabali's throne base as a precedent for the rule: whatever carries the figure's weight on the ground is its "feet".
+
+The pivot **cannot drift through the rear-up**, and not by luck: the pack measures one pivot on one settled frame and reuses it for every cell (the camera is locked, so that world point is fixed). Had it been measured per frame it *would* have drifted — the feet rule gives x 962.8 (f000) → 986.0 (f060) → 938.7 (f070) → 829.1 (f080) as the coil shifts under him. One pivot, one frame, no drift. **M18** pins it.
+
+### Both tails needed trimming — the first pair since Bali
+
+STEP-0 first reported both tails as clean. That was wrong: the measurement read a raw-frame mask rather than the packed matte. On the real matte both carry surviving ground, and both needed a trim frame.
+
+- **Mahishi stops at f115.** Her red powder dominates through f115; from f116 the red drains and what survives is **khaki crumbs** — source-green pixels rescued by the un-mix and despilled to olive (source-green share of kept pixels runs 13.9% → 21.6% → 30.7% → 53.5% → 83.6% across f115→f119). The Bali-blob class.
+- **Vritra stops at f112**, and his tail does **real work** — he does not end empty. Past f112 the drift carries two defects: every chunk keeps a **pale ground halo ring** (pale-grey share of kept pixels climbs 13% → 25% across f113–f120), and Kling's grey smoke **despills to magenta** (grey over green → G clamped to max(R,B) → pink), peaking 3.2% at f109. Ending at f112 drops the halo drift outright and leaves the magenta window (f107–f110) sitting in the **back half of the fade ramp**, at alpha 0.55 → 0.25, which plays it down. No new matte knob was needed.
+
+### Accepted defects
+
+- **Mahishi:** the khaki residue class beyond f115 is dropped, not fixed; if a later rung wants those frames it needs a despill that can tell olive smoke from olive powder.
+- **Vritra:** the chunk halos and the magenta smoke window are handled by the trim and the fade ramp, not removed at the source. His **tail reaches the right frame edge from f062** (26 frames) — a hard vertical cut that the standard 8 px side feather fades; he is a serpent whose tail leaves frame, so the cut reads as intended rather than as damage.
+
+### What the rung did not need
+
+Neither card carries a `travelScale` line: both are nova, and the LAB-9a nova special case already gives a nova zero travel. Both packed at **cellPx 448** — the first rung of the lever ladder, and the only one either needed; unlike Shukracharya, **neither dropped a frame to `thin_alternate`**.
+
+S11 holds with room on both (their EMERGE cell counts predict zero lost cells at 30 Hz / tempo 1, against the LAB-8 bound of four). S21 holds: no frame moves either actor more than 3 px inside ACT, both seats, both rungs. A5 holds: one actor decoded at a time, 0 MB between plays.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference
