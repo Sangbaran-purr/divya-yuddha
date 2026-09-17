@@ -119,6 +119,22 @@ CARDS = {
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("bolt-edge", (44, 64)), "settled": 0, "pivot": "feet",
                 "facing": "right", "aim": None, "feather": 8, "engine_id": "kartikeya", "travel_scale": 0,   # LAB-13a: the Vel throws, the god stands. bolt-edge does NOT imply travel - travel is per-card data, and LAB-13 simply never set it
                 "exit": "native", "fade_tail": 10, "cell_px": 384, "thin_alternate": None},   # LAB-13: 448 was ruled, but at 448 his 256 rung packs to 27.3% of the 512 rung and fails the A5 quarter-rung invariant; 384 packs to 25.4% and costs 8.0 MB on the low rung, the least of any card
+
+    # LAB-14 · the first NAGA actors. All three sit on coils, so "feet" resolves to the COIL BASE (the Vritra reading); all three
+    # exit natively, so the Naga dissolve preset stays untuned and unexercised (the M15 note now covers Deva and Naga alike).
+    "vasuki":  {"label": "Vasuki", "clip": "vasuki/vasuki_magenta.mp4", "emerge": (0, 44), "act": (45, 120), "tempo": None,   # the ring pulse is born at f045; his closing teal cloud is genuine, not residue, so nothing is trimmed and the fade tail carries it
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 45), "settled": 0, "pivot": "feet",
+                "facing": "right", "aim": None, "feather": 8, "engine_id": "vasuki",
+                "exit": "native", "fade_tail": 10, "cell_px": 384, "thin_alternate": None},
+    "takshaka": {"label": "Takshaka", "clip": "takshaka/takshaka_magenta.mp4", "emerge": (0, 54), "act": (55, 110), "tempo": None,   # stopped at f110: past it his specks are increasingly ground, the Kartikeya pink-residue class
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 56), "settled": 0, "pivot": "feet",
+                "facing": "left", "aim": None, "feather": 8, "feather_bottom": 16, "engine_id": "takshaka",
+                "exit": "native", "fade_tail": 10, "cell_px": 384, "thin_alternate": None},
+    "shesha":  {"label": "Shesha", "clip": "shesha/shesha_magenta.mp4", "emerge": (0, 44), "act": (45, 113), "tempo": None,   # nothing in his clip strikes: the flash rides the radiance at its fullest (f078), softened like Shukracharya
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 78), "settled": 0, "pivot": "feet",
+                "facing": "right", "aim": None, "feather": 8, "engine_id": "shesha",
+                "exit": "native", "fade_tail": 10, "cell_px": 384, "thin_alternate": None,
+                "contact_strength": {"flash": 0.5, "impulse": 0}},
 }
 CFG = None
 def configure(card):

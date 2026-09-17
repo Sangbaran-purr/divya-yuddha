@@ -70,6 +70,8 @@ function build(attackerSeat) {
 
 // LAB-7: one builder for every "a Hero enters on an empty board" fixture — the card's seat moves first and plays it; nothing else
 // happens (the no-number SETTLE path). Indra's fixture is this builder's output, field for field, as it was.
+// LAB-14: the first Naga decks — the twelve launch Nagas that are not Heroes, so a hero entry names its own Hero and nothing else enters
+const NAGA_DECK = ['Manasa', 'Karkotaka', 'Surasa', 'Ulupi', 'Naga Sadhu', 'Kaliya', 'Astika', 'Naga Archer', 'Naga Enchantress', 'Naga Warrior', 'Naga Hatchling', 'Ashvatara'];
 const VANARA_DECK = ['Bali', 'Sugriva', 'Angad', 'Nala', 'Neela', 'Jambavan', 'Kesari', 'Tara', 'Dwivida', 'Mainda', 'Sharabha', 'Vanara Scout'];
 function buildHeroEntry(spec, seat) {
   const other = 1 - seat;
@@ -115,6 +117,12 @@ const HERO_ENTRIES = {
           ruling: 'LAB-12 - a WAVE-1 hero, reached by NAME through the scenario deck, no shim (the LAB-11 finding). A1 (the board is the truth): the Hero enters and nothing else changes - his cleanse strips Venom from friendly Units, and on an empty board there are none to strip' },
   kartikeya: { card: 'Kartikeya', faction: 'devas', deck: ['Kartikeya'].concat(DEVA_DECK.slice(0, 11)), oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'kartikeya_play',
           ruling: 'LAB-13 - a WAVE-1 hero, reached by NAME through the scenario deck, no shim (the LAB-11 finding). A1 (the board is the truth): the Hero enters and nothing else changes - his passive waits for an enemy Astra to resolve against his side, and nothing resolves on an empty board' },
+  vasuki: { card: 'Vasuki', faction: 'nagas', deck: ['Vasuki'].concat(NAGA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'vasuki_play',
+          ruling: 'LAB-14 - one of the first NAGA actors. A1 (the board is the truth): the Hero enters and nothing else changes - his ON PLAY takes a power from every enemy Unit, and an empty board has none' },
+  takshaka: { card: 'Takshaka', faction: 'nagas', deck: ['Takshaka'].concat(NAGA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'takshaka_play',
+          ruling: 'LAB-14 - one of the first NAGA actors. A1: the Hero enters and nothing else changes - his passive only strips enemy Hero immunity from Naga Astras, and no Astra resolves here' },
+  shesha: { card: 'Shesha', faction: 'nagas', deck: ['Shesha'].concat(NAGA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'shesha_play',
+          ruling: 'LAB-14 - one of the first NAGA actors. A1: the Hero enters and nothing else changes - his passive waits for a lost round and a Unit in the discard' },
   varuna: { card: 'Varuna', faction: 'devas', deck: ['Varuna', 'Narada', 'Chandra Dev', 'Yama', 'Marut', 'Gandharva', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Vishwakarma', 'Agni'], oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'varuna_play',
            ruling: 'VFX-LAB-8 — the fourth character, the first native exit; A1 (the board is the truth): the Hero enters and nothing else changes (his passive limits the opponent\'s Astras; it changes no card on an empty board)' },
 };

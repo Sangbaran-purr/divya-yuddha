@@ -932,6 +932,60 @@ Kartikeya is **bolt-edge**, not nova, so the first never applied; and the LAB-13
 
 **The lasting guard is M25**, which reads *who travels* off the registry rather than a hand list: it re-derives every card's effective travel each run and requires that exactly one card still charges. Meghnad remains the only travelling card in the lab — as he has been since LAB-10, and now provably so rather than by assumption.
 
+## LAB-14: Takshaka, Vasuki and Shesha — the first Naga actors, and an identity gate that earned its keep
+
+Three launch Naga Heroes, all on coils, all native exits. The rung's first act was not packing anything.
+
+### The identity gate caught a three-way rotation
+
+Ten new clips were staged, each beside an identity master PNG generated with it. Before any pack, every clip's first character-bearing frame was compared against every master by silhouette IoU. Seven matched their own name. Three did not — and they did not form the *swap* the audit suspected, but a **cycle**:
+
+| clip file, as staged | actually contained | IoU to that master | IoU to its own name |
+|---|---|---|---|
+| `takshaka_magenta.mp4` | **Vasuki** | 0.994 | 0.762 |
+| `vasuki_magenta.mp4` | **Kulika** | 0.988 | 0.757 |
+| `kulika_magenta.mp4` | **Takshaka** | 0.995 | 0.705 |
+
+No two-way rename could have fixed it. Two things corroborated the finding independently: the audit's *action* descriptions travelled with the **files** (the teal ring pulse really is in the file named `takshaka`), and the master-based mapping suits the card text better — a board-wide ring pulse belongs to Vasuki, whose ON PLAY takes a power from every enemy Unit.
+
+**The ruling that came out of it: the master is the provenance parent, and the filename is not authority.** A master is generated alongside its clip and names it; a filename is a label applied afterwards and can rotate. The owner re-staged, and the gate was re-run before the build: all ten now match their own master at **0.929–0.997**, with the three corrected clips at 0.988–0.995 against runner-ups of 0.705–0.770.
+
+This check costs one pass over ten first frames. The previous batch shipped four mislabels without it.
+
+### The three packs
+
+| | Vasuki (P8 L) | Takshaka (P6 E) | Shesha (P7 L) |
+|---|---|---|---|
+| EMERGE | f000–f044 (44) | f000–f054 (54) | f000–f044 (45) |
+| ACT | f045–f120 (76) | f055–f110 (56) | f045–f113 (69) |
+| Contact | f045, cell 0 | f056, cell 1 | **f078, cell 33** |
+| Rule | nova | nova | **nova, softened** |
+| Trim | **none** | f111–f120 | f114–f120 |
+| Fade tail | f111–f120 | f101–f110 | f104–f113 |
+| Bottom feather | none | **16 px, guarded** | none |
+| Pivot (coil base) | (967.3, 1069) | (1004.8, 1045) | (997.8, 1063) |
+| Atlas | 4055×2256 · 34.9 MB | 4087×2141 · 33.4 MB | 4066×2138 · 33.2 MB |
+| 256 rung | 8.9 MB (25.4%) | 8.4 MB (25.2%) | 8.3 MB (25.1%) |
+| Full / Fast | 8018 / 4008 ms | 7180 / 3590 ms | 7578 / 3788 ms |
+
+**Vasuki keeps his whole clip.** His ring pulse is born at f045 — brightness inflects there (10.9k → 17.6k) before running to its 110.5k peak at f060 — and the nova rides the birth, per the Mahishi and Varuna precedent. Nothing is trimmed, because his closing teal cloud is *genuine matter*, not ground: despilled mean `[120,165,197]`, and the ground-dominant share holds 5.9–13.4% and never climbs. But the clip does not end empty — 362k px still stand at f120 — so his fade tail does real work, the Vritra case.
+
+**Takshaka is the Kartikeya class.** He conjures the orb at f040 and the arcs sweep out; the nova sits on f056, the largest picture change in the clip (Δ 17.56). He stops at f110 because past it his specks are increasingly *ground* rather than debris — 19.4% at f110 climbing to **65% at f120**, with the despilled mean going near-black. His bottom feather is the first band measured under the LAB-13 all-frames guard: **16 px against a 35 px core gap, measured across all 54 EMERGE frames** rather than the settled frame alone.
+
+**Shesha is a soft cast, and the measurement is what says so.** Nothing in his clip strikes. His picture change holds flat at 3.5–3.9 through the entire build, and his brightness climbs gently to 21.7k and then *plateaus and declines*. There is no percussive moment anywhere to put a flash on. So the nova rides the radiance at its fullest — f078, 38.2k — rather than an arbitrary point on the ramp or the f094 dissolve flash, which is his exit rather than his act, and `contactStrength {flash: 0.5, impulse: 0}` softens it exactly as Shukracharya's self-cast does. That puts contact on **ACT cell 33**, much later than any other card, which is harmless precisely because a nova performs where it stands: there is no charge for a late contact to compress.
+
+### Accepted defects
+
+- **Vasuki:** his clip never empties, so the last thing on screen is a fade rather than a finish. The cloud is real matter, so this is a property of the performance, not a matting fault.
+- **Takshaka:** the dropped f111–f120 are his final specks; anything genuinely his that lived there is lost with the ground that dominated them.
+- **Shesha:** he is near-self-finishing, and only the spent frames are dropped — 7k px and 34% ground at f114, empty from f116.
+- **All three:** their corners go dirty by f120 (98.4, 58.0, 35.8) as the dissolves spread. The key is unaffected — `ground_colour` reads f000, which is clean at 1.0–1.4 on every one.
+- **Facing is near-cosmetic** on all three. They are frontal seated figures with mild asymmetry (mirror IoU 0.63–0.73), so the value chosen follows each one's dominant gesture rather than a direction they look.
+
+### The Naga exit preset: untuned, and now unexercised
+
+`data/factionfx.json` has carried a Naga dissolve since the presets were written, and no card has ever played it. These three do not change that — **they all exit natively**, so the Naga preset joins the Deva one as a preset held by data rather than by a live card. **M30** pins it: the preset exists, names no tuning knob, sits at its defaults, and every Naga actor in the lab resolves to a native exit. This extends the LAB-10 M15 note, which now covers both presets.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

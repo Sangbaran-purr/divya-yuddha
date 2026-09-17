@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "5c03b306f4969e67088bf0684bdf7113267c1e40",
+    "gameCommit": "3ff4a232c598cc1c75aa7ed3450ce3c9e28ec511",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -183,6 +183,36 @@
       "to": "art/Devas_Hero_Kartikeya_P8_rLegendary.png",
       "bytes": 509797,
       "sha256": "5b162746a1c33a900722015d741d5bcd690864d063fc2138db04b53588cc204b",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Nagas_Hero_Vasuki_P8_rLegendary.png",
+      "to": "art/Nagas_Hero_Vasuki_P8_rLegendary.png",
+      "bytes": 409269,
+      "sha256": "0a95ea06e2d2951e16ee5eae896a0691e82b3be88311a974b0208beabe20c51c",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Nagas_Hero_Takshaka_P6_rEpic.png",
+      "to": "art/Nagas_Hero_Takshaka_P6_rEpic.png",
+      "bytes": 395034,
+      "sha256": "e02a9051a96aecc8f21b4ba2901ab4e2acdd5f974583bc651a4fdabdc92d7fe8",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Nagas_Hero_Shesha_P7_rLegendary.png",
+      "to": "art/Nagas_Hero_Shesha_P7_rLegendary.png",
+      "bytes": 412177,
+      "sha256": "23e3c4d6895238eb20c566c8b867e959acf8425397b4fd0680639e23847b8836",
       "px": {
         "w": 750,
         "h": 1050

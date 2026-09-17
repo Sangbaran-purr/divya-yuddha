@@ -62,6 +62,11 @@ const GFX = [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixture
 // LAB-13 · the first MAGENTA ground: a two-channel key, and the all-frames bottom-feather guard
 const KMAN = JSON.parse(fs.readFileSync(path.join(LAB, 'actors', 'kartikeya', 'manifest.json'), 'utf8'));
 const KFX = [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', 'kartikeya_seat' + s + '.json'), 'utf8')));
+// LAB-14 · the first NAGA actors — three launch Heroes, all on coils, all native exits
+const NAGAS = [['vasuki', 'Vasuki', 'L', 8], ['takshaka', 'Takshaka', 'E', 6], ['shesha', 'Shesha', 'L', 7]].map(([key, name, rarity, power]) => ({
+  key, name, rarity, power, M: JSON.parse(fs.readFileSync(path.join(LAB, 'actors', key, 'manifest.json'), 'utf8')),
+  FX: [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', key + '_seat' + s + '.json'), 'utf8'))),
+}));
 let JSDOM = null; try { ({ JSDOM } = require(require.resolve('jsdom', { paths: [path.join(WEB, 'tests')] }))); } catch (e) { JSDOM = null; }
 
 // ═══ F · THE FIXTURE ═══
@@ -173,6 +178,21 @@ console.log('── F · the fixture: the real engine, both seats ──');
               f.diff.entered[0].eff === 8 && f.diff.entered[0].seat === f.attackerSeat && f.events[0].sourceUid === f.diff.entered[0].uid &&
               f.before.seats[f.attackerSeat].faction === 'devas';
      }), J(KFX.map((f) => [f.events, f.diff.entered])));
+  NAGAS.forEach((c, k) => { for (const seat of [0, 1]) {
+    ok('F' + (34 + k * 2 + seat) + ' · LAB-14 · the ' + c.name + ' seat-' + seat + ' fixture is what a fresh engine run produces today (every field), on the engine it names',
+       J(c.FX[seat]) === J(forEntry(c.key)(seat)) && c.FX[seat].engine.sha256 === liveEngineSha, 'differs from a fresh run');
+  } });
+  ok('F40 · LAB-14 · THE THREE NAGA HEROES THROUGH THE SAME GUARD RAIL, both seats: each named as a plain string, no wave flag, no option a launch card would not pass; ONE event; the board difference is the Hero entering his own seat heroes row at his printed power — Vasuki 8 (Legendary), Takshaka 6 (Epic), Shesha 7 (Legendary), all LAUNCH cards the balance campaign never renumbered. Nothing changed, nothing left, no number: Vasuki takes a power from every enemy Unit and an empty board has none, Takshaka only strips Hero immunity from Naga Astras, and Shesha waits for a lost round',
+     NAGAS.every((c) => c.FX.every((f) => {
+       const opt = f.scenario, deck = opt['p' + f.attackerSeat + 'Deck'];
+       return deck.every((n2) => typeof n2 === 'string') && deck[0] === c.name && opt.wave1 === undefined &&
+              Object.keys(opt).every((k2) => ['p0', 'p1', 'p0Faction', 'p1Faction', 'p0Deck', 'p1Deck', 'mulligan'].indexOf(k2) >= 0) &&
+              J(f.events.map((e) => [e.type, e.abilityName || null, e.text || null])) === J([['play', c.name, '{p' + f.attackerSeat + '} plays ' + c.name]]) &&
+              f.diff.changed.length === 0 && f.diff.left.length === 0 && f.diff.entered.length === 1 &&
+              f.diff.entered[0].id === c.key && f.diff.entered[0].n === c.name && f.diff.entered[0].zone === 'heroes' &&
+              f.diff.entered[0].eff === c.power && f.diff.entered[0].seat === f.attackerSeat && f.events[0].sourceUid === f.diff.entered[0].uid &&
+              f.before.seats[f.attackerSeat].faction === 'nagas';
+     })), J(NAGAS.map((c) => c.FX.map((f) => [f.events, f.diff.entered]))));
   {
     const labFiles = [];
     (function walk(d) { for (const n of fs.readdirSync(d)) { if (n === 'node_modules' || n === '.venv' || n === 'actors' || n === 'sources' || n === 'frames') continue;
@@ -251,6 +271,12 @@ const CTX = FX.map((f) => CC.fromBatch(f)), ICTX = IFX.map((f) => CC.fromBatch(f
               c.boardDiff.length === 1 && c.boardDiff[0].kind === 'enter' && c.boardDiff[0].to === 8 && c.boardDiff[0].evented === 0 &&
               J(CC.project(b.entry)) === J(CC.project(KFX[s2].after)) && J(b.settle) === J(KFX[s2].after) && J(b.final) === J(KFX[s2].after); }),
      J(KFX.map((f) => CC.fromBatch(f).cardId)));
+  ok('C13 · LAB-14 · the three NAGA Heroes contexts, both seats: each a Hero of the NAGA faction — the first the lab has staged — at his own rarity and printed power, in scope, keyed by his engine id; one ENTER with nothing evented; no rest of batch; ENTRY = SETTLE = FINAL = the engine AFTER',
+     NAGAS.every((n) => n.FX.map((f) => CC.fromBatch(f)).every((c, s2) => { const b = CC.boards(c, n.FX[s2].before, n.FX[s2].after);
+       return c.cardId === n.key && !!REG[c.cardId] && c.cardType === 'hero' && c.rarity === n.rarity && c.faction === 'nagas' && c.seat === n.FX[s2].attackerSeat && c.scope === 'manifest' && c.rest.length === 0 &&
+              c.boardDiff.length === 1 && c.boardDiff[0].kind === 'enter' && c.boardDiff[0].to === n.power && c.boardDiff[0].evented === 0 &&
+              J(CC.project(b.entry)) === J(CC.project(n.FX[s2].after)) && J(b.settle) === J(n.FX[s2].after) && J(b.final) === J(n.FX[s2].after); })),
+     J(NAGAS.map((n) => n.FX.map((f) => CC.fromBatch(f).cardId))));
 }
 
 const LADDER = {};   // (label helper — the plan reports the ladder itself)
@@ -571,6 +597,33 @@ templateActor({ label: 'M19 · LAB-12 · GARUDA BY THE TEMPLATE (a WAVE-1 hero; 
   emerge: [0, 39], act: [40, 116], contactIn: [41, 41], contact: 'nova', contactNote: 'nova: the wing snap, where the burst is born', aim: null, facing: 'left', keyChannel: 'G' });
 templateActor({ label: 'M21 · LAB-13 · KARTIKEYA BY THE TEMPLATE (a WAVE-1 hero; the first MAGENTA ground, keyed on the R+B PAIR)', M: KMAN, folder: 'kartikeya', cardId: 'kartikeya', clip: 'kartikeya_magenta.mp4', sha: '77a3e64d4010', chroma: 'magenta',
   emerge: [0, 44], act: [45, 102], contactIn: [50, 50], contact: 'bolt-edge', contactNote: 'the lance reaches the frame edge', aim: null, facing: 'right', keyChannel: 'RB' });
+templateActor({ label: 'M26 · LAB-14 · VASUKI BY THE TEMPLATE (the first NAGA actor; a coil, so the feet pivot is his COIL BASE)', M: NAGAS[0].M, folder: 'vasuki', cardId: 'vasuki', clip: 'vasuki_magenta.mp4', sha: '84dd0c075088', chroma: 'magenta',
+  emerge: [0, 44], act: [45, 120], contactIn: [45, 45], contact: 'nova', contactNote: 'nova: the ring pulse is born, the audited frame', aim: null, facing: 'right', keyChannel: 'RB' });
+templateActor({ label: 'M27 · LAB-14 · TAKSHAKA BY THE TEMPLATE (a coil base pivot and a guarded bottom feather)', M: NAGAS[1].M, folder: 'takshaka', cardId: 'takshaka', clip: 'takshaka_magenta.mp4', sha: 'bfe28171255f', chroma: 'magenta',
+  emerge: [0, 54], act: [55, 110], contactIn: [56, 56], contact: 'nova', contactNote: 'nova: the arcs sweep out, the audited frame', aim: null, facing: 'left', keyChannel: 'RB' });
+templateActor({ label: 'M28 · LAB-14 · SHESHA BY THE TEMPLATE (a SOFT cast — nothing in his clip strikes)', M: NAGAS[2].M, folder: 'shesha', cardId: 'shesha', clip: 'shesha_magenta.mp4', sha: '055a68ea27d2', chroma: 'magenta',
+  emerge: [0, 44], act: [45, 113], contactIn: [78, 78], contact: 'nova', contactNote: 'nova: the radiance at its fullest, the audited frame', aim: null, facing: 'right', keyChannel: 'RB' });
+{
+  // LAB-14 · what the first Naga rung settled
+  const [VS, TK, SH] = NAGAS.map((n) => n.M);
+  const soft = MAN.contactStrength(SH), plain = MAN.contactStrength(VS);
+  ok('M29 · LAB-14 · THE FIRST NAGA ACTORS: three launch Heroes, three readings. VASUKI keeps his whole clip — nothing is trimmed (' + J(VS.audit.droppedTail) + ') because his closing teal cloud is genuine matter rather than ground residue, but it never empties, so his fade tail does real work like Vritra\'s. TAKSHAKA stops at f' + TK.cells[TK.cells.length - 1].src + ' and drops ' + J(TK.audit.droppedTail) + ': past it his specks are increasingly GROUND, the Kartikeya pink-residue class, and he carries a ' + TK.audit.featherBottom.px + ' px bottom feather guarded by the LAB-13 ALL-FRAMES rule — a ' + TK.audit.featherBottom.coreGapMin + ' px core gap measured across all ' + TK.audit.featherBottom.guardFrames + ' EMERGE frames (scope "' + TK.audit.featherBottom.guardScope + '"), not the settled frame alone. SHESHA is a SOFT cast (' + J(soft) + ', the Shukracharya reading) because nothing in his clip strikes, and his nova rides the radiance at its fullest on ACT cell ' + SH.contact + ' — a late index that is harmless precisely because a nova performs where it stands. All three sit on COILS, so the feet rule resolves to the coil base as it did for Vritra (' + NAGAS.map((n) => n.name + ' ' + J(n.M.audit.pivotSrc)).join(', ') + '), all three are keyed on the MAGENTA PAIR, and all three exit natively',
+     J(VS.audit.droppedTail) === J(null) && J(TK.audit.droppedTail) === J([111, 120]) && J(SH.audit.droppedTail) === J([114, 120]) &&
+     TK.audit.featherBottom.px === 16 && TK.audit.featherBottom.guardScope === 'emerge' && TK.audit.featherBottom.guardFrames === 54 && TK.audit.featherBottom.coreGapMin === 35 &&
+     VS.audit.featherBottom === undefined && SH.audit.featherBottom === undefined &&
+     soft.flash === 0.5 && soft.impulse === 0 && plain.flash === 1 && plain.impulse === 1 &&
+     SH.contact === 33 && VS.contact === 0 && TK.contact === 1 &&
+     NAGAS.every((n) => n.M.contactRule === 'nova' && n.M.exit === 'native' && n.M.phases.fizzle === undefined && n.M.cellPx === 384 &&
+                        n.M.travelScale === undefined && n.M.audit.recipe.keyKind === 'pair' && n.M.audit.recipe.keyChannel === 'RB' &&
+                        n.M.audit.recipe.pivot === 'feet' && n.M.atlasSize.w <= 4096 && n.M.atlasSize.h <= 4096 &&
+                        MAN.decodedBytes(MAN.forRung(n.M, 256)) < 10 * 1048576),
+     J(NAGAS.map((n) => [n.name, n.M.audit.droppedTail, n.M.contact, n.M.cellPx, (MAN.decodedBytes(MAN.forRung(n.M, 256)) / 1048576).toFixed(1)])));
+  const FFX14 = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DS14 = lib('dissolve');
+  ok('M30 · LAB-14 · THE NAGA EXIT PRESET IS STILL UNTUNED AND NOW UNEXERCISED — the M15 note, extended. data/factionfx.json carries a Naga dissolve, but all three Naga actors exit NATIVELY, so nothing in the lab plays it: the Naga preset joins the Deva one as a preset pinned by data rather than by a card. It names no tuning knob and sits at its defaults, ready for a future Naga card that wants the procedural exit',
+     !!FFX14.nagas && !!FFX14.nagas.dissolve && Object.keys(DS14.ALIAS).concat(['haze']).every((k) => FFX14.nagas.dissolve[k] === undefined) &&
+     NAGAS.every((n) => MAN.exitMode({ entry: REG[n.key], manifest: n.M }).exit === 'native'),
+     J(FFX14.nagas));
+}
 {
   // LAB-13 · the two-channel key. The numbers live where they are produced — the classifier is mirrored here and run over the
   // ground colour EVERY manifest records, so this check re-derives the decision from data rather than pinning a copied figure.
@@ -584,7 +637,8 @@ templateActor({ label: 'M21 · LAB-13 · KARTIKEYA BY THE TEMPLATE (a WAVE-1 her
   const pairs = ALL.filter((c) => c.got.kind === 'pair'), singles = ALL.filter((c) => c.got.kind === 'single');
   const kart = ALL.find((c) => c.id === 'kartikeya');
   ok('M22 · LAB-13 · THE CHROMA CLASSIFIER, RE-DERIVED FROM EVERY MANIFEST. A chroma ground is keyed by ONE channel (green, blue) or by a PAIR that together oppose the third — magenta is R and B against G. argmax cannot tell them apart: on Kartikeya\'s ' + J(kart.K) + ' it picks R, and "R − max(G,B)" is ' + (kart.K[0] - Math.max(kart.K[1], kart.K[2])) + ', so the ground reads as LESS key-coloured than the figure and the matte comes out INVERTED. Running the classifier over the ground colour each of the ' + ALL.length + ' manifests recorded: ' + singles.length + ' single (' + singles.map((c) => c.id + ' ' + c.tag).join(', ') + ') and ' + pairs.length + ' pair (' + pairs.map((c) => c.id + ' ' + c.tag).join(', ') + '). Every clip clears the boundary with room — the tightest single is ' + singles.map((c) => c.id + ' ' + c.got.margin.map((v) => v.toFixed(1)).join(' vs ')).sort()[0] + ' and Kartikeya sits at ' + kart.got.margin.map((v) => v.toFixed(1)).join(' vs ') + ' — so the ten shipped actors keep the single-channel path untouched (M8 still pins Meghnad\'s atlases byte-for-byte). The ten shipped manifests predate the recorded kind field, so the classifier is checked against the channel tag they DO carry and against Kartikeya\'s full record',
-     ALL.every((c) => (c.kind === undefined || c.got.kind === c.kind) && c.got.tag === c.tag) && pairs.length === 1 && pairs[0].id === 'kartikeya' && singles.length === 10 &&
+     ALL.every((c) => (c.kind === undefined || c.got.kind === c.kind) && c.got.tag === c.tag) && ALL.length === Object.keys(REG).filter((id) => REG[id].manifest).length &&
+     pairs.every((c) => c.tag === 'RB') && singles.every((c) => c.tag.length === 1) && pairs.length >= 1 && singles.length >= 10 &&
      kart.kind === 'pair' && kart.tag === 'RB' && /chroma magenta\)/.test(JSON.parse(fs.readFileSync(path.join(LAB, 'actors', 'kartikeya', 'manifest.json'), 'utf8')).source) &&
      ALL.every((c) => c.got.margin[0] < c.got.margin[1] === (c.got.kind === 'pair')),
      J(ALL.map((c) => [c.id, c.K, c.kind, c.tag, c.got.kind, c.got.tag])));
@@ -597,7 +651,8 @@ templateActor({ label: 'M21 · LAB-13 · KARTIKEYA BY THE TEMPLATE (a WAVE-1 her
     const movers = TRAVEL.filter((c) => c.eff > 0);
     ok('M25 · LAB-13a · MEGHNAD IS THE ONLY CARD THAT STILL CHARGES. A card performs in place two ways, and they are not the same thing: a "nova" bursts where it stands whatever its data says (the LAB-9a special case, ' + TRAVEL.filter((c) => c.nova).map((c) => c.id).join(', ') + '), and every other in-place card carries travelScale 0 as DATA (' + TRAVEL.filter((c) => !c.nova && c.ts === 0).map((c) => c.id).join(', ') + '). Kartikeya is the case that proved the distinction matters: he is bolt-edge, not nova, so the nova special case never covered him, and LAB-13 simply never set his travelScale — he shipped on the default 1 and charged ' + '31 px at the player seat and 57 px at the top seat' + ' across ACT, which the owner saw as a shift on the contact sound. BOLT-EDGE DOES NOT IMPLY TRAVEL: travel is per-card data, and the omission, not the contact rule, was the cause',
        J(movers.map((c) => c.id)) === J(['meghnad']) && TRAVEL.find((c) => c.id === 'kartikeya').ts === 0 &&
-       TRAVEL.filter((c) => c.nova).length === 7 && TRAVEL.filter((c) => !c.nova && c.ts === 0).length === 3 && TRAVEL.length === 11,
+       TRAVEL.length === Object.keys(REG).filter((id) => REG[id].manifest).length &&
+       TRAVEL.every((c) => c.id === 'meghnad' || c.nova || c.ts === 0) && TRAVEL.filter((c) => c.nova).length + TRAVEL.filter((c) => !c.nova && c.ts === 0).length === TRAVEL.length - 1,
        J(TRAVEL.map((c) => [c.id, c.ts, c.nova, c.eff])));
   }
   const tool = fs.readFileSync(path.join(LAB, 'tools', 'make_actor_from_clip.py'), 'utf8');
@@ -698,7 +753,7 @@ console.log('\n── K · the sources rule (A7) ──');
   const raw = tracked.filter((p) => (p.indexOf('lab/') === 0 || p.indexOf('assets/') === 0) && (/(^|\/)(frames|matted|sources|clips_raw)\//.test(p) || /(^|\/)frame_\d+\.(png|jpe?g|webp)$/i.test(p) || /(^|\/)f\d{3}\.png$/.test(p)));
   ok('K2 · no raw or matted frame, and nothing from sources/, is tracked anywhere under lab/ or assets/ (' + raw.length + ')', raw.length === 0, raw.slice(0, 5).join(', '));
   const ignored = (p) => { try { cp.execFileSync('git', ['check-ignore', '-q', p], { cwd: GAME }); return true; } catch (e) { return false; } };
-  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg', 'lab/vfx-manifestation/sources/varuna/varuna_green.mp4', 'lab/vfx-manifestation/sources/varuna/varuna-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/varuna/f086.png', 'lab/vfx-manifestation/frames/varuna_contact_sheet.jpg', 'lab/vfx-manifestation/sources/agni/agni_green.mp4', 'lab/vfx-manifestation/sources/mahabali/mahabali_green.mp4', 'lab/vfx-manifestation/sources/shukracharya/shukracharya_green.mp4', 'lab/vfx-manifestation/sources/mahishi/mahishi_green.mp4', 'lab/vfx-manifestation/sources/vritra/vritra_green.mp4', 'lab/vfx-manifestation/sources/garuda/garuda_green.mp4', 'lab/vfx-manifestation/sources/kartikeya/kartikeya_magenta.mp4'].concat(fs.readdirSync(path.join(LAB, 'sources')).filter((n) => fs.existsSync(path.join(LAB, 'sources', n, n + '-isolated-kling-source-v1.png'))).map((n) => 'lab/vfx-manifestation/sources/' + n + '/' + n + '-isolated-kling-source-v1.png'));   // every identity master staged in sources/
+  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg', 'lab/vfx-manifestation/sources/varuna/varuna_green.mp4', 'lab/vfx-manifestation/sources/varuna/varuna-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/varuna/f086.png', 'lab/vfx-manifestation/frames/varuna_contact_sheet.jpg', 'lab/vfx-manifestation/sources/agni/agni_green.mp4', 'lab/vfx-manifestation/sources/mahabali/mahabali_green.mp4', 'lab/vfx-manifestation/sources/shukracharya/shukracharya_green.mp4', 'lab/vfx-manifestation/sources/mahishi/mahishi_green.mp4', 'lab/vfx-manifestation/sources/vritra/vritra_green.mp4', 'lab/vfx-manifestation/sources/garuda/garuda_green.mp4', 'lab/vfx-manifestation/sources/kartikeya/kartikeya_magenta.mp4', 'lab/vfx-manifestation/sources/vasuki/vasuki_magenta.mp4', 'lab/vfx-manifestation/sources/takshaka/takshaka_magenta.mp4', 'lab/vfx-manifestation/sources/shesha/shesha_magenta.mp4'].concat(fs.readdirSync(path.join(LAB, 'sources')).filter((n) => fs.existsSync(path.join(LAB, 'sources', n, n + '-isolated-kling-source-v1.png'))).map((n) => 'lab/vfx-manifestation/sources/' + n + '/' + n + '-isolated-kling-source-v1.png'));   // every identity master staged in sources/
   const present = must.filter((p) => fs.existsSync(path.join(GAME, p)));
   const strayDir = path.join(GAME, 'assets', 'vfx', 'experimental'), stray = [];
   (function walk(d) { if (!fs.existsSync(d)) return; fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else if (/\.(png|jpe?g|webp|mp4|mov)$/i.test(n)) stray.push(rel(q)); }); })(strayDir);
@@ -762,7 +817,7 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
                                        : 'no number at all — ' + name + ' only enters, so SETTLE lands the board with him on it and nothing floats' };
     });
     ok('S4b · LAB-7 · the stage suite and its gate run for EVERY registry card with an actor, built from data/manifestations.json: ' + CARDS.map((c) => c.name + ' (' + c.id + ', ' + c.faction + ', ' + (c.exit === 'native' ? 'the native exit' : 'the ' + c.presetName + ' exit') + (c.exempt ? ', ladder-exempt' : '') + ')').join(' · '),
-       J(CARDS.map((c) => c.id)) === J(['meghnad', 'indra', 'hanuman', 'varuna', 'agni', 'mahabali', 'shukra', 'mahishi', 'vritra', 'garuda', 'kartikeya']) && J(CARDS.map((c) => c.exit)) === J(['procedural', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native']) && CARDS.every((c) => c.M.cardId === c.id && c.FX.every((f) => f.diff.entered.some((x) => x.id === c.id))) && J(CARDS[0].expectFloats(0)) === J([{ uid: FX[0].before.seats[FX[0].defenderSeat].heroes[0].uid, delta: -2 }]), J(CARDS.map((c) => [c.id, c.faction, c.expectFloats(0)])));
+       J(CARDS.map((c) => c.id)) === J(['meghnad', 'indra', 'hanuman', 'varuna', 'agni', 'mahabali', 'shukra', 'mahishi', 'vritra', 'garuda', 'kartikeya', 'vasuki', 'takshaka', 'shesha']) && J(CARDS.map((c) => c.exit)) === J(['procedural', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native']) && CARDS.every((c) => c.M.cardId === c.id && c.FX.every((f) => f.diff.entered.some((x) => x.id === c.id))) && J(CARDS[0].expectFloats(0)) === J([{ uid: FX[0].before.seats[FX[0].defenderSeat].heroes[0].uid, delta: -2 }]), J(CARDS.map((c) => [c.id, c.faction, c.expectFloats(0)])));
     const ALLGATES = [];
     const stageSuite = (CARD) => {
       const CARD_ST = MAN.contactStrength(CARD.M);   // LAB-9: a self-cast softens its flash and may forbid the camera impulse entirely

@@ -1,0 +1,480 @@
+{
+  "fixture": "vasuki_play",
+  "ruling": "LAB-14 - one of the first NAGA actors. A1 (the board is the truth): the Hero enters and nothing else changes - his ON PLAY takes a power from every enemy Unit, and an empty board has none",
+  "engine": {
+    "file": "src/engine.js",
+    "sha256": "3613706f3b736b3e367bfc063575902037b9b05e02ed1de9422bad7ee46520b9"
+  },
+  "seed": 1,
+  "attackerSeat": 1,
+  "defenderSeat": 0,
+  "realm": "mrityulok",
+  "scenario": {
+    "p0": "{p0}",
+    "p1": "{p1}",
+    "p0Faction": "devas",
+    "p1Faction": "nagas",
+    "p0Deck": [
+      "Indra",
+      "Narada",
+      "Chandra Dev",
+      "Yama",
+      "Marut",
+      "Gandharva",
+      "Deva Soldier",
+      "Kubera",
+      "Urvashi",
+      "Brihaspati",
+      "Vishwakarma",
+      "Agni"
+    ],
+    "p1Deck": [
+      "Vasuki",
+      "Manasa",
+      "Karkotaka",
+      "Surasa",
+      "Ulupi",
+      "Naga Sadhu",
+      "Kaliya",
+      "Astika",
+      "Naga Archer",
+      "Naga Enchantress",
+      "Naga Warrior",
+      "Naga Hatchling"
+    ],
+    "mulligan": 0
+  },
+  "setup": [],
+  "action": {
+    "seat": 1,
+    "type": "play",
+    "card": "Vasuki",
+    "handIndex": 0,
+    "targetUid": null
+  },
+  "before": {
+    "round": 1,
+    "turn": 1,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "devas",
+        "units": [],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 1,
+            "id": "indra",
+            "n": "Indra",
+            "t": "hero",
+            "r": "L",
+            "power": 7
+          },
+          {
+            "uid": 2,
+            "id": "saraswati",
+            "n": "Narada",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 3,
+            "id": "surya",
+            "n": "Chandra Dev",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 4,
+            "id": "yama",
+            "n": "Yama",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 5,
+            "id": "marut",
+            "n": "Marut",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 6,
+            "id": "gandharva",
+            "n": "Gandharva",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 7,
+            "id": "soldier",
+            "n": "Deva Soldier",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 8,
+            "id": "kubera",
+            "n": "Kubera",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 9,
+            "id": "urvashi",
+            "n": "Urvashi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 10,
+            "id": "brihaspati",
+            "n": "Brihaspati",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "nagas",
+        "units": [],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 13,
+            "id": "vasuki",
+            "n": "Vasuki",
+            "t": "hero",
+            "r": "L",
+            "power": 8
+          },
+          {
+            "uid": 14,
+            "id": "manasa",
+            "n": "Manasa",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          },
+          {
+            "uid": 15,
+            "id": "karkotaka",
+            "n": "Karkotaka",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 16,
+            "id": "surasa",
+            "n": "Surasa",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          },
+          {
+            "uid": 17,
+            "id": "ulupi",
+            "n": "Ulupi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 18,
+            "id": "nagasadhu",
+            "n": "Naga Sadhu",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 19,
+            "id": "kaliya",
+            "n": "Kaliya",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 20,
+            "id": "astika",
+            "n": "Astika",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 21,
+            "id": "nagaarcher",
+            "n": "Naga Archer",
+            "t": "unit",
+            "r": "U",
+            "power": 3
+          },
+          {
+            "uid": 22,
+            "id": "nagaenchantress",
+            "n": "Naga Enchantress",
+            "t": "unit",
+            "r": "U",
+            "power": 3
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "events": [
+    {
+      "round": 1,
+      "seq": 0,
+      "type": "play",
+      "sourceUid": 13,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Vasuki",
+      "text": "{p1} plays Vasuki"
+    }
+  ],
+  "log": [
+    "{p1} plays Vasuki — The Cosmic Serpent.",
+    "Vasuki uncoils over an empty field."
+  ],
+  "after": {
+    "round": 1,
+    "turn": 0,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "devas",
+        "units": [],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 1,
+            "id": "indra",
+            "n": "Indra",
+            "t": "hero",
+            "r": "L",
+            "power": 7
+          },
+          {
+            "uid": 2,
+            "id": "saraswati",
+            "n": "Narada",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 3,
+            "id": "surya",
+            "n": "Chandra Dev",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 4,
+            "id": "yama",
+            "n": "Yama",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 5,
+            "id": "marut",
+            "n": "Marut",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 6,
+            "id": "gandharva",
+            "n": "Gandharva",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 7,
+            "id": "soldier",
+            "n": "Deva Soldier",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 8,
+            "id": "kubera",
+            "n": "Kubera",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 9,
+            "id": "urvashi",
+            "n": "Urvashi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 10,
+            "id": "brihaspati",
+            "n": "Brihaspati",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "nagas",
+        "units": [],
+        "heroes": [
+          {
+            "uid": 13,
+            "id": "vasuki",
+            "n": "Vasuki",
+            "t": "hero",
+            "r": "L",
+            "power": 8,
+            "base": 8,
+            "eff": 8,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 14,
+            "id": "manasa",
+            "n": "Manasa",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          },
+          {
+            "uid": 15,
+            "id": "karkotaka",
+            "n": "Karkotaka",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 16,
+            "id": "surasa",
+            "n": "Surasa",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          },
+          {
+            "uid": 17,
+            "id": "ulupi",
+            "n": "Ulupi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 18,
+            "id": "nagasadhu",
+            "n": "Naga Sadhu",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 19,
+            "id": "kaliya",
+            "n": "Kaliya",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 20,
+            "id": "astika",
+            "n": "Astika",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 21,
+            "id": "nagaarcher",
+            "n": "Naga Archer",
+            "t": "unit",
+            "r": "U",
+            "power": 3
+          },
+          {
+            "uid": 22,
+            "id": "nagaenchantress",
+            "n": "Naga Enchantress",
+            "t": "unit",
+            "r": "U",
+            "power": 3
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "diff": {
+    "entered": [
+      {
+        "uid": 13,
+        "id": "vasuki",
+        "n": "Vasuki",
+        "seat": 1,
+        "zone": "heroes",
+        "power": 8,
+        "eff": 8
+      }
+    ],
+    "left": [],
+    "changed": []
+  }
+}
