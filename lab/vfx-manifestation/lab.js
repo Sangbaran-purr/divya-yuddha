@@ -43,6 +43,7 @@
       if (runner) { try { runner.tick(); } catch (e) { report(e); } }
     }
     try { stage.frame(clock.t, real); } catch (e) { report(e); }
+    try { effect.frame(clock.t); } catch (e) { report(e); }
     if (runner && !runner.done && runner.t > 30) { try { measureLayout(); } catch (e) { report(e); } }
     if (readoutAt == null || real - readoutAt >= 250) { readoutAt = real; readout(); }   // text four times a second: the DOM work stays off the actor's frames
     window.requestAnimationFrame(tick);
@@ -65,7 +66,8 @@
     now: () => clock.t, pixiUrl: V('assets/vendor/pixi.min.mjs') });
 
   // ── SOUND (LAB-5): the game's audio pattern, copied — unlocked by the first gesture, the game's own sound switch and volume ──
-  const audio = window.LabAudio.create({ files: { contact: V('../audio/sfx_unit_clash.mp3'), exit: V('../audio/sfx_chaos_surge.mp3') }, now: () => clock.t });
+  const audio = window.LabAudio.create({ files: { contact: V('../audio/sfx_unit_clash.mp3'), exit: V('../audio/sfx_chaos_surge.mp3'),
+    sfx_astra: V('../audio/sfx_astra.mp3'), sfx_unit_destroy: V('../audio/sfx_unit_destroy.mp3') }, now: () => clock.t });   // LAB-19: the Vajra contract's own two sounds, byte-identical copies
   let audioUnlocked = false;
   function unlockAudioOnce() { if (audioUnlocked) return; audioUnlocked = true; audio.unlock(); ['pointerdown', 'click', 'touchstart', 'keydown'].forEach((ev) => window.removeEventListener(ev, unlockAudioOnce)); }
   ['pointerdown', 'click', 'touchstart', 'keydown'].forEach((ev) => window.addEventListener(ev, unlockAudioOnce));
@@ -138,6 +140,47 @@
   // after SETTLE: the stage destroys the GPU texture and closes the bitmap; the page lets go of it (the compressed bytes stay cached)
   function release(cardId) { if (stage.unloadActor(cardId)) delete actors[cardId]; }
 
+  // ── THE EFFECT CLIP (LAB-19, the premium effects track): additive, not an actor — its own layer, its own player, budget E1 ──
+  const effectCanvas = el('effectclip'), effectManifests = {};
+  let lastEffect = null;
+  function sizeEffectCanvas() { const r = el('field').getBoundingClientRect(), d = window.devicePixelRatio || 1; effectCanvas.width = Math.round(r.width * d); effectCanvas.height = Math.round(r.height * d); }
+  async function effectManifestFor(cardId) {
+    if (effectManifests[cardId]) return effectManifests[cardId];
+    const entry = REG[cardId]; if (!entry || !entry.effect) return null;
+    const murl = new URL(V(entry.effect)), m = await fetch(murl).then((r) => r.json()), v = window.EffectClip.validate(m);
+    if (!v.ok) { report('effect ' + cardId + ': ' + v.errors.join('; ')); return null; }
+    m.__url = murl.href;
+    return (effectManifests[cardId] = m);
+  }
+  // E1: fetched and decoded ON PLAY, the luminance alpha baked once (the game's bakeAlpha), released when the clip ends
+  async function loadEffectAtlas(m) {
+    const blob = await fetch(V(new URL(m.atlas, m.__url).href)).then((r) => r.blob());
+    const bmp = await createImageBitmap(blob), cv = document.createElement('canvas'); cv.width = bmp.width; cv.height = bmp.height;
+    const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(bmp, 0, 0); if (bmp.close) bmp.close();
+    const id = g.getImageData(0, 0, cv.width, cv.height); window.EffectClip.bake(id.data); g.putImageData(id, 0, 0);
+    return { source: cv, bytes: cv.width * cv.height * 4, close() { cv.width = 0; cv.height = 0; } };
+  }
+  const effect = window.EffectClip.createPlayer({
+    now: () => clock.t, canvas: effectCanvas, get dpr() { return window.devicePixelRatio || 1; },
+    cardOf: (uid) => { const r = rectOf(uid); return r ? { cx: r.x + r.w / 2, cy: r.y + r.h / 2, w: r.w } : null; },
+    loadAtlas: loadEffectAtlas, render: (b) => render(b, []), sound: (name) => audio.play(name),
+    crack: (uid, ms) => { const n = el('field').querySelector('.bc[data-uid="' + uid + '"]'); if (n) { n.style.setProperty('--crack-ms', Math.round(ms) + 'ms'); n.classList.add('crack'); } },
+    onDone: (res) => { lastEffect = res; }, onError: report,
+  });
+  function formatEffectPlan(p, m) {
+    const T = p.timeline, r = (x) => Math.round(x);
+    return 'EFFECT CLIP · ' + m.cardId + ' · ' + p.mode + ' (vfxT ' + T.vfxT.toFixed(2) + ') · ' + (p.clip ? m.cells.length + ' cells at ' + (1000 / T.frameMs).toFixed(2) + '/s, impact cell ' + m.impact + ' (' + m.cells[m.impact].name + ')' : p.strike ? 'no clip (Reduced)' : 'no strike: the card found no mark') + '\n' +
+      'lead ' + r(T.leadMs) + ' ms inside the cast beat ' + r(T.castBeatMs) + ' ms → wire-clock cost ' + r(T.waitCostMs) + ' ms\n\n' +
+      p.cues.map((c) => ('      ' + r(c.t)).slice(-6) + ' ms  ' + c.cue + (c.sound ? ' · ' + c.sound : '') + (c.uid != null ? ' · uid ' + c.uid : '')).join('\n');
+  }
+  async function playEffect() {
+    const m = await effectManifestFor(currentCard); if (!m) return;
+    render(F.before, []);   // the mark must be on the board before the clip measures where to strike
+    lastPlan = null; lastEffect = null;
+    const run = await effect.play(F, m, { before: F.before, after: F.after }, { mode });
+    el('plan').textContent = formatEffectPlan(run.plan, m);
+  }
+
   // ── THE BOARD ──
   let F = null, attackerSeat = 0, runner = null, playback = null, lastPlan = null, lastDone = null;
   const memory = window.Director.createMemory();
@@ -190,10 +233,11 @@
     const ch = F.diff.changed.map((c) => c.n + ' ' + c.eff.from + ' → ' + c.eff.to).join(', '), en = F.diff.entered.map((c) => c.n + ' enters at ' + c.eff).join(', ');
     el('story-truth').textContent = F.diff.changed.length
       ? 'The board difference: ' + ch + '. No event carried this; the engine only logged "' + (F.log.find((l) => /bolt|strikes/.test(l)) || F.log[F.log.length - 1]) + '". It lands at SETTLE.'
+      : F.diff.left.length ? 'The board difference: ' + F.diff.left.map((c) => c.n + ' leaves the board').join(', ') + ', and nothing else. ' + F.action.card + ' is an Astra: nothing enters, and the destroy event carries the kill.'   // LAB-19
       : 'The board difference: ' + en + ', and nothing else. No power changes, so SETTLE lands no numbers: the card is simply on the board.';
   }
   async function load(seat, card) {
-    stopRun();
+    stopRun(); effect.skip();
     if (card) currentCard = card;
     attackerSeat = seat; F = await fetch(V(FIXTURE(currentCard, seat))).then((r) => r.json());
     render(F.before, []); story(); prefetchHands();
@@ -222,6 +266,7 @@
   // the plan the next play would run, printed as soon as a slider or the mode moves (a play already running keeps its timeline)
   async function previewPlan() {
     if (!F) return;
+    if (REG[currentCard] && REG[currentCard].effect) { const m = await effectManifestFor(currentCard); if (m) el('plan').textContent = '(the next play — press Play ' + F.action.card + ')\n\n' + formatEffectPlan(window.EffectClip.plan(F, m, { mode }), m); return; }   // LAB-19
     const ctx = window.ClashContext.fromBatch(F), reg = REG[ctx.cardId] || {};
     const mf = (ctx.scope === 'manifest' && reg.manifest) ? await manifestFor(ctx.cardId) : null, { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
     const p = window.Director.plan(ctx, { mode, prior: memory.count(ctx.cardId), ladderExempt: !!reg.ladderExempt, timing: timingOf(mf), tempo, fizzleMs, exit: exitFor(reg, mf, ctx) });
@@ -232,7 +277,8 @@
   function stopRun() { if (runner && !runner.done) runner.skip(); runner = null; }   // LAB-5: an interrupted play lands on AFTER, nothing left behind
   async function play(opts) {
     opts = opts || {};
-    stopRun();
+    stopRun(); effect.skip();   // LAB-19: an effect clip in flight lands on AFTER too
+    if (REG[currentCard] && REG[currentCard].effect) return playEffect();   // LAB-19: an effect clip is not an actor — it never enters the director
     const ctx = window.ClashContext.fromBatch(F);
     const boards = window.ClashContext.boards(ctx, F.before, F.after);
     const reg = REG[ctx.cardId] || {};
@@ -286,7 +332,7 @@
 
   // ── A HIDDEN PAGE (LAB-5): a tab switch or a locked phone mid-play lands the play at once — the board on AFTER, nothing left behind ──
   let hiddenSkips = 0;
-  document.addEventListener('visibilitychange', () => { if (document.hidden && runner && !runner.done) { runner.skip(); hiddenSkips++; } });
+  document.addEventListener('visibilitychange', () => { if (document.hidden && runner && !runner.done) { runner.skip(); hiddenSkips++; } if (document.hidden && effect.stats().playing) { effect.skip(); hiddenSkips++; } });
 
   // ── MOCK MATCH (LAB-5): the manifestation in the rhythm of a match, with the game's own gaps — the owner judges tempo here ──
   const MOCK = {
@@ -337,6 +383,9 @@
     el('ro-fps').textContent = String(clock.fps);
     el('ro-time').textContent = (clock.paused ? 'paused' : clock.scale + '×') + ' · ' + (clock.t / 1000).toFixed(2) + ' s · ' + mode + (runner && !runner.done ? ' · playing ' + Math.round(runner.t) + ' ms' + (runner.speed !== 1 ? ' at ' + runner.speed + '×' : '') : '');
     el('ro-renderer').textContent = 'effects ' + (g.renderer || 'none') + (g.enabled ? '' : ' (off → Canvas 2D)') + (g.texReady ? ' · surge ready' : '');
+    const es = effect.stats(), er = el('ro-effect');
+    if (er) er.textContent = es.loads || es.playing ? (es.playing ? 'playing · ' : '') + 'decoded now ' + mb(es.decodedBytes) + ' (E1 cap ' + mb(window.EffectClip.E1.capBytes) + ') · peak ' + mb(es.peak) + ' · ' + es.loads + ' decodes, ' + es.releases + ' releases' +
+      (lastEffect ? ' · last: cells drawn ' + lastEffect.log.drawn.length + ', impact cell drawn at ' + (lastEffect.log.impactDrawnAt == null ? '—' : Math.round(lastEffect.log.impactDrawnAt) + ' ms') + ' against the destroy beat at ' + (lastEffect.log.destroyCueAt == null ? '—' : Math.round(lastEffect.log.destroyCueAt) + ' ms') + (lastEffect.skipped ? ' (skipped)' : '') : '') : '—';
     el('ro-actor').textContent = s.backend + ' · ' + s.cellPx + ' px cells · drawn ' + s.drawnPx + ' px · cells drawn ' + (s.cellsDrawn ? s.cellsDrawn.drawn + '/' + s.cellsDrawn.total + (s.cellsDrawn.live ? ' so far' : '') + (s.cellsDrawn.cellFps ? ' at ' + Math.round(s.cellsDrawn.cellFps * 100) / 100 + '/s' : '') + ' · repeats ' + s.cellsDrawn.repeats + (s.cellsDrawn.contact ? ' · contact on ' + s.cellsDrawn.contact : '') : '—') + ' · ' + (s.liveFps != null ? s.liveFps + ' fps now' : (s.fps ? s.fps + ' fps last run' : 'no run yet')) + ' · draw ' + s.drawMsAvg.toFixed(2) + ' ms/frame · live actors ' + stage.liveActors() + ' · GPU sprites ' + stage.liveSprites() + (lastDone ? (lastDone.equalsFinal ? ' · final board = engine AFTER ✓' : ' · final board ≠ AFTER ✖') : '');
     el('ro-rung').textContent = VFX.currentRung();
     el('ro-sprites').textContent = 'Canvas 2D ' + VFX.sprCount() + ' · GPU ' + (g.live != null ? g.live : 0);
@@ -364,13 +413,13 @@
   // LAB-7: one Play button per registry card that has an actor, in registry order (the buttons were typed per card)
   function cardButtons() {
     const box = el('card-buttons'); box.textContent = '';
-    Object.keys(REG).filter((id) => REG[id].manifest).forEach((id) => {
+    Object.keys(REG).filter((id) => REG[id].manifest || REG[id].effect).forEach((id) => {   // LAB-19: an effect clip gets its Play button too
       const b = document.createElement('button'); b.className = 'primary'; b.type = 'button'; b.id = 'play-' + id; b.dataset.card = id;
       b.textContent = 'Play ' + (REG[id].label || REG[id].name || id); b.onclick = () => { playCard(id).catch(report); }; box.appendChild(b);
     });
   }
   ['awaken', 'emerge', 'act', 'fizzle', 'settle'].forEach((p) => { el('phase-' + p).onclick = () => { play({ phase: p.toUpperCase() }).catch(report); }; });
-  el('ctl-skip').onclick = () => { if (runner && !runner.done) runner.skip(); };
+  el('ctl-skip').onclick = () => { if (runner && !runner.done) runner.skip(); effect.skip(); };   // LAB-19: Skip lands an effect clip on AFTER too
   el('ctl-ff').onclick = () => { if (runner && !runner.done) runner.fastForward(runner.speed === 3 ? 1 : 3); };
   el('ctl-memory').onclick = () => { memory.reset(); el('memory-note').textContent = 'Match memory reset: the next play runs in the chosen mode.'; };
   ['full', 'fast', 'reduced'].forEach((m) => { el('mode-' + m).onclick = () => { mode = m; setOn(['mode-full', 'mode-fast', 'mode-reduced'], 'mode-' + m); previewPlan().catch(report); }; });
@@ -383,7 +432,7 @@
   el('exit-preset').addEventListener('change', () => { previewPlan().catch(report); });   // another faction's preset may bring its own fizzle_ms
   async function backend(which) {
     setOn(['be-webgpu', 'be-webgl', 'be-canvas'], 'be-' + which);
-    stopRun();
+    effect.skip(); stopRun();
     try { if (which === 'canvas') { if (VFX.gpu.enabled) VFX.gpu.toggle(); } else await VFX.gpu.__forceBackend(which); } catch (e) { report(e); }
     try { await stage.useBackend(which); } catch (e) { report(e); }
     prefetchHands();   // the rung may change with the renderer
@@ -402,7 +451,8 @@
   }
   VFX.applyQuality('lo');   // the rung whose sheets the lab carries (before init, so the GPU loads lo)
   VFX.init(); VFX.resize();
-  window.addEventListener('resize', () => { VFX.resize(); stage.resize(); });
+  sizeEffectCanvas();
+  window.addEventListener('resize', () => { VFX.resize(); stage.resize(); sizeEffectCanvas(); });
   Promise.all([
     fetch(V('COPY.json')).then((r) => r.json()).then((j) => { copyMeta = j; }),
     fetch(V('../data/manifestations.json')).then((r) => r.json()).then((j) => { REG = j.cards || {}; REG_DEFAULTS = j.defaults || {}; }),
@@ -417,5 +467,5 @@
     if (here.searchParams.get('v') !== served) { here.searchParams.set('v', served); location.replace(here.href); return; }
     stampNote = 'STALE — this page is ' + STAMP + ', the server has ' + served; report('stale lab page: ' + stampNote);
   }).catch(() => { stampNote = 'served STAMP unreadable'; });
-  window.__lab = { STAMP, VFX, stage, audio, mockMatch, playCard, get card() { return currentCard; }, release, rungFor, manifests, prefetched, get actors() { return actors; }, get layout() { return layout; }, get mockLog() { return mockLog; }, clock, play, load, memory, errors, get runner() { return runner; }, get plan() { return lastPlan; }, get playback() { return playback; }, get done() { return lastDone; }, get fixture() { return F; } };
+  window.__lab = { STAMP, VFX, stage, audio, effect, get lastEffect() { return lastEffect; }, mockMatch, playCard, get card() { return currentCard; }, release, rungFor, manifests, prefetched, get actors() { return actors; }, get layout() { return layout; }, get mockLog() { return mockLog; }, clock, play, load, memory, errors, get runner() { return runner; }, get plan() { return lastPlan; }, get playback() { return playback; }, get done() { return lastDone; }, get fixture() { return F; } };
 })();

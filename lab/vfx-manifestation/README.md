@@ -45,6 +45,10 @@ The experiment ground for **VFX_MANIFESTATION_v1** (`docs/VFX_MANIFESTATION_v1.m
 | `tools/make_actor_from_clip.py` | **LAB-4.** A Kling clip on chroma green → an actor: key, despill, isolate, frame selection, one ground pivot, packed atlas and manifest, plus a contact sheet in `frames/`. Run with the lab venv. |
 | `tools/.venv/` | **Ignored.** The matting venv (A6): rembg with a pinned onnxruntime that loads on macOS 13.0, and its model in `tools/.venv/u2net/`. |
 | `sources/` · `frames/` | **Ignored (A7).** The Kling clip and the Kling source stills; the matted frames, matte stats and contact sheet. Never committed. |
+| `lib/effectclip.js` | **LAB-19.** The additive effect clip: its validator, its plan against the game's own beat, its placement, and its player (budget E1). Not an actor. |
+| `effects/vajra/` | **LAB-19.** Vajra's strike clip: `atlas.webp` (RGB, no matte) and `manifest.json`. |
+| `tools/make_effect_from_clip.py` | **LAB-19.** A black-ground Kling clip → an additive effect clip: crop, scale, fade-in head, fade tail, guarded feathers. Run with the lab venv. |
+| `audio/` | Byte-identical copies of the game's `sfx_unit_clash` and `sfx_chaos_surge` (LAB-5), and `sfx_astra` and `sfx_unit_destroy` (LAB-19, the Vajra contract's own). |
 | `test/run.js` | The lab's own proofs, all rungs: `node lab/vfx-manifestation/test/run.js`. |
 
 **Why `<base href="runtime/">`:** the module builds sheet URLs relative to the page (`assets/vfx/…`) but imports Pixi relative to its own file (`./assets/vendor/…`). With the base set, both resolve inside `runtime/`, so the copy needs no path rewrite.
@@ -257,6 +261,8 @@ The page picks by device (`ActorManifest.pickRung`):
 The **Actor quality** dropdown overrides the pick. The Memory, Quality and Decode rows show decoded MB right now, the peak, decodes and releases, the compressed cache, the rung and why it was picked, and whether the decode came from the hand.
 
 **A5 watch.** One actor at the 256 rung is 11.5 MB decoded, about the ~10 MB per-match budget. The 512 rung's 47.3 MB is held only for the ~6 s of a play, never more than one actor at a time. Whether that is acceptable is the export ruling's call.
+
+**E1 — the effect-clip budget line (owner ruling, LAB-19), beside A5.** An additive effect clip is capped at the effect layer's **hi-rung class, ~18 MB decoded** (the game's own hi-rung Vajra sheet: 3072×1536 RGBA = 18.00 MB). It is loaded on play and released after, and **at most one effect clip is decoded at once**, coexisting with at most the one decoded actor A5 allows. **The combined worst-case peak is ~18 + ~56 MB = 74.1 MB**: the E1 cap plus the largest actor at its 512 rung (Mahabali, 56.1 MB). Vajra's strike clip decodes to 17.65 MB.
 
 ### Sound
 
@@ -1314,6 +1320,117 @@ Registry key `rahu`, button **"Rahu (Asura Hero, Epic)"**, fixture off the Asura
 ### Accepted defects
 
 - **Rahu:** the faint lime rim on his corona is Kling's (identical under both mattes). The dropped f093–f120 are near-black specks and empty frames.
+
+## LAB-19: the Vajra strike clip — the premium effects track opens
+
+The first clip that is not a character. Vajra (Deva Astra, Legendary) plays a black-ground Kling strike **additively**, slotted into the live game's existing Vajra contract. It is not an actor, and it touches none of the 21 actors, their laws, or the live game's Vajra effect: the lab plays the clip version alongside, and export stays a separate ruling.
+
+### Owner amendments, recorded here (not in docs/)
+
+1. **The premium track admits additive effect clips.** Mythic and Legendary Astras, Mantras and Artifacts may play **black-background emissive Kling footage additively**, alongside procedural work. The "no Kling" line is narrowed to **"no actor-class assets"**: no mattes, no rungs, no per-actor memory ladder.
+2. **The v4a carve-out: an Astra's effect may depict the Astra's own weapon — the weapon is the spell.** The v4a "no objects" law stays in force everywhere else.
+
+### The premium ruling (owner ruling, 2026-09-16) — its first authoritative recording
+
+The owner gave this ruling in chat on 2026-09-16; until now it had not landed in the repo. This section is its first authoritative recording, dated, in full. The export rung's docs/ consolidation carries this text forward.
+
+1. **Actors are Heroes-only by default.** A Hero card's play may manifest as an actor.
+2. **Meghnad is grandfathered as the pilot.** He stays an actor although he is a Unit.
+3. **Unit actors are reserved as a future paid-cosmetic tier.** No other Unit gets an actor under the default rules.
+4. **Mythic and Legendary Astras, Mantras and Artifacts get the premium effects track.**
+5. **Lower rarities, and all other Units, keep their existing VFX.**
+
+Both LAB-19 amendments above are scoped by this ruling: they apply to the premium effects track, and so to Mythic and Legendary Astras, Mantras and Artifacts only. Vajra is a Legendary Astra.
+
+**Standing note: docs/ consolidation of all lab amendments happens at the EXPORT rung.** The experiment rule stays absolute — no docs/ exception for this rung.
+
+### The contract it slots into (the game's index.html, read, never modified)
+
+| beat | what the game does | × speed × CHOREO_SPEED 1.3 |
+|---|---|---|
+| cast (`play` event) | `sfx_astra`; Legendary → spectacle tier: 110 ms hit-stop + 1000 ms hold | **1443 ms** at Normal |
+| strike (`destroy`, abilityName `Vajra`) | `sfx_unit_destroy`; `sprVajra` on the target card's centre; 40 ms; the card cracks; 600 ms dwell | 52 + 780 ms |
+| draw | the sheet's alpha baked to its brightest channel, drawn `lighter` | — |
+| no target | no destroy event, so no strike | — |
+
+**M52** reads every one of those numbers from the game's source, so a change to the game's Vajra beat fails the suite. The cast-time screen shake (spectacle tier, at the cast, ~433 ms before this clip's impact) is **noted, not changed**.
+
+### The portion and the timing (ruling 1)
+
+**S1, the strike alone: f085–f120, 36 cells.** The charge phase (f000–f084, the mandala) stays in the source, unused — a possible future cast cinematic, not built.
+
+The clip **starts inside the cast beat's hold**, exactly its lead before the destroy beat, so its **impact cell (f093, the largest picture change in its window, 11.95) lands on the destroy beat**. Its aftermath is un-awaited, as today's sprite is.
+
+| | Normal | Fast |
+|---|---|---|
+| cast beat | 1443 ms | 866 ms |
+| clip starts | 1010 ms | 606 ms |
+| **impact cell = destroy beat** | **1443 ms** | **866 ms** |
+| crack | 1495 ms | 897 ms |
+| board on AFTER | 2275 ms | 1365 ms |
+| clip ends (un-awaited) | 2960 ms | 1776 ms |
+| **wire-clock cost** | **0 ms** | **0 ms** |
+
+### Anchor and scale (ruling 2)
+
+The impact point — the brightest blurred point on f093, **(959, 923)** in the source — is the anchor, placed on **the target card's centre**. The ring on f112 (**910 source px**) draws **2.4 card widths** across, the current strike's size. On a 64 px card the clip draws 288×182 px and rises 156 px above the card's centre. The edge-slot spark overrun (~63 px of additive glow past the field) is accepted.
+
+### The pack (ruling 3) and budget E1
+
+`tools/make_effect_from_clip.py` (not the actor tool): crop to the union of content (luma > 4) over the kept frames, **1708×1080**; one scale; **448×283 cells**; RGB WebP. No matte, no rungs, no pivot, no phases.
+
+| | |
+|---|---|
+| atlas | 4052×1142 · 328 KB |
+| decoded | **17.65 MB** |
+| E1 cap | 18.00 MB (the game's own hi-rung Vajra sheet, 3072×1536 RGBA) |
+
+**E1 is recorded beside A5** (see *Memory (A5)*).
+
+### Edges, feathers, fades (ruling 4)
+
+The black ground is true: corners 0 in every channel on every frame; more than 300 px from content, at most 2.
+
+| edge | frames touched (of 36) | treatment |
+|---|---|---|
+| top | 36 — the weapon is cut | 64 px feather (16.8 cell px) |
+| bottom | 28 — the impact glow and spike, from f093 | 64 px feather, **guarded** |
+| sides | 0 | none |
+
+**The bottom band's guard** stops above the ring **body**: rows holding at least 20 bright (> 150) pixels off the beam column, on every frame from the impact to the fade tail (f093–f110). The body's lowest row is y 998 (f094), leaving 81 px of room. Sparse sparks are not the body. The first guard read every bright pixel and fell to 0 px, because sparks reach the edge on the last tail frames. The body itself enters the band only inside the tail: f119 at 11%, f120 at 0%.
+
+**Ratified (owner ruling, LAB-19): the guard protects the ring body, not the sparks the feather exists to fade.** This is the LAB-13 precedent applied to an effect. There, the bottom-feather guard was scoped to the EMERGE frames, because EMERGE is the character before the action: from the action on, what reaches the edge is the fire the band exists to fade. Here the same distinction is drawn inside the frame instead of across time. The ring body is what the clip must keep whole, so the guard measures it on every frame from the impact to the tail start. The sparse sparks and the spike running off the bottom edge are exactly what the band exists to fade. A guard that counted them would forbid the feather wherever it is needed, which is how the first version read 0 px.
+
+**Fade-in head** over f085–f088 (20/40/60/80%) — the weapon would otherwise pop in. **Fade tail f111–f120, mandatory**: the ring is still growing on the clip's last frame, so the clip never exits on its own.
+
+Sounds unchanged: `sfx_astra` at the cast, `sfx_unit_destroy` and the card crack at the destroy beat. Both are byte-identical copies from `assets/audio/`, like LAB-5's two.
+
+### The fixture: the first Astra fixture
+
+`fixtures/vajra_seat0.json` / `_seat1.json`, from the real engine: the Asura seat moves first and sets **Bana Asura** down (printed 6, 7 after the first Chaos Surge); the Deva seat casts Vajra, which is **legal**. The engine emits exactly **play, destroy** (both named Vajra, the destroy on Bana), logs "Vajra falls!", and the board difference is Bana **leaving**.
+
+- **F64** asserts the kill, and rejects three doctored fixtures: the destroy removed, the kill credited to Gandiva, the mark surviving.
+- **F65** drives **the no-target case** live from the same builder with a smaller mark (Vibhishana, 5): Vajra is **not playable**, a forced cast only logs "Vajra finds no mark.", nothing is destroyed, and the clip's plan has **no strike and no clip**. Rejects a doctored run claiming legality, and one carrying a destroy.
+- **C18:** A2 stands — the Astra is out of the actor scope, and the clip never enters the director.
+
+### The stage (`lib/effectclip.js`)
+
+Its own player on its own layer (`#effectclip`, z 6, with the effect layer, under the actor), wired by `lab.js` for any registry entry carrying `effect` (Vajra's carries no `manifest`, so every actor loop skips it). **E1–E6** drive it on a stepped clock:
+
+- **Full, 60 Hz:** all 36 cells in order, all `lighter`; the impact cell's first frame **is** the destroy beat's frame.
+- **30 Hz and Fast:** still exact.
+- **Reduced:** no decode, no draw, the beats and sounds still run.
+- **Skip mid-clip:** AFTER at once, released.
+- **One clip at a time:** a second play ends the first before decoding.
+- **The bake is the game's `bakeAlpha`.**
+
+**Falsifiable:** with the clip's start moved one cell late, E1, E2 and M52 fail.
+
+The clip is **timed, not stepped**: a stalled frame shows the cell that is due, so it can skip a cell but never drifts off the beat. Live in the browser, one cell was skipped on a frame that stalled past 54 ms right after the 17.7 MB bake. Every other play drew 36/36, with the impact on the destroy beat's frame.
+
+### Registry
+
+Key `vajra`: `"effect": "../effects/vajra/manifest.json"`, fixture `vajra`, button **"Vajra (Deva Astra, Legendary — strike clip)"**. All 42 existing fixtures regenerate byte-identical.
 
 ## Notes for the next rungs
 

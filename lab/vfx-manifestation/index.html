@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="lab-stamp" content="5070b38c2a8c">
+<meta name="lab-stamp" content="ce1d3ced6b74">
 <!-- runtime/ is the base: the copied VFX module's page-relative sheet URLs and its file-relative Pixi import both resolve inside it (see README) -->
 <base href="runtime/">
 <title>Manifestation Lab</title>
@@ -39,6 +39,8 @@
   .bc.pulse{ box-shadow:0 0 0 2px var(--gold), 0 0 18px rgba(217,178,92,.6); }
   .empty{ font-size:12px; color:#6f624d; font-style:italic; }
   #vfxcanvas{ position:absolute; inset:0; z-index:5; pointer-events:none; }
+  #effectclip{ position:absolute; inset:0; z-index:6; pointer-events:none; width:100%; height:100%; }   /* LAB-19: the additive effect clip — an EFFECT, so it sits with the effect layer, under the actor */
+  .bc.crack{ transition:opacity var(--crack-ms,520ms) ease-in, filter var(--crack-ms,520ms) ease-in; opacity:0; filter:brightness(2.2) blur(2px); }   /* LAB-19: the lab's stand-in for the game's victim crack (showcaseVictim kill) */
   #vfxflash{ position:absolute; inset:0; z-index:7; pointer-events:none; opacity:0; background:#fff4dc; }
   #actorunder{ position:absolute; inset:0; z-index:8; pointer-events:none; width:100%; height:100%; }
   #actorcanvas{ position:absolute; inset:0; z-index:9; pointer-events:none; width:100%; height:100%; }
@@ -91,6 +93,7 @@
     <div class="divider" id="divider"></div>
     <div class="half me"><span class="tag" id="tag-me">You</span><div class="row units"></div><div class="row heroes"></div></div>
     <canvas id="vfxcanvas"></canvas>
+    <canvas id="effectclip"></canvas>
     <div id="vfxflash"></div>
     <canvas id="actorunder"></canvas>
     <canvas id="actorcanvas"></canvas>
@@ -180,6 +183,7 @@
       <dt>Clock</dt><dd id="ro-time">—</dd>
       <dt>Renderer</dt><dd id="ro-renderer">—</dd>
       <dt>Actor</dt><dd id="ro-actor">—</dd>
+      <dt>Effect clip</dt><dd id="ro-effect">—</dd>
       <dt>Exit</dt><dd id="ro-exit">—</dd>
       <dt>Sound</dt><dd id="ro-sound">—</dd>
       <dt>Layout</dt><dd id="ro-layout">—</dd>
@@ -205,17 +209,18 @@
     <p id="story-truth" class="truth"></p>
   </section>
 </main>
-<script src="../lib/boarddiff.js?v=5070b38c2a8c"></script>
-<script src="../lib/clashcontext.js?v=5070b38c2a8c"></script>
-<script src="../lib/director.js?v=5070b38c2a8c"></script>
-<script src="../lib/runner.js?v=5070b38c2a8c"></script>
-<script src="../lib/manifest.js?v=5070b38c2a8c"></script>
-<script src="../lib/stagemath.js?v=5070b38c2a8c"></script>
-<script src="../lib/dissolve.js?v=5070b38c2a8c"></script>
-<script src="../lib/labaudio.js?v=5070b38c2a8c"></script>
-<script src="../lib/actorstage.js?v=5070b38c2a8c"></script>
-<script src="../lib/playback.js?v=5070b38c2a8c"></script>
-<script src="vfx.js?v=5070b38c2a8c"></script>
-<script src="../lab.js?v=5070b38c2a8c"></script>
+<script src="../lib/boarddiff.js?v=ce1d3ced6b74"></script>
+<script src="../lib/clashcontext.js?v=ce1d3ced6b74"></script>
+<script src="../lib/director.js?v=ce1d3ced6b74"></script>
+<script src="../lib/runner.js?v=ce1d3ced6b74"></script>
+<script src="../lib/manifest.js?v=ce1d3ced6b74"></script>
+<script src="../lib/stagemath.js?v=ce1d3ced6b74"></script>
+<script src="../lib/dissolve.js?v=ce1d3ced6b74"></script>
+<script src="../lib/labaudio.js?v=ce1d3ced6b74"></script>
+<script src="../lib/actorstage.js?v=ce1d3ced6b74"></script>
+<script src="../lib/playback.js?v=ce1d3ced6b74"></script>
+<script src="../lib/effectclip.js?v=ce1d3ced6b74"></script>
+<script src="vfx.js?v=ce1d3ced6b74"></script>
+<script src="../lab.js?v=ce1d3ced6b74"></script>
 </body>
 </html>

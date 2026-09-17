@@ -143,13 +143,51 @@ const HERO_ENTRIES = {
   varuna: { card: 'Varuna', faction: 'devas', deck: ['Varuna', 'Narada', 'Chandra Dev', 'Yama', 'Marut', 'Gandharva', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Vishwakarma', 'Agni'], oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'varuna_play',
            ruling: 'VFX-LAB-8 — the fourth character, the first native exit; A1 (the board is the truth): the Hero enters and nothing else changes (his passive limits the opponent\'s Astras; it changes no card on an empty board)' },
 };
+// LAB-19 · THE FIRST ASTRA FIXTURE — Vajra, the premium effects track's first clip. Not an actor (A2 stands: an Astra plays its effect,
+// nothing emerges): its fixture exists so the strike clip is driven by the real engine's own beat. The Asura seat moves first and sets a
+// Unit down; the Deva seat then casts Vajra ("Destroy one enemy Unit with power 6+"). With Bana Asura (printed 6, +1 from the Asura's first
+// Chaos Surge) the Astra is LEGAL and the engine emits play, then destroy on Bana — the destroy beat the clip's impact lands on. With
+// Vibhishana (printed 4, 5 after the surge) there is NO MARK: the Astra is not playable, and a forced cast only logs "Vajra finds no mark."
+// — no destroy event, so no strike. Both are built here from one function, so the no-target case is the SAME board with a smaller Unit.
+const VAJRA_DECK = ['Vajra'].concat(DEVA_DECK.slice(0, 11));
+function buildVajraCast(seat, oppUnit, opts) {
+  opts = opts || {};
+  const opp = 1 - seat;
+  for (let seed = 1; seed < 1000; seed++) {
+    const E = freshEngine();
+    const decks = seat === 0 ? [VAJRA_DECK, ASURA_DECK] : [ASURA_DECK, VAJRA_DECK];
+    const sc = { p0Deck: decks[0], p1Deck: decks[1], p0Hand: HAND(decks[0]), p1Hand: HAND(decks[1]), mulligan: 0 };
+    const o = { rng: seeded(seed), p0: '{p0}', p1: '{p1}', realm: 'mrityulok', p0Faction: seat === 0 ? 'devas' : 'asuras', p1Faction: seat === 1 ? 'devas' : 'asuras', scenario: sc };
+    const g = E.newGame(o);
+    if (g.turn !== opp) continue;                                               // the Asura seat moves first: its Unit is the mark
+    const setup = [], uh = g.players[opp].hand.findIndex((c) => c.n === oppUnit);
+    E.playCard(g, opp, uh); setup.push({ seat: opp, type: 'play', card: oppUnit, handIndex: uh });
+    if (g.turn !== seat) throw new Error('after ' + oppUnit + ' the turn did not pass to the Deva seat');
+    const vh = g.players[seat].hand.findIndex((c) => c.id === 'vajra'), legal = E.playableIndices(g, seat).indexOf(vh) >= 0;
+    if (opts.probe) return { E, g, seat, vh, legal, seed };
+    const before = snapshot(E, g), ev0 = g.events.length, log0 = g.log.length;
+    E.playCard(g, seat, vh);
+    const after = snapshot(E, g);
+    return {
+      fixture: 'vajra_play', ruling: 'LAB-19 - the premium effects track opens: an Astra fixture so the Vajra strike clip is driven by the real engine. The Asura seat sets ' + oppUnit + ' down (the first Chaos Surge adds 1); the Deva seat casts Vajra, which is LEGAL (a mark of power 6 or more) - the engine emits play, then destroy on the mark: the destroy beat the clip impact lands on. A2 stands: nothing emerges; the Astra plays its effect',
+      engine: { file: 'src/engine.js', sha256: engineSha() },
+      seed, attackerSeat: seat, defenderSeat: opp, realm: 'mrityulok',
+      scenario: { p0: o.p0, p1: o.p1, p0Faction: o.p0Faction, p1Faction: o.p1Faction, p0Deck: decks[0], p1Deck: decks[1], mulligan: 0 },
+      setup, action: { seat, type: 'play', card: 'Vajra', handIndex: vh, targetUid: null, legal },
+      before, events: g.events.slice(ev0), log: g.log.slice(log0).map((l) => l.msg), after,
+      diff: boardDiff(before, after),
+    };
+  }
+  throw new Error('no seed in 1..999 gave the Asura seat the first move');
+}
+const buildVajra = (seat) => buildVajraCast(seat, 'Bana Asura');
 const forEntry = (key) => (seat) => buildHeroEntry(HERO_ENTRIES[key], seat);   // LAB-9: one builder per registry entry
 const buildIndra = forEntry('indra'), buildBali = forEntry('bali'), buildVaruna = forEntry('varuna');
 
-module.exports = { build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK };
+module.exports = { build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK };
 
 if (require.main === module) {
-  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]))) for (const seat of [0, 1]) {
+  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra]])) for (const seat of [0, 1]) {
     const f = make(seat), out = path.join(__dirname, name + '_seat' + seat + '.json');
     fs.writeFileSync(out, JSON.stringify(f, null, 2) + '\n');
     console.log('wrote ' + path.relative(GAME, out) + ' — seed ' + f.seed + ', ' + f.events.length + ' events (' + f.events.map((e) => e.type).join(', ') + '), changed: ' +

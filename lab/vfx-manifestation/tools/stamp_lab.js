@@ -14,7 +14,7 @@
 // Run it after changing any lab file, before committing.
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const LAB = path.resolve(__dirname, '..');
-const DIRS = ['lib', 'runtime', 'data', 'fixtures', 'art', 'actors', 'audio'];
+const DIRS = ['lib', 'runtime', 'data', 'fixtures', 'art', 'actors', 'effects', 'audio'];   // LAB-19: effects/ holds the additive effect clips
 const LOADED = /\.(js|mjs|json|png|webp|jpe?g|mp3)$/i;
 
 function walk(rel, out) {
