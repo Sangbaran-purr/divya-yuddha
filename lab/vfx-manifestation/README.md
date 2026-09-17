@@ -1524,6 +1524,53 @@ The pin draws the impact cell on the beat's frame whatever the clock says.
 
 Key `sudarshana`: `"effect": "../effects/sudarshana/chain.json"`, button **"Sudarshana Chakra (Deva Astra, Mythic — invoke + strike chain)"**.
 
+## LAB-20a: the effect chain fails open — beats never wait on a decode
+
+**The defect.** On the owner's phone, on the live Pages page, Play Sudarshana did nothing at all: no `sfx_astra`, no clip, and Mahabali never left the row.
+
+**The diagnosis.**
+- **Pages was clean:** every file 200 and byte-identical to f95e701, and the stamp current.
+- **Reduced mode was not the cause:** it isn't device-chosen, and it never gated the beats.
+- **Chrome's phone emulation on the live URL played both effects fully**, with no errors.
+- **The mechanism proven in the code:** the effect player fetched and decoded the first clip **before its cast cue and before drawing the board**. Any failure or stall there meant exactly the reported no-show, and the error went only to the readout's Errors row, far below the board on a phone.
+
+The phone's own root cause is still unconfirmed. The `?diag=1` breadcrumb exists to name it.
+
+### The fix (owner ruling: all six parts)
+
+1. **Fail open.** `play()` starts the timeline at once: the board is drawn and the cast cue fires at 0 ms, and every beat runs on schedule. Each clip decodes alongside. A clip that isn't ready, or failed, simply doesn't draw; a decode arriving after its segment is over is closed on arrival. This also removes the cold-start silence: **tap to cast sound is now 8–23 ms** (it was about 1.4 s). E1 is unchanged.
+2. **A draw error.**
+   - The ruling said the draw-error handler lands the board on AFTER, as Skip does. **Reading applied:** a *draw* error drops only the decoration, and the beats run on to AFTER on schedule, so the removal and callout still happen.
+   - A *beat* that throws gets the literal Skip behaviour (AFTER at once).
+   - Before the fix, a draw error ended the play without landing AFTER at all.
+3. **Errors are seen on a device.** `report()` logs to the console **and** shows a short banner on the board.
+4. **Loader fallback.** An `Image` element is used when `createImageBitmap` is missing or fails, ported from the actor path. A missing 2D context is named in the error.
+5. **`?diag=1`** prints every effect step on screen with timings: tap, prefetch, the play's plan, atlas fetch and bytes, decode (and through which API), bake, load ready or failed, handoff, first draw, the cues, finish.
+6. **Prefetch.** Effect manifests are fetched at boot, and atlas bytes when the card enters the hand (the actor pattern). A failed fetch is not cached.
+
+### Proven
+
+- **E12, the fail-open matrix, Vajra and the chain, both seats:** the loader throws, the decode rejects, the decode never settles, every decode arrives 1.2 s late, and (chain only) the strike fails at the handoff.
+  - **Result:** 18 of 18 runs still play `sfx_astra` at 0 ms, land the impact beat on schedule (Vajra: `sfx_unit_destroy` and the crack; the chain: the removal and the callout) and reach AFTER when the beat ends.
+  - **Invariants:** never two atlases live. The late invocation is closed on arrival, and a draw error keeps the beats.
+- **E13, the negative:** the f95e701 player, driven through the same harness, is a **total no-show** under a decode that never settles (0 sounds, no AFTER) and throws out of `play()` when the loader throws. E12's predicate rejects both. This reproduces the defect.
+- **E14, the page pins:** console logging and the banner, `?diag=1`, the `Image` fallback, the named missing context, prefetch at hand and boot, the play never awaited on a decode, a missing manifest still landing AFTER, a failed fetch not cached, and **the boot chain still scheduling the tick** (below).
+- **Live (localhost, before commit):**
+  - **Forced total failure** (both `createImageBitmap` and the `Image` fallback refuse): cast sound at 23 ms; bite 1,942 ms, removal 2,074, callout 2,458, board on AFTER 2,642. The banner showed the error, and the breadcrumb named `createImageBitmap-failed` then `load-failed` for both clips.
+  - **Normal runs:** Vajra impact on the destroy beat (1,451 ms Normal, 875 ms Fast); the chain's ring-snap on the bite (1,941–1,942 ms Normal, 1,166 ms Fast).
+
+### Found by live verification, before commit
+
+Adding the boot-time manifest fetch, a `//` comment was written into the middle of the single-line boot chain. It commented out the step that starts the lab clock, so **nothing on the page would have animated at all**. The syntax check and the whole suite passed; only the live browser run caught it. It is fixed, and **E14 now pins that the boot chain schedules the tick**: the pin fails on the broken line and passes on the fixed one.
+
+### The handoff, measured truthfully
+
+The earlier handoff counter measured when the strike's decode *resolved*, and the first draw lands a frame later. The log now records `firstDrawnCell`. Live, the chain's strike first draws **cell 1: f034, the first frame of the trail, is lost at the handoff**. The bite is unaffected.
+
+### Standing process fix (owner ruling)
+
+**From this rung on, live verification runs against the public Pages URL** (`https://sangbaran-purr.github.io/divya-yuddha/lab/vfx-manifestation/`), not localhost. Pages serves a commit only after it is pushed. So a rung is checked locally before its commit, and the Pages verification runs right after the push and is reported then.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

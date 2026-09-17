@@ -18,7 +18,24 @@
   let currentCard = 'meghnad';   // LAB-6: the card whose play the board shows — one Play button per registry card
   const VIEWER = 0;   // the board is read as seat 0; "swap sides" moves the ATTACKER
   const errors = [];
-  function report(e) { errors.push(String(e && (e.message || e))); }
+  // LAB-20a: an error must be SEEN on a phone — the console, and a short banner on the board (the readout's Errors row is a scroll away)
+  let errT = null;
+  function report(e) {
+    const msg = String(e && (e.message || e)); errors.push(msg);
+    try { console.error('[lab]', e); } catch (x) {}
+    const b = document.getElementById('errbanner');
+    if (b) { b.textContent = 'Error: ' + msg.slice(0, 140); b.classList.add('on'); clearTimeout(errT); errT = setTimeout(() => b.classList.remove('on'), 6000); }
+    diagLog('error', { message: msg });
+  }
+  // LAB-20a · ?diag=1: an on-screen breadcrumb of every effect step, with timings, so a device-specific death names its step
+  const DIAG = new URLSearchParams(location.search).get('diag') === '1', diagT0 = performance.now(), diagLines = [];
+  function diagLog(step, detail) {
+    if (!DIAG) return;
+    const line = (('     ' + Math.round(performance.now() - diagT0)).slice(-6)) + ' ms  ' + step + (detail ? '  ' + JSON.stringify(detail) : '');
+    diagLines.push(line); if (diagLines.length > 60) diagLines.shift();
+    try { console.info('[diag]', line); } catch (x) {}
+    const d = document.getElementById('diag'); if (d) { d.hidden = false; d.textContent = diagLines.join('\n'); d.scrollTop = d.scrollHeight; }
+  }
   window.addEventListener('error', (ev) => report(ev.error || ev.message));
   window.addEventListener('unhandledrejection', (ev) => report(ev.reason));
 
@@ -106,7 +123,7 @@
   }
   function prefetchHands() {
     if (!F) return;
-    [0, 1].forEach((seat) => F.before.seats[seat].hand.forEach((c) => { if (REG[c.id] && REG[c.id].manifest) prefetch(c.id).catch(report); }));
+    [0, 1].forEach((seat) => F.before.seats[seat].hand.forEach((c) => { if (REG[c.id] && REG[c.id].manifest) prefetch(c.id).catch(report); else if (REG[c.id] && REG[c.id].effect) prefetchEffect(c.id).catch(report); }));   // LAB-20a: effects too
   }
   function prefetchedBytes() { let n = 0; Object.keys(prefetched).forEach((k) => { if (prefetched[k].done) n += prefetched[k].done.bytes; }); return n; }
   // at play, for a play that shows the actor: decode the prefetched bytes (fetching now only if no hand prefetch happened)
@@ -162,14 +179,38 @@
   }
   // the compressed bytes, fetched once and kept (LAB-20: a chain fetches its strike's bytes at the cast, so the handoff only decodes)
   const effectBlobs = {};
-  function effectBlob(m) { const u = V(new URL(m.atlas, m.__url).href); if (!effectBlobs[u]) effectBlobs[u] = fetch(V(new URL(m.atlas, m.__url).href)).then((r) => r.blob()); return effectBlobs[u]; }
-  // E1: decoded ON PLAY (a chain's strike: at the handoff), the luminance alpha baked once (the game's bakeAlpha), released when the clip ends
+  function effectBlob(m) {
+    const u = V(new URL(m.atlas, m.__url).href);
+    if (!effectBlobs[u]) effectBlobs[u] = fetch(V(new URL(m.atlas, m.__url).href)).then((r) => { if (!r.ok) throw new Error('atlas ' + r.status + ' ' + u); return r.blob(); }).catch((e) => { delete effectBlobs[u]; throw e; });   // LAB-20a: a failed fetch is not cached
+    return effectBlobs[u];
+  }
+  // E1: decoded ON PLAY (a chain's strike: at the handoff) — ALONGSIDE the running timeline (LAB-20a), the luminance alpha baked once (the
+  // game's bakeAlpha), released when the clip ends. LAB-20a: an Image element when createImageBitmap is missing or fails (the actor path's fallback)
   async function loadEffectAtlas(m) {
+    const role = m.role || m.cardId, t0 = performance.now();
+    diagLog('atlas-fetch', { role });
     const blob = await effectBlob(m);
-    const bmp = await createImageBitmap(blob), cv = document.createElement('canvas'); cv.width = bmp.width; cv.height = bmp.height;
-    const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(bmp, 0, 0); if (bmp.close) bmp.close();
+    diagLog('atlas-bytes', { role, bytes: blob.size, ms: Math.round(performance.now() - t0) });
+    let src = null, how = 'createImageBitmap';
+    if (window.createImageBitmap) { try { src = await createImageBitmap(blob); } catch (e) { diagLog('createImageBitmap-failed', { role, error: String(e && (e.message || e)) }); src = null; } }
+    if (!src) {
+      how = 'Image';
+      const u = URL.createObjectURL(blob), im = new Image(); im.decoding = 'async'; im.src = u;
+      try { await im.decode(); } finally { URL.revokeObjectURL(u); }
+      src = im;
+    }
+    diagLog('atlas-decoded', { role, via: how, w: src.width, h: src.height, ms: Math.round(performance.now() - t0) });
+    const cv = document.createElement('canvas'); cv.width = src.width; cv.height = src.height;
+    const g = cv.getContext('2d', { willReadFrequently: true });
+    if (!g) throw new Error('no 2D context for the ' + role + ' atlas canvas (' + cv.width + 'x' + cv.height + ')');
+    g.drawImage(src, 0, 0); if (src.close) src.close();
     const id = g.getImageData(0, 0, cv.width, cv.height); window.EffectClip.bake(id.data); g.putImageData(id, 0, 0);
+    diagLog('atlas-baked', { role, ms: Math.round(performance.now() - t0) });
     return { source: cv, bytes: cv.width * cv.height * 4, close() { cv.width = 0; cv.height = 0; } };
+  }
+  // LAB-20a: an effect card's manifests and atlas bytes are fetched when it enters a hand (the actor pattern) — the tap-to-cue path fetches nothing
+  function prefetchEffect(cardId) {
+    return effectManifestFor(cardId).then((spec) => { if (!spec) return; (spec.class === 'effect-chain' ? spec.clips : [spec]).forEach((m) => effectBlob(m).catch(report)); diagLog('prefetch', { card: cardId }); });
   }
   const cardNode = (uid) => el('field').querySelector('.bc[data-uid="' + uid + '"]');
   const effect = window.EffectClip.createPlayer({
@@ -181,7 +222,7 @@
     crack: (uid, ms) => { const n = cardNode(uid); if (n) { n.style.setProperty('--crack-ms', Math.round(ms) + 'ms'); n.classList.add('crack'); } },
     removal: (uid, ms) => { const n = cardNode(uid); if (n) { n.style.setProperty('--crack-ms', Math.round(ms) + 'ms'); n.classList.add('removal'); } },   // LAB-20: the game's removal exit — a clean fade and lift, no crack
     callout: (uid, text) => { if (text) banner(text, 900); },
-    onDone: (res) => { lastEffect = res; }, onError: report,
+    onDone: (res) => { lastEffect = res; }, onError: report, diag: diagLog,
   });
   function formatEffectPlan(p, spec) {
     const T = p.timeline, r = (x) => Math.round(x), chained = spec.class === 'effect-chain', strike = chained ? spec.clips[1] : spec;
@@ -194,11 +235,13 @@
       p.cues.map((c) => ('      ' + r(c.t)).slice(-6) + ' ms  ' + c.cue + (c.sound ? ' · ' + c.sound : '') + (c.uid != null ? ' · uid ' + c.uid : '')).join('\n');
   }
   async function playEffect() {
-    const spec = await effectManifestFor(currentCard); if (!spec) return;
-    if (spec.class === 'effect-chain') effectBlob(spec.clips[1]).catch(report);   // the strike's compressed bytes, fetched at the cast
+    diagLog('tap', { card: currentCard, mode });
+    let spec = null;
+    try { spec = await effectManifestFor(currentCard); } catch (e) { report(e); }
+    if (!spec) { report('effect ' + currentCard + ': no manifest — the board lands on the engine\'s AFTER'); render(F.after, []); return; }   // LAB-20a: never a no-show
     render(F.before, []);   // the mark must be on the board before the clip measures where to strike
     lastPlan = null; lastEffect = null;
-    const run = await effect.play(F, spec, { before: F.before, after: F.after }, { mode, casterSeat: F.attackerSeat });
+    const run = effect.play(F, spec, { before: F.before, after: F.after }, { mode, casterSeat: F.attackerSeat });   // LAB-20a: starts at once; the clips decode alongside
     el('plan').textContent = formatEffectPlan(run.plan, spec);
   }
 
@@ -407,7 +450,7 @@
     const es = effect.stats(), er = el('ro-effect');
     if (er) er.textContent = es.loads || es.playing ? (es.playing ? 'playing · ' : '') + 'decoded now ' + mb(es.decodedBytes) + ' (E1 cap ' + mb(window.EffectClip.E1.capBytes) + ') · peak ' + mb(es.peak) + ' · ' + es.loads + ' decodes, ' + es.releases + ' releases' +
       (lastEffect ? ' · last: ' + (lastEffect.log.bySegment.invoke ? 'invocation cells ' + lastEffect.log.bySegment.invoke.length + ', strike cells ' : 'cells drawn ') + lastEffect.log.drawn.length + ', impact cell drawn at ' + (lastEffect.log.impactDrawnAt == null ? '—' : Math.round(lastEffect.log.impactDrawnAt) + ' ms') + ' against the impact beat at ' + (lastEffect.log.destroyCueAt == null ? '—' : Math.round(lastEffect.log.destroyCueAt) + ' ms') +
-        (lastEffect.log.handoff ? ' · handoff at ' + Math.round(lastEffect.log.handoff.at) + ' ms, strike ready at ' + (lastEffect.log.handoff.readyAt == null ? '—' : Math.round(lastEffect.log.handoff.readyAt) + ' ms (decode ' + lastEffect.log.handoff.decodeMs + ' ms, ' + lastEffect.log.handoff.cellsBeforeReady + ' cells before ready)') : '') + (lastEffect.skipped ? ' (skipped)' : '') : '') : '—';
+        (lastEffect.log.handoff ? ' · handoff at ' + Math.round(lastEffect.log.handoff.at) + ' ms, strike ready at ' + (lastEffect.log.handoff.readyAt == null ? '—' : Math.round(lastEffect.log.handoff.readyAt) + ' ms (decode ' + lastEffect.log.handoff.decodeMs + ' ms, first strike cell drawn: ' + lastEffect.log.handoff.firstDrawnCell + ')') : '') + (lastEffect.skipped ? ' (skipped)' : '') : '') : '—';
     el('ro-actor').textContent = s.backend + ' · ' + s.cellPx + ' px cells · drawn ' + s.drawnPx + ' px · cells drawn ' + (s.cellsDrawn ? s.cellsDrawn.drawn + '/' + s.cellsDrawn.total + (s.cellsDrawn.live ? ' so far' : '') + (s.cellsDrawn.cellFps ? ' at ' + Math.round(s.cellsDrawn.cellFps * 100) / 100 + '/s' : '') + ' · repeats ' + s.cellsDrawn.repeats + (s.cellsDrawn.contact ? ' · contact on ' + s.cellsDrawn.contact : '') : '—') + ' · ' + (s.liveFps != null ? s.liveFps + ' fps now' : (s.fps ? s.fps + ' fps last run' : 'no run yet')) + ' · draw ' + s.drawMsAvg.toFixed(2) + ' ms/frame · live actors ' + stage.liveActors() + ' · GPU sprites ' + stage.liveSprites() + (lastDone ? (lastDone.equalsFinal ? ' · final board = engine AFTER ✓' : ' · final board ≠ AFTER ✖') : '');
     el('ro-rung').textContent = VFX.currentRung();
     el('ro-sprites').textContent = 'Canvas 2D ' + VFX.sprCount() + ' · GPU ' + (g.live != null ? g.live : 0);
@@ -479,7 +522,8 @@
     fetch(V('COPY.json')).then((r) => r.json()).then((j) => { copyMeta = j; }),
     fetch(V('../data/manifestations.json')).then((r) => r.json()).then((j) => { REG = j.cards || {}; REG_DEFAULTS = j.defaults || {}; }),
     fetch(V('../data/factionfx.json')).then((r) => r.json()).then((j) => { FFX = j; }),
-  ]).then(() => { cardButtons(); return load(0, 'meghnad'); }).then(() => { stage.useBackend('webgpu').then(() => prefetchHands()).catch(report); window.requestAnimationFrame(tick); previewPlan().catch(report); }).catch(report);   // the rung depends on the renderer: prefetch again once it is up
+  // LAB-20a: every effect's manifests are fetched at boot (small JSON), so a tap never waits on them
+  ]).then(() => { cardButtons(); Object.keys(REG).filter((id) => REG[id].effect).forEach((id) => effectManifestFor(id).catch(report)); return load(0, 'meghnad'); }).then(() => { stage.useBackend('webgpu').then(() => prefetchHands()).catch(report); window.requestAnimationFrame(tick); previewPlan().catch(report); }).catch(report);   // the rung depends on the renderer: prefetch again once it is up
   // is this page the served one? STAMP read past every cache; a cached page reloads itself once onto the served stamp
   fetch(new URL('../STAMP', document.baseURI).href + '?t=' + Date.now(), { cache: 'no-store' }).then((r) => (r.ok ? r.text() : null)).then((served) => {
     served = served && served.trim();

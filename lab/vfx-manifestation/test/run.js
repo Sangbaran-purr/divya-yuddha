@@ -1337,6 +1337,77 @@ console.log('\n── E · the effect chain and the impact pin ──');
      mirrorLeft.W.draws.filter((d) => d.img.__effect === 'strike').every((d) => d.mirrored) && mirrorLeft.W.draws.filter((d) => d.img.__effect === 'invoke').every((d) => !d.mirrored) &&
      mirrorRight.W.draws.every((d) => !d.mirrored) && mirrorLeft.run.log.mirror === true && mirrorRight.run.log.mirror === false,
      J({ skipInv: skipInv.map((r) => r.W.events), skipStr: skipStr.map((r) => r.W.events), mirror: [mirrorLeft.run.log.mirror, mirrorRight.run.log.mirror] }));
+  // ── LAB-20a · FAILS OPEN: the beats never wait on a decode ──
+  // a deferred loader the test resolves or rejects at a chosen moment, synchronously (a real promise would settle only after the loop)
+  function driveFail(f, spec, loaderFor, o) {
+    o = o || {};
+    const draws = [], rendered = [], sounds = [], exits = [], callouts = [], errs = [], closes = [];
+    let now = 0, live = 0, maxLive = 0;
+    const g = { _op: 'source-over', setTransform() {}, clearRect() {}, drawImage(img) { if (o.drawThrows) throw new Error('drawImage failed (doctored)'); draws.push(img.__effect); }, set globalCompositeOperation(v) { this._op = v; }, get globalCompositeOperation() { return this._op; }, globalAlpha: 1 };
+    const mk = (m) => { live++; maxLive = Math.max(maxLive, live); return { source: { __effect: m.role || m.cardId }, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() { live--; closes.push(m.role || m.cardId); } }; };
+    const pending = [];
+    const env = { now: () => now, canvas: { width: 820, height: 840, getContext: () => g }, dpr: 2, cardOf: () => ({ cx: 205, cy: 55, w: 64 }), halfOf: (seat) => ({ cx: 205, cy: seat === 0 ? 315 : 105 }), fieldCentreX: () => 205,
+      loadAtlas: (m) => loaderFor(m, mk, pending), render: (b) => rendered.push(b), sound: (n) => sounds.push({ n, t: now }), crack: (u) => exits.push(['crack', u, now]), removal: (u) => exits.push(['removal', u, now]), callout: (u, t) => callouts.push([u, t, now]),
+      onError: (e) => errs.push(String(e && (e.message || e))), onDone: (r) => { env.result = r; } };
+    const P = (o.lib || EC).createPlayer(env);
+    let run = P.play(f, spec, { before: f.before, after: f.after }, { mode: o.mode || 'full', casterSeat: f.attackerSeat });
+    const settleAt = [];
+    for (let n = 0; n < 400 && !(run && run.done); n++) {
+      now += 1000 / 60;
+      pending.filter((d) => !d.settled && d.at != null && now >= d.at).forEach((d) => { d.settled = true; d.fire(); });
+      P.frame(now);
+      if (rendered.length && J(rendered[rendered.length - 1]) === J(f.after) && !settleAt.length) settleAt.push(now);
+    }
+    return { run, draws, rendered, sounds, exits, callouts, errs, closes, maxLive, live, settleAt: settleAt[0], P };
+  }
+  const deferred = (pending, at, mode) => (m, mk) => { const d = { at, then(ok, bad) { d.ok = ok; d.bad = bad; } }; d.fire = () => (mode === 'reject' ? d.bad(new Error('decode failed (doctored)')) : d.ok(mk(m))); pending.push(d); return d; };
+  const L = {
+    'the loader throws': () => () => { throw new Error('createImageBitmap is not a function (doctored)'); },
+    'the decode rejects': (pend) => (m, mk, pending) => { const d = { at: 60, then(ok, bad) { d.bad = bad; } }; d.fire = () => d.bad(new Error('decode failed (doctored)')); pending.push(d); return d; },
+    'the decode never settles': () => (m, mk, pending) => ({ then() {} }),
+    'every decode arrives 1.2 s late': () => (m, mk, pending) => { const d = { at: 1200, then(ok, bad) { d.ok = ok; } }; d.fire = () => d.ok(mk(m)); pending.push(d); return d; },
+    'only the strike fails (at the handoff)': () => (m, mk, pending) => { if (m.role !== 'strike') return mk(m); const d = { at: 950, then(ok, bad) { d.bad = bad; } }; d.fire = () => d.bad(new Error('strike decode failed (doctored)')); pending.push(d); return d; },
+  };
+  const beatsOk = (r, f, spec) => {
+    const chained = spec.class === 'effect-chain', T = r.run.plan.timeline, hero = f.events[1].targetUids[0], dt = 1000 / 60 + 1e-6;
+    const cast = r.sounds.find((x) => x.n === 'sfx_astra'), settle = r.run.log.settledAt;
+    const beat = chained ? r.exits.length === 1 && r.exits[0][0] === 'removal' && r.exits[0][1] === hero && Math.abs(r.exits[0][2] - T.crackAt) <= dt && r.callouts.length === 1 && r.callouts[0][1] === 'Sudarshana Chakra'
+                         : r.exits.length === 1 && r.exits[0][0] === 'crack' && r.sounds.some((x) => x.n === 'sfx_unit_destroy' && Math.abs(x.t - T.destroyAt) <= dt);
+    return !!cast && cast.t <= dt && beat && settle != null && Math.abs(settle - T.beatEnd) <= dt && J(r.rendered[r.rendered.length - 1]) === J(f.after) && r.run.done && r.maxLive <= 1 && r.live === 0;
+  };
+  const matrix = [];
+  [['Vajra', VJ.FX, VJ.M], ['Sudarshana', SU.FX, SU.spec]].forEach(([name, FX, spec]) => [0, 1].forEach((seat) => Object.keys(L).forEach((k) => {
+    if (name === 'Vajra' && k === 'only the strike fails (at the handoff)') return;
+    const r = driveFail(FX[seat], spec, L[k]());
+    matrix.push({ name, seat, k, ok: beatsOk(r, FX[seat], spec), drawn: r.draws.length, errs: r.errs.length, late: r.run.log.late.length, ready: r.run.log.ready }); })));
+  const drawErr = [[VJ.FX[0], VJ.M], [SU.FX[1], SU.spec]].map(([f, spec]) => { const r = driveFail(f, spec, () => (m, mk) => mk(m), { drawThrows: true }); return { ok: beatsOk(r, f, spec) && !!r.run.log.drawError && r.errs.length === 1 && r.draws.length === 0, err: r.run.log.drawError }; });
+  const lateChain = matrix.filter((x) => x.name === 'Sudarshana' && x.k === 'every decode arrives 1.2 s late');
+  ok('E12 · LAB-20a · FAILS OPEN — THE BEATS NEVER WAIT ON A DECODE, Vajra and the chain, both seats. play() now starts the timeline at once (the board drawn, the cast cue at 0 ms) and each clip decodes ALONGSIDE; a clip that is not ready, or failed, simply does not draw. Under every doctored failure — ' + Object.keys(L).join(' · ') + ' — sfx_astra still sounds at 0 ms, the impact beat still lands on schedule (Vajra: sfx_unit_destroy and the crack at the destroy beat; the chain: the REMOVAL and the callout "Sudarshana Chakra"), and the board lands on the engine\'s AFTER when the beat ends, never two atlases live, nothing left decoded (' + matrix.filter((x) => x.ok).length + ' of ' + matrix.length + ' runs). A late decode draws from the moment it is ready; the chain\'s invocation, arriving after its segment is over, is CLOSED on arrival (' + lateChain.map((x) => x.late + ' discarded').join(', ') + '). And a DRAW error drops the decoration only: the beats run on to AFTER (' + drawErr.map((x) => x.ok).join(', ') + ')',
+     matrix.every((x) => x.ok) && drawErr.every((x) => x.ok) && lateChain.every((x) => x.late === 1),
+     J({ failed: matrix.filter((x) => !x.ok), drawErr, lateChain }));
+  // THE NEGATIVE: the LAB-20 player (f95e701), under the same failing decode, is a total no-show — the owner's reported defect, reproduced
+  const vm = require('vm'), oldSrc = cp.execFileSync('git', ['show', 'f95e701:lab/vfx-manifestation/lib/effectclip.js'], { cwd: GAME, encoding: 'utf8' });
+  const oldBox = { module: { exports: {} } }; oldBox.window = undefined; vm.runInNewContext(oldSrc, Object.assign(oldBox, { exports: oldBox.module.exports }));
+  const OLD = oldBox.module.exports;
+  const oldRuns = [['Vajra', VJ.FX[0], VJ.M], ['Sudarshana', SU.FX[0], SU.spec]].map(([name, f, spec]) => { let threw = null, r = null;
+    try { r = driveFail(f, spec, L['the decode never settles'](), { lib: OLD }); } catch (e) { threw = String(e); }
+    const rr = (() => { try { return driveFail(f, spec, L['the loader throws'](), { lib: OLD }); } catch (e) { return { threw: String(e) }; } })();
+    return { name, hangSounds: r ? r.sounds.length : null, hangAfter: r ? J(r.rendered[r.rendered.length - 1]) === J(f.after) : null, hangCaught: !(r && r.run && r.run.plan && beatsOk(r, f, spec)), throwThrew: !!rr.threw, throwCaught: !!rr.threw || !beatsOk(rr, f, spec) }; });
+  ok('E13 · LAB-20a · THE NEGATIVE — the check can fail, and the defect is reproduced: the LAB-20 player (git f95e701), driven through the SAME harness, is a total no-show under a decode that never settles (' + oldRuns.map((x) => x.name + ': ' + x.hangSounds + ' sounds, AFTER ' + x.hangAfter).join(' · ') + ') and throws out of play() when the loader throws (' + oldRuns.map((x) => x.name + ' ' + (x.throwThrew ? 'threw' : 'did not throw')).join(' · ') + '). E12\'s predicate rejects both; the fail-open player passes it',
+     oldRuns.every((x) => x.hangCaught && x.throwCaught && x.hangSounds === 0 && x.hangAfter === false), J(oldRuns));
+  // THE PAGE: errors seen on a phone, the breadcrumb, the loader fallback, the prefetch, and no await on the decode before the cue
+  const LJ = fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8'), PG = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
+  const pins = { consoleError: /try \{ console\.error\('\[lab\]', e\); \} catch \(x\) \{\}/.test(LJ), banner: /const b = document\.getElementById\('errbanner'\);\s*\n\s*if \(b\) \{ b\.textContent = 'Error: '/.test(LJ) && /<div id="errbanner" role="alert"><\/div>/.test(PG) && /#errbanner\.on\{ opacity:1; \}/.test(PG),
+    diag: /const DIAG = new URLSearchParams\(location\.search\)\.get\('diag'\) === '1'/.test(LJ) && /<pre id="diag" hidden/.test(PG) && /diag: diagLog,/.test(LJ),
+    imageFallback: /if \(window\.createImageBitmap\) \{ try \{ src = await createImageBitmap\(blob\); \} catch \(e\) \{/.test(LJ) && /const u = URL\.createObjectURL\(blob\), im = new Image\(\);/.test(LJ),
+    noContextNamed: /if \(!g\) throw new Error\('no 2D context for the '/.test(LJ),
+    prefetchHand: /else if \(REG\[c\.id\] && REG\[c\.id\]\.effect\) prefetchEffect\(c\.id\)\.catch\(report\);/.test(LJ), manifestsAtBoot: /filter\(\(id\) => REG\[id\]\.effect\)\.forEach\(\(id\) => effectManifestFor\(id\)\.catch\(report\)\)/.test(LJ),
+    playNotAwaited: /const run = effect\.play\(F, spec,/.test(LJ) && !/await effect\.play\(/.test(LJ), noManifestLandsAfter: /render\(F\.after, \[\]\); return; \}   \/\/ LAB-20a: never a no-show/.test(LJ),
+    failedFetchNotCached: /\.catch\(\(e\) => \{ delete effectBlobs\[u\]; throw e; \}\)/.test(LJ),
+    // the boot chain still reaches the tick: the statement that loads the registry must schedule it, with no line comment cutting it short
+    bootSchedulesTick: (() => { const b0 = LJ.indexOf("fetch(V('../data/factionfx.json'))"), stmt = LJ.slice(b0, LJ.indexOf('\n  // is this page the served one?', b0)); const code = stmt.split('\n').map((ln) => ln.replace(/\s\/\/ .*$/, '')).join('\n'); return /window\.requestAnimationFrame\(tick\)/.test(code) && /\}\)\.catch\(report\);\s*$/.test(code.trim() + '\n'); })() };
+  ok('E14 · LAB-20a · THE PAGE FAILS OPEN AND SPEAKS UP: ' + Object.keys(pins).map((x) => x + ' ' + pins[x]).join(', ') + ' — report() logs to the console AND shows a short banner on the board; ?diag=1 prints every effect step with timings on screen (tap, manifest, atlas bytes, decode and via which API, bake, load-ready or load-failed, handoff, first draw, cues, finish); the loader falls back to an Image element when createImageBitmap is missing or fails and names a missing 2D context; effect manifests are fetched at boot and atlas bytes when the card enters the hand; the play is never awaited on a decode, and a missing manifest still lands the board on AFTER',
+     Object.values(pins).every(Boolean), J(pins));
 }
 
 // ═══ K · THE SOURCES (A7) ═══

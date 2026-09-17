@@ -16,6 +16,7 @@
    flightMs before its bite, and exits the Hero cleanly (no crack) — Vajra's contract is the same shape with no flight.
    THE IMPACT PIN (LAB-20, retro-applied to Vajra): on the frame the impact beat fires, the impact cell is drawn, whatever the clock says —
    a timed clip at Fast on a 30 Hz device (a cell shorter than a frame) could otherwise skip exactly that cell.
+   LAB-20a · FAILS OPEN (see createPlayer): the timeline never waits on a decode.
    Browser: window.EffectClip. Node: require. */
 (function (root) {
   'use strict';
@@ -159,12 +160,18 @@
   function bake(d) { for (var i = 0; i < d.length; i += 4) { var r = d[i], g = d[i + 1], b = d[i + 2]; d[i + 3] = r > g ? (r > b ? r : b) : (g > b ? g : b); } return d; }
 
   // THE PLAYER. env: now(), canvas, dpr, cardOf(uid) → {cx, cy, w}, halfOf(seat) → {cx, cy}, fieldCentreX(), loadAtlas(m) → atlas or Promise,
-  // render(board), crack(uid, ms), removal(uid, ms), callout(uid, text), sound(name), onDone(result), onError(e)
+  // render(board), crack(uid, ms), removal(uid, ms), callout(uid, text), sound(name), onDone(result), onError(e), diag(step, detail)
+  // LAB-20a · FAILS OPEN: the beats are never hostage to a decoration's decode. play() starts the timeline AT ONCE — the board drawn, the
+  // cast cue at 0 ms, every beat on schedule — and each clip decodes ALONGSIDE; a clip that is not ready (or failed) simply does not draw.
+  // A draw error lands the board on the engine's AFTER, as Skip does. E1 is unchanged: an atlas is accepted only while its segment is
+  // current, the invocation is released at the handoff before the strike decodes, and a decode arriving too late is closed on arrival.
   function createPlayer(env) {
     var st = { run: null, loaded: null, loadedRole: null, decodedBytes: 0, peak: 0, loads: 0, releases: 0, peakClips: 0, live: 0, last: null };
+    var diag = function (step, detail) { if (env.diag) { try { env.diag(step, detail || null); } catch (e) {} } };
     function release() {
       if (!st.loaded) return;
       try { st.loaded.close(); } catch (e) {}
+      diag('release', { role: st.loadedRole });
       st.loaded = null; st.loadedRole = null; st.decodedBytes = 0; st.releases++; st.live = 0;
     }
     function accept(a, role, t0) {
@@ -172,8 +179,27 @@
       st.loaded = a; st.loadedRole = role; st.loads++; st.live = 1; st.decodedBytes = a.bytes; st.peak = Math.max(st.peak, a.bytes); st.peakClips = Math.max(st.peakClips, st.live);
       st.decodeMs = Date.now() - t0;
     }
-    function clear() { var c = env.canvas; if (!c) return; var g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height); }
-    // play: synchronous when the atlas loader is (a test world), a promise when it is not (the page fetches and decodes)
+    function clear() { var c = env.canvas; if (!c) return; var g = c.getContext('2d'); if (!g) return; g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height); }
+    // decode segment k's clip alongside the running timeline; accept it only if the run is live and the segment is still current
+    function loadSegment(run, k) {
+      var sg = run.plan.segments[k], m = run.clips[sg.clip], t0 = Date.now(), tStart = env.now() - run.t0;
+      run.current = k; diag('load-start', { role: sg.role, at: Math.round(tStart) });
+      var h = sg.role === 'strike' && k > 0 ? run.log.handoff : null;
+      var ready = function (x) {
+        if (!x) return fail(new Error('the ' + sg.role + ' atlas loader returned nothing'));
+        var t = env.now() - run.t0;
+        if (run.done || run.current !== k) { try { x.close(); } catch (e) {} run.log.late.push({ role: sg.role, at: t }); diag('load-discarded', { role: sg.role, at: Math.round(t), why: run.done ? 'the play ended' : 'its segment is over' }); return; }
+        accept(x, sg.role, t0); run.log.ready[sg.role] = t;
+        if (h) { h.readyAt = t; h.decodeMs = Date.now() - t0; h.cellsBeforeReady = Math.max(0, Math.floor((t - sg.start) / sg.frameMs)); }
+        diag('load-ready', { role: sg.role, at: Math.round(t), ms: Date.now() - t0, bytes: x.bytes });
+      };
+      var fail = function (e) { var t = env.now() - run.t0; run.log.loadErrors.push({ role: sg.role, at: t, error: String(e && (e.message || e)) }); diag('load-failed', { role: sg.role, at: Math.round(t), error: String(e && (e.message || e)) }); if (env.onError) env.onError(e); };
+      var a;
+      try { a = env.loadAtlas(m); } catch (e) { fail(e); return; }
+      if (a && typeof a.then === 'function') { run.pending = a; a.then(ready, fail); }
+      else ready(a);
+    }
+    // play: starts the timeline at once (always synchronous); the clips decode alongside
     function play(batch, spec, boards, opts) {
       opts = opts || {};
       if (st.run && !st.run.done) skip();
@@ -182,35 +208,28 @@
       var places = p.segments.map(function (sg) {
         var m = clips[sg.clip];
         if (sg.place === 'target') return target ? place(m, target, mirrorFor(m, target.cx, env.fieldCentreX ? env.fieldCentreX() : target.cx)) : null;
-        var h = env.halfOf ? env.halfOf(p.casterSeat) : null;
-        return h && target ? place(m, { cx: h.cx, cy: h.cy, w: target.w }, false) : null;
+        var hh = env.halfOf ? env.halfOf(p.casterSeat) : null;
+        return hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w }, false) : null;
       });
-      function start(a, t0) {
-        if (a) accept(a, p.segments[0].role, t0);
-        env.render(boards.before);
-        var run = { plan: p, spec: spec, clips: clips, boards: boards, target: target, places: places, t0: env.now(), next: 0, done: false, pin: opts.impactPin !== false, pendingLoad: null,
-                    manifest: clips[p.segments.length ? p.segments[p.segments.length - 1].clip : 0],
-                    place: places[places.length - 1] || null,
-                    log: { cues: [], drawn: [], bySegment: {}, composite: [], impactDrawnAt: null, impactPinned: false, destroyCueAt: null, settledAt: null, crackAt: null, handoff: null, mirror: null } };
-        p.segments.forEach(function (sg) { run.log.bySegment[sg.role] = []; });
-        run.log.mirror = places.length ? places[places.length - 1] && places[places.length - 1].mirror : null;
-        st.run = run; st.last = run;
-        return run;
-      }
-      if (!p.clip) return start(null, 0);
       if (st.loaded) release();
-      var t0 = Date.now(), a = env.loadAtlas(clips[p.segments[0].clip]);
-      return a && typeof a.then === 'function' ? a.then(function (x) { return start(x, t0); }) : start(a, t0);
+      env.render(boards.before);
+      var run = { plan: p, spec: spec, clips: clips, boards: boards, target: target, places: places, t0: env.now(), next: 0, done: false, pin: opts.impactPin !== false, pending: null, current: -1,
+                  manifest: clips[p.segments.length ? p.segments[p.segments.length - 1].clip : 0],
+                  place: places[places.length - 1] || null,
+                  log: { cues: [], drawn: [], bySegment: {}, composite: [], impactDrawnAt: null, impactPinned: false, destroyCueAt: null, settledAt: null, crackAt: null, handoff: null, mirror: null,
+                         ready: {}, late: [], loadErrors: [], drawError: null } };
+      p.segments.forEach(function (sg) { run.log.bySegment[sg.role] = []; });
+      run.log.mirror = places.length ? places[places.length - 1] && places[places.length - 1].mirror : null;
+      st.run = run; st.last = run;
+      diag('play', { mode: p.mode, clip: p.clip, chained: p.chained, strike: p.strike, cues: p.cues.length, end: Math.round(p.end) });
+      if (p.clip) loadSegment(run, 0);                             // alongside — the cast cue does not wait for it
+      return run;
     }
     function handoff(run, t) {
-      var sg = run.plan.segments[1], m = run.clips[sg.clip];
       release();                                                   // the invocation lets go FIRST — then the strike decodes (E1)
-      var t0 = Date.now(), h = { at: t, releasedAt: t, readyAt: null, decodeMs: null, cellsBeforeReady: null };
-      run.log.handoff = h;
-      var a = env.loadAtlas(m);
-      var ready = function (x) { if (run.done) { try { x.close(); } catch (e) {} return; } accept(x, 'strike', t0); h.readyAt = env.now() - run.t0; h.decodeMs = Date.now() - t0; h.cellsBeforeReady = Math.max(0, Math.floor((h.readyAt - sg.start) / sg.frameMs)); };
-      if (a && typeof a.then === 'function') { run.pendingLoad = a; a.then(ready).catch(function (e) { if (env.onError) env.onError(e); }); }
-      else ready(a);
+      run.log.handoff = { at: t, releasedAt: t, readyAt: null, decodeMs: null, cellsBeforeReady: null, firstDrawnCell: null };
+      diag('handoff', { at: Math.round(t) });
+      loadSegment(run, 1);
     }
     function fire(run, c, t) {
       run.log.cues.push({ cue: c.cue, planned: c.t, at: t });
@@ -221,37 +240,47 @@
       if (c.cue === 'removal') { run.log.crackAt = t; if (env.removal) env.removal(c.uid, c.ms); }
       if (c.cue === 'callout' && env.callout) env.callout(c.uid, c.text);
       if (c.cue === 'settle') { run.log.settledAt = t; env.render(run.boards.after); }
-      if (c.cue === 'clip-end') { clear(); release(); }
+      if (c.cue === 'clip-end') { clear(); release(); run.current = -1; }
+      if (c.cue === 'cast' || c.cue === 'impact' || c.cue === 'settle') diag('cue', { cue: c.cue, at: Math.round(t) });
     }
     function finish(run, skipped) {
       run.done = true; clear(); release();
       var res = { skipped: !!skipped, plan: run.plan, log: run.log };
+      diag('finish', { skipped: !!skipped, drawn: run.log.drawn.length, errors: run.log.loadErrors.length + (run.log.drawError ? 1 : 0) });
       if (env.onDone) env.onDone(res);
+    }
+    function draw(run, t) {
+      var drew = false;
+      run.plan.segments.forEach(function (sg, k) {
+        if (drew || !st.loaded || st.loadedRole !== sg.role || !run.places[k]) return;
+        var m = run.clips[sg.clip], ix = segIndex(m, sg, t);
+        if (run.pin && run.impactFrame && sg.impact != null) { if (ix !== sg.impact) run.log.impactPinned = true; ix = sg.impact; }   // THE IMPACT PIN
+        if (ix == null) return;
+        var c = env.canvas, g = c.getContext('2d'), d = env.dpr || 1, cell = m.cells[ix], r = run.places[k];
+        g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height);
+        g.globalCompositeOperation = 'lighter'; g.globalAlpha = 1;
+        if (r.mirror) { g.setTransform(-1, 0, 0, 1, (r.x + r.w) * d, 0); g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, 0, r.y * d, r.w * d, r.h * d); g.setTransform(1, 0, 0, 1, 0, 0); }
+        else g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, r.x * d, r.y * d, r.w * d, r.h * d);
+        g.globalCompositeOperation = 'source-over';
+        var seq = run.log.bySegment[sg.role]; if (!seq.length) { diag('first-draw', { role: sg.role, at: Math.round(t), cell: ix }); if (sg.role === 'strike' && run.log.handoff) run.log.handoff.firstDrawnCell = ix; }   // the TRUE loss at the handoff: cells before the first one drawn
+        if (seq[seq.length - 1] !== ix) seq.push(ix);
+        if (sg.role === 'strike' && run.log.drawn[run.log.drawn.length - 1] !== ix) run.log.drawn.push(ix);
+        run.log.composite.push('lighter'); drew = true;
+        if (sg.impact != null && ix === sg.impact && run.log.impactDrawnAt == null) run.log.impactDrawnAt = t;
+      });
     }
     function frame(now) {
       var run = st.run; if (!run || run.done) return;
-      try {
-        var t = now - run.t0, cues = run.plan.cues; run.impactFrame = false;
-        while (run.next < cues.length && cues[run.next].t <= t + 1e-6) { fire(run, cues[run.next], t); run.next++; }
-        var drew = false;
-        run.plan.segments.forEach(function (sg, k) {
-          if (drew || !st.loaded || st.loadedRole !== sg.role || !run.places[k]) return;
-          var m = run.clips[sg.clip], ix = segIndex(m, sg, t);
-          if (run.pin && run.impactFrame && sg.impact != null) { if (ix !== sg.impact) run.log.impactPinned = true; ix = sg.impact; }   // THE IMPACT PIN
-          if (ix == null) return;
-          var c = env.canvas, g = c.getContext('2d'), d = env.dpr || 1, cell = m.cells[ix], r = run.places[k];
-          g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height);
-          g.globalCompositeOperation = 'lighter'; g.globalAlpha = 1;
-          if (r.mirror) { g.setTransform(-1, 0, 0, 1, (r.x + r.w) * d, 0); g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, 0, r.y * d, r.w * d, r.h * d); g.setTransform(1, 0, 0, 1, 0, 0); }
-          else g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, r.x * d, r.y * d, r.w * d, r.h * d);
-          g.globalCompositeOperation = 'source-over';
-          var seq = run.log.bySegment[sg.role]; if (seq[seq.length - 1] !== ix) seq.push(ix);
-          if (sg.role === 'strike' && run.log.drawn[run.log.drawn.length - 1] !== ix) run.log.drawn.push(ix);
-          run.log.composite.push('lighter'); drew = true;
-          if (sg.impact != null && ix === sg.impact && run.log.impactDrawnAt == null) run.log.impactDrawnAt = t;
-        });
-        if (run.next >= cues.length) finish(run, false);
-      } catch (e) { if (env.onError) env.onError(e); finish(run, true); }
+      var t = now - run.t0, cues = run.plan.cues; run.impactFrame = false;
+      try { while (run.next < cues.length && cues[run.next].t <= t + 1e-6) { fire(run, cues[run.next], t); run.next++; } }
+      catch (e) { if (env.onError) env.onError(e); diag('cue-error', { at: Math.round(t), error: String(e && (e.message || e)) }); env.render(run.boards.after); finish(run, true); return; }
+      try { if (run.plan.clip) draw(run, t); }
+      catch (e) {
+        // a DRAW error costs the decoration, never the beats: the clip is dropped, the timeline plays on to AFTER
+        if (!run.log.drawError) { run.log.drawError = { at: t, error: String(e && (e.message || e)) }; diag('draw-error', { at: Math.round(t), error: run.log.drawError.error }); if (env.onError) env.onError(e); }
+        release(); run.current = -2;
+      }
+      if (run.next >= cues.length) finish(run, false);
     }
     function skip() {
       var run = st.run; if (!run || run.done) return;
