@@ -10,6 +10,12 @@
    ground becomes fully transparent), and every cell is drawn with 'lighter'.
    BUDGET E1 (owner ruling, LAB-19, beside A5): an effect clip is capped at the effect layer's hi-rung class (~18 MB decoded); loaded on
    play, released after; at most ONE effect clip decoded at once, coexisting with at most the one decoded actor A5 allows.
+   LAB-20 · THE CHAIN: an effect may be two clips — an INVOCATION on the caster's half centre (the game's own throw origin) handed off to
+   a STRIKE on the target, whose impact lands on the contract's bite. The clips decode ONE AFTER THE OTHER (E1): the invocation at the cast,
+   released at the handoff, then the strike. The contract generalises: a removal (Sudarshana) keys off a 'passive' event, flies for
+   flightMs before its bite, and exits the Hero cleanly (no crack) — Vajra's contract is the same shape with no flight.
+   THE IMPACT PIN (LAB-20, retro-applied to Vajra): on the frame the impact beat fires, the impact cell is drawn, whatever the clock says —
+   a timed clip at Fast on a 30 Hz device (a cell shorter than a frame) could otherwise skip exactly that cell.
    Browser: window.EffectClip. Node: require. */
 (function (root) {
   'use strict';
@@ -32,58 +38,111 @@
       if (!(num(c.x) && num(c.y) && c.w > 0 && c.h > 0)) e.push('cell ' + i + ' has no rectangle');
       else if (m.atlasSize && (c.x + c.w > m.atlasSize.w || c.y + c.h > m.atlasSize.h)) e.push('cell ' + i + ' falls outside the atlas');
     });
-    if (!(Number.isInteger(m.impact) && cells && m.impact >= 0 && m.impact < cells.length)) e.push('impact must name a cell');
+    var member = m.role === 'invoke' || m.role === 'strike';
+    if (m.role !== undefined && !member) e.push('role must be "invoke" or "strike"');
+    if (m.role === 'invoke') { if (m.impact !== null) e.push('an invocation has no impact cell'); }
+    else if (!(Number.isInteger(m.impact) && cells && m.impact >= 0 && m.impact < cells.length)) e.push('impact must name a cell');
     if (!(m.anchor && num(m.anchor.x) && num(m.anchor.y))) e.push('anchor missing');
     else if (m.cellSize && (m.anchor.x < 0 || m.anchor.y < 0 || m.anchor.x > m.cellSize.w || m.anchor.y > m.cellSize.h)) e.push('anchor falls outside the cell');
-    var sr = m.scaleRule; if (!(sr && sr.ringDiameterCell > 0 && sr.cardWidths > 0)) e.push('scaleRule missing');
-    var k = m.contract;
-    if (!(k && k.trigger && k.abilityName && k.castSound && k.impactSound && num(k.castHitStopMs) && num(k.castHoldMs) && num(k.crackAfterMs) && num(k.destroyDwellMs))) e.push('contract missing');
-    if (k && k.awaited !== false) e.push('the strike is never awaited (the current contract)');
+    var sr = m.scaleRule; if (!(sr && (sr.ringDiameterCell > 0 || sr.spanCell > 0) && sr.cardWidths > 0)) e.push('scaleRule missing');
+    if (!member) e = e.concat(contractErrors(m.contract));
+    else if (m.contract !== undefined) e.push('a chain member carries no contract (the chain does)');
     if (m.atlasSize && m.atlasSize.w * m.atlasSize.h * 4 > E1.capBytes) e.push('the atlas decodes past the E1 cap');
     return { ok: e.length === 0, errors: e };
   }
+  function contractErrors(k) {
+    var e = [];
+    if (!(k && k.trigger && k.abilityName && k.castSound && (k.impactSound === null || typeof k.impactSound === 'string') && num(k.castHitStopMs) && num(k.castHoldMs) && num(k.crackAfterMs) && num(k.destroyDwellMs))) e.push('contract missing');
+    if (k && k.awaited !== false) e.push('the strike is never awaited (the current contract)');
+    if (k && k.flightMs !== undefined && !(k.flightMs >= 0)) e.push('flightMs must be 0 or more');
+    return e;
+  }
+  // a chain: its contract, and exactly an invocation then a strike (validated clip manifests)
+  function validateChain(chain, clips) {
+    var e = [];
+    if (!chain || chain.class !== 'effect-chain') e.push('class must be "effect-chain"');
+    if (!(chain && typeof chain.cardName === 'string')) e.push('cardName missing (the cast event carries the card name)');
+    e = e.concat(contractErrors(chain && chain.contract));
+    if (!(Array.isArray(clips) && clips.length === 2 && clips[0].role === 'invoke' && clips[1].role === 'strike')) e.push('a chain is an invocation then a strike');
+    (clips || []).forEach(function (m, i) { var v = validate(m); if (!v.ok) e.push('clip ' + i + ': ' + v.errors.join('; ')); if (chain && m.cardId !== chain.cardId) e.push('clip ' + i + ' is another card'); });
+    return { ok: e.length === 0, errors: e };
+  }
+  var contractOf = function (spec) { return spec.class === 'effect-chain' ? spec.chain.contract : spec.contract; };
+  var clipsOf = function (spec) { return spec.class === 'effect-chain' ? spec.clips : [spec]; };
 
   // the cast and the strike this batch carries: the play of the card, and its resolution event (null when the card found no mark)
-  function fromBatch(batch, m) {
-    var ev = (batch && batch.events) || [], k = m.contract;
-    var cast = ev[0] && ev[0].type === 'play' && ev[0].abilityName === k.abilityName ? ev[0] : null;
+  function fromBatch(batch, spec) {
+    var ev = (batch && batch.events) || [], k = contractOf(spec);
+    var name = spec.class === 'effect-chain' ? spec.chain.cardName : null;   // a chain's cast is named by its card (Sudarshana Chakra), its resolution by the ability (Sudarshana)
+    var cast = ev[0] && ev[0].type === 'play' && (ev[0].abilityName === k.abilityName || (name && ev[0].abilityName === name)) ? ev[0] : null;
     var strike = ev.filter(function (x) { return x.type === k.trigger && x.abilityName === k.abilityName; })[0] || null;
     return { cast: cast, strike: strike, targetUid: strike && strike.targetUids && strike.targetUids.length ? strike.targetUids[0] : null };
   }
 
-  // the timeline, from the contract's beats and the clip's own frames, at a speed (the game's speedMult: Normal 1, Fast 0.6)
+  // the contract's beats at a speed (the game's speedMult: Normal 1, Fast 0.6): the cast beat, then the resolution beat; the impact is its
+  // flight after it (Vajra: no flight — the impact IS the destroy beat), the exit its crackAfterMs after the impact, the beat's end its dwell after
+  function beats(k, vfxT) {
+    var castBeatMs = (k.castHitStopMs + k.castHoldMs) * vfxT, impactAt = castBeatMs + (k.flightMs || 0) * vfxT;
+    return { castBeatMs: castBeatMs, destroyAt: castBeatMs, impactAt: impactAt, crackAt: impactAt + k.crackAfterMs * vfxT,
+             calloutAt: k.calloutAfterMs != null ? impactAt + (k.crackAfterMs + k.calloutAfterMs) * vfxT : null,
+             beatEnd: impactAt + (k.crackAfterMs + k.destroyDwellMs) * vfxT };
+  }
+  var vfxOf = function (speed, choreo) { return (speed > 0 ? speed : 1) * (choreo > 0 ? choreo : CHOREO_SPEED); };
+  // one clip (LAB-19): its impact cell lands on the impact beat
   function timeline(m, speed, choreo) {
-    var vfxT = (speed > 0 ? speed : 1) * (choreo > 0 ? choreo : CHOREO_SPEED), k = m.contract;
-    var frameMs = 1000 / m.fps * vfxT, leadMs = m.impact * frameMs, totalMs = m.cells.length * frameMs;
-    var castBeatMs = (k.castHitStopMs + k.castHoldMs) * vfxT, destroyAt = castBeatMs;
-    return { vfxT: vfxT, frameMs: frameMs, leadMs: leadMs, totalMs: totalMs, castBeatMs: castBeatMs, destroyAt: destroyAt,
-             clipStart: destroyAt - leadMs, impactAt: destroyAt - leadMs + m.impact * frameMs, crackAt: destroyAt + k.crackAfterMs * vfxT,
-             beatEnd: destroyAt + (k.crackAfterMs + k.destroyDwellMs) * vfxT, clipEnd: destroyAt - leadMs + totalMs,
-             waitCostMs: Math.max(0, leadMs - castBeatMs) };
+    var vfxT = vfxOf(speed, choreo), B = beats(m.contract, vfxT), frameMs = 1000 / m.fps * vfxT, leadMs = m.impact * frameMs, totalMs = m.cells.length * frameMs;
+    var clipStart = B.impactAt - leadMs;
+    return { vfxT: vfxT, frameMs: frameMs, leadMs: leadMs, totalMs: totalMs, castBeatMs: B.castBeatMs, destroyAt: B.destroyAt, clipStart: clipStart, impactAt: clipStart + m.impact * frameMs,
+             crackAt: B.crackAt, beatEnd: B.beatEnd, clipEnd: clipStart + totalMs, waitCostMs: Math.max(0, -clipStart) };
+  }
+  // the chain (LAB-20): the strike's impact cell on the bite; the invocation ends exactly where the strike begins (the handoff), and starts
+  // its own length before — no dead time, no overlap, by construction. The wire-clock cost is whatever the chain would need before the cast
+  function chainTimeline(chain, clips, speed, choreo) {
+    var vfxT = vfxOf(speed, choreo), B = beats(chain.contract, vfxT), inv = clips[0], str = clips[1];
+    var frameMs = 1000 / str.fps * vfxT, invFrameMs = 1000 / inv.fps * vfxT;
+    var strikeStart = B.impactAt - str.impact * frameMs, invokeStart = strikeStart - inv.cells.length * invFrameMs;
+    return { vfxT: vfxT, frameMs: frameMs, invokeFrameMs: invFrameMs, castBeatMs: B.castBeatMs, beatStart: B.castBeatMs, impactAt: strikeStart + str.impact * frameMs,
+             crackAt: B.crackAt, calloutAt: B.calloutAt, beatEnd: B.beatEnd, invokeStart: invokeStart, handoffAt: strikeStart, strikeStart: strikeStart,
+             strikeEnd: strikeStart + str.cells.length * frameMs, leadMs: str.impact * frameMs, waitCostMs: Math.max(0, -invokeStart) };
   }
 
   var SPEED = { full: 1, fast: 0.6, reduced: 1 };
-  function plan(batch, m, opts) {
+  // spec: a clip manifest (one clip) or { class: 'effect-chain', chain, clips: [invoke, strike] }
+  function plan(batch, spec, opts) {
     opts = opts || {};
-    var mode = SPEED[opts.mode] != null ? opts.mode : 'full', b = fromBatch(batch, m), T = timeline(m, SPEED[mode], opts.choreoSpeed), k = m.contract;
-    var clip = !!(b.cast && b.strike) && mode !== 'reduced';
-    var cues = [];
+    var mode = SPEED[opts.mode] != null ? opts.mode : 'full', chained = spec.class === 'effect-chain', k = contractOf(spec), b = fromBatch(batch, spec);
+    var T = chained ? chainTimeline(spec.chain, spec.clips, SPEED[mode], opts.choreoSpeed) : timeline(spec, SPEED[mode], opts.choreoSpeed);
+    var clip = !!(b.cast && b.strike) && mode !== 'reduced', segments = [], cues = [];
+    if (clip && chained) segments.push({ role: 'invoke', clip: 0, start: T.invokeStart, end: T.handoffAt, frameMs: T.invokeFrameMs, place: 'caster-half' },
+                                       { role: 'strike', clip: 1, start: T.strikeStart, end: T.strikeEnd, frameMs: T.frameMs, place: 'target', impact: spec.clips[1].impact });
+    else if (clip) segments.push({ role: 'strike', clip: 0, start: T.clipStart, end: T.clipEnd, frameMs: T.frameMs, place: 'target', impact: spec.impact });
     if (b.cast) cues.push({ t: 0, cue: 'cast', sound: k.castSound });
     if (b.strike) {
-      if (clip) cues.push({ t: T.clipStart, cue: 'clip-start' });
-      cues.push({ t: T.destroyAt, cue: 'impact', sound: k.impactSound, uid: b.targetUid });
-      cues.push({ t: T.crackAt, cue: 'crack', uid: b.targetUid, ms: 520 * T.vfxT });
+      if (clip && chained) { cues.push({ t: T.invokeStart, cue: 'invoke-start' }); cues.push({ t: T.handoffAt, cue: 'handoff' }); }
+      else if (clip) cues.push({ t: T.clipStart, cue: 'clip-start' });
+      cues.push({ t: T.impactAt, cue: 'impact', sound: k.impactSound, uid: b.targetUid });
+      cues.push({ t: T.crackAt, cue: k.exitKind === 'removal' ? 'removal' : 'crack', uid: b.targetUid, ms: (k.exitKind === 'removal' ? k.exitMs : 520) * T.vfxT });
+      if (T.calloutAt != null) cues.push({ t: T.calloutAt, cue: 'callout', uid: b.targetUid, text: chained ? spec.chain.cardName : null });
       cues.push({ t: T.beatEnd, cue: 'settle' });
-      if (clip) cues.push({ t: T.clipEnd, cue: 'clip-end' });
+      if (clip) cues.push({ t: chained ? T.strikeEnd : T.clipEnd, cue: 'clip-end' });
     } else cues.push({ t: T.castBeatMs, cue: 'settle' });
+    cues.forEach(function (c) { if (c.sound === null) delete c.sound; });
     cues.sort(function (x, y) { return x.t - y.t; });
-    return { mode: mode, clip: clip, strike: !!b.strike, targetUid: b.targetUid, timeline: T, cues: cues, end: cues[cues.length - 1].t };
+    return { mode: mode, chained: chained, clip: clip, strike: !!b.strike, targetUid: b.targetUid, casterSeat: opts.casterSeat != null ? opts.casterSeat : null,
+             timeline: T, segments: segments, cues: cues, end: cues[cues.length - 1].t };
   }
 
-  // where the clip draws: its impact anchor on the target card's centre, sized so the ring's diameter is cardWidths card widths
-  function place(m, card) {
-    var s = m.scaleRule.cardWidths * card.w / m.scaleRule.ringDiameterCell;
-    return { scale: s, x: card.cx - m.anchor.x * s, y: card.cy - m.anchor.y * s, w: m.cellSize.w * s, h: m.cellSize.h * s };
+  var spanOf = function (m) { return m.scaleRule.spanCell || m.scaleRule.ringDiameterCell; };
+  // where a clip draws: its anchor on a point, sized so its scale feature spans cardWidths card widths. mirror = a horizontal mirror
+  function place(m, card, mirror) {
+    var s = m.scaleRule.cardWidths * card.w / spanOf(m);
+    return { scale: s, mirror: !!mirror, x: card.cx - (mirror ? m.cellSize.w - m.anchor.x : m.anchor.x) * s, y: card.cy - m.anchor.y * s, w: m.cellSize.w * s, h: m.cellSize.h * s };
+  }
+  // the arrival rule (LAB-20): the source's disc arrives from its left; mirror so it arrives from the board's horizontal centre
+  function mirrorFor(m, cardCx, fieldCentreX) {
+    if (!m.arrival) return false;
+    var fromLeft = m.arrival.sourceArrivesFrom === 'left';
+    return fromLeft ? cardCx < fieldCentreX : cardCx > fieldCentreX;
   }
 
   // the cell on screen at time t (ms from the play's start), or null before the clip starts and from its end on
@@ -91,43 +150,76 @@
     if (t < T.clipStart || t >= T.clipEnd) return null;
     return Math.min(m.cells.length - 1, Math.floor((t - T.clipStart) / T.frameMs + 1e-9));
   }
+  function segIndex(m, seg, t) {
+    if (t < seg.start || t >= seg.end) return null;
+    return Math.min(m.cells.length - 1, Math.max(0, Math.floor((t - seg.start) / seg.frameMs + 1e-9)));
+  }
 
   // the game's T72 bakeAlpha, on raw RGBA bytes: alpha = the brightest channel
   function bake(d) { for (var i = 0; i < d.length; i += 4) { var r = d[i], g = d[i + 1], b = d[i + 2]; d[i + 3] = r > g ? (r > b ? r : b) : (g > b ? g : b); } return d; }
 
-  // THE PLAYER. env: now(), canvas, dpr, cardOf(uid) → {cx, cy, w} in the canvas's CSS space, loadAtlas(m) → Promise<{source, bytes, close()}>,
-  // render(board), crack(uid, ms), sound(name), onDone(result), onError(e)
+  // THE PLAYER. env: now(), canvas, dpr, cardOf(uid) → {cx, cy, w}, halfOf(seat) → {cx, cy}, fieldCentreX(), loadAtlas(m) → atlas or Promise,
+  // render(board), crack(uid, ms), removal(uid, ms), callout(uid, text), sound(name), onDone(result), onError(e)
   function createPlayer(env) {
-    var st = { run: null, loaded: null, decodedBytes: 0, peak: 0, loads: 0, releases: 0, peakClips: 0, last: null };
+    var st = { run: null, loaded: null, loadedRole: null, decodedBytes: 0, peak: 0, loads: 0, releases: 0, peakClips: 0, live: 0, last: null };
     function release() {
       if (!st.loaded) return;
       try { st.loaded.close(); } catch (e) {}
-      st.loaded = null; st.decodedBytes = 0; st.releases++;
+      st.loaded = null; st.loadedRole = null; st.decodedBytes = 0; st.releases++; st.live = 0;
+    }
+    function accept(a, role, t0) {
+      if (st.loaded) release();                                  // E1: never two effect clips decoded at once
+      st.loaded = a; st.loadedRole = role; st.loads++; st.live = 1; st.decodedBytes = a.bytes; st.peak = Math.max(st.peak, a.bytes); st.peakClips = Math.max(st.peakClips, st.live);
+      st.decodeMs = Date.now() - t0;
     }
     function clear() { var c = env.canvas; if (!c) return; var g = c.getContext('2d'); g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height); }
     // play: synchronous when the atlas loader is (a test world), a promise when it is not (the page fetches and decodes)
-    function play(batch, m, boards, opts) {
-      if (st.run && !st.run.done) skip();                      // E1: one clip decoded at once — a new play ends the one before
-      var p = plan(batch, m, opts);
+    function play(batch, spec, boards, opts) {
+      opts = opts || {};
+      if (st.run && !st.run.done) skip();
+      var p = plan(batch, spec, opts), clips = clipsOf(spec);
       var target = p.targetUid != null && env.cardOf ? env.cardOf(p.targetUid) : null;
+      var places = p.segments.map(function (sg) {
+        var m = clips[sg.clip];
+        if (sg.place === 'target') return target ? place(m, target, mirrorFor(m, target.cx, env.fieldCentreX ? env.fieldCentreX() : target.cx)) : null;
+        var h = env.halfOf ? env.halfOf(p.casterSeat) : null;
+        return h && target ? place(m, { cx: h.cx, cy: h.cy, w: target.w }, false) : null;
+      });
       function start(a, t0) {
-        if (a) { st.loaded = a; st.loads++; st.decodedBytes = a.bytes; st.peak = Math.max(st.peak, a.bytes); st.peakClips = Math.max(st.peakClips, 1); st.decodeMs = Date.now() - t0; }
+        if (a) accept(a, p.segments[0].role, t0);
         env.render(boards.before);
-        var run = { plan: p, manifest: m, boards: boards, target: target, place: target && p.clip ? place(m, target) : null, t0: env.now(), next: 0, done: false,
-                    log: { cues: [], drawn: [], composite: [], impactDrawnAt: null, destroyCueAt: null, settledAt: null, crackAt: null } };
+        var run = { plan: p, spec: spec, clips: clips, boards: boards, target: target, places: places, t0: env.now(), next: 0, done: false, pin: opts.impactPin !== false, pendingLoad: null,
+                    manifest: clips[p.segments.length ? p.segments[p.segments.length - 1].clip : 0],
+                    place: places[places.length - 1] || null,
+                    log: { cues: [], drawn: [], bySegment: {}, composite: [], impactDrawnAt: null, impactPinned: false, destroyCueAt: null, settledAt: null, crackAt: null, handoff: null, mirror: null } };
+        p.segments.forEach(function (sg) { run.log.bySegment[sg.role] = []; });
+        run.log.mirror = places.length ? places[places.length - 1] && places[places.length - 1].mirror : null;
         st.run = run; st.last = run;
         return run;
       }
       if (!p.clip) return start(null, 0);
       if (st.loaded) release();
-      var t0 = Date.now(), a = env.loadAtlas(m);
+      var t0 = Date.now(), a = env.loadAtlas(clips[p.segments[0].clip]);
       return a && typeof a.then === 'function' ? a.then(function (x) { return start(x, t0); }) : start(a, t0);
+    }
+    function handoff(run, t) {
+      var sg = run.plan.segments[1], m = run.clips[sg.clip];
+      release();                                                   // the invocation lets go FIRST — then the strike decodes (E1)
+      var t0 = Date.now(), h = { at: t, releasedAt: t, readyAt: null, decodeMs: null, cellsBeforeReady: null };
+      run.log.handoff = h;
+      var a = env.loadAtlas(m);
+      var ready = function (x) { if (run.done) { try { x.close(); } catch (e) {} return; } accept(x, 'strike', t0); h.readyAt = env.now() - run.t0; h.decodeMs = Date.now() - t0; h.cellsBeforeReady = Math.max(0, Math.floor((h.readyAt - sg.start) / sg.frameMs)); };
+      if (a && typeof a.then === 'function') { run.pendingLoad = a; a.then(ready).catch(function (e) { if (env.onError) env.onError(e); }); }
+      else ready(a);
     }
     function fire(run, c, t) {
       run.log.cues.push({ cue: c.cue, planned: c.t, at: t });
       if (c.sound && env.sound) env.sound(c.sound);
-      if (c.cue === 'impact') run.log.destroyCueAt = t;
+      if (c.cue === 'impact') { run.log.destroyCueAt = t; run.impactFrame = true; }
+      if (c.cue === 'handoff') handoff(run, t);
       if (c.cue === 'crack') { run.log.crackAt = t; if (env.crack) env.crack(c.uid, c.ms); }
+      if (c.cue === 'removal') { run.log.crackAt = t; if (env.removal) env.removal(c.uid, c.ms); }
+      if (c.cue === 'callout' && env.callout) env.callout(c.uid, c.text);
       if (c.cue === 'settle') { run.log.settledAt = t; env.render(run.boards.after); }
       if (c.cue === 'clip-end') { clear(); release(); }
     }
@@ -139,19 +231,25 @@
     function frame(now) {
       var run = st.run; if (!run || run.done) return;
       try {
-        var t = now - run.t0, cues = run.plan.cues;
+        var t = now - run.t0, cues = run.plan.cues; run.impactFrame = false;
         while (run.next < cues.length && cues[run.next].t <= t + 1e-6) { fire(run, cues[run.next], t); run.next++; }
-        var ix = run.plan.clip && st.loaded ? frameIndex(run.manifest, run.plan.timeline, t) : null;
-        if (ix != null && run.place) {
-          var c = env.canvas, g = c.getContext('2d'), d = env.dpr || 1, cell = run.manifest.cells[ix], r = run.place;
+        var drew = false;
+        run.plan.segments.forEach(function (sg, k) {
+          if (drew || !st.loaded || st.loadedRole !== sg.role || !run.places[k]) return;
+          var m = run.clips[sg.clip], ix = segIndex(m, sg, t);
+          if (run.pin && run.impactFrame && sg.impact != null) { if (ix !== sg.impact) run.log.impactPinned = true; ix = sg.impact; }   // THE IMPACT PIN
+          if (ix == null) return;
+          var c = env.canvas, g = c.getContext('2d'), d = env.dpr || 1, cell = m.cells[ix], r = run.places[k];
           g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height);
           g.globalCompositeOperation = 'lighter'; g.globalAlpha = 1;
-          g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, r.x * d, r.y * d, r.w * d, r.h * d);
+          if (r.mirror) { g.setTransform(-1, 0, 0, 1, (r.x + r.w) * d, 0); g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, 0, r.y * d, r.w * d, r.h * d); g.setTransform(1, 0, 0, 1, 0, 0); }
+          else g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, r.x * d, r.y * d, r.w * d, r.h * d);
           g.globalCompositeOperation = 'source-over';
-          if (run.log.drawn[run.log.drawn.length - 1] !== ix) run.log.drawn.push(ix);
-          run.log.composite.push('lighter');
-          if (ix === run.manifest.impact && run.log.impactDrawnAt == null) run.log.impactDrawnAt = t;
-        }
+          var seq = run.log.bySegment[sg.role]; if (seq[seq.length - 1] !== ix) seq.push(ix);
+          if (sg.role === 'strike' && run.log.drawn[run.log.drawn.length - 1] !== ix) run.log.drawn.push(ix);
+          run.log.composite.push('lighter'); drew = true;
+          if (sg.impact != null && ix === sg.impact && run.log.impactDrawnAt == null) run.log.impactDrawnAt = t;
+        });
         if (run.next >= cues.length) finish(run, false);
       } catch (e) { if (env.onError) env.onError(e); finish(run, true); }
     }
@@ -160,10 +258,10 @@
       env.render(run.boards.after); run.log.settledAt = run.log.settledAt == null ? -1 : run.log.settledAt; finish(run, true);
     }
     return { play: play, frame: frame, skip: skip, release: release,
-             stats: function () { return { decodedBytes: st.decodedBytes, peak: st.peak, loads: st.loads, releases: st.releases, peakClips: st.peakClips, loaded: !!st.loaded, playing: !!(st.run && !st.run.done), decodeMs: st.decodeMs, last: st.last }; } };
+             stats: function () { return { decodedBytes: st.decodedBytes, peak: st.peak, loads: st.loads, releases: st.releases, peakClips: st.peakClips, loaded: !!st.loaded, loadedRole: st.loadedRole, playing: !!(st.run && !st.run.done), decodeMs: st.decodeMs, last: st.last }; } };
   }
 
-  var OUT = { validate: validate, fromBatch: fromBatch, timeline: timeline, plan: plan, place: place, frameIndex: frameIndex, bake: bake, createPlayer: createPlayer, E1: E1, CHOREO_SPEED: CHOREO_SPEED, SPEED: SPEED };
+  var OUT = { validate: validate, validateChain: validateChain, fromBatch: fromBatch, beats: beats, timeline: timeline, chainTimeline: chainTimeline, plan: plan, place: place, mirrorFor: mirrorFor, frameIndex: frameIndex, segIndex: segIndex, bake: bake, createPlayer: createPlayer, E1: E1, CHOREO_SPEED: CHOREO_SPEED, SPEED: SPEED };
   root.EffectClip = OUT;
   if (typeof module !== 'undefined' && module.exports) module.exports = OUT;
 })(typeof window !== 'undefined' ? window : this);

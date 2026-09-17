@@ -47,6 +47,7 @@ The experiment ground for **VFX_MANIFESTATION_v1** (`docs/VFX_MANIFESTATION_v1.m
 | `sources/` · `frames/` | **Ignored (A7).** The Kling clip and the Kling source stills; the matted frames, matte stats and contact sheet. Never committed. |
 | `lib/effectclip.js` | **LAB-19.** The additive effect clip: its validator, its plan against the game's own beat, its placement, and its player (budget E1). Not an actor. |
 | `effects/vajra/` | **LAB-19.** Vajra's strike clip: `atlas.webp` (RGB, no matte) and `manifest.json`. |
+| `effects/sudarshana/`, `effects/sudarshana_invoke/`, `effects/sudarshana_strike/` | **LAB-20.** Sudarshana Chakra's chain: `chain.json` (the two clips, in order, and the game's removal contract), and each clip's atlas and manifest. |
 | `tools/make_effect_from_clip.py` | **LAB-19.** A black-ground Kling clip → an additive effect clip: crop, scale, fade-in head, fade tail, guarded feathers. Run with the lab venv. |
 | `audio/` | Byte-identical copies of the game's `sfx_unit_clash` and `sfx_chaos_surge` (LAB-5), and `sfx_astra` and `sfx_unit_destroy` (LAB-19, the Vajra contract's own). |
 | `test/run.js` | The lab's own proofs, all rungs: `node lab/vfx-manifestation/test/run.js`. |
@@ -262,7 +263,7 @@ The **Actor quality** dropdown overrides the pick. The Memory, Quality and Decod
 
 **A5 watch.** One actor at the 256 rung is 11.5 MB decoded, about the ~10 MB per-match budget. The 512 rung's 47.3 MB is held only for the ~6 s of a play, never more than one actor at a time. Whether that is acceptable is the export ruling's call.
 
-**E1 — the effect-clip budget line (owner ruling, LAB-19), beside A5.** An additive effect clip is capped at the effect layer's **hi-rung class, ~18 MB decoded** (the game's own hi-rung Vajra sheet: 3072×1536 RGBA = 18.00 MB). It is loaded on play and released after, and **at most one effect clip is decoded at once**, coexisting with at most the one decoded actor A5 allows. **The combined worst-case peak is ~18 + ~56 MB = 74.1 MB**: the E1 cap plus the largest actor at its 512 rung (Mahabali, 56.1 MB). Vajra's strike clip decodes to 17.65 MB.
+**E1 — the effect-clip budget line (owner ruling, LAB-19), beside A5.** An additive effect clip is capped at the effect layer's **hi-rung class, ~18 MB decoded** (the game's own hi-rung Vajra sheet: 3072×1536 RGBA = 18.00 MB). It is loaded on play and released after, and **at most one effect clip is decoded at once**, coexisting with at most the one decoded actor A5 allows. **The combined worst-case peak is ~18 + ~56 MB = 74.1 MB**: the E1 cap plus the largest actor at its 512 rung (Mahabali, 56.1 MB). Vajra's strike clip decodes to 17.65 MB. **A chain (LAB-20) keeps E1 unchanged:** its two clips decode one after the other, the invocation released before the strike decodes, so the peak is the larger clip (Sudarshana's strike, 13.98 MB), never the pair (21.89 MB). A per-play fallback amendment (cap the whole play at ~18 MB, both clips decoded at the cast at 256 px cells: 16.3 MB) is recorded as **available but unused**.
 
 ### Sound
 
@@ -280,6 +281,8 @@ On the same origin as the game, muting sound in the game's settings mutes the la
 | FIZZLE starts | the ember exit | `audio/sfx_chaos_surge.mp3` (the game's Asura surge) |
 
 Both are byte-identical copies of the game's files. **A bespoke strike sound (spear impact) and dissolve sound would suit this better when the actor ships.**
+
+**Bespoke-sound wishlist (added LAB-20):** a **bite cue for Sudarshana Chakra's removal**. The game's own removal is silent at the bite (screen shake and a hit-stop only), and the lab keeps that contract, so the moment the disc seizes the Hero has no sound of its own.
 
 ### Reduced motion, no GPU
 
@@ -1431,6 +1434,95 @@ The clip is **timed, not stepped**: a stalled frame shows the cell that is due, 
 ### Registry
 
 Key `vajra`: `"effect": "../effects/vajra/manifest.json"`, fixture `vajra`, button **"Vajra (Deva Astra, Legendary — strike clip)"**. All 42 existing fixtures regenerate byte-identical.
+
+## LAB-20: Sudarshana Chakra — the first two-clip effect chain
+
+Sudarshana Chakra (Deva Astra, **Mythic**) extends the LAB-19 template: the same E1 budget line and the same additive stage, plus the first **chained** effect. An invocation clip at the cast hands off to a strike clip timed to the Hero's bite. None of the 21 actors or the live game's Sudarshana effect is touched.
+
+### What the engine and the game actually do (the STEP-0 corrections)
+
+- **Sudarshana is a removal, not a kill.** "Remove one enemy Hero for this round. It returns next round at half power." The engine emits `play`, then `passive` "Sudarshana" "removed" on the Hero; the Hero leaves its row and **does not reach the discard**. There is no destroy beat to land on.
+- **The impact is the bite.** The game's removal beat throws a disc **from the caster's half centre**, flies 380 ms, **bites** (screen shake plus a 100 ms hit-stop), lifts the Hero away cleanly (320 ms fade, no crack), then names the deed at the empty slot. **The bite is silent.**
+- **An Astra has no cast callout**: it is never on the board. The only cast-time anchor is the throw origin, the caster's half centre.
+- **Mythic uses exactly Legendary's beats** (the spectacle tier: 110 ms hit-stop plus 1000 ms hold).
+
+**M57** reads every one of those numbers and code paths from the game's source.
+
+### The rulings
+
+1. **The strike's impact is f053, the ring-snap: the ring-snap IS the bite.** A removal seizes, and the burst is aftermath. It lands exactly on the bite at both speeds, and the chain costs 0 ms of wire clock. **Recorded honestly:** f053 is the first frame where the ring closes as a full band around the disc. The window's single largest picture change is one frame later, on **f054** (13.58 against 13.05). The frame is therefore *named* by the ruling rather than measured, and the manifest records the window as measured.
+2. **Strike portion f034–f088.** The **f090+ red-contour phase is excluded: a reshoot candidate.** Rendered through the game's bake and `lighter` blend over the real board, the burst from f090 carries a hard, saturated red contour with a thin dark inner line and a nearly flat-filled interior. It reads as a **sticker contour, not light**. The trail's thinner red rim reads as a flame edge, and the rays around f080 read correctly. The portion extends if the owner regenerates the ending.
+3. **Invocation f083–f098 at 448**: the last spin revolutions into the tilt-flat throw (from f099 the late phase runs off the left edge).
+   - **Anchor:** the caster's half centre, the game's own throw origin.
+   - **Scale:** disc ≈ 2.0 card widths.
+   - **Fades:** in over 3 cells, out over 4 (it hands off; it doesn't end).
+   - **Feathers:** bottom 48 px (the rim touches it in 7 of 16 frames), sides 32 px.
+   - **Speed:** plays at both speeds.
+4. **E1 unchanged, sequential.** The invocation decodes at the cast and is released at the 908 ms handoff; then the strike (288 px cells, 13.98 MB) decodes. The per-play fallback amendment is recorded as available but unused. **The strike is at 92% of native:** at the ruled scale its crop box draws 312 device px wide on a DPR-2 phone, and 320 px cells would pack to 18.5 MB, past the cap.
+5. **No target: nothing plays**, the invocation included. This matches the game (no sprite without a removal event) and the F65 doctrine.
+6. **The arrival rule and the impact pin.**
+   - **Arrival:** the source disc arrives from its left. The rule is a **horizontal mirror only** (no rotation, the actors-upright analogue), so the disc always arrives from the board's horizontal centre.
+   - **Impact pin:** the bite's frame always draws the impact cell. It applies to both effects and is **retro-applied to Vajra** (see the self-audit below).
+7. **Sound: the contract is kept.** `sfx_astra` plays at the cast, and the bite is silent (the game's own removal has no bite sound). The bite cue joins the bespoke-sound wishlist (LAB-5's Sound section).
+8. **The fixture's bystander is Vibhishana**, not Bana Asura, whose arms multiply on any Astra. The removal is asserted from the passive event, the log line, the untouched discard and the Hero row. The snapshot format is untouched and all 42 earlier fixtures are byte-identical.
+
+### The chain's timing (the game's beats × speed × CHOREO_SPEED 1.3)
+
+| | Normal | Fast |
+|---|---|---|
+| cast (`sfx_astra`) | 0 | 0 |
+| invocation starts | 41 ms | 25 ms |
+| **handoff**: invocation released, strike decodes and starts | **908 ms** | **545 ms** |
+| resolution beat starts (the game's throw) | 1443 ms | 866 ms |
+| **strike ring-snap f053 = the bite** | **1937 ms** | **1162 ms** |
+| the Hero's removal exit | 2067 ms | 1240 ms |
+| callout "Sudarshana Chakra" | 2457 ms | 1474 ms |
+| board on AFTER | 2639 ms | 1583 ms |
+| strike ends, not awaited | 3887 ms | 2332 ms |
+| **wire-clock cost** | **0 ms** | **0 ms** |
+
+There is no dead time and no overlap at the handoff, by construction: the invocation's last cell ends exactly where the strike's first begins.
+
+### The packs
+
+| clip | cells | cellPx | cell | atlas | decoded |
+|---|---|---|---|---|---|
+| invocation f083–f098 | 16 | 448 | 448×253 | 4052×512 · 217 KB | **7.91 MB** |
+| strike f034–f088 | 55 | 288 | 288×223 | 4062×902 · 659 KB | **13.98 MB** |
+
+- **The strike disc never moves**: its core stays at (989, 518) within 5.4 px. The trail tells the flight.
+- **Strike feathers:** top and bottom 64 px under a **disc-body guard** (the disc's rows 265–828, measured on f050 where it stands alone): 265 px of room above, 251 px below. The rays touch the top in 11 and the bottom in 12 of 55 frames; the sides never.
+- **Strike fade tail:** f079–f088, mandatory.
+
+### The handoff, measured
+
+- **Desktop, decode and bake alone** (5 runs on an 18 MB atlas): 51–60 ms, with the longest frame gap 22–28 ms.
+- **Live chain in the lab** (7 runs): the strike became ready **41–60 ms after its planned start**, with decode taking **60–101 ms** of wall time. That is about one Normal cell (54 ms). **In 5 of 7 runs the strike's first cell (f034, the first frame of the long trail) was not drawn.** The bite was never affected.
+- **Phone:** the handoff check joins the owner's device backlog.
+
+### The impact pin — and the self-audit that retro-applies it to Vajra
+
+A timed clip draws the cell that is due. At Fast on a 30 Hz device a cell (32.5 ms) is shorter than a frame (33.3 ms), so a frame can straddle the impact cell and show the next one, exactly on the beat. **LAB-19's E2 checked Fast only at 60 Hz, so Vajra carried this latent gap.**
+
+**E9** sweeps the frame grid's phase over a whole frame (33 offsets) at Fast, 30 Hz:
+
+| | pin off | pin on |
+|---|---|---|
+| Vajra | missed on **1** offset | **0** |
+| Sudarshana chain | missed on **1** offset | **0** |
+
+The pin draws the impact cell on the beat's frame whatever the clock says.
+
+### The fixture
+
+`fixtures/sudarshana_seat0.json` / `_seat1.json`: the Asura seat sets Mahabali down, and the Deva seat casts Sudarshana Chakra, which is legal.
+
+- **F68** asserts the removal. Falsifiable: it rejects the removal event gone, a **kill passed off as a removal** (the Hero in the discard), the Hero still on its row, and a log naming a destroy.
+- **F69** drives the no-target case live (Vibhishana): not playable, "Sudarshana finds no Hero.", the Unit survives, and the chain's plan plays nothing. It rejects a run claiming legality, one carrying a removal event, and a plan that still plays the invocation.
+
+### Registry
+
+Key `sudarshana`: `"effect": "../effects/sudarshana/chain.json"`, button **"Sudarshana Chakra (Deva Astra, Mythic — invoke + strike chain)"**.
 
 ## Notes for the next rungs
 

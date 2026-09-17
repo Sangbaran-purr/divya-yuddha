@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
-<meta name="lab-stamp" content="ce1d3ced6b74">
+<meta name="lab-stamp" content="6b94a72dcf78">
 <!-- runtime/ is the base: the copied VFX module's page-relative sheet URLs and its file-relative Pixi import both resolve inside it (see README) -->
 <base href="runtime/">
 <title>Manifestation Lab</title>
@@ -40,6 +40,7 @@
   .empty{ font-size:12px; color:#6f624d; font-style:italic; }
   #vfxcanvas{ position:absolute; inset:0; z-index:5; pointer-events:none; }
   #effectclip{ position:absolute; inset:0; z-index:6; pointer-events:none; width:100%; height:100%; }   /* LAB-19: the additive effect clip — an EFFECT, so it sits with the effect layer, under the actor */
+  .bc.removal{ transition:opacity var(--crack-ms,320ms) ease-out, transform var(--crack-ms,320ms) ease-out; opacity:0; transform:translateY(-14px); }   /* LAB-20: the game's removal exit — a clean fade and lift, no crack (the Hero returns next round) */
   .bc.crack{ transition:opacity var(--crack-ms,520ms) ease-in, filter var(--crack-ms,520ms) ease-in; opacity:0; filter:brightness(2.2) blur(2px); }   /* LAB-19: the lab's stand-in for the game's victim crack (showcaseVictim kill) */
   #vfxflash{ position:absolute; inset:0; z-index:7; pointer-events:none; opacity:0; background:#fff4dc; }
   #actorunder{ position:absolute; inset:0; z-index:8; pointer-events:none; width:100%; height:100%; }
@@ -209,18 +210,18 @@
     <p id="story-truth" class="truth"></p>
   </section>
 </main>
-<script src="../lib/boarddiff.js?v=ce1d3ced6b74"></script>
-<script src="../lib/clashcontext.js?v=ce1d3ced6b74"></script>
-<script src="../lib/director.js?v=ce1d3ced6b74"></script>
-<script src="../lib/runner.js?v=ce1d3ced6b74"></script>
-<script src="../lib/manifest.js?v=ce1d3ced6b74"></script>
-<script src="../lib/stagemath.js?v=ce1d3ced6b74"></script>
-<script src="../lib/dissolve.js?v=ce1d3ced6b74"></script>
-<script src="../lib/labaudio.js?v=ce1d3ced6b74"></script>
-<script src="../lib/actorstage.js?v=ce1d3ced6b74"></script>
-<script src="../lib/playback.js?v=ce1d3ced6b74"></script>
-<script src="../lib/effectclip.js?v=ce1d3ced6b74"></script>
-<script src="vfx.js?v=ce1d3ced6b74"></script>
-<script src="../lab.js?v=ce1d3ced6b74"></script>
+<script src="../lib/boarddiff.js?v=6b94a72dcf78"></script>
+<script src="../lib/clashcontext.js?v=6b94a72dcf78"></script>
+<script src="../lib/director.js?v=6b94a72dcf78"></script>
+<script src="../lib/runner.js?v=6b94a72dcf78"></script>
+<script src="../lib/manifest.js?v=6b94a72dcf78"></script>
+<script src="../lib/stagemath.js?v=6b94a72dcf78"></script>
+<script src="../lib/dissolve.js?v=6b94a72dcf78"></script>
+<script src="../lib/labaudio.js?v=6b94a72dcf78"></script>
+<script src="../lib/actorstage.js?v=6b94a72dcf78"></script>
+<script src="../lib/playback.js?v=6b94a72dcf78"></script>
+<script src="../lib/effectclip.js?v=6b94a72dcf78"></script>
+<script src="vfx.js?v=6b94a72dcf78"></script>
+<script src="../lab.js?v=6b94a72dcf78"></script>
 </body>
 </html>

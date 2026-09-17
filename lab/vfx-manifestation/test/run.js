@@ -89,6 +89,11 @@ const RAHU = { key: 'rahu', name: 'Rahu', rarity: 'E', power: 4, M: JSON.parse(f
 const VJ = { M: JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'vajra', 'manifest.json'), 'utf8')),
   FX: [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', 'vajra_seat' + s + '.json'), 'utf8'))) };
 const EC = require(path.join(LAB, 'lib', 'effectclip.js'));
+// LAB-20 · THE FIRST CHAIN — Sudarshana Chakra: an invocation handed off to a strike, and its real-engine removal fixture
+const SU = { I: JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'sudarshana_invoke', 'manifest.json'), 'utf8')), S: JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'sudarshana_strike', 'manifest.json'), 'utf8')),
+  C: JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'sudarshana', 'chain.json'), 'utf8')),
+  FX: [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', 'sudarshana_seat' + s + '.json'), 'utf8'))) };
+SU.spec = { class: 'effect-chain', chain: SU.C, clips: [SU.I, SU.S] };
 let JSDOM = null; try { ({ JSDOM } = require(require.resolve('jsdom', { paths: [path.join(WEB, 'tests')] }))); } catch (e) { JSDOM = null; }
 
 // ═══ F · THE FIXTURE ═══
@@ -361,6 +366,39 @@ console.log('── F · the fixture: the real engine, both seats ──');
        nm.every(noMarkOk) && !doctored.every(noMarkOk) && !doctored2.every(noMarkOk), J(nm.map((r) => Object.assign({}, r, { plan: r.plan.cues }))));
   }
   {
+    // LAB-20 · THE FIRST CHAIN'S FIXTURE — Sudarshana Chakra: a REMOVAL asserted from the engine, and the no-target case
+    const { buildSudarshana, buildSudarshanaCast } = require(path.join(LAB, 'fixtures', 'make_fixture.js'));
+    for (const seat of [0, 1]) {
+      ok('F' + (66 + seat) + ' · LAB-20 · the Sudarshana seat-' + seat + ' fixture is what a fresh engine run produces today (every field), on the engine it names',
+         J(SU.FX[seat]) === J(buildSudarshana(seat)) && SU.FX[seat].engine.sha256 === liveEngineSha, 'differs from a fresh run');
+    }
+    const LINE = 'Sudarshana Chakra removes Mahabali for this round.';
+    const removal = (fx) => fx.every((f) => { const a = f.attackerSeat, o = 1 - a, hero = f.before.seats[o].heroes.find((h) => h.id === 'mahabali');
+      return !!hero && f.action.legal === true && f.action.card === 'Sudarshana Chakra' && f.before.seats[a].faction === 'devas' && f.before.seats[o].faction === 'asuras' &&
+        J(f.events.map((e) => [e.type, e.abilityName || null, e.text || null])) === J([['play', 'Sudarshana Chakra', '{p' + a + '} plays Sudarshana Chakra'], ['passive', 'Sudarshana', 'removed']]) && J(f.events[1].targetUids) === J([hero.uid]) &&
+        f.log.filter((l) => l === LINE).length === 1 && f.log.indexOf('Sudarshana finds no Hero.') < 0 &&
+        f.after.seats[o].heroes.every((h) => h.uid !== hero.uid) && J(f.after.seats[o].discard) === J(f.before.seats[o].discard) && f.after.seats[o].discard.indexOf('mahabali') < 0 &&
+        f.diff.left.length === 1 && f.diff.left[0].uid === hero.uid && f.diff.left[0].zone === 'heroes' && f.diff.entered.length === 0 && f.diff.changed.length === 0 && f.after.seats[a].discard.indexOf('sudarshana') >= 0; });
+    const clone = (x) => JSON.parse(J(x));
+    const noPassive = SU.FX.map((f) => { const g = clone(f); g.events = g.events.filter((e) => e.type !== 'passive'); return g; });
+    const slain = SU.FX.map((f) => { const g = clone(f); g.after.seats[1 - g.attackerSeat].discard.push('mahabali'); return g; });
+    const stays = SU.FX.map((f) => { const g = clone(f), o = 1 - g.attackerSeat; g.after.seats[o].heroes = clone(g.before.seats[o].heroes); g.diff.left = []; return g; });
+    const other = SU.FX.map((f) => { const g = clone(f); g.log = g.log.map((l) => l === LINE ? 'Sudarshana Chakra destroys Mahabali.' : l); return g; });
+    const negR = { 'the removal event gone': removal(noPassive), 'a KILL passed off as a removal (the Hero in the discard)': removal(slain), 'the Hero still on its row': removal(stays), 'the log naming a destroy': removal(other) };
+    ok('F68 · LAB-20 · SUDARSHANA\'S REMOVAL, ASSERTED FROM THE ENGINE, both seats — a REMOVAL, not a kill ("Remove one enemy Hero for this round. It returns next round at half power."). The Asura seat sets Mahabali down; the Deva seat casts Sudarshana Chakra, LEGAL in playableIndices. The engine emits exactly play then passive "Sudarshana" "removed" on Mahabali (no destroy event: there is no destroy beat to land on — the strike lands on the bite); the log says "' + LINE + '"; the Hero leaves its row and does NOT reach the discard, which is untouched; nothing enters, nothing changes. The snapshot format is untouched, so the removal is read from the event, the log, the row and the discard. Falsifiable: ' + Object.keys(negR).map((k) => k + ': ' + (negR[k] ? 'NOT caught' : 'caught')).join(' · '),
+       removal(SU.FX) && Object.values(negR).every((v) => v === false), J({ events: SU.FX.map((f) => f.events), log: SU.FX.map((f) => f.log), left: SU.FX.map((f) => f.diff.left) }));
+    const noHero = (seat) => { const p = buildSudarshanaCast(seat, 'Vibhishana', { probe: true }), g = p.g, o = 1 - seat, ev0 = g.events.length, l0 = g.log.length, units0 = g.players[o].units.map((u) => u.n), heroes0 = g.players[o].heroes.length;
+      p.E.playCard(g, seat, p.sh);
+      const batch = { events: g.events.slice(ev0) };
+      return { legal: p.legal, units0, heroes0, events: batch.events.map((e) => e.type + ':' + e.abilityName), log: g.log.slice(l0).map((l) => l.msg), survives: g.players[o].units.length === 1, plan: EC.plan(batch, SU.spec, { mode: 'full', casterSeat: seat }) }; };
+    const nh = [0, 1].map(noHero);
+    const noHeroOk = (r) => r.legal === false && r.heroes0 === 0 && J(r.units0) === J(['Vibhishana']) && J(r.events) === J(['play:Sudarshana Chakra']) && r.log.indexOf('Sudarshana finds no Hero.') >= 0 && r.survives &&
+      r.plan.strike === false && r.plan.clip === false && r.plan.segments.length === 0 && J(r.plan.cues.map((c) => c.cue)) === J(['cast', 'settle']);
+    const dn1 = nh.map((r) => Object.assign({}, r, { legal: true })), dn2 = nh.map((r) => Object.assign({}, r, { events: r.events.concat(['passive:Sudarshana']) })), dn3 = nh.map((r) => Object.assign({}, r, { plan: Object.assign({}, r.plan, { segments: [{ role: 'invoke' }] }) }));
+    ok('F69 · LAB-20 · THE NO-TARGET CASE, driven live, both seats: the same builder with a Unit instead of a Hero (Vibhishana — inert to Astras, where Bana Asura would react) — Sudarshana is NOT playable, and a forced cast emits only the play and logs "Sudarshana finds no Hero."; the Unit survives; and the chain\'s plan plays NOTHING, the invocation included (no segment, no clip: cast, then settle). Falsifiable: a run claiming legality is ' + (dn1.every(noHeroOk) ? 'NOT caught' : 'caught') + ', one carrying a removal event is ' + (dn2.every(noHeroOk) ? 'NOT caught' : 'caught') + ', a plan that still plays the invocation is ' + (dn3.every(noHeroOk) ? 'NOT caught' : 'caught'),
+       nh.every(noHeroOk) && !dn1.every(noHeroOk) && !dn2.every(noHeroOk) && !dn3.every(noHeroOk), J(nh.map((r) => Object.assign({}, r, { plan: r.plan.cues }))));
+  }
+  {
     const labFiles = [];
     (function walk(d) { for (const n of fs.readdirSync(d)) { if (n === 'node_modules' || n === '.venv' || n === 'actors' || n === 'sources' || n === 'frames') continue;
       const f = path.join(d, n); const st = fs.statSync(f); if (st.isDirectory()) walk(f); else if (/[.](js|json|html|py)$/.test(n)) labFiles.push(f); } })(LAB);
@@ -472,6 +510,10 @@ const CTX = FX.map((f) => CC.fromBatch(f)), ICTX = IFX.map((f) => CC.fromBatch(f
      VJ.FX.map((f) => CC.fromBatch(f)).every((c, s2) => c.cardId === 'vajra' && c.cardType === 'astra' && c.rarity === 'L' && c.faction === 'devas' && c.seat === VJ.FX[s2].attackerSeat && c.scope === 'out' &&
        c.boardDiff.length === 1 && c.boardDiff[0].kind === 'left' && c.boardDiff[0].toDiscard === true) && J(Object.keys(CC.SCOPE)) === J(['hero', 'unit']) && !REG.vajra.manifest && !!REG.vajra.effect,
      J(VJ.FX.map((f) => CC.fromBatch(f))));
+  ok('C19 · LAB-20 · A2 STANDS FOR THE MYTHIC ASTRA: the Sudarshana context, both seats, is a Mythic Deva ASTRA out of the actor scope; its board difference is the enemy Hero LEAVING its row and NOT to the discard (a removal, not a kill)',
+     SU.FX.map((f) => CC.fromBatch(f)).every((c, s2) => c.cardId === 'sudarshana' && c.cardType === 'astra' && c.rarity === 'M' && c.faction === 'devas' && c.seat === SU.FX[s2].attackerSeat && c.scope === 'out' &&
+       c.boardDiff.length === 1 && c.boardDiff[0].kind === 'left' && c.boardDiff[0].zone === 'heroes' && c.boardDiff[0].toDiscard === false) && !REG.sudarshana.manifest && !!REG.sudarshana.effect,
+     J(SU.FX.map((f) => CC.fromBatch(f))));
 }
 
 const LADDER = {};   // (label helper — the plan reports the ladder itself)
@@ -853,7 +895,7 @@ templateActor({ label: 'M45 · LAB-18 · RAHU BY THE TEMPLATE (the last card: a 
      VM.source.indexOf('Kling clip vajra_black.mp4 (sha256 ' + (clipSha ? clipSha.slice(0, 12) : '') + '…, 121 frames @ 24 fps, 1916x1080, black ground)') === 0 &&
      au.ground.cornersMax === 0 && au.ground.farMax <= 2 && VM.rungs === undefined && VM.phases === undefined && VM.pivot === undefined && !(VM.audit.recipe) &&
      !bad({ rungs: [] }) && !bad({ phases: {} }) && !bad({ blend: 'normal' }) && !bad({ channels: 'rgba' }) && !bad({ impact: 99 }) &&
-     J(fs.readdirSync(path.join(LAB, 'effects', 'vajra')).sort()) === J(['atlas.webp', 'manifest.json']) && J(fs.readdirSync(path.join(LAB, 'effects'))) === J(['vajra']), v.errors.join('; '));
+     J(fs.readdirSync(path.join(LAB, 'effects', 'vajra')).sort()) === J(['atlas.webp', 'manifest.json']), v.errors.join('; '));
   // E1 — the cap is the effect layer's hi-rung class, read off the game's own Vajra sheet; the worst actor is read off every actor manifest
   // the game's sheets are JPEG bytes under a .png name (the thumbs convention): read the size from whichever it really is
   const imgSize = (p) => { const b = fs.readFileSync(p);
@@ -893,6 +935,50 @@ templateActor({ label: 'M45 · LAB-18 · RAHU BY THE TEMPLATE (the last card: a 
      VM.scaleRule.cardWidths === 2.4 && Math.abs(ringDrawn - 2.4 * card.w) < 1e-6 && Math.abs(P.x + VM.anchor.x * P.scale - card.cx) < 1e-6 && Math.abs(P.y + VM.anchor.y * P.scale - card.cy) < 1e-6 &&
      Math.abs(VM.anchor.x - (au.impactPoint[0] - au.box[0]) * au.scale) < 0.1 && Math.abs(VM.anchor.y - (au.impactPoint[1] - au.box[1]) * au.scale) < 0.1 && VM.contract.anchor === 'target-card-centre',
      J({ anchor: VM.anchor, P, ringDrawn }));
+}
+{
+  // LAB-20 · THE CHAIN: two packs, the chain, the game's removal contract, the placement and the arrival rule
+  const I = SU.I, S = SU.S, clipSha = (n) => { const p2 = path.join(LAB, 'sources', 'sudarshana', n); return fs.existsSync(p2) ? sha256(fs.readFileSync(p2)).slice(0, 12) : ''; };
+  const bytesOf = (m) => m.atlasSize.w * m.atlasSize.h * 4, pxOf = (d) => webpSize(fs.readFileSync(path.join(LAB, 'effects', d, 'atlas.webp')));
+  const vI = EC.validate(I), pI = pxOf('sudarshana_invoke'), srcI = I.cells.map((c) => c.src), auI = I.audit;
+  ok('M54 · LAB-20 · THE INVOCATION BY THE EFFECT TEMPLATE (a chain member, role "invoke"): ' + I.cells.length + ' cells f' + srcI[0] + '–f' + srcI[srcI.length - 1] + ' — the last spin revolutions into the tilt-flat throw (from f099 the late phase runs off the left edge) — one ' + I.cellSize.w + 'x' + I.cellSize.h + ' cell at cellPx ' + I.cellPx + ', atlas ' + pI.w + 'x' + pI.h + ', ' + (bytesOf(I) / 1048576).toFixed(2) + ' MB decoded; anchored at the disc\'s core ' + J(auI.anchorPoint) + ' on f' + auI.anchorFrame + ' (it spins in place: the core drifts at most ' + auI.coreDriftMax + ' px); the disc spans ' + I.scaleRule.spanSrc + ' px on f' + I.scaleRule.frame + ', drawn ' + I.scaleRule.cardWidths + ' card widths across; fade-in over 3 cells and fade-OUT over 4 (it hands off, it does not end: ' + J(auI.fades.map((x) => x[1])) + '); feathers bottom ' + auI.feathers.bottom + ' px (the rim touches it in ' + auI.edges.bottom + ' of 16 frames) and sides ' + auI.feathers.left + ' px; no impact and no contract (the chain carries it); the ground true (corners ' + auI.ground.cornersMax + ' — late-phase sparks, far-ground mean at most ' + auI.ground.farMeanMax + ')',
+     vI.ok && I.role === 'invoke' && I.impact === null && I.contract === undefined && !!pI && pI.w === I.atlasSize.w && pI.h === I.atlasSize.h && I.cellPx === 448 && I.cells.length === 16 && srcI.every((x, i) => x === 83 + i) &&
+     J(auI.droppedHead) === J([0, 82]) && J(auI.droppedTail) === J([99, 120]) && I.source.indexOf('Kling clip sudarshana_invoke_black.mp4 (sha256 ' + clipSha('sudarshana_invoke_black.mp4')) === 0 &&
+     auI.coreDriftMax <= 10 && I.scaleRule.feature === 'disc' && I.scaleRule.cardWidths === 2.0 && J(auI.fades.map((x) => x[1])) === J([0.25, 0.5, 0.75, 0.8, 0.6, 0.4, 0.2]) &&
+     auI.feathers.bottom === 48 && auI.feathers.left === 32 && auI.feathers.right === 32 && auI.feathers.top === 0 && auI.edges.bottom === 7 && auI.edges.left === 0 && auI.ground.farMeanMax < 0.01 &&
+     bytesOf(I) <= EC.E1.capBytes && J(fs.readdirSync(path.join(LAB, 'effects', 'sudarshana_invoke')).sort()) === J(['atlas.webp', 'manifest.json']), vI.errors.join('; '));
+  const vS = EC.validate(S), pS = pxOf('sudarshana_strike'), srcS = S.cells.map((c) => c.src), auS = S.audit;
+  ok('M55 · LAB-20 · THE STRIKE BY THE EFFECT TEMPLATE (role "strike"): ' + S.cells.length + ' cells f' + srcS[0] + '–f' + srcS[srcS.length - 1] + ' at cellPx ' + S.cellPx + ' (' + S.cellSize.w + 'x' + S.cellSize.h + ', atlas ' + pS.w + 'x' + pS.h + ', ' + (bytesOf(S) / 1048576).toFixed(2) + ' MB — at the ruled scale the crop box draws 312 device px on a DPR-2 phone, so 288 is 92% of native, stated honestly; 320 would pack to 18.5 MB, past E1). The disc NEVER MOVES: its core sits at ' + J(auS.anchorPoint) + ' and drifts at most ' + auS.coreDriftMax + ' px; the trail tells the flight. The impact is cell ' + S.impact + ' = f' + srcS[S.impact] + ', NAMED by the owner\'s ruling — the ring closes around the disc — and the window is recorded as measured: the single largest picture change is ' + auS.largestChangeAt + ' (' + auS.windowChange[auS.largestChangeAt] + '), one frame later (' + J(auS.windowChange) + '). The burst spans ' + S.scaleRule.spanSrc + ' px on f' + S.scaleRule.frame + ' = ' + S.scaleRule.cardWidths + ' card widths. It ENDS at f088: the f090+ red-contour burst is excluded (a sticker contour, not light — a reshoot candidate). Top and bottom 64 px feathers under a DISC-BODY guard (rows ' + J(auS.feathers.guard.bodyRows) + ' on f' + auS.feathers.guard.bodyFrame + ', room ' + auS.feathers.guard.topRoom + '/' + auS.feathers.guard.bottomRoom + ' px); the rays touch top ' + auS.edges.top + ' and bottom ' + auS.edges.bottom + ' of 55 frames, the sides never. A mandatory fade tail f079–f088',
+     vS.ok && S.role === 'strike' && S.contract === undefined && !!pS && pS.w === S.atlasSize.w && pS.h === S.atlasSize.h && S.cellPx === 288 && S.cells.length === 55 && srcS.every((x, i) => x === 34 + i) &&
+     J(auS.droppedTail) === J([89, 120]) && S.impact === 19 && srcS[S.impact] === 53 && auS.impactSrc === 53 && auS.largestChangeAt === 'f054' && auS.windowChange.f053 < auS.windowChange.f054 &&
+     S.source.indexOf('Kling clip sudarshana_strike_black.mp4 (sha256 ' + clipSha('sudarshana_strike_black.mp4')) === 0 && auS.coreDriftMax <= 6 &&
+     S.scaleRule.feature === 'burst span' && S.scaleRule.spanSrc === 1370 && S.scaleRule.cardWidths === 2.4 && S.arrival && S.arrival.sourceArrivesFrom === 'left' &&
+     auS.feathers.top === 64 && auS.feathers.bottom === 64 && auS.feathers.guard.topRoom >= 66 && auS.feathers.guard.bottomRoom >= 66 && auS.edges.left === 0 && auS.edges.right === 0 &&
+     J(auS.fades.map((x) => x[0])) === J([79, 80, 81, 82, 83, 84, 85, 86, 87, 88]) && auS.fades.every((x, k) => Math.abs(x[1] - (1 - k / 9)) < 1e-4) && auS.ground.farMax <= 2 && bytesOf(S) <= EC.E1.capBytes, vS.errors.join('; '));
+  const vc = EC.validateChain(SU.C, [I, S]), swapped = EC.validateChain(SU.C, [S, I]), sum = bytesOf(I) + bytesOf(S);
+  ok('M56 · LAB-20 · THE CHAIN AND E1, UNCHANGED: effects/sudarshana/chain.json names the invocation then the strike and carries the contract; a chain in the wrong order is refused. Each clip is under the per-clip cap (' + (bytesOf(I) / 1048576).toFixed(2) + ' and ' + (bytesOf(S) / 1048576).toFixed(2) + ' MB of ' + (EC.E1.capBytes / 1048576).toFixed(2) + '), and the pair would be ' + (sum / 1048576).toFixed(2) + ' MB together — PAST the cap — which is exactly why they decode ONE AFTER THE OTHER: the invocation at the cast, released at the handoff, then the strike. The per-play fallback amendment (both at 256: 16.3 MB) is recorded as available but unused',
+     vc.ok && !swapped.ok && SU.C.class === 'effect-chain' && SU.C.cardName === 'Sudarshana Chakra' && J(SU.C.clips.map((c) => c.role)) === J(['invoke', 'strike']) && sum > EC.E1.capBytes &&
+     J(fs.readdirSync(path.join(LAB, 'effects')).sort()) === J(['sudarshana', 'sudarshana_invoke', 'sudarshana_strike', 'vajra']) && J(fs.readdirSync(path.join(LAB, 'effects', 'sudarshana'))) === J(['chain.json']), vc.errors.join('; '));
+  // the removal contract, read from the game's source
+  const G_HTML = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8'), a0 = G_HTML.indexOf("if (ev.type==='passive' && ev.abilityName==='Sudarshana')"), blk = G_HTML.slice(a0, G_HTML.indexOf("if (ev.type==='passive' && ev.abilityName==='Nagapasha')"));
+  const pins = { throwFromCasterHalf: /const caster=1-ownerPiOfUid\(u\), ch=document\.querySelector\(halfSel\(caster\)\);/.test(blk), flight380: /VFX\.sprSudarshana\(dp\.cx, dp\.rect\.top\+dp\.rect\.height\/2, dp\.rect\.width, fx, fy, 380\);/.test(blk) && /await cDelay\(380\);/.test(blk),
+    bite100: /screenShake\(false\); await cDelay\(100\);/.test(blk), removal: /showcaseVictim\(u, 'removal'\);/.test(blk), dwell300: /await cDelay\(300\);/.test(blk), callout: /calloutAt\(dp, 'Sudarshana Chakra'\);/.test(blk), tail140: /await cDelay\(140\); \}/.test(blk),
+    removalFade320: /node\.classList\.add\('victim-removal'\); setTimeout\(\(\)=>node\.remove\(\), 320\*vfxT\(\)\);/.test(G_HTML), silentPassive: !/case 'passive'/.test(G_HTML.slice(G_HTML.indexOf('function resolveSound('), G_HTML.indexOf('function resolveSound(') + 1600)),
+    mythicIsSpectacle: /if\(ev\.type==='play' && c && \(c\.r==='L'\|\|c\.r==='M'\)\) return 'spectacle';/.test(G_HTML) };
+  const k = SU.C.contract, TN = EC.chainTimeline(SU.C, [I, S], 1), TF = EC.chainTimeline(SU.C, [I, S], 0.6), R = (x) => Math.round(x);
+  ok('M57 · LAB-20 · THE REMOVAL CONTRACT IS THE GAME\'S, READ FROM ITS SOURCE: ' + Object.keys(pins).map((x) => x + ' ' + pins[x]).join(', ') + '. Mythic is the same spectacle tier as Legendary. The chain, at Normal / Fast: invocation from ' + R(TN.invokeStart) + ' / ' + R(TF.invokeStart) + ' ms, HANDOFF at ' + R(TN.handoffAt) + ' / ' + R(TF.handoffAt) + ', the strike\'s ring-snap on THE BITE at ' + R(TN.impactAt) + ' / ' + R(TF.impactAt) + ' (the resolution beat at ' + R(TN.beatStart) + ' / ' + R(TF.beatStart) + ' plus the 380 ms flight), the removal exit ' + R(TN.crackAt) + ' / ' + R(TF.crackAt) + ', the callout ' + R(TN.calloutAt) + ' / ' + R(TF.calloutAt) + ', the board on AFTER ' + R(TN.beatEnd) + ' / ' + R(TF.beatEnd) + ', the strike ending un-awaited at ' + R(TN.strikeEnd) + ' / ' + R(TF.strikeEnd) + '. No dead time and no overlap at the handoff, by construction; wire-clock cost ' + TN.waitCostMs + ' / ' + TF.waitCostMs + ' ms. Sound: sfx_astra at the cast, a SILENT bite (the game\'s own)',
+     Object.values(pins).every(Boolean) && k.trigger === 'passive' && k.abilityName === 'Sudarshana' && k.castSound === 'sfx_astra' && k.impactSound === null && k.flightMs === 380 && k.crackAfterMs === 100 && k.exitKind === 'removal' && k.exitMs === 320 && k.calloutAfterMs === 300 && k.destroyDwellMs === 440 && k.awaited === false &&
+     R(TN.impactAt) === 1937 && R(TF.impactAt) === 1162 && R(TN.handoffAt) === 908 && R(TF.handoffAt) === 545 && R(TN.invokeStart) === 41 && R(TF.invokeStart) === 25 && R(TN.strikeEnd) === 3887 && R(TF.strikeEnd) === 2332 &&
+     Math.abs(TN.handoffAt - TN.strikeStart) < 1e-9 && Math.abs(TN.impactAt - (TN.beatStart + 380 * TN.vfxT)) < 1e-6 && Math.abs(TF.impactAt - (TF.beatStart + 380 * TF.vfxT)) < 1e-6 && TN.invokeStart > 0 && TF.invokeStart > 0 && TN.waitCostMs === 0 && TF.waitCostMs === 0,
+     J({ pins, TN, TF }));
+  const card = { cx: 205, cy: 55, w: 64 }, half = { cx: 205, cy: 315 }, PS = EC.place(S, card, false), PSm = EC.place(S, card, true), PI = EC.place(I, { cx: half.cx, cy: half.cy, w: card.w }, false);
+  const mirrorCases = [[100, 205, true], [205, 205, false], [310, 205, false]].map(([cx, c0, want]) => ({ cardCx: cx, mirrored: EC.mirrorFor(S, cx, c0), want }));
+  ok('M58 · LAB-20 · THE PLACEMENT AND THE ARRIVAL RULE: the strike\'s disc core lands on the target Hero card\'s CENTRE with its burst at 2.4 card widths (' + (S.scaleRule.spanCell * PS.scale).toFixed(1) + ' px on a 64 px card); the invocation\'s core lands on the CASTER\'S HALF CENTRE — the game\'s own throw origin — with its disc at 2.0 card widths (' + (I.scaleRule.spanCell * PI.scale).toFixed(1) + ' px). The source disc arrives from its LEFT; the rule is a horizontal mirror only (no rotation — the actors-upright analogue): the disc arrives from the board\'s horizontal centre, so a target left of centre is mirrored and one at or right of centre is not (card centre x ' + mirrorCases.map((x) => x.cardCx + ' → ' + (x.mirrored ? 'mirrored' : 'as shot')).join(', ') + ', the board centre at 205); mirrored, the core still lands on the card\'s centre. The invocation is never mirrored',
+     Math.abs(S.scaleRule.spanCell * PS.scale - 2.4 * card.w) < 1e-6 && Math.abs(PS.x + S.anchor.x * PS.scale - card.cx) < 1e-6 && Math.abs(PS.y + S.anchor.y * PS.scale - card.cy) < 1e-6 &&
+     PSm.mirror === true && Math.abs(PSm.x + PSm.w - S.anchor.x * PSm.scale - card.cx) < 1e-6 &&
+     Math.abs(I.scaleRule.spanCell * PI.scale - 2.0 * card.w) < 1e-6 && Math.abs(PI.x + I.anchor.x * PI.scale - half.cx) < 1e-6 && Math.abs(PI.y + I.anchor.y * PI.scale - half.cy) < 1e-6 &&
+     mirrorCases.every((x) => x.mirrored === x.want) && EC.mirrorFor(I, 100, 205) === false && SU.C.contract.invokeAnchor === 'caster-half-centre',
+     J({ PS, PSm, PI, mirrorCases }));
 }
 {
   // LAB-17 · the windowed ground-impact, the in-place trap avoided, the edge that was never touched, and the calibration rows
@@ -1184,6 +1270,75 @@ console.log('\n── E · the additive effect clip ──');
   }
 }
 
+// ═══ E · THE CHAIN AND THE IMPACT PIN (LAB-20) ═══
+console.log('\n── E · the effect chain and the impact pin ──');
+{
+  function chainWorld(o) {
+    o = o || {};
+    const draws = [], rendered = [], sounds = [], exits = [], callouts = [], events = [];
+    let tf = { a: 1, e: 0 };
+    const g = { _op: 'source-over', setTransform(a, b, c, d, e) { tf = { a, e }; }, clearRect() {}, drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) { draws.push({ img, sx, sy, dx, dy, dw, dh, op: this._op, mirrored: tf.a === -1, e: tf.e }); },
+      set globalCompositeOperation(v) { this._op = v; }, get globalCompositeOperation() { return this._op; }, globalAlpha: 1 };
+    let now = o.t0 || 0, live = 0, maxLive = 0, loads = [];
+    const env = { now: () => now, canvas: { width: 820, height: 840, getContext: () => g }, dpr: 2,
+      cardOf: (uid) => ({ cx: o.cardCx != null ? o.cardCx : 205, cy: 55, w: 64 }), halfOf: (seat) => ({ cx: 205, cy: seat === 0 ? 315 : 105 }), fieldCentreX: () => 205,
+      loadAtlas: (m) => { live++; maxLive = Math.max(maxLive, live); loads.push({ role: m.role || 'single', t: now, liveAfter: live }); events.push('load:' + (m.role || m.cardId)); return { source: { __effect: m.role || m.cardId }, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() { live--; events.push('release:' + (m.role || m.cardId)); } }; },
+      render: (b) => rendered.push(b), sound: (n) => sounds.push(n), crack: (uid, ms) => exits.push(['crack', uid, ms]), removal: (uid, ms) => exits.push(['removal', uid, ms]), callout: (uid, t) => callouts.push([uid, t]),
+      onDone: (r) => { chainWorld.last = r; } };
+    const P = EC.createPlayer(env);
+    return { P, draws, rendered, sounds, exits, callouts, events, loads, step: (ms) => { now += ms; P.frame(now); }, get live() { return live; }, get maxLive() { return maxLive; } };
+  }
+  // drive a play at hz; the phase offset shifts the frame grid against the plan (a real device's frames never align with the beats)
+  function driveChain(f, spec, mode, hz, o) {
+    o = o || {};
+    const W = chainWorld(o), run = W.P.play(f, spec, { before: f.before, after: f.after }, { mode, casterSeat: f.attackerSeat, impactPin: o.pin });
+    const dt = 1000 / hz, impactCell = (spec.class === 'effect-chain' ? spec.clips[1] : spec).cells[(spec.class === 'effect-chain' ? spec.clips[1] : spec).impact];
+    let biteFrame = null, impactFrame = null, n = 0;
+    if (o.phase) W.step(o.phase);
+    while (!run.done && n++ < 4000) {
+      const d0 = W.draws.length, c0 = run.log.cues.length; W.step(dt);
+      if (run.log.cues.slice(c0).some((c) => c.cue === 'impact')) biteFrame = n;
+      if (impactFrame == null && W.draws.slice(d0).some((d) => d.img.__effect === (spec.class === 'effect-chain' ? 'strike' : spec.cardId) && d.sx === impactCell.x && d.sy === impactCell.y)) impactFrame = n;
+      if (o.skipAt && n * dt + (o.phase || 0) >= o.skipAt) { W.P.skip(); break; }
+    }
+    return { W, run, biteFrame, impactFrame, stats: W.P.stats() };
+  }
+  const inOrder = (a) => a.every((x, i) => i === 0 || x > a[i - 1]);
+  const full = [0, 1].map((s) => driveChain(SU.FX[s], SU.spec, 'full', 60));
+  const hero = (f) => f.events[1].targetUids[0];
+  ok('E7 · LAB-20 · THE CHAIN, FULL at 60 Hz, both seats: the INVOCATION draws all 16 cells in order at the caster\'s half centre (seat 0 casts from the lower half, seat 1 from the upper), then at the handoff it is RELEASED and only then the STRIKE decodes (the order of events: ' + full[0].W.events.join(' → ') + '; never two atlases live) and draws all 55 cells in order on the Hero; the strike\'s impact cell is first drawn on the SAME FRAME as the bite (seat 0 frame ' + full[0].impactFrame + ' = ' + full[0].biteFrame + ', seat 1 ' + full[1].impactFrame + ' = ' + full[1].biteFrame + '); every cell "lighter"; one sound — sfx_astra at the cast, the bite silent; the Hero\'s exit is the clean REMOVAL, not a crack; the callout names Sudarshana Chakra; the board lands on AFTER; both atlases released (decoded 0; peak ' + (full[0].stats.peak / 1048576).toFixed(2) + ' MB = the strike alone)',
+     full.every((r, s2) => { const inv = r.run.log.bySegment.invoke, st = r.run.log.bySegment.strike, invDraws = r.W.draws.filter((d) => d.img.__effect === 'invoke');
+       return inv.length === 16 && inOrder(inv) && st.length === 55 && inOrder(st) && r.impactFrame === r.biteFrame && r.W.maxLive === 1 && J(r.W.events) === J(['load:invoke', 'release:invoke', 'load:strike', 'release:strike']) &&
+         r.W.draws.every((d) => d.op === 'lighter') && J(r.W.sounds) === J(['sfx_astra']) && J(r.W.exits.map((x) => [x[0], x[1]])) === J([['removal', hero(SU.FX[s2])]]) && J(r.W.callouts) === J([[hero(SU.FX[s2]), 'Sudarshana Chakra']]) &&
+         J(r.W.rendered[r.W.rendered.length - 1]) === J(SU.FX[s2].after) && r.stats.decodedBytes === 0 && r.W.live === 0 && r.stats.peak === SU.S.atlasSize.w * SU.S.atlasSize.h * 4 &&
+         invDraws.every((d) => Math.abs((d.dx / 2) + SU.I.anchor.x * (d.dw / 2) / SU.I.cellSize.w - 205) < 0.5 && Math.abs((d.dy / 2) + SU.I.anchor.y * (d.dh / 2) / SU.I.cellSize.h - (SU.FX[s2].attackerSeat === 0 ? 315 : 105)) < 0.5); }),
+     J(full.map((r) => ({ inv: r.run.log.bySegment.invoke.length, strike: r.run.log.bySegment.strike.length, frames: [r.impactFrame, r.biteFrame], events: r.W.events, sounds: r.W.sounds, exits: r.W.exits }))));
+  const speeds = [['full', 30], ['fast', 60], ['fast', 30]].map(([m, hz]) => [m + ' ' + hz + ' Hz', [0, 1].map((s) => driveChain(SU.FX[s], SU.spec, m, hz))]);
+  ok('E8 · LAB-20 · THE CHAIN AT 30 Hz AND AT FAST, both seats: the bite\'s frame always draws the strike\'s impact cell (' + speeds.map((x) => x[0] + ': ' + x[1].map((r) => r.impactFrame + '=' + r.biteFrame).join(', ')).join(' · ') + '); cells stay in order, never two atlases live, both released. The S-prediction held: at Full 30 Hz a cell (54 ms) outlasts a frame, so all 16 + 55 cells draw (' + speeds[0][1].map((r) => r.run.log.bySegment.invoke.length + '+' + r.run.log.bySegment.strike.length).join(', ') + '); at Fast 30 Hz a cell (32.5 ms) is just shorter than a frame, so a few fall between frames (' + speeds[2][1].map((r) => r.run.log.bySegment.invoke.length + '+' + r.run.log.bySegment.strike.length).join(', ') + ')',
+     speeds.every((x) => x[1].every((r) => r.impactFrame === r.biteFrame && inOrder(r.run.log.bySegment.invoke) && inOrder(r.run.log.bySegment.strike) && r.W.maxLive === 1 && r.stats.decodedBytes === 0)) &&
+     speeds[0][1].every((r) => r.run.log.bySegment.invoke.length === 16 && r.run.log.bySegment.strike.length === 55),
+     J(speeds.map((x) => [x[0], x[1].map((r) => [r.impactFrame, r.biteFrame, r.run.log.bySegment.invoke.length, r.run.log.bySegment.strike.length])])));
+  // THE IMPACT PIN, retro-applied to Vajra: sweep the frame grid's phase against the plan at Fast on a 30 Hz device, pin off and on
+  const sweep = (f, spec, pin) => { let miss = 0, pinned = 0; for (let ph = 0; ph < 33; ph += 1) { const r = driveChain(f, spec, 'fast', 30, { phase: ph + 0.37, pin }); if (r.impactFrame !== r.biteFrame) miss++; if (r.run.log.impactPinned) pinned++; } return { miss, pinned }; };
+  const pinRes = { vajraOff: sweep(VJ.FX[0], VJ.M, false), vajraOn: sweep(VJ.FX[0], VJ.M, true), chainOff: sweep(SU.FX[0], SU.spec, false), chainOn: sweep(SU.FX[0], SU.spec, true) };
+  ok('E9 · LAB-20 · THE IMPACT PIN, AND THE SELF-AUDIT THAT RETRO-APPLIES IT TO VAJRA: a timed clip draws the cell that is due, so at Fast on a 30 Hz device (a cell of 32.5 ms, a frame of 33.3) a frame can straddle the impact cell and show the next one — exactly on the beat. Sweeping the frame grid\'s phase over a whole frame (33 offsets), with the pin OFF the impact cell is missed on the beat\'s frame for Vajra ' + pinRes.vajraOff.miss + ' times and for the Sudarshana chain ' + pinRes.chainOff.miss + ' times: LAB-19\'s E2 checked Fast only at 60 Hz, so Vajra carried this latent gap. With the pin ON — the beat\'s frame always draws the impact cell — both miss 0 (Vajra pinned on ' + pinRes.vajraOn.pinned + ' offsets, the chain on ' + pinRes.chainOn.pinned + ')',
+     pinRes.vajraOff.miss > 0 && pinRes.chainOff.miss > 0 && pinRes.vajraOn.miss === 0 && pinRes.chainOn.miss === 0 && pinRes.vajraOn.pinned === pinRes.vajraOff.miss && pinRes.chainOn.pinned === pinRes.chainOff.miss, J(pinRes));
+  const reduced = [0, 1].map((s) => driveChain(SU.FX[s], SU.spec, 'reduced', 60));
+  const noTarget = [0, 1].map((s) => { const f = SU.FX[s], batch = { events: [f.events[0]], before: f.before, after: f.before }; return driveChain(batch, SU.spec, 'full', 60); });
+  ok('E10 · LAB-20 · REDUCED, and NO TARGET, both seats. Reduced: no atlas decoded and nothing drawn, while the beats run (sfx_astra, the removal, the callout, AFTER). No target (a cast with no removal event): NOTHING plays — no invocation either: no decode, no draw, no removal, no callout; the cast sound and the settle only, the F65 doctrine for a chain',
+     reduced.every((r, s2) => r.W.loads.length === 0 && r.W.draws.length === 0 && J(r.W.sounds) === J(['sfx_astra']) && r.W.exits.length === 1 && r.W.exits[0][0] === 'removal' && r.W.callouts.length === 1 && J(r.W.rendered[r.W.rendered.length - 1]) === J(SU.FX[s2].after)) &&
+     noTarget.every((r) => r.W.loads.length === 0 && r.W.draws.length === 0 && r.W.exits.length === 0 && r.W.callouts.length === 0 && J(r.W.sounds) === J(['sfx_astra']) && J(r.run.plan.cues.map((c) => c.cue)) === J(['cast', 'settle'])),
+     J({ reduced: reduced.map((r) => [r.W.loads.length, r.W.draws.length, r.W.sounds]), noTarget: noTarget.map((r) => [r.W.loads.length, r.W.draws.length, r.run.plan.cues.map((c) => c.cue)]) }));
+  const skipInv = [0, 1].map((s) => driveChain(SU.FX[s], SU.spec, 'full', 60, { skipAt: 500 })), skipStr = [0, 1].map((s) => driveChain(SU.FX[s], SU.spec, 'full', 60, { skipAt: 1500 }));
+  const mirrorLeft = driveChain(SU.FX[0], SU.spec, 'full', 60, { cardCx: 100 }), mirrorRight = driveChain(SU.FX[0], SU.spec, 'full', 60, { cardCx: 310 });
+  ok('E11 · LAB-20 · SKIP DURING THE INVOCATION (500 ms) and DURING THE STRIKE (1500 ms), both seats: the board lands on AFTER at once and whatever atlas is live is released (decoded 0); a skipped invocation never decodes the strike. And the arrival rule on the stage: a Hero left of the board\'s centre draws the strike MIRRORED (every strike draw), one right of it does not; the invocation is never mirrored',
+     skipInv.every((r, s2) => r.run.done && r.stats.decodedBytes === 0 && r.W.live === 0 && J(r.W.events) === J(['load:invoke', 'release:invoke']) && J(r.W.rendered[r.W.rendered.length - 1]) === J(SU.FX[s2].after)) &&
+     skipStr.every((r, s2) => r.run.done && r.stats.decodedBytes === 0 && r.W.live === 0 && J(r.W.events) === J(['load:invoke', 'release:invoke', 'load:strike', 'release:strike']) && J(r.W.rendered[r.W.rendered.length - 1]) === J(SU.FX[s2].after)) &&
+     mirrorLeft.W.draws.filter((d) => d.img.__effect === 'strike').every((d) => d.mirrored) && mirrorLeft.W.draws.filter((d) => d.img.__effect === 'invoke').every((d) => !d.mirrored) &&
+     mirrorRight.W.draws.every((d) => !d.mirrored) && mirrorLeft.run.log.mirror === true && mirrorRight.run.log.mirror === false,
+     J({ skipInv: skipInv.map((r) => r.W.events), skipStr: skipStr.map((r) => r.W.events), mirror: [mirrorLeft.run.log.mirror, mirrorRight.run.log.mirror] }));
+}
+
 // ═══ K · THE SOURCES (A7) ═══
 console.log('\n── K · the sources rule (A7) ──');
 {
@@ -1196,7 +1351,7 @@ console.log('\n── K · the sources rule (A7) ──');
   const raw = tracked.filter((p) => (p.indexOf('lab/') === 0 || p.indexOf('assets/') === 0) && (/(^|\/)(frames|matted|sources|clips_raw)\//.test(p) || /(^|\/)frame_\d+\.(png|jpe?g|webp)$/i.test(p) || /(^|\/)f\d{3}\.png$/.test(p)));
   ok('K2 · no raw or matted frame, and nothing from sources/, is tracked anywhere under lab/ or assets/ (' + raw.length + ')', raw.length === 0, raw.slice(0, 5).join(', '));
   const ignored = (p) => { try { cp.execFileSync('git', ['check-ignore', '-q', p], { cwd: GAME }); return true; } catch (e) { return false; } };
-  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg', 'lab/vfx-manifestation/sources/varuna/varuna_green.mp4', 'lab/vfx-manifestation/sources/varuna/varuna-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/varuna/f086.png', 'lab/vfx-manifestation/frames/varuna_contact_sheet.jpg', 'lab/vfx-manifestation/sources/agni/agni_green.mp4', 'lab/vfx-manifestation/sources/mahabali/mahabali_green.mp4', 'lab/vfx-manifestation/sources/shukracharya/shukracharya_green.mp4', 'lab/vfx-manifestation/sources/mahishi/mahishi_green.mp4', 'lab/vfx-manifestation/sources/vritra/vritra_green.mp4', 'lab/vfx-manifestation/sources/garuda/garuda_green.mp4', 'lab/vfx-manifestation/sources/kartikeya/kartikeya_magenta.mp4', 'lab/vfx-manifestation/sources/vasuki/vasuki_magenta.mp4', 'lab/vfx-manifestation/sources/takshaka/takshaka_magenta.mp4', 'lab/vfx-manifestation/sources/shesha/shesha_magenta.mp4', 'lab/vfx-manifestation/sources/padmavati/padmavati_magenta.mp4', 'lab/vfx-manifestation/sources/kulika/kulika_magenta.mp4', 'lab/vfx-manifestation/sources/sugriva/sugriva_magenta.mp4', 'lab/vfx-manifestation/sources/angad/angad_magenta.mp4', 'lab/vfx-manifestation/sources/anjana/anjana_magenta.mp4', 'lab/vfx-manifestation/sources/makardhwaja/makardhwaja_magenta.mp4', 'lab/vfx-manifestation/sources/rahu/rahu_green.mp4', 'lab/vfx-manifestation/sources/vajra/vajra_black.mp4', 'lab/vfx-manifestation/frames/vajra_effect_sheet.jpg', 'lab/vfx-manifestation/sources/rahu/rahu-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/rahu/f044.png', 'lab/vfx-manifestation/frames/rahu_contact_sheet.jpg'].concat(fs.readdirSync(path.join(LAB, 'sources')).filter((n) => fs.existsSync(path.join(LAB, 'sources', n, n + '-isolated-kling-source-v1.png'))).map((n) => 'lab/vfx-manifestation/sources/' + n + '/' + n + '-isolated-kling-source-v1.png'));   // every identity master staged in sources/
+  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg', 'lab/vfx-manifestation/sources/varuna/varuna_green.mp4', 'lab/vfx-manifestation/sources/varuna/varuna-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/varuna/f086.png', 'lab/vfx-manifestation/frames/varuna_contact_sheet.jpg', 'lab/vfx-manifestation/sources/agni/agni_green.mp4', 'lab/vfx-manifestation/sources/mahabali/mahabali_green.mp4', 'lab/vfx-manifestation/sources/shukracharya/shukracharya_green.mp4', 'lab/vfx-manifestation/sources/mahishi/mahishi_green.mp4', 'lab/vfx-manifestation/sources/vritra/vritra_green.mp4', 'lab/vfx-manifestation/sources/garuda/garuda_green.mp4', 'lab/vfx-manifestation/sources/kartikeya/kartikeya_magenta.mp4', 'lab/vfx-manifestation/sources/vasuki/vasuki_magenta.mp4', 'lab/vfx-manifestation/sources/takshaka/takshaka_magenta.mp4', 'lab/vfx-manifestation/sources/shesha/shesha_magenta.mp4', 'lab/vfx-manifestation/sources/padmavati/padmavati_magenta.mp4', 'lab/vfx-manifestation/sources/kulika/kulika_magenta.mp4', 'lab/vfx-manifestation/sources/sugriva/sugriva_magenta.mp4', 'lab/vfx-manifestation/sources/angad/angad_magenta.mp4', 'lab/vfx-manifestation/sources/anjana/anjana_magenta.mp4', 'lab/vfx-manifestation/sources/makardhwaja/makardhwaja_magenta.mp4', 'lab/vfx-manifestation/sources/rahu/rahu_green.mp4', 'lab/vfx-manifestation/sources/vajra/vajra_black.mp4', 'lab/vfx-manifestation/sources/sudarshana/sudarshana_invoke_black.mp4', 'lab/vfx-manifestation/sources/sudarshana/sudarshana_strike_black.mp4', 'lab/vfx-manifestation/frames/sudarshana_strike_effect_sheet.jpg', 'lab/vfx-manifestation/frames/vajra_effect_sheet.jpg', 'lab/vfx-manifestation/sources/rahu/rahu-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/rahu/f044.png', 'lab/vfx-manifestation/frames/rahu_contact_sheet.jpg'].concat(fs.readdirSync(path.join(LAB, 'sources')).filter((n) => fs.existsSync(path.join(LAB, 'sources', n, n + '-isolated-kling-source-v1.png'))).map((n) => 'lab/vfx-manifestation/sources/' + n + '/' + n + '-isolated-kling-source-v1.png'));   // every identity master staged in sources/
   const present = must.filter((p) => fs.existsSync(path.join(GAME, p)));
   const strayDir = path.join(GAME, 'assets', 'vfx', 'experimental'), stray = [];
   (function walk(d) { if (!fs.existsSync(d)) return; fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else if (/\.(png|jpe?g|webp|mp4|mov)$/i.test(n)) stray.push(rel(q)); }); })(strayDir);

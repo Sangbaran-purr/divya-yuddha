@@ -181,13 +181,50 @@ function buildVajraCast(seat, oppUnit, opts) {
   throw new Error('no seed in 1..999 gave the Asura seat the first move');
 }
 const buildVajra = (seat) => buildVajraCast(seat, 'Bana Asura');
+// LAB-20 · THE FIRST CHAIN'S FIXTURE — Sudarshana Chakra (Mythic). It is a REMOVAL, not a kill: "Remove one enemy Hero for this round. It
+// returns next round at half power." The Asura seat moves first and sets a Hero down (Mahabali); the Deva seat casts Sudarshana, which is
+// LEGAL (an enemy Hero is on the board), and the engine emits play then passive "Sudarshana" "removed" — the Hero leaves its row for the
+// round and does NOT go to the discard. With a Unit instead (Vibhishana — inert to Astras, unlike Bana Asura, whose arms multiply on any
+// Astra) there is NO HERO: the Astra is not playable, and a forced cast only logs "Sudarshana finds no Hero." The snapshot format is untouched.
+const SUD_DECK = ['Sudarshana Chakra'].concat(DEVA_DECK.slice(0, 11)), SUD_OPP_DECK = ['Mahabali'].concat(ASURA_DECK.slice(0, 11));
+function buildSudarshanaCast(seat, oppFirst, opts) {
+  opts = opts || {};
+  const opp = 1 - seat;
+  for (let seed = 1; seed < 1000; seed++) {
+    const E = freshEngine();
+    const decks = seat === 0 ? [SUD_DECK, SUD_OPP_DECK] : [SUD_OPP_DECK, SUD_DECK];
+    const sc = { p0Deck: decks[0], p1Deck: decks[1], p0Hand: HAND(decks[0]), p1Hand: HAND(decks[1]), mulligan: 0 };
+    const o = { rng: seeded(seed), p0: '{p0}', p1: '{p1}', realm: 'mrityulok', p0Faction: seat === 0 ? 'devas' : 'asuras', p1Faction: seat === 1 ? 'devas' : 'asuras', scenario: sc };
+    const g = E.newGame(o);
+    if (g.turn !== opp) continue;                                               // the Asura seat moves first
+    const setup = [], uh = g.players[opp].hand.findIndex((c) => c.n === oppFirst);
+    E.playCard(g, opp, uh); setup.push({ seat: opp, type: 'play', card: oppFirst, handIndex: uh });
+    if (g.turn !== seat) throw new Error('after ' + oppFirst + ' the turn did not pass to the Deva seat');
+    const sh = g.players[seat].hand.findIndex((c) => c.id === 'sudarshana'), legal = E.playableIndices(g, seat).indexOf(sh) >= 0;
+    if (opts.probe) return { E, g, seat, sh, legal, seed };
+    const before = snapshot(E, g), ev0 = g.events.length, log0 = g.log.length;
+    E.playCard(g, seat, sh);
+    const after = snapshot(E, g);
+    return {
+      fixture: 'sudarshana_play', ruling: 'LAB-20 - the first chained effect: a real-engine Sudarshana Chakra cast so the invocation and strike clips are driven by the engine. The Asura seat sets ' + oppFirst + ' (a Hero) down; the Deva seat casts Sudarshana, which is LEGAL - the engine emits play, then passive Sudarshana removed on the Hero: a REMOVAL for the round, not a kill (the Hero leaves its row and does not reach the discard). A2 stands: nothing emerges; the Astra plays its effect',
+      engine: { file: 'src/engine.js', sha256: engineSha() },
+      seed, attackerSeat: seat, defenderSeat: opp, realm: 'mrityulok',
+      scenario: { p0: o.p0, p1: o.p1, p0Faction: o.p0Faction, p1Faction: o.p1Faction, p0Deck: decks[0], p1Deck: decks[1], mulligan: 0 },
+      setup, action: { seat, type: 'play', card: 'Sudarshana Chakra', handIndex: sh, targetUid: null, legal },
+      before, events: g.events.slice(ev0), log: g.log.slice(log0).map((l) => l.msg), after,
+      diff: boardDiff(before, after),
+    };
+  }
+  throw new Error('no seed in 1..999 gave the Asura seat the first move');
+}
+const buildSudarshana = (seat) => buildSudarshanaCast(seat, 'Mahabali');
 const forEntry = (key) => (seat) => buildHeroEntry(HERO_ENTRIES[key], seat);   // LAB-9: one builder per registry entry
 const buildIndra = forEntry('indra'), buildBali = forEntry('bali'), buildVaruna = forEntry('varuna');
 
-module.exports = { build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK };
+module.exports = { build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK, buildSudarshana, buildSudarshanaCast, SUD_DECK, SUD_OPP_DECK };
 
 if (require.main === module) {
-  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra]])) for (const seat of [0, 1]) {
+  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra], ['sudarshana', buildSudarshana]])) for (const seat of [0, 1]) {
     const f = make(seat), out = path.join(__dirname, name + '_seat' + seat + '.json');
     fs.writeFileSync(out, JSON.stringify(f, null, 2) + '\n');
     console.log('wrote ' + path.relative(GAME, out) + ' — seed ' + f.seed + ', ' + f.events.length + ' events (' + f.events.map((e) => e.type).join(', ') + '), changed: ' +

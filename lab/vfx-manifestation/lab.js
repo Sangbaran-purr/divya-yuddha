@@ -147,38 +147,59 @@
   async function effectManifestFor(cardId) {
     if (effectManifests[cardId]) return effectManifests[cardId];
     const entry = REG[cardId]; if (!entry || !entry.effect) return null;
-    const murl = new URL(V(entry.effect)), m = await fetch(murl).then((r) => r.json()), v = window.EffectClip.validate(m);
+    const murl = new URL(V(entry.effect)), m = await fetch(murl).then((r) => r.json());
+    if (m.class === 'effect-chain') {   // LAB-20: a chain — its two clip manifests, resolved beside it
+      const chainUrl = murl;
+      const clips = await Promise.all(m.clips.map(async (c) => { const murl = new URL(V(new URL(c.manifest, chainUrl).href)), cm = await fetch(murl).then((r) => r.json()); cm.__url = murl.href; return cm; }));
+      const vc = window.EffectClip.validateChain(m, clips);
+      if (!vc.ok) { report('effect chain ' + cardId + ': ' + vc.errors.join('; ')); return null; }
+      return (effectManifests[cardId] = { class: 'effect-chain', chain: m, clips, cardId: m.cardId, __url: murl.href });
+    }
+    const v = window.EffectClip.validate(m);
     if (!v.ok) { report('effect ' + cardId + ': ' + v.errors.join('; ')); return null; }
     m.__url = murl.href;
     return (effectManifests[cardId] = m);
   }
-  // E1: fetched and decoded ON PLAY, the luminance alpha baked once (the game's bakeAlpha), released when the clip ends
+  // the compressed bytes, fetched once and kept (LAB-20: a chain fetches its strike's bytes at the cast, so the handoff only decodes)
+  const effectBlobs = {};
+  function effectBlob(m) { const u = V(new URL(m.atlas, m.__url).href); if (!effectBlobs[u]) effectBlobs[u] = fetch(V(new URL(m.atlas, m.__url).href)).then((r) => r.blob()); return effectBlobs[u]; }
+  // E1: decoded ON PLAY (a chain's strike: at the handoff), the luminance alpha baked once (the game's bakeAlpha), released when the clip ends
   async function loadEffectAtlas(m) {
-    const blob = await fetch(V(new URL(m.atlas, m.__url).href)).then((r) => r.blob());
+    const blob = await effectBlob(m);
     const bmp = await createImageBitmap(blob), cv = document.createElement('canvas'); cv.width = bmp.width; cv.height = bmp.height;
     const g = cv.getContext('2d', { willReadFrequently: true }); g.drawImage(bmp, 0, 0); if (bmp.close) bmp.close();
     const id = g.getImageData(0, 0, cv.width, cv.height); window.EffectClip.bake(id.data); g.putImageData(id, 0, 0);
     return { source: cv, bytes: cv.width * cv.height * 4, close() { cv.width = 0; cv.height = 0; } };
   }
+  const cardNode = (uid) => el('field').querySelector('.bc[data-uid="' + uid + '"]');
   const effect = window.EffectClip.createPlayer({
     now: () => clock.t, canvas: effectCanvas, get dpr() { return window.devicePixelRatio || 1; },
     cardOf: (uid) => { const r = rectOf(uid); return r ? { cx: r.x + r.w / 2, cy: r.y + r.h / 2, w: r.w } : null; },
+    halfOf: (seat) => { const h = document.querySelector('.half.' + sideOf(seat)), f = fieldRect(); if (!h) return null; const r = h.getBoundingClientRect(); return { cx: r.left - f.left + r.width / 2, cy: r.top - f.top + r.height / 2 }; },
+    fieldCentreX: () => fieldRect().width / 2,
     loadAtlas: loadEffectAtlas, render: (b) => render(b, []), sound: (name) => audio.play(name),
-    crack: (uid, ms) => { const n = el('field').querySelector('.bc[data-uid="' + uid + '"]'); if (n) { n.style.setProperty('--crack-ms', Math.round(ms) + 'ms'); n.classList.add('crack'); } },
+    crack: (uid, ms) => { const n = cardNode(uid); if (n) { n.style.setProperty('--crack-ms', Math.round(ms) + 'ms'); n.classList.add('crack'); } },
+    removal: (uid, ms) => { const n = cardNode(uid); if (n) { n.style.setProperty('--crack-ms', Math.round(ms) + 'ms'); n.classList.add('removal'); } },   // LAB-20: the game's removal exit — a clean fade and lift, no crack
+    callout: (uid, text) => { if (text) banner(text, 900); },
     onDone: (res) => { lastEffect = res; }, onError: report,
   });
-  function formatEffectPlan(p, m) {
-    const T = p.timeline, r = (x) => Math.round(x);
-    return 'EFFECT CLIP · ' + m.cardId + ' · ' + p.mode + ' (vfxT ' + T.vfxT.toFixed(2) + ') · ' + (p.clip ? m.cells.length + ' cells at ' + (1000 / T.frameMs).toFixed(2) + '/s, impact cell ' + m.impact + ' (' + m.cells[m.impact].name + ')' : p.strike ? 'no clip (Reduced)' : 'no strike: the card found no mark') + '\n' +
-      'lead ' + r(T.leadMs) + ' ms inside the cast beat ' + r(T.castBeatMs) + ' ms → wire-clock cost ' + r(T.waitCostMs) + ' ms\n\n' +
+  function formatEffectPlan(p, spec) {
+    const T = p.timeline, r = (x) => Math.round(x), chained = spec.class === 'effect-chain', strike = chained ? spec.clips[1] : spec;
+    const what = !p.strike ? 'no strike: the card found no mark — nothing plays' : !p.clip ? 'no clip (Reduced)'
+      : chained ? 'CHAIN · invocation ' + spec.clips[0].cells.length + ' cells, then strike ' + strike.cells.length + ' cells at ' + (1000 / T.frameMs).toFixed(2) + '/s, impact cell ' + strike.impact + ' (' + strike.cells[strike.impact].name + ') on the bite'
+      : strike.cells.length + ' cells at ' + (1000 / T.frameMs).toFixed(2) + '/s, impact cell ' + strike.impact + ' (' + strike.cells[strike.impact].name + ')';
+    return 'EFFECT ' + (chained ? 'CHAIN' : 'CLIP') + ' · ' + spec.cardId + ' · ' + p.mode + ' (vfxT ' + T.vfxT.toFixed(2) + ') · ' + what + '\n' +
+      (chained ? 'invocation ' + r(T.invokeStart) + '–' + r(T.handoffAt) + ' ms → handoff → strike to ' + r(T.strikeEnd) + ' ms; the bite ' + r(T.impactAt) + ' ms' : 'lead ' + r(T.leadMs) + ' ms inside the cast beat ' + r(T.castBeatMs) + ' ms') +
+      ' → wire-clock cost ' + r(T.waitCostMs) + ' ms\n\n' +
       p.cues.map((c) => ('      ' + r(c.t)).slice(-6) + ' ms  ' + c.cue + (c.sound ? ' · ' + c.sound : '') + (c.uid != null ? ' · uid ' + c.uid : '')).join('\n');
   }
   async function playEffect() {
-    const m = await effectManifestFor(currentCard); if (!m) return;
+    const spec = await effectManifestFor(currentCard); if (!spec) return;
+    if (spec.class === 'effect-chain') effectBlob(spec.clips[1]).catch(report);   // the strike's compressed bytes, fetched at the cast
     render(F.before, []);   // the mark must be on the board before the clip measures where to strike
     lastPlan = null; lastEffect = null;
-    const run = await effect.play(F, m, { before: F.before, after: F.after }, { mode });
-    el('plan').textContent = formatEffectPlan(run.plan, m);
+    const run = await effect.play(F, spec, { before: F.before, after: F.after }, { mode, casterSeat: F.attackerSeat });
+    el('plan').textContent = formatEffectPlan(run.plan, spec);
   }
 
   // ── THE BOARD ──
@@ -266,7 +287,7 @@
   // the plan the next play would run, printed as soon as a slider or the mode moves (a play already running keeps its timeline)
   async function previewPlan() {
     if (!F) return;
-    if (REG[currentCard] && REG[currentCard].effect) { const m = await effectManifestFor(currentCard); if (m) el('plan').textContent = '(the next play — press Play ' + F.action.card + ')\n\n' + formatEffectPlan(window.EffectClip.plan(F, m, { mode }), m); return; }   // LAB-19
+    if (REG[currentCard] && REG[currentCard].effect) { const m = await effectManifestFor(currentCard); if (m) el('plan').textContent = '(the next play — press Play ' + F.action.card + ')\n\n' + formatEffectPlan(window.EffectClip.plan(F, m, { mode, casterSeat: F.attackerSeat }), m); return; }   // LAB-19
     const ctx = window.ClashContext.fromBatch(F), reg = REG[ctx.cardId] || {};
     const mf = (ctx.scope === 'manifest' && reg.manifest) ? await manifestFor(ctx.cardId) : null, { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
     const p = window.Director.plan(ctx, { mode, prior: memory.count(ctx.cardId), ladderExempt: !!reg.ladderExempt, timing: timingOf(mf), tempo, fizzleMs, exit: exitFor(reg, mf, ctx) });
@@ -385,7 +406,8 @@
     el('ro-renderer').textContent = 'effects ' + (g.renderer || 'none') + (g.enabled ? '' : ' (off → Canvas 2D)') + (g.texReady ? ' · surge ready' : '');
     const es = effect.stats(), er = el('ro-effect');
     if (er) er.textContent = es.loads || es.playing ? (es.playing ? 'playing · ' : '') + 'decoded now ' + mb(es.decodedBytes) + ' (E1 cap ' + mb(window.EffectClip.E1.capBytes) + ') · peak ' + mb(es.peak) + ' · ' + es.loads + ' decodes, ' + es.releases + ' releases' +
-      (lastEffect ? ' · last: cells drawn ' + lastEffect.log.drawn.length + ', impact cell drawn at ' + (lastEffect.log.impactDrawnAt == null ? '—' : Math.round(lastEffect.log.impactDrawnAt) + ' ms') + ' against the destroy beat at ' + (lastEffect.log.destroyCueAt == null ? '—' : Math.round(lastEffect.log.destroyCueAt) + ' ms') + (lastEffect.skipped ? ' (skipped)' : '') : '') : '—';
+      (lastEffect ? ' · last: ' + (lastEffect.log.bySegment.invoke ? 'invocation cells ' + lastEffect.log.bySegment.invoke.length + ', strike cells ' : 'cells drawn ') + lastEffect.log.drawn.length + ', impact cell drawn at ' + (lastEffect.log.impactDrawnAt == null ? '—' : Math.round(lastEffect.log.impactDrawnAt) + ' ms') + ' against the impact beat at ' + (lastEffect.log.destroyCueAt == null ? '—' : Math.round(lastEffect.log.destroyCueAt) + ' ms') +
+        (lastEffect.log.handoff ? ' · handoff at ' + Math.round(lastEffect.log.handoff.at) + ' ms, strike ready at ' + (lastEffect.log.handoff.readyAt == null ? '—' : Math.round(lastEffect.log.handoff.readyAt) + ' ms (decode ' + lastEffect.log.handoff.decodeMs + ' ms, ' + lastEffect.log.handoff.cellsBeforeReady + ' cells before ready)') : '') + (lastEffect.skipped ? ' (skipped)' : '') : '') : '—';
     el('ro-actor').textContent = s.backend + ' · ' + s.cellPx + ' px cells · drawn ' + s.drawnPx + ' px · cells drawn ' + (s.cellsDrawn ? s.cellsDrawn.drawn + '/' + s.cellsDrawn.total + (s.cellsDrawn.live ? ' so far' : '') + (s.cellsDrawn.cellFps ? ' at ' + Math.round(s.cellsDrawn.cellFps * 100) / 100 + '/s' : '') + ' · repeats ' + s.cellsDrawn.repeats + (s.cellsDrawn.contact ? ' · contact on ' + s.cellsDrawn.contact : '') : '—') + ' · ' + (s.liveFps != null ? s.liveFps + ' fps now' : (s.fps ? s.fps + ' fps last run' : 'no run yet')) + ' · draw ' + s.drawMsAvg.toFixed(2) + ' ms/frame · live actors ' + stage.liveActors() + ' · GPU sprites ' + stage.liveSprites() + (lastDone ? (lastDone.equalsFinal ? ' · final board = engine AFTER ✓' : ' · final board ≠ AFTER ✖') : '');
     el('ro-rung').textContent = VFX.currentRung();
     el('ro-sprites').textContent = 'Canvas 2D ' + VFX.sprCount() + ' · GPU ' + (g.live != null ? g.live : 0);
