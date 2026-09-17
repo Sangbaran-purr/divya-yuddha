@@ -1125,6 +1125,88 @@ The lab could not recreate a truly cold start: reopening the pane reused the bro
 
 **Closing condition.** The owner's device pass runs the decisive experiment: **a cold app launch with Sugriva played first.** A clean result closes it as environmental; a repeat of the shift reopens it as a defect against his card.
 
+## LAB-17: Anjana and Makardhwaja — the first card that touches no edge, and ground-impact's return
+
+Identity first. Anjana: **0.987**, runner-up 0.633. Makardhwaja: **0.929**, the lowest in the batch — but his margin over the runner-up is **0.441**, the *widest of any card*, because his lunge silhouette is unlike anyone else's. A low self-score here reflects pose drift between f000 and his still, not an ambiguous match.
+
+| | Anjana (P6 L) | Makardhwaja (P7 L) |
+|---|---|---|
+| EMERGE | f000–f047 (48) | f000–f054 (55) |
+| ACT | f048–f105 (58) | f055–f106 (52) |
+| Contact | f085, cell 37, **nova SOFT** | f059, cell 4, **ground-impact** |
+| travelScale | nova → 0 | **0, stated** |
+| Fade tail | f096–f105 | f097–f106 |
+| Trim | f106–f120 | f107–f120 |
+| Feathers | **none — no edge touched** | none |
+| Pivot (feet) | (878.5, 1051) | (1069.4, 1047), a 791 px lunge |
+| cellPx | 384 | **352** |
+| Atlas | 4052×1749 · 27.0 MB | 4058×2109 · 32.6 MB |
+| 256 rung | 6.9 MB (25.42%) | 8.3 MB (25.39%) |
+| Full / Fast | 7012 / 3505 ms | 6929 / 3464 ms |
+
+### The engine is authoritative over the roster
+
+The roster describes Makardhwaja's ability as *"Leap from Hanuman if present, else your strongest."* The engine says **"ON PLAY: Copy the power of Bali if he is on the board, otherwise of your strongest Unit."** Two differences, both deliberate: Bali's engine id is `hanuman`, so "Hanuman" is the id and "Bali" the name; and batch 17 implemented the ability as a **direct power copy**, not a Leap, because Heroes live outside `pl.units`. Everything in this rung tests the engine's behaviour.
+
+### Sugriva and Makardhwaja are a mirror-image pair
+
+LAB-16 found that Sugriva's on-play draw **changes state** on the empty fixture board (hand 10 → 10, deck 2 → 1) yet **logs nothing**, so F51 asserts it from the state.
+
+Makardhwaja is the exact reverse. On the empty board there is no Bali and no friendly Unit, so his **no-source branch** runs and he enters at his printed 7. That **changes no state** (hand 10 → 9, deck untouched) and **emits no event** — but it leaves one line in the fixture's log: *"Makardhwaja finds no strength to borrow — he enters at his printed power."*
+
+**F57** asserts his ability from that log line, extending F51's principle from state to log: **assert an ability from whatever it actually changes.** It cannot throw on the empty board either — the branch's `units.reduce` would throw on an empty array, but it sits behind `units.length ? … : null`.
+
+F57 was proven falsifiable before being trusted, against three doctored fixtures: one where the branch didn't run, one where a source existed and he copied it (a `buff` event and a different power), and an inert Hero passed off as him. It rejects all three.
+
+### Ground-impact returns, and needs both of Bali's conditions
+
+Makardhwaja is the first ground-impact card since Bali, and he needs both of the things Bali has.
+
+**A search window.** Unwindowed, the ground-impact rule fires at **f040** — while he is **airborne**. What crosses the ground band there is his **tail sweeping low mid-leap**, not a landing. Two things combine: the airborne frames sit inside the default window, and his wide lunge leaves only **one foot** within 14 px of the ground line, so the "standing feet" exclusion covers just **16%** of the frame width. Windowed to **(56, 70)**, the rule fires on **f059**, where the landing splash first reaches the band (582 at f058 → 2,172 at f059 → 10,167 at f060, the clip's largest picture change). This is the Kartikeya window precedent; no tool change.
+
+**`travelScale: 0`, stated.** Ground-impact is not a nova, so the nova zero-travel case does not cover it. That is precisely the LAB-13a trap — a bolt-edge card shipped charging because nobody set the line. Makardhwaja's manifest carries `travelScale: 0`, as Bali's does.
+
+His core rides the **top edge for 24 airborne frames** (f039–f062) — an accepted cut per Garuda, since a top band would fade him mid-leap. He never touches the bottom, so he carries no feather.
+
+### S20 never covered a directional contact — now it does
+
+S20 checked only novas. So Bali, Indra and Kartikeya — every in-place card that strikes *toward* its target — had **no check that their flash points at the target**. **S20b** closes that gap for all four in-place non-nova cards: the flash is directional, not radial; it fires on the contact cell; and both the flash and the camera impulse aim at the true target seat (up from the player, down from the top). It passes for Indra, Bali, Kartikeya and Makardhwaja on every backend.
+
+Both of its guarantees were tested by breaking them, and one test changed what the check claims:
+
+- **The direction is S20b's own guarantee.** With the flash direction flipped in `playback.js`, **S20b fails on all four cards.**
+- **The 0 px is not.** S20b reports the actor's distance from where it spawned (0.00 px on all four), but its gate admits only `travelScale: 0` cards — so a card that *charged* would be **skipped** there, not failed. Forcing Makardhwaja's `travelScale` to 1 confirmed it: S20b didn't run. The charge is guarded instead by **M25** (only Meghnad travels) and **M42** (his `travelScale` is 0), **both of which failed** under that same negative. S20b's label says exactly this, so the check does not over-claim.
+
+### Cell sizes: a second sub-384 card, and a second packing accident
+
+**Makardhwaja is the second card below 384**, following Padmavati. His box is compact even airborne (widest 1564), which forces a dense scale; and his heavy motion blur through the leap means lower resolution costs little.
+
+He was ruled at **320**, but **320 failed M21**: his 256 rung packed to **25.532%** of the 512 rung, over the bound by 35,269 bytes. It was an isolated accident — 288 (25.145%), 352 (25.387%) and 384 (25.264%) all pass. Per the resolution order ratified in LAB-13, the invariant outranks the per-card ruling, so he packs at **352**: the nearest passing size to the ruling, still sub-384, at 8.3 MB.
+
+### Anjana: the first card that touches no frame edge
+
+Every card before her needed at least one feather band. Anjana's frames are clear of **top, bottom, left and right** in every frame, so she carries **no feather at all**.
+
+She is also a **soft cast**, like Shesha and Padmavati. Her picture change holds at about 4 through the whole ribbon with no percussive frame, so the nova rides the ribbon **at its fullest (f085, 79.3k)** with `{flash: 0.5, impulse: 0}`. The gold glow at her feet ignites at **f090** (2k → 12.4k, a 6× jump) — that is her exit, not her act, and the contact lands five frames before it.
+
+### M34 calibration: two more source-only rows
+
+| card | source ground-share | output pink cast | class |
+|---|---|---|---|
+| Kartikeya | catches | catches | both |
+| Padmavati | catches | ≤ 15% | source-only |
+| Sugriva | under-reports | catches | output-only |
+| Angad | under-reports | catches | output-only |
+| **Anjana** | crosses 20% at f102 | ≤ 17% | **source-only** |
+| **Makardhwaja** | 11.4% → 19.7% at f101 | ≈ 0% | **source-only** |
+
+Makardhwaja's frost-blue dissolve has R < G, so it carries no pink cast at all. Only the two tan-gold dust cards have needed the output metric so far.
+
+### Accepted defects
+
+- **Anjana:** her trim excludes her **teal sari fragments** scattering at f110–f120. They are genuine, but thin and translucent enough to read **36–51% ground**, so real content is excluded because contamination rides it — the Bali stone-chunk precedent.
+- **Makardhwaja:** his head leaves the frame for 24 airborne frames; the dropped f107–f120 are residue and empty frames.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

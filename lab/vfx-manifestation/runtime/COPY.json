@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "91564031517e8444b7fb08743a71d36682037443",
+    "gameCommit": "9769c737f8787acef0852a0a7af119ca137e7cb6",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -253,6 +253,26 @@
       "to": "art/Vanaras_Hero_Angad_P7_rEpic.png",
       "bytes": 443713,
       "sha256": "449db1895de6bda33d57d060d133041dd4fdde699ca26788856b6322fe12e397",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Vanaras_Hero_Anjana_P6_rLegendary.png",
+      "to": "art/Vanaras_Hero_Anjana_P6_rLegendary.png",
+      "bytes": 455030,
+      "sha256": "f5eb7ebf313ea997a4f5ca4074e752085c8e794ac91b28ff57b12aa409e64d61",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Vanaras_Hero_Makardhwaja_P7_rLegendary.png",
+      "to": "art/Vanaras_Hero_Makardhwaja_P7_rLegendary.png",
+      "bytes": 464031,
+      "sha256": "204e87a79bd21e7af475b23018b9763f3d5299d439985816b0c3557a1d2bc76c",
       "px": {
         "w": 750,
         "h": 1050

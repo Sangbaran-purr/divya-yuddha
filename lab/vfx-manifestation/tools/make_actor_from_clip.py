@@ -156,6 +156,20 @@ CARDS = {
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 53), "settled": 0, "pivot": "feet",
                 "facing": "left", "aim": None, "feather": 8, "engine_id": "angad",
                 "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
+    # LAB-17 · two Wave-1 Vanaras. ANJANA touches no frame edge in any frame — the first card that needs no feather at all.
+    "anjana":  {"label": "Anjana", "clip": "anjana/anjana_magenta.mp4", "emerge": (0, 47), "act": (48, 105), "tempo": None,   # a SOFT cast: the nova rides the ribbon at its fullest (f085), five frames before the gold exit glow ignites at f090
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 85), "settled": 0, "pivot": "feet",
+                "facing": "right", "aim": None, "feather": 8, "engine_id": "anjana",
+                "exit": "native", "fade_tail": 10, "cell_px": 384, "thin_alternate": None,
+                "contact_strength": {"flash": 0.5, "impulse": 0}},
+    # MAKARDHWAJA is the first GROUND-IMPACT card since Bali, and inherits both of Bali's conditions. Its search window (56, 70) keeps
+    # the rule out of his airborne frames: unwindowed it fires at f040, where his TAIL sweeps low through the ground band mid-leap —
+    # and his wide lunge leaves only ONE foot within 14 px of the ground line, so the feet exclusion covers 16% of the width. And
+    # ground-impact is not nova, so the nova zero-travel case does not cover him: travel_scale 0 is stated here (the LAB-13a trap).
+    "makardhwaja": {"label": "Makardhwaja", "clip": "makardhwaja/makardhwaja_magenta.mp4", "emerge": (0, 54), "act": (55, 106), "tempo": None,
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("ground-impact", (56, 70)), "settled": 0, "pivot": "feet",
+                "facing": "left", "aim": None, "feather": 8, "engine_id": "makardhwaja", "travel_scale": 0,
+                "exit": "native", "fade_tail": 10, "cell_px": 352, "thin_alternate": None},   # LAB-17: 320 was ruled, but at 320 his 256 rung packs to 25.532% of the 512 rung and fails the M21 quarter-rung invariant by 35,269 B; 288, 352 and 384 all pass, and 352 is the nearest to the ruling, still sub-384, at 8.3 MB
 }
 CFG = None
 def configure(card):
