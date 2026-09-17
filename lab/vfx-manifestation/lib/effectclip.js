@@ -17,6 +17,12 @@
    THE IMPACT PIN (LAB-20, retro-applied to Vajra): on the frame the impact beat fires, the impact cell is drawn, whatever the clock says —
    a timed clip at Fast on a 30 Hz device (a cell shorter than a frame) could otherwise skip exactly that cell.
    LAB-20a · FAILS OPEN (see createPlayer): the timeline never waits on a decode.
+   LAB-20b · THE CHAKRA TRAVELS, AND THE EFFECT ROTATION RULE. A strike that carries a travel block flies the game's own throw path: its layer
+   starts on the invocation's anchor (the caster's half centre) and reaches the target's centre where its trail dies, on the trail's own
+   integral curve, starting on the FIRST DRAWN cell (a slow decode shortens the flight, never jumps it), scaled from the invocation disc's
+   size to its own. RULE: actors never rotate (the upright law stands); a directional effect may rotate its layer to align its motion feature
+   with its board path — from the actual caster-to-target vector, only while in motion, easing back to its authored orientation before its
+   impact frame. The LAB-20 arrive-from-centre mirror is retired.
    Browser: window.EffectClip. Node: require. */
 (function (root) {
   'use strict';
@@ -134,16 +140,26 @@
   }
 
   var spanOf = function (m) { return m.scaleRule.spanCell || m.scaleRule.ringDiameterCell; };
-  // where a clip draws: its anchor on a point, sized so its scale feature spans cardWidths card widths. mirror = a horizontal mirror
-  function place(m, card, mirror) {
+  // where a clip draws: its anchor on a point, sized so its scale feature spans cardWidths card widths
+  function place(m, card) {
     var s = m.scaleRule.cardWidths * card.w / spanOf(m);
-    return { scale: s, mirror: !!mirror, x: card.cx - (mirror ? m.cellSize.w - m.anchor.x : m.anchor.x) * s, y: card.cy - m.anchor.y * s, w: m.cellSize.w * s, h: m.cellSize.h * s };
+    return { scale: s, x: card.cx - m.anchor.x * s, y: card.cy - m.anchor.y * s, w: m.cellSize.w * s, h: m.cellSize.h * s };
   }
-  // the arrival rule (LAB-20): the source's disc arrives from its left; mirror so it arrives from the board's horizontal centre
-  function mirrorFor(m, cardCx, fieldCentreX) {
-    if (!m.arrival) return false;
-    var fromLeft = m.arrival.sourceArrivesFrom === 'left';
-    return fromLeft ? cardCx < fieldCentreX : cardCx > fieldCentreX;
+  // LAB-20b · the travel curve: the manifest's table (the trail's integral) linearly interpolated at u in [0, 1]
+  function lut(table, u) {
+    if (!(u > 0)) return table[0]; if (u >= 1) return table[table.length - 1];
+    var x = u * (table.length - 1), i = Math.floor(x), f = x - i; return table[i] + (table[i + 1] - table[i]) * f;
+  }
+  var easeOutQuad = function (u) { u = Math.max(0, Math.min(1, u)); return 1 - (1 - u) * (1 - u); };
+  // the layer rotation for a travelling effect: the source's motion (+x) turned onto the caster-to-target vector, in radians
+  function travelAngle(from, to) { return Math.atan2(to.y - from.y, to.x - from.x); }
+  // the strike layer's pose at time t: position, scale factor, rotation — given its travel (t0 = the first drawn cell, or null before it)
+  function travelPose(m, tv, t) {
+    var t0 = tv.t0 == null ? t : tv.t0, span = tv.arriveT - t0, u = span > 0 ? Math.min(1, Math.max(0, (t - t0) / span)) : 1;
+    var p = lut(m.travel.table, u), rot;
+    if (t < tv.arriveT) rot = tv.angle;
+    else { var v = tv.zeroT > tv.arriveT ? Math.min(1, Math.max(0, (t - tv.arriveT) / (tv.zeroT - tv.arriveT))) : 1; rot = tv.angle * (1 - lut(m.travel.table, v)); }
+    return { u: u, p: p, x: tv.from.x + (tv.to.x - tv.from.x) * p, y: tv.from.y + (tv.to.y - tv.from.y) * p, scale: tv.scaleFrom + (1 - tv.scaleFrom) * p, rot: rot };
   }
 
   // the cell on screen at time t (ms from the play's start), or null before the clip starts and from its end on
@@ -207,9 +223,9 @@
       var target = p.targetUid != null && env.cardOf ? env.cardOf(p.targetUid) : null;
       var places = p.segments.map(function (sg) {
         var m = clips[sg.clip];
-        if (sg.place === 'target') return target ? place(m, target, mirrorFor(m, target.cx, env.fieldCentreX ? env.fieldCentreX() : target.cx)) : null;
+        if (sg.place === 'target') return target ? place(m, target) : null;
         var hh = env.halfOf ? env.halfOf(p.casterSeat) : null;
-        return hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w }, false) : null;
+        return hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w }) : null;
       });
       if (st.loaded) release();
       env.render(boards.before);
@@ -217,9 +233,16 @@
                   manifest: clips[p.segments.length ? p.segments[p.segments.length - 1].clip : 0],
                   place: places[places.length - 1] || null,
                   log: { cues: [], drawn: [], bySegment: {}, composite: [], impactDrawnAt: null, impactPinned: false, destroyCueAt: null, settledAt: null, crackAt: null, handoff: null, mirror: null,
-                         ready: {}, late: [], loadErrors: [], drawError: null } };
+                         ready: {}, late: [], loadErrors: [], drawError: null, travel: [], travelPlan: null } };
       p.segments.forEach(function (sg) { run.log.bySegment[sg.role] = []; });
-      run.log.mirror = places.length ? places[places.length - 1] && places[places.length - 1].mirror : null;
+      // LAB-20b: a travelling strike flies from the caster's half centre to the target's centre
+      var ks = p.segments.map(function (sg) { return sg.role; }).indexOf('strike'), sm = ks >= 0 ? clips[p.segments[ks].clip] : null, hh2 = env.halfOf && p.casterSeat != null ? env.halfOf(p.casterSeat) : null;
+      if (sm && sm.travel && target && hh2) {
+        var sg2 = p.segments[ks], from = { x: hh2.cx, y: hh2.cy }, to = { x: target.cx, y: target.cy };
+        run.travel = { from: from, to: to, angle: travelAngle(from, to), scaleFrom: (spec.chain && spec.chain.travel && spec.chain.travel.scaleFrom) || 1,
+                       arriveT: sg2.start + sm.travel.arriveCell * sg2.frameMs, zeroT: sg2.start + sm.impact * sg2.frameMs, t0: null };
+        run.log.travelPlan = { from: from, to: to, angleDeg: run.travel.angle * 180 / Math.PI, scaleFrom: run.travel.scaleFrom, plannedStart: sg2.start, arriveAt: run.travel.arriveT, rotationZeroAt: run.travel.zeroT, firstDrawAt: null };
+      }
       st.run = run; st.last = run;
       diag('play', { mode: p.mode, clip: p.clip, chained: p.chained, strike: p.strike, cues: p.cues.length, end: Math.round(p.end) });
       if (p.clip) loadSegment(run, 0);                             // alongside — the cast cue does not wait for it
@@ -259,7 +282,15 @@
         var c = env.canvas, g = c.getContext('2d'), d = env.dpr || 1, cell = m.cells[ix], r = run.places[k];
         g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = 'source-over'; g.clearRect(0, 0, c.width, c.height);
         g.globalCompositeOperation = 'lighter'; g.globalAlpha = 1;
-        if (r.mirror) { g.setTransform(-1, 0, 0, 1, (r.x + r.w) * d, 0); g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, 0, r.y * d, r.w * d, r.h * d); g.setTransform(1, 0, 0, 1, 0, 0); }
+        if (sg.role === 'strike' && run.travel) {
+          // LAB-20b: the flight — the first DRAWN cell starts it; the pose rides the trail's integral; rotation only while travelling
+          var tv = run.travel; if (tv.t0 == null) { tv.t0 = t; run.log.travelPlan.firstDrawAt = t; diag('travel', { from: tv.from, to: tv.to, angleDeg: Math.round(tv.angle * 1800 / Math.PI) / 10, scaleFrom: tv.scaleFrom, firstDrawAt: Math.round(t), arriveAt: Math.round(tv.arriveT) }); }
+          var pose = travelPose(m, tv, t), kk = r.scale * pose.scale * d, cs = Math.cos(pose.rot) * kk, sn = Math.sin(pose.rot) * kk;
+          g.setTransform(cs, sn, -sn, cs, pose.x * d, pose.y * d);
+          g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, -m.anchor.x, -m.anchor.y, cell.w, cell.h);
+          g.setTransform(1, 0, 0, 1, 0, 0);
+          run.log.travel.push({ t: t, cell: ix, x: pose.x, y: pose.y, rot: pose.rot, scale: pose.scale, u: pose.u });
+        }
         else g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, r.x * d, r.y * d, r.w * d, r.h * d);
         g.globalCompositeOperation = 'source-over';
         var seq = run.log.bySegment[sg.role]; if (!seq.length) { diag('first-draw', { role: sg.role, at: Math.round(t), cell: ix }); if (sg.role === 'strike' && run.log.handoff) run.log.handoff.firstDrawnCell = ix; }   // the TRUE loss at the handoff: cells before the first one drawn
@@ -290,7 +321,7 @@
              stats: function () { return { decodedBytes: st.decodedBytes, peak: st.peak, loads: st.loads, releases: st.releases, peakClips: st.peakClips, loaded: !!st.loaded, loadedRole: st.loadedRole, playing: !!(st.run && !st.run.done), decodeMs: st.decodeMs, last: st.last }; } };
   }
 
-  var OUT = { validate: validate, validateChain: validateChain, fromBatch: fromBatch, beats: beats, timeline: timeline, chainTimeline: chainTimeline, plan: plan, place: place, mirrorFor: mirrorFor, frameIndex: frameIndex, segIndex: segIndex, bake: bake, createPlayer: createPlayer, E1: E1, CHOREO_SPEED: CHOREO_SPEED, SPEED: SPEED };
+  var OUT = { validate: validate, validateChain: validateChain, fromBatch: fromBatch, beats: beats, timeline: timeline, chainTimeline: chainTimeline, plan: plan, place: place, lut: lut, easeOutQuad: easeOutQuad, travelAngle: travelAngle, travelPose: travelPose, frameIndex: frameIndex, segIndex: segIndex, bake: bake, createPlayer: createPlayer, E1: E1, CHOREO_SPEED: CHOREO_SPEED, SPEED: SPEED };
   root.EffectClip = OUT;
   if (typeof module !== 'undefined' && module.exports) module.exports = OUT;
 })(typeof window !== 'undefined' ? window : this);

@@ -952,7 +952,7 @@ templateActor({ label: 'M45 · LAB-18 · RAHU BY THE TEMPLATE (the last card: a 
      vS.ok && S.role === 'strike' && S.contract === undefined && !!pS && pS.w === S.atlasSize.w && pS.h === S.atlasSize.h && S.cellPx === 288 && S.cells.length === 55 && srcS.every((x, i) => x === 34 + i) &&
      J(auS.droppedTail) === J([89, 120]) && S.impact === 19 && srcS[S.impact] === 53 && auS.impactSrc === 53 && auS.largestChangeAt === 'f054' && auS.windowChange.f053 < auS.windowChange.f054 &&
      S.source.indexOf('Kling clip sudarshana_strike_black.mp4 (sha256 ' + clipSha('sudarshana_strike_black.mp4')) === 0 && auS.coreDriftMax <= 6 &&
-     S.scaleRule.feature === 'burst span' && S.scaleRule.spanSrc === 1370 && S.scaleRule.cardWidths === 2.4 && S.arrival && S.arrival.sourceArrivesFrom === 'left' &&
+     S.scaleRule.feature === 'burst span' && S.scaleRule.spanSrc === 1370 && S.scaleRule.cardWidths === 2.4 && S.arrival === undefined && S.travel && S.travel.sourceMotion === '+x' &&
      auS.feathers.top === 64 && auS.feathers.bottom === 64 && auS.feathers.guard.topRoom >= 66 && auS.feathers.guard.bottomRoom >= 66 && auS.edges.left === 0 && auS.edges.right === 0 &&
      J(auS.fades.map((x) => x[0])) === J([79, 80, 81, 82, 83, 84, 85, 86, 87, 88]) && auS.fades.every((x, k) => Math.abs(x[1] - (1 - k / 9)) < 1e-4) && auS.ground.farMax <= 2 && bytesOf(S) <= EC.E1.capBytes, vS.errors.join('; '));
   const vc = EC.validateChain(SU.C, [I, S]), swapped = EC.validateChain(SU.C, [S, I]), sum = bytesOf(I) + bytesOf(S);
@@ -971,14 +971,22 @@ templateActor({ label: 'M45 · LAB-18 · RAHU BY THE TEMPLATE (the last card: a 
      R(TN.impactAt) === 1937 && R(TF.impactAt) === 1162 && R(TN.handoffAt) === 908 && R(TF.handoffAt) === 545 && R(TN.invokeStart) === 41 && R(TF.invokeStart) === 25 && R(TN.strikeEnd) === 3887 && R(TF.strikeEnd) === 2332 &&
      Math.abs(TN.handoffAt - TN.strikeStart) < 1e-9 && Math.abs(TN.impactAt - (TN.beatStart + 380 * TN.vfxT)) < 1e-6 && Math.abs(TF.impactAt - (TF.beatStart + 380 * TF.vfxT)) < 1e-6 && TN.invokeStart > 0 && TF.invokeStart > 0 && TN.waitCostMs === 0 && TF.waitCostMs === 0,
      J({ pins, TN, TF }));
-  const card = { cx: 205, cy: 55, w: 64 }, half = { cx: 205, cy: 315 }, PS = EC.place(S, card, false), PSm = EC.place(S, card, true), PI = EC.place(I, { cx: half.cx, cy: half.cy, w: card.w }, false);
-  const mirrorCases = [[100, 205, true], [205, 205, false], [310, 205, false]].map(([cx, c0, want]) => ({ cardCx: cx, mirrored: EC.mirrorFor(S, cx, c0), want }));
-  ok('M58 · LAB-20 · THE PLACEMENT AND THE ARRIVAL RULE: the strike\'s disc core lands on the target Hero card\'s CENTRE with its burst at 2.4 card widths (' + (S.scaleRule.spanCell * PS.scale).toFixed(1) + ' px on a 64 px card); the invocation\'s core lands on the CASTER\'S HALF CENTRE — the game\'s own throw origin — with its disc at 2.0 card widths (' + (I.scaleRule.spanCell * PI.scale).toFixed(1) + ' px). The source disc arrives from its LEFT; the rule is a horizontal mirror only (no rotation — the actors-upright analogue): the disc arrives from the board\'s horizontal centre, so a target left of centre is mirrored and one at or right of centre is not (card centre x ' + mirrorCases.map((x) => x.cardCx + ' → ' + (x.mirrored ? 'mirrored' : 'as shot')).join(', ') + ', the board centre at 205); mirrored, the core still lands on the card\'s centre. The invocation is never mirrored',
-     Math.abs(S.scaleRule.spanCell * PS.scale - 2.4 * card.w) < 1e-6 && Math.abs(PS.x + S.anchor.x * PS.scale - card.cx) < 1e-6 && Math.abs(PS.y + S.anchor.y * PS.scale - card.cy) < 1e-6 &&
-     PSm.mirror === true && Math.abs(PSm.x + PSm.w - S.anchor.x * PSm.scale - card.cx) < 1e-6 &&
-     Math.abs(I.scaleRule.spanCell * PI.scale - 2.0 * card.w) < 1e-6 && Math.abs(PI.x + I.anchor.x * PI.scale - half.cx) < 1e-6 && Math.abs(PI.y + I.anchor.y * PI.scale - half.cy) < 1e-6 &&
-     mirrorCases.every((x) => x.mirrored === x.want) && EC.mirrorFor(I, 100, 205) === false && SU.C.contract.invokeAnchor === 'caster-half-centre',
-     J({ PS, PSm, PI, mirrorCases }));
+  // LAB-20b · THE EFFECT ROTATION RULE (supersedes LAB-20's arrive-from-centre mirror) — read from the manifests, measured on the lab board
+  const card = { cx: 178, cy: 55, w: 64 }, PS = EC.place(S, card), PI = EC.place(I, { cx: 178, cy: 315, w: card.w }), TV = S.travel;
+  const half = { 0: { x: 178, y: 315 }, 1: { x: 178, y: 105 } }, heroY = { 0: 55, 1: 365 };   // the phone board (375 px): caster half centres, the enemy Hero row
+  const sixCases = [[0, 106, -105.5], [0, 178, -90], [0, 250, -74.5], [1, 106, 105.5], [1, 178, 90], [1, 250, 74.5]].map(([seat, x, want]) => {
+    const deg = EC.travelAngle(half[seat], { x, y: heroY[seat] }) * 180 / Math.PI; return { seat, targetX: x, deg: Math.round(deg * 10) / 10, want, ok: Math.abs(deg - want) <= 0.5 }; });
+  const tot = TV.trailLengths.reduce((a2, b2) => a2 + b2, 0); let run2 = 0; const integral = [0].concat(TV.trailLengths.map((v) => (run2 += v) / tot));
+  const quadErr = Math.sqrt(TV.table.reduce((a2, p2, k2) => a2 + Math.pow(p2 - EC.easeOutQuad(k2 / (TV.table.length - 1)), 2), 0) / TV.table.length);
+  const scaleFromWant = I.scaleRule.cardWidths / (TV.bodyWidthSrc * S.scaleRule.cardWidths / S.scaleRule.spanSrc);
+  ok('M58 · LAB-20b · THE EFFECT ROTATION RULE, recorded in the strike manifest: "' + TV.rotation.rule + '" The six measured cases on the phone board, the layer rotation from the caster-to-target vector (the source disc moves +x): ' + sixCases.map((c2) => 'seat ' + c2.seat + ' → x ' + c2.targetX + ': ' + c2.deg + '° (' + c2.want + '°)').join(' · ') + ' — each within ±0.5°. Rotation holds only while travelling and eases back to 0 over the parked cells ' + J(TV.rotation.parkedCells) + ' (f046–f052), zero by cell ' + TV.rotation.zeroBy + ' = f053, the impact. THE PATH: from the caster\'s half centre (the invocation\'s own anchor, so the disc hands off in place) to the target card\'s centre, arriving on cell ' + TV.arriveCell + ' = f0' + TV.arriveSrc + ', the first frame with no trail left. THE CURVE: the trail\'s length per frame ' + J(TV.trailLengths) + ' integrated and normalised is the table ' + J(TV.table) + ' (recomputed here and equal); easeOutQuad is the named fallback (rms ' + quadErr.toFixed(3) + ' off it). THE SCALE: from ' + SU.C.travel.scaleFrom + ' (the invocation disc\'s 2.0 card widths over the strike disc\'s ' + (TV.bodyWidthSrc * S.scaleRule.cardWidths / S.scaleRule.spanSrc).toFixed(3) + ') to 1.0 on the same curve. The LAB-20 mirror is RETIRED (no arrival field, no mirror function); the invocation never travels or rotates; the strike still lands at 2.4 card widths on the target, the invocation at 2.0 on the caster\'s half centre',
+     sixCases.every((c2) => c2.ok) && TV.from === 'caster-half-centre' && TV.to === 'target-card-centre' && TV.arriveCell === 12 && TV.arriveSrc === 46 && TV.startCell === 0 &&
+     integral.length === TV.table.length && integral.every((v, k2) => Math.abs(v - TV.table[k2]) < 1e-3) && TV.fallbackEase === 'easeOutQuad' && quadErr < 0.05 &&
+     J(TV.rotation.parkedCells) === J([12, 18]) && TV.rotation.zeroBy === S.impact && /Actors never rotate/.test(TV.rotation.rule) && /eases back to the clip's authored orientation before its impact frame/.test(TV.rotation.rule) &&
+     Math.abs(SU.C.travel.scaleFrom - scaleFromWant) < 1e-3 && SU.C.travel.scaleTo === 1 && S.arrival === undefined && EC.mirrorFor === undefined && I.travel === undefined &&
+     Math.abs(S.scaleRule.spanCell * PS.scale - 2.4 * card.w) < 1e-6 && Math.abs(PS.x + S.anchor.x * PS.scale - card.cx) < 1e-6 &&
+     Math.abs(I.scaleRule.spanCell * PI.scale - 2.0 * card.w) < 1e-6 && Math.abs(PI.x + I.anchor.x * PI.scale - 178) < 1e-6 && Math.abs(PI.y + I.anchor.y * PI.scale - 315) < 1e-6 && SU.C.contract.invokeAnchor === 'caster-half-centre',
+     J({ sixCases, integral, table: TV.table, quadErr, scaleFrom: SU.C.travel.scaleFrom, scaleFromWant }));
 }
 {
   // LAB-17 · the windowed ground-impact, the in-place trap avoided, the edge that was never touched, and the calibration rows
@@ -1276,12 +1284,12 @@ console.log('\n── E · the effect chain and the impact pin ──');
   function chainWorld(o) {
     o = o || {};
     const draws = [], rendered = [], sounds = [], exits = [], callouts = [], events = [];
-    let tf = { a: 1, e: 0 };
-    const g = { _op: 'source-over', setTransform(a, b, c, d, e) { tf = { a, e }; }, clearRect() {}, drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) { draws.push({ img, sx, sy, dx, dy, dw, dh, op: this._op, mirrored: tf.a === -1, e: tf.e }); },
+    let tf = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+    const g = { _op: 'source-over', setTransform(a, b, c, d, e, f) { tf = { a, b, c, d, e, f }; }, clearRect() {}, drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) { draws.push({ img, sx, sy, dx, dy, dw, dh, op: this._op, tf: Object.assign({}, tf), rot: Math.atan2(tf.b, tf.a) * 180 / Math.PI }); },
       set globalCompositeOperation(v) { this._op = v; }, get globalCompositeOperation() { return this._op; }, globalAlpha: 1 };
     let now = o.t0 || 0, live = 0, maxLive = 0, loads = [];
     const env = { now: () => now, canvas: { width: 820, height: 840, getContext: () => g }, dpr: 2,
-      cardOf: (uid) => ({ cx: o.cardCx != null ? o.cardCx : 205, cy: 55, w: 64 }), halfOf: (seat) => ({ cx: 205, cy: seat === 0 ? 315 : 105 }), fieldCentreX: () => 205,
+      cardOf: (uid) => ({ cx: o.cardCx != null ? o.cardCx : 205, cy: o.cardCy != null ? o.cardCy : 55, w: 64 }), halfOf: (seat) => ({ cx: o.halfX != null ? o.halfX : 205, cy: seat === 0 ? 315 : 105 }), fieldCentreX: () => 205,
       loadAtlas: (m) => { live++; maxLive = Math.max(maxLive, live); loads.push({ role: m.role || 'single', t: now, liveAfter: live }); events.push('load:' + (m.role || m.cardId)); return { source: { __effect: m.role || m.cardId }, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() { live--; events.push('release:' + (m.role || m.cardId)); } }; },
       render: (b) => rendered.push(b), sound: (n) => sounds.push(n), crack: (uid, ms) => exits.push(['crack', uid, ms]), removal: (uid, ms) => exits.push(['removal', uid, ms]), callout: (uid, t) => callouts.push([uid, t]),
       onDone: (r) => { chainWorld.last = r; } };
@@ -1330,13 +1338,42 @@ console.log('\n── E · the effect chain and the impact pin ──');
      noTarget.every((r) => r.W.loads.length === 0 && r.W.draws.length === 0 && r.W.exits.length === 0 && r.W.callouts.length === 0 && J(r.W.sounds) === J(['sfx_astra']) && J(r.run.plan.cues.map((c) => c.cue)) === J(['cast', 'settle'])),
      J({ reduced: reduced.map((r) => [r.W.loads.length, r.W.draws.length, r.W.sounds]), noTarget: noTarget.map((r) => [r.W.loads.length, r.W.draws.length, r.run.plan.cues.map((c) => c.cue)]) }));
   const skipInv = [0, 1].map((s) => driveChain(SU.FX[s], SU.spec, 'full', 60, { skipAt: 500 })), skipStr = [0, 1].map((s) => driveChain(SU.FX[s], SU.spec, 'full', 60, { skipAt: 1500 }));
-  const mirrorLeft = driveChain(SU.FX[0], SU.spec, 'full', 60, { cardCx: 100 }), mirrorRight = driveChain(SU.FX[0], SU.spec, 'full', 60, { cardCx: 310 });
-  ok('E11 · LAB-20 · SKIP DURING THE INVOCATION (500 ms) and DURING THE STRIKE (1500 ms), both seats: the board lands on AFTER at once and whatever atlas is live is released (decoded 0); a skipped invocation never decodes the strike. And the arrival rule on the stage: a Hero left of the board\'s centre draws the strike MIRRORED (every strike draw), one right of it does not; the invocation is never mirrored',
+  // LAB-20b: per-draw rotation on the stage, the six measured cases (the phone board: halves at x 178; the enemy Hero row at y 55 / 365)
+  const rotCases = [[0, 106, -105.5], [0, 178, -90], [0, 250, -74.5], [1, 106, 105.5], [1, 178, 90], [1, 250, 74.5]].map(([seat, x, want]) => {
+    const r = driveChain(SU.FX[seat], SU.spec, 'full', 60, { halfX: 178, cardCx: x, cardCy: seat === 0 ? 55 : 365 }), tv = r.run.log.travelPlan, strikeDraws = r.W.draws.filter((d) => d.img.__effect === 'strike');
+    const tDraws = r.run.log.travel.map((e, i2) => Object.assign({}, e, { deg: e.rot * 180 / Math.PI }));
+    const flying = tDraws.filter((e) => e.t < tv.arriveAt), parked = tDraws.filter((e) => e.t >= tv.arriveAt && e.t < tv.rotationZeroAt), after = tDraws.filter((e) => e.t >= tv.rotationZeroAt);
+    const impactDraw = tDraws.find((e) => e.cell === SU.S.impact);
+    return { seat, x, want, flyingOk: flying.length > 0 && flying.every((e) => Math.abs(e.deg - want) <= 0.5), parkedEases: parked.length > 0 && parked.every((e, i2) => i2 === 0 || Math.abs(e.deg) <= Math.abs(parked[i2 - 1].deg) + 1e-9),
+      impactUpright: !!impactDraw && Math.abs(impactDraw.deg) <= 0.5, afterUpright: after.every((e) => Math.abs(e.deg) <= 0.5), stageMatches: strikeDraws.length === tDraws.length && strikeDraws.every((d, i2) => Math.abs(d.rot - tDraws[i2].deg) < 1e-6),
+      invocationUpright: r.W.draws.filter((d) => d.img.__effect === 'invoke').every((d) => d.tf.b === 0 && d.tf.c === 0), flying: flying.length, parked: parked.length, impactDeg: impactDraw && Math.round(impactDraw.deg * 100) / 100, impactFrame: r.impactFrame, biteFrame: r.biteFrame };
+  });
+  ok('E11 · LAB-20 / 20b · SKIP DURING THE INVOCATION (500 ms) and DURING THE STRIKE (1500 ms), both seats: the board lands on AFTER at once and whatever atlas is live is released (decoded 0); a skipped invocation never decodes the strike. AND THE ROTATION RULE ON THE STAGE, the six measured cases (both seats × the left, centre and right Hero slots): every strike draw while travelling is rotated to the caster-to-target vector within 0.5° (' + rotCases.map((c2) => c2.want + '°').join(', ') + '); over the parked cells the rotation only shrinks; the impact cell (f053) draws upright (' + rotCases.map((c2) => c2.impactDeg + '°').join(', ') + ') and so does everything after; the stage\'s transforms are the travel log\'s; the invocation never rotates; the bite is still the impact cell\'s frame',
      skipInv.every((r, s2) => r.run.done && r.stats.decodedBytes === 0 && r.W.live === 0 && J(r.W.events) === J(['load:invoke', 'release:invoke']) && J(r.W.rendered[r.W.rendered.length - 1]) === J(SU.FX[s2].after)) &&
      skipStr.every((r, s2) => r.run.done && r.stats.decodedBytes === 0 && r.W.live === 0 && J(r.W.events) === J(['load:invoke', 'release:invoke', 'load:strike', 'release:strike']) && J(r.W.rendered[r.W.rendered.length - 1]) === J(SU.FX[s2].after)) &&
-     mirrorLeft.W.draws.filter((d) => d.img.__effect === 'strike').every((d) => d.mirrored) && mirrorLeft.W.draws.filter((d) => d.img.__effect === 'invoke').every((d) => !d.mirrored) &&
-     mirrorRight.W.draws.every((d) => !d.mirrored) && mirrorLeft.run.log.mirror === true && mirrorRight.run.log.mirror === false,
-     J({ skipInv: skipInv.map((r) => r.W.events), skipStr: skipStr.map((r) => r.W.events), mirror: [mirrorLeft.run.log.mirror, mirrorRight.run.log.mirror] }));
+     rotCases.every((c2) => c2.flyingOk && c2.parkedEases && c2.impactUpright && c2.afterUpright && c2.stageMatches && c2.invocationUpright && c2.impactFrame === c2.biteFrame),
+     J({ skipInv: skipInv.map((r) => r.W.events), skipStr: skipStr.map((r) => r.W.events), rotCases }));
+  // LAB-20b · THE TRAVEL: the layer leaves the anchor on the first drawn strike cell and reaches the target by the trail's death, on the table
+  const travelOk = (log, spec) => {
+    const tv = log.travelPlan, T = spec.clips[1].travel, e = log.travel; if (!tv || !e.length) return false;
+    const near = (a2, b2, tol) => Math.hypot(a2.x - b2.x, a2.y - b2.y) <= tol, span = tv.arriveAt - tv.firstDrawAt, dist = Math.hypot(tv.to.x - tv.from.x, tv.to.y - tv.from.y);
+    const first = e[0], arrived = e.find((x) => x.t >= tv.arriveAt);
+    const onTable = e.every((x) => { const u = span > 0 ? Math.min(1, Math.max(0, (x.t - tv.firstDrawAt) / span)) : 1, p2 = EC.lut(T.table, u); return Math.abs(x.x - (tv.from.x + (tv.to.x - tv.from.x) * p2)) <= 1 && Math.abs(x.y - (tv.from.y + (tv.to.y - tv.from.y) * p2)) <= 1; });
+    const monotonic = e.every((x, i2) => i2 === 0 || Math.hypot(x.x - tv.from.x, x.y - tv.from.y) >= Math.hypot(e[i2 - 1].x - tv.from.x, e[i2 - 1].y - tv.from.y) - 1e-6);
+    const scaleOk = Math.abs(first.scale - spec.chain.travel.scaleFrom) <= 0.01 && !!arrived && Math.abs(arrived.scale - 1) <= 0.01;
+    return first.t === tv.firstDrawAt && near(first, tv.from, 0.5) && !!arrived && near(arrived, tv.to, 0.5) && onTable && monotonic && scaleOk && dist > 100;
+  };
+  const clone2 = (x) => JSON.parse(J(x));
+  const travelRuns = [['full', 60], ['fast', 60], ['full', 30], ['fast', 30]].map(([m2, hz]) => [0, 1].map((seat) => ({ m2, hz, seat, r: driveChain(SU.FX[seat], SU.spec, m2, hz, { halfX: 178, cardCx: 178, cardCy: seat === 0 ? 55 : 365 }) }))).flat();
+  const base = travelRuns[0].r.run.log;
+  const parkedLog = clone2(base); parkedLog.travel.forEach((x) => { x.x = parkedLog.travelPlan.to.x; x.y = parkedLog.travelPlan.to.y; });
+  const linearLog = clone2(base); { const tv = linearLog.travelPlan, span = tv.arriveAt - tv.firstDrawAt; linearLog.travel.forEach((x) => { const u = Math.min(1, Math.max(0, (x.t - tv.firstDrawAt) / span)); x.x = tv.from.x + (tv.to.x - tv.from.x) * u; x.y = tv.from.y + (tv.to.y - tv.from.y) * u; }); }
+  // a lost first cell: the strike's decode is ready 70 ms after its start — the real player departs from the anchor; a player whose flight clock started at the planned start would not
+  const jumpLog = (log) => { const j = clone2(log), tv = j.travelPlan, T = SU.S.travel, span = tv.arriveAt - tv.plannedStart; j.travel.forEach((x) => { const u = Math.min(1, Math.max(0, (x.t - tv.plannedStart) / span)), p2 = EC.lut(T.table, u); x.x = tv.from.x + (tv.to.x - tv.from.x) * p2; x.y = tv.from.y + (tv.to.y - tv.from.y) * p2; }); return j; };
+  const negT = { parked: travelOk(parkedLog, SU.spec), linear: travelOk(linearLog, SU.spec) };
+  ok('E15 · LAB-20b · THE CHAKRA TRAVELS, both seats, Full and Fast, at 60 and 30 Hz (' + travelRuns.length + ' runs): the strike layer is at the CASTER\'S HALF CENTRE on its first drawn cell (the invocation\'s anchor — the disc hands off in place), follows the trail\'s own integral at every drawn frame (±1 px), never backs up, and is at the TARGET\'S CENTRE from the trail\'s death (f046) on (±0.5 px); its scale eases from ' + SU.C.travel.scaleFrom + ' to 1.0 on the same curve; the bite is unchanged (' + travelRuns.map((x) => x.m2 + ' ' + x.hz + ' Hz seat ' + x.seat + ': impact frame ' + x.r.impactFrame + ' = bite ' + x.r.biteFrame).slice(0, 2).join(' · ') + ' …). Falsifiable: a doctored PARKED player (the layer always on the target) is ' + (negT.parked ? 'NOT caught' : 'caught') + '; a LINEAR-eased player is ' + (negT.linear ? 'NOT caught' : 'caught') + '; see E15b for the lost-first-cell jump',
+     travelRuns.every((x) => travelOk(x.r.run.log, SU.spec) && x.r.impactFrame === x.r.biteFrame) && negT.parked === false && negT.linear === false,
+     J({ runs: travelRuns.map((x) => ({ m: x.m2, hz: x.hz, seat: x.seat, ok: travelOk(x.r.run.log, SU.spec), plan: x.r.run.log.travelPlan, first: x.r.run.log.travel[0] })), negT }));
   // ── LAB-20a · FAILS OPEN: the beats never wait on a decode ──
   // a deferred loader the test resolves or rejects at a chosen moment, synchronously (a real promise would settle only after the loop)
   function driveFail(f, spec, loaderFor, o) {
@@ -1346,7 +1383,7 @@ console.log('\n── E · the effect chain and the impact pin ──');
     const g = { _op: 'source-over', setTransform() {}, clearRect() {}, drawImage(img) { if (o.drawThrows) throw new Error('drawImage failed (doctored)'); draws.push(img.__effect); }, set globalCompositeOperation(v) { this._op = v; }, get globalCompositeOperation() { return this._op; }, globalAlpha: 1 };
     const mk = (m) => { live++; maxLive = Math.max(maxLive, live); return { source: { __effect: m.role || m.cardId }, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() { live--; closes.push(m.role || m.cardId); } }; };
     const pending = [];
-    const env = { now: () => now, canvas: { width: 820, height: 840, getContext: () => g }, dpr: 2, cardOf: () => ({ cx: 205, cy: 55, w: 64 }), halfOf: (seat) => ({ cx: 205, cy: seat === 0 ? 315 : 105 }), fieldCentreX: () => 205,
+    const env = { now: () => now, canvas: { width: 820, height: 840, getContext: () => g }, dpr: 2, cardOf: () => ({ cx: 205, cy: f.attackerSeat === 1 ? 365 : 55, w: 64 }), halfOf: (seat) => ({ cx: 205, cy: seat === 0 ? 315 : 105 }), fieldCentreX: () => 205,
       loadAtlas: (m) => loaderFor(m, mk, pending), render: (b) => rendered.push(b), sound: (n) => sounds.push({ n, t: now }), crack: (u) => exits.push(['crack', u, now]), removal: (u) => exits.push(['removal', u, now]), callout: (u, t) => callouts.push([u, t, now]),
       onError: (e) => errs.push(String(e && (e.message || e))), onDone: (r) => { env.result = r; } };
     const P = (o.lib || EC).createPlayer(env);
@@ -1385,6 +1422,14 @@ console.log('\n── E · the effect chain and the impact pin ──');
   ok('E12 · LAB-20a · FAILS OPEN — THE BEATS NEVER WAIT ON A DECODE, Vajra and the chain, both seats. play() now starts the timeline at once (the board drawn, the cast cue at 0 ms) and each clip decodes ALONGSIDE; a clip that is not ready, or failed, simply does not draw. Under every doctored failure — ' + Object.keys(L).join(' · ') + ' — sfx_astra still sounds at 0 ms, the impact beat still lands on schedule (Vajra: sfx_unit_destroy and the crack at the destroy beat; the chain: the REMOVAL and the callout "Sudarshana Chakra"), and the board lands on the engine\'s AFTER when the beat ends, never two atlases live, nothing left decoded (' + matrix.filter((x) => x.ok).length + ' of ' + matrix.length + ' runs). A late decode draws from the moment it is ready; the chain\'s invocation, arriving after its segment is over, is CLOSED on arrival (' + lateChain.map((x) => x.late + ' discarded').join(', ') + '). And a DRAW error drops the decoration only: the beats run on to AFTER (' + drawErr.map((x) => x.ok).join(', ') + ')',
      matrix.every((x) => x.ok) && drawErr.every((x) => x.ok) && lateChain.every((x) => x.late === 1),
      J({ failed: matrix.filter((x) => !x.ok), drawErr, lateChain }));
+  // LAB-20b · E15b: THE LOST FIRST CELL — a late strike decode shortens the flight, never jumps it
+  { const lr = [0, 1].map((seat) => driveFail(SU.FX[seat], SU.spec, (m, mk, pending) => { if (m.role !== 'strike') return mk(m); const d = { at: 908 + 70, then(ok2) { d.ok = ok2; } }; d.fire = () => d.ok(mk(m)); pending.push(d); return d; }));
+    const lateRuns = [0, 1].map((seat) => driveFail(SU.FX[seat], SU.spec, L['every decode arrives 1.2 s late']()));
+    const departs = (r) => { const tv = r.run.log.travelPlan, e = r.run.log.travel; return !!tv && e.length > 0 && Math.hypot(e[0].x - tv.from.x, e[0].y - tv.from.y) <= 0.5 && e[0].t === tv.firstDrawAt && tv.firstDrawAt > tv.plannedStart && e.some((x) => x.t >= tv.arriveAt && Math.hypot(x.x - tv.to.x, x.y - tv.to.y) <= 0.5); };
+    const jumped = lr.map((r) => travelOk(jumpLog(r.run.log), SU.spec));
+    ok('E15b · LAB-20b · A LATE STRIKE DECODE SHORTENS THE FLIGHT, NEVER JUMPS IT (E12 extended), both seats: with the strike ready 70 ms after its planned start (its first cell lost) the layer\'s first drawn cell is still ON THE ANCHOR (first drawn at ' + lr.map((r) => Math.round(r.run.log.travelPlan.firstDrawAt) + ' ms against a planned ' + Math.round(r.run.log.travelPlan.plannedStart)).join(', ') + ') and still arrives at the target by f046 (' + lr.map((r) => Math.round(r.run.log.travelPlan.arriveAt)).join(', ') + ' ms); the same holds under E12\'s 1.2 s-late decode (' + lateRuns.map((r) => (departs(r) ? 'departs from the anchor' : 'DOES NOT')).join(', ') + '). Falsifiable: the same run with its flight clock started at the PLANNED start instead of the first draw — the lost-f034 jump — is ' + (jumped.every((x) => x === false) ? 'caught' : 'NOT caught') + ' (the disc would first appear ' + lr.map((r) => { const j = jumpLog(r.run.log), tv = j.travelPlan, e0 = j.travel[0]; return Math.round(Math.hypot(e0.x - tv.from.x, e0.y - tv.from.y)) + ' px'; }).join(', ') + ' along the path)',
+       lr.every((r) => departs(r) && travelOk(r.run.log, SU.spec)) && lateRuns.every(departs) && jumped.every((x) => x === false),
+       J({ lr: lr.map((r) => ({ plan: r.run.log.travelPlan, first: r.run.log.travel[0] })), jumped })); }
   // THE NEGATIVE: the LAB-20 player (f95e701), under the same failing decode, is a total no-show — the owner's reported defect, reproduced
   const vm = require('vm'), oldSrc = cp.execFileSync('git', ['show', 'f95e701:lab/vfx-manifestation/lib/effectclip.js'], { cwd: GAME, encoding: 'utf8' });
   const oldBox = { module: { exports: {} } }; oldBox.window = undefined; vm.runInNewContext(oldSrc, Object.assign(oldBox, { exports: oldBox.module.exports }));

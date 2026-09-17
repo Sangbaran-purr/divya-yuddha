@@ -592,8 +592,54 @@
     },
     "largestChangeAt": "f054"
   },
-  "arrival": {
-    "rule": "horizontal mirror only: the disc arrives from the board's horizontal centre",
-    "sourceArrivesFrom": "left"
+  "travel": {
+    "sourceMotion": "+x",
+    "from": "caster-half-centre",
+    "to": "target-card-centre",
+    "startCell": 0,
+    "arriveCell": 12,
+    "arriveSrc": 46,
+    "trailLengths": [
+      167,
+      150,
+      133,
+      117,
+      98,
+      80,
+      63,
+      46,
+      33,
+      22,
+      8,
+      2
+    ],
+    "table": [
+      0.0,
+      0.1817,
+      0.3449,
+      0.4897,
+      0.617,
+      0.7236,
+      0.8107,
+      0.8792,
+      0.9293,
+      0.9652,
+      0.9891,
+      0.9978,
+      1.0
+    ],
+    "tableSource": "the trail's length per frame (px of content left of the disc body, rows 265-828, body left x 618 on f050), integrated and normalised",
+    "fallbackEase": "easeOutQuad",
+    "startsOn": "the first drawn strike cell (a slow decode shortens the flight, never jumps it)",
+    "rotation": {
+      "while": "travelling",
+      "parkedCells": [
+        12,
+        18
+      ],
+      "zeroBy": 19,
+      "rule": "Actors never rotate (the upright law stands). A directional effect may rotate its layer to align its motion feature with its board path: the rotation is taken from the actual caster-to-target vector, applies only while the feature is in motion, and eases back to the clip's authored orientation before its impact frame. An effect's authored orientation is kept at its impact."
+    },
+    "bodyWidthSrc": 691
   }
 }

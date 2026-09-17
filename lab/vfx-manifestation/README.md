@@ -1571,6 +1571,65 @@ The earlier handoff counter measured when the strike's decode *resolved*, and th
 
 **From this rung on, live verification runs against the public Pages URL** (`https://sangbaran-purr.github.io/divya-yuddha/lab/vfx-manifestation/`), not localhost. Pages serves a commit only after it is pushed. So a rung is checked locally before its commit, and the Pages verification runs right after the push and is reported then.
 
+## LAB-20b: the chakra travels — the effect rotation rule
+
+**The owner's ruling on the shipped chain:** the flight was missing. The disc invoked at the caster's half centre and then *appeared* at the target, while its trail implied motion the board never showed. The strike layer now travels the game's own throw path during the clip's trail.
+
+### The rule (recorded in the strike manifest)
+
+> **Actors never rotate (the upright law stands). A directional effect may rotate its layer to align its motion feature with its board path: the rotation is taken from the actual caster-to-target vector, applies only while the feature is in motion, and eases back to the clip's authored orientation before its impact frame. An effect's authored orientation is kept at its impact.**
+
+**Why the rotation eases back rather than holds:** the disc is a perspective ellipse (axis ratio 0.78, major axis at 8°), and so are its ring-snap and burst. Held at ±90°, they would read as tall, narrow ellipses, and the rotated burst would lose about 23 px to the board edge (6 px upright). **LAB-20's arrive-from-centre mirror is retired.**
+
+### The path, the curve, the scale
+
+- **Path:** from the caster's half centre (the invocation's own anchor, so the disc hands off in place) to the target card's centre, **arriving at f046**, the first frame with no trail left.
+- **Curve:** the trail's length per frame (f034–f045: 167, 150, 133, 117, 98, 80, 63, 46, 33, 22, 8, 2 px) *is* the disc's speed. Integrated and normalised, it is the manifest's travel table, linearly interpolated. **easeOutQuad** is the named fallback (rms 0.041 off the table).
+- **Starts on the first drawn strike cell:** a slow decode shortens the flight and never jumps it. Arrival is fixed at f046.
+- **Scale:** eases from **1.6522** (the invocation disc's 2.0 card widths over the strike disc's 1.211) to 1.0 on the same curve, so the disc recedes as it flies.
+- **Rotation:** set from the vector while travelling, then eased back to 0 on the same curve over the parked cells f046–f052, **upright on the impact cell f053**.
+
+| | Normal | Fast |
+|---|---|---|
+| planned flight (f034 → f046) | 908 → 1,558 ms (650 ms) | 545 → 935 ms (390 ms) |
+| the game sprite's own flight (380 ms × speed) | 494 ms | 296 ms |
+| **bite (ring-snap f053)** | **1,937 ms, unchanged** | **1,162 ms, unchanged** |
+
+### The six measured cases (phone board, 375 px)
+
+| caster | target slot | vector | rotation |
+|---|---|---|---|
+| seat 0 (lower half, 178,315) | left (106,55) | (−72, −260) | **−105.5°** |
+| seat 0 | centre (178,55) | (0, −260) | **−90°** |
+| seat 0 | right (250,55) | (72, −260) | **−74.5°** |
+| seat 1 (upper half, 178,105) | left (106,365) | (−72, 260) | **+105.5°** |
+| seat 1 | centre (178,365) | (0, 260) | **+90°** |
+| seat 1 | right (250,365) | (72, 260) | **+74.5°** |
+
+The shortest path is the centre slot, 260 px; no enemy Hero sits closer to the caster's half centre.
+
+### Proven
+
+- **M58, rewritten:** the rule text, all six angles within ±0.5°, the table recomputed from the recorded trail lengths, arrival at f046, the parked cells, the scale ratio, and the mirror retired.
+- **E11, rewritten:** per-draw rotation on the stage for all six cases. Travelling draws follow the vector, parked draws only shrink, and the impact cell and everything after it draw upright. The invocation never rotates.
+- **E15:** 8 runs (both seats, Full and Fast, 60 and 30 Hz). The layer sits on the anchor at its first drawn cell, on the table (±1 px) and never backing up, at the target from f046 (±0.5 px), with scale 1.6522 → 1.0. The impact frame is the bite.
+  - **Falsifiable:** it catches a doctored parked player and a linear ease.
+- **E15b:** a strike decode 70 ms late still departs from the anchor and arrives by f046, and so does E12's 1.2 s-late decode.
+  - **Falsifiable:** a flight clock started at the planned start (the lost-f034 jump) is caught; the disc would first appear 64 px along the path.
+- **E7, E8 and E9 pass unchanged.**
+
+### Live (localhost, phone viewport; Pages after the push)
+
+| run | first drawn cell | at the anchor | arrives | flight | impact / bite | impact rotation |
+|---|---|---|---|---|---|---|
+| seat 0 Full | f035 at 983 ms | (177.5, 314.8), −90°, ×1.652 | (177.5, 55) at 1,558, ×1.0 | 575 ms | 1,941 / 1,941 | 0° |
+| seat 0 Fast | f036 at 617 ms | (177.5, 314.8), −90°, ×1.652 | (177.5, 55) at 935, ×1.0 | 317 ms | 1,167 / 1,167 | 0° |
+| seat 1 Full | f035 at 968 ms | (177.5, 105.3), +90°, ×1.652 | (177.5, 365) at 1,558, ×1.0 | 590 ms | 1,942 / 1,942 | 0° |
+| seat 1 Fast | f036 at 615 ms | (177.5, 105.3), +90°, ×1.652 | (177.5, 365) at 935, ×1.0 | 319 ms | 1,166 / 1,166 | 0° |
+
+- **Parked ease-back** (seat 1): 89.7° → 60.8 → 37.6 → 20.3 → 9.1 → 2.6 → 0.2°.
+- **Shortened flights:** the strike's first cell or two are lost at the handoff, so each flight is shorter than planned. It still starts on the anchor, as the rule intends.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

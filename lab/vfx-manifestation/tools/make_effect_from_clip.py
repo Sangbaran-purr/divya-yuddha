@@ -41,7 +41,10 @@ EFFECTS = {
     "sudarshana_strike": {"kind": "chain-clip", "role": "strike", "label": "Sudarshana strike", "clip": "sudarshana/sudarshana_strike_black.mp4", "card_id": "sudarshana",
               "range": (34, 88), "impact": 53, "impact_window": (50, 56), "cell_px": 288, "fade_in": 0, "fade_out": 0, "fade_tail": 10,   # ends before the f090+ red-contour burst (a reshoot candidate)
               "feather_top": 64, "feather_bottom": 64, "feather_left": 0, "feather_right": 0, "anchor_frame": 53, "body_frame": 50,
-              "scale": {"feature": "burst span", "frame": 85, "card_widths": 2.4}, "arrival": {"rule": "horizontal mirror only: the disc arrives from the board's horizontal centre", "sourceArrivesFrom": "left"}},
+              "scale": {"feature": "burst span", "frame": 85, "card_widths": 2.4},
+              # LAB-20b: THE CHAKRA TRAVELS. The disc moves +x in the source (its trail streams left). The layer travels the game's own throw path
+              # during the trail, arriving where the trail dies; the easing is the trail's own integral; rotation only while travelling
+              "travel": {"source_motion": "+x", "fallback_ease": "easeOutQuad"}},
     "sudarshana": {"kind": "chain", "card_id": "sudarshana", "card_name": "Sudarshana Chakra", "clips": ["sudarshana_invoke", "sudarshana_strike"],
               "contract": {"trigger": "passive", "abilityName": "Sudarshana", "target": "enemy-hero", "castSound": "sfx_astra", "impactSound": None,
                            "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 380, "crackAfterMs": 100, "exitKind": "removal", "exitMs": 320,
@@ -136,7 +139,27 @@ def main_chain_clip(key):
     }
     if impact is not None:
         manifest["audit"].update({"impactSrc": impact, "impactRule": "named (owner ruling LAB-20: the ring closes around the disc)", "impactWindow": list(C["impact_window"]), "windowChange": {("f%03d" % k): v for k, v in window.items()}, "largestChangeAt": "f%03d" % max(window, key=window.get)})
-    if C.get("arrival"): manifest["arrival"] = C["arrival"]   # not "mirror": that is the actor class's boolean
+    if C.get("travel"):
+        # the trail's length per frame from the first kept frame: the pixels of content left of the disc body, in the body's rows. Its length
+        # is the disc's speed; its running sum, normalised, is the position. Arrival = the first frame with no trail left
+        n_, lab_, stats_, _ = cv2.connectedComponentsWithStats((L[C["body_frame"]] > 40).astype(np.uint8), 8); comp_ = lab_[CORE[1], CORE[0]]
+        bx0 = int(stats_[comp_, cv2.CC_STAT_LEFT]); by0_ = int(stats_[comp_, cv2.CC_STAT_TOP]); by1_ = by0_ + int(stats_[comp_, cv2.CC_STAT_HEIGHT])
+        lengths = []
+        for i in kept:
+            cols = np.where((L[i][by0_:by1_] > 40).any(axis=0))[0]; ln = max(0, bx0 - int(cols.min())) if len(cols) else 0
+            if ln == 0: break
+            lengths.append(ln)
+        arrive = len(lengths); tot = float(sum(lengths)); cum = [0.0]
+        for v in lengths: cum.append(cum[-1] + v)
+        table = [round(c / tot, 4) for c in cum]
+        parked = [arrive, kept.index(impact) - 1] if impact is not None else None
+        manifest["travel"] = {"sourceMotion": C["travel"]["source_motion"], "from": "caster-half-centre", "to": "target-card-centre",
+                              "startCell": 0, "arriveCell": arrive, "arriveSrc": kept[arrive], "trailLengths": lengths, "table": table,
+                              "tableSource": "the trail's length per frame (px of content left of the disc body, rows %d-%d, body left x %d on f%03d), integrated and normalised" % (by0_, by1_ - 1, bx0, C["body_frame"]),
+                              "fallbackEase": C["travel"]["fallback_ease"], "startsOn": "the first drawn strike cell (a slow decode shortens the flight, never jumps it)",
+                              "rotation": {"while": "travelling", "parkedCells": parked, "zeroBy": kept.index(impact) if impact is not None else None,
+                                           "rule": "Actors never rotate (the upright law stands). A directional effect may rotate its layer to align its motion feature with its board path: the rotation is taken from the actual caster-to-target vector, applies only while the feature is in motion, and eases back to the clip's authored orientation before its impact frame. An effect's authored orientation is kept at its impact."},
+                              "bodyWidthSrc": int(stats_[comp_, cv2.CC_STAT_WIDTH])}
     with open(os.path.join(out, "manifest.json"), "w") as fh: json.dump(manifest, fh, indent=2); fh.write("\n")
     tw = 300; th = int(round(tw * ch / cw)); cols = 6; rows = (len(placed) + cols - 1) // cols
     sheet = Image.new("RGB", (cols * tw, rows * (th + 20) + 28), (12, 12, 12)); d = ImageDraw.Draw(sheet)
@@ -156,10 +179,18 @@ def main_chain_clip(key):
 def main_chain(key):
     C = EFFECTS[key]
     for k in C["clips"]: main_chain_clip(k)
+    inv = json.load(open(os.path.join(LAB, "effects", C["clips"][0], "manifest.json"))); stk = json.load(open(os.path.join(LAB, "effects", C["clips"][1], "manifest.json")))
+    # LAB-20b: the strike layer starts at the invocation disc's on-screen size and recedes to its own — the ratio, from both packs' own scale rules
+    scale_from = None
+    if stk.get("travel"):
+        inv_disc = inv["scaleRule"]["cardWidths"]                                             # card widths across, on screen
+        stk_disc = stk["travel"]["bodyWidthSrc"] * stk["scaleRule"]["cardWidths"] / stk["scaleRule"]["spanSrc"]
+        scale_from = round(inv_disc / stk_disc, 4)
     chain = {"cardId": C["card_id"], "cardName": C["card_name"], "class": "effect-chain", "version": 1,
              "clips": [{"role": EFFECTS[k]["role"], "manifest": "../" + k + "/manifest.json"} for k in C["clips"]],
              "handoff": "sequential: the invocation is released at the handoff, then the strike decodes (E1: one effect clip decoded at a time)",
              "contract": C["contract"]}
+    if scale_from is not None: chain["travel"] = {"scaleFrom": scale_from, "scaleTo": 1.0, "why": "the invocation disc (%.1f card widths on screen) hands off in place to the strike disc (%.3f card widths): the strike layer eases from the one to the other on the travel curve, receding as it flies" % (inv["scaleRule"]["cardWidths"], stk["travel"]["bodyWidthSrc"] * stk["scaleRule"]["cardWidths"] / stk["scaleRule"]["spanSrc"])}
     out = os.path.join(LAB, "effects", key); os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "chain.json"), "w") as fh: json.dump(chain, fh, indent=2); fh.write("\n")
     print("chain %s: %s" % (key, [c["manifest"] for c in chain["clips"]]))

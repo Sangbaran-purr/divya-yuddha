@@ -31,5 +31,10 @@
     "invokeAnchor": "caster-half-centre",
     "anchor": "target-card-centre",
     "awaited": false
+  },
+  "travel": {
+    "scaleFrom": 1.6522,
+    "scaleTo": 1.0,
+    "why": "the invocation disc (2.0 card widths on screen) hands off in place to the strike disc (1.211 card widths): the strike layer eases from the one to the other on the travel curve, receding as it flies"
   }
 }
