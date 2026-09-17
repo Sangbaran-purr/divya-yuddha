@@ -170,6 +170,18 @@ CARDS = {
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("ground-impact", (56, 70)), "settled": 0, "pivot": "feet",
                 "facing": "left", "aim": None, "feather": 8, "engine_id": "makardhwaja", "travel_scale": 0,
                 "exit": "native", "fade_tail": 10, "cell_px": 352, "thin_alternate": None},   # LAB-17: 320 was ruled, but at 320 his 256 rung packs to 25.532% of the 512 rung and fails the M21 quarter-rung invariant by 35,269 B; 288, 352 and 384 all pass, and 352 is the nearest to the ruling, still sub-384, at 8.3 MB
+    # LAB-18 · RAHU, the last card of the roster — a severed floating head, black smoke matter, on the batch's one GREEN key (single channel,
+    # after nine pair keys). The BRIGHT matte: the numbers tie with dark-body on all three risks (green cast in translucent smoke, despill on
+    # near-black, corona hue), but dark-body gaps his corona at f076 and fringes the smoke red. PIVOT READING FOUR: the ordinary feet rule on
+    # f000 lands on his lowest smoke tendril, so the smoke is the tether on the ground line and the head hangs above it (no knob — Garuda).
+    # The most static clip in the lab (picture change under 0.8 through f024–f060) and no ignition: a SOFT nova at the glow's fullest, f044.
+    # He touches no frame edge (the second card, after Anjana). His dissolve is near-black: the source ground share crosses 20% at f090.
+    "rahu":    {"label": "Rahu", "clip": "rahu/rahu_green.mp4", "emerge": (0, 31), "act": (32, 92), "tempo": None,
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 44), "settled": 0, "pivot": "feet",
+                "facing": "right", "aim": None, "feather": 8, "engine_id": "rahu",
+                "exit": "native", "fade_tail": 10, "cell_px": 384, "thin_alternate": None,
+                "contact_strength": {"flash": 0.5, "impulse": 0},
+                "keep_duplicates": True},   # LAB-18 ruling: his shimmer moves below DUP_MAE on 29 GENUINE frames (f001–f057 odd: change inside a dropped pair 0.37–0.54 matches between pairs 0.36–0.57), so the duplicate rule's premise fails — calling them duplicates would make the manifest false and halve the static head against the dissolve
 }
 CFG = None
 def configure(card):
@@ -330,11 +342,12 @@ def fringe_share(rgb, alpha, K):
     near_ground = np.linalg.norm(rgb.astype(np.float32) - K, axis=2) < 45
     return float(((alpha > 0.5) & near_ground & band).sum()) / float(band.sum()), band
 
-def distinct(indices, grays, keep=()):
-    # every usable frame, in order; a frame whose picture repeats the last kept one is a true duplicate and dropped (never a forced one)
+def distinct(indices, grays, keep=(), keep_all=False):
+    # every usable frame, in order; a frame whose picture repeats the last kept one is a true duplicate and dropped (never a forced one).
+    # LAB-18: keep_all (a card's "keep_duplicates") keeps every frame — for a clip whose genuine motion sits below DUP_MAE
     out, dropped = [], []
     for i in indices:
-        if out and i not in keep and float(np.abs(grays[i].astype(np.float32) - grays[out[-1]].astype(np.float32)).mean()) < DUP_MAE:
+        if out and not keep_all and i not in keep and float(np.abs(grays[i].astype(np.float32) - grays[out[-1]].astype(np.float32)).mean()) < DUP_MAE:
             dropped.append(i); continue
         out.append(i)
     return out, dropped
@@ -391,8 +404,9 @@ def main(card="meghnad"):
             band = matte(i)[0][gy - 60:, :] > 0.5; band[:, fx0:fx1] = False; hits[i] = int(band.sum())
         contact_src = min(i for i, v in hits.items() if v >= 2000)
         contact_note = "the weapon reaches the ground band clear of the feet (columns %d–%d kept out) first at f%d (hits %s)" % (fx0, fx1, contact_src, {k: hits[k] for k in sorted(hits)})
-    emerge, dup_e = distinct(range(EMERGE_RANGE[0], EMERGE_RANGE[1] + 1), grays)
-    act, dup_a = distinct(range(ACT_RANGE[0], ACT_RANGE[1] + 1), grays, keep=(contact_src,))
+    KEEP_ALL = bool(CFG.get("keep_duplicates"))          # LAB-18: per-card data, default false — the standing duplicate rule for every other card
+    emerge, dup_e = distinct(range(EMERGE_RANGE[0], EMERGE_RANGE[1] + 1), grays, keep_all=KEEP_ALL)
+    act, dup_a = distinct(range(ACT_RANGE[0], ACT_RANGE[1] + 1), grays, keep=(contact_src,), keep_all=KEEP_ALL)
     thin, thinned = CFG.get("thin_alternate"), []        # LAB-8 lever 1: every other frame in the named range
     if thin: thinned = [i for i in act if thin[0] <= i <= thin[1] and (i - thin[0]) % 2 == 1 and i != contact_src and i != act[-1]]; act = [i for i in act if i not in thinned]
     kept = emerge + act
@@ -535,6 +549,7 @@ def main(card="meghnad"):
         if manifest["phases"]["act"][-1] != len(kept) - 1: sys.exit("a native-exit pack must end ACT on its last cell")
     if CFG["contact"][0] == "nova": manifest["contactRule"] = "nova"
     if CFG.get("contact_strength"): manifest["contactStrength"] = dict(CFG["contact_strength"])
+    if KEEP_ALL: manifest["audit"]["keepDuplicates"] = True     # LAB-18: recorded, so the empty duplicatesDropped reads as a ruling, not a measurement
     if CFG.get("travel_scale") is not None: manifest["travelScale"] = CFG["travel_scale"]   # LAB-10: 0 = performs where it stands; absent = 1, the charge as it always was
     if BOTTOM: manifest["audit"]["featherBottom"] = {"px": BOTTOM, "asked": CFG["feather_bottom"], "coreGapMin": min(gaps.values()), "guardFrame": min(gaps, key=lambda i: gaps[i]), "guardScope": "emerge", "guardFrames": len(gaps), "settledGap": gaps.get(SETTLED_FRAME)}
     if "cell_px" in CFG:

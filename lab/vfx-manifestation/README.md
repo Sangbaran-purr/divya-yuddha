@@ -1207,6 +1207,114 @@ Makardhwaja's frost-blue dissolve has R < G, so it carries no pink cast at all. 
 - **Anjana:** her trim excludes her **teal sari fragments** scattering at f110–f120. They are genuine, but thin and translucent enough to read **36–51% ground**, so real content is excluded because contamination rides it — the Bali stone-chunk precedent.
 - **Makardhwaja:** his head leaves the frame for 24 airborne frames; the dropped f107–f120 are residue and empty frames.
 
+## LAB-18: Rahu — the roster complete
+
+The last card and the strangest: a **severed floating head**, black smoke matter, on the batch's **one green key**. Identity first: **0.974**, runner-up anjana 0.601, margin **0.373**. The classifier picks **green, single-channel** (margin 122 against a threshold of 15) after nine pair keys, and his corners stay clean through f120 (max 8.7), unlike every recent magenta card.
+
+| | Rahu (P4 E, launch Asura Hero) |
+|---|---|
+| EMERGE | f000–f031 (32) |
+| ACT | f032–f092 (61) |
+| Contact | f044, ACT cell 12, **nova SOFT** `{flash: 0.5, impulse: 0}` |
+| travelScale | nova → 0 |
+| Fade tail | f083–f092 |
+| Trim | f093–f120 |
+| Feathers | **none — no edge touched** |
+| Pivot (feet) | (926.2, 1053), his lowest smoke tendril |
+| Cells | **93, every frame kept** (`keep_duplicates`) |
+| cellPx | 384 |
+| Atlas | 4065×2295 · 35.6 MB |
+| 256 rung | 2027×1155 · 8.9 MB (25.095%) |
+| Full / Fast | 6524 / 3261 ms, contact at 2775 / 1387 ms |
+
+### The matte: the hardest keying case, resolved on the standard path
+
+Near-black translucent smoke on green is the case every earlier card avoided, with three named risks. Both mattes were rendered on six frames over a warm dark board and measured:
+
+| risk | source | bright output | dark-body output |
+|---|---|---|---|
+| (a) green cast in translucent smoke | climbs +1.5 → +14.8 as he goes translucent | −1.1 to +1.2 | −1.9 to +0.2 |
+| (b) despill crushing near-black | — | neutral, no magenta shift | neutral |
+| (c) corona hue (G/R) | 0.85–0.93 | 0.83–0.91 | 0.81–0.91 |
+| fringe share | — | 0.000% | 0.000% |
+
+The numbers tie, so **the frames decide: the bright matte.** The dark-body path's isolate step cuts bright light too far from the dark body, which **breaks the corona into a gapped ring at f076** and leaves a reddish fringe on the smoke. **rembg is unused.** The dark-body matte stays available — Meghnad still uses it — but it was not exercised here.
+
+A few thousand **yellow-green rim pixels** in the corona are identical under both mattes, so they are Kling's, not the key's; on the dark board the rim reads faintly lime. Accepted as a source property.
+
+### Pivot reading four: the smoke is his feet
+
+The pivot rule is measured once, on f000, and reused for every cell. It has now been read four ways, each the thing that meets the ground:
+
+| card | what the feet rule lands on |
+|---|---|
+| every standing card | the feet |
+| Mahabali | the throne's base |
+| Vasuki, Takshaka, Shesha, Vritra | the coil's base |
+| Garuda | the talon tips (a permanent hoverer) |
+| **Rahu** | **the lowest smoke tendril** |
+
+The ordinary rule, with no knob, puts his **smoke tendrils on the card's ground line and the head above it**: the smoke is about 38% of his height, a real tether, so he reads as an apparition rising from the card rather than a sticker on it. His dissolve completes the reading — he fades **bottom-up**, the tether dissipates first (f060–f075), and the head floats free before it vanishes. The pivot's x is within 10 px of his horizontal centre. The alternatives were measured and rejected: the bounding-box centre lands on his **nose** (half the head below the ground line), and a "chin" heuristic landed inside the neck smoke, which is as solid as the face.
+
+### keep_duplicates: the duplicate rule's premise fails for the stillest card
+
+The pack drops a frame whose picture differs from the last *kept* frame by under **0.6** — that is how a true duplicate reads. Rahu is the most static clip in the lab, and on first pack the rule dropped **29 frames, every odd frame f001–f057**. They are not duplicates:
+
+| | change to the next frame | pixels moving by more than 24 levels |
+|---|---|---|
+| inside a dropped pair | 0.37–0.54 | 3,841–8,753 |
+| between pairs | 0.36–0.57 | 5,112–11,670 |
+
+The two rows match: these are genuine frames of his glow shimmer and smoke drift, moving below the threshold. The rule compares with the last kept frame, so it kept every second one. Recording them as **"true duplicates" would have made the manifest false**, and because a phase plays its cells at one even rate, it would have **compressed the static head (981 → 624 ms) and stretched the dissolve (1321 → 1679 ms)**, landing the flash on ACT cell 6 at 288 ms instead of cell 12 at 453 ms.
+
+**Ruling:** `keep_duplicates` is a per-card pack-tool setting (default false), per-card data like `travelScale`, `contactStrength` and `cellPx`. The standing rule is unchanged for every other card. Rahu carries it: **93 cells, `duplicatesDropped: []`, `audit.keepDuplicates: true`**. The cost is honest and within budget — 64 cells would have been 6.0 MB at the low rung, 93 cells are 8.9 MB — and both pass M21. **M46** pins that the setting is on exactly one card, that every manifest recording it records zero dropped duplicates (a doctored one is rejected), and that Rahu has 93 contiguous cells.
+
+The default path was proven untouched: Mahabali (9 duplicates dropped) repacked with the committed tool and with this rung's tool comes out **byte-identical** in both atlases and the manifest. Both differ from Mahabali's committed pack by a few 1-px cell boxes — older environment drift, the LAB-13 Meghnad precedent — so the committed pack was restored.
+
+### A soft nova with no ignition
+
+The audit described his eyes igniting and the corona flaring. **Nothing ignites**: eyes, corona and molten cracks are all lit at f000. Across f024–f060 his picture change never exceeds **0.8**, brightness holds at 31.5–32.8k and gold at 62–65k. That makes him the clearest **soft cast** in the lab, after Shesha, Padmavati and Anjana.
+
+**The contact frame is close to arbitrary, and the rule is the tiebreaker.** Gold peaks at **f044 (64,821)**, under 1% above a flat glow; any frame from f024 to f050 is effectively equivalent. The contact sits at **f044, ACT cell 12**, by the radiance-at-its-fullest rule.
+
+He is also the **second card that touches no frame edge**, after Anjana — no feather of any kind.
+
+### The third ability class: inert by timing
+
+Rahu's text is a **PASSIVE**: *"At the start of each round, the opponent discards 1 random card from their hand."* In the engine it lives in **`endRound`, after `g.round++`**, guarded by `foe.hand.length` — never in `playCard`. So on his play the opponent's hand stays **10** and their discard stays **empty**. The three Heroes whose abilities hide from the event stream and the board difference now form a complete table:
+
+| card | class | what the guard rail reads |
+|---|---|---|
+| Sugriva | changes state | his hand and deck counts (F51) |
+| Makardhwaja | log only | the no-source log line (F57) |
+| **Rahu** | **fires at a moment the fixture never reaches** | **the opponent's untouched hand and discard (F61)** |
+
+**F61** asserts opponent hand 10 → 10 and discard 0 → 0, and makes it more than a silent pass three ways: it pins that the engine's only Rahu hook sits inside `endRound` after the round advances; it **drives the engine across the round boundary** — with Rahu on the board the opponent loses one card to the discard with the *"Rahu devours…"* line, without him none; and it rejects three doctored fixtures — an on-play discard (hand 9, discard 1), a play where the round turned, and an inert Asura Hero (Vritra) passed off as him.
+
+### The M34 method note: green keys are source-only by construction
+
+The output metric was built for magenta keys, where a translucent dissolve leaves a pink cast. On a **single-channel green key** its analogue — output green cast — reads **0.0% on every frame**, and that is structural, not a measurement: the despill sets `G ← min(G, max(R, B))`, so no output pixel can be green-dominant. **A green-keyed card is source-only by construction and must never be read as "clean on both."** **M48** proves it over the sampled RGB cube (0 green-dominant after despill).
+
+Rahu's tail is the near-black class: output mean `[70,58,31]` → `[25,22,16]` at f080 → `[7,7,4]` at f088. The source ground share crosses 20% at **f090 (29.7%)**, 41.3% at f092, 77.6% at f094, empty by f098. The ramp f083–f092 covers the first degrading frame and ends on the last kept cell; the trim begins at f093.
+
+| card | source ground-share | output cast | class |
+|---|---|---|---|
+| Kartikeya | catches | catches | both |
+| Padmavati | catches | ≤ 15% | source-only |
+| Sugriva | under-reports | catches | output-only |
+| Angad | under-reports | catches | output-only |
+| Anjana | crosses 20% at f102 | ≤ 17% | source-only |
+| Makardhwaja | 11.4% → 19.7% at f101 | ≈ 0% | source-only |
+| **Rahu** | **crosses 20% at f090** | **0 by construction (green key)** | **source-only** |
+
+### Registry, fixture, and the roster
+
+Registry key `rahu`, button **"Rahu (Asura Hero, Epic)"**, fixture off the Asura deck path (`['Rahu'].concat(ASURA_DECK.slice(0, 11))` against the Deva deck). All 40 existing fixtures regenerate byte-identical. With him the lab holds **21 actors: Meghnad and twenty Heroes** — the roster is complete.
+
+### Accepted defects
+
+- **Rahu:** the faint lime rim on his corona is Kling's (identical under both mattes). The dropped f093–f120 are near-black specks and empty frames.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

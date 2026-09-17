@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "9769c737f8787acef0852a0a7af119ca137e7cb6",
+    "gameCommit": "375035402390182dbd9a35a8c4a3e5f07c3dac7b",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -273,6 +273,16 @@
       "to": "art/Vanaras_Hero_Makardhwaja_P7_rLegendary.png",
       "bytes": 464031,
       "sha256": "204e87a79bd21e7af475b23018b9763f3d5299d439985816b0c3557a1d2bc76c",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Asuras_Hero_Rahu_P4_rEpic.png",
+      "to": "art/Asuras_Hero_Rahu_P4_rEpic.png",
+      "bytes": 411184,
+      "sha256": "4c8d80c6d30998b303633269a007789c9bf5c8fd539797af55418c5c8f74aba5",
       "px": {
         "w": 750,
         "h": 1050
