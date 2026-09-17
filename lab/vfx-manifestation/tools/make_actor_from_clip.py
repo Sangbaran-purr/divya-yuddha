@@ -146,6 +146,16 @@ CARDS = {
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 87), "settled": 0, "pivot": "feet",
                 "facing": "left", "aim": None, "feather": 8, "feather_bottom": 8, "engine_id": "kulika",
                 "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
+    # LAB-16 · the first Vanara actors since the pilot wave. Their dissolves are TAN-GOLD DUST, which the source ground-share metric
+    # cannot see (tan has B < G, so no source pixel is ground-dominant) — the trims were set on the OUTPUT pink cast as well.
+    "sugriva": {"label": "Sugriva", "clip": "sugriva/sugriva_magenta.mp4", "emerge": (0, 51), "act": (52, 110), "tempo": None,   # the SLAM is his contact, not the sweep: the sweep has no clean onset
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 56), "settled": 0, "pivot": "feet",
+                "facing": "right", "aim": None, "feather": 8, "feather_bottom": 16, "engine_id": "sugriva",
+                "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
+    "angad":   {"label": "Angad", "clip": "angad/angad_magenta.mp4", "emerge": (0, 47), "act": (48, 104), "tempo": None,   # no bottom feather: his core touches the bottom edge at f039, so the all-frames guard can never pass one
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 53), "settled": 0, "pivot": "feet",
+                "facing": "left", "aim": None, "feather": 8, "engine_id": "angad",
+                "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
 }
 CFG = None
 def configure(card):

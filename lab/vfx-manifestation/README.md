@@ -1037,6 +1037,94 @@ The ramp always ends on the last kept cell and the trim always begins the frame 
 - **Kulika:** her top edge is touched for 26 frames from f023 (hood and raised hand) and her sides for 2–3 frames at f103+; all accepted under the standard 8 px feather.
 - **Both:** corners go dirty by f120 as the dissolves spread (37.3 and 25.5). The key is unaffected — `ground_colour` reads f000, clean at 1.4 and 1.7.
 
+## LAB-16: Sugriva and Angad — the first Vanaras since the pilot, a blind spot in the method, and an ability that fires
+
+Identity first: Sugriva **0.985** against a runner-up of 0.611, Angad **0.973** against 0.597. Their action priors were re-derived from the files, and each needed one correction. The audit missed Sugriva's **second strike** (a vertical slam, larger than the sweep it did record), and Angad's shield **doesn't spin** — he raises it and it throws a radial flash.
+
+| | Sugriva (P6 E) | Angad (P7 E) |
+|---|---|---|
+| EMERGE | f000–f051 (52) | f000–f047 (48) |
+| ACT | f052–f110 (59) | f048–f104 (57) |
+| Contact | f056, cell 4, nova — **the slam** | f053, cell 5, nova — **the shield flash** |
+| Fade tail | f101–f110 | f095–f104 |
+| Trim | f111–f120 | f105–f120 |
+| Bottom feather | 16 px (gap 24 @ f000) | **none — unguardable** |
+| Pivot (feet) | (857.4, 1057) | (934.2, 1029), a 579 px crouch |
+| cellPx | 448 | 448 |
+| Atlas | 4079×2042 · 31.8 MB | 4002×2381 · 36.3 MB |
+| 256 rung | 8.0 MB (25.2%) | 9.2 MB (25.3%) |
+| Full / Fast | 7243 / 3620 ms | 6949 / 3473 ms |
+
+**Sugriva strikes twice, and the nova rides the slam.** He sweeps his staff and flings dark fragments rightward, then drives it down into a burst at his feet. The slam is his largest event: brightness jumps 29.6k → **47.9k at f056**, carrying the biggest picture change in his act. The sweep climbs smoothly (7.9k → 31.4k over f044–f052) with no clean onset to put a contact on.
+
+**Angad is the busiest clip in the lab.** His picture change runs 8–16 for most of the clip, with brightness spikes for the dust kick, the shield flash, a second shield motion and a blown-out golden transformation (487k). The flash is born on **f053** (32.3k → 70.4k, a 2.2× jump, rising to the clip's largest change at f055). A defensive ward suits a card whose opponent forfeits a turn for playing an Astra.
+
+### The first on-play ability that fires on an empty board
+
+Every Hero before Sugriva was inert on the empty board a fixture plays onto. **Sugriva is not.** "ON PLAY: Draw 1 extra card" runs: his hand stays at **10** (one card played, one drawn) and his deck falls **2 → 1**.
+
+**Neither instrument the guard rail uses can see it.** The event stream carries only the play, and the board difference carries only his entry. So "one event, nothing changed" passes him by the letter while hiding that his ability ran. A1 is unaffected, because a draw isn't on the board, but a silent pass is not acceptable.
+
+**F51** asserts the draw from the state it changes: hand 10 → 10 and deck 2 → 1, on both seats, against Angad's inert 10 → 9 and 2 → 2. It was checked against three doctored fixtures before being trusted: a draw that didn't fire, a draw of two, and an inert Hero fed in as Sugriva. It rejects all three.
+
+**This is the template for any future fixture whose Hero carries an on-play ability:** assert the ability from the state it changes, whether or not an event or the board reports it.
+
+### M34 now uses both metrics — tan-gold dust was the blind spot
+
+LAB-13 to LAB-15 set trims with the **source** metric: the share of kept pixels whose *source* is ground-dominant. On these two cards it badly under-reports. Sugriva reads **7.9% at f108**, while his dissolve is already visibly pink.
+
+Putting source beside matte shows why. Kling's dissolve here is **tan-gold dust** with only a faint pink haze in it. The dust is semi-transparent, so the un-mix leaves a magenta cast in the *output*. But tan has **B < G**, so no source pixel is ground-dominant, and the despill (which only acts where both R and B exceed G) never touches it.
+
+An **output-side** metric — pink cast among the despilled result — does see it. Its breakpoints agreed with the eye on both cards. Calibrated against the cards already shipped:
+
+| card | source ground-share | output pink cast | what it shows |
+|---|---|---|---|
+| **Kartikeya** | catches it | catches it — **16.6% → 35.8%** at f104 | his shipped f102 trim sits exactly on the output break |
+| **Padmavati** | catches it | barely registers (≤15%) | darker, purple residue — source-only |
+| **Sugriva** | under-reports (7.9% at f108) | **catches it** — 14% → 20.0% (f108) → 28.5% (f110) | tinted dust — output-only |
+| **Angad** | under-reports | **catches it** — 19.2% (f102) → **37.3% (f104)** | tinted dust — output-only |
+
+**Neither metric is sufficient alone, and M34's evidence basis is now both, jointly.** Each covers the other's blind class. Tan-gold dust (B < G) is the documented blind spot of the source metric; darker residue is the output metric's.
+
+Both trims follow the law: Sugriva's pink rim begins ~f105 under a ramp f101–f110, and Angad's rim begins f096 under a ramp f095–f104 that ends exactly at his break into fragments. **M37** pins the structure the measurements produced.
+
+### Angad's bottom edge cannot be feathered
+
+His core **touches the bottom edge at f039**, mid-EMERGE, during the dust-kick lunge. The all-frames guard measures every EMERGE frame, so no band can ever clear it. He touches that edge in **87 frames**, the most in the lab. It's an accepted cut under the standard 8 px feather, following the Garuda precedent. **M38** pins it.
+
+### The presets nobody plays — and the difference the record keeps
+
+Both Vanara actors exit natively, so the **Vanara dissolve preset is now unexercised**, and the M15/M30 note reaches its last faction. **No Deva, Naga or Vanara actor exits procedurally.** Only the Asura preset is still played, by a single card: Meghnad.
+
+They are **not all untuned**, though, and **M39** keeps that difference on the record. The Naga and Vanara presets carry none of the tuning knobs. The **Deva preset still carries the 13 it was given in LAB-6a** (pinned by M15): tuned, but unexercised since LAB-10 sent Indra native.
+
+### A new deck, and one that stayed put
+
+`VANARA_DECK` (LAB-7) holds Bali, Sugriva and Angad together, and Bali's byte-pinned fixture uses it unsliced. Reusing it would have put Sugriva in his own deck twice with both other Heroes beside him. So it is **untouched**, and a new `VANARA_UNITS` — twelve launch Vanaras, no Heroes — backs these two fixtures, as `NAGA_DECK` did for LAB-14. All 32 pre-existing fixtures are byte-identical, Bali's included.
+
+### Accepted defects
+
+- **Sugriva:** his edges are touched often — top 57 frames from f014 (the staff tip), bottom 63 from f044, right 12 from f051 (flying fragments). All are accepted cuts, with the bottom band guarded.
+- **Angad:** besides the unguardable bottom edge, top 43 frames from f020 and left 8 from f039 (the dust kick widening), all accepted.
+- **Both:** the dropped tails are tinted dust. Whatever was genuinely theirs in those frames goes with the magenta cast that dominated them.
+
+### OPEN: Sugriva's first live play
+
+**Status: open.** Not labelled an artifact and not labelled a defect.
+
+**The observation.** On the very first play in a newly opened browser pane, Sugriva's readout showed a **295 px board shift** on `#field`, and its "final board = engine AFTER ✓" was **missing**. Angad, played immediately after in the same pane, was clean.
+
+**The evidence against a pattern.** It happened **once**. Sugriva then played **clean eight times**, 0 px shift and final board ✓ every time: three replays in that tab, one on seat 1, one second on a fresh reload, one with no wait after load, and one sampled at both 9 s and 14 s in a reopened pane. Angad played *first* on a fresh page was clean as well, and the suite's GATE layout check passes for Sugriva.
+
+**The cause is unproven.** Both candidate explanations are environmental, and neither was confirmed:
+
+- **Cold-start latency.** First fetch and decode pushed the play past the 9-second sampling window, so the readout was read mid-play. The one test of this found the play already done by 9 s.
+- **First GPU initialisation.** Layout was still settling during the first play of a new pane.
+
+The lab could not recreate a truly cold start: reopening the pane reused the browser process, so its asset cache stayed warm. Nothing observed points at Sugriva specifically, but a single cold start is too little to rule that out.
+
+**Closing condition.** The owner's device pass runs the decisive experiment: **a cold app launch with Sugriva played first.** A clean result closes it as environmental; a repeat of the shift reopens it as a defect against his card.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

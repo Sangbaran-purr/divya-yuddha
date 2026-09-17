@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "8afb21d7ade333c4eea0b78ae94c6cfa9b148e77",
+    "gameCommit": "91564031517e8444b7fb08743a71d36682037443",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -233,6 +233,26 @@
       "to": "art/Nagas_Hero_Kulika_P8_rLegendary.png",
       "bytes": 357387,
       "sha256": "90c6b9f9f69a2bb23bd513c5844c6c9b40b4c0bde6c6d2f83bd604d3b30b5370",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Vanaras_Hero_Sugriva_P6_rEpic.png",
+      "to": "art/Vanaras_Hero_Sugriva_P6_rEpic.png",
+      "bytes": 438313,
+      "sha256": "f756fedf0ce4093dccb60c47f1b0950efcbd229f9323ae527a3dc5985beae0ef",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Vanaras_Hero_Angad_P7_rEpic.png",
+      "to": "art/Vanaras_Hero_Angad_P7_rEpic.png",
+      "bytes": 443713,
+      "sha256": "449db1895de6bda33d57d060d133041dd4fdde699ca26788856b6322fe12e397",
       "px": {
         "w": 750,
         "h": 1050

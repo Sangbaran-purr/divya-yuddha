@@ -70,6 +70,9 @@ function build(attackerSeat) {
 
 // LAB-7: one builder for every "a Hero enters on an empty board" fixture — the card's seat moves first and plays it; nothing else
 // happens (the no-number SETTLE path). Indra's fixture is this builder's output, field for field, as it was.
+// LAB-16: a Vanara deck WITHOUT Heroes. VANARA_DECK (LAB-7) holds Bali, Sugriva and Angad together and Bali's byte-pinned fixture
+// uses it unsliced, so it stays exactly as it is; a hero entry here names its own Hero and draws only non-Hero Vanaras beside it
+const VANARA_UNITS = ['Nala', 'Neela', 'Jambavan', 'Kesari', 'Tara', 'Dwivida', 'Mainda', 'Sharabha', 'Vanara Scout', 'Vanara Warrior', 'Dadhimukha', 'Riksha'];
 // LAB-14: the first Naga decks — the twelve launch Nagas that are not Heroes, so a hero entry names its own Hero and nothing else enters
 const NAGA_DECK = ['Manasa', 'Karkotaka', 'Surasa', 'Ulupi', 'Naga Sadhu', 'Kaliya', 'Astika', 'Naga Archer', 'Naga Enchantress', 'Naga Warrior', 'Naga Hatchling', 'Ashvatara'];
 const VANARA_DECK = ['Bali', 'Sugriva', 'Angad', 'Nala', 'Neela', 'Jambavan', 'Kesari', 'Tara', 'Dwivida', 'Mainda', 'Sharabha', 'Vanara Scout'];
@@ -127,6 +130,10 @@ const HERO_ENTRIES = {
           ruling: 'LAB-15 - a WAVE-1 Naga hero, reached by NAME through the scenario deck, no shim (the LAB-11 finding). A1 (the board is the truth): the Hero enters and nothing else changes - her Venom lands at ROUND END, not on play' },
   kulika: { card: 'Kulika', faction: 'nagas', deck: ['Kulika'].concat(NAGA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'kulika_play',
           ruling: 'LAB-15 - a WAVE-1 Naga hero, reached by NAME through the scenario deck, no shim. A1: the Hero enters and nothing else changes - her ON PLAY transfers Venom from friendly Units to enemies, and an empty board has neither' },
+  sugriva: { card: 'Sugriva', faction: 'vanaras', deck: ['Sugriva'].concat(VANARA_UNITS.slice(0, 11)), oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'sugriva_play',
+          ruling: 'LAB-16 - the first Vanara actor since the pilot wave, and THE FIRST ON-PLAY ABILITY THAT FIRES ON AN EMPTY BOARD. A1 (the board is the truth) holds - the board difference is only the Hero entering - but his draw RUNS: the hand stays at 10 (one played, one drawn) and the deck falls 2 to 1. Neither the event stream nor the board difference shows it, so the guard rail asserts it from the counts' },
+  angad: { card: 'Angad', faction: 'vanaras', deck: ['Angad'].concat(VANARA_UNITS.slice(0, 11)), oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'angad_play',
+          ruling: 'LAB-16 - the first Vanara actor since the pilot wave. A1: the Hero enters and nothing else changes - his passive waits for the opponent to play an Astra; the hand falls 10 to 9 and the deck is untouched' },
   varuna: { card: 'Varuna', faction: 'devas', deck: ['Varuna', 'Narada', 'Chandra Dev', 'Yama', 'Marut', 'Gandharva', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Vishwakarma', 'Agni'], oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'varuna_play',
            ruling: 'VFX-LAB-8 — the fourth character, the first native exit; A1 (the board is the truth): the Hero enters and nothing else changes (his passive limits the opponent\'s Astras; it changes no card on an empty board)' },
 };
