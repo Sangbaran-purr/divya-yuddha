@@ -986,6 +986,57 @@ This check costs one pass over ten first frames. The previous batch shipped four
 
 `data/factionfx.json` has carried a Naga dissolve since the presets were written, and no card has ever played it. These three do not change that — **they all exit natively**, so the Naga preset joins the Deva one as a preset held by data rather than by a live card. **M30** pins it: the preset exists, names no tuning knob, sits at its defaults, and every Naga actor in the lab resolves to a native exit. This extends the LAB-10 M15 note, which now covers both presets.
 
+## LAB-15: Padmavati and Kulika — two Wave-1 Nagas, and two rules that generalise
+
+The identity gate ran first, as it now always does. Both clips matched their own master decisively — Padmavati **0.993** against a runner-up of 0.748, Kulika **0.988** against 0.757 — and Kulika's is the clip that was rotated in at LAB-14, now sitting correctly. The action priors were re-derived from the files rather than carried over from the earlier audit table, and both held.
+
+| | Padmavati (P7 L) | Kulika (P8 L) |
+|---|---|---|
+| EMERGE | f000–f049 (50) | f000–f069 (70) |
+| ACT | f050–f110 (61) | f070–f104 (35) |
+| Contact | f076, cell 26, **nova SOFT** | f087, cell 17, nova |
+| Fade tail | f101–f110 | f095–f104 |
+| Trim | f111–f120 | f105–f120 |
+| Bottom feather | 12 px (gap 14 @ f036) | 8 px (gap 10 @ f066) |
+| Pivot (coil base) | (1051.9, 1065) | (965.4, 1065) |
+| cellPx | **320** | 448 |
+| Atlas | 4078×2078 · 32.3 MB | 4075×2021 · 31.4 MB |
+| 256 rung | 8.1 MB (24.9%) | 7.9 MB (25.3%) |
+| Full / Fast | 7284 / 3641 ms | 6493 / 3245 ms |
+
+**Padmavati is a soft cast**, on the same evidence that settled Shesha: her picture change never exceeds **2.9** across the entire performance, and her brightness peaks at 8.9k — an order below Shesha's 38k. Nothing strikes. She lets a green droplet fall from her palm, then turns it up and an orb forms with a flat ring spinning around it. The nova rides that ring at its fullest (f076) with `{flash: 0.5, impulse: 0}`.
+
+**Kulika's burst is also her exit.** She conjures a green orb, it collapses to a wisp, and her coil ignites into black specks and green fire. ACT therefore opens at f070 — where the orb begins to resolve — and the nova lands mid-ACT on **f087**, which a fine scan pinned: green runs 7.7k (f085) → 11.4k (f086) → **27.6k (f087)**, a 2.4× jump carrying the largest picture change in the clip to that point.
+
+### Box compactness drives atlas cost, not character size
+
+Padmavati is **the lab's first card below 384**, and the reason is counter-intuitive enough to record.
+
+Her bounding box is *compact* — hood-tall at 1080, but never frame-wide (1324 at its widest). A small box means the scale that fits her into a cell is **larger**, so every cell is denser. At 384 she would put **12.3 MB** on the 256 rung: the highest figure in the lab, above even the pilot's 11.5 MB. At **320** she costs **8.1 MB**.
+
+Kulika is the same lesson inverted. Her specks span the entire frame width (1916) during the burst, so her scale shrinks and her cells are sparse — she is cheap at **448** (7.9 MB) and would even have fitted at 512. A visually smaller actor can cost more than a sprawling one; what the atlas charges for is how tightly the content packs into its box, not how big the character looks.
+
+Both clear the M21 quarter-rung invariant at 24.9% and 25.3%.
+
+### The fade tail covers the decay, never the good frames
+
+This is now the standing structure, and LAB-13, LAB-14 and LAB-15 are each an instance of it.
+
+A magenta clip degrades at its end, in one of two ways: a translucent figure **un-mixes to pink** (Kartikeya, Padmavati), or a burst fades and leaves **pale ground** behind (Takshaka, Kulika). Either way the last frames stop being the actor and start being the screen.
+
+The rule: **place the ramp so its declining alpha lands on the degrading window, and trim everything past the ramp floor.** The ten-cell tail is not decoration to be appended wherever the clip stops — it is the instrument that disposes of the decay, so it must be aimed at it.
+
+- Padmavati's pink creeps into her dissolving torso from **f106**; her ramp runs **f101–f110**, so that window plays at alpha 0.44 → 0.0, and f111–f120 (51–65% ground) is dropped.
+- Kulika's pale cloud dominates from **f099** as the green dies; her ramp runs **f095–f104**, so the burst f087–f094 plays at **full alpha** and the decay is what fades, with f105–f120 dropped.
+
+The ramp always ends on the last kept cell and the trim always begins the frame after. **M34** pins both halves.
+
+### Accepted defects
+
+- **Padmavati:** the dropped f111–f120 are her final specks; whatever was genuinely hers there goes with the ground that dominated them. Her bottom feather is 12 px against a 14 px core gap — the tightest margin in the lab, measured across all 50 EMERGE frames by the all-frames guard.
+- **Kulika:** her top edge is touched for 26 frames from f023 (hood and raised hand) and her sides for 2–3 frames at f103+; all accepted under the standard 8 px feather.
+- **Both:** corners go dirty by f120 as the dissolves spread (37.3 and 25.5). The key is unaffected — `ground_colour` reads f000, clean at 1.4 and 1.7.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

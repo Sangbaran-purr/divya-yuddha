@@ -135,6 +135,17 @@ CARDS = {
                 "facing": "right", "aim": None, "feather": 8, "engine_id": "shesha",
                 "exit": "native", "fade_tail": 10, "cell_px": 384, "thin_alternate": None,
                 "contact_strength": {"flash": 0.5, "impulse": 0}},
+    # LAB-15 · two Wave-1 Nagas. PADMAVATI is the lab's first card below 384: her box is COMPACT (hood-tall, never frame-wide),
+    # and a small box forces a LARGER scale, so every cell is denser — box compactness drives atlas cost, not character size.
+    "padmavati": {"label": "Padmavati", "clip": "padmavati/padmavati_magenta.mp4", "emerge": (0, 49), "act": (50, 110), "tempo": None,
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 76), "settled": 0, "pivot": "feet",
+                "facing": "right", "aim": None, "feather": 8, "feather_bottom": 12, "engine_id": "padmavati",
+                "exit": "native", "fade_tail": 10, "cell_px": 320, "thin_alternate": None,
+                "contact_strength": {"flash": 0.5, "impulse": 0}},
+    "kulika":  {"label": "Kulika", "clip": "kulika/kulika_magenta.mp4", "emerge": (0, 69), "act": (70, 104), "tempo": None,   # her burst IS her exit: ACT opens where the orb collapses to a wisp and the ignition lands mid-ACT
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 87), "settled": 0, "pivot": "feet",
+                "facing": "left", "aim": None, "feather": 8, "feather_bottom": 8, "engine_id": "kulika",
+                "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
 }
 CFG = None
 def configure(card):

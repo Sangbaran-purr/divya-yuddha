@@ -67,6 +67,11 @@ const NAGAS = [['vasuki', 'Vasuki', 'L', 8], ['takshaka', 'Takshaka', 'E', 6], [
   key, name, rarity, power, M: JSON.parse(fs.readFileSync(path.join(LAB, 'actors', key, 'manifest.json'), 'utf8')),
   FX: [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', key + '_seat' + s + '.json'), 'utf8'))),
 }));
+// LAB-15 · two Wave-1 Nagas — the first card below 384, and a burst that is also an exit
+const WAVE15 = [['padmavati', 'Padmavati', 'L', 7], ['kulika', 'Kulika', 'L', 8]].map(([key, name, rarity, power]) => ({
+  key, name, rarity, power, M: JSON.parse(fs.readFileSync(path.join(LAB, 'actors', key, 'manifest.json'), 'utf8')),
+  FX: [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', key + '_seat' + s + '.json'), 'utf8'))),
+}));
 let JSDOM = null; try { ({ JSDOM } = require(require.resolve('jsdom', { paths: [path.join(WEB, 'tests')] }))); } catch (e) { JSDOM = null; }
 
 // ═══ F · THE FIXTURE ═══
@@ -193,6 +198,21 @@ console.log('── F · the fixture: the real engine, both seats ──');
               f.diff.entered[0].eff === c.power && f.diff.entered[0].seat === f.attackerSeat && f.events[0].sourceUid === f.diff.entered[0].uid &&
               f.before.seats[f.attackerSeat].faction === 'nagas';
      })), J(NAGAS.map((c) => c.FX.map((f) => [f.events, f.diff.entered]))));
+  WAVE15.forEach((c, k) => { for (const seat of [0, 1]) {
+    ok('F' + (41 + k * 2 + seat) + ' · LAB-15 · the ' + c.name + ' seat-' + seat + ' fixture is what a fresh engine run produces today (every field), on the engine it names',
+       J(c.FX[seat]) === J(forEntry(c.key)(seat)) && c.FX[seat].engine.sha256 === liveEngineSha, 'differs from a fresh run');
+  } });
+  ok('F45 · LAB-15 · THE TWO WAVE-1 NAGAS THROUGH THE SAME GUARD RAIL, both seats: each named as a plain string, no wave flag, no option a launch card would not pass; ONE event; the board difference is the Hero entering her own seat heroes row at her printed P7 / P8, neither renumbered by the balance campaign. Nothing changed, nothing left, no number: Padmavati venoms at ROUND END rather than on play, and Kulika transfers Venom from friendly Units to enemies on a board that has neither',
+     WAVE15.every((c) => c.FX.every((f) => {
+       const opt = f.scenario, deck = opt['p' + f.attackerSeat + 'Deck'];
+       return deck.every((n2) => typeof n2 === 'string') && deck[0] === c.name && opt.wave1 === undefined &&
+              Object.keys(opt).every((k2) => ['p0', 'p1', 'p0Faction', 'p1Faction', 'p0Deck', 'p1Deck', 'mulligan'].indexOf(k2) >= 0) &&
+              J(f.events.map((e) => [e.type, e.abilityName || null, e.text || null])) === J([['play', c.name, '{p' + f.attackerSeat + '} plays ' + c.name]]) &&
+              f.diff.changed.length === 0 && f.diff.left.length === 0 && f.diff.entered.length === 1 &&
+              f.diff.entered[0].id === c.key && f.diff.entered[0].n === c.name && f.diff.entered[0].zone === 'heroes' &&
+              f.diff.entered[0].eff === c.power && f.diff.entered[0].seat === f.attackerSeat && f.events[0].sourceUid === f.diff.entered[0].uid &&
+              f.before.seats[f.attackerSeat].faction === 'nagas';
+     })), J(WAVE15.map((c) => c.FX.map((f) => [f.events, f.diff.entered]))));
   {
     const labFiles = [];
     (function walk(d) { for (const n of fs.readdirSync(d)) { if (n === 'node_modules' || n === '.venv' || n === 'actors' || n === 'sources' || n === 'frames') continue;
@@ -277,6 +297,12 @@ const CTX = FX.map((f) => CC.fromBatch(f)), ICTX = IFX.map((f) => CC.fromBatch(f
               c.boardDiff.length === 1 && c.boardDiff[0].kind === 'enter' && c.boardDiff[0].to === n.power && c.boardDiff[0].evented === 0 &&
               J(CC.project(b.entry)) === J(CC.project(n.FX[s2].after)) && J(b.settle) === J(n.FX[s2].after) && J(b.final) === J(n.FX[s2].after); })),
      J(NAGAS.map((n) => n.FX.map((f) => CC.fromBatch(f).cardId))));
+  ok('C14 · LAB-15 · the two WAVE-1 Naga Heroes contexts, both seats: each a Legendary Naga Hero, in scope, keyed by her engine id; one ENTER at her printed power with nothing evented; no rest of batch; ENTRY = SETTLE = FINAL = the engine AFTER',
+     WAVE15.every((n) => n.FX.map((f) => CC.fromBatch(f)).every((c, s2) => { const b = CC.boards(c, n.FX[s2].before, n.FX[s2].after);
+       return c.cardId === n.key && !!REG[c.cardId] && c.cardType === 'hero' && c.rarity === n.rarity && c.faction === 'nagas' && c.seat === n.FX[s2].attackerSeat && c.scope === 'manifest' && c.rest.length === 0 &&
+              c.boardDiff.length === 1 && c.boardDiff[0].kind === 'enter' && c.boardDiff[0].to === n.power && c.boardDiff[0].evented === 0 &&
+              J(CC.project(b.entry)) === J(CC.project(n.FX[s2].after)) && J(b.settle) === J(n.FX[s2].after) && J(b.final) === J(n.FX[s2].after); })),
+     J(WAVE15.map((n) => n.FX.map((f) => CC.fromBatch(f).cardId))));
 }
 
 const LADDER = {};   // (label helper — the plan reports the ladder itself)
@@ -603,6 +629,35 @@ templateActor({ label: 'M27 · LAB-14 · TAKSHAKA BY THE TEMPLATE (a coil base p
   emerge: [0, 54], act: [55, 110], contactIn: [56, 56], contact: 'nova', contactNote: 'nova: the arcs sweep out, the audited frame', aim: null, facing: 'left', keyChannel: 'RB' });
 templateActor({ label: 'M28 · LAB-14 · SHESHA BY THE TEMPLATE (a SOFT cast — nothing in his clip strikes)', M: NAGAS[2].M, folder: 'shesha', cardId: 'shesha', clip: 'shesha_magenta.mp4', sha: '055a68ea27d2', chroma: 'magenta',
   emerge: [0, 44], act: [45, 113], contactIn: [78, 78], contact: 'nova', contactNote: 'nova: the radiance at its fullest, the audited frame', aim: null, facing: 'right', keyChannel: 'RB' });
+templateActor({ label: 'M31 · LAB-15 · PADMAVATI BY THE TEMPLATE (a SOFT cast, and the first card below 384)', M: WAVE15[0].M, folder: 'padmavati', cardId: 'padmavati', clip: 'padmavati_magenta.mp4', sha: 'b57b63af449a', chroma: 'magenta',
+  emerge: [0, 49], act: [50, 110], contactIn: [76, 76], contact: 'nova', contactNote: 'nova: the ring above her palm at its fullest, the audited frame', aim: null, facing: 'right', keyChannel: 'RB' });
+templateActor({ label: 'M32 · LAB-15 · KULIKA BY THE TEMPLATE (her burst is also her exit)', M: WAVE15[1].M, folder: 'kulika', cardId: 'kulika', clip: 'kulika_magenta.mp4', sha: '0d86f04cb13e', chroma: 'magenta',
+  emerge: [0, 69], act: [70, 104], contactIn: [87, 87], contact: 'nova', contactNote: 'nova: the ignition, the audited frame', aim: null, facing: 'left', keyChannel: 'RB' });
+{
+  // LAB-15 · the two findings this rung settled
+  const PD = WAVE15[0].M, KU = WAVE15[1].M;
+  const cells = (M) => M.cells.map((c) => c.src);
+  const boxes = (M) => M.cells.map((c) => Math.max(c.w, c.h));
+  ok('M33 · LAB-15 · BOX COMPACTNESS DRIVES ATLAS COST, NOT CHARACTER SIZE — and Padmavati is the lab\'s FIRST CARD BELOW 384. Her box is compact: hood-tall but never frame-wide, so the scale that fits her into a cell is LARGER than a sprawling actor\'s and every cell is denser. At 384 she would put 12.3 MB on the 256 rung, the highest figure in the lab; at cellPx ' + PD.cellPx + ' she costs ' + (MAN.decodedBytes(MAN.forRung(PD, 256)) / 1048576).toFixed(1) + ' MB. Kulika is the same lesson inverted: her specks span the whole frame during the burst, so her scale shrinks and she is cheap at cellPx ' + KU.cellPx + ' (' + (MAN.decodedBytes(MAN.forRung(KU, 256)) / 1048576).toFixed(1) + ' MB). Both clear the M21 quarter-rung invariant',
+     PD.cellPx === 320 && KU.cellPx === 448 && PD.cellMax === 512 && KU.cellMax === 512 &&
+     Math.max.apply(null, boxes(PD)) === PD.cellPx && Math.max.apply(null, boxes(KU)) === KU.cellPx &&
+     MAN.decodedBytes(MAN.forRung(PD, 256)) * 4 <= MAN.decodedBytes(PD) * 1.02 &&
+     MAN.decodedBytes(MAN.forRung(KU, 256)) * 4 <= MAN.decodedBytes(KU) * 1.02 &&
+     MAN.decodedBytes(MAN.forRung(PD, 256)) < 10 * 1048576 && MAN.decodedBytes(MAN.forRung(KU, 256)) < 10 * 1048576,
+     J(WAVE15.map((c) => [c.name, c.M.cellPx, c.M.atlasSize, (MAN.decodedBytes(MAN.forRung(c.M, 256)) / 1048576).toFixed(1)])));
+  const covers = (M, firstBad) => { const ft = M.audit.fadeTail, lastKept = cells(M)[cells(M).length - 1];
+    return ft[0][0] <= firstBad && ft[9][0] === lastKept && M.audit.droppedTail[0] === lastKept + 1; };
+  ok('M34 · LAB-15 · THE FADE TAIL COVERS THE DECAY, NEVER THE GOOD FRAMES — the general structure LAB-13, LAB-14 and LAB-15 each instantiate. A magenta clip degrades at its end: a translucent figure un-mixes to pink (Kartikeya, Padmavati) or a burst fades leaving pale ground (Takshaka, Kulika). The ramp is placed so its declining alpha lands ON that degrading window, and everything past the ramp floor is TRIMMED. Padmavati\'s pink creeps in from f106 and her ramp runs f' + PD.audit.fadeTail[0][0] + '–f' + PD.audit.fadeTail[9][0] + ', dropping ' + J(PD.audit.droppedTail) + '; Kulika\'s pale cloud dominates from f099 and her ramp runs f' + KU.audit.fadeTail[0][0] + '–f' + KU.audit.fadeTail[9][0] + ' so the burst plays at full alpha, dropping ' + J(KU.audit.droppedTail) + '. The ramp always ends on the last kept cell and the trim always begins the frame after',
+     covers(PD, 106) && covers(KU, 99) &&
+     J(PD.audit.droppedTail) === J([111, 120]) && J(KU.audit.droppedTail) === J([105, 120]) &&
+     PD.audit.fadeTail.every((x, k) => Math.abs(x[1] - (1 - k / 9)) < 1e-4) && KU.audit.fadeTail.every((x, k) => Math.abs(x[1] - (1 - k / 9)) < 1e-4) &&
+     J(MAN.contactStrength(PD)) === J({ flash: 0.5, impulse: 0 }) && J(MAN.contactStrength(KU)) === J({ flash: 1, impulse: 1 }) &&
+     PD.contact === 26 && KU.contact === 17 &&
+     WAVE15.every((c) => c.M.contactRule === 'nova' && c.M.exit === 'native' && c.M.phases.fizzle === undefined && c.M.travelScale === undefined &&
+                         c.M.audit.recipe.keyKind === 'pair' && c.M.audit.recipe.pivot === 'feet' &&
+                         c.M.audit.featherBottom.guardScope === 'emerge'),
+     J(WAVE15.map((c) => [c.name, c.M.audit.fadeTail[0][0], c.M.audit.fadeTail[9][0], c.M.audit.droppedTail, c.M.audit.featherBottom])));
+}
 {
   // LAB-14 · what the first Naga rung settled
   const [VS, TK, SH] = NAGAS.map((n) => n.M);
@@ -753,7 +808,7 @@ console.log('\n── K · the sources rule (A7) ──');
   const raw = tracked.filter((p) => (p.indexOf('lab/') === 0 || p.indexOf('assets/') === 0) && (/(^|\/)(frames|matted|sources|clips_raw)\//.test(p) || /(^|\/)frame_\d+\.(png|jpe?g|webp)$/i.test(p) || /(^|\/)f\d{3}\.png$/.test(p)));
   ok('K2 · no raw or matted frame, and nothing from sources/, is tracked anywhere under lab/ or assets/ (' + raw.length + ')', raw.length === 0, raw.slice(0, 5).join(', '));
   const ignored = (p) => { try { cp.execFileSync('git', ['check-ignore', '-q', p], { cwd: GAME }); return true; } catch (e) { return false; } };
-  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg', 'lab/vfx-manifestation/sources/varuna/varuna_green.mp4', 'lab/vfx-manifestation/sources/varuna/varuna-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/varuna/f086.png', 'lab/vfx-manifestation/frames/varuna_contact_sheet.jpg', 'lab/vfx-manifestation/sources/agni/agni_green.mp4', 'lab/vfx-manifestation/sources/mahabali/mahabali_green.mp4', 'lab/vfx-manifestation/sources/shukracharya/shukracharya_green.mp4', 'lab/vfx-manifestation/sources/mahishi/mahishi_green.mp4', 'lab/vfx-manifestation/sources/vritra/vritra_green.mp4', 'lab/vfx-manifestation/sources/garuda/garuda_green.mp4', 'lab/vfx-manifestation/sources/kartikeya/kartikeya_magenta.mp4', 'lab/vfx-manifestation/sources/vasuki/vasuki_magenta.mp4', 'lab/vfx-manifestation/sources/takshaka/takshaka_magenta.mp4', 'lab/vfx-manifestation/sources/shesha/shesha_magenta.mp4'].concat(fs.readdirSync(path.join(LAB, 'sources')).filter((n) => fs.existsSync(path.join(LAB, 'sources', n, n + '-isolated-kling-source-v1.png'))).map((n) => 'lab/vfx-manifestation/sources/' + n + '/' + n + '-isolated-kling-source-v1.png'));   // every identity master staged in sources/
+  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg', 'lab/vfx-manifestation/sources/varuna/varuna_green.mp4', 'lab/vfx-manifestation/sources/varuna/varuna-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/varuna/f086.png', 'lab/vfx-manifestation/frames/varuna_contact_sheet.jpg', 'lab/vfx-manifestation/sources/agni/agni_green.mp4', 'lab/vfx-manifestation/sources/mahabali/mahabali_green.mp4', 'lab/vfx-manifestation/sources/shukracharya/shukracharya_green.mp4', 'lab/vfx-manifestation/sources/mahishi/mahishi_green.mp4', 'lab/vfx-manifestation/sources/vritra/vritra_green.mp4', 'lab/vfx-manifestation/sources/garuda/garuda_green.mp4', 'lab/vfx-manifestation/sources/kartikeya/kartikeya_magenta.mp4', 'lab/vfx-manifestation/sources/vasuki/vasuki_magenta.mp4', 'lab/vfx-manifestation/sources/takshaka/takshaka_magenta.mp4', 'lab/vfx-manifestation/sources/shesha/shesha_magenta.mp4', 'lab/vfx-manifestation/sources/padmavati/padmavati_magenta.mp4', 'lab/vfx-manifestation/sources/kulika/kulika_magenta.mp4'].concat(fs.readdirSync(path.join(LAB, 'sources')).filter((n) => fs.existsSync(path.join(LAB, 'sources', n, n + '-isolated-kling-source-v1.png'))).map((n) => 'lab/vfx-manifestation/sources/' + n + '/' + n + '-isolated-kling-source-v1.png'));   // every identity master staged in sources/
   const present = must.filter((p) => fs.existsSync(path.join(GAME, p)));
   const strayDir = path.join(GAME, 'assets', 'vfx', 'experimental'), stray = [];
   (function walk(d) { if (!fs.existsSync(d)) return; fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else if (/\.(png|jpe?g|webp|mp4|mov)$/i.test(n)) stray.push(rel(q)); }); })(strayDir);
@@ -817,7 +872,7 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
                                        : 'no number at all — ' + name + ' only enters, so SETTLE lands the board with him on it and nothing floats' };
     });
     ok('S4b · LAB-7 · the stage suite and its gate run for EVERY registry card with an actor, built from data/manifestations.json: ' + CARDS.map((c) => c.name + ' (' + c.id + ', ' + c.faction + ', ' + (c.exit === 'native' ? 'the native exit' : 'the ' + c.presetName + ' exit') + (c.exempt ? ', ladder-exempt' : '') + ')').join(' · '),
-       J(CARDS.map((c) => c.id)) === J(['meghnad', 'indra', 'hanuman', 'varuna', 'agni', 'mahabali', 'shukra', 'mahishi', 'vritra', 'garuda', 'kartikeya', 'vasuki', 'takshaka', 'shesha']) && J(CARDS.map((c) => c.exit)) === J(['procedural', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native']) && CARDS.every((c) => c.M.cardId === c.id && c.FX.every((f) => f.diff.entered.some((x) => x.id === c.id))) && J(CARDS[0].expectFloats(0)) === J([{ uid: FX[0].before.seats[FX[0].defenderSeat].heroes[0].uid, delta: -2 }]), J(CARDS.map((c) => [c.id, c.faction, c.expectFloats(0)])));
+       J(CARDS.map((c) => c.id)) === J(['meghnad', 'indra', 'hanuman', 'varuna', 'agni', 'mahabali', 'shukra', 'mahishi', 'vritra', 'garuda', 'kartikeya', 'vasuki', 'takshaka', 'shesha', 'padmavati', 'kulika']) && J(CARDS.map((c) => c.exit)) === J(['procedural', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native', 'native']) && CARDS.every((c) => c.M.cardId === c.id && c.FX.every((f) => f.diff.entered.some((x) => x.id === c.id))) && J(CARDS[0].expectFloats(0)) === J([{ uid: FX[0].before.seats[FX[0].defenderSeat].heroes[0].uid, delta: -2 }]), J(CARDS.map((c) => [c.id, c.faction, c.expectFloats(0)])));
     const ALLGATES = [];
     const stageSuite = (CARD) => {
       const CARD_ST = MAN.contactStrength(CARD.M);   // LAB-9: a self-cast softens its flash and may forbid the camera impulse entirely

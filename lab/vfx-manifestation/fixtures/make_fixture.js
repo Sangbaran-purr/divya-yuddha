@@ -123,6 +123,10 @@ const HERO_ENTRIES = {
           ruling: 'LAB-14 - one of the first NAGA actors. A1: the Hero enters and nothing else changes - his passive only strips enemy Hero immunity from Naga Astras, and no Astra resolves here' },
   shesha: { card: 'Shesha', faction: 'nagas', deck: ['Shesha'].concat(NAGA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'shesha_play',
           ruling: 'LAB-14 - one of the first NAGA actors. A1: the Hero enters and nothing else changes - his passive waits for a lost round and a Unit in the discard' },
+  padmavati: { card: 'Padmavati', faction: 'nagas', deck: ['Padmavati'].concat(NAGA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'padmavati_play',
+          ruling: 'LAB-15 - a WAVE-1 Naga hero, reached by NAME through the scenario deck, no shim (the LAB-11 finding). A1 (the board is the truth): the Hero enters and nothing else changes - her Venom lands at ROUND END, not on play' },
+  kulika: { card: 'Kulika', faction: 'nagas', deck: ['Kulika'].concat(NAGA_DECK.slice(0, 11)), oppFaction: 'devas', oppDeck: DEVA_DECK, fixture: 'kulika_play',
+          ruling: 'LAB-15 - a WAVE-1 Naga hero, reached by NAME through the scenario deck, no shim. A1: the Hero enters and nothing else changes - her ON PLAY transfers Venom from friendly Units to enemies, and an empty board has neither' },
   varuna: { card: 'Varuna', faction: 'devas', deck: ['Varuna', 'Narada', 'Chandra Dev', 'Yama', 'Marut', 'Gandharva', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Vishwakarma', 'Agni'], oppFaction: 'asuras', oppDeck: ASURA_DECK, fixture: 'varuna_play',
            ruling: 'VFX-LAB-8 — the fourth character, the first native exit; A1 (the board is the truth): the Hero enters and nothing else changes (his passive limits the opponent\'s Astras; it changes no card on an empty board)' },
 };

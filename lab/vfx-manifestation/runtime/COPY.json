@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "3ff4a232c598cc1c75aa7ed3450ce3c9e28ec511",
+    "gameCommit": "8afb21d7ade333c4eea0b78ae94c6cfa9b148e77",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -213,6 +213,26 @@
       "to": "art/Nagas_Hero_Shesha_P7_rLegendary.png",
       "bytes": 412177,
       "sha256": "23e3c4d6895238eb20c566c8b867e959acf8425397b4fd0680639e23847b8836",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Nagas_Hero_Padmavati_P7_rLegendary.png",
+      "to": "art/Nagas_Hero_Padmavati_P7_rLegendary.png",
+      "bytes": 414273,
+      "sha256": "4a18d7867134d61e8dd9bc0204fb590eeae95d1a86865643033017a387270544",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Nagas_Hero_Kulika_P8_rLegendary.png",
+      "to": "art/Nagas_Hero_Kulika_P8_rLegendary.png",
+      "bytes": 357387,
+      "sha256": "90c6b9f9f69a2bb23bd513c5844c6c9b40b4c0bde6c6d2f83bd604d3b30b5370",
       "px": {
         "w": 750,
         "h": 1050
