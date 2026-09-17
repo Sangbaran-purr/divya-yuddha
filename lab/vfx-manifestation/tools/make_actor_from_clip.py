@@ -117,7 +117,7 @@ CARDS = {
                 "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
     "kartikeya": {"label": "Kartikeya", "clip": "kartikeya/kartikeya_magenta.mp4", "emerge": (0, 44), "act": (45, 102), "tempo": None,   # LAB-13: the first MAGENTA ground, keyed by the R+B pair; stopped at f102, past which his translucent dissolve un-mixes to pink ground residue
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("bolt-edge", (44, 64)), "settled": 0, "pivot": "feet",
-                "facing": "right", "aim": None, "feather": 8, "engine_id": "kartikeya",
+                "facing": "right", "aim": None, "feather": 8, "engine_id": "kartikeya", "travel_scale": 0,   # LAB-13a: the Vel throws, the god stands. bolt-edge does NOT imply travel - travel is per-card data, and LAB-13 simply never set it
                 "exit": "native", "fade_tail": 10, "cell_px": 384, "thin_alternate": None},   # LAB-13: 448 was ruled, but at 448 his 256 rung packs to 27.3% of the 512 rung and fails the A5 quarter-rung invariant; 384 packs to 25.4% and costs 8.0 MB on the low rung, the least of any card
 }
 CFG = None

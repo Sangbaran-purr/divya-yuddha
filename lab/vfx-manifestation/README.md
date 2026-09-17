@@ -906,6 +906,32 @@ All four are genuine character-in-band cases, verified by eye — not fire artif
 
 **The all-frames EMERGE-scoped guard governs every future pack.** The three bands above are grandfathered by measurement, not by exception: their numbers are recorded here so that a later repack of any of them is a deliberate act with the figures already on the table.
 
+## LAB-13a: Kartikeya in place — bolt-edge does not imply travel
+
+The owner saw Kartikeya shift position on the contact sound. He did, and the cause was an omission rather than a mechanism.
+
+**What was measured.** Max actor movement between frames inside ACT, both seats, both rungs:
+
+| card | before | after |
+|---|---|---|
+| **Kartikeya** | **0.80 px** (seat 0) · **1.47 px** (seat 1) | **0.01 px** |
+| Meghnad (the traveller) | 1.35 · 2.48 | unchanged |
+| Indra, Bali (travelScale 0) | 0.04, 0.03 | unchanged |
+| the seven nova cards | 0 | unchanged |
+
+Per-frame is the gentle end of it: the displacement he actually walked across ACT was **31 px at the player's seat and 57 px at the top seat** — the same charge distance S21 quotes — which is plainly visible on a board.
+
+**Why the existing protections missed him.** There are two ways a card performs in place, and they are not the same thing:
+
+- a **nova** bursts where it stands whatever its data says — the LAB-9a special case in `playback.js`, which covers Varuna, Agni, Mahabali, Shukracharya, Mahishi, Vritra and Garuda;
+- every other in-place card carries **`travelScale: 0` as data** — the LAB-10 mechanism, Indra and Bali.
+
+Kartikeya is **bolt-edge**, not nova, so the first never applied; and the LAB-13 greenlight never set the second. He shipped on the default `travelScale` of 1 and charged. **The contact rule was not the cause — the missing data line was.** `bolt-edge` says where the contact lands, not whether the actor moves; travel is per-card data and has to be stated. Indra is the proof in the other direction: also bolt-edge, and in place since LAB-10 because his card says so.
+
+**The fix** is one data line — `travel_scale: 0` on his card, emitted as `travelScale: 0` in the manifest by the LAB-10 mechanism. The repack is data-only: **both atlases are byte-identical** and the manifest gains exactly one line. Contact stays ACT cell 5 → f050 and the cue timing is unchanged.
+
+**The lasting guard is M25**, which reads *who travels* off the registry rather than a hand list: it re-derives every card's effective travel each run and requires that exactly one card still charges. Meghnad remains the only travelling card in the lab — as he has been since LAB-10, and now provably so rather than by assumption.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference
