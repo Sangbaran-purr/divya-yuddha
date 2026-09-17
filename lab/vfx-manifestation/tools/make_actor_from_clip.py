@@ -115,6 +115,10 @@ CARDS = {
                 "matte": "bright", "key": (10.0, 45.0), "contact": ("nova", 41), "settled": 0, "pivot": "feet",
                 "facing": "left", "aim": None, "feather": 8, "engine_id": "garuda",
                 "exit": "native", "fade_tail": 10, "cell_px": 448, "thin_alternate": None},
+    "kartikeya": {"label": "Kartikeya", "clip": "kartikeya/kartikeya_magenta.mp4", "emerge": (0, 44), "act": (45, 102), "tempo": None,   # LAB-13: the first MAGENTA ground, keyed by the R+B pair; stopped at f102, past which his translucent dissolve un-mixes to pink ground residue
+                "matte": "bright", "key": (10.0, 45.0), "contact": ("bolt-edge", (44, 64)), "settled": 0, "pivot": "feet",
+                "facing": "right", "aim": None, "feather": 8, "engine_id": "kartikeya",
+                "exit": "native", "fade_tail": 10, "cell_px": 384, "thin_alternate": None},   # LAB-13: 448 was ruled, but at 448 his 256 rung packs to 27.3% of the 512 rung and fails the A5 quarter-rung invariant; 384 packs to 25.4% and costs 8.0 MB on the low rung, the least of any card
 }
 CFG = None
 def configure(card):
@@ -145,7 +149,26 @@ def key_channels(K):
     kc = int(np.argmax(K)); o = [c for c in (0, 1, 2) if c != kc]
     return kc, o[0], o[1]
 
+PAIR_NAME = {(0, 1): "yellow", (0, 2): "magenta", (1, 2): "cyan"}
+def key_axes(K):
+    # LAB-13: a chroma ground is keyed either by ONE channel (green, blue — the ground's strongest, LAB-7) or by a PAIR of
+    # channels that together oppose the third (magenta = R and B against G). argmax alone cannot tell them apart: on magenta
+    # (243, 6, 240) it picks R, and "R - max(G, B)" is 243 - 240 = 3, so the ground reads as LESS key-coloured than the figure
+    # and the matte comes out inverted. The pair is read off the sorted ground: the top two close, the third far below.
+    order = [int(c) for c in np.argsort(K)[::-1]]; hi, mid, lo = [float(K[c]) for c in order]
+    if (hi - mid) < 0.25 * (mid - lo): return "pair", tuple(sorted(order[:2])), int(order[2])
+    return "single", (int(order[0]),), tuple(sorted(order[1:]))
+
+def chroma_label(K):
+    kind, keys, _ = key_axes(K)
+    return PAIR_NAME[keys] if kind == "pair" else {0: "red", 1: "green", 2: "blue"}[keys[0]]
+
+def key_tag(K):
+    # what the manifest records: "G", "B" for a single channel, "RB" for a magenta pair
+    return "".join("RGB"[c] for c in key_axes(K)[1])
+
 def key(rgb, K):
+    if key_axes(K)[0] == "pair": sys.exit("the dark-body matte is single-channel only; this ground is a %s pair key — use matte \"bright\"" % chroma_label(K))
     kc, o1, o2 = key_channels(K)
     a = rgb.astype(np.float32)
     dom = a[..., kc] - np.maximum(a[..., o1], a[..., o2])                   # key dominance (on green: G − max(R, B))
@@ -180,16 +203,31 @@ def key_bright(rgb, K):
     # the "bright" matte (LAB-6): the key, strict (T0/T1 low, so key-tinted sparkle keys out); then, next to solid matter, every pixel
     # keeps at least the alpha its colour UN-MIXES to — the largest a with F = (C − (1−a)K)/a not key-dominant — so thin light (a bolt's
     # edges, a mace's glow, a shockwave ring) keeps its alpha where the plain key would drop it; then decontam + despill. Any key colour (LAB-7).
-    kc, o1, o2 = key_channels(K)
+    # LAB-13: the key may be a PAIR (magenta = R and B against G). Both cases are the same shape — "the key level, less the best
+    # non-key level" — so only how the two levels are read differs; the single-channel path below is untouched, to the operation.
+    kind, keys, other = key_axes(K)
     a = rgb.astype(np.float32)
-    ak = 1.0 - np.clip((a[..., kc] - np.maximum(a[..., o1], a[..., o2]) - KEY_T0) / (KEY_T1 - KEY_T0), 0, 1)
     d = a - K
-    au = np.maximum(np.clip(-(d[..., kc] - d[..., o1]) / max(1.0, float(K[kc] - K[o1])), 0, 1), np.clip(-(d[..., kc] - d[..., o2]) / max(1.0, float(K[kc] - K[o2])), 0, 1))
+    if kind == "pair":
+        k1, k2 = keys; o = other
+        lev, oth = np.minimum(a[..., k1], a[..., k2]), a[..., o]                 # the pair's JOINT level against the lone other
+        au = np.clip(-(np.minimum(d[..., k1], d[..., k2]) - d[..., o]) / max(1.0, float(min(K[k1], K[k2]) - K[o])), 0, 1)
+    else:
+        kc = keys[0]; o1, o2 = other
+        lev, oth = a[..., kc], np.maximum(a[..., o1], a[..., o2])
+        au = np.maximum(np.clip(-(d[..., kc] - d[..., o1]) / max(1.0, float(K[kc] - K[o1])), 0, 1), np.clip(-(d[..., kc] - d[..., o2]) / max(1.0, float(K[kc] - K[o2])), 0, 1))
+    ak = 1.0 - np.clip((lev - oth - KEY_T0) / (KEY_T1 - KEY_T0), 0, 1)
     near = cv2.dilate((ak > SOLID).astype(np.uint8), cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * RESCUE_R + 1, 2 * RESCUE_R + 1))).astype(bool)
     alpha = np.where(near, np.maximum(ak, au), ak)
     am = np.maximum(alpha, 0.05)[..., None]
     fg = np.clip((a - (1.0 - alpha)[..., None] * K) / am, 0, 255)
-    fg[..., kc] = np.minimum(fg[..., kc], np.maximum(fg[..., o1], fg[..., o2]))
+    if kind == "pair":
+        # despill, the dual of the single-channel rule: subtract the pair's excess over the lone other from BOTH key channels,
+        # so neither can end below it. Gold, white and the peacock's blue-green have no such excess and pass through untouched.
+        sp = np.maximum(0.0, np.minimum(fg[..., k1], fg[..., k2]) - fg[..., o])
+        fg[..., k1] -= sp; fg[..., k2] -= sp
+    else:
+        fg[..., kc] = np.minimum(fg[..., kc], np.maximum(fg[..., o1], fg[..., o2]))
     return alpha, fg
 
 def isolate_bright(alpha):
@@ -257,7 +295,7 @@ def main(card="meghnad"):
     H, W = frames[0].shape[:2]
     K = np.array(CFG["key_colour"], np.float32) if isinstance(CFG.get("key_colour"), (list, tuple)) else ground_colour(frames[0])
     sha = hashlib.sha256(open(CLIP, "rb").read()).hexdigest()
-    print("clip %d frames @ %.0f fps · %dx%d · ground RGB %s · key channel %s (%s)" % (len(frames), fps, W, H, K.astype(int).tolist(), "RGB"[key_channels(K)[0]], "pinned" if isinstance(CFG.get("key_colour"), (list, tuple)) else "auto from the corners"))
+    print("clip %d frames @ %.0f fps · %dx%d · ground RGB %s · key channel %s (%s)" % (len(frames), fps, W, H, K.astype(int).tolist(), key_tag(K), "pinned" if isinstance(CFG.get("key_colour"), (list, tuple)) else "auto from the corners"))
     grays = {i: cv2.resize(cv2.cvtColor(f, cv2.COLOR_RGB2GRAY), (240, 135)) for i, f in enumerate(frames)}
 
     mattes = {}
@@ -319,12 +357,18 @@ def main(card="meghnad"):
             if CFG["matte"] == "bright": al, _ = key_bright(frames[i], K); al, _ = isolate_bright(al)
             else: al, _ = key(frames[i], K); al, _ = isolate(al, frames[i])
             return al                                                    # NO side feather: its own 8 px ramp would read as the core's edge
-        gaps = {SETTLED_FRAME: core_gap(raw_matte(SETTLED_FRAME))}       # the character standing: the ground contact the pivot itself uses
-        room = gaps[SETTLED_FRAME] - 2
+        # LAB-13: measured across EVERY EMERGE frame, not the settled frame alone. The settled frame is one pose; a character who
+        # MOVES through the band (Garuda's talons ride the bottom edge for sixteen frames) defeats a single-frame check, which is how
+        # LAB-12 found this latent. EMERGE is the right scope: it is the character before the action, so the core is the character —
+        # from the action on, what reaches the edge is the fire the band exists to fade (Agni's core "touches" the edge at f097 only
+        # because the fire has merged into it).
+        gaps = {i: core_gap(raw_matte(i)) for i in emerge}
+        worst = min(gaps.values()); worst_at = min(i for i, v in gaps.items() if v == worst)
+        room = worst - 2
         if BOTTOM > room: BOTTOM = max(0, room)
         pooled = [i for i in kept if i > SETTLED_FRAME and (raw_matte(i)[-1:, :] > 0.5).any()]
-        bottom_note = "%d px (the standing core stops %d px above the edge on f%03d; asked %d; from f%s the clip's own fire reaches the edge and the band fades that, as intended)" % (
-            BOTTOM, gaps[SETTLED_FRAME], SETTLED_FRAME, CFG["feather_bottom"], ("%03d" % pooled[0]) if pooled else "—")
+        bottom_note = "%d px (the core comes within %d px of the edge on f%03d — the closest of all %d EMERGE frames, settled f%03d reads %d; asked %d; from f%s the clip's own fire reaches the edge and the band fades that, as intended)" % (
+            BOTTOM, worst, worst_at, len(gaps), SETTLED_FRAME, gaps.get(SETTLED_FRAME, -1), CFG["feather_bottom"], ("%03d" % pooled[0]) if pooled else "—")
     print("bottom feather: %s" % bottom_note)
     shares = {i: fringe_share(frames[i], matte(i)[0], K)[0] for i in kept}
     need = [i for i in kept if shares[i] > FRINGE_LIMIT]
@@ -421,7 +465,7 @@ def main(card="meghnad"):
     ne = len(emerge)
     manifest = {
         "cardId": CFG.get("engine_id") or CARD, "class": "actor", "version": 2, "placeholder": False,
-        "source": "Kling clip %s (sha256 %s…, %d frames @ %d fps, %dx%d, chroma %s) — kept f%d–f%d; matted by tools/make_actor_from_clip.py" % (os.path.basename(CLIP), sha[:12], len(frames), round(fps), W, H, {"R": "red", "G": "green", "B": "blue"}["RGB"[key_channels(K)[0]]], kept[0], kept[-1]),
+        "source": "Kling clip %s (sha256 %s…, %d frames @ %d fps, %dx%d, chroma %s) — kept f%d–f%d; matted by tools/make_actor_from_clip.py" % (os.path.basename(CLIP), sha[:12], len(frames), round(fps), W, H, chroma_label(K), kept[0], kept[-1]),
         "atlas": "atlas.webp", "atlasSize": {"w": AW, "h": AH},
         "alpha": "straight", "blend": "normal", "mv": False, "vignette": False, "cellMax": 512,
         "fps": FPS, "timing": "native", "tempo": TEMPO, "phaseMs": PHASE_MS, "facing": CFG["facing"], "mirror": True,
@@ -441,13 +485,13 @@ def main(card="meghnad"):
     if CFG["contact"][0] == "nova": manifest["contactRule"] = "nova"
     if CFG.get("contact_strength"): manifest["contactStrength"] = dict(CFG["contact_strength"])
     if CFG.get("travel_scale") is not None: manifest["travelScale"] = CFG["travel_scale"]   # LAB-10: 0 = performs where it stands; absent = 1, the charge as it always was
-    if BOTTOM: manifest["audit"]["featherBottom"] = {"px": BOTTOM, "asked": CFG["feather_bottom"], "coreGapMin": min(gaps.values()), "guardFrame": SETTLED_FRAME}
+    if BOTTOM: manifest["audit"]["featherBottom"] = {"px": BOTTOM, "asked": CFG["feather_bottom"], "coreGapMin": min(gaps.values()), "guardFrame": min(gaps, key=lambda i: gaps[i]), "guardScope": "emerge", "guardFrames": len(gaps), "settledGap": gaps.get(SETTLED_FRAME)}
     if "cell_px" in CFG:
         manifest["cellPx"] = max(max(c.width, c.height) for _, c, _, _ in cells); manifest["rungs"][0]["cellPx"] = max(max(c.width, c.height) for _, c, _, _ in half)
         manifest["audit"]["atlasLever"] = (["alternate frames dropped in f%d–f%d: %s" % (thin[0], thin[1], ", ".join("f%03d" % i for i in thinned))] if thin else []) + (["cells at %d px" % CELL_MAX] if CELL_MAX != 512 else []) or "none"
     if CFG.get("fade_tail"): manifest["audit"]["fadeTail"] = fade
     if CFG["aim"]: manifest = dict(sum(([(k, v)] + ([("aim", CFG["aim"])] if k == "facing" else []) for k, v in manifest.items()), []))
-    manifest["audit"]["recipe"] = {"matte": CFG["matte"], "key": list(CFG["key"]), "keyColour": [int(round(v)) for v in K.tolist()], "keyChannel": "RGB"[key_channels(K)[0]], "contact": CFG["contact"][0], "pivot": CFG["pivot"], "feather": CFG["feather"],
+    manifest["audit"]["recipe"] = {"matte": CFG["matte"], "key": list(CFG["key"]), "keyColour": [int(round(v)) for v in K.tolist()], "keyChannel": key_tag(K), "keyKind": key_axes(K)[0], "contact": CFG["contact"][0], "pivot": CFG["pivot"], "feather": CFG["feather"],
                                    "msPerSourceFrame": {k: round(v, 4) for k, v in MS_PER_SRC.items()}}
     with open(os.path.join(OUT, "manifest.json"), "w") as f: json.dump(manifest, f, indent=2); f.write("\n")
     with open(os.path.join(AUDIT, "matte_stats.json"), "w") as f: json.dump(stats, f, indent=1)

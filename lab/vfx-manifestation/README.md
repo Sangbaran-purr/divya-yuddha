@@ -819,6 +819,93 @@ The binding constraint is **A5**, whose budget line is drawn against the **256 r
 
 S11 predicted zero lost cells for a 40-cell EMERGE and the suite confirms it: all 117 cells draw in order, none repeated, at 30 Hz and under a 250 ms stall. S21 holds at 3 px. A5 returns to 0 MB between plays.
 
+## LAB-13: Kartikeya — the magenta pair key, and the guard that was only ever checking one frame
+
+The tenth actor and the fourth Wave-1 hero. Two things made this rung: a ground colour the tool could not key at all, and a latent bug LAB-12 found in the bottom-feather guard.
+
+### Magenta is a two-channel key, and the old rule inverted him
+
+His ground is **(243, 6, 240)** — R and B both high and nearly equal, G near zero. `key_channels` took `argmax` → R, so the keyness metric read `R − max(G, B) = 243 − 240 = **3**`. The second key channel sits right under the first, and the signal collapses.
+
+It did not merely weaken. **It inverted.** Separation between ground and figure was **−31.98**: by that metric the *figure* was more key-coloured than the screen, so the matte kept the magenta and cut the man out as a silhouette, holding 85–100% of the frame.
+
+| metric | ground | figure | separation | frame kept |
+|---|---|---|---|---|
+| `R − max(G,B)` (the old rule) | 2.92 | 34.91 | **−31.98** | 85–100% |
+| `(R+B)/2 − G` | 235.24 | −6.45 | +241.69 | ~19–22% |
+| **`min(R,B) − G`** (shipped) | 233.74 | −48.92 | **+282.65** | ~19–22% |
+
+`min(R,B) − G` was chosen over the mean because it is the structural dual of the rule already there — "the key level, less the **best** non-key level" — and it separates 17% harder.
+
+**The classifier.** `key_axes(K)` sorts the ground and calls it a pair when the top two are close and the third is far below (`hi − mid < 0.25 × (mid − lo)`). Every clip in the lab clears the boundary with room: nine green, Bali's blue at 128 against a 17 threshold, Kartikeya at 3 against 58. So the ten shipped actors keep the single-channel path untouched — proven, not assumed: **Meghnad repacks to byte-identical atlases** (his manifest gains only the new `keyKind` field; a `424.0` → `424` float-format drift in it is **pre-existing**, reproduced by the unmodified tool).
+
+**The despill is what made him paintable.** He rides in beside a **peacock**, and blue-green plumage is exactly what a careless magenta despill destroys. The dual of the green rule (`G ← min(G, max(R,B))`) is: subtract `max(0, min(R,B) − G)` from **both** key channels, so neither can end below the lone other. Measured inside the real matte, every material passes through untouched:
+
+| material | px | mean RGB | spill | after despill |
+|---|---|---|---|---|
+| peacock blue/teal | 33,323 | `[18 65 99]` | 0.0 | `[18 65 99]` |
+| peacock green | 12,685 | `[56 85 50]` | 0.0 | `[56 85 50]` |
+| gold armour | 293,858 | `[147 111 61]` | 0.0 | `[147 111 61]` |
+| white robe | 36,374 | `[223 213 197]` | 0.1 | `[222 213 197]` |
+
+Figure-wide spill is mean 0.1, with 0.3% of pixels above 10. The manifest now records the pair truthfully — `keyChannel: "RB"`, `keyKind: "pair"`, `chroma magenta` — where the old label would have written the false `"R"` and `"red"`. The dark-body matte (Meghnad's, single-channel by construction) now refuses a pair ground rather than keying it wrongly.
+
+### The pack
+
+| | |
+|---|---|
+| EMERGE | f000–f044 (45 cells) — **idle kept** |
+| ACT | f045–f102 (58 cells) |
+| Contact | **f050, ACT cell 5 — bolt-edge** |
+| Exit | native, fade tail f093–f102 |
+| Dropped | f103–f120 |
+| Pivot | standard **feet**, settled f000 → (960.9, 1055) |
+| Atlas | 4048×2033, 2216 KB, **31.4 MB** · 256 rung 2036×1025, 787 KB, **8.0 MB** |
+| Full / Fast | 6886 / 3442 ms |
+
+**His idle is kept, and the distinction is worth recording.** Mahishi's f000–f032 was dropped as *static*; Kartikeya's f000–f044 is *live* — cloth and hair moving at Δ 3.9–5.0 per frame. The no-idle-padding law is about frames that do not change, not about frames where nothing dramatic happens. A live idle is performance; a static one is padding.
+
+**He throws, so `bolt-edge` — not `nova` and not `spear-tip`.** His wings-equivalent is a hurled Vel: a lance of energy that flies right and leaves frame. `spear-tip` is hardcoded to the **leftmost** tip (written for Meghnad, who faces left) and would have found the wrong end; `bolt-edge` is edge-based and fits unchanged. His lance peaks at 558 px on the right edge at f049 and the rule's own quarter-peak guard correctly rejects the f047 grazing tip at 37 px, giving contact **f050**. One constraint recorded in the card: the search window is **(44, 64)**, excluding f028–f034 where his banner grazes the **top** edge, which that rule also counts.
+
+**cellPx 384, not the 448 first ruled.** At 448 his 256 rung packs to **27.3%** of the 512 rung and breaks the A5 quarter-rung invariant this suite enforces. 448 is the outlier, not a trend — 512 packs to 25.3% and 384 to 25.4%. 384 costs **8.0 MB** on the low rung, the least of any card in the lab, at a scale of 0.248 that sits between Garuda's 0.234 and Vritra's 0.249.
+
+### The tail: the Bali-blob class, and worse
+
+A translucent figure over magenta **un-mixes to pink ground**. The share of kept pixels whose source was ground-dominant:
+
+| f098 | f102 | f104 | f106 | f108 | f112 | f114 |
+|---|---|---|---|---|---|---|
+| 8.9% | 12.6% | 17.5% | 27.4% | 35.9% | 52.8% | 56.4% |
+
+Through f102 he is gold and coherent; from f103 he becomes pink blotches with green specks (an un-mix artifact at low alpha, not a despill inversion — the despill cannot push a channel below G by construction). **The trade, stated plainly:** we lose the clip's own disintegration and he exits on the fade tail instead, the Vritra precedent. Keeping it would mean ACT to f107, 12.2 MB on the low rung, and visible pink and green — the numbers are here in case the phone pass wants it back.
+
+**Accepted edge cuts:** the lance leaves the frame's **right** edge f049–f055 — the attack reading correctly, not damage — and his banner grazes the **top** at f028–f034. The 8 px feather softens both.
+
+### The bottom-feather guard was only ever checking one frame
+
+LAB-12 found this latent on Garuda and this rung fixes it. The guard existed to keep the band clear of the character's core; its own comment said "on every frame", but the code measured **the settled frame alone**. A settled frame is one pose. A character who *moves* through the band defeats it — Garuda's talons ride the bottom edge for sixteen EMERGE frames while f000 happens to clear it by 20 px, so a band asked for there would have **passed** and then faded his robe.
+
+**EMERGE is the right scope, and it is not the whole clip.** From the action onward, what reaches the bottom edge is the fire the band exists to fade: Agni's core "touches" the edge at f097 only because the fire has merged into the largest connected component. Measured to contact instead of to the end of EMERGE, Agni reads a false 0 px.
+
+Re-measured against the four shipped bands:
+
+| card | asked | EMERGE-min gap | at | shipped band | under the all-frames guard |
+|---|---|---|---|---|---|
+| Agni | 24 | 22 px | f071 (his bare feet) | 22 px | **20 px** |
+| Mahabali | 24 | **4 px** | f087 (his throne base) | 24 px | **2 px** |
+| Mahishi | 12 | 12 px | f055 (her hem) | 12 px | **10 px** |
+| Vritra | 16 | 22 px | f017 | 16 px | unchanged |
+
+All four are genuine character-in-band cases, verified by eye — not fire artifacts. **Mahabali's is the one that matters:** his throne base sits 4 px above the edge, so his shipped 24 px band is fading roughly 20 px into the throne's lowest step. That is a real shipped defect, not bookkeeping.
+
+**The three shipped bands are ACCEPTED AS SHIPPED — no repacks**, ruled on three grounds.
+
+- **They are proven invisible at viewing size.** All three passed the owner's device pass at these bands. The guard measures source pixels; what reaches a phone is the actor drawn at ~190 px, and a 2 px overage on a 1080 px frame does not survive that reduction.
+- **Mahabali's is structurally unfixable, not merely tolerated.** His fire and his throne base occupy the *same bottom rows*: any band wide enough to fade the fire fades the step, and the compliant 2 px band would simply resurrect the hard cut the feather exists to hide. There is no band that satisfies both. Fixing it would need the fire and the throne separated in the matte, which the largest-connected-component core cannot do once they touch.
+- **Agni and Mahishi are 2 px overages** — 22 against 20, and 12 against 10.
+
+**The all-frames EMERGE-scoped guard governs every future pack.** The three bands above are grandfathered by measurement, not by exception: their numbers are recorded here so that a later repack of any of them is a deliberate act with the figures already on the table.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

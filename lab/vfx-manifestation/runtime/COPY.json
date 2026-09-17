@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "c13ac059fcb7a77ab106d91b3bba77b7e6840ab6",
+    "gameCommit": "7ecf72c2a3c5f64ad72560bc1da5819d53f1a76b",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -173,6 +173,16 @@
       "to": "art/Devas_Hero_Garuda_P7_rLegendary.png",
       "bytes": 498961,
       "sha256": "bc647ef0f4322b1eacc9a5ba8ae360eb5678d3bf75ece8a337c5f8871a90ba70",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Devas_Hero_Kartikeya_P8_rLegendary.png",
+      "to": "art/Devas_Hero_Kartikeya_P8_rLegendary.png",
+      "bytes": 509797,
+      "sha256": "5b162746a1c33a900722015d741d5bcd690864d063fc2138db04b53588cc204b",
       "px": {
         "w": 750,
         "h": 1050
