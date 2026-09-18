@@ -315,3 +315,43 @@ X11. THE EXPERIMENT RULE, AMENDED NARROWLY (owner ruling, EXPORT-1).
     stays UNTOUCHABLE — zero engine lines; the export is
     presentation only. The lab stays intact and working: everything
     is copied out of lab/, nothing moves.
+
+## AMENDMENT 2026-09-18 — THE HEROES ENTER THE GAME (EXPORT-2)
+
+Y1. THE PLAN-AWARE WATCHDOG, built first. The choreography
+    watchdog's budget is per step: 8,000 ms for an ordinary step, and
+    a Hero manifestation raises its own step's budget to its plan's
+    total + 2,000 ms (choreoBudgetFor). Every new step resets it.
+    Vasuki's Full plan (8,018 ms) runs under a 10,018 ms budget; the
+    same tick with the old flat cap trips on him, and the game's
+    manifest suite pins exactly that (H11, falsifiable).
+Y2. TWENTY HEROES, ONE LAW. Every Hero the engine has — the twelve
+    launch Heroes and the eight wave Heroes — is routed; Meghnad
+    (a Unit) is not. Each plays AWAKEN → EMERGE → ACT (contact on its
+    contact cell) → SETTLE with a native exit, in place, at the 256
+    rung, Full in every mode (solo, story, the wire). Every other
+    card keeps its presentation byte-for-byte.
+Y3. THE BATCH STAYS WITH THE GAME. The manifestation's context is
+    built from the whole batch (so the board difference is split into
+    what a later event carries and what none does), then its queue is
+    emptied: SETTLE floats only the un-evented part (GL-4 — Indra's
+    aura +1s float for the first time), and the game's own loop plays
+    the rest of the batch as it always has. Per Unit, the SETTLE float
+    plus what the later events carry equals its whole change.
+Y4. PRESENTATION CHOICES MADE IN THE PORT. The stage runs Canvas 2D
+    (its default); the game's Pixi layer stays the only GPU context
+    on the page. The actor's own contact impulse replaces the
+    spectacle screen-shake at the play (never both); the game's
+    card-pulse and callout stay, so the plan's pulse is a no-op.
+    Prior is always 0 (a Hero enters once per match).
+Y5. FAIL-OPEN, TO THE LETTER. Not ready at the play, a refused
+    decode, a decode still pending at EMERGE (or one that never
+    settles), a missing manifest, no actors in the registry, or
+    reduced motion: the Hero plays today's landing. The manifestation
+    never waits on a decode; one that lands after the Hero was handed
+    back is released at once. Failures go to console.warn and the
+    battle log's diagnostics (layer 'actor'), never narrated.
+Y6. MEMORY. Compressed bytes are prefetched when a routed Hero enters
+    a visible hand; the atlas decodes on play, alongside AWAKEN, and
+    is released after SETTLE. One actor decoded at a time: the peak
+    is the largest single actor (14.23 MB).

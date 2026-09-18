@@ -68,13 +68,13 @@ console.log('\n── 1 · the seat pin (index.html UI, comments stripped) ─�
      /let ME = 0, OPP = 1;/.test(UI) && /function setSeats\(me\)/.test(UI) && /function halfSel\(pi\)/.test(UI));
   ok('vs-AI and Story set ME=0 at their entries',
      /function startGame\([^)]*\)\{[\s\S]{0,160}setSeats\(0\)/.test(UI) && /function startStoryChapter\(id\)\{[\s\S]{0,160}setSeats\(0\)/.test(UI));
-  // BW3b — THE QUERY FACADE: every one of the screen's engine questions goes through Q (29 sites); a bare call survives
+  // BW3b — THE QUERY FACADE: every one of the screen's engine questions goes through Q (30 sites — EXPORT-2's board snapshot for a Hero manifestation, mfSnap, is the 30th); a bare call survives
   //   only inside the facade itself, by name. Count code, never prose.
   const fStart = code.indexOf('const Q = {'), fEnd = code.indexOf('};', fStart) + 2;
   const outside = code.slice(0, fStart) + code.slice(fEnd);
   const bare = outside.match(/(?<![\w.])(effPower|totalPower|isShielded|playableIndices|targetSpec|canLeap|adjacentUnits|shieldCap)\(/g) || [];
   const viaQ = (outside.match(/\bQ\.(effPower|totalPower|isShielded|playableIndices|targetSpec|canLeap|adjacentUnits|shieldCap)\(/g) || []).length;
-  ok('BW3b facade: 0 bare engine queries outside Q (' + bare.length + '), the 29 sites routed through Q (' + viaQ + ')', fStart > 0 && bare.length === 0 && viaQ === 29, bare.join(' '));
+  ok('BW3b facade: 0 bare engine queries outside Q (' + bare.length + '), the 30 sites routed through Q (' + viaQ + ')', fStart > 0 && bare.length === 0 && viaQ === 30, bare.join(' '));
   // THE WALL — this repo, asserted
   const all = HTML;
   const wall = { WebSocket: (all.match(/WebSocket/g) || []).length, ethers: (all.match(/ethers/gi) || []).length,

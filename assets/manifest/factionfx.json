@@ -1,0 +1,16 @@
+{
+  "about": "VFX-LAB-4b · faction energy: the portal colour and the EXIT. exit \"dissolve\" is the procedural dissolve (lib/dissolve.js): the last ACT cell erodes bottom-up behind a glowing front in the faction's colour, embers rise from the front, faint smoke hangs behind it. Every key under \"dissolve\" is optional; lib/dissolve.js DEFAULTS fill the rest. Asura is tuned against the Kling clip's own dissolve (frames 89–120: magenta front ≈ rgb(231,109,186), hot pink-white core, pink sparks, dark smoke); Deva (LAB-6a) is tuned against Indra's own clip tail (f98–f120: the figure breaks into dense bright gold dust over the whole body, the cloud hangs, then drifts up and fades in ~0.9 s; no dark smoke) with the tuning knobs ember_density · mote_life · mote_size · mote_rise · mote_spread · mote_zone · mote_color · front_width · front_soft · sweep_frac · haze · canvas_cap · gpu_cap (lib/dissolve.js); Naga and Vanara are sane defaults until their first manifestation. fizzle_ms (LAB-4d) is a faction's own FIZZLE length in ms; a preset without it inherits data/manifestations.json defaults.fizzle_ms. Asura: 1500 (owner ruling 2026-09-13). \"embers\" (the shipped runtime's cardLand) is still understood but no faction uses it.",
+  "asuras":  { "name": "Asura",  "portal": "rgba(255,96,48,0.85)",  "exit": "dissolve", "fizzle_ms": 1500,
+               "dissolve": { "edge": "#e76dba", "core": "#ffd9ee", "edgeWidth": 0.06, "charge": 0.26, "chargeAlpha": 0.75, "noise": 0.42, "noiseScale": 6,
+                             "embers": 1, "emberColor": "#ff86d6", "emberSize": [1.1, 2.4], "emberRise": [36, 84], "smoke": true, "smokeColor": "#1b1a1d", "smokeAlpha": 0.2, "seed": 11 } },
+  "devas":   { "name": "Deva",   "portal": "rgba(255,214,120,0.85)", "exit": "dissolve",
+               "dissolve": { "edge": "#ffc94a", "core": "#fff6d8", "front_width": 0.24, "front_soft": 0.08, "charge": 0.6, "chargeAlpha": 1.0, "noise": 0.5, "noiseScale": 9,
+                             "sweep_frac": 0.7, "ember_density": 8, "mote_color": "#ffe08a", "mote_size": [0.6, 1.5], "mote_life": [1100, 1700], "mote_rise": [8, 40], "mote_spread": 26, "mote_zone": 0.6,
+                             "haze": { "color": "#ffd978", "alpha": 0.18, "rate": 30, "life": [800, 1200], "size": [0.14, 0.26], "rise": [8, 22] },
+                             "canvas_cap": 140, "gpu_cap": 700, "smoke": false, "seed": 23 } },
+  "nagas":   { "name": "Naga",   "portal": "rgba(80,220,190,0.85)",  "exit": "dissolve",
+               "dissolve": { "edge": "#34d9b8", "core": "#d6fff3", "embers": 0.7, "emberColor": "#7ff0d6", "smoke": true, "smokeColor": "#0d2721", "smokeAlpha": 0.22, "seed": 31 } },
+  "vanaras": { "name": "Vanara", "portal": "rgba(255,170,80,0.85)",  "exit": "dissolve",
+               "dissolve": { "edge": "#ff9a3c", "core": "#fff0d2", "embers": 1.1, "emberColor": "#ffc070", "smoke": true, "smokeColor": "#261a0e", "seed": 41 } },
+  "default": { "name": "Default", "portal": "rgba(255,230,180,0.8)", "exit": "dissolve", "dissolve": {} }
+}
