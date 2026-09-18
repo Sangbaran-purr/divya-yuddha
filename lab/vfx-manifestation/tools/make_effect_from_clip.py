@@ -49,8 +49,39 @@ EFFECTS = {
               "contract": {"trigger": "passive", "abilityName": "Sudarshana", "target": "enemy-hero", "castSound": "sfx_astra", "impactSound": None,
                            "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 380, "crackAfterMs": 100, "exitKind": "removal", "exitMs": 320,
                            "calloutAfterMs": 300, "destroyDwellMs": 440, "invokeAnchor": "caster-half-centre", "anchor": "target-card-centre", "awaited": False}},
+    # LAB-21 · THE MYTHIC SHELF CLOSES. Two single-strike clips of a NEW class: frame-filling content that crosses every edge in every
+    # frame, no internal build, no ending. So: an ALL-EDGE VIGNETTE (not the top/bottom bands of the Vajra class), an anchor measured at the
+    # clip's own core rather than a strike point, and a scale feature measured per clip — 2.4 card widths is the DEFAULT, not a law (owner
+    # ruling LAB-21/3): the scale is whatever measured legibility allows over the real board.
+    "brahmastra": {"kind": "vignette-clip", "label": "Brahmastra", "clip": "brahmastra/brahmastra_black.mp4", "card_id": "brahmastra",
+              "range": (51, 90), "impact": 75, "impact_rule": "escalation", "impact_window": (66, 84),   # ends at f090: the f093+ vivid-yellow posterized phase is excluded (a reshoot candidate)
+              "cell_px": 416, "fade_in": 4, "fade_tail": 10,
+              "feather_top": 48, "feather_bottom": 64, "feather_left": 96, "feather_right": 96,
+              "anchor_region": "frame",
+              "scale": {"feature": "mandala ring diameter", "frame": 36, "card_widths": 2.0, "ruled_default_card_widths": 2.4,
+                        # LAB-21 PRE-AUTHORIZED FALLBACK TAKEN (owner ruling 2 named 2.0 as the fallback; ruling 3 makes measured legibility the test).
+                        # STEP-0 priced the plate at 277 px and called it "2.4 cw" using a span contaminated by the vertical beam (1080 px). The packer's
+                        # off-beam measure gives the ring 891 px, under which 277 px IS 2.0 cw. Measured on the real vignetted atlas over the real board:
+                        # 2.4 cw = 330x186, 31.6% of the enemy half blown out, its median luma 68 -> 170; 2.0 cw = 275x155, 22.8%, median 106.
+                        "measured": {"2.4cw": {"plate": "330x186", "blownOut": 0.316, "halfMedianLuma": 170},
+                                     "2.0cw": {"plate": "275x155", "blownOut": 0.228, "halfMedianLuma": 106}, "bareHalfMedianLuma": 68}},
+              "guard": {"kind": "ring", "col_in": 260, "col_out": 360, "row_in": 200, "row_out": 300, "thr": 150},
+              "contract": {"trigger": "destroy", "abilityName": "Brahmastra", "anchor": "enemy-half-centre", "castSound": "sfx_brahmastra", "impactSound": "sfx_unit_destroy",
+                           "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 0, "crackAfterMs": 40, "destroyDwellMs": 600, "awaited": False}},
+    "pashupata": {"kind": "vignette-clip", "label": "Pashupatastra", "clip": "pashupatastra/pashupatastra_black.mp4", "card_id": "pashupata",
+              "range": (0, 59), "impact": 24, "impact_rule": "positional",   # S1: the clip starts AT the beat; the impact cell is POSITIONAL — the pin's job is alignment, the columns are already landed
+              "cell_px": 352, "cell_px_fallback": 320, "fade_in": 4, "fade_tail": 10,
+              "feather_top": 12, "feather_bottom": 96, "feather_left": 96, "feather_right": 128,   # the top band is a TOKEN: the vortex rim runs within 16 px of the top edge at f026. Accepted ONLY because the plate's top edge sits flush with the half boundary (owner ruling LAB-21/3 — a POSITIONAL DEPENDENCY, re-ruled if the anchor or scale ever changes)
+              "anchor_region": "top",
+              "scale": {"feature": "vortex span", "frame": 30, "card_widths": 4.1},
+              "guard": {"kind": "blob", "thr": 170, "top_frac": 0.60},
+              "contract": {"trigger": "damage", "abilityName": "Pashupatastra", "anchor": "enemy-half-centre", "castSound": "sfx_astra", "impactSound": "sfx_debuff",
+                           "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 0, "crackAfterMs": 40, "destroyDwellMs": 600, "awaited": False}},
 }
 E1_CAP = 3072 * 1536 * 4   # the effect layer's hi-rung class (LAB-19)
+
+def sl(l, edge):
+    return l[:3] if edge == "top" else l[-3:] if edge == "bottom" else l[:, :3] if edge == "left" else l[:, -3:]
 
 def main_chain_clip(key):
     # LAB-20: a chain member. Same crop / scale / fade / feather law as the single clip; its own anchor rule (the disc's core), its own
@@ -317,7 +348,192 @@ def main(key):
         ft, fb, C["feather_bottom"], ring_low, ring_low_at, guard_frames[0], guard_frames[-1], room, [["f%03d" % i, fades[i]] for i in into], [fades[i] for i in kept[:n_in]], [fades[i] for i in kept[-n_tail:]]))
     print("atlas %dx%d · %.1f KB · decoded %.2f MB · cells %dx%d · anchor %s" % (AW, AH, os.path.getsize(os.path.join(out, "atlas.webp")) / 1024, AW * AH * 4 / 1048576, cw, ch, anchor))
 
+
+def main_vignette(key):
+    # LAB-21: the VIGNETTE CLASS — a single strike clip whose content fills the frame and crosses EVERY edge in EVERY frame. Three things
+    # differ from the Vajra class: (1) an ALL-EDGE vignette instead of top/bottom bands, with a CORE-BODY guard per edge; (2) the anchor is
+    # the clip's own core (its brightest point in a named region), not a strike point on a card — these plates hang on the enemy half;
+    # (3) the scale feature is measured per clip and the card-width figure is whatever measured legibility allows (2.4 is a default, not a law).
+    C = EFFECTS[key]; clip = os.path.join(LAB, "sources", C["clip"])
+    if not os.path.exists(clip): sys.exit("the source clip is not at " + clip)
+    frames, fps = decode(clip); N = len(frames); H, W = frames[0].shape[:2]
+    sha = hashlib.sha256(open(clip, "rb").read()).hexdigest()
+    L = [luma(f) for f in frames]
+    a, b = C["range"]; kept = list(range(a, b + 1))
+
+    # THE GROUND, on the game's own bake metric (alpha = max(R,G,B), T72 bakeAlpha). METHOD NOTE: the Vajra-class "brightest pixel > 300 px
+    # from any content" is STRUCTURALLY UNAVAILABLE here — the content leaves no such region — so the ground is stated as the exact-zero
+    # share (a true transparent floor) and the 1..4 pedestal share (a lifted veil would live there and wash the board under `lighter`).
+    zero_min, ped_max, far = 1.0, 0.0, None
+    for i in kept:
+        al = frames[i].max(axis=2)
+        zero_min = min(zero_min, float((al == 0).mean())); ped_max = max(ped_max, float(((al >= 1) & (al <= 4)).mean()))
+        dist = cv2.distanceTransform(1 - (al > 40).astype(np.uint8), cv2.DIST_L2, 5)
+        g = al[dist > 300]
+        if g.size: far = max(far or 0, int(g.max()))
+    corners = max(int(np.concatenate([frames[i][:32, :32], frames[i][:32, -32:], frames[i][-32:, :32], frames[i][-32:, -32:]]).max()) for i in kept)
+
+    # THE IMPACT. "escalation": the biggest escalation STEP inside the window — the steepest 3-frame rise in the clip's own ADDED light
+    # (rgb * alpha/255, the shipping contribution), which is what a detonation's peak actually is. "positional" (the S1 pattern): the clip
+    # starts at the beat and the impact cell is the one the beat lands on — nothing to measure, so the ruled frame stands.
+    add = [float((frames[i].astype(np.float32) * (frames[i].max(axis=2).astype(np.float32) / 255.0)[..., None]).mean()) for i in range(N)]
+    if C["impact_rule"] == "escalation":
+        w0, w1 = C["impact_window"]
+        rise = {i: add[i] - add[i - 3] for i in range(max(w0, 3), w1 + 1)}
+        impact = max(rise, key=rise.get)
+        if impact != C["impact"]: sys.exit("the measured escalation step f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
+        imp_note = {"rule": "escalation", "window": [w0, w1], "riseOver3Frames": round(rise[impact], 3)}
+    else:
+        impact = C["impact"]; imp_note = {"rule": "positional", "why": "the clip starts at the beat (S1); the impact cell is the one the first resolution cue lands on"}
+    if impact not in kept: sys.exit("the impact f%03d is outside the kept range" % impact)
+
+    # THE ANCHOR: the clip's core — the brightest blurred point on the impact frame, inside the named region
+    reg = L[impact] if C["anchor_region"] == "frame" else L[impact][:int(H * 0.60)]
+    blur = cv2.GaussianBlur(reg, (0, 0), 15); ay, ax = np.unravel_index(int(np.argmax(blur)), blur.shape); CORE = (int(ax), int(ay))
+
+    # THE SCALE FEATURE, measured per clip
+    sf = C["scale"]["frame"]
+    if C["scale"]["feature"] == "mandala ring diameter":
+        # the ring's chord on the VERTICAL axis, read in columns off the beams (the LAB-19 off-beam method — the arms run horizontally)
+        G = C["guard"]; al = frames[sf].max(axis=2)
+        band = np.hstack([al[:, max(0, CORE[0] - G["col_out"]):max(0, CORE[0] - G["col_in"])], al[:, CORE[0] + G["col_in"]:CORE[0] + G["col_out"]]]).max(axis=1)
+        ys = np.where(band >= G["thr"])[0]; span = int(ys[-1] - ys[0] + 1) if ys.size else 0
+    else:
+        # the vortex's horizontal span: the widest bright body in the clip's top band
+        G = C["guard"]; al = frames[sf].max(axis=2)
+        m = np.zeros(al.shape, np.uint8); t = int(H * G["top_frac"]); m[:t] = (al[:t] >= G["thr"])
+        m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (41, 41)))
+        nl, _, st, _ = cv2.connectedComponentsWithStats(m, 8)
+        k2 = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA])); span = int(st[k2, cv2.CC_STAT_WIDTH])
+    if span <= 0: sys.exit("the scale feature measured 0 px on f%03d" % sf)
+
+    # the crop box: the union of content (luma > 4) over the kept frames
+    x0, y0, x1, y1 = W, H, 0, 0
+    for i in kept:
+        ys, xs = np.where(L[i] > 4); x0, y0, x1, y1 = min(x0, int(xs.min())), min(y0, int(ys.min())), max(x1, int(xs.max()) + 1), max(y1, int(ys.max()) + 1)
+    bw, bh = x1 - x0, y1 - y0
+    edges = {e: sum(1 for i in kept if (sl(L[i], e) > 40).any()) for e in ("top", "bottom", "left", "right")}
+
+    n_in, n_tail = C["fade_in"], C["fade_tail"]
+    fades = {}
+    for k2, i in enumerate(kept[:n_in]): fades[i] = round((k2 + 1) / float(n_in + 1), 4)
+    for k2, i in enumerate(kept[-n_tail:]): fades[i] = round(min(fades.get(i, 1.0), 1.0 - k2 / float(n_tail - 1)), 4)
+    tail0 = kept[-n_tail]
+
+    # THE CORE-BODY GUARD, per edge. A band may never reach the clip's core body; the frames where the body itself grows into a band are
+    # NAMED and must lie inside the fade tail (the LAB-19 law). On this class the body reaches an edge on some frames, so naming is the answer.
+    def core_margins(i):
+        al = frames[i].max(axis=2)
+        if C["guard"]["kind"] == "ring":
+            G = C["guard"]
+            cb = np.hstack([al[:, max(0, CORE[0] - G["col_out"]):max(0, CORE[0] - G["col_in"])], al[:, CORE[0] + G["col_in"]:CORE[0] + G["col_out"]]]).max(axis=1)
+            rb = np.vstack([al[max(0, CORE[1] - G["row_out"]):max(0, CORE[1] - G["row_in"]), :], al[CORE[1] + G["row_in"]:CORE[1] + G["row_out"], :]]).max(axis=0)
+            ys = np.where(cb >= G["thr"])[0]; xs = np.where(rb >= G["thr"])[0]
+            t, bo = (int(ys[0]), H - 1 - int(ys[-1])) if ys.size else (H, H)
+            l, r = (int(xs[0]), W - 1 - int(xs[-1])) if xs.size else (W, W)
+            return {"top": t, "bottom": bo, "left": l, "right": r}
+        G = C["guard"]; m = np.zeros(al.shape, np.uint8); t2 = int(H * G["top_frac"]); m[:t2] = (al[:t2] >= G["thr"])
+        m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (41, 41)))
+        nl, _, st, _ = cv2.connectedComponentsWithStats(m, 8)
+        if nl < 2: return {"top": H, "bottom": H, "left": W, "right": W}
+        k3 = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
+        bx, by, bwid, bhgt = (int(st[k3, cv2.CC_STAT_LEFT]), int(st[k3, cv2.CC_STAT_TOP]), int(st[k3, cv2.CC_STAT_WIDTH]), int(st[k3, cv2.CC_STAT_HEIGHT]))
+        return {"top": by, "bottom": H - (by + bhgt), "left": bx, "right": W - (bx + bwid)}
+    marg = {i: core_margins(i) for i in kept}
+    bands = {"top": C["feather_top"], "bottom": C["feather_bottom"], "left": C["feather_left"], "right": C["feather_right"]}
+    guard = {}
+    for e, px in bands.items():
+        mins = min(marg[i][e] for i in kept); at = min(i for i in kept if marg[i][e] == mins)
+        into = [i for i in kept if marg[i][e] < px]
+        body_frames = [i for i in kept if i < tail0 and marg[i][e] < px]
+        guard[e] = {"px": px, "cellPxAtScale": None, "coreMarginMin": mins, "coreMarginMinAt": at,
+                    "bodyInBand": ["f%03d" % i for i in into], "bodyInBandOutsideTail": ["f%03d" % i for i in body_frames]}
+        if body_frames: sys.exit("the %s band (%d px) reaches the core body on f%s — OUTSIDE the fade tail (tail starts f%03d)" % (e, px, ", f".join("%03d" % i for i in body_frames), tail0))
+
+    # one scale for every cell; E1 outranks the per-card cellPx (the Makardhwaja order) — step down to the pre-authorized fallback if needed
+    def pack_at(cell_px):
+        s2 = cell_px / float(max(bw, bh)); cw2, ch2 = round(bw * s2), round(bh * s2)
+        per = max(1, (4096 - PAD) // (cw2 + PAD)); rows2 = (len(kept) + per - 1) // per
+        return s2, cw2, ch2, per * cw2 + (per + 1) * PAD, rows2 * ch2 + (rows2 + 1) * PAD
+    cell_px = C["cell_px"]; stepped = None
+    s, cw, ch, AWp, AHp = pack_at(cell_px)
+    if AWp * AHp * 4 > E1_CAP and C.get("cell_px_fallback"):
+        stepped = {"from": cell_px, "to": C["cell_px_fallback"], "why": "the real pack exceeded E1; the invariant outranks the per-card number (pre-authorized, LAB-21/3)"}
+        cell_px = C["cell_px_fallback"]; s, cw, ch, AWp, AHp = pack_at(cell_px)
+
+    ramp_y = np.ones(H, np.float32); ramp_x = np.ones(W, np.float32)
+    if bands["top"]: ramp_y[:bands["top"]] = np.linspace(0.0, 1.0, bands["top"], endpoint=False, dtype=np.float32)
+    if bands["bottom"]: ramp_y[H - bands["bottom"]:] = np.minimum(ramp_y[H - bands["bottom"]:], np.linspace(1.0, 0.0, bands["bottom"], endpoint=True, dtype=np.float32))
+    if bands["left"]: ramp_x[:bands["left"]] = np.linspace(0.0, 1.0, bands["left"], endpoint=False, dtype=np.float32)
+    if bands["right"]: ramp_x[W - bands["right"]:] = np.minimum(ramp_x[W - bands["right"]:], np.linspace(1.0, 0.0, bands["right"], endpoint=True, dtype=np.float32))
+    vig = ramp_y[:, None] * ramp_x[None, :]   # the vignette proper: both ramps, so a corner takes both
+    cells = []
+    for i in kept:
+        f = frames[i].astype(np.float32) * vig[:, :, None] * fades.get(i, 1.0)
+        crop = np.clip(np.round(f[y0:y1, x0:x1]), 0, 255).astype(np.uint8)
+        cells.append((i, Image.fromarray(crop, "RGB").resize((cw, ch), Image.LANCZOS)))
+    ROW = 4096; x, y, rowh, placed = PAD, PAD, 0, []
+    for i, c in cells:
+        if x + c.width + PAD > ROW: x, y, rowh = PAD, y + rowh + PAD, 0
+        placed.append((i, c, x, y)); x += c.width + PAD; rowh = max(rowh, c.height)
+    AW = max(p2[2] + p2[1].width for p2 in placed) + PAD; AH = max(p2[3] + p2[1].height for p2 in placed) + PAD
+    if AW > 4096 or AH > 4096: sys.exit("atlas %dx%d exceeds 4096" % (AW, AH))
+    if AW * AH * 4 > E1_CAP: sys.exit("atlas %dx%d decodes to %.2f MB, past the E1 cap %.2f MB" % (AW, AH, AW * AH * 4 / 1048576, E1_CAP / 1048576))
+    atlas = Image.new("RGB", (AW, AH), (0, 0, 0))
+    for i, c, cx, cy in placed: atlas.paste(c, (cx, cy))
+    out = os.path.join(LAB, "effects", key); os.makedirs(out, exist_ok=True)
+    atlas.save(os.path.join(out, "atlas.webp"), "WEBP", quality=90, method=6)
+    for e in guard: guard[e]["cellPxAtScale"] = round(guard[e]["px"] * s, 1)
+
+    anchor = {"x": round((CORE[0] - x0) * s, 1), "y": round((CORE[1] - y0) * s, 1)}
+    manifest = {
+        "cardId": C["card_id"], "class": "effect-clip", "version": 1,
+        "source": "Kling clip %s (sha256 %s\u2026, %d frames @ %d fps, %dx%d, black ground) \u2014 kept f%03d\u2013f%03d; packed by tools/make_effect_from_clip.py" % (os.path.basename(clip), sha[:12], N, round(fps), W, H, a, b),
+        "atlas": "atlas.webp", "atlasSize": {"w": AW, "h": AH}, "channels": "rgb", "blend": "add", "alpha": "luminance",
+        "fps": round(fps), "timing": "native", "cellPx": max(cw, ch), "cellSize": {"w": cw, "h": ch},
+        "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height} for i, c, cx, cy in placed],
+        "impact": kept.index(impact), "anchor": anchor,
+        "scaleRule": {"feature": C["scale"]["feature"], "frame": sf, "spanSrc": span, "spanCell": round(span * s, 2), "cardWidths": C["scale"]["card_widths"],
+                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "legibility": C["scale"].get("measured"),
+                      "note": "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board"},
+        "contract": C["contract"],
+        "audit": {"range": [a, b], "droppedHead": [0, a - 1] if a > 0 else None, "droppedTail": [b + 1, N - 1] if b < N - 1 else None,
+                  "impactSrc": impact, "impact": imp_note, "corePoint": list(CORE), "scale": round(s, 5), "box": [x0, y0, x1, y1],
+                  "cellPx": {"used": cell_px, "asked": C["cell_px"], "steppedDown": stepped},
+                  "decodedBytes": AW * AH * 4, "e1CapBytes": E1_CAP,
+                  "ground": {"cornersMax": corners, "farMax": far,
+                             "method": "the frame-filling class leaves no region > 300 px from content, so farMax is structurally unavailable; the ground is stated on the bake metric instead",
+                             "zeroShareMin": round(zero_min, 5), "pedestal1to4ShareMax": round(ped_max, 5)},
+                  "edges": dict(edges, of=len(kept)),
+                  "fadeIn": [[i, fades[i]] for i in kept[:n_in]], "fadeTail": [[i, fades[i]] for i in kept[-n_tail:]],
+                  "vignette": guard, "guardKind": C["guard"]["kind"], "guardTailStart": tail0},
+    }
+    with open(os.path.join(out, "manifest.json"), "w") as fh: json.dump(manifest, fh, indent=2); fh.write("\n")
+
+    tw = 300; th = int(round(tw * ch / cw)); cols = 6; rows = (len(placed) + cols - 1) // cols
+    sheet = Image.new("RGB", (cols * tw, rows * (th + 20) + 28), (12, 12, 12)); d = ImageDraw.Draw(sheet)
+    d.text((8, 8), "%s effect clip \u00b7 %d cells f%03d\u2013f%03d \u00b7 impact f%03d (cell %d) \u00b7 cell %dx%d \u00b7 atlas %dx%d \u00b7 %.2f MB decoded" % (C["label"], len(placed), a, b, impact, kept.index(impact), cw, ch, AW, AH, AW * AH * 4 / 1048576), fill=(235, 210, 150))
+    for k2, (i, c, _, _) in enumerate(placed):
+        ox, oy = (k2 % cols) * tw, 28 + (k2 // cols) * (th + 20)
+        t = c.resize((tw, th), Image.LANCZOS); sheet.paste(t, (ox, oy + 20)); td = ImageDraw.Draw(sheet)
+        axx, ayy = ox + anchor["x"] * tw / cw, oy + 20 + anchor["y"] * th / ch; td.ellipse([axx - 3, ayy - 3, axx + 3, ayy + 3], outline=(80, 200, 255))
+        td.text((ox + 4, oy + 4), "f%03d%s" % (i, "  \u2605 IMPACT" if i == impact else ""), fill=(255, 120, 120) if i == impact else (255, 220, 120))
+    os.makedirs(os.path.join(LAB, "frames"), exist_ok=True); sheet.save(os.path.join(LAB, "frames", key + "_effect_sheet.jpg"), quality=88)
+
+    print("clip %d frames @ %.0f fps \u00b7 %dx%d \u00b7 ground: corners max %d, far %s, exact-zero share min %.2f%%, pedestal(1-4) max %.2f%%" % (N, fps, W, H, corners, far, 100 * zero_min, 100 * ped_max))
+    print("kept f%03d\u2013f%03d (%d cells) \u00b7 impact f%03d (cell %d, %s) \u00b7 core at %s \u00b7 %s on f%03d = %d px (%.2f cell px) at %.1f card widths" % (
+        a, b, len(kept), impact, kept.index(impact), imp_note["rule"], CORE, C["scale"]["feature"], sf, span, span * s, C["scale"]["card_widths"]))
+    print("box x %d\u2013%d y %d\u2013%d = %dx%d \u00b7 edges touched: %s of %d frames" % (x0, x1, y0, y1, bw, bh, ", ".join("%s %d" % (e, edges[e]) for e in ("top", "bottom", "left", "right")), len(kept)))
+    for e in ("top", "bottom", "left", "right"):
+        gg = guard[e]
+        print("  %-6s band %3d px (%5.1f cell px) \u00b7 core margin min %4d on f%03d \u00b7 body in band: %s (all inside the tail from f%03d)" % (
+            e, gg["px"], gg["cellPxAtScale"], gg["coreMarginMin"], gg["coreMarginMinAt"], gg["bodyInBand"] or "none", tail0))
+    print("fade-in %s \u00b7 fade tail %s" % ([fades[i] for i in kept[:n_in]], [fades[i] for i in kept[-n_tail:]]))
+    if stepped: print("cellPx STEPPED DOWN %d \u2192 %d: %s" % (stepped["from"], stepped["to"], stepped["why"]))
+    print("atlas %dx%d \u00b7 %.1f KB \u00b7 decoded %.2f MB of the E1 %.2f MB cap \u00b7 cells %dx%d (cellPx %d) \u00b7 anchor %s" % (
+        AW, AH, os.path.getsize(os.path.join(out, "atlas.webp")) / 1024, AW * AH * 4 / 1048576, E1_CAP / 1048576, cw, ch, cell_px, anchor))
+
 if __name__ == "__main__":
     k = sys.argv[1] if len(sys.argv) > 1 else "vajra"
     kind = EFFECTS.get(k, {}).get("kind")
-    main_chain(k) if kind == "chain" else main_chain_clip(k) if kind == "chain-clip" else main(k)
+    main_chain(k) if kind == "chain" else main_chain_clip(k) if kind == "chain-clip" else main_vignette(k) if kind == "vignette-clip" else main(k)

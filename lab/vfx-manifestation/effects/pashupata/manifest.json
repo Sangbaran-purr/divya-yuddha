@@ -1,0 +1,681 @@
+{
+  "cardId": "pashupata",
+  "class": "effect-clip",
+  "version": 1,
+  "source": "Kling clip pashupatastra_black.mp4 (sha256 aee143c040b3\u2026, 121 frames @ 24 fps, 1916x1080, black ground) \u2014 kept f000\u2013f059; packed by tools/make_effect_from_clip.py",
+  "atlas": "atlas.webp",
+  "atlasSize": {
+    "w": 3896,
+    "h": 1202
+  },
+  "channels": "rgb",
+  "blend": "add",
+  "alpha": "luminance",
+  "fps": 24,
+  "timing": "native",
+  "cellPx": 352,
+  "cellSize": {
+    "w": 352,
+    "h": 198
+  },
+  "cells": [
+    {
+      "name": "f000",
+      "src": 0,
+      "x": 2,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f001",
+      "src": 1,
+      "x": 356,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f002",
+      "src": 2,
+      "x": 710,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f003",
+      "src": 3,
+      "x": 1064,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f004",
+      "src": 4,
+      "x": 1418,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f005",
+      "src": 5,
+      "x": 1772,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f006",
+      "src": 6,
+      "x": 2126,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f007",
+      "src": 7,
+      "x": 2480,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f008",
+      "src": 8,
+      "x": 2834,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f009",
+      "src": 9,
+      "x": 3188,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f010",
+      "src": 10,
+      "x": 3542,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f011",
+      "src": 11,
+      "x": 2,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f012",
+      "src": 12,
+      "x": 356,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f013",
+      "src": 13,
+      "x": 710,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f014",
+      "src": 14,
+      "x": 1064,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f015",
+      "src": 15,
+      "x": 1418,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f016",
+      "src": 16,
+      "x": 1772,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f017",
+      "src": 17,
+      "x": 2126,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f018",
+      "src": 18,
+      "x": 2480,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f019",
+      "src": 19,
+      "x": 2834,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f020",
+      "src": 20,
+      "x": 3188,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f021",
+      "src": 21,
+      "x": 3542,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f022",
+      "src": 22,
+      "x": 2,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f023",
+      "src": 23,
+      "x": 356,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f024",
+      "src": 24,
+      "x": 710,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f025",
+      "src": 25,
+      "x": 1064,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f026",
+      "src": 26,
+      "x": 1418,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f027",
+      "src": 27,
+      "x": 1772,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f028",
+      "src": 28,
+      "x": 2126,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f029",
+      "src": 29,
+      "x": 2480,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f030",
+      "src": 30,
+      "x": 2834,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f031",
+      "src": 31,
+      "x": 3188,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f032",
+      "src": 32,
+      "x": 3542,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f033",
+      "src": 33,
+      "x": 2,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f034",
+      "src": 34,
+      "x": 356,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f035",
+      "src": 35,
+      "x": 710,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f036",
+      "src": 36,
+      "x": 1064,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f037",
+      "src": 37,
+      "x": 1418,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f038",
+      "src": 38,
+      "x": 1772,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f039",
+      "src": 39,
+      "x": 2126,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f040",
+      "src": 40,
+      "x": 2480,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f041",
+      "src": 41,
+      "x": 2834,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f042",
+      "src": 42,
+      "x": 3188,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f043",
+      "src": 43,
+      "x": 3542,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f044",
+      "src": 44,
+      "x": 2,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f045",
+      "src": 45,
+      "x": 356,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f046",
+      "src": 46,
+      "x": 710,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f047",
+      "src": 47,
+      "x": 1064,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f048",
+      "src": 48,
+      "x": 1418,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f049",
+      "src": 49,
+      "x": 1772,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f050",
+      "src": 50,
+      "x": 2126,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f051",
+      "src": 51,
+      "x": 2480,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f052",
+      "src": 52,
+      "x": 2834,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f053",
+      "src": 53,
+      "x": 3188,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f054",
+      "src": 54,
+      "x": 3542,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f055",
+      "src": 55,
+      "x": 2,
+      "y": 1002,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f056",
+      "src": 56,
+      "x": 356,
+      "y": 1002,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f057",
+      "src": 57,
+      "x": 710,
+      "y": 1002,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f058",
+      "src": 58,
+      "x": 1064,
+      "y": 1002,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f059",
+      "src": 59,
+      "x": 1418,
+      "y": 1002,
+      "w": 352,
+      "h": 198
+    }
+  ],
+  "impact": 24,
+  "anchor": {
+    "x": 174.7,
+    "y": 71.3
+  },
+  "scaleRule": {
+    "feature": "vortex span",
+    "frame": 30,
+    "spanSrc": 1430,
+    "spanCell": 262.71,
+    "cardWidths": 4.1,
+    "fallbackCardWidths": null,
+    "note": "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board"
+  },
+  "contract": {
+    "trigger": "damage",
+    "abilityName": "Pashupatastra",
+    "anchor": "enemy-half-centre",
+    "castSound": "sfx_astra",
+    "impactSound": "sfx_debuff",
+    "castHitStopMs": 110,
+    "castHoldMs": 1000,
+    "flightMs": 0,
+    "crackAfterMs": 40,
+    "destroyDwellMs": 600,
+    "awaited": false
+  },
+  "audit": {
+    "range": [
+      0,
+      59
+    ],
+    "droppedHead": null,
+    "droppedTail": [
+      60,
+      120
+    ],
+    "impactSrc": 24,
+    "impact": {
+      "rule": "positional",
+      "why": "the clip starts at the beat (S1); the impact cell is the one the first resolution cue lands on"
+    },
+    "corePoint": [
+      951,
+      388
+    ],
+    "scale": 0.18372,
+    "box": [
+      0,
+      0,
+      1916,
+      1080
+    ],
+    "cellPx": {
+      "used": 352,
+      "asked": 352,
+      "steppedDown": null
+    },
+    "decodedBytes": 18731968,
+    "e1CapBytes": 18874368,
+    "ground": {
+      "cornersMax": 161,
+      "farMax": 0,
+      "method": "the frame-filling class leaves no region > 300 px from content, so farMax is structurally unavailable; the ground is stated on the bake metric instead",
+      "zeroShareMin": 0.30113,
+      "pedestal1to4ShareMax": 0.0268
+    },
+    "edges": {
+      "top": 37,
+      "bottom": 60,
+      "left": 43,
+      "right": 39,
+      "of": 60
+    },
+    "fadeIn": [
+      [
+        0,
+        0.2
+      ],
+      [
+        1,
+        0.4
+      ],
+      [
+        2,
+        0.6
+      ],
+      [
+        3,
+        0.8
+      ]
+    ],
+    "fadeTail": [
+      [
+        50,
+        1.0
+      ],
+      [
+        51,
+        0.8889
+      ],
+      [
+        52,
+        0.7778
+      ],
+      [
+        53,
+        0.6667
+      ],
+      [
+        54,
+        0.5556
+      ],
+      [
+        55,
+        0.4444
+      ],
+      [
+        56,
+        0.3333
+      ],
+      [
+        57,
+        0.2222
+      ],
+      [
+        58,
+        0.1111
+      ],
+      [
+        59,
+        0.0
+      ]
+    ],
+    "vignette": {
+      "top": {
+        "px": 12,
+        "cellPxAtScale": 2.2,
+        "coreMarginMin": 0,
+        "coreMarginMinAt": 56,
+        "bodyInBand": [
+          "f056",
+          "f057",
+          "f058",
+          "f059"
+        ],
+        "bodyInBandOutsideTail": []
+      },
+      "bottom": {
+        "px": 96,
+        "cellPxAtScale": 17.6,
+        "coreMarginMin": 432,
+        "coreMarginMinAt": 0,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "left": {
+        "px": 96,
+        "cellPxAtScale": 17.6,
+        "coreMarginMin": 0,
+        "coreMarginMinAt": 51,
+        "bodyInBand": [
+          "f051"
+        ],
+        "bodyInBandOutsideTail": []
+      },
+      "right": {
+        "px": 128,
+        "cellPxAtScale": 23.5,
+        "coreMarginMin": 153,
+        "coreMarginMinAt": 0,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      }
+    },
+    "guardKind": "blob",
+    "guardTailStart": 50
+  }
+}

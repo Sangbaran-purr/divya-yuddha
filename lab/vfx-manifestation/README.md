@@ -1630,6 +1630,193 @@ The shortest path is the centre slot, 260 px; no enemy Hero sits closer to the c
 - **Parked ease-back** (seat 1): 89.7° → 60.8 → 37.6 → 20.3 → 9.1 → 2.6 → 0.2°.
 - **Shortened flights:** the strike's first cell or two are lost at the handoff, so each flight is shorter than planned. It still starts on the anchor, as the rule intends.
 
+### The Pages verification (the standing process fix, run against the public URL)
+
+Pages served the LAB-20b stamp `030cdb11322e` about 280 s after the push. The check ran on
+`https://sangbaran-purr.github.io/divya-yuddha/lab/vfx-manifestation/` at a 375 px phone viewport, four combinations:
+
+| | seat 0 Full | seat 0 Fast | seat 1 Full | seat 1 Fast |
+|---|---|---|---|---|
+| departs (caster half centre) | 178,315 | 178,315 | 178,105 | 178,105 |
+| arrives (target card centre) | 178,55 | 178,55 | 178,365 | 178,365 |
+| vector angle | −90.0° | −90.0° | +90.0° | +90.0° |
+| first drawn cell / scale | 0 · ×1.652 | 1 · ×1.652 | 0 · ×1.652 | 2 · ×1.652 |
+| arrival cell / scale | 12 (f046) · ×1.000 | 12 · ×1.000 | 12 · ×1.000 | 12 · ×1.000 |
+| arrival at (planned) | 1559 (1558) | 942 (935) | 1558 (1558) | 942 (935) |
+| rotation at impact cell 19 (f053) | 0.0° | 0.0° | 0.0° | 0.0° |
+| bite: impact drawn / destroy cue | 1941 / 1941 | 1167 / 1167 | 1941 / 1941 | 1167 / 1167 |
+
+Every ruling reads true on the phone: the layer leaves the caster's half centre on its first drawn cell at ×1.652, flies the
+260 px path on the caster→target vector, is at the target centre at ×1.0 by f046, eases its rotation back to the authored
+orientation by `rotationZeroAt` (1937 / 1162 ms) — ahead of the bite — and the impact cell draws on the bite's own frame.
+
+**`impactPinned: false` in all four.** The cell landed on the beat unaided; the pin stayed a safety net.
+
+Two honest flags. **Fast loses leading strike cells at the handoff** — seat 0 drew 54 of 55 (first drawn cell 1), seat 1 drew 53
+(first drawn cell 2), decode 63–86 ms against a 545–551 ms handoff; Full lost none. The flight is whole either way, because
+travel starts on the first *drawn* cell; what is lost is a frame or two of the disc's longest trail. And **one page 404 that is
+not ours and not new:** `runtime/assets/vfx/game/vfx_ring_1.png`, the copied game runtime's GPU init asking for the hero-moment
+kit the lab deliberately does not carry — already documented above as a known caught request.
+
+## LAB-21: Brahmastra and Pashupatastra — the Mythic shelf closes
+
+Two single-strike clips of a new class, and the first premium effect off the Deva shelf. Both are 1916×1080, 24 fps, 121 frames
+of black-ground Kling footage whose content **fills the frame and crosses every edge in every frame** — no internal build, no
+ending. That one property drives everything below.
+
+### What each card actually is (read from the engine, not assumed)
+
+| | **Brahmastra** | **Pashupatastra** |
+|---|---|---|
+| id / faction | `brahmastra` / Deva | `pashupata` / **Asura** |
+| class | **destroy**, not `dmgAstra` | **damage**, `dmgAstra:true` |
+| resolution | `destroyUnit` per enemy Unit | `max(1, floor(your board power / enemy Units))` to each |
+| Hiranyakashipu | **dies** — excepted by name | **survives, floors at 1** with a `block` event |
+| Patala realm | no effect | +1 per Unit |
+| extra | — | Chaos Surge fires for the caster |
+| cast sound | **`sfx_brahmastra`** — the game's only bespoke impact file | `sfx_astra` (+ coalesced `sfx_debuff`) |
+
+**The anchor is the enemy half, not a card.** Both shipped game sprites (`sprBrahmastra`, `sprPashupatastra`) are BOARD-EFFECT
+row plates anchored on the **caster's enemy half centre** at `half.width × 1.04`. The clips keep that anchor, which needed a
+third placement in the player beside the chain's `caster-half` and the strike's `target-card`: `enemy-half`, resolved as
+`halfOf(1 − casterSeat)`. The card width still sets the scale; the half only sets the centre.
+
+**Neither has a flight**, so the contract's `flightMs` is 0 and the impact falls exactly at the end of the cast hold —
+`110 + 1000` scaled — which is the instant the first resolution beat opens. That is the cue each clip's impact cell is pinned to.
+
+### The fringe check, taken first
+
+Rendered through the shipping math — `lighter` over a baked source is `dst + rgb·max(rgb)/255` — over the real board.
+
+**Brahmastra's red arm contour PASSES.** It is real (0.44% of frame early, 2.39% at f066) and it is in the clip, but it fails
+every limb of the LAB-20 sticker test: it sits on the **bright** side of the gradient (luma ~46 under the red, ~85 six px
+inward, dark-gap share only 2.3–8.1%, so **no thin dark inner line**), the interior is richly structured rather than flat, and
+the band is 1.9–4.7 px median native against a **5.18× downscale**. This is LAB-20's accepted "flame edge", not its rejected
+"sticker contour". Two corrections to the STEP-0 brief: the red is worst **mid-clip (f042–f078), not early**, and it never
+fully clears.
+
+**Both late phases FAIL, and both are reshoot candidates.**
+
+- Brahmastra: what looked like yellow-green is **vivid pure yellow** (~60°) in hard-edged posterized blocks along ragged black
+  tears — absent until f077, then 630 px at f084, 3,956 px with 3 blocks ≥200 px at f090, 53,556 px (2.59% of frame) with 51
+  blocks at f120, with tear voids rising to 0.65% and grain from its 2.41 minimum at f078. **Onset f093, clean to f088.**
+  The portion ends at f090. **The lost second of plate life returns only with a regenerated ending:** the shipped sprite lives
+  3.25 s at Normal and this clip lives 2.17 s, and the gap is exactly the defective frames.
+- Pashupatastra: the columns break into **beaded dark voids with dark rims** — 0.03% at f072, 0.15% and 6 blobs at f078, 0.72%
+  and 29 blobs at f119, grain 4.3 → 8.1, violet edge fringing 1,762 px at f120. **Onset f079**; the portion is bounded at f076
+  and ends at f059.
+
+Its orange spark accents pass (≈0.1% of content; most of the warmth in a composite is the board's own lamps). The milky-veil
+index — mid-alpha, low-chroma — is near zero for both (0.01% / 0.09% mean, saturation 0.62–0.73), which is *why* the numeric
+veil test alone would have missed these: both failures are structural (voids, posterized blocks), not translucency.
+
+### The two clips as packed
+
+| | Brahmastra | Pashupatastra |
+|---|---|---|
+| portion | f051–f090, 40 cells | f000–f059, 60 cells |
+| impact | cell 24 = f075, the **biggest escalation step** (steepest 3-frame rise in added light, +13.1) | cell 24 = f024, **positional** (S1: the clip starts at the beat) |
+| fade-in head / tail | 4 cells / 10 (f081–f090) | 4 cells / 10 (f050–f059) |
+| cellPx | 416 | **352** — the ruled number; the pre-authorized 320 was not needed |
+| atlas | 3764×1182, 871 KB webp, **16.97 MB** decoded | 3896×1202, 893 KB webp, **17.86 MB** decoded |
+| E1 | 18.00 MB cap — both inside; the packer refuses any pack past it | |
+
+**Pashupatastra is not a continuous escalation.** Its added light is flat (33.2 → 43.1 peak → 35.6; steepest 3-frame rise only
++2.5), so there is no escalation step to pin and the manifest says `"rule": "positional"` in as many words. The pin's job on
+this card is alignment, not drama — the columns are already landed when the beat arrives.
+
+### The all-edge vignette, and its guard
+
+Content crosses all four edges on every kept frame (Brahmastra 40/40 on each edge; Pashupatastra 37/60/43/39), so all four
+bands are real — not the Vajra class's top-and-bottom. The guard is the LAB-19 law, re-aimed at each clip's **core body**:
+
+| | top | bottom | left | right | guarded on | grows into the band on |
+|---|---|---|---|---|---|---|
+| Brahmastra | 48 | 64 | 96 | 96 | the mandala ring, read off the beams | **left: f087–f090** |
+| Pashupatastra | 12 | 96 | 96 | 128 | the vortex body | **top: f056–f059 · left: f051** |
+
+Every named frame lies inside the fade tail (from f081 and f050), and the packer **refuses** a pack whose band reaches the body
+outside the tail. Clear margins: Brahmastra 59/84/0/142 px, Pashupatastra 0/432/0/153 px.
+
+**Pashupatastra's 12 px top band is a token, and it is a positional dependency.** The vortex rim runs within 16 px of the top
+edge at f026 — mid-portion, beside the impact — so a real top band would scissor it. It is accepted *only* because at this
+scale the plate's top edge sits flush with the half boundary, where the hard cut is hidden by the board's own edge. **If the
+anchor or the scale ever changes, this must be re-ruled.**
+
+### The scale: 2.4 card widths is a default, not a law
+
+Owner ruling LAB-21/3. The scale is per-clip **measured legibility** over the real board, and the two clips land in different
+places because they add different amounts of light. Measured on the real vignetted atlases at the impact frame, over the
+enemy half (bare median luma 68):
+
+| plate | blown out (≥235) | half median luma |
+|---|---|---|
+| Brahmastra at the game's own 1.04 × half (369 px) | 40.8% | 217 |
+| Brahmastra at 2.4 cw (330×186) | 31.6% | **170** |
+| Brahmastra at **2.0 cw (275×155)** — shipped | 22.8% | **106** |
+| Pashupatastra at **4.1 cw (352×198)** — shipped, ≈ the full half | **6.0%** | 89 |
+
+**Brahmastra ships on the pre-authorized 2.0 cw fallback, and the reason is worth recording, because it was my error.** The
+STEP-0 scale table priced the plate at 277 px and labelled it "2.4 cw" using a ring span of 1080 px — a measurement
+contaminated by the clip's vertical beam. The packer's off-beam measure gives the ring **891 px**, under which 277 px *is*
+2.0 cw. So the plate the ruling approved on the evidence and the number the ruling named had come apart; the evidence wins,
+per ruling 3, and both figures are recorded in the manifest.
+
+Pashupatastra goes the other way, to **4.1 cw = the full half width**, and earns it: its vortex is a dark-ground swirl, so at
+full width it blows out 6.0% of the half where Brahmastra blows 31.6%.
+
+### The ground, and a method note
+
+The frame-filling class leaves **no region more than 300 px from any content**, so the Vajra-class reading ("the brightest
+pixel far from content") is structurally unavailable and the manifests say so rather than reporting a hollow zero. The ground
+is stated on the game's own bake metric instead: every kept frame keeps a true transparent floor (exact-zero share ≥ 7.10% and
+≥ 30.11%) and the 1–4 pedestal a lifted veil would live in never exceeds 4.21% / 2.68%.
+
+### The fixtures: the Hiranyakashipu mirror pair
+
+One unit, one board truth, two opposite answers — both out of `isAstraImmune`:
+`unit.id==='hiranya' && ASTRA_KILL.has(cause) && cause!=='Brahmastra'`.
+
+- **Brahmastra** (Deva vs Asura): the Asura seat lays Hiranyakashipu(8), Ravana(12) and Vibhishana(4) down while the Deva seat
+  builds Yama(6) and Marut(3); Brahmastra destroys **all three**, Hiranyakashipu included, all three to the discard, and both
+  Deva Units stand at the same power.
+- **Pashupatastra** (an **Asura mirror** — the only board where he can stand opposite an Asura caster): 17 board power against
+  2 enemy Units splits to **8 each**; Vibhishana dies and Hiranyakashipu **survives at power 1** with
+  `block/Pashupatastra "Hiranyakashipu floors at 1"`. Chaos Surge's toast and buff ride the same action.
+
+"Overrides all shields" is asserted **structurally** rather than staged: Brahmastra's legality gate asks only whether an enemy
+Unit exists and its resolution iterates `opp.units` directly, so `astraProtected` appears in neither — while Gandiva's gate
+right beside it does filter on it. A Dharma Shield is the Deva passive and cannot sit on the Asura row this fixture needs.
+
+**The no-target negatives** (F65/F69 doctrine): on an empty enemy row neither Astra is playable, and a forced cast emits only
+the play, so the plan raises no segment and no clip. One honest asymmetry surfaced: Pashupatastra logs "Pashupatastra finds no
+target." while **Brahmastra's branch logs unconditionally** — a forced cast on an empty row still announces "BRAHMASTRA. The
+earth remembers, and trembles." and destroys nothing. The plan plays nothing either way.
+
+### Timings, verified
+
+| | clip start | impact = first resolution cue | clip end | one beat ends | wire-clock cost |
+|---|---|---|---|---|---|
+| Brahmastra Full | 143 ms | **1443 ms** (first destroy) | 2310 ms | 2275 ms | **0** |
+| Brahmastra Fast | 86 ms | **866 ms** | 1386 ms | 1365 ms | **0** |
+| Pashupatastra Full | 143 ms | **1443 ms** (first damage) | 3393 ms | 2275 ms | **0** |
+| Pashupatastra Fast | 86 ms | **866 ms** | 2036 ms | 1365 ms | **0** |
+
+Because the lead and the beat both scale with `vfxT`, **one design satisfies both speeds** — which is exactly why the impact
+index had to be 24 or under. At index 34 the clip would have to start 399 ms before the cast, and the wire would wait.
+
+At a 30 Hz clock: **Full draws every cell at every phase**; **Fast drops one** (frame 32.5 ms against a 33.3 ms sample), and at
+**5 of 200 clock phases (2.5%)** the dropped cell is the impact one — which is what the impact pin is for. Driven at 30 Hz Fast
+on both seats, both cards draw the impact cell on the cue.
+
+### What is still open
+
+- **Both endings are reshoot candidates.** Brahmastra's f091–f120 (vivid-yellow posterized blocks on ragged tears) and
+  Pashupatastra's f079+ (beaded dark voids with dark rims, violet fringing). Brahmastra's would also return the second of plate
+  life the trim costs.
+- **Pashupatastra's token top band** stands on the plate being flush with the half boundary — re-rule it if the anchor or scale
+  moves.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

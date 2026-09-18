@@ -122,7 +122,7 @@
     var clip = !!(b.cast && b.strike) && mode !== 'reduced', segments = [], cues = [];
     if (clip && chained) segments.push({ role: 'invoke', clip: 0, start: T.invokeStart, end: T.handoffAt, frameMs: T.invokeFrameMs, place: 'caster-half' },
                                        { role: 'strike', clip: 1, start: T.strikeStart, end: T.strikeEnd, frameMs: T.frameMs, place: 'target', impact: spec.clips[1].impact });
-    else if (clip) segments.push({ role: 'strike', clip: 0, start: T.clipStart, end: T.clipEnd, frameMs: T.frameMs, place: 'target', impact: spec.impact });
+    else if (clip) segments.push({ role: 'strike', clip: 0, start: T.clipStart, end: T.clipEnd, frameMs: T.frameMs, place: k.anchor === 'enemy-half-centre' ? 'enemy-half' : 'target', impact: spec.impact });   // LAB-21: a BOARD-WIDE astra anchors on the caster's enemy half (the game's own row-plate anchor), not on one card
     if (b.cast) cues.push({ t: 0, cue: 'cast', sound: k.castSound });
     if (b.strike) {
       if (clip && chained) { cues.push({ t: T.invokeStart, cue: 'invoke-start' }); cues.push({ t: T.handoffAt, cue: 'handoff' }); }
@@ -224,8 +224,9 @@
       var places = p.segments.map(function (sg) {
         var m = clips[sg.clip];
         if (sg.place === 'target') return target ? place(m, target) : null;
-        var hh = env.halfOf ? env.halfOf(p.casterSeat) : null;
-        return hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w }) : null;
+        var seat = sg.place === 'enemy-half' ? (p.casterSeat != null ? 1 - p.casterSeat : null) : p.casterSeat;   // LAB-21: the enemy half is the caster's opposite seat
+        var hh = seat != null && env.halfOf ? env.halfOf(seat) : null;
+        return hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w }) : null;   // the card width still sets the scale (cardWidths), the half sets the centre
       });
       if (st.loaded) release();
       env.render(boards.before);

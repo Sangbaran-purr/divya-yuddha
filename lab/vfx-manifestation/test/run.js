@@ -90,6 +90,8 @@ const VJ = { M: JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'vajra', 'm
   FX: [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', 'vajra_seat' + s + '.json'), 'utf8'))) };
 const EC = require(path.join(LAB, 'lib', 'effectclip.js'));
 // LAB-20 · THE FIRST CHAIN — Sudarshana Chakra: an invocation handed off to a strike, and its real-engine removal fixture
+const BR = { M: JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'brahmastra', 'manifest.json'), 'utf8')), F: [0, 1].map((n) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', 'brahmastra_seat' + n + '.json'), 'utf8'))) };   // LAB-21
+const PA = { M: JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'pashupata', 'manifest.json'), 'utf8')), F: [0, 1].map((n) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', 'pashupata_seat' + n + '.json'), 'utf8'))) };   // LAB-21
 const SU = { I: JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'sudarshana_invoke', 'manifest.json'), 'utf8')), S: JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'sudarshana_strike', 'manifest.json'), 'utf8')),
   C: JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'sudarshana', 'chain.json'), 'utf8')),
   FX: [0, 1].map((s) => JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', 'sudarshana_seat' + s + '.json'), 'utf8'))) };
@@ -407,6 +409,83 @@ console.log('── F · the fixture: the real engine, both seats ──');
     ok('F27 · LAB-11 · THE NO-SHIM PIN: no file in lab/ mentions the wave flag at all — not the fixtures, not the registry, not the lab page, not the pack tool (this suite is exempt: it is the scanner, so it must name what it forbids). Wave-1 cards live in the engine behind the draft filter mkPlayer applies to the RANDOM pool; CARD_BY_NAME is built from every deck, so a scenario deck that NAMES one reaches it. The shim was never built because it was never needed (' + scanned.length + ' lab files scanned)',
        offenders.length === 0, offenders.map((f) => rel(f)).join(', '));
   }
+}
+
+// ═══ F · LAB-21 · THE HIRANYAKASHIPU MIRROR PAIR ═══
+{
+  const MK = require(path.join(LAB, 'fixtures', 'make_fixture.js'));
+  // F70-F72 · BRAHMASTRA: the destroy half
+  const bAll = BR.F.map((F) => {
+    const d = F.defenderSeat, a = F.attackerSeat;
+    const before = F.before.seats[d].units.filter((u) => !u.ghost), after = F.after.seats[d].units.filter((u) => !u.ghost);
+    const destroys = F.events.filter((e) => e.type === 'destroy' && e.abilityName === 'Brahmastra');
+    return { seat: a, legal: F.action.legal, foesBefore: before.length, foesAfter: after.length, destroys: destroys.length,
+             hirBefore: !!before.find((u) => u.id === 'hiranya'), hirAfter: !!after.find((u) => u.id === 'hiranya'),
+             hirDestroyed: destroys.some((e) => (e.text || '').indexOf('Hiranyakashipu') === 0),
+             discard: F.after.seats[d].discard.indexOf('hiranya') >= 0,
+             mineBefore: F.before.seats[a].units.length, mineAfter: F.after.seats[a].units.length,
+             minePowersHeld: J(F.before.seats[a].units.map((u) => u.eff)) === J(F.after.seats[a].units.map((u) => u.eff)),
+             firstResolution: F.events[1] && F.events[1].type };
+  });
+  ok('F70 · LAB-21 · BRAHMASTRA WIPES THE ROW, both seats: the real engine lays ' + bAll[0].foesBefore + ' enemy Units down and Brahmastra destroys every one (' + bAll.map((x) => 'seat' + x.seat + ': ' + x.foesBefore + '→' + x.foesAfter + ', ' + x.destroys + ' destroy events').join(' · ') + '), each carrying abilityName "Brahmastra"; the first resolution event after the play is the destroy the clip impact is pinned to',
+     bAll.every((x) => x.legal && x.foesBefore >= 3 && x.foesAfter === 0 && x.destroys === x.foesBefore && x.firstResolution === 'destroy'), J(bAll));
+  ok('F71 · LAB-21 · THE BY-NAME EXCEPTION: Hiranyakashipu — "cannot be destroyed by any Astra except Brahmastra" — is on the board before and GONE after, with his own destroy event and his id in the discard, both seats. This is isAstraImmune\'s `cause !== \'Brahmastra\'` clause read from the outside',
+     bAll.every((x) => x.hirBefore && !x.hirAfter && x.hirDestroyed && x.discard), J(bAll.map((x) => ({ seat: x.seat, hirBefore: x.hirBefore, hirAfter: x.hirAfter, destroyed: x.hirDestroyed, inDiscard: x.discard }))));
+  ok('F72 · LAB-21 · THE CASTER IS UNTOUCHED: the Deva seat\'s own ' + bAll[0].mineBefore + ' Units stand at the same power after the wipe (both seats) — "ALL enemy Units" is exactly the enemy row',
+     bAll.every((x) => x.mineBefore >= 2 && x.mineAfter === x.mineBefore && x.minePowersHeld), J(bAll.map((x) => ({ seat: x.seat, before: x.mineBefore, after: x.mineAfter, held: x.minePowersHeld }))));
+  const ENG = fs.readFileSync(path.join(GAME, 'src', 'engine.js'), 'utf8');
+  const bGate = /if \(c\.id==='brahmastra' && !opp\.units\.some\(u=>!u\.ghost\)\) return;/.test(ENG);
+  const bRes = /case 'brahmastra':[\s\S]{0,200}?for \(const u of \[\.\.\.opp\.units\]\) destroyUnit\(g, 1-pi, u, 'Brahmastra'\);/.test(ENG);
+  const bNoProt = !/case 'brahmastra':[\s\S]{0,200}?astraProtected/.test(ENG);
+  const gandivaHasProt = /if \(c\.id==='gandiva' && !opp\.units\.some\(u=>!u\.ghost && !astraProtected\(g,1-pi,u\)\)\) return;/.test(ENG);
+  ok('F73 · LAB-21 · "OVERRIDES ALL SHIELDS", STRUCTURALLY: Brahmastra\'s legality gate asks only whether an enemy Unit exists and its resolution iterates opp.units directly — astraProtected appears in NEITHER, while Gandiva\'s gate right beside it DOES filter on it. So no shield, no untargetability and no immunity can be in its way, by construction rather than by staging one (a Dharma Shield is the Deva passive and cannot sit on the Asura row this fixture needs)',
+     bGate && bRes && bNoProt && gandivaHasProt, J({ bGate, bRes, bNoProt, gandivaHasProt }));
+  // F74-F77 · PASHUPATASTRA: the damage half, and the cross-assertion
+  const pAll = PA.F.map((F) => {
+    const d = F.defenderSeat, a = F.attackerSeat;
+    const before = F.before.seats[d].units.filter((u) => !u.ghost), after = F.after.seats[d].units.filter((u) => !u.ghost);
+    const dmg = F.events.filter((e) => e.type === 'damage' && e.abilityName === 'Pashupatastra');
+    const blk = F.events.filter((e) => e.type === 'block' && e.abilityName === 'Pashupatastra');
+    const hirB = before.find((u) => u.id === 'hiranya'), hirA = after.find((u) => u.id === 'hiranya');
+    return { seat: a, legal: F.action.legal, split: F.split, expected: Math.max(1, Math.floor(F.split.casterTotalPower / F.split.enemyUnits)),
+             dmgCount: dmg.length, amounts: dmg.map((e) => e.amount), foes: before.length,
+             hirPowerBefore: hirB && hirB.power, hirPowerAfter: hirA && hirA.power, hirAlive: !!hirA,
+             blocked: blk.length === 1 && /floors at 1/.test(blk[0].text || ''),
+             otherDied: F.events.some((e) => e.type === 'destroy' && e.abilityName === 'Pashupatastra'),
+             surge: F.events.some((e) => e.type === 'toast' && e.abilityName === 'Chaos Surge') && F.events.some((e) => e.type === 'buff' && e.abilityName === 'Chaos Surge'),
+             firstResolution: F.events[1] && F.events[1].type };
+  });
+  ok('F74 · LAB-21 · THE SPLIT IS THE BOARD\'S OWN ARITHMETIC, both seats: per-Unit damage = max(1, floor(your total board power / enemy Units)) computed from the fixture\'s OWN board — ' + pAll.map((x) => 'seat' + x.seat + ': ' + x.split.casterTotalPower + '/' + x.split.enemyUnits + ' → ' + x.expected).join(' · ') + ' — and every enemy Unit takes exactly that, one damage event each, abilityName "Pashupatastra". The first resolution event after the play is the damage the clip impact is pinned to',
+     pAll.every((x) => x.legal && x.dmgCount === x.foes && x.amounts.every((v) => v === -x.expected) && x.expected === x.split.perUnit && x.firstResolution === 'damage'), J(pAll.map((x) => ({ seat: x.seat, split: x.split, expected: x.expected, amounts: x.amounts }))));
+  ok('F75 · LAB-21 · THE MIRROR OF F71: the SAME unit on the SAME kind of board SURVIVES Pashupatastra. The split (' + pAll[0].expected + ') meets or beats his power, so the engine takes him to 0 or less and isAstraImmune floors him at 1 with a block event "floors at 1" — because ASTRA_KILL covers Pashupatastra and only Brahmastra is excepted by name (' + pAll.map((x) => 'seat' + x.seat + ': ' + x.hirPowerBefore + '→' + x.hirPowerAfter).join(' · ') + '), while the Unit beside him simply dies',
+     pAll.every((x) => x.hirAlive && x.hirPowerAfter === 1 && x.expected >= x.hirPowerBefore && x.blocked && x.otherDied), J(pAll.map((x) => ({ seat: x.seat, before: x.hirPowerBefore, after: x.hirPowerAfter, blocked: x.blocked, otherDied: x.otherDied }))));
+  ok('F76 · LAB-21 · CHAOS SURGE RIDES THE SAME ACTION (the caster is Asura): the toast and the buff are both in this play\'s event slice, both seats — so the clip\'s beats and the surge\'s own beat coexist on one action, as the Tamasa/Chandrahas precedent has it',
+     pAll.every((x) => x.surge), J(pAll.map((x) => ({ seat: x.seat, surge: x.surge }))));
+  const cross = { hirDiesToBrahmastra: bAll.every((x) => x.hirDestroyed && !x.hirAfter),
+                  hirLivesThroughPashupatastra: pAll.every((x) => x.hirAlive && x.hirPowerAfter === 1),
+                  bothReachedHim: pAll.every((x) => x.expected >= x.hirPowerBefore),
+                  astraKill: /const ASTRA_KILL = new Set\(\['Vajra','Brahmastra','Pashupatastra'\]\);/.test(ENG),
+                  branch: /function isAstraImmune\(unit, cause\)\{ return unit\.id==='hiranya' && ASTRA_KILL\.has\(cause\) && cause!=='Brahmastra'; \}/.test(ENG) };
+  ok('F77 · LAB-21 · THE CROSS-ASSERTION: Hiranyakashipu DIES to Brahmastra and SURVIVES Pashupatastra at power 1 — both Mythic, both in ASTRA_KILL, and the split did reach him so the immunity is what saved him, not a small number. The engine line that makes both true at once is pinned verbatim: isAstraImmune = hiranya && ASTRA_KILL.has(cause) && cause !== \'Brahmastra\'',
+     Object.values(cross).every(Boolean), J(cross));
+  // F78-F79 · THE NO-TARGET NEGATIVES (the F65/F69 doctrine), driven live
+  const noTarget = ['brahmastra', 'pashupata'].map((which) => [0, 1].map((seat) => {
+    const probe = which === 'brahmastra' ? MK.buildBrahmastraCast(seat, { probe: true, oppPlays: [], myPlays: [] }) : MK.buildPashupataCast(seat, { probe: true, oppPlays: [], myPlays: [] });
+    const E = probe.E, g = probe.g, h = probe.bh != null ? probe.bh : probe.ph;
+    const legal = E.playableIndices(g, seat).indexOf(h) >= 0;
+    const ev0 = g.events.length, log0 = g.log.length;
+    let threw = false; try { E.playCard(g, seat, h); } catch (e) { threw = true; }
+    const evs = g.events.slice(ev0), logs = g.log.slice(log0).map((l) => l.msg);
+    const spec = which === 'brahmastra' ? BR.M : PA.M;
+    const pl = EC.plan({ events: evs }, spec, { mode: 'full', casterSeat: seat });
+    return { which: which, seat: seat, legal: legal, threw: threw, types: evs.map((e) => e.type), logs: logs, strike: pl.strike, clip: pl.clip, segments: pl.segments.length, cues: pl.cues.map((c) => c.cue) };
+  }));
+  const ntOk = (x) => !x.legal && !x.threw && J(x.types) === J(['play']) && !x.strike && !x.clip && x.segments === 0 && J(x.cues) === J(['cast', 'settle']);
+  ok('F78 · LAB-21 · THE NO-TARGET CASE, driven live, both cards and both seats (F65/F69 doctrine): on an EMPTY enemy row neither Astra is playable, and a forced cast emits only the play — ' + noTarget.map((g2) => g2.map((x) => x.which + ' seat' + x.seat + ': "' + (x.logs[x.logs.length - 1] || '') + '"').join(' · ')).join(' · ') + ' — so the plan plays NOTHING: no segment, no clip, cast then settle',
+     noTarget.every((g2) => g2.every(ntOk)), J(noTarget.map((g2) => g2.map((x) => ({ which: x.which, seat: x.seat, legal: x.legal, types: x.types, strike: x.strike, clip: x.clip, cues: x.cues })))));
+  const ntNeg = noTarget.map((g2) => g2.map((x) => ntOk(Object.assign({}, x, { legal: true }))));
+  ok('F79 · LAB-21 · THE NEGATIVE: F78 can fail — a run claiming the Astra was legal on an empty row is ' + (ntNeg.every((g2) => g2.every((v) => v === false)) ? 'caught' : 'NOT caught') + ', and a plan that still raised a clip would be caught by the same predicate',
+     ntNeg.every((g2) => g2.every((v) => v === false)), J(ntNeg));
 }
 
 // ═══ C · THE CONTEXT ═══
@@ -958,7 +1037,7 @@ templateActor({ label: 'M45 · LAB-18 · RAHU BY THE TEMPLATE (the last card: a 
   const vc = EC.validateChain(SU.C, [I, S]), swapped = EC.validateChain(SU.C, [S, I]), sum = bytesOf(I) + bytesOf(S);
   ok('M56 · LAB-20 · THE CHAIN AND E1, UNCHANGED: effects/sudarshana/chain.json names the invocation then the strike and carries the contract; a chain in the wrong order is refused. Each clip is under the per-clip cap (' + (bytesOf(I) / 1048576).toFixed(2) + ' and ' + (bytesOf(S) / 1048576).toFixed(2) + ' MB of ' + (EC.E1.capBytes / 1048576).toFixed(2) + '), and the pair would be ' + (sum / 1048576).toFixed(2) + ' MB together — PAST the cap — which is exactly why they decode ONE AFTER THE OTHER: the invocation at the cast, released at the handoff, then the strike. The per-play fallback amendment (both at 256: 16.3 MB) is recorded as available but unused',
      vc.ok && !swapped.ok && SU.C.class === 'effect-chain' && SU.C.cardName === 'Sudarshana Chakra' && J(SU.C.clips.map((c) => c.role)) === J(['invoke', 'strike']) && sum > EC.E1.capBytes &&
-     J(fs.readdirSync(path.join(LAB, 'effects')).sort()) === J(['sudarshana', 'sudarshana_invoke', 'sudarshana_strike', 'vajra']) && J(fs.readdirSync(path.join(LAB, 'effects', 'sudarshana'))) === J(['chain.json']), vc.errors.join('; '));
+     J(fs.readdirSync(path.join(LAB, 'effects')).sort()) === J(['brahmastra', 'pashupata', 'sudarshana', 'sudarshana_invoke', 'sudarshana_strike', 'vajra']) && J(fs.readdirSync(path.join(LAB, 'effects', 'sudarshana'))) === J(['chain.json']), vc.errors.join('; '));
   // the removal contract, read from the game's source
   const G_HTML = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8'), a0 = G_HTML.indexOf("if (ev.type==='passive' && ev.abilityName==='Sudarshana')"), blk = G_HTML.slice(a0, G_HTML.indexOf("if (ev.type==='passive' && ev.abilityName==='Nagapasha')"));
   const pins = { throwFromCasterHalf: /const caster=1-ownerPiOfUid\(u\), ch=document\.querySelector\(halfSel\(caster\)\);/.test(blk), flight380: /VFX\.sprSudarshana\(dp\.cx, dp\.rect\.top\+dp\.rect\.height\/2, dp\.rect\.width, fx, fy, 380\);/.test(blk) && /await cDelay\(380\);/.test(blk),
@@ -1455,6 +1534,114 @@ console.log('\n── E · the effect chain and the impact pin ──');
      Object.values(pins).every(Boolean), J(pins));
 }
 
+// ═══ M/E · LAB-21 · THE MYTHIC SHELF: TWO VIGNETTE CLIPS ═══
+console.log('\n── M/E · the Mythic shelf (LAB-21) ──');
+{
+  const MB = BR.M, MP = PA.M, cap = EC.E1.capBytes;
+  const bytesOf = (m) => m.atlasSize.w * m.atlasSize.h * 4;
+  const vB = EC.validate(MB), vP = EC.validate(MP);
+  const folder = (d) => J(fs.readdirSync(path.join(LAB, 'effects', d)).sort()) === J(['atlas.webp', 'manifest.json']);
+  ok('M59 · LAB-21 · BRAHMASTRA\'S CLIP: ' + MB.cells.length + ' cells f' + MB.audit.range[0].toString().padStart(3, '0') + '–f' + MB.audit.range[1] + ' at ' + MB.fps + ' fps, cell ' + MB.cellSize.w + '×' + MB.cellSize.h + ' (cellPx ' + MB.cellPx + '), atlas ' + MB.atlasSize.w + '×' + MB.atlasSize.h + ' = ' + (bytesOf(MB) / 1048576).toFixed(2) + ' MB decoded, INSIDE the E1 cap of ' + (cap / 1048576).toFixed(2) + '. The impact cell is index ' + MB.impact + ' = source f' + MB.audit.impactSrc.toString().padStart(3, '0') + ', measured as the biggest escalation step in its window (the steepest 3-frame rise in the clip\'s own added light, ' + MB.audit.impact.riseOver3Frames + ') and it agrees with the ruled frame; the tail excludes f091–f120, the vivid-yellow posterized phase',
+     vB.ok && bytesOf(MB) <= cap && folder('brahmastra') && MB.cells.length === 40 && MB.impact === 24 && MB.audit.impactSrc === 75 && MB.audit.impact.rule === 'escalation' && MB.cellPx === 416 && MB.audit.droppedTail[0] === 91,
+     J({ errors: vB.errors, bytes: bytesOf(MB), cells: MB.cells.length, impact: MB.impact, impactSrc: MB.audit.impactSrc, cellPx: MB.cellPx }));
+  ok('M60 · LAB-21 · PASHUPATASTRA\'S CLIP, and WHICH cellPx LANDED: ' + MP.cells.length + ' cells f000–f' + MP.audit.range[1] + ' at ' + MP.fps + ' fps, cell ' + MP.cellSize.w + '×' + MP.cellSize.h + ', atlas ' + MP.atlasSize.w + '×' + MP.atlasSize.h + ' = ' + (bytesOf(MP) / 1048576).toFixed(2) + ' MB of the ' + (cap / 1048576).toFixed(2) + ' MB cap. cellPx ' + MP.audit.cellPx.used + ' is the one that landed — the ruled number, asked for and kept: the pre-authorized step-down to 320 was NOT needed (steppedDown ' + J(MP.audit.cellPx.steppedDown) + '), and the packer refuses any pack past E1 outright. Its impact cell is index ' + MP.impact + ' = f' + MP.audit.impactSrc.toString().padStart(3, '0') + ', POSITIONAL by the S1 pattern (the clip starts at the beat; there is no escalation step to pin — this clip\'s added light is flat)',
+     vP.ok && bytesOf(MP) <= cap && folder('pashupata') && MP.cells.length === 60 && MP.impact === 24 && MP.audit.impactSrc === 24 && MP.audit.impact.rule === 'positional' && MP.audit.cellPx.used === 352 && MP.audit.cellPx.asked === 352 && MP.audit.cellPx.steppedDown === null,
+     J({ errors: vP.errors, bytes: bytesOf(MP), cellPx: MP.audit.cellPx }));
+  // M61 · the all-edge vignette and its core-body guard
+  const gB = MB.audit.vignette, gP = MP.audit.vignette, edges = ['top', 'bottom', 'left', 'right'];
+  const inTail = (m, g) => edges.every((e) => g[e].bodyInBandOutsideTail.length === 0) && edges.every((e) => g[e].bodyInBand.every((f) => +f.slice(1) >= m.audit.guardTailStart));
+  const bandsB = J(edges.map((e) => gB[e].px)), bandsP = J(edges.map((e) => gP[e].px));
+  ok('M61 · LAB-21 · THE ALL-EDGE VIGNETTE AND ITS CORE-BODY GUARD. Both clips cross EVERY edge on EVERY kept frame (Brahmastra ' + J(edges.map((e) => MB.audit.edges[e])) + ' of ' + MB.audit.edges.of + '; Pashupatastra ' + J(edges.map((e) => MP.audit.edges[e])) + ' of ' + MP.audit.edges.of + '), so all four bands are real, not the Vajra class\'s two. Brahmastra top/bottom/left/right = ' + bandsB + ' px guarded on the MANDALA RING read off the beams: its clear margins are ' + J(edges.map((e) => gB[e].coreMarginMin)) + ' px, so the ring grows into the LEFT band on ' + J(gB.left.bodyInBand) + ' and nowhere else. Pashupatastra = ' + bandsP + ' px guarded on the VORTEX body: margins ' + J(edges.map((e) => gP[e].coreMarginMin)) + ' px, so the vortex grows into the TOP band on ' + J(gP.top.bodyInBand) + ' and the LEFT on ' + J(gP.left.bodyInBand) + '. EVERY named frame lies inside the fade tail (from f' + MB.audit.guardTailStart.toString().padStart(3, '0') + ' and f' + MP.audit.guardTailStart.toString().padStart(3, '0') + '), which is the LAB-19 law; the packer REFUSES a pack whose band reaches the body outside the tail',
+     bandsB === J([48, 64, 96, 96]) && bandsP === J([12, 96, 96, 128]) && inTail(MB, gB) && inTail(MP, gP) &&
+     edges.every((e) => MB.audit.edges[e] === MB.audit.edges.of) && J(gB.left.bodyInBand) === J(['f087', 'f088', 'f089', 'f090']) && J(gP.top.bodyInBand) === J(['f056', 'f057', 'f058', 'f059']) &&
+     /the %s band \(%d px\) reaches the core body on f%s — OUTSIDE the fade tail/.test(fs.readFileSync(path.join(LAB, 'tools', 'make_effect_from_clip.py'), 'utf8')),
+     J({ bandsB: bandsB, bandsP: bandsP, gB: edges.map((e) => ({ e, min: gB[e].coreMarginMin, into: gB[e].bodyInBand })), gP: edges.map((e) => ({ e, min: gP[e].coreMarginMin, into: gP[e].bodyInBand })) }));
+  ok('M62 · LAB-21 · THE GROUND, AND A METHOD NOTE. The frame-filling class leaves NO region more than 300 px from content, so the Vajra-class "brightest pixel far from content" reading is structurally unavailable (' + J(MB.audit.ground.farMax) + ' / ' + J(MP.audit.ground.farMax) + ') and the manifest says so instead of reporting a hollow zero. The ground is stated on the game\'s own bake metric: every kept frame keeps a TRUE transparent floor (exact-zero share at least ' + (100 * MB.audit.ground.zeroShareMin).toFixed(2) + '% and ' + (100 * MP.audit.ground.zeroShareMin).toFixed(2) + '%) and the 1–4 pedestal that a lifted veil would live in never exceeds ' + (100 * MB.audit.ground.pedestal1to4ShareMax).toFixed(2) + '% and ' + (100 * MP.audit.ground.pedestal1to4ShareMax).toFixed(2) + '%',
+     /structurally unavailable/.test(MB.audit.ground.method) && MB.audit.ground.zeroShareMin > 0 && MP.audit.ground.zeroShareMin > 0 &&
+     MB.audit.ground.pedestal1to4ShareMax < 0.06 && MP.audit.ground.pedestal1to4ShareMax < 0.06 && MB.audit.ground.farMax === null,
+     J({ b: MB.audit.ground, p: MP.audit.ground }));
+  ok('M63 · LAB-21 · THE SCALE PRECEDENT, RECORDED PROPERLY: 2.4 card widths is the effects shelf\'s DEFAULT, not a law — the scale is per-clip measured legibility over the real board (owner ruling LAB-21/3). Both manifests carry that note. Brahmastra ships at ' + MB.scaleRule.cardWidths + ' cw, the PRE-AUTHORIZED fallback from the ruled ' + MB.scaleRule.ruledDefaultCardWidths + ', because the measurement says so: at 2.4 cw the plate is ' + MB.scaleRule.legibility['2.4cw'].plate + ' and the enemy half\'s median luma reads ' + MB.scaleRule.legibility['2.4cw'].halfMedianLuma + ' against ' + MB.scaleRule.legibility.bareHalfMedianLuma + ' bare with ' + (100 * MB.scaleRule.legibility['2.4cw'].blownOut).toFixed(1) + '% of it blown out; at 2.0 cw it is ' + MB.scaleRule.legibility['2.0cw'].plate + ', ' + MB.scaleRule.legibility['2.0cw'].halfMedianLuma + ' and ' + (100 * MB.scaleRule.legibility['2.0cw'].blownOut).toFixed(1) + '%. Pashupatastra ships at ' + MP.scaleRule.cardWidths + ' cw — ABOVE the default, and earned: its vortex is a dark-ground swirl, not a flood',
+     /not a law/.test(MB.scaleRule.note) && /not a law/.test(MP.scaleRule.note) && MB.scaleRule.cardWidths === 2.0 && MB.scaleRule.ruledDefaultCardWidths === 2.4 &&
+     MB.scaleRule.legibility['2.4cw'].halfMedianLuma > MB.scaleRule.legibility['2.0cw'].halfMedianLuma && MP.scaleRule.cardWidths === 4.1,
+     J({ b: MB.scaleRule, p: MP.scaleRule }));
+
+  // ── E16-E19 · the timing, the enemy-half anchor, and the 30 Hz prediction ──
+  const CARDW = 64, HALF = { 0: { cx: 177.5, cy: 314.5 }, 1: { cx: 177.5, cy: 104.5 } };   // measured live on a 375 px viewport
+  function world21() {
+    const draws = [], rendered = [], sounds = [];
+    const g = { _op: 'source-over', setTransform() {}, clearRect() {}, drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) { draws.push({ sx, sy, dx, dy, dw, dh, op: this.globalCompositeOperation }); },
+      set globalCompositeOperation(v) { this._op = v; }, get globalCompositeOperation() { return this._op; }, globalAlpha: 1 };
+    let now = 0;
+    const env = { now: () => now, canvas: { width: 710, height: 840, getContext: () => g }, dpr: 2,
+      cardOf: (uid) => ({ cx: 120, cy: 60, w: CARDW, uid }), halfOf: (seat) => HALF[seat],
+      loadAtlas: (m) => ({ source: { __effect: m.cardId }, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() {} }),
+      render: (b) => rendered.push(b), sound: (n) => sounds.push({ n, t: now }), crack: () => {}, removal: () => {}, callout: () => {}, onDone: () => {} };
+    const P = EC.createPlayer(env);
+    return { P, draws, sounds, step: (ms) => { now += ms; P.frame(now); }, get now() { return now; } };
+  }
+  const cards = [{ k: 'brahmastra', M: MB, F: BR.F, cue: 'destroy' }, { k: 'pashupata', M: MP, F: PA.F, cue: 'damage' }];
+  const modes = [['full', 1.0], ['fast', 0.6]];
+  const tl = [];
+  cards.forEach((c) => modes.forEach((m) => {
+    const T = EC.timeline(c.M, m[1], EC.CHOREO_SPEED), beat = T.castBeatMs + (40 + 600) * T.vfxT;
+    tl.push({ k: c.k, mode: m[0], vfxT: +T.vfxT.toFixed(2), clipStart: +T.clipStart.toFixed(1), impactAt: +T.impactAt.toFixed(1),
+              castBeatMs: +T.castBeatMs.toFixed(1), destroyAt: +T.destroyAt.toFixed(1), clipEnd: +T.clipEnd.toFixed(1),
+              beatEnd: +beat.toFixed(1), waitCost: +T.waitCostMs.toFixed(1), covers: T.clipEnd >= beat });
+  }));
+  ok('E16 · LAB-21 · THE IMPACT LANDS ON THE FIRST RESOLUTION CUE, both cards and both speeds, at NO wire-clock cost: these plates have no flight, so the contract puts the impact exactly at the end of the cast hold — which is the instant the first destroy (Brahmastra) or first damage (Pashupatastra) beat opens. ' + tl.map((x) => x.k + ' ' + x.mode + ': clip starts ' + x.clipStart + ' ms, impact = first cue ' + x.impactAt + ' ms, ends ' + x.clipEnd + ' ms against a beat end of ' + x.beatEnd + ' ms').join(' · ') + '. Every wire-clock cost is 0 and every fade tail outlasts the beat. Because the lead and the beat both scale with vfxT, ONE design satisfies both speeds — that is why the impact index had to be 24 or under',
+     tl.every((x) => x.waitCost === 0 && x.clipStart > 0 && Math.abs(x.impactAt - x.destroyAt) < 0.001 && x.covers),
+     J(tl));
+  const placements = cards.map((c) => [0, 1].map((seat) => {
+    const F = c.F[seat], p = EC.plan(F, c.M, { mode: 'full', casterSeat: F.attackerSeat });
+    const W = world21(), run = W.P.play(F, c.M, { before: F.before, after: F.after }, { mode: 'full', casterSeat: F.attackerSeat });
+    let n = 0; while (!run.done && n++ < 4000) W.step(1000 / 60);
+    const pl = run.places[0], enemy = HALF[1 - F.attackerSeat], expect = EC.place(c.M, { cx: enemy.cx, cy: enemy.cy, w: CARDW });
+    const featureSpanOnBoard = c.M.scaleRule.spanCell * pl.scale;
+    return { k: c.k, seat: F.attackerSeat, segPlace: p.segments[0] && p.segments[0].place, centredOnEnemyHalf: Math.abs(pl.x + c.M.anchor.x * pl.scale - enemy.cx) < 0.01 && Math.abs(pl.y + c.M.anchor.y * pl.scale - enemy.cy) < 0.01,
+             sameAsPlace: Math.abs(pl.x - expect.x) < 1e-9 && Math.abs(pl.y - expect.y) < 1e-9,
+             plateW: +pl.w.toFixed(1), plateH: +pl.h.toFixed(1), cardWidths: +(featureSpanOnBoard / CARDW).toFixed(2),
+             drewCells: run.log.drawn.length, additive: W.draws.length > 0 && W.draws.every((d) => d.op === 'lighter') };
+  }));
+  ok('E17 · LAB-21 · THE PLATE HANGS ON THE CASTER\'S ENEMY HALF, driven, both cards and both seats: the segment\'s placement is "enemy-half" (a third placement beside the chain\'s caster-half and the strike\'s target-card), its anchor lands EXACTLY on the enemy half centre for whichever seat cast it, and the scale makes each clip\'s measured feature span its ruled card widths — ' + placements.map((g2) => g2.map((x) => x.k + ' seat' + x.seat + ': plate ' + x.plateW + '×' + x.plateH + ' px, feature ' + x.cardWidths + ' cw, ' + x.drewCells + ' cells drawn').join(' · ')).join(' · ') + ' — every cell drawn "lighter"',
+     placements.every((g2) => g2.every((x) => x.segPlace === 'enemy-half' && x.centredOnEnemyHalf && x.sameAsPlace && x.additive && x.drewCells === (x.k === 'brahmastra' ? 40 : 60))) &&
+     placements[0].every((x) => Math.abs(x.cardWidths - 2.0) < 0.02) && placements[1].every((x) => Math.abs(x.cardWidths - 4.1) < 0.02),
+     J(placements));
+  // E18 · the 30 Hz prediction, and the phases where only the pin saves the impact cell
+  function sweep(M, speed, offsets) {
+    const T = EC.timeline(M, speed, EC.CHOREO_SPEED), step = 1000 / 30;
+    let missed = 0, lo = 1e9, hi = -1;
+    for (let o = 0; o < offsets; o++) {
+      const ph = o * step / offsets, seen = {};
+      for (let k = 0; ph + k * step <= T.clipEnd + step; k++) { const t = ph + k * step; if (t >= T.clipStart && t < T.clipEnd) seen[EC.frameIndex(M, T, t)] = 1; }
+      const n = Object.keys(seen).length; lo = Math.min(lo, M.cells.length - n); hi = Math.max(hi, M.cells.length - n);
+      if (!seen[M.impact]) missed++;
+    }
+    return { missed: missed, of: offsets, skipLo: lo, skipHi: hi };
+  }
+  const sw = [];
+  cards.forEach((c) => modes.forEach((m) => sw.push(Object.assign({ k: c.k, mode: m[0] }, sweep(c.M, m[1], 200)))));
+  const pinned = cards.map((c) => [0, 1].map((seat) => {
+    const F = c.F[seat], W = world21();
+    const run = W.P.play(F, c.M, { before: F.before, after: F.after }, { mode: 'fast', casterSeat: F.attackerSeat });
+    let n = 0; while (!run.done && n++ < 4000) W.step(1000 / 30);
+    const cell = c.M.cells[c.M.impact], drewImpact = W.draws.some((d) => d.sx === cell.x && d.sy === cell.y);
+    return { k: c.k, seat: F.attackerSeat, drewImpact: drewImpact, impactDrawnAt: run.log.impactDrawnAt, destroyCueAt: run.log.destroyCueAt, onCue: run.log.impactDrawnAt != null && run.log.destroyCueAt != null && Math.abs(run.log.impactDrawnAt - run.log.destroyCueAt) <= 1000 / 30 };
+  }));
+  ok('E18 · LAB-21 · THE 30 Hz PREDICTION, AND WHAT THE PIN IS FOR: at Full the clip is slower than the clock, so every cell is drawn at every phase (' + sw.filter((x) => x.mode === 'full').map((x) => x.k + ': ' + x.skipLo + '–' + x.skipHi + ' skipped, impact missed at ' + x.missed + '/' + x.of + ' phases').join(' · ') + '). At Fast the clip outruns it (frame 32.5 ms against a 33.3 ms sample) so a cell is dropped, and at a few clock phases the dropped one IS the impact — ' + sw.filter((x) => x.mode === 'fast').map((x) => x.k + ': ' + x.skipLo + '–' + x.skipHi + ' skipped, impact missed at ' + x.missed + '/' + x.of + ' (' + (100 * x.missed / x.of).toFixed(1) + '%)').join(' · ') + '. Driven at 30 Hz Fast on both seats the impact cell IS drawn on the cue anyway, because the pin puts it there',
+     sw.filter((x) => x.mode === 'full').every((x) => x.skipHi === 0 && x.missed === 0) &&
+     sw.filter((x) => x.mode === 'fast').every((x) => x.skipHi >= 1 && x.missed > 0 && x.missed / x.of < 0.05) &&
+     pinned.every((g2) => g2.every((x) => x.drewImpact && x.onCue)), J({ sw: sw, pinned: pinned }));
+  // E19 · the negatives
+  const negTl = tl.map((x) => x.waitCost === 0 && Math.abs(x.impactAt - x.destroyAt) < 0.001 && x.covers);
+  const shifted = cards.map((c) => { const M2 = JSON.parse(JSON.stringify(c.M)); M2.impact = 34;   // an impact cell past 26 cannot start after the cast
+    const T = EC.timeline(M2, 1.0, EC.CHOREO_SPEED); return { k: c.k, impact: M2.impact, waitCost: +T.waitCostMs.toFixed(1), clipStart: +T.clipStart.toFixed(1) }; });
+  const targetAnchored = cards.map((c) => { const M2 = JSON.parse(JSON.stringify(c.M)); M2.contract = Object.assign({}, M2.contract, { anchor: 'target-card-centre' });
+    const F = c.F[0], p = EC.plan(F, M2, { mode: 'full', casterSeat: F.attackerSeat }); return { k: c.k, place: p.segments[0] && p.segments[0].place }; });
+  ok('E19 · LAB-21 · THE NEGATIVES: E16 can fail — moving either impact cell to index 34 puts the clip start BEFORE the cast and the wire would have to wait (' + shifted.map((x) => x.k + ': start ' + x.clipStart + ' ms, cost ' + x.waitCost + ' ms').join(' · ') + '), which is exactly the budget that fixed the index at 24. And E17 can fail — a manifest whose contract said "target-card-centre" would place on the struck card instead of the half (' + targetAnchored.map((x) => x.k + ': ' + x.place).join(' · ') + '), so the enemy-half anchor is read from the contract, not assumed',
+     negTl.every(Boolean) && shifted.every((x) => x.waitCost > 0 && x.clipStart < 0) && targetAnchored.every((x) => x.place === 'target'),
+     J({ shifted: shifted, targetAnchored: targetAnchored }));
+}
+
 // ═══ K · THE SOURCES (A7) ═══
 console.log('\n── K · the sources rule (A7) ──');
 {
@@ -1467,7 +1654,7 @@ console.log('\n── K · the sources rule (A7) ──');
   const raw = tracked.filter((p) => (p.indexOf('lab/') === 0 || p.indexOf('assets/') === 0) && (/(^|\/)(frames|matted|sources|clips_raw)\//.test(p) || /(^|\/)frame_\d+\.(png|jpe?g|webp)$/i.test(p) || /(^|\/)f\d{3}\.png$/.test(p)));
   ok('K2 · no raw or matted frame, and nothing from sources/, is tracked anywhere under lab/ or assets/ (' + raw.length + ')', raw.length === 0, raw.slice(0, 5).join(', '));
   const ignored = (p) => { try { cp.execFileSync('git', ['check-ignore', '-q', p], { cwd: GAME }); return true; } catch (e) { return false; } };
-  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg', 'lab/vfx-manifestation/sources/varuna/varuna_green.mp4', 'lab/vfx-manifestation/sources/varuna/varuna-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/varuna/f086.png', 'lab/vfx-manifestation/frames/varuna_contact_sheet.jpg', 'lab/vfx-manifestation/sources/agni/agni_green.mp4', 'lab/vfx-manifestation/sources/mahabali/mahabali_green.mp4', 'lab/vfx-manifestation/sources/shukracharya/shukracharya_green.mp4', 'lab/vfx-manifestation/sources/mahishi/mahishi_green.mp4', 'lab/vfx-manifestation/sources/vritra/vritra_green.mp4', 'lab/vfx-manifestation/sources/garuda/garuda_green.mp4', 'lab/vfx-manifestation/sources/kartikeya/kartikeya_magenta.mp4', 'lab/vfx-manifestation/sources/vasuki/vasuki_magenta.mp4', 'lab/vfx-manifestation/sources/takshaka/takshaka_magenta.mp4', 'lab/vfx-manifestation/sources/shesha/shesha_magenta.mp4', 'lab/vfx-manifestation/sources/padmavati/padmavati_magenta.mp4', 'lab/vfx-manifestation/sources/kulika/kulika_magenta.mp4', 'lab/vfx-manifestation/sources/sugriva/sugriva_magenta.mp4', 'lab/vfx-manifestation/sources/angad/angad_magenta.mp4', 'lab/vfx-manifestation/sources/anjana/anjana_magenta.mp4', 'lab/vfx-manifestation/sources/makardhwaja/makardhwaja_magenta.mp4', 'lab/vfx-manifestation/sources/rahu/rahu_green.mp4', 'lab/vfx-manifestation/sources/vajra/vajra_black.mp4', 'lab/vfx-manifestation/sources/sudarshana/sudarshana_invoke_black.mp4', 'lab/vfx-manifestation/sources/sudarshana/sudarshana_strike_black.mp4', 'lab/vfx-manifestation/frames/sudarshana_strike_effect_sheet.jpg', 'lab/vfx-manifestation/frames/vajra_effect_sheet.jpg', 'lab/vfx-manifestation/sources/rahu/rahu-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/rahu/f044.png', 'lab/vfx-manifestation/frames/rahu_contact_sheet.jpg'].concat(fs.readdirSync(path.join(LAB, 'sources')).filter((n) => fs.existsSync(path.join(LAB, 'sources', n, n + '-isolated-kling-source-v1.png'))).map((n) => 'lab/vfx-manifestation/sources/' + n + '/' + n + '-isolated-kling-source-v1.png'));   // every identity master staged in sources/
+  const must = ['lab/vfx-manifestation/sources/kling_20260913_VIDEO_Create_a_p_5011_0.mp4', 'lab/vfx-manifestation/sources/meghnad-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/meghnad/f072.png', 'lab/vfx-manifestation/frames/meghnad_contact_sheet.jpg', 'lab/vfx-manifestation/tools/.venv/u2net/isnet-general-use.onnx', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_I_5205_0.mp4', 'lab/vfx-manifestation/sources/indra-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/indra/f055.png', 'lab/vfx-manifestation/frames/indra_contact_sheet.jpg', 'lab/vfx-manifestation/sources/kling_20260914_VIDEO_Preserve_B_5645_0.mp4', 'lab/vfx-manifestation/sources/bali-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/bali/f064.png', 'lab/vfx-manifestation/frames/bali_contact_sheet.jpg', 'lab/vfx-manifestation/frames/bali_tail_contact_sheet.jpg', 'lab/vfx-manifestation/sources/varuna/varuna_green.mp4', 'lab/vfx-manifestation/sources/varuna/varuna-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/varuna/f086.png', 'lab/vfx-manifestation/frames/varuna_contact_sheet.jpg', 'lab/vfx-manifestation/sources/agni/agni_green.mp4', 'lab/vfx-manifestation/sources/mahabali/mahabali_green.mp4', 'lab/vfx-manifestation/sources/shukracharya/shukracharya_green.mp4', 'lab/vfx-manifestation/sources/mahishi/mahishi_green.mp4', 'lab/vfx-manifestation/sources/vritra/vritra_green.mp4', 'lab/vfx-manifestation/sources/garuda/garuda_green.mp4', 'lab/vfx-manifestation/sources/kartikeya/kartikeya_magenta.mp4', 'lab/vfx-manifestation/sources/vasuki/vasuki_magenta.mp4', 'lab/vfx-manifestation/sources/takshaka/takshaka_magenta.mp4', 'lab/vfx-manifestation/sources/shesha/shesha_magenta.mp4', 'lab/vfx-manifestation/sources/padmavati/padmavati_magenta.mp4', 'lab/vfx-manifestation/sources/kulika/kulika_magenta.mp4', 'lab/vfx-manifestation/sources/sugriva/sugriva_magenta.mp4', 'lab/vfx-manifestation/sources/angad/angad_magenta.mp4', 'lab/vfx-manifestation/sources/anjana/anjana_magenta.mp4', 'lab/vfx-manifestation/sources/makardhwaja/makardhwaja_magenta.mp4', 'lab/vfx-manifestation/sources/rahu/rahu_green.mp4', 'lab/vfx-manifestation/sources/vajra/vajra_black.mp4', 'lab/vfx-manifestation/sources/sudarshana/sudarshana_invoke_black.mp4', 'lab/vfx-manifestation/sources/sudarshana/sudarshana_strike_black.mp4', 'lab/vfx-manifestation/frames/sudarshana_strike_effect_sheet.jpg', 'lab/vfx-manifestation/frames/vajra_effect_sheet.jpg', 'lab/vfx-manifestation/sources/brahmastra/brahmastra_black.mp4', 'lab/vfx-manifestation/sources/pashupatastra/pashupatastra_black.mp4', 'lab/vfx-manifestation/frames/brahmastra_effect_sheet.jpg', 'lab/vfx-manifestation/frames/pashupata_effect_sheet.jpg', 'lab/vfx-manifestation/sources/rahu/rahu-isolated-kling-source-v1.png', 'lab/vfx-manifestation/frames/rahu/f044.png', 'lab/vfx-manifestation/frames/rahu_contact_sheet.jpg'].concat(fs.readdirSync(path.join(LAB, 'sources')).filter((n) => fs.existsSync(path.join(LAB, 'sources', n, n + '-isolated-kling-source-v1.png'))).map((n) => 'lab/vfx-manifestation/sources/' + n + '/' + n + '-isolated-kling-source-v1.png'));   // every identity master staged in sources/
   const present = must.filter((p) => fs.existsSync(path.join(GAME, p)));
   const strayDir = path.join(GAME, 'assets', 'vfx', 'experimental'), stray = [];
   (function walk(d) { if (!fs.existsSync(d)) return; fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else if (/\.(png|jpe?g|webp|mp4|mov)$/i.test(n)) stray.push(rel(q)); }); })(strayDir);

@@ -1,0 +1,658 @@
+{
+  "fixture": "pashupata_play",
+  "ruling": "LAB-21 - the Mythic shelf closes (2 of 2), and the first premium effect off the Deva shelf. The DAMAGE half of the Hiranyakashipu mirror pair, on an ASURA MIRROR - the only board where he can stand opposite an Asura caster. The caster holds 17 board power against 2 enemy Units, so the engine splits it evenly: 8 each, at least 1. Hiranyakashipu (power 1) is taken to 0 or less and SURVIVES, floored at 1 with a block event, because isAstraImmune covers every ASTRA_KILL cause except Brahmastra by name; the other Unit simply dies. Chaos Surge fires for the Asura caster on the same action. The engine emits play, then one damage per enemy Unit: the first damage is the cue the clip impact lands on. Patala would deepen each hit by 1 (dmgAstra:true); Mrityulok is pinned here",
+  "engine": {
+    "file": "src/engine.js",
+    "sha256": "3613706f3b736b3e367bfc063575902037b9b05e02ed1de9422bad7ee46520b9"
+  },
+  "seed": 2,
+  "attackerSeat": 1,
+  "defenderSeat": 0,
+  "realm": "mrityulok",
+  "scenario": {
+    "p0": "{p0}",
+    "p1": "{p1}",
+    "p0Faction": "asuras",
+    "p1Faction": "asuras",
+    "p0Deck": [
+      "Hiranyakashipu",
+      "Vibhishana",
+      "Chandrahas",
+      "Meghnad",
+      "Asura Berserker",
+      "Kali Asura",
+      "Kalanemi",
+      "Bana Asura",
+      "Narakasura",
+      "Ravana",
+      "Maricha",
+      "Tataka"
+    ],
+    "p1Deck": [
+      "Pashupatastra",
+      "Mahabali",
+      "Kumbhakarna",
+      "Meghnad",
+      "Asura Berserker",
+      "Kali Asura",
+      "Kalanemi",
+      "Bana Asura",
+      "Narakasura",
+      "Vibhishana",
+      "Ravana",
+      "Maricha"
+    ],
+    "mulligan": 0
+  },
+  "setup": [
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Hiranyakashipu",
+      "handIndex": 0
+    },
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Mahabali",
+      "handIndex": 1
+    },
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Vibhishana",
+      "handIndex": 0
+    },
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Kumbhakarna",
+      "handIndex": 1
+    },
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Chandrahas",
+      "handIndex": 0
+    }
+  ],
+  "action": {
+    "seat": 1,
+    "type": "play",
+    "card": "Pashupatastra",
+    "handIndex": 0,
+    "targetUid": null,
+    "legal": true
+  },
+  "split": {
+    "casterTotalPower": 17,
+    "enemyUnits": 2,
+    "perUnit": 8
+  },
+  "before": {
+    "round": 1,
+    "turn": 1,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "asuras",
+        "units": [
+          {
+            "uid": 1,
+            "id": "hiranya",
+            "n": "Hiranyakashipu",
+            "t": "unit",
+            "r": "E",
+            "power": 5,
+            "base": 7,
+            "eff": 5,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 2,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4,
+            "base": 4,
+            "eff": 4,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": {
+          "uid": 3,
+          "id": "chandrahas",
+          "n": "Chandrahas",
+          "t": "artifact",
+          "r": "R",
+          "power": 0,
+          "base": 0,
+          "eff": 0,
+          "venom": 0,
+          "bound": false,
+          "ghost": false
+        },
+        "hand": [
+          {
+            "uid": 4,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 5,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 6,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 7,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 8,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 9,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 10,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 7
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "asuras",
+        "units": [
+          {
+            "uid": 15,
+            "id": "kumbha",
+            "n": "Kumbhakarna",
+            "t": "unit",
+            "r": "E",
+            "power": 9,
+            "base": 8,
+            "eff": 9,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [
+          {
+            "uid": 14,
+            "id": "mahabali",
+            "n": "Mahabali",
+            "t": "hero",
+            "r": "L",
+            "power": 8,
+            "base": 8,
+            "eff": 8,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 13,
+            "id": "pashupata",
+            "n": "Pashupatastra",
+            "t": "astra",
+            "r": "M",
+            "power": 0
+          },
+          {
+            "uid": 16,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 17,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 18,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 19,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 20,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 21,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 22,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "events": [
+    {
+      "round": 1,
+      "seq": 13,
+      "type": "play",
+      "sourceUid": 13,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Pashupatastra",
+      "text": "{p1} plays Pashupatastra"
+    },
+    {
+      "round": 1,
+      "seq": 14,
+      "type": "damage",
+      "sourceUid": null,
+      "targetUids": [
+        1
+      ],
+      "amount": -8,
+      "abilityName": "Pashupatastra",
+      "text": "−8"
+    },
+    {
+      "round": 1,
+      "seq": 15,
+      "type": "block",
+      "sourceUid": null,
+      "targetUids": [
+        1
+      ],
+      "amount": null,
+      "abilityName": "Pashupatastra",
+      "text": "Hiranyakashipu floors at 1"
+    },
+    {
+      "round": 1,
+      "seq": 16,
+      "type": "damage",
+      "sourceUid": null,
+      "targetUids": [
+        2
+      ],
+      "amount": -8,
+      "abilityName": "Pashupatastra",
+      "text": "−8"
+    },
+    {
+      "round": 1,
+      "seq": 17,
+      "type": "destroy",
+      "sourceUid": null,
+      "targetUids": [
+        2
+      ],
+      "amount": null,
+      "abilityName": "Pashupatastra",
+      "text": "Vibhishana destroyed"
+    },
+    {
+      "round": 1,
+      "seq": 18,
+      "type": "toast",
+      "sourceUid": null,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Chaos Surge",
+      "text": "Chaos Surge!"
+    },
+    {
+      "round": 1,
+      "seq": 19,
+      "type": "buff",
+      "sourceUid": 15,
+      "targetUids": [
+        15
+      ],
+      "amount": 3,
+      "abilityName": "Chaos Surge",
+      "text": "+3"
+    }
+  ],
+  "log": [
+    "{p1} plays Pashupatastra — Shiva’s Wrath.",
+    "Pashupatastra rains 8 on each enemy Unit (board power 17).",
+    "Hiranyakashipu takes 8 damage (Pashupatastra) → 0.",
+    "Hiranyakashipu endures the Astra — floors at 1.",
+    "Vibhishana takes 8 damage (Pashupatastra) → 0.",
+    "Vibhishana is destroyed (Pashupatastra).",
+    "Chaos Surge! Kumbhakarna +3 → 12."
+  ],
+  "after": {
+    "round": 1,
+    "turn": 0,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "asuras",
+        "units": [
+          {
+            "uid": 1,
+            "id": "hiranya",
+            "n": "Hiranyakashipu",
+            "t": "unit",
+            "r": "E",
+            "power": 1,
+            "base": 7,
+            "eff": 1,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": {
+          "uid": 3,
+          "id": "chandrahas",
+          "n": "Chandrahas",
+          "t": "artifact",
+          "r": "R",
+          "power": 0,
+          "base": 0,
+          "eff": 0,
+          "venom": 0,
+          "bound": false,
+          "ghost": false
+        },
+        "hand": [
+          {
+            "uid": 4,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 5,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 6,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 7,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 8,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 9,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 10,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 7
+          }
+        ],
+        "discard": [
+          "vibhishana"
+        ],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "asuras",
+        "units": [
+          {
+            "uid": 15,
+            "id": "kumbha",
+            "n": "Kumbhakarna",
+            "t": "unit",
+            "r": "E",
+            "power": 12,
+            "base": 8,
+            "eff": 12,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [
+          {
+            "uid": 14,
+            "id": "mahabali",
+            "n": "Mahabali",
+            "t": "hero",
+            "r": "L",
+            "power": 8,
+            "base": 8,
+            "eff": 8,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 16,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 17,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 18,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 19,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 20,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 21,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 22,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          }
+        ],
+        "discard": [
+          "pashupata"
+        ],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "diff": {
+    "entered": [],
+    "left": [
+      {
+        "uid": 2,
+        "id": "vibhishana",
+        "n": "Vibhishana",
+        "seat": 0,
+        "zone": "units",
+        "power": 4,
+        "eff": 4
+      }
+    ],
+    "changed": [
+      {
+        "uid": 1,
+        "id": "hiranya",
+        "n": "Hiranyakashipu",
+        "seat": 0,
+        "zone": "units",
+        "power": {
+          "from": 5,
+          "to": 1,
+          "delta": -4
+        },
+        "eff": {
+          "from": 5,
+          "to": 1,
+          "delta": -4
+        }
+      },
+      {
+        "uid": 15,
+        "id": "kumbha",
+        "n": "Kumbhakarna",
+        "seat": 1,
+        "zone": "units",
+        "power": {
+          "from": 9,
+          "to": 12,
+          "delta": 3
+        },
+        "eff": {
+          "from": 9,
+          "to": 12,
+          "delta": 3
+        }
+      }
+    ]
+  }
+}

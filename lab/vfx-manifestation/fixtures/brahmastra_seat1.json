@@ -1,0 +1,579 @@
+{
+  "fixture": "brahmastra_play",
+  "ruling": "LAB-21 - the Mythic shelf closes (1 of 2). The DESTROY half of the Hiranyakashipu mirror pair. The Asura seat lays 3 Units down, Hiranyakashipu among them, while the Deva seat builds its own 2; the Deva seat then casts Brahmastra, which is LEGAL (an enemy Unit is on the board) and destroys ALL 3 - Hiranyakashipu included, because isAstraImmune excepts Brahmastra BY NAME - while both Deva Units stand untouched. The engine emits play, then one destroy per enemy Unit: the first destroy is the cue the clip impact lands on. Neither the legality gate nor the resolution consults astraProtected, which is how \"overrides all shields and immunities\" is true in code",
+  "engine": {
+    "file": "src/engine.js",
+    "sha256": "3613706f3b736b3e367bfc063575902037b9b05e02ed1de9422bad7ee46520b9"
+  },
+  "seed": 2,
+  "attackerSeat": 1,
+  "defenderSeat": 0,
+  "realm": "mrityulok",
+  "scenario": {
+    "p0": "{p0}",
+    "p1": "{p1}",
+    "p0Faction": "asuras",
+    "p1Faction": "devas",
+    "p0Deck": [
+      "Hiranyakashipu",
+      "Ravana",
+      "Vibhishana",
+      "Meghnad",
+      "Asura Berserker",
+      "Kali Asura",
+      "Kalanemi",
+      "Bana Asura",
+      "Narakasura",
+      "Maricha",
+      "Tataka",
+      "Kumbhakarna"
+    ],
+    "p1Deck": [
+      "Brahmastra",
+      "Indra",
+      "Narada",
+      "Chandra Dev",
+      "Yama",
+      "Marut",
+      "Gandharva",
+      "Deva Soldier",
+      "Kubera",
+      "Urvashi",
+      "Brihaspati",
+      "Vishwakarma"
+    ],
+    "mulligan": 0
+  },
+  "setup": [
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Hiranyakashipu",
+      "handIndex": 0
+    },
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Yama",
+      "handIndex": 4
+    },
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Ravana",
+      "handIndex": 0
+    },
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Marut",
+      "handIndex": 4
+    },
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Vibhishana",
+      "handIndex": 0
+    }
+  ],
+  "action": {
+    "seat": 1,
+    "type": "play",
+    "card": "Brahmastra",
+    "handIndex": 0,
+    "targetUid": null,
+    "legal": true
+  },
+  "before": {
+    "round": 1,
+    "turn": 1,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "asuras",
+        "units": [
+          {
+            "uid": 1,
+            "id": "hiranya",
+            "n": "Hiranyakashipu",
+            "t": "unit",
+            "r": "E",
+            "power": 8,
+            "base": 7,
+            "eff": 8,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 2,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 12,
+            "base": 7,
+            "eff": 12,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 3,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4,
+            "base": 4,
+            "eff": 4,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 4,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 5,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 6,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 7,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 8,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 9,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 10,
+            "id": "maricha",
+            "n": "Maricha",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "devas",
+        "units": [
+          {
+            "uid": 17,
+            "id": "yama",
+            "n": "Yama",
+            "t": "unit",
+            "r": "E",
+            "power": 6,
+            "base": 6,
+            "eff": 6,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 18,
+            "id": "marut",
+            "n": "Marut",
+            "t": "unit",
+            "r": "C",
+            "power": 3,
+            "base": 3,
+            "eff": 3,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 13,
+            "id": "brahmastra",
+            "n": "Brahmastra",
+            "t": "astra",
+            "r": "M",
+            "power": 0
+          },
+          {
+            "uid": 14,
+            "id": "indra",
+            "n": "Indra",
+            "t": "hero",
+            "r": "L",
+            "power": 7
+          },
+          {
+            "uid": 15,
+            "id": "saraswati",
+            "n": "Narada",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 16,
+            "id": "surya",
+            "n": "Chandra Dev",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 19,
+            "id": "gandharva",
+            "n": "Gandharva",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 20,
+            "id": "soldier",
+            "n": "Deva Soldier",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 21,
+            "id": "kubera",
+            "n": "Kubera",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 22,
+            "id": "urvashi",
+            "n": "Urvashi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [
+          17
+        ],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "events": [
+    {
+      "round": 1,
+      "seq": 9,
+      "type": "play",
+      "sourceUid": 13,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Brahmastra",
+      "text": "{p1} plays Brahmastra"
+    },
+    {
+      "round": 1,
+      "seq": 10,
+      "type": "destroy",
+      "sourceUid": null,
+      "targetUids": [
+        1
+      ],
+      "amount": null,
+      "abilityName": "Brahmastra",
+      "text": "Hiranyakashipu destroyed"
+    },
+    {
+      "round": 1,
+      "seq": 11,
+      "type": "destroy",
+      "sourceUid": null,
+      "targetUids": [
+        2
+      ],
+      "amount": null,
+      "abilityName": "Brahmastra",
+      "text": "Ravana destroyed"
+    },
+    {
+      "round": 1,
+      "seq": 12,
+      "type": "destroy",
+      "sourceUid": null,
+      "targetUids": [
+        3
+      ],
+      "amount": null,
+      "abilityName": "Brahmastra",
+      "text": "Vibhishana destroyed"
+    }
+  ],
+  "log": [
+    "{p1} plays Brahmastra — The Ultimate Weapon.",
+    "BRAHMASTRA. The earth remembers, and trembles.",
+    "Hiranyakashipu is destroyed (Brahmastra).",
+    "Ravana is destroyed (Brahmastra).",
+    "Vibhishana is destroyed (Brahmastra)."
+  ],
+  "after": {
+    "round": 1,
+    "turn": 0,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "asuras",
+        "units": [],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 4,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 5,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 6,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 7,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 8,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 9,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 10,
+            "id": "maricha",
+            "n": "Maricha",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          }
+        ],
+        "discard": [
+          "hiranya",
+          "ravana",
+          "vibhishana"
+        ],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "devas",
+        "units": [
+          {
+            "uid": 17,
+            "id": "yama",
+            "n": "Yama",
+            "t": "unit",
+            "r": "E",
+            "power": 6,
+            "base": 6,
+            "eff": 6,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 18,
+            "id": "marut",
+            "n": "Marut",
+            "t": "unit",
+            "r": "C",
+            "power": 3,
+            "base": 3,
+            "eff": 3,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 14,
+            "id": "indra",
+            "n": "Indra",
+            "t": "hero",
+            "r": "L",
+            "power": 7
+          },
+          {
+            "uid": 15,
+            "id": "saraswati",
+            "n": "Narada",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 16,
+            "id": "surya",
+            "n": "Chandra Dev",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 19,
+            "id": "gandharva",
+            "n": "Gandharva",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 20,
+            "id": "soldier",
+            "n": "Deva Soldier",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 21,
+            "id": "kubera",
+            "n": "Kubera",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 22,
+            "id": "urvashi",
+            "n": "Urvashi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          }
+        ],
+        "discard": [
+          "brahmastra"
+        ],
+        "deckCount": 2,
+        "shieldUids": [
+          17
+        ],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "diff": {
+    "entered": [],
+    "left": [
+      {
+        "uid": 1,
+        "id": "hiranya",
+        "n": "Hiranyakashipu",
+        "seat": 0,
+        "zone": "units",
+        "power": 8,
+        "eff": 8
+      },
+      {
+        "uid": 2,
+        "id": "ravana",
+        "n": "Ravana",
+        "seat": 0,
+        "zone": "units",
+        "power": 12,
+        "eff": 12
+      },
+      {
+        "uid": 3,
+        "id": "vibhishana",
+        "n": "Vibhishana",
+        "seat": 0,
+        "zone": "units",
+        "power": 4,
+        "eff": 4
+      }
+    ],
+    "changed": []
+  }
+}

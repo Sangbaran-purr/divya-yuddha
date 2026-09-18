@@ -221,10 +221,110 @@ const buildSudarshana = (seat) => buildSudarshanaCast(seat, 'Mahabali');
 const forEntry = (key) => (seat) => buildHeroEntry(HERO_ENTRIES[key], seat);   // LAB-9: one builder per registry entry
 const buildIndra = forEntry('indra'), buildBali = forEntry('bali'), buildVaruna = forEntry('varuna');
 
-module.exports = { build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK, buildSudarshana, buildSudarshanaCast, SUD_DECK, SUD_OPP_DECK };
+// LAB-21 · THE MYTHIC SHELF'S FIXTURES — the HIRANYAKASHIPU MIRROR PAIR. One unit, one board truth, two opposite answers, both read
+// straight out of isAstraImmune (engine ~669): `unit.id==='hiranya' && ASTRA_KILL.has(cause) && cause!=='Brahmastra'`. So Brahmastra
+// DESTROYS him — the by-name exception — and Pashupatastra CANNOT: its damage takes him to 0 or less and the immunity floors him at 1
+// with a `block` event. Both fixtures put him on the enemy board and let the real engine settle it.
+//
+// Brahmastra (DESTROY class, not dmgAstra): the Asura seat sets three Units down (Hiranyakashipu among them) while the Deva seat builds
+// its OWN two, then Brahmastra destroys ALL THREE enemy Units and leaves both Deva Units standing. There is no astraProtected filter on
+// either its legality gate or its resolution — it iterates opp.units directly — which is how "overrides all shields" is true in code.
+const BRAHMA_DECK = ['Brahmastra'].concat(DEVA_DECK.slice(0, 11));
+const BRAHMA_OPP_DECK = ['Hiranyakashipu', 'Ravana', 'Vibhishana'].concat(ASURA_DECK.filter((n) => n !== 'Hiranyakashipu' && n !== 'Ravana' && n !== 'Vibhishana').slice(0, 9));
+function buildBrahmastraCast(seat, opts) {
+  opts = opts || {};
+  const opp = 1 - seat;
+  const oppPlays = opts.oppPlays || ['Hiranyakashipu', 'Ravana', 'Vibhishana'], myPlays = opts.myPlays || ['Yama', 'Marut'];
+  for (let seed = 1; seed < 2000; seed++) {
+    const E = freshEngine();
+    const decks = seat === 0 ? [BRAHMA_DECK, BRAHMA_OPP_DECK] : [BRAHMA_OPP_DECK, BRAHMA_DECK];
+    const sc = { p0Deck: decks[0], p1Deck: decks[1], p0Hand: HAND(decks[0]), p1Hand: HAND(decks[1]), mulligan: 0 };
+    const o = { rng: seeded(seed), p0: '{p0}', p1: '{p1}', realm: 'mrityulok', p0Faction: seat === 0 ? 'devas' : 'asuras', p1Faction: seat === 1 ? 'devas' : 'asuras', scenario: sc };
+    const g = E.newGame(o);
+    // with no setup at all (the no-target negative) the CASTER must be the one on turn, facing an empty row; otherwise the mark lays first
+    if (g.turn !== (oppPlays.length === 0 && myPlays.length === 0 ? seat : opp)) continue;
+    const setup = [];
+    const lay = (who, name) => { const h = g.players[who].hand.findIndex((c) => c.n === name); if (h < 0) return false;
+      if (g.turn !== who) return false; E.playCard(g, who, h); setup.push({ seat: who, type: 'play', card: name, handIndex: h }); return true; };
+    let ok = true;
+    for (let i = 0; i < oppPlays.length && ok; i++) { ok = lay(opp, oppPlays[i]); if (ok && i < myPlays.length) ok = lay(seat, myPlays[i]); }
+    if (!ok || g.turn !== seat) continue;
+    const bh = g.players[seat].hand.findIndex((c) => c.id === 'brahmastra'), legal = E.playableIndices(g, seat).indexOf(bh) >= 0;
+    const foes = g.players[opp].units.filter((u) => !u.ghost).length, mine = g.players[seat].units.filter((u) => !u.ghost).length;
+    if (opts.probe) return { E, g, seat, bh, legal, seed, foes, mine };          // the probe returns BEFORE the legality gate — the no-target negative needs the illegal board
+    if (!legal) continue;
+    if (foes < 3 || mine < 2) continue;                                          // "ALL enemy Units" needs a row to wipe; our own two prove the caster is untouched
+    const before = snapshot(E, g), ev0 = g.events.length, log0 = g.log.length;
+    E.playCard(g, seat, bh);
+    const after = snapshot(E, g);
+    return {
+      fixture: 'brahmastra_play',
+      ruling: 'LAB-21 - the Mythic shelf closes (1 of 2). The DESTROY half of the Hiranyakashipu mirror pair. The Asura seat lays ' + foes + ' Units down, Hiranyakashipu among them, while the Deva seat builds its own ' + mine + '; the Deva seat then casts Brahmastra, which is LEGAL (an enemy Unit is on the board) and destroys ALL ' + foes + ' - Hiranyakashipu included, because isAstraImmune excepts Brahmastra BY NAME - while both Deva Units stand untouched. The engine emits play, then one destroy per enemy Unit: the first destroy is the cue the clip impact lands on. Neither the legality gate nor the resolution consults astraProtected, which is how "overrides all shields and immunities" is true in code',
+      engine: { file: 'src/engine.js', sha256: engineSha() },
+      seed, attackerSeat: seat, defenderSeat: opp, realm: 'mrityulok',
+      scenario: { p0: o.p0, p1: o.p1, p0Faction: o.p0Faction, p1Faction: o.p1Faction, p0Deck: decks[0], p1Deck: decks[1], mulligan: 0 },
+      setup, action: { seat, type: 'play', card: 'Brahmastra', handIndex: bh, targetUid: null, legal },
+      before, events: g.events.slice(ev0), log: g.log.slice(log0).map((l) => l.msg), after,
+      diff: boardDiff(before, after),
+    };
+  }
+  throw new Error('no seed in 1..1999 produced the Brahmastra board');
+}
+const buildBrahmastra = (seat) => buildBrahmastraCast(seat);
+
+// Pashupatastra (DAMAGE class, dmgAstra:true): an ASURA MIRROR, the only board on which Hiranyakashipu can stand opposite an Asura caster.
+// per = max(1, floor(your total board power / enemy Units)) - so the caster needs enough board that per reaches 7 and the immunity branch
+// actually fires. Mahabali (hero 8) + Kumbhakarna (8) against two foes gives per 8: Vibhishana DIES, Hiranyakashipu FLOORS AT 1 with a
+// block event. The opponent's third play is Chandrahas, an ARTIFACT, so the enemy Unit count stays 2 (its own Chaos Surge is left to happen).
+const PASHU_DECK = ['Pashupatastra', 'Mahabali', 'Kumbhakarna'].concat(ASURA_DECK.filter((n) => n !== 'Kumbhakarna').slice(0, 9));
+const PASHU_OPP_DECK = ['Hiranyakashipu', 'Vibhishana', 'Chandrahas'].concat(ASURA_DECK.filter((n) => n !== 'Hiranyakashipu' && n !== 'Vibhishana').slice(0, 9));
+function buildPashupataCast(seat, opts) {
+  opts = opts || {};
+  const opp = 1 - seat;
+  const oppPlays = opts.oppPlays || ['Hiranyakashipu', 'Vibhishana', 'Chandrahas'], myPlays = opts.myPlays || ['Mahabali', 'Kumbhakarna'];
+  for (let seed = 1; seed < 2000; seed++) {
+    const E = freshEngine();
+    const decks = seat === 0 ? [PASHU_DECK, PASHU_OPP_DECK] : [PASHU_OPP_DECK, PASHU_DECK];
+    const sc = { p0Deck: decks[0], p1Deck: decks[1], p0Hand: HAND(decks[0]), p1Hand: HAND(decks[1]), mulligan: 0 };
+    const o = { rng: seeded(seed), p0: '{p0}', p1: '{p1}', realm: 'mrityulok', p0Faction: 'asuras', p1Faction: 'asuras', scenario: sc };
+    const g = E.newGame(o);
+    if (g.turn !== (oppPlays.length === 0 && myPlays.length === 0 ? seat : opp)) continue;   // the no-target negative needs the caster on turn against an empty row
+    const setup = [];
+    const lay = (who, name) => { const h = g.players[who].hand.findIndex((c) => c.n === name); if (h < 0) return false;
+      if (g.turn !== who) return false; E.playCard(g, who, h); setup.push({ seat: who, type: 'play', card: name, handIndex: h }); return true; };
+    let ok = true;
+    for (let i = 0; i < oppPlays.length && ok; i++) { ok = lay(opp, oppPlays[i]); if (ok && i < myPlays.length) ok = lay(seat, myPlays[i]); }
+    if (!ok || g.turn !== seat) continue;
+    const ph = g.players[seat].hand.findIndex((c) => c.id === 'pashupata'), legal = E.playableIndices(g, seat).indexOf(ph) >= 0;
+    const foes = g.players[opp].units.filter((u) => !u.ghost);
+    const total = E.totalPower(g, seat), per = foes.length ? Math.max(1, Math.floor(total / foes.length)) : 0;
+    const hir = foes.find((u) => u.id === 'hiranya');
+    if (opts.probe) return { E, g, seat, ph, legal, seed, foes: foes.length, total, per, hir };   // the probe returns BEFORE the legality gate — the no-target negative needs the illegal board
+    if (!legal) continue;
+    if (foes.length < 2 || !hir || per < hir.power) continue;                   // the immunity branch only fires when the split reaches him
+    const before = snapshot(E, g), ev0 = g.events.length, log0 = g.log.length;
+    E.playCard(g, seat, ph);
+    const after = snapshot(E, g);
+    return {
+      fixture: 'pashupata_play',
+      ruling: 'LAB-21 - the Mythic shelf closes (2 of 2), and the first premium effect off the Deva shelf. The DAMAGE half of the Hiranyakashipu mirror pair, on an ASURA MIRROR - the only board where he can stand opposite an Asura caster. The caster holds ' + total + ' board power against ' + foes.length + ' enemy Units, so the engine splits it evenly: ' + per + ' each, at least 1. Hiranyakashipu (power ' + hir.power + ') is taken to 0 or less and SURVIVES, floored at 1 with a block event, because isAstraImmune covers every ASTRA_KILL cause except Brahmastra by name; the other Unit simply dies. Chaos Surge fires for the Asura caster on the same action. The engine emits play, then one damage per enemy Unit: the first damage is the cue the clip impact lands on. Patala would deepen each hit by 1 (dmgAstra:true); Mrityulok is pinned here',
+      engine: { file: 'src/engine.js', sha256: engineSha() },
+      seed, attackerSeat: seat, defenderSeat: opp, realm: 'mrityulok',
+      scenario: { p0: o.p0, p1: o.p1, p0Faction: o.p0Faction, p1Faction: o.p1Faction, p0Deck: decks[0], p1Deck: decks[1], mulligan: 0 },
+      setup, action: { seat, type: 'play', card: 'Pashupatastra', handIndex: ph, targetUid: null, legal },
+      split: { casterTotalPower: total, enemyUnits: foes.length, perUnit: per },
+      before, events: g.events.slice(ev0), log: g.log.slice(log0).map((l) => l.msg), after,
+      diff: boardDiff(before, after),
+    };
+  }
+  throw new Error('no seed in 1..1999 produced the Pashupatastra board');
+}
+const buildPashupata = (seat) => buildPashupataCast(seat);
+
+module.exports = { build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK, buildSudarshana, buildSudarshanaCast, SUD_DECK, SUD_OPP_DECK, buildBrahmastra, buildBrahmastraCast, BRAHMA_DECK, BRAHMA_OPP_DECK, buildPashupata, buildPashupataCast, PASHU_DECK, PASHU_OPP_DECK };
 
 if (require.main === module) {
-  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra], ['sudarshana', buildSudarshana]])) for (const seat of [0, 1]) {
+  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra], ['sudarshana', buildSudarshana], ['brahmastra', buildBrahmastra], ['pashupata', buildPashupata]])) for (const seat of [0, 1]) {
     const f = make(seat), out = path.join(__dirname, name + '_seat' + seat + '.json');
     fs.writeFileSync(out, JSON.stringify(f, null, 2) + '\n');
     console.log('wrote ' + path.relative(GAME, out) + ' — seed ' + f.seed + ', ' + f.events.length + ' events (' + f.events.map((e) => e.type).join(', ') + '), changed: ' +

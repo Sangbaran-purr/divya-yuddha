@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "d6fe0da639691a8e0e1e1ece40cd1b95a30fe851",
+    "gameCommit": "2be509965c3febc2cd47d1ac0b85df485037d3c4",
     "startLine": 8876,
     "endLine": 9611,
     "lines": 736,
@@ -293,6 +293,26 @@
       "to": "art/Devas_Astra_Vajra_rLegendary.png",
       "bytes": 523342,
       "sha256": "75ec4792110cf83683c614d7430c4e8ac5e89fe9e733edf7796d9e50197ddf2a",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Devas_Astra_Brahmastra_rMythic.png",
+      "to": "art/Devas_Astra_Brahmastra_rMythic.png",
+      "bytes": 526148,
+      "sha256": "3567fe48e3cf8c608228c882a2ddf889cd114b0622fa1d893ba58dd9ef758ecc",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Asuras_Astra_Pashupatastra_rMythic.png",
+      "to": "art/Asuras_Astra_Pashupatastra_rMythic.png",
+      "bytes": 448271,
+      "sha256": "1fc9ee308af21b98369d785d4d7aeeaec2b5a9ae8abdb365c1fc1192ad53042e",
       "px": {
         "w": 750,
         "h": 1050
