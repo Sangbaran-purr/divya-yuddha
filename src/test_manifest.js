@@ -28,12 +28,15 @@ const PIN = {
   inlinedEngine: 'd70e94b34248bf85c9a3bf00724a724e0997580fdadb16f3d8bfa753d79d8791',
   sprBrahmastra: 'ca7898c5da25a7ec39b5beb28fb5196e14f111a5d69b3b812f03b41bca80166a',
   unitLanding: 'cd4ed62d5f7b67d61599a5f7d6e67c0ab9606adea88bc08d3bf5a6636e813011',
-  effectPlayer: '0be2d7225a542cd769a32c771c37e25b8342d9a960925e502e1fdd771648952a',   // EXPORT-4: the fitted law + the card floor; EXPORT-3 shipped 3a780fe5ec52…, EXPORT-1 30219bcb370e…
+  effectPlayer: '5d3ba4b04935c7860faf0344d7d7f49326745d8f80c478df6f21fdad6f5e48e5',   // EXPORT-5: the beat gate (hold · cap · beat()); EXPORT-4 0be2d7225a54…: the fitted law + the card floor; EXPORT-3 shipped 3a780fe5ec52…, EXPORT-1 30219bcb370e…
   wireTypes: ['leap', 'mulligan', 'pass', 'play', 'shield'],
   // EXPORT-2: the nine actor modules and the faction effects, as certified in the manifestation lab when the export was built
   // (recorded here, never read from the lab: nothing outside the lab may name it — its own rule G2)
   actorModules: {"boarddiff": "879fe41a315d53122fd1d9b03d7f47a5643f2e1c59e7a14bb7f9973d57957ede", "clashcontext": "eb87c50dc6cee9726445fa066aafc0a47ad3ca382cad20ba5c8cca185e6f6d94", "director": "7027e197441e3cc3b8cb9df104585eeb51300f761263b434a3403252961b51c0", "runner": "7a0b80b824ed294493d53360c2c1a93997068897394fd7b400bb5faa151ebc35", "manifest": "077314c6a55483546f06b08e83a453c174d5636366bb5079d981a2c8b3396408", "stagemath": "6deed7f01db143d210133a95b856981094e647b67d3cd9467f70506fa00b4979", "dissolve": "8e4efc39f2714ca917c8b8da5095d50c58b2237280c137b05ca63ffd53a59e59", "actorstage": "dec202561478b1046cfeebcf552d8d885912d6a4f1e74b112c3d14faad1f7241", "playback": "ba7fce765c96f70d9eda895dce27172f340fc9bcf1969ea3fdcf449325d55d5f"},
   factionFx: '7254d128bcec6c2d433281f4daa027d81b74b022dbe13fe81ba2be3efbf310dc',
+  // EXPORT-5 · THE DESIGN FREEZE: one digest over every certified file in assets/manifest (73 files — every atlas, manifest, chain, the
+  // registry and the faction effects), recorded at 03b1e45. Nothing a resilience rung does may move it
+  certifiedAssets: 'e0e131e84c6bc96a95e9661983e376fbd8d2a96daa3dc5044b5ddaa6d6844f60',
 };
 const ROUTED = ['brahmastra', 'pashupata', 'sudarshana', 'vajra'];
 const lineOf = (needle) => HTML.split('\n').find((l) => l.indexOf(needle) >= 0) || null;
@@ -171,7 +174,7 @@ console.log('\n── F · fail-open falls back to yesterday\'s game, never to a
 const GLUE = between('/* ══ EXPORT-1 — THE PREMIUM EFFECTS', 'function runAction(mutate, opts={}){');
 function sandbox(o) {
   o = o || {};
-  let now = 1000; const logs = [], warns = [], files = {};
+  let now = 1000; const logs = [], warns = [], files = {}, fetched = [];
   const rect = { left: 0, top: 0, width: 355, height: 420, right: 355, bottom: 420 };
   const el = { getBoundingClientRect: () => rect, width: 0, height: 0, getContext: () => ({ setTransform() {}, clearRect() {}, drawImage() {}, globalCompositeOperation: 'source-over', globalAlpha: 1, getImageData: (x, y, w, h) => ({ data: new Uint8ClampedArray(4) }), putImageData() {} }) };
   const abs = (u) => new URL(u, 'https://game.test/index.html');
@@ -180,11 +183,12 @@ function sandbox(o) {
     console: { log: (...a) => logs.push(a.join(' ')), warn: (...a) => warns.push(a.join(' ')), error: (...a) => warns.push(a.join(' ')) },
     location: { href: 'https://game.test/index.html' }, URL, Blob, Promise, Math, JSON, Object, Array, Date, String, Number, Error, setTimeout,
     performance: { now: () => now }, requestAnimationFrame: () => 1, devicePixelRatio: 2,
-    fetch: (u) => { if (o.fetch404) return Promise.resolve({ ok: false, status: 404 });
+    fetch: (u) => { const rel0 = decodeURIComponent(abs(u).pathname).replace(/^\//, ''); fetched.push([rel0, now]);
+      if (o.fetch404 || (o.fetchFail && o.fetchFail(rel0))) return Promise.resolve({ ok: false, status: 404 });
       const rel = abs(u).pathname; if (o.hold && o.hold(rel)) return new Promise(() => {});
       const p = read(u); if (!p) return Promise.resolve({ ok: false, status: 404 });
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(fs.readFileSync(p, 'utf8'))), blob: () => Promise.resolve(new Blob([fs.readFileSync(p)])) }); },
-    createImageBitmap: (b) => o.decodeFails ? Promise.reject(new Error('decode refused')) : Promise.resolve({ width: 64, height: 32, close() {} }),
+    createImageBitmap: (b) => (o.decodeFails === true || (typeof o.decodeFails === 'function' && o.decodeFails())) ? Promise.reject(new Error('decode refused')) : Promise.resolve({ width: 64, height: 32, close() {} }),
     Image: function () { const im = this; setTimeout(() => { if (im.onerror) im.onerror(); }, 0); },
     document: { createElement: () => el, querySelector: () => o.halfRect ? Object.assign({}, el, { getBoundingClientRect: () => o.halfRect }) : el },
     $: () => el, EffectClip: EC, G: { players: [{ hand: [] }, { hand: [] }] }, BLog: { fx: null },
@@ -193,8 +197,8 @@ function sandbox(o) {
   };
   ctx.window = ctx; ctx.URL.createObjectURL = ctx.URL.createObjectURL || (() => 'blob:x'); ctx.URL.revokeObjectURL = ctx.URL.revokeObjectURL || (() => {});
   vm.createContext(ctx);
-  vm.runInContext(GLUE + '\n;globalThis.__fx = { FX, fxBoot, fxPrefetch, fxReady, fxCast, fxOwnsMoment, fxOnError, fxSkip, fxClips, fxAtlasUrl };', ctx);
-  return { ctx, fx: ctx.__fx, logs, warns, tick: (ms) => { now += ms; if (ctx.__fx.FX.player && ctx.__fx.FX.run) ctx.__fx.FX.player.frame(now); } };
+  vm.runInContext(GLUE + '\n;globalThis.__fx = { FX, fxBoot, fxPrefetch, fxPrefetchHands, fxReady, fxCast, fxOwnsMoment, fxOnError, fxSkip, fxClips, fxAtlasUrl, fxBeatFrom, fxLoadAtlas, ASSET_RETRY };', ctx);
+  return { ctx, fx: ctx.__fx, logs, warns, fetched, advance: (ms) => { now += ms; }, get now() { return now; }, tick: (ms) => { now += ms; if (ctx.__fx.FX.player && ctx.__fx.FX.run) ctx.__fx.FX.player.frame(now); } };
 }
 const flush = () => new Promise((r) => setTimeout(r, 5));
 // a hang is a failure, loudly: the whole suite must finish (a manifestation that waits forever would otherwise just never end)
@@ -296,7 +300,7 @@ const card = (id) => ({ id, n: id, t: 'astra' });
   const WD_TICK = (() => { const i = HTML.indexOf('setInterval(()=>{ if(choreoActive && choreoStartedAt'); return i < 0 ? null : HTML.slice(i, HTML.indexOf('}, 1500);', i) + 9); })();
   function actorSandbox(o) {
     o = o || {};
-    let now = 1000; const warns = [], logs = [], floats = [], sfx = [], fetched = [], blobFile = new WeakMap(), decodes = [];
+    let now = 1000; const warns = [], logs = [], floats = [], sfx = [], fetched = [], blobFile = new WeakMap(), decodes = [];   // fetched: every URL asked for (EXPORT-5 counts retries)
     const g2d = () => new Proxy({}, { get: (t, k) => (k in t ? t[k] : (k === 'getImageData' || k === 'createImageData') ? (x, y, w, h) => ({ data: new Uint8ClampedArray(Math.max(1, (w | 0) * (h | 0)) * 4), width: w, height: h })
       : k === 'measureText' ? () => ({ width: 0 }) : (k === 'createRadialGradient' || k === 'createLinearGradient') ? () => ({ addColorStop() {} }) : k === 'canvas' ? {} : () => {}), set: (t, k, v) => { t[k] = v; return true; } });
     const canvas = () => { const c = { width: 1, height: 1, style: {}, getContext: () => (c.__g = c.__g || g2d()), getBoundingClientRect: () => ({ left: 0, top: 0, width: 355, height: 420, right: 355, bottom: 420 }) }; return c; };
@@ -315,7 +319,7 @@ const card = (id) => ({ id, n: id, t: 'astra' });
         if (o.missing && o.missing(rel)) return Promise.resolve({ ok: false, status: 404 });
         const p = path.join(GAME, rel); if (!fs.existsSync(p)) return Promise.resolve({ ok: false, status: 404 });
         return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(fs.readFileSync(p, 'utf8'))), blob: () => { const b = new Blob([fs.readFileSync(p)]); blobFile.set(b, p); return Promise.resolve(b); } }); },
-      createImageBitmap: (b) => { decodes.push(now); if (o.decodeFails) return Promise.reject(new Error('decode refused')); if (o.decodeHangs) return new Promise(() => {});
+      createImageBitmap: (b) => { decodes.push(now); if (o.decodeFails === true || (typeof o.decodeFails === 'function' && o.decodeFails())) return Promise.reject(new Error('decode refused')); if (o.decodeHangs) return new Promise(() => {});
         const px = webpSize(fs.readFileSync(blobFile.get(b))); return Promise.resolve({ width: px.w, height: px.h, close() {} }); },
       Image: function () { const im = this; setTimeout(() => { if (im.onerror) im.onerror(); }, 0); },
       document: { createElement: () => canvas(), querySelector: (sel) => { if (/\.bc/.test(sel)) { const c = cellsOf(0).concat(cellsOf(1)); return c[0] || null; } const seat = /opp/.test(sel) ? 1 : 0; return { querySelectorAll: () => cellsOf(seat) }; } },
@@ -327,8 +331,8 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     ctx.window = ctx; vm.createContext(ctx);
     for (const n of MODS) vm.runInContext(modSrc(n), ctx, { filename: n + '.js' });
     vm.runInContext(WD + '\n', ctx);
-    vm.runInContext(GLUE + '\n;globalThis.__mf = { MF, mfBoot, mfManifest, mfPrefetch, mfPrefetchHands, mfReady, mfRouted, mfSnap, mfStage, mfWantRung, mfPickRung, mfDrawnPx, MF_RUNG_PX, get budget(){ return choreoBudgetMs; } };', ctx);
-    return { ctx, mf: ctx.__mf, warns, logs, floats, sfx, fetched, decodes, get now() { return now; } };
+    vm.runInContext(GLUE + '\n;globalThis.__mf = { MF, mfBoot, mfManifest, mfPrefetch, mfPrefetchHands, mfReady, mfRouted, mfSnap, mfStage, mfWantRung, mfPickRung, mfDrawnPx, MF_RUNG_PX, mfDecode, ASSET_RETRY, get budget(){ return choreoBudgetMs; } };', ctx);
+    return { ctx, mf: ctx.__mf, warns, logs, floats, sfx, fetched, decodes, advance: (ms) => { now += ms; }, get now() { return now; } };
   }
   // a real play of each Hero through the engine: two friendly Units down, then the Hero
   function heroPlay(id) {
@@ -516,6 +520,120 @@ const card = (id) => ({ id, n: id, t: 'astra' });
        rows.every((x) => x.b.h <= x.v.half.h + 1e-6 && x.pa.h <= x.v.half.h + 1e-6) &&
        rows.filter((x) => x.floor).every((x) => x.va.h / x.v.half.h >= 0.8 && x.va.h / x.v.half.h <= 0.99),
        J(rows.map((x) => ({ vp: x.v.vw + 'x' + x.v.vh, b: [+x.b.w.toFixed(1), +x.b.h.toFixed(1)], pa: [+x.pa.w.toFixed(1), +x.pa.h.toFixed(1)], va: +x.va.w.toFixed(1), floor: x.floor }))));
+  }
+
+  // ═══ X · EXPORT-5: RESILIENCE — beats and clips keep each other honest ═══
+  console.log('\n── X · resilience: the beat gate and the retry (EXPORT-5) ──');
+  {
+    // X1 · THE DESIGN FREEZE
+    const all = []; (function walk(d) { fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else all.push(q); }); })(MAN); all.sort();
+    const digest = sha(all.map((f) => path.relative(MAN, f) + ' ' + sha(fs.readFileSync(f))).join('\n'));
+    ok('X1 · THE DESIGN FREEZE (owner, binding): every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chain, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…): no atlas, portion, plate size, tempo, plan or impact frame moves in a resilience rung',
+       digest === PIN.certifiedAssets && all.length === 73, digest);
+
+    // the player on a fake clock: every drawn cell with its time, and the cues as they fired
+    const RATE = 1000 / 60;
+    function drive(id, vfxT, gate, beatAt, capMs) {
+      const spec = SPECS[id], clips = clipsOf(spec), cellIx = (sx, sy) => { for (let c = 0; c < clips.length; c++) { const k2 = clips[c].cells.findIndex((q) => q.x === sx && q.y === sy); if (k2 >= 0) return c + ':' + k2; } return '?'; };
+      let now = 0, caps = 0; const draws = [];
+      const g = { _op: 'source-over', setTransform() {}, clearRect() {}, drawImage(img, sx, sy) { draws.push([Math.round(now * 1000) / 1000, cellIx(sx, sy)]); }, set globalCompositeOperation(v) { this._op = v; }, get globalCompositeOperation() { return this._op; }, globalAlpha: 1 };
+      const env = { now: () => now, canvas: { width: 710, height: 840, getContext: () => g }, dpr: 2, cardOf: (uid) => ({ cx: 120, cy: 60, w: 64, uid }), halfOf: (st) => ({ cx: 177.5, cy: st ? 104.5 : 314.5, top: st ? 0 : 210, w: 355, h: 209 }),
+        loadAtlas: (m) => ({ source: {}, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() {} }), render() {}, sound() {}, crack() {}, removal() {}, callout() {}, onDone() {}, onBeatLateCap: () => { caps++; } };
+      const P = EC.createPlayer(env), run = P.play({ events: BATCH[id].events }, spec, { before: null, after: null }, { mode: 'full', choreoSpeed: vfxT, casterSeat: 0, beatGate: gate, beatCapMs: capMs });
+      const impactT = run.plan.cues.find((c) => c.cue === 'impact').t; let beaten = beatAt == null, n = 0;
+      while (!run.done && n++ < 6000) { const next = now + RATE; if (!beaten && next >= beatAt) { now = beatAt; P.beat(); beaten = true; } now = next; P.frame(now); }
+      if (!beaten && gate) { now = beatAt; P.beat(); }
+      return { run, draws, impactT, caps, impactDrawnAt: run.log.impactDrawnAt, cues: run.log.cues.map((c) => [c.cue, Math.round(c.at * 1000) / 1000]), travel: run.log.travel.map((q) => [Math.round(q.t), +q.x.toFixed(3), +q.y.toFixed(3), +q.rot.toFixed(5)]) };
+    }
+    const IDS = ['brahmastra', 'pashupata', 'sudarshana', 'vajra'], SPEEDS2 = [['normal', 1.3], ['fast', 0.78]];
+    const impactCell = (id) => { const sp = SPECS[id]; return (sp.class === 'effect-chain' ? 1 : 0) + ':' + clipsOf(sp)[clipsOf(sp).length - 1].impact; };
+    const preCell = (id) => { const sp = SPECS[id]; return (sp.class === 'effect-chain' ? 1 : 0) + ':' + (clipsOf(sp)[clipsOf(sp).length - 1].impact - 1); };
+
+    // X2 · on time = byte-identical (the beat at the planned impact, or before it)
+    const same = []; for (const id of IDS) for (const [sp, v] of SPEEDS2) {
+      const base = drive(id, v, false, null), onT = drive(id, v, true, base.impactT), just = drive(id, v, true, base.impactT - 1);
+      const key = (x) => J({ d: x.draws, c: x.cues, i: x.impactDrawnAt, t: x.travel });
+      same.push({ id, sp, onTime: key(onT) === key(base), justBefore: key(just) === key(base), impactAt: Math.round(base.impactDrawnAt), cells: base.draws.length });
+    }
+    ok('X2 · ON-TIME BEATS ARE BYTE-IDENTICAL, all four effects at Normal AND Fast: with the beat arriving at the planned impact (or a millisecond before it) every drawn cell, every draw time, every cue, the impact instant and the chain\'s travel samples equal the ungated player\'s exactly — ' + same.map((x) => x.id + ' ' + x.sp + ' ' + x.cells + ' draws, impact ' + x.impactAt + ' ms').join(' · '),
+       same.every((x) => x.onTime && x.justBefore), J(same));
+
+    // X3 · a beat 1000 ms late: the pre-impact cell holds, the impact lands ON the beat, nothing is skipped, everything after shifts
+    const late = IDS.map((id) => { const base = drive(id, 1.3, false, null), L = drive(id, 1.3, true, base.impactT + 1000);
+      const inHold = L.draws.filter((d) => d[0] > base.impactT && d[0] < base.impactT + 1000);
+      const post = (x, from) => x.draws.filter((d) => d[0] >= from).map((d) => d[1]).filter((c, i, a) => i === 0 || c !== a[i - 1]);
+      const settle = (x) => (x.cues.find((c) => c[0] === 'settle') || [0, NaN])[1];
+      return { id, beat: Math.round(base.impactT + 1000), impactDrawnAt: Math.round(L.impactDrawnAt), heldCells: [...new Set(inHold.map((d) => d[1]))], wantHeld: preCell(id), held: inHold.length,
+               postSame: J(post(L, L.impactDrawnAt)) === J(post(base, base.impactDrawnAt)), settleShift: Math.round(settle(L) - settle(base)), shift: L.run.log.beat && Math.round(L.run.log.beat.shift) }; });
+    ok('X3 · A BEAT 1000 ms LATE: each clip FREEZES on its pre-impact cell (the weapon at maximum tension) for the whole wait, lands its impact ON the beat, skips nothing, and runs its after-impact cells shifted by exactly the lateness — ' + late.map((x) => x.id + ': held ' + J(x.heldCells) + ' ×' + x.held + ', impact at ' + x.impactDrawnAt + ' for a beat at ' + x.beat + ', settle +' + x.settleShift).join(' · '),
+       late.every((x) => J(x.heldCells) === J([x.wantHeld]) && x.held > 30 && x.impactDrawnAt >= x.beat && x.impactDrawnAt - x.beat <= RATE + 1 && x.postSame && Math.abs(x.settleShift - 1000) <= 1 && Math.abs(x.shift - 1000) <= 1), J(late));
+
+    // X4 · THE NEGATIVE: the same late beat with the gate OFF lands the impact 1000 ms early — X3 can fail
+    const early = IDS.map((id) => { const base = drive(id, 1.3, false, null), off = drive(id, 1.3, false, base.impactT + 1000); return { id, impactDrawnAt: Math.round(off.impactDrawnAt), beat: Math.round(base.impactT + 1000) }; });
+    ok('X4 · THE NEGATIVE (falsifiable): with the hold disabled the same 1000 ms-late beat finds each impact already drawn ~1000 ms EARLY (' + early.map((x) => x.id + ' ' + x.impactDrawnAt + ' vs ' + x.beat).join(' · ') + ') — exactly the defect X3 catches',
+       early.every((x) => x.beat - x.impactDrawnAt > 950));
+
+    // X5 · the cap: no beat within 1500 ms → the clip stands down, no impact drawn; X7 · an early beat is today's behaviour
+    const capped = IDS.map((id) => { const base = drive(id, 1.3, false, null), C = drive(id, 1.3, true, base.impactT + 5000); return { id, done: C.run.done, capAt: C.run.log.beatLateCap && Math.round(C.run.log.beatLateCap - base.impactT), impact: C.impactDrawnAt, caps: C.caps }; });
+    const earlyBeat = IDS.map((id) => { const base = drive(id, 1.3, false, null), E = drive(id, 1.3, true, base.impactT - 300); const key = (x) => J({ d: x.draws, c: x.cues }); return { id, same: key(E) === key(base) }; });
+    ok('X5 · THE CAP: a beat that has not come 1500 ms after the planned impact stands the clip down — cleared and released, its impact NEVER drawn, the glue told once (' + capped.map((x) => x.id + ' at +' + x.capAt + ' ms').join(' · ') + '); and X7 · an EARLY beat is today\'s behaviour exactly (' + earlyBeat.map((x) => x.id + ' ' + (x.same ? 'identical' : 'DIFFERS')).join(' · ') + ')',
+       capped.every((x) => x.done && x.capAt >= 1500 && x.capAt <= 1500 + RATE + 1 && x.impact == null && x.caps === 1) && earlyBeat.every((x) => x.same), J({ capped, earlyBeat }));
+
+    // X6 · Sudarshana's bite 800 ms late: the strike impact lands on the bite; the travel pose is frozen at its arrival through the hold
+    { const base = drive('sudarshana', 1.3, false, null), L = drive('sudarshana', 1.3, true, base.impactT + 800);
+      const held = L.travel.filter((q) => q[0] > base.impactT && q[0] < base.impactT + 800), poses = [...new Set(held.map((q) => q.slice(1).join(',')))];
+      ok('X6 · SUDARSHANA\'S BITE 800 ms LATE: the strike\'s impact lands on the bite (' + Math.round(L.impactDrawnAt) + ' for a bite at ' + Math.round(base.impactT + 800) + ') and through the whole hold the disc keeps ONE pose — its arrival point (' + (poses[0] || '?') + ', ' + held.length + ' frames)',
+         L.impactDrawnAt >= base.impactT + 800 && L.impactDrawnAt - (base.impactT + 800) <= RATE + 1 && poses.length === 1 && held.length > 30, J({ poses, n: held.length })); }
+
+    // X8 · the glue: the classic sprite takes a beat that comes past the cap; an on-time beat is heard by the clip
+    { const run2 = async (id, beatLate) => { const S = sandbox(); await S.fx.fxBoot(); await S.fx.fxPrefetch(id); await flush();
+        const r = S.fx.fxCast(card(id), castEv(id)[0], castEv(id), {}); let fired = 0; const owns = id === 'vajra' ? null : S.fx.fxOwnsMoment(id, () => { fired++; });   // the play-moment route is asked at the cast; Vajra is asked at its destroy beat
+        await flush(); const t0 = S.now, impactT = r.plan.cues.find((c) => c.cue === 'impact').t;
+        const stepTo = (ms) => { while (S.now - t0 < ms) S.tick(16); };
+        stepTo(beatLate ? impactT + 1600 : impactT - 5);
+        const ownsAtBeat = id === 'vajra' ? S.fx.fxOwnsMoment('vajra') : null;
+        const beatEv = castEv(id).find((e) => e.type === (id === 'pashupata' ? 'damage' : 'destroy'));
+        S.fx.fxBeatFrom(beatEv); stepTo((beatLate ? impactT + 1600 : impactT) + 200);
+        return { id, owns, fired, ownsAtBeat, capped: !!r.log.beatLateCap, impact: r.log.impactDrawnAt != null, diag: S.fx.FX.diag.map((d) => d.kind) }; };
+      const B = await run2('brahmastra', true), V = await run2('vajra', true), OT = await run2('brahmastra', false);
+      ok('X8 · THE CLASSIC PATH TAKES A BEAT PAST THE CAP, through the live glue: Brahmastra (its sprite held since the cast) fires its classic sprite ONCE, on the late beat (' + B.fired + '); Vajra\'s destroy-moment ownership test fails once the clip has stood down (' + V.ownsAtBeat + '), so its classic sprite fires as yesterday; beat-late-cap is a diagnostic, never narrated; and an ON-TIME beat is heard by the clip, which lands its impact (' + OT.impact + ', sprite ' + OT.fired + ')',
+         B.capped && B.fired === 1 && !B.impact && B.diag.indexOf('beat-late-cap') >= 0 && V.capped && V.ownsAtBeat === false && OT.impact && OT.fired === 0 && !OT.capped, J({ B, V, OT })); }
+
+    // X9 · THE RETRY (effects): a 404 once is retried after the backoff; a permanent 404 costs exactly 1 + 3 fetches however often the hand
+    // renders; bad bytes are evicted and refetched, and the next cast plays
+    { const u = 'assets/manifest/effects/vajra/atlas.webp', countOf = (S) => S.fetched.filter((f) => f[0] === u).length;
+      let once = true; const S1 = sandbox({ fetchFail: (rel) => { if (rel === u && once) { once = false; return true; } return false; } }); await S1.fx.fxBoot();
+      await S1.fx.fxPrefetch('vajra'); await flush(); const afterFail = { ready: S1.fx.fxReady('vajra'), n: countOf(S1) };
+      await S1.fx.fxPrefetch('vajra'); await flush(); const tooSoon = countOf(S1);
+      S1.advance(2001); await S1.fx.fxPrefetch('vajra'); await flush(); const retried = { ready: S1.fx.fxReady('vajra'), n: countOf(S1) };
+      const S2 = sandbox({ fetchFail: (rel) => rel === u }); await S2.fx.fxBoot(); S2.ctx.G = { players: [{ hand: [card('vajra')] }, { hand: [] }] };
+      for (let k = 0; k < 300; k++) { S2.fx.fxPrefetchHands(); await flush(); S2.advance(250); }   // 300 renders over 75 s
+      const permanent = { n: countOf(S2), gaveUp: !!(S2.fx.ASSET_RETRY.s[Object.keys(S2.fx.ASSET_RETRY.s).find((k2) => /vajra\/atlas/.test(k2))] || {}).gaveUp };
+      let bad = true; const S3 = sandbox({ decodeFails: () => { if (bad) { bad = false; return true; } return false; } }); await S3.fx.fxBoot();
+      await S3.fx.fxPrefetch('vajra'); await flush();
+      const r1 = S3.fx.fxCast(card('vajra'), castEv('vajra')[0], castEv('vajra'), {}); await flush(); await flush(); S3.tick(16);
+      const evicted = { ready: S3.fx.fxReady('vajra'), errors: r1 && r1.log.loadErrors.length };
+      await S3.fx.fxPrefetch('vajra'); await flush(); const soon = S3.fx.fxReady('vajra');
+      S3.advance(2001); await S3.fx.fxPrefetch('vajra'); await flush(); const refetched = S3.fx.fxReady('vajra');
+      const r2 = S3.fx.fxCast(card('vajra'), castEv('vajra')[0], castEv('vajra'), {}); await flush(); await flush(); S3.tick(16);
+      const plays = !!r2 && r2.log.loadErrors.length === 0 && r2.log.ready.strike != null;
+      ok('X9 · THE RETRY, effects (owner ruling 3): a 404 once leaves Vajra not ready (' + J(afterFail) + '), asking again inside the backoff fetches nothing (' + tooSoon + '), and after 2 s the retry lands it (' + J(retried) + '); a PERMANENT 404 costs exactly ' + permanent.n + ' fetches across 300 hand renders in 75 s (1 + 3 retries at 2/8/30 s) and then gives up (' + permanent.gaveUp + ') — never a fetch per render; BAD BYTES are evicted at the failed decode (ready ' + evicted.ready + '), not refetched inside the backoff (' + soon + '), refetched after it (' + refetched + '), and the next cast plays its clip (' + plays + ')',
+         afterFail.ready === false && afterFail.n === 1 && tooSoon === 1 && retried.ready === true && retried.n === 2 && permanent.n === 4 && permanent.gaveUp &&
+         evicted.ready === false && evicted.errors === 1 && soon === false && refetched === true && plays, J({ afterFail, tooSoon, retried, permanent, evicted, soon, refetched, plays })); }
+
+    // X10 · THE RETRY (actors): the EXPORT-4 per-render retry is bounded; bad actor bytes are evicted and refetched
+    { const u = 'assets/manifest/actors/hanuman/atlas_256.webp';
+      const S = actorSandbox({ missing: (rel) => rel === u }); await S.mf.mfBoot(); const P = heroPlay('hanuman'); S.ctx.G = P.g;
+      for (let k = 0; k < 300; k++) { S.mf.mfPrefetchHands(); await flush(); S.advance(250); }
+      const n = S.fetched.filter((f) => f === u).length;
+      let bad = true; const S2 = actorSandbox({ decodeFails: () => { if (bad) { bad = false; return true; } return false; } }); await S2.mf.mfBoot();
+      const P2 = heroPlay('hanuman'); S2.ctx.G = P2.g; await S2.mf.mfPrefetch('hanuman', 256); await flush();
+      let threw = false; try { await S2.mf.mfDecode('hanuman', 256); } catch (e) { threw = true; }
+      const evicted = !S2.mf.mfReady('hanuman', 256);
+      S2.advance(2001); await S2.mf.mfPrefetch('hanuman', 256); await flush(); const back = S2.mf.mfReady('hanuman', 256);
+      let decoded = false; try { await S2.mf.mfDecode('hanuman', 256); decoded = true; } catch (e) {}
+      ok('X10 · THE RETRY, actors (owner ruling 4 — the EXPORT-4 per-render retry fixed): a permanently missing actor atlas costs exactly ' + n + ' fetches across 300 hand renders in 75 s, never one per render; a refused decode evicts the actor\'s bytes (' + evicted + '), the refetch after the backoff restores them (' + back + ') and they decode (' + decoded + ')',
+         n === 4 && threw && evicted && back && decoded, J({ n, threw, evicted, back, decoded })); }
   }
 
   // ═══ W · THE WIRE ═══

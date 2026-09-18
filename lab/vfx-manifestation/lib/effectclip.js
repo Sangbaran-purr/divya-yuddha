@@ -249,11 +249,16 @@
       });
       if (st.loaded) release();
       env.render(boards.before);
-      var run = { plan: p, spec: spec, clips: clips, boards: boards, target: target, places: places, t0: env.now(), next: 0, done: false, pin: opts.impactPin !== false, pending: null, current: -1,
+      // EXPORT-5 · THE BEAT GATE (opt-in: the live game passes beatGate; the lab plays its plans as before). The plan stays the schedule;
+      // the game's REAL beat is the trigger for the impact cell: a beat that has not come by the planned impact holds the clip on the
+      // pre-impact cell (the weapon at maximum tension) until it does; past the cap the clip stands down and the classic sprite takes the beat
+      var ic = p.cues.filter(function (c) { return c.cue === 'impact'; })[0], isg = p.segments[p.segments.length - 1];
+      var gate = opts.beatGate && ic && p.clip ? { impactT: ic.t, deadMs: isg ? isg.frameMs : 0, capMs: opts.beatCapMs || 1500, state: 'wait', shift: 0, holdFrom: null, late: null } : null;
+      var run = { plan: p, spec: spec, clips: clips, boards: boards, target: target, places: places, t0: env.now(), next: 0, done: false, pin: opts.impactPin !== false, pending: null, current: -1, gate: gate, beatAt: null,
                   manifest: clips[p.segments.length ? p.segments[p.segments.length - 1].clip : 0],
                   place: places[places.length - 1] || null,
                   log: { cues: [], drawn: [], bySegment: {}, composite: [], impactDrawnAt: null, impactPinned: false, destroyCueAt: null, settledAt: null, crackAt: null, handoff: null, mirror: null,
-                         ready: {}, late: [], loadErrors: [], drawError: null, travel: [], travelPlan: null } };
+                         ready: {}, late: [], loadErrors: [], drawError: null, travel: [], travelPlan: null, beat: null, beatLateCap: null } };
       p.segments.forEach(function (sg) { run.log.bySegment[sg.role] = []; });
       // LAB-20b: a travelling strike flies from the caster's half centre to the target's centre
       var ks = p.segments.map(function (sg) { return sg.role; }).indexOf('strike'), sm = ks >= 0 ? clips[p.segments[ks].clip] : null, hh2 = env.halfOf && p.casterSeat != null ? env.halfOf(p.casterSeat) : null;
@@ -292,8 +297,8 @@
       diag('finish', { skipped: !!skipped, drawn: run.log.drawn.length, errors: run.log.loadErrors.length + (run.log.drawError ? 1 : 0) });
       if (env.onDone) env.onDone(res);
     }
-    function draw(run, t) {
-      var drew = false;
+    function draw(run, t, tr) {
+      var drew = false; if (tr == null) tr = t;   // EXPORT-5: t = the plan clock (cells, pose); tr = the real clock (logs)
       run.plan.segments.forEach(function (sg, k) {
         if (drew || !st.loaded || st.loadedRole !== sg.role || !run.places[k]) return;
         var m = run.clips[sg.clip], ix = segIndex(m, sg, t);
@@ -304,28 +309,44 @@
         g.globalCompositeOperation = 'lighter'; g.globalAlpha = 1;
         if (sg.role === 'strike' && run.travel) {
           // LAB-20b: the flight — the first DRAWN cell starts it; the pose rides the trail's integral; rotation only while travelling
-          var tv = run.travel; if (tv.t0 == null) { tv.t0 = t; run.log.travelPlan.firstDrawAt = t; diag('travel', { from: tv.from, to: tv.to, angleDeg: Math.round(tv.angle * 1800 / Math.PI) / 10, scaleFrom: tv.scaleFrom, firstDrawAt: Math.round(t), arriveAt: Math.round(tv.arriveT) }); }
+          var tv = run.travel; if (tv.t0 == null) { tv.t0 = t; run.log.travelPlan.firstDrawAt = tr; diag('travel', { from: tv.from, to: tv.to, angleDeg: Math.round(tv.angle * 1800 / Math.PI) / 10, scaleFrom: tv.scaleFrom, firstDrawAt: Math.round(t), arriveAt: Math.round(tv.arriveT) }); }
           var pose = travelPose(m, tv, t), kk = r.scale * pose.scale * d, cs = Math.cos(pose.rot) * kk, sn = Math.sin(pose.rot) * kk;
           g.setTransform(cs, sn, -sn, cs, pose.x * d, pose.y * d);
           g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, -m.anchor.x, -m.anchor.y, cell.w, cell.h);
           g.setTransform(1, 0, 0, 1, 0, 0);
-          run.log.travel.push({ t: t, cell: ix, x: pose.x, y: pose.y, rot: pose.rot, scale: pose.scale, u: pose.u });
+          run.log.travel.push({ t: tr, cell: ix, x: pose.x, y: pose.y, rot: pose.rot, scale: pose.scale, u: pose.u });
         }
         else g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, r.x * d, r.y * d, r.w * d, r.h * d);
         g.globalCompositeOperation = 'source-over';
-        var seq = run.log.bySegment[sg.role]; if (!seq.length) { diag('first-draw', { role: sg.role, at: Math.round(t), cell: ix }); if (sg.role === 'strike' && run.log.handoff) run.log.handoff.firstDrawnCell = ix; }   // the TRUE loss at the handoff: cells before the first one drawn
+        var seq = run.log.bySegment[sg.role]; if (!seq.length) { diag('first-draw', { role: sg.role, at: Math.round(tr), cell: ix }); if (sg.role === 'strike' && run.log.handoff) run.log.handoff.firstDrawnCell = ix; }   // the TRUE loss at the handoff: cells before the first one drawn
         if (seq[seq.length - 1] !== ix) seq.push(ix);
         if (sg.role === 'strike' && run.log.drawn[run.log.drawn.length - 1] !== ix) run.log.drawn.push(ix);
         run.log.composite.push('lighter'); drew = true;
-        if (sg.impact != null && ix === sg.impact && run.log.impactDrawnAt == null) run.log.impactDrawnAt = t;
+        if (sg.impact != null && ix === sg.impact && run.log.impactDrawnAt == null) run.log.impactDrawnAt = tr;
       });
     }
     function frame(now) {
       var run = st.run; if (!run || run.done) return;
-      var t = now - run.t0, cues = run.plan.cues; run.impactFrame = false;
-      try { while (run.next < cues.length && cues[run.next].t <= t + 1e-6) { fire(run, cues[run.next], t); run.next++; } }
+      var t = now - run.t0, cues = run.plan.cues, tc = t, G = run.gate; run.impactFrame = false;
+      if (G) {
+        if (G.state === 'wait' && t >= G.impactT - 1e-6) {
+          if (run.beatAt != null) G.state = 'go';                                         // the beat is already in: today's schedule, untouched
+          else { G.state = 'hold'; G.holdFrom = t; diag('beat-hold', { at: Math.round(t), impactAt: Math.round(G.impactT) }); }
+        }
+        if (G.state === 'hold' && run.beatAt != null) {
+          G.late = run.beatAt - G.impactT; G.shift = G.late > G.deadMs ? G.late : 0; G.state = 'go';   // within one clip frame: the post-impact schedule stays as planned
+          run.log.beat = { at: run.beatAt, late: G.late, shift: G.shift, heldFor: t - G.holdFrom }; diag('beat-late', { late: Math.round(G.late), shift: Math.round(G.shift) });
+        }
+        if (G.state === 'hold' && t - G.impactT > G.capMs) {                               // PAST THE CAP: stand down; the classic sprite takes the beat
+          run.log.beatLateCap = t; diag('beat-late-cap', { at: Math.round(t), heldFor: Math.round(t - G.holdFrom) });
+          if (env.onBeatLateCap) env.onBeatLateCap(run);
+          finish(run, true); return;
+        }
+        tc = G.state === 'hold' ? G.impactT - 1e-3 : t - G.shift;                           // HOLD: the pre-impact cell (impact − 1), the travel pose at arrival
+      }
+      try { while (run.next < cues.length && cues[run.next].t <= tc + 1e-6) { fire(run, cues[run.next], t); run.next++; } }
       catch (e) { if (env.onError) env.onError(e); diag('cue-error', { at: Math.round(t), error: String(e && (e.message || e)) }); env.render(run.boards.after); finish(run, true); return; }
-      try { if (run.plan.clip) draw(run, t); }
+      try { if (run.plan.clip) draw(run, tc, t); }
       catch (e) {
         // a DRAW error costs the decoration, never the beats: the clip is dropped, the timeline plays on to AFTER
         if (!run.log.drawError) { run.log.drawError = { at: t, error: String(e && (e.message || e)) }; diag('draw-error', { at: Math.round(t), error: run.log.drawError.error }); if (env.onError) env.onError(e); }
@@ -333,11 +354,16 @@
       }
       if (run.next >= cues.length) finish(run, false);
     }
+    // EXPORT-5: the game's real beat for this cast (once). Returns false if there is no live run to hear it (the caller then owns the moment)
+    function beat() {
+      var run = st.run; if (!run || run.done || run.beatAt != null) return false;
+      run.beatAt = env.now() - run.t0; diag('beat', { at: Math.round(run.beatAt) }); return true;
+    }
     function skip() {
       var run = st.run; if (!run || run.done) return;
       env.render(run.boards.after); run.log.settledAt = run.log.settledAt == null ? -1 : run.log.settledAt; finish(run, true);
     }
-    return { play: play, frame: frame, skip: skip, release: release,
+    return { play: play, frame: frame, skip: skip, beat: beat, release: release,
              stats: function () { return { decodedBytes: st.decodedBytes, peak: st.peak, loads: st.loads, releases: st.releases, peakClips: st.peakClips, loaded: !!st.loaded, loadedRole: st.loadedRole, playing: !!(st.run && !st.run.done), decodeMs: st.decodeMs, last: st.last }; } };
   }
 

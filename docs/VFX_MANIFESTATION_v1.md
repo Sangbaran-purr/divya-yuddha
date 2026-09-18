@@ -411,3 +411,42 @@ AA5. THE CARD FLOOR for the single-target strikes (Vajra, both
 AA6. UNCHANGED: every atlas byte-identical; every impact pin and beat
     timing; the 375 px phone in rung, plate and timing (Pashupatastra's
     width to within 0.1 px, its position moved top-flush by ruling).
+
+## AMENDMENT 2026-09-19 — RESILIENCE (EXPORT-5)
+
+BB1. THE DESIGN FREEZE (owner, binding for EXPORT-5 and every later
+    rung): the certified animations are immutable. Every atlas,
+    portion, plate size, tempo, plan and impact frame stays
+    byte-identical; the suite pins one digest over all 73 certified
+    files in assets/manifest. A proposal that would change how a
+    certified animation looks or plays in the normal case stops for an
+    owner ruling.
+BB2. THE FIRST-CAST LAG was not our code. The play beat is synchronous
+    work plus two timers; 12 of 12 cold casts were on time. The one
+    catch was a pause across the whole host renderer: an independent
+    heartbeat ran 601 ms late and frames dropped from 358 to 288, with
+    no long task. The clip therefore answers to the game's real beat,
+    whatever delays it.
+BB3. THE BEAT GATE. A routed cast listens for the event its contract
+    names (Vajra and Brahmastra: destroy; Pashupatastra: damage;
+    Sudarshana: its bite). If the clip reaches its impact before that
+    beat, it FREEZES on the pre-impact cell (impact - 1), the weapon at
+    maximum tension, redrawn until the beat. No looping, no synthesized
+    motion. Sudarshana's disc freezes at its arrival point. On the beat
+    the impact fires and everything after it plays, shifted by the
+    lateness. A beat that arrives on time or early leaves the
+    animation byte-identical to the ungated player. A beat within one
+    clip frame after the impact shifts nothing; its first impact draw
+    can land at most one frame later.
+BB4. THE CAP. If the beat has not come 1,500 ms after the planned
+    impact, the clip stands down (cleared, released, impact never
+    drawn) and the classic sprite takes the beat through the existing
+    late-fire and ownership paths. The glue records beat-late-cap in
+    diagnostics; it is never narrated.
+BB5. THE RETRY. One helper per asset URL covers effect specs and
+    atlases and actor specs and atlases: an initial fetch, then retries
+    at 2, 8 and 30 s, then give up. The count resets only after a
+    fetch and decode succeed. A failed decode evicts the bytes so a
+    retry fetches fresh ones. Every step fails open to the classic
+    path, and nothing waits on a retry. This also fixes the EXPORT-4
+    actor prefetch, which retried on every render.

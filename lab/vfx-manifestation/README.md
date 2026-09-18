@@ -1969,6 +1969,15 @@ is **resolved by anchor**: the hard cut now hides at the half boundary on every 
 
 All five effect atlases repack byte-identical; every impact cell is unchanged. The lab page's `halfOf` reports the half's height too.
 
+## EXPORT-5: resilience — the lab's side
+
+The effect player (`lib/effectclip.js`) gains an optional **beat gate** (`opts.beatGate`, `opts.beatCapMs`, default 1500) and one new
+call, `beat()`. With the gate on, a clip that reaches its impact before the game's beat freezes on its pre-impact cell until `beat()`
+is called, fires the impact then, and shifts the rest of its schedule by the lateness. Past the cap it finishes without drawing the
+impact and calls `env.onBeatLateCap`. `draw()` now takes the plan clock (cells, pose) apart from the real clock (logs), so a held
+clip logs honest times. Gate off, which is how the lab page plays, nothing changes: all 749 lab checks still pass, and every atlas
+and manifest is byte-identical under the design freeze.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference
