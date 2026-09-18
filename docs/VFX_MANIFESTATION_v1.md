@@ -212,3 +212,106 @@ A8. THE DOC: explicit word — this rung commits
     docs/VFX_MANIFESTATION_v1.md, with an "AMENDMENT 2026-09-13"
     section appended carrying A1–A8 verbatim. That file is the one
     exception to the experiment rule for this rung only.
+
+## AMENDMENT 2026-09-18 — THE EXPORT (EXPORT-1)
+OWNER RULINGS, consolidated at the export rung as ruled at LAB-19 ("docs/
+consolidation of all lab amendments happens at the EXPORT rung"). They
+amend VFX_MANIFESTATION_v1 and the 2026-09-13 amendment above; A1–A8
+stand except where an item below narrows them. Numbered X so no label
+collides with A1–A8 or with the budget line E1.
+X1. THE PREMIUM RULING (owner ruling in chat, 2026-09-16, first
+    recorded in the lab at LAB-19), in full:
+    1. Actors are Heroes-only by default. A Hero card's play may
+       manifest as an actor.
+    2. Meghnad is grandfathered as the pilot. He stays an actor
+       although he is a Unit.
+    3. Unit actors are reserved as a future paid-cosmetic tier. No
+       other Unit gets an actor under the default rules.
+    4. Mythic and Legendary Astras, Mantras and Artifacts get the
+       premium effects track.
+    5. Lower rarities, and all other Units, keep their existing VFX.
+X2. THE MEGHNAD GRANDFATHER IS SCOPED TO THE LAB (owner ruling,
+    EXPORT-1 scope amendment). Meghnad stays the lab's pilot and
+    reference; he is NOT exported, and his live-game presentation
+    stays exactly as it is. The live game's rule is exception-free.
+X3. THE EXPORT'S PRESENTATION LAW: HEROES MANIFEST, ALL IN-PLACE, ALL
+    NATIVE EXITS. Verified against the twenty exported actors: every
+    one exits natively (no procedural FIZZLE), and every one stands
+    where its card stands — sixteen because their contact is a nova,
+    four (Indra, Bali, Kartikeya, Makardhwaja) because their
+    travelScale is 0. Meghnad was the only actor that charged and the
+    only procedural exit.
+X4. ADDITIVE EFFECT CLIPS AND THE WEAPON CARVE-OUT (owner amendments,
+    LAB-19). (1) The premium track admits additive effect clips:
+    Mythic and Legendary Astras, Mantras and Artifacts may play
+    black-background emissive Kling footage additively, alongside
+    procedural work. The "no Kling" line is narrowed to "no
+    actor-class assets": no mattes, no rungs, no per-actor memory
+    ladder. (2) The v4a carve-out: an Astra's effect may depict the
+    Astra's own weapon — the weapon is the spell. The v4a "no
+    objects" law stays in force everywhere else.
+X5. E1 — THE EFFECT-CLIP BUDGET LINE, BESIDE A5 (owner ruling,
+    LAB-19). An additive effect clip is capped at the effect layer's
+    hi-rung class, ~18 MB decoded (3072×1536 RGBA = 18.00 MB). It is
+    loaded on play and released after, and at most one effect clip
+    is decoded at once. A chain (two clips) keeps E1 unchanged: its
+    clips decode one after the other, the first released before the
+    second decodes.
+X6. THE EFFECT ROTATION RULE (owner ruling, LAB-20b): Actors never
+    rotate (the upright law stands). A directional effect may rotate
+    its layer to align its motion feature with its board path: the
+    rotation is taken from the actual caster-to-target vector,
+    applies only while the feature is in motion, and eases back to
+    the clip's authored orientation before its impact frame. An
+    effect's authored orientation is kept at its impact.
+X7. FAIL-OPEN (owner ruling, LAB-20a), and where it falls in the
+    live game (EXPORT-1/7). Beats never wait on a decode: the cast
+    and contact sounds fire on time, the board lands on the engine's
+    AFTER, and a clip that is not ready or fails simply does not
+    draw. In the live game, fail-open FALLS BACK TO YESTERDAY'S GAME,
+    NEVER TO ABSENCE: a routed effect clip that is not ready, or
+    fails, at its moment draws the card's classic sprite instead. A
+    failure is logged to the console and to the battle log's
+    diagnostics — never narrated, no player banner.
+X8. SCALE IS MEASURED LEGIBILITY (owner ruling, LAB-21/3). 2.4 card
+    widths is the effects shelf's default, not a law: each clip's
+    scale is set by measured legibility over the real board.
+X9. THE WIRE-CLOCK RULING (owner ruling, EXPORT-1/1 as amended): ONE
+    SPEED EVERYWHERE. Actors play FULL in every mode — solo, story
+    and the wire — and the player's Relaxed/Normal/Fast speed
+    setting does NOT scale actor manifestations: the certified tempo
+    is the presentation, uniform for all players. Full on the wire
+    is an owner ruling with the measured cost accepted: +4.5 to
+    +6.6 s of a fresh per-move 120 s budget, on the move after a
+    Hero is played, at most three Hero plays per player per match,
+    launch pool only (the server plays no wave cards). Effects cost
+    0 ms of wire clock everywhere by design: they draw on the game's
+    own beats and re-time nothing. Consequence, binding for
+    EXPORT-2: the choreography watchdog becomes plan-aware (its
+    budget taken from the running plan) as the FIRST item built,
+    before any actor route — Vasuki's Full manifestation (8,018 ms)
+    exceeds today's fixed 8,000 ms cap.
+X10. THE EXPORT RULINGS, binding for both export rungs (EXPORT-1):
+    (a) Split: EXPORT-1 = the three premium effects (Vajra,
+    Sudarshana Chakra's travelling chain, Pashupatastra); EXPORT-2 =
+    the twenty Hero actors, after EXPORT-1 lands and verifies.
+    (b) Actor rung for EXPORT-2: 256 only; 512 is a separate later
+    ruling, the Pages headroom reserved for Brahmastra's rebuild and
+    future waves. (c) The opponent's centre-screen showcase stays
+    for routed Heroes (reveal, then manifest), revisitable by owner
+    ruling after device experience. (d) Sounds: sfx_unit_clash at
+    the play; the spectacle boom moves to the CONTACT instant; native
+    exits are silent; the bespoke-sound wishlist stands. (e) Routing
+    is data: a card plays its clip or actor only while it is listed
+    in assets/manifest/registry.json; removing its entry returns it
+    to its classic presentation without a revert. (f) Brahmastra is
+    excluded: its live sprite stays exactly as it is until the
+    owner's rebuilt clip re-runs the template. (g) The lab suite's
+    experiment-rule check (G1) re-anchors to each ruled export
+    commit; the runtime copy is regenerated and the lab restamped.
+X11. THE EXPERIMENT RULE, AMENDED NARROWLY (owner ruling, EXPORT-1).
+    An export rung may touch the game's index.html and game-side
+    assets to port the lab's certified presentation. src/engine.js
+    stays UNTOUCHABLE — zero engine lines; the export is
+    presentation only. The lab stays intact and working: everything
+    is copied out of lab/, nothing moves.

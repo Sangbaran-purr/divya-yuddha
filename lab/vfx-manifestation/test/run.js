@@ -23,6 +23,9 @@ const fs = require('fs'), path = require('path'), crypto = require('crypto'), cp
 const LAB = path.resolve(__dirname, '..'), GAME = path.resolve(LAB, '..', '..');
 const WEB = process.env.DY_WEB || path.resolve(GAME, '..', 'divya-yuddha-web');
 const LAB_BASE = 'e2f4c19';   // GL-3 — the game commit the lab began from
+// EXPORT-1 (owner ruling 6): the experiment rule re-anchors to EACH RULED EXPORT COMMIT — the most recent commit whose subject
+// begins "EXPORT-<n>:" — with no allowlist. Before the first export exists it is still the commit the lab began from.
+const RULE_BASE = (() => { try { const h = cp.execFileSync('git', ['log', '-1', '--format=%h', '--extended-regexp', '--grep=^EXPORT-[0-9]+: '], { cwd: GAME }).toString().trim(); return h || LAB_BASE; } catch (e) { return LAB_BASE; } })();
 const DOC = 'docs/VFX_MANIFESTATION_v1.md';
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { if (c) { pass++; console.log('  ✓ ' + n); } else { fail++; console.log('  ✖ ' + n + (d ? '\n      ' + d : '')); } };
@@ -1004,7 +1007,7 @@ templateActor({ label: 'M45 · LAB-18 · RAHU BY THE TEMPLATE (the last card: a 
   const T1 = EC.timeline(VM, 1), T6 = EC.timeline(VM, 0.6);
   ok('M52 · LAB-19 · THE CONTRACT IS THE GAME\'S, READ FROM ITS SOURCE: a Legendary cast is the spectacle tier (' + lTier + '), sfx_astra at the cast (' + astraSnd + '), then hit-stop ' + (gameSpect && gameSpect[2]) + ' ms + hold ' + holdTotal + ' ms; the destroy beat keyed on abilityName Vajra plays sfx_unit_destroy (' + destroySnd + '), ' + (crackMs && crackMs[1]) + ' ms, the crack, ' + (dwellMs && dwellMs[1]) + ' ms; CHOREO_SPEED ' + (choreo && choreo[1]) + '. The clip STARTS inside the cast beat\'s hold so its impact cell lands ON the destroy beat: at Normal the cast beat is ' + Math.round(T1.castBeatMs) + ' ms, the clip\'s lead ' + Math.round(T1.leadMs) + ' ms, so it starts at ' + Math.round(T1.clipStart) + ' ms and its impact cell is due at ' + Math.round(T1.impactAt) + ' ms = the destroy beat; the crack at ' + Math.round(T1.crackAt) + ', the beat ends at ' + Math.round(T1.beatEnd) + ', the clip at ' + Math.round(T1.clipEnd) + ' (un-awaited). At Fast (0.6) the same, scaled: impact ' + Math.round(T6.impactAt) + ' = destroy ' + Math.round(T6.destroyAt) + '. WIRE-CLOCK COST ' + T1.waitCostMs + ' ms',
      lTier && astraSnd && destroySnd && !!choreo && +choreo[1] === EC.CHOREO_SPEED && holdTotal === k.castHoldMs && +gameSpect[2] === k.castHitStopMs &&
-     !!crackMs && +crackMs[1] === k.crackAfterMs && !!dwellMs && +dwellMs[1] === k.destroyDwellMs && /if\(ev\.abilityName==='Vajra' && dp\) VFX\.sprVajra\(dp\.cx, dp\.rect\.top\+dp\.rect\.height\/2, dp\.rect\.width\);/.test(destroyBlock) &&
+     !!crackMs && +crackMs[1] === k.crackAfterMs && !!dwellMs && +dwellMs[1] === k.destroyDwellMs && /if\(ev\.abilityName==='Vajra' && dp && !fxOwnsMoment\('vajra'\)\) VFX\.sprVajra\(dp\.cx, dp\.rect\.top\+dp\.rect\.height\/2, dp\.rect\.width\);/.test(destroyBlock) &&
      k.castSound === 'sfx_astra' && k.impactSound === 'sfx_unit_destroy' && k.trigger === 'destroy' && k.abilityName === 'Vajra' && k.awaited === false &&
      Math.abs(T1.castBeatMs - 1443) < 1e-6 && Math.abs(T1.impactAt - T1.destroyAt) < 1e-6 && Math.abs(T6.impactAt - T6.destroyAt) < 1e-6 && T1.clipStart > 0 && T6.clipStart > 0 && T1.waitCostMs === 0 && T6.waitCostMs === 0 &&
      Math.abs(T1.leadMs - 8 * 1000 / 24 * 1.3) < 1e-6 && Math.abs(T1.clipEnd - T1.clipStart - 36 * 1000 / 24 * 1.3) < 1e-6,
@@ -2216,11 +2219,11 @@ console.log('\n── P · the page ──');
 // ═══ G · THE RULE ═══
 console.log('\n── G · the experiment rule ──');
 {
-  const changed = git(['diff', '--name-only', LAB_BASE, '--']).split('\n').filter(Boolean);
+  const changed = git(['diff', '--name-only', RULE_BASE, '--']).split('\n').filter(Boolean);
   const staged = git(['diff', '--cached', '--name-only']).split('\n').filter(Boolean);
   const untracked = git(['ls-files', '--others', '--exclude-standard', '--', 'docs', 'src', 'index.html', 'scripts', 'tools', 'test']).split('\n').filter(Boolean);
   const outside = [...new Set(changed.concat(staged))].filter((p) => p.indexOf('lab/') !== 0 && p !== DOC);
-  ok('G1 · no tracked change outside lab/ since the lab began (' + LAB_BASE + ') — committed, staged or in the working tree — except the ruling doc (A8)', outside.length === 0, outside.join(', '));
+  ok('G1 · no tracked change outside lab/ since ' + (RULE_BASE === LAB_BASE ? 'the lab began (' + LAB_BASE + ')' : 'the last ruled export commit (' + RULE_BASE + ', re-anchored per EXPORT-1 ruling 6)') + ' — committed, staged or in the working tree — except the ruling doc (A8)', outside.length === 0, outside.join(', '));
   const codeFiles = git(['ls-files']).split('\n').filter((p) => p && p.indexOf('lab/') !== 0 && /\.(html|js|mjs|cjs|json|sh|py|css)$/.test(p));
   const refs = codeFiles.filter((p) => { try { return /vfx-manifestation|lab\/vfx/.test(fs.readFileSync(path.join(GAME, p), 'utf8')); } catch (e) { return false; } });
   ok('G2 · nothing outside lab/ references the lab: ' + codeFiles.length + ' tracked code files scanned, 0 mention it', refs.length === 0, refs.join(', '));

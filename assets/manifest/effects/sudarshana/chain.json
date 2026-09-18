@@ -1,0 +1,40 @@
+{
+  "cardId": "sudarshana",
+  "cardName": "Sudarshana Chakra",
+  "class": "effect-chain",
+  "version": 1,
+  "clips": [
+    {
+      "role": "invoke",
+      "manifest": "../sudarshana_invoke/manifest.json"
+    },
+    {
+      "role": "strike",
+      "manifest": "../sudarshana_strike/manifest.json"
+    }
+  ],
+  "handoff": "sequential: the invocation is released at the handoff, then the strike decodes (E1: one effect clip decoded at a time)",
+  "contract": {
+    "trigger": "passive",
+    "abilityName": "Sudarshana",
+    "target": "enemy-hero",
+    "castSound": "sfx_astra",
+    "impactSound": null,
+    "castHitStopMs": 110,
+    "castHoldMs": 1000,
+    "flightMs": 380,
+    "crackAfterMs": 100,
+    "exitKind": "removal",
+    "exitMs": 320,
+    "calloutAfterMs": 300,
+    "destroyDwellMs": 440,
+    "invokeAnchor": "caster-half-centre",
+    "anchor": "target-card-centre",
+    "awaited": false
+  },
+  "travel": {
+    "scaleFrom": 1.6522,
+    "scaleTo": 1.0,
+    "why": "the invocation disc (2.0 card widths on screen) hands off in place to the strike disc (1.211 card widths): the strike layer eases from the one to the other on the travel curve, receding as it flies"
+  }
+}

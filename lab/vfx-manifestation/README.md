@@ -1817,6 +1817,27 @@ on both seats, both cards draw the impact cell on the cue.
 - **Pashupatastra's token top band** stands on the plate being flush with the half boundary — re-rule it if the anchor or scale
   moves.
 
+## EXPORT-1: the premium effects enter the live game — the lab's side
+
+The three certified effects (Vajra, Sudarshana Chakra's travelling chain, Pashupatastra) were **copied** into the live game — the
+player module inlined verbatim into `index.html`, the atlases and manifests into `assets/manifest/effects/`, routing as data in
+`assets/manifest/registry.json`. Nothing moved out of the lab, and the lab still plays all of them. Brahmastra's LAB-21 clip stays
+here, unexported; Meghnad stays the lab's pilot and reference (the grandfather clause is scoped to the lab, docs X2).
+
+Four lab anchors moved with the export, none of them hand-edited around a failure:
+
+- **G1** re-anchors to each ruled export commit (owner ruling 6, no allowlist): the experiment rule now reads "no change outside
+  `lab/` since the last `EXPORT-<n>:` commit". Before that commit exists it still reads from `e2f4c19`, and reports exactly the
+  export's own out-of-lab file.
+- **R1**: `tools/copy_runtime.js` re-run. The game's VFX module moved to `index.html:9211–9946` (lines inserted above it) with its
+  body **byte-identical** (sha256 `96ab5284…` unchanged) — 0 lines of drift.
+- **STAMP** regenerated.
+- **M52** — not in the ruling's list, reported: it pins the game's exact Vajra destroy-beat line, and the export's ruled sprite gate
+  (`&& !fxOwnsMoment('vajra')`, ruling 7) changed that line. Its pin moved to the gated form; every contract number it reads from the
+  game's source (hit-stop 110, hold 700 + 300, crack 40, dwell 600, CHOREO_SPEED 1.3) is unchanged and still read.
+
+The live game carries its own suite for the export, `src/test_manifest.js` (30 checks), which never references this lab.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

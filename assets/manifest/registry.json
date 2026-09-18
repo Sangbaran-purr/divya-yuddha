@@ -1,0 +1,28 @@
+{
+  "about": "EXPORT-1 — the premium effects routing table. A card listed under routes plays its additive effect clip, drawn on the game's own beats (the beat code stays the conductor; the clip only draws). Remove a card's entry and it returns to its classic sprite by a data edit, no revert. A clip that is not ready, or fails, at its moment draws the classic sprite instead (owner ruling EXPORT-1/7: fail-open falls back to yesterday's game, never to absence).",
+  "version": 1,
+  "routes": {
+    "vajra": {
+      "spec": "effects/vajra/manifest.json",
+      "replaces": "sprVajra",
+      "moment": "destroy",
+      "anchor": "target-card-centre"
+    },
+    "sudarshana": {
+      "spec": "effects/sudarshana/chain.json",
+      "replaces": "sprSudarshana",
+      "moment": "passive",
+      "anchor": "caster-half-centre, then the removed hero"
+    },
+    "pashupata": {
+      "spec": "effects/pashupata/manifest.json",
+      "replaces": "sprPashupatastra",
+      "moment": "play",
+      "anchor": "enemy-half-centre"
+    }
+  },
+  "pinned": {
+    "brahmastra": "sprBrahmastra stays exactly as-is until the owner's rebuilt clip re-runs the template",
+    "meghnad": "the lab's pilot and reference; his live presentation stays exactly as-is"
+  }
+}

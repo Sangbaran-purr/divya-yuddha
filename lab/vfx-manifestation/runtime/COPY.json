@@ -2,9 +2,9 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "2be509965c3febc2cd47d1ac0b85df485037d3c4",
-    "startLine": 8876,
-    "endLine": 9611,
+    "gameCommit": "c0b57ee5c3ca3e29bd10c81f561a436a1dacd3c1",
+    "startLine": 9211,
+    "endLine": 9946,
     "lines": 736,
     "sha256": "96ab5284d7246005841ed986298193daff0ac99172e6d950bb99905a910b0fff"
   },
