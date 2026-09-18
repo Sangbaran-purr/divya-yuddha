@@ -681,6 +681,7 @@
     "cardWidths": 4.82,
     "ruledDefaultCardWidths": null,
     "halfFraction": 0.93,
+    "heightCap": 1.0,
     "legibility": {
       "method": "the game's board (board_bg, cover, no overlay) at the game's own 375 px phone proportions \u2014 enemy half 373 x 229, card 72 px, bare median 66; the real vignetted atlas; top-flush",
       "halfFraction0.93": {

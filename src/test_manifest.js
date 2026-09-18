@@ -28,7 +28,7 @@ const PIN = {
   inlinedEngine: 'd70e94b34248bf85c9a3bf00724a724e0997580fdadb16f3d8bfa753d79d8791',
   sprBrahmastra: 'ca7898c5da25a7ec39b5beb28fb5196e14f111a5d69b3b812f03b41bca80166a',
   unitLanding: 'cd4ed62d5f7b67d61599a5f7d6e67c0ab9606adea88bc08d3bf5a6636e813011',
-  effectPlayer: '3a780fe5ec52754c60b69268a6923fc5b80185e3ad549923641e7ef7ddd1141c',   // EXPORT-3: the LAB-22 player (enemy-half-top, halfFraction); EXPORT-1 shipped 30219bcb370e…
+  effectPlayer: '0be2d7225a542cd769a32c771c37e25b8342d9a960925e502e1fdd771648952a',   // EXPORT-4: the fitted law + the card floor; EXPORT-3 shipped 3a780fe5ec52…, EXPORT-1 30219bcb370e…
   wireTypes: ['leap', 'mulligan', 'pass', 'play', 'shield'],
   // EXPORT-2: the nine actor modules and the faction effects, as certified in the manifestation lab when the export was built
   // (recorded here, never read from the lab: nothing outside the lab may name it — its own rule G2)
@@ -186,7 +186,7 @@ function sandbox(o) {
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(fs.readFileSync(p, 'utf8'))), blob: () => Promise.resolve(new Blob([fs.readFileSync(p)])) }); },
     createImageBitmap: (b) => o.decodeFails ? Promise.reject(new Error('decode refused')) : Promise.resolve({ width: 64, height: 32, close() {} }),
     Image: function () { const im = this; setTimeout(() => { if (im.onerror) im.onerror(); }, 0); },
-    document: { createElement: () => el, querySelector: () => el },
+    document: { createElement: () => el, querySelector: () => o.halfRect ? Object.assign({}, el, { getBoundingClientRect: () => o.halfRect }) : el },
     $: () => el, EffectClip: EC, G: { players: [{ hand: [] }, { hand: [] }] }, BLog: { fx: null },
     posOf: () => ({ cx: 120, top: 60, rect: { top: 40, height: 90, width: 64, left: 88 } }), halfSel: (s) => s ? '.half.opp' : '.half.me',
     ownerPiOfUid: () => 0, reducedMotion: () => !!o.reduced, vfxT: () => 1.3,
@@ -265,8 +265,15 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     const r2 = S2.fx.fxCast(card('brahmastra'), castEv('brahmastra')[0], castEv('brahmastra'), {});
     ok('F10 · THE REBUILT PLATE HANGS TOP-FLUSH (EXPORT-3, LAB-22 ruling 4): the segment places "enemy-half-top" and the game\'s halfOf now reports the half\'s top and width, so the plate\'s top sits on the half\'s top edge (' + (pl && pl.y.toFixed(1)) + ' px), horizontally centred, ' + (pl && (pl.w / 355).toFixed(3)) + ' of the half\'s width (the ruled 0.93); with no half to hang on the player plays no plate (' + J(r2 && r2.places) + ') and the classic sprite keeps the moment',
        !!pl && seg.place === 'enemy-half-top' && Math.abs(pl.y) < 0.01 && Math.abs(pl.x + pl.w / 2 - 177.5) < 0.01 && Math.abs(pl.w / 355 - 0.93) < 0.001 &&
-       /return \{ cx:r\.left-f\.left\+r\.width\/2, cy:r\.top-f\.top\+r\.height\/2, top:r\.top-f\.top, w:r\.width \}; \}/.test(GLUE) &&
+       /return \{ cx:r\.left-f\.left\+r\.width\/2, cy:r\.top-f\.top\+r\.height\/2, top:r\.top-f\.top, w:r\.width, h:r\.height \}; \}/.test(GLUE) &&
        (r2 === null || !r2.places || r2.places[0] === null), J({ pl, place: seg && seg.place, r2: r2 && r2.places })); }
+  // F11 · EXPORT-4: on a LANDSCAPE half (wide and short) both row weapons are fitted inside it, through the game's own halfOf — Pashupatastra now top-flush too
+  { const S = sandbox({ halfRect: { left: 0, top: 0, width: 998, height: 230, right: 998, bottom: 230 } }); await S.fx.fxBoot();
+    const got = {};
+    for (const id of ['brahmastra', 'pashupata']) { await S.fx.fxPrefetch(id); await flush(); const r = S.fx.fxCast(card(id), castEv(id)[0], castEv(id), {}); const pl = r && r.places && r.places[0]; got[id] = pl ? { w: +pl.w.toFixed(1), h: +pl.h.toFixed(1), y: +pl.y.toFixed(2), place: r.plan.segments[0].place } : null; S.fx.fxSkip(); }
+    const B = got.brahmastra, P = got.pashupata;
+    ok('F11 · THE FITTED LAW ON A LANDSCAPE HALF (EXPORT-4 rulings 1 and 3): on the 998×230 half of a 1280×800 laptop the width fractions alone would hang Brahmastra 928 px wide and 522 px tall and Pashupatastra 1045×588 — both far taller than the half; fitted, each is exactly as tall as the half and inside it (Brahmastra ' + (B && B.w + '×' + B.h) + ', Pashupatastra ' + (P && P.w + '×' + P.h) + '), and BOTH hang top-flush ("' + (P && P.place) + '", top at ' + (P && P.y) + ' px) — the token top band\'s hard cut hides at the half boundary',
+       !!B && !!P && Math.abs(B.h - 230) < 0.05 && Math.abs(P.h - 230) < 0.05 && B.w < 998 && P.w < 998 && Math.abs(B.y) < 0.01 && Math.abs(P.y) < 0.01 && P.place === 'enemy-half-top' && B.place === 'enemy-half-top', J(got)); }
   // F8 · the diagnostics never narrate and never console.log
   const NARR = /BLog\.lines\.push/.test(GLUE), LOGS = /console\.log\(/.test(GLUE);
   ok('F8 · THE DIAGNOSTICS ARE QUIET: the glue writes the console (warn, never log) and the battle log\'s BLog.fx field — never a narrated line, never a banner', !NARR && !LOGS && /BLog\.fx=BLog\.fx\|\|\[\]/.test(GLUE));
@@ -278,8 +285,8 @@ const card = (id) => ({ id, n: id, t: 'astra' });
   const DEFS = []; for (const f of Object.keys(E.DECKS)) for (const c of E.DECKS[f]) DEFS.push(Object.assign({ fac: f }, c));
   const HEROES = DEFS.filter((c) => c.t === 'hero').map((c) => c.id).sort();
   const ACT = REG.actors || {};
-  ok('H1 · THE ROUTING TABLE NAMES EXACTLY THE TWENTY HEROES — every Hero the engine has (launch and wave), each at rung 256 with a native exit, none an effect route; Meghnad (a Unit) is not among them (' + Object.keys(ACT).length + ' actors)',
-     J(Object.keys(ACT).sort()) === J(HEROES) && HEROES.length === 20 && HEROES.every((id) => ACT[id].rung === 256 && ACT[id].exit === 'native' && ACT[id].manifest === 'actors/' + id + '/manifest.json' && !(REG.routes || {})[id]) &&
+  ok('H1 · THE ROUTING TABLE NAMES EXACTLY THE TWENTY HEROES — every Hero the engine has (launch and wave), each carrying both rungs [512, 256] (EXPORT-4) with a native exit, none an effect route, the rung rule 512 above 420 device px; Meghnad (a Unit) is not among them (' + Object.keys(ACT).length + ' actors)',
+     J(Object.keys(ACT).sort()) === J(HEROES) && HEROES.length === 20 && REG.actorRungRule && REG.actorRungRule.drawnPxOver === 420 && HEROES.every((id) => J(ACT[id].rungs) === J([512, 256]) && ACT[id].exit === 'native' && ACT[id].manifest === 'actors/' + id + '/manifest.json' && !(REG.routes || {})[id]) &&
      !ACT.meghnad && DEFS.find((c) => c.id === 'meghnad').t === 'unit', J(Object.keys(ACT)));
   const modBad = MODS.filter((n) => { const src = modSrc(n); return !src || sha(src) !== PIN.actorModules[n]; });
   ok('H2 · THE NINE ACTOR MODULES ARE THE LAB\'S, VERBATIM — each inlined block is byte-identical to the certified module (sha256 recorded at export) (' + MODS.join(', ') + ')', modBad.length === 0, 'differ: ' + J(modBad));
@@ -293,7 +300,7 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     const g2d = () => new Proxy({}, { get: (t, k) => (k in t ? t[k] : (k === 'getImageData' || k === 'createImageData') ? (x, y, w, h) => ({ data: new Uint8ClampedArray(Math.max(1, (w | 0) * (h | 0)) * 4), width: w, height: h })
       : k === 'measureText' ? () => ({ width: 0 }) : (k === 'createRadialGradient' || k === 'createLinearGradient') ? () => ({ addColorStop() {} }) : k === 'canvas' ? {} : () => {}), set: (t, k, v) => { t[k] = v; return true; } });
     const canvas = () => { const c = { width: 1, height: 1, style: {}, getContext: () => (c.__g = c.__g || g2d()), getBoundingClientRect: () => ({ left: 0, top: 0, width: 355, height: 420, right: 355, bottom: 420 }) }; return c; };
-    const cellRect = (seat, i) => ({ left: 20 + i * 62, top: seat === 0 ? 270 : 70, width: 56, height: 80, right: 76 + i * 62, bottom: (seat === 0 ? 270 : 70) + 80 });
+    const CH = o.cardH || 80, cellRect = (seat, i) => ({ left: 20 + i * 62, top: seat === 0 ? 270 : 70, width: 56, height: CH, right: 76 + i * 62, bottom: (seat === 0 ? 270 : 70) + CH });
     const cellsOf = (seat) => { const pl = ctx.G.players[seat]; return (pl.units || []).concat(pl.heroes || []).map((c, i) => ({ uid: c.uid, getBoundingClientRect: () => cellRect(seat, i) })); };
     const field = Object.assign(canvas(), { clientWidth: 355, clientHeight: 420, querySelector: (sel) => { const m = /data-uid="([^"]+)"/.exec(sel); if (!m) return null; for (const s of [0, 1]) { const c = cellsOf(s).find((x) => String(x.uid) === m[1]); if (c) return c; } return null; } });
     const els = { field, actorunder: canvas(), actorcanvas: canvas(), actorgpu: canvas(), actorover: canvas(), effectclip: canvas() };
@@ -301,7 +308,7 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     const ctx = {
       console: { log: (...a) => logs.push(a.join(' ')), warn: (...a) => warns.push(a.join(' ')), error: (...a) => warns.push(a.join(' ')) },
       location: { href: 'https://game.test/index.html' }, URL, Blob, Promise, Math, JSON, Object, Array, Date, String, Number, Error, Map, Set, WeakMap, Uint8ClampedArray, Float32Array, Int32Array, Uint8Array, Uint16Array, Symbol, Proxy, Reflect, isFinite, isNaN, parseInt, parseFloat, setTimeout, clearTimeout,
-      performance: { now: () => now }, devicePixelRatio: 2,
+      performance: { now: () => now }, devicePixelRatio: o.dpr || 2,
       requestAnimationFrame: (f) => { setImmediate(() => { now += 16; f(now); }); return 1; }, cancelAnimationFrame: () => {},
       fetch: (u) => { const rel = decodeURIComponent(abs(u).pathname).replace(/^\//, ''); fetched.push(rel);
         if (o.noActors && /registry\.json$/.test(rel)) { const j = JSON.parse(fs.readFileSync(path.join(GAME, rel), 'utf8')); delete j.actors; return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(j) }); }
@@ -311,7 +318,7 @@ const card = (id) => ({ id, n: id, t: 'astra' });
       createImageBitmap: (b) => { decodes.push(now); if (o.decodeFails) return Promise.reject(new Error('decode refused')); if (o.decodeHangs) return new Promise(() => {});
         const px = webpSize(fs.readFileSync(blobFile.get(b))); return Promise.resolve({ width: px.w, height: px.h, close() {} }); },
       Image: function () { const im = this; setTimeout(() => { if (im.onerror) im.onerror(); }, 0); },
-      document: { createElement: () => canvas(), querySelector: (sel) => { const seat = /opp/.test(sel) ? 1 : 0; return { querySelectorAll: () => cellsOf(seat) }; } },
+      document: { createElement: () => canvas(), querySelector: (sel) => { if (/\.bc/.test(sel)) { const c = cellsOf(0).concat(cellsOf(1)); return c[0] || null; } const seat = /opp/.test(sel) ? 1 : 0; return { querySelectorAll: () => cellsOf(seat) }; } },
       $: (id) => els[id] || null, EffectClip: EC, BLog: { fx: null }, Q: { effPower: E.effPower }, ME: 0,
       G: { players: [{ hand: [] }, { hand: [] }] }, choreoForce: [],
       posOf: () => null, halfSel: (s) => s ? '.half.opp' : '.half.me', ownerPiOfUid: () => 0, reducedMotion: () => !!o.reduced, vfxT: () => o.vfxT || 1.3,
@@ -320,7 +327,7 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     ctx.window = ctx; vm.createContext(ctx);
     for (const n of MODS) vm.runInContext(modSrc(n), ctx, { filename: n + '.js' });
     vm.runInContext(WD + '\n', ctx);
-    vm.runInContext(GLUE + '\n;globalThis.__mf = { MF, mfBoot, mfManifest, mfPrefetch, mfPrefetchHands, mfReady, mfRouted, mfSnap, mfStage, get budget(){ return choreoBudgetMs; } };', ctx);
+    vm.runInContext(GLUE + '\n;globalThis.__mf = { MF, mfBoot, mfManifest, mfPrefetch, mfPrefetchHands, mfReady, mfRouted, mfSnap, mfStage, mfWantRung, mfPickRung, mfDrawnPx, MF_RUNG_PX, get budget(){ return choreoBudgetMs; } };', ctx);
     return { ctx, mf: ctx.__mf, warns, logs, floats, sfx, fetched, decodes, get now() { return now; } };
   }
   // a real play of each Hero through the engine: two friendly Units down, then the Hero
@@ -363,16 +370,18 @@ const card = (id) => ({ id, n: id, t: 'astra' });
       const dir = path.join(MAN, 'actors', id), files = fs.existsSync(dir) ? fs.readdirSync(dir).sort() : [];
       let m = null; try { m = JSON.parse(fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8')); } catch (e) { bad.push(id + ': no manifest'); continue; }
       const v = AM.validate(m); if (!v.ok) bad.push(id + ': ' + v.errors.join('; '));
-      const r = AM.forRung(m, 256), ap = path.join(dir, r.atlas), px = fs.existsSync(ap) ? webpSize(fs.readFileSync(ap)) : null;
-      if (J(files) !== J(['atlas_256.webp', 'manifest.json'])) bad.push(id + ': files ' + J(files));
-      if (r.rung !== 256 || !px || px.w !== r.atlasSize.w || px.h !== r.atlasSize.h) bad.push(id + ': rung-256 atlas ' + J(px) + ' vs ' + J(r.atlasSize));
-      rows.push({ id, bytes: fs.existsSync(ap) ? fs.statSync(ap).size : 0, decoded: AM.decodedBytes(r) });
+      for (const rung of [512, 256]) {
+        const r = AM.forRung(m, rung), ap = path.join(dir, r.atlas), px = fs.existsSync(ap) ? webpSize(fs.readFileSync(ap)) : null;
+        if ((r.rung || r.cellMax) !== rung || !px || px.w !== r.atlasSize.w || px.h !== r.atlasSize.h) bad.push(id + ': rung-' + rung + ' atlas ' + J(px) + ' vs ' + J(r.atlasSize));
+        rows.push({ id, rung, bytes: fs.existsSync(ap) ? fs.statSync(ap).size : 0, decoded: AM.decodedBytes(r) });
+      }
+      if (J(files) !== J(['atlas.webp', 'atlas_256.webp', 'manifest.json'])) bad.push(id + ': files ' + J(files));
     }
     const ffx = JSON.parse(fs.readFileSync(path.join(MAN, REG.factionFx), 'utf8'));
-    const extra = ALLFILES.filter((f) => !/^effects\//.test(f) && !/^actors\/[a-z]+\/(manifest\.json|atlas_256\.webp)$/.test(f) && f !== 'registry.json' && f !== REG.factionFx);
-    const mb = rows.reduce((a, r) => a + r.bytes, 0) / 1048576, peak = Math.max(...rows.map((r) => r.decoded)) / 1048576;
-    ok('H3 · EVERY ACTOR SHIPS AT THE 256 RUNG ONLY — each folder holds exactly its manifest and atlas_256.webp (no 512 atlas), each manifest validates under the page\'s ActorManifest and its 256 atlas decodes to the size the rung records; factionfx.json is the certified one (sha256 pinned); nothing else in assets/manifest (' + rows.length + ' actors, ' + mb.toFixed(2) + ' MB compressed, the largest decodes to ' + peak.toFixed(2) + ' MB)',
-       bad.length === 0 && rows.length === 20 && extra.length === 0 && sha(fs.readFileSync(path.join(MAN, REG.factionFx))) === PIN.factionFx && ['devas', 'asuras', 'vanaras', 'nagas'].every((f) => JSON.stringify(ffx).indexOf(f) >= 0), J({ bad, extra }));
+    const extra = ALLFILES.filter((f) => !/^effects\//.test(f) && !/^actors\/[a-z]+\/(manifest\.json|atlas_256\.webp|atlas\.webp)$/.test(f) && f !== 'registry.json' && f !== REG.factionFx);
+    const at = (rg) => rows.filter((x) => x.rung === rg), mb = (rg) => at(rg).reduce((a, x) => a + x.bytes, 0) / 1048576, peak = (rg) => Math.max(...at(rg).map((x) => x.decoded)) / 1048576;
+    ok('H3 · EVERY ACTOR SHIPS BOTH RUNGS (EXPORT-4) — each folder holds exactly its manifest, atlas.webp (512) and atlas_256.webp, each manifest validates under the page\'s ActorManifest and BOTH atlases decode to the sizes their rungs record; factionfx.json is the certified one (sha256 pinned); nothing else in assets/manifest (' + at(512).length + ' actors: 512 = ' + mb(512).toFixed(2) + ' MB compressed, the largest decoding to ' + peak(512).toFixed(2) + ' MB; 256 = ' + mb(256).toFixed(2) + ' MB, the largest ' + peak(256).toFixed(2) + ' MB)',
+       bad.length === 0 && at(512).length === 20 && at(256).length === 20 && extra.length === 0 && sha(fs.readFileSync(path.join(MAN, REG.factionFx))) === PIN.factionFx && ['devas', 'asuras', 'vanaras', 'nagas'].every((f) => JSON.stringify(ffx).indexOf(f) >= 0), J({ bad, extra }));
   }
 
   // H4–H9 · every Hero, manifested through the shipped glue on the fake clock
@@ -472,6 +481,41 @@ const card = (id) => ({ id, n: id, t: 'astra' });
        !/useBackend|pickBackend/.test(between('/* ══ EXPORT-2 — THE HERO MANIFESTATIONS', 'function runAction(')) && S.mf.MF.stage.backend === 'canvas2d');
     ok('H19 · A SKIP LANDS IT: resetChoreo and the choreography fast-forward stand a running manifestation down (mfSkip, and its runner.skip in choreoForce)',
        /function resetChoreo\(\)\{ try\{ fxSkip\(\); \}catch\(e\)\{\} try\{ mfSkip\(\); \}catch\(e\)\{\}/.test(HTML) && /choreoForce\.push\(\(\)=>\{ if\(!runner\.done\) runner\.skip\(\); \}\);/.test(fnBody('mfManifest')));
+  }
+
+  // ═══ H20–H21 · EXPORT-4: THE DEVICE MATRIX ═══
+  {
+    const DM = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8'));
+    const S0 = actorSandbox(), want = (h, dpr) => S0.mf.mfWantRung(h * 2.1 * Math.min(2, dpr));
+    const table = DM.viewports.map((v) => ({ vp: v.vw + 'x' + v.vh, tier: v.tier, px2: Math.round(v.card.h * 2.1 * 2), d1: want(v.card.h, 1), d2: want(v.card.h, 2), d3: want(v.card.h, 3) }));
+    const at512 = table.filter((x) => x.d2 === 512).map((x) => x.vp);
+    const run = async (cardH, dpr, rungs) => {
+      const S2 = actorSandbox({ cardH, dpr }), P = heroPlay('mahabali'); S2.ctx.G = P.g; await S2.mf.mfBoot();
+      for (const rg of rungs) await S2.mf.mfPrefetch('mahabali', rg);
+      const R = await manifest(S2, 'mahabali', { play: P, noPrefetch: true }), L = S2.mf.MF.last;
+      return { ok: R.r, rung: L && L.card === 'mahabali' ? L.rung : null, px: L && L.drawnPx, peakMB: S2.mf.MF.stage ? +(S2.mf.MF.stage.stat.peakDecoded / 1048576).toFixed(2) : 0, diag: S2.mf.MF.diag.map((d) => d.kind) };
+    };
+    const a = await run(94.8, 2, [256]), f = await run(94.8, 3, [512, 256]), b = await run(151.4, 2, [512, 256]), c = await run(151.4, 1, [256]), d = await run(151.4, 2, [256]), e = await run(151.4, 2, []);
+    ok('H20 · EXPORT-4 · THE RUNG BY DRAWN SIZE (ruling 4): an actor takes 512 when card height × 2.1 × min(DPR, 2) exceeds ' + S0.mf.MF_RUNG_PX + ' device px. On the ' + DM.viewports.length + ' measured screens EVERY PHONE draws 256 at DPR 1, 2 and 3 (the most any phone draws is ' + Math.max(...table.filter((x) => x.tier === 'phone').map((x) => x.px2)) + ' px), every DPR-1 screen draws 256, and at DPR 2 the 512 rung goes to ' + at512.join(', ') + '. Driven through the glue on Mahabali: a 375 px phone card at DPR 2 draws ' + a.px + ' px on ' + a.rung + ', and at DPR 3 — with BOTH rungs in hand — still ' + f.px + ' px on ' + f.rung + ' (the stage caps DPR at 2); a laptop card at DPR 2 draws ' + b.px + ' px on ' + b.rung + ' (the stage\'s peak ' + b.peakMB + ' MB — one actor); the same card at DPR 1 draws ' + c.px + ' px on ' + c.rung + '; with only the 256 bytes in hand the 512 play FALLS BACK to ' + d.rung + ' and still manifests (' + d.diag.join('+') + '); with neither it hands the Hero to the classic path (' + e.ok + ', ' + e.diag.join('+') + ')',
+       table.filter((x) => x.tier === 'phone').every((x) => x.d1 === 256 && x.d2 === 256 && x.d3 === 256) && table.every((x) => x.d1 === 256) &&
+       J(at512) === J(['1024x1366', '1194x834', '1366x1024', '1440x900', '1680x1050', '1920x1080']) &&
+       a.ok === true && a.rung === 256 && f.ok === true && f.rung === 256 && f.px === a.px && b.ok === true && b.rung === 512 && b.peakMB > 50 && c.rung === 256 && d.ok === true && d.rung === 256 && d.diag.indexOf('rung-fell-back') >= 0 &&
+       e.ok === false && e.diag.indexOf('not-ready-at-play') >= 0, J({ table, a, f, b, c, d, e }));
+    // H21 · every plate on every measured screen, through the game's own inlined player
+    const L = (id) => JSON.parse(fs.readFileSync(path.join(MAN, 'effects', id, 'manifest.json'), 'utf8'));
+    const MB = L('brahmastra'), MP = L('pashupata'), MV = L('vajra'), SI = L('sudarshana_invoke'), SS = L('sudarshana_strike');
+    const law = (m, w) => m.scaleRule.cardWidths * w / (m.scaleRule.spanCell || m.scaleRule.ringDiameterCell) * m.cellSize.w;   // the pre-EXPORT-4 card-width law
+    const rows = DM.viewports.map((v) => { const H = { cx: 0, cy: 0, halfW: v.half.w, halfH: v.half.h }, pl = (m, w) => EC.place(m, Object.assign({ w }, H));
+      return { v, b: pl(MB, v.card.w), pa: pl(MP, v.card.w), va: pl(MV, v.card.w), si: pl(SI, v.hero.w), ss: pl(SS, v.hero.w), floor: 0.294 * v.half.h > Math.min(v.card.w, v.hero.w) }; });
+    const p375 = rows.find((x) => x.v.vw === 375), phones = rows.filter((x) => x.v.tier === 'phone');
+    const dz = (x, y) => Math.abs(x - y);
+    ok('H21 · EXPORT-4 · EVERY SCREEN GETS ITS TRUE SIZE, through the game\'s own player on all ' + rows.length + ' measured screens. THE 375 PHONE IS UNCHANGED: Brahmastra ' + p375.b.w.toFixed(1) + ' (0.93 of the half, unclamped), Vajra ' + p375.va.w.toFixed(1) + ', the Sudarshana invocation ' + p375.si.w.toFixed(1) + ' and strike ' + p375.ss.w.toFixed(1) + ' — each exactly the card-width law, the floor idle — and Pashupatastra ' + p375.pa.w.toFixed(1) + ' against its certified 390.6. On EVERY phone the height clamp never engages (ruling 1) and the floor is idle through 390 px; on EVERY screen both row weapons sit inside the half (landscape laptops: Brahmastra ' + rows.filter((x) => x.v.tier === 'laptop').map((x) => x.b.w.toFixed(0) + '×' + x.b.h.toFixed(0)).join(', ') + '); where the floor engages (' + rows.filter((x) => x.floor).map((x) => x.v.vw + 'x' + x.v.vh).join(', ') + ') Vajra\'s height sits at ' + rows.filter((x) => x.floor).map((x) => (x.va.h / x.v.half.h).toFixed(2)).join(' / ') + ' of the half',
+       dz(p375.b.w, 0.93 * p375.v.half.w) < 1e-9 && dz(p375.va.w, law(MV, p375.v.card.w)) < 1e-9 && dz(p375.si.w, law(SI, p375.v.hero.w)) < 1e-9 && dz(p375.ss.w, law(SS, p375.v.hero.w)) < 1e-9 && dz(p375.pa.w, 390.6) < 0.1 &&
+       phones.every((x) => x.b.h < x.v.half.h && x.pa.h < x.v.half.h && dz(x.b.w, 0.93 * x.v.half.w) < 1e-9) &&
+       rows.filter((x) => x.v.vw <= 390).every((x) => !x.floor && dz(x.va.w, law(MV, x.v.card.w)) < 1e-9 && dz(x.si.w, law(SI, x.v.hero.w)) < 1e-9 && dz(x.ss.w, law(SS, x.v.hero.w)) < 1e-9) &&
+       rows.every((x) => x.b.h <= x.v.half.h + 1e-6 && x.pa.h <= x.v.half.h + 1e-6) &&
+       rows.filter((x) => x.floor).every((x) => x.va.h / x.v.half.h >= 0.8 && x.va.h / x.v.half.h <= 0.99),
+       J(rows.map((x) => ({ vp: x.v.vw + 'x' + x.v.vh, b: [+x.b.w.toFixed(1), +x.b.h.toFixed(1)], pa: [+x.pa.w.toFixed(1), +x.pa.h.toFixed(1)], va: +x.va.w.toFixed(1), floor: x.floor }))));
   }
 
   // ═══ W · THE WIRE ═══

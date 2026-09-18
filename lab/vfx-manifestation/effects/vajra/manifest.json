@@ -317,7 +317,8 @@
     "ringFrame": 112,
     "ringDiameterSrc": 910,
     "ringDiameterCell": 238.69,
-    "cardWidths": 2.4
+    "cardWidths": 2.4,
+    "cardFloorOfHalfH": 0.294
   },
   "contract": {
     "trigger": "destroy",

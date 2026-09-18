@@ -1566,14 +1566,39 @@ console.log('\n── M/E · the Mythic shelf (LAB-21) ──');
      MB.audit.ground.zeroShareMin > 0 && MP.audit.ground.zeroShareMin > 0 && MB.audit.ground.pedestal1to4ShareMax < 0.06 && MP.audit.ground.pedestal1to4ShareMax < 0.06,
      J({ b: MB.audit.ground, p: MP.audit.ground }));
   const LB = MB.scaleRule.legibility, h93 = LB && LB['halfFraction0.93'];
-  ok('M63 · LAB-22 · THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3, the permanent fix for a units near-miss): Brahmastra\'s plate is ' + MB.scaleRule.halfFraction + ' of the enemy half\'s width, sized off the half itself; card widths are derived commentary only (' + MB.scaleRule.cardWidths + ' cw of plate width at the 72 px cards of the 375 px phone) — because LAB-21\'s "cw" measured the RING and a plate-based "cw" measures the whole plate, and they are not the same unit. Measured on the game\'s board at its own proportions (bare median ' + (LB && LB.bareHalfMedianLuma) + '): at the IMPACT the ' + (h93 && h93.plate) + ' plate blows out ' + (h93 && (100 * h93.impact.blownOut).toFixed(1)) + '% with median ' + (h93 && h93.impact.halfMedianLuma) + ', INSIDE LAB-21\'s accepted bar (22.8% / 106); its aftermath peaks at ' + (h93 && (100 * h93.worst.blownOut).toFixed(1)) + '% / ' + (h93 && h93.worst.halfMedianLuma) + ', under the rejected 31.6% / 170. The literal 2.4 cw plate (' + (LB && LB['rejected_literal2.4cw'] && LB['rejected_literal2.4cw'].plate) + ') was rejected: half the footprint of the classic 1.04 × half sprite. Pashupatastra keeps its LAB-21 record, ' + MP.scaleRule.cardWidths + ' cw of its vortex span — "2.4 is a default, not a law"',
-     MB.scaleRule.halfFraction === 0.93 && /FRACTION OF THE ENEMY HALF/.test(MB.scaleRule.note) && /not the same unit/.test(MB.scaleRule.note) && Math.abs(MB.scaleRule.cardWidths - 4.82) < 1e-9 &&
-     !!h93 && h93.impact.blownOut < 0.228 && h93.impact.halfMedianLuma < 106 && h93.worst.blownOut < 0.316 && h93.worst.halfMedianLuma < 170 &&
-     /not a law/.test(MP.scaleRule.note) && MP.scaleRule.cardWidths === 4.1 && !MP.scaleRule.halfFraction,
-     J({ b: MB.scaleRule.halfFraction, legibility: LB, p: MP.scaleRule.cardWidths }));
+  ok('M63 · LAB-22 + EXPORT-4 · THE SCALE IS A FRACTION OF THE ENEMY HALF, FITTED: Brahmastra\'s plate is ' + MB.scaleRule.halfFraction + ' of the half\'s width and Pashupatastra\'s ' + MP.scaleRule.halfFraction + ' (EXPORT-4 ruling 3 converted it; 1.047 is its certified 375 px plate, 390.6 on the measured 373 px half), each CLAMPED so the plate is never taller than ' + MB.scaleRule.heightCap + ' of the half\'s height (ruling 1: landscape halves are wide and short). Card widths are derived commentary only (' + MB.scaleRule.cardWidths + ' and ' + MP.scaleRule.cardWidths + ') — LAB-21\'s ring-based cw and a plate-based cw are not the same unit. Brahmastra\'s legibility stands as measured at the 375 px phone: impact ' + (h93 && (100 * h93.impact.blownOut).toFixed(1)) + '% / ' + (h93 && h93.impact.halfMedianLuma) + ', inside LAB-21\'s accepted 22.8% / 106',
+     MB.scaleRule.halfFraction === 0.93 && MP.scaleRule.halfFraction === 1.047 && MB.scaleRule.heightCap === 1 && MP.scaleRule.heightCap === 1 &&
+     /FRACTION OF THE ENEMY HALF/.test(MB.scaleRule.note) && /FRACTION OF THE ENEMY HALF/.test(MP.scaleRule.note) && Math.abs(MB.scaleRule.cardWidths - 4.82) < 1e-9 && MP.scaleRule.cardWidths === 4.1 &&
+     !!h93 && h93.impact.blownOut < 0.228 && h93.worst.blownOut < 0.316,
+     J({ b: MB.scaleRule.halfFraction, p: MP.scaleRule.halfFraction, cap: [MB.scaleRule.heightCap, MP.scaleRule.heightCap] }));
+  // ── M64 · EXPORT-4 · the device matrix: every measured screen, every plate, through the player's own place() ──
+  const DM = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8'));
+  const MV = JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'vajra', 'manifest.json'), 'utf8')), SI = JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'sudarshana_invoke', 'manifest.json'), 'utf8')), SS = JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'sudarshana_strike', 'manifest.json'), 'utf8'));
+  const sized = DM.viewports.map((v) => {
+    const H = { halfW: v.half.w, halfH: v.half.h }, pl = (m, w) => EC.place(m, Object.assign({ cx: 0, cy: 0, w: w }, H));
+    const b = pl(MB, v.card.w), pa = pl(MP, v.card.w), va = pl(MV, v.card.w), si = pl(SI, v.hero.w), ss = pl(SS, v.hero.w);
+    const floorOn = MV.scaleRule.cardFloorOfHalfH * v.half.h > Math.min(v.card.w, v.hero.w);   // engaged for any card on this screen
+    return { vp: v.vw + 'x' + v.vh, tier: v.tier, b: b, pa: pa, va: va, si: si, ss: ss, floorOn: floorOn,
+             bClamp: 0.93 * v.half.w * MB.cellSize.h / MB.cellSize.w > v.half.h, pClamp: 1.047 * v.half.w * MP.cellSize.h / MP.cellSize.w > v.half.h,
+             // "before" = the card-width law with no floor (the pre-EXPORT-4 player), computed from the manifests: Vajra from the Unit card, both Sudarshana clips from the Hero
+             vaBefore: MV.scaleRule.cardWidths * v.card.w / MV.scaleRule.ringDiameterCell * MV.cellSize.w, bBefore: v.platesBefore.brahmastra,
+             siBefore: SI.scaleRule.cardWidths * v.hero.w / SI.scaleRule.spanCell * SI.cellSize.w, ssBefore: SS.scaleRule.cardWidths * v.hero.w / SS.scaleRule.spanCell * SS.cellSize.w,
+             // the chain's hand-off: both clips scale from the same (floored) card width, so the invocation disc over the strike disc is the chain's own scaleFrom
+             // the chain's hand-off: the card width each clip was sized from (scale x span / cardWidths) — the same floored width for both, on every screen
+             wInvoke: si.scale * SI.scaleRule.spanCell / SI.scaleRule.cardWidths, wStrike: ss.scale * SS.scaleRule.spanCell / SS.scaleRule.cardWidths };
+  });
+  const phones = sized.filter((x) => x.tier === 'phone'), under = (x, p) => p.h <= x.halfH;
+  const r = (x) => Math.round(x * 10) / 10;
+  ok('M64 · EXPORT-4 · THE DEVICE MATRIX, through the player\'s own place(), on all ' + sized.length + ' measured screens (src/device_matrix.json). (1) THE CLAMP NEVER ENGAGES ON A PHONE (ruling 1) and Brahmastra is the same plate there as before; (2) on every screen both row weapons sit INSIDE the half — the landscape overflow is gone (1280×800: Brahmastra ' + r(sized.find((x) => x.vp === '1280x800').bBefore) + ' → ' + r(sized.find((x) => x.vp === '1280x800').b.w) + ' px wide, ' + r(sized.find((x) => x.vp === '1280x800').b.h) + ' px tall on a ' + DM.viewports.find((v) => v.vw === 1280).half.h + ' px half); (3) THE CARD FLOOR (ruling 2) never touches the 360/375/390 phones — Vajra and both Sudarshana clips are the plates they were — and where it engages (' + sized.filter((x) => x.floorOn).map((x) => x.vp).join(', ') + ') Vajra\'s height lands at ' + sized.filter((x) => x.floorOn).map((x) => (x.va.h / DM.viewports.find((v) => v.vw + 'x' + v.vh === x.vp).half.h).toFixed(2)).join(' / ') + ' of the half (the phone band ~0.85); (4) THE HAND-OFF: both Sudarshana clips are sized from the SAME (floored) card width on every screen (' + sized.map((x) => r(x.wInvoke) + '=' + r(x.wStrike)).join(', ') + ' px), so the invocation disc hands off to the strike disc at the chain\'s own ratio everywhere',
+     phones.every((x) => !x.bClamp && !x.pClamp && Math.abs(x.b.w - x.bBefore) < 0.2) &&
+     sized.every((x) => { const v = DM.viewports.find((q) => q.vw + 'x' + q.vh === x.vp); return x.b.h <= v.half.h + 0.01 && x.pa.h <= v.half.h + 0.01; }) &&
+     sized.filter((x) => /^(360|375|390)x/.test(x.vp)).every((x) => !x.floorOn && Math.abs(x.va.w - x.vaBefore) < 0.2 && Math.abs(x.si.w - x.siBefore) < 0.2 && Math.abs(x.ss.w - x.ssBefore) < 0.2) &&
+     sized.filter((x) => x.floorOn).every((x) => { const v = DM.viewports.find((q) => q.vw + 'x' + q.vh === x.vp); return x.va.h / v.half.h >= 0.83 && x.va.h / v.half.h <= 0.99; }) &&
+     sized.every((x) => Math.abs(x.wInvoke - x.wStrike) < 1e-6),
+     J(sized.map((x) => ({ vp: x.vp, b: [r(x.b.w), r(x.b.h)], pa: [r(x.pa.w), r(x.pa.h)], va: [r(x.va.w), r(x.va.h)], floor: x.floorOn, bClamp: x.bClamp, pClamp: x.pClamp }))));
 
   // ── E16-E19 · the timing, the enemy-half anchor, and the 30 Hz prediction ──
-  const CARDW = 64, HALF = { 0: { cx: 177.5, cy: 314.5, top: 210, w: 355 }, 1: { cx: 177.5, cy: 104.5, top: 0, w: 355 } };   // measured live on a 375 px viewport (LAB-22: + top and width, for the top-flush plate)
+  const CARDW = 64, HALF = { 0: { cx: 177.5, cy: 314.5, top: 210, w: 355, h: 209 }, 1: { cx: 177.5, cy: 104.5, top: 0, w: 355, h: 209 } };   // measured live on a 375 px viewport (LAB-22: + top and width, for the top-flush plate)
   function world21() {
     const draws = [], rendered = [], sounds = [];
     const g = { _op: 'source-over', setTransform() {}, clearRect() {}, drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) { draws.push({ sx, sy, dx, dy, dw, dh, op: this.globalCompositeOperation }); },
@@ -1603,18 +1628,17 @@ console.log('\n── M/E · the Mythic shelf (LAB-21) ──');
     const W = world21(), run = W.P.play(F, c.M, { before: F.before, after: F.after }, { mode: 'full', casterSeat: F.attackerSeat });
     let n = 0; while (!run.done && n++ < 4000) W.step(1000 / 60);
     const pl = run.places[0], enemy = HALF[1 - F.attackerSeat], top = c.M.contract.anchor === 'enemy-half-top', ay = top ? enemy.top : enemy.cy;
-    const expect = EC.place(c.M, { cx: enemy.cx, cy: ay, w: CARDW, halfW: enemy.w });
+    const expect = EC.place(c.M, { cx: enemy.cx, cy: ay, w: CARDW, halfW: enemy.w, halfH: enemy.h });
     const featureSpanOnBoard = c.M.scaleRule.spanCell * pl.scale;
     return { k: c.k, seat: F.attackerSeat, segPlace: p.segments[0] && p.segments[0].place, centredOnEnemyHalf: Math.abs(pl.x + c.M.anchor.x * pl.scale - enemy.cx) < 0.01 && Math.abs(pl.y + c.M.anchor.y * pl.scale - ay) < 0.01,
-             topFlush: top ? Math.abs(pl.y - enemy.top) < 0.01 && Math.abs(pl.x + pl.w / 2 - enemy.cx) < 0.01 : null, halfFraction: +(pl.w / enemy.w).toFixed(3),
+             topFlush: top ? Math.abs(pl.y - enemy.top) < 0.01 && Math.abs(pl.x + pl.w / 2 - enemy.cx) < 0.01 : null, halfFraction: +(pl.w / enemy.w).toFixed(3), insideHalf: pl.h <= enemy.h + 0.01,
              sameAsPlace: Math.abs(pl.x - expect.x) < 1e-9 && Math.abs(pl.y - expect.y) < 1e-9,
              plateW: +pl.w.toFixed(1), plateH: +pl.h.toFixed(1), cardWidths: +(featureSpanOnBoard / CARDW).toFixed(2),
              drewCells: run.log.drawn.length, additive: W.draws.length > 0 && W.draws.every((d) => d.op === 'lighter') };
   }));
-  ok('E17 · LAB-21/22 · THE PLATE HANGS ON THE CASTER\'S ENEMY HALF, driven, both cards and both seats. Pashupatastra\'s segment places "enemy-half" — its core point EXACTLY on the enemy half centre, its vortex spanning 4.1 card widths. Brahmastra\'s (LAB-22, ruling 4) places "enemy-half-top" — the plate\'s TOP flush with the enemy half\'s top edge and horizontally centred, the beam falling in from beyond the field — and it is sized as ' + (placements[0][0] && placements[0][0].halfFraction) + ' of the half\'s width (ruling 3), whichever seat cast it — ' + placements.map((g2) => g2.map((x) => x.k + ' seat' + x.seat + ': plate ' + x.plateW + '×' + x.plateH + ' px, ' + x.drewCells + ' cells drawn').join(' · ')).join(' · ') + ' — every cell drawn "lighter"',
-     placements.every((g2) => g2.every((x) => x.centredOnEnemyHalf && x.sameAsPlace && x.additive && x.drewCells === (x.k === 'brahmastra' ? 81 : 60))) &&
-     placements[0].every((x) => x.segPlace === 'enemy-half-top' && x.topFlush === true && Math.abs(x.halfFraction - 0.93) < 0.002) &&
-     placements[1].every((x) => x.segPlace === 'enemy-half' && Math.abs(x.cardWidths - 4.1) < 0.02),
+  ok('E17 · LAB-21/22 + EXPORT-4 · BOTH ROW WEAPONS HANG TOP-FLUSH ON THE CASTER\'S ENEMY HALF, driven, both seats: the segment places "enemy-half-top" — the plate\'s TOP on the enemy half\'s top edge, horizontally centred — sized by the FITTED LAW (the certified fraction of the half\'s width, never taller than the half): Brahmastra ' + (placements[0][0] && placements[0][0].halfFraction) + ' of the width, Pashupatastra ' + (placements[1][0] && placements[1][0].halfFraction) + ' (EXPORT-4 ruling 3 converted it from 4.1 card widths and moved it top-flush) — ' + placements.map((g2) => g2.map((x) => x.k + ' seat' + x.seat + ': plate ' + x.plateW + '×' + x.plateH + ' px, ' + x.drewCells + ' cells drawn').join(' · ')).join(' · ') + ' — every cell drawn "lighter"',
+     placements.every((g2) => g2.every((x) => x.centredOnEnemyHalf && x.sameAsPlace && x.additive && x.segPlace === 'enemy-half-top' && x.topFlush === true && x.insideHalf && x.drewCells === (x.k === 'brahmastra' ? 81 : 60))) &&
+     placements[0].every((x) => Math.abs(x.halfFraction - 0.93) < 0.002) && placements[1].every((x) => x.halfFraction <= 1.047 + 0.002),
      J(placements));
   // E18 · the 30 Hz prediction, and the phases where only the pin saves the impact cell
   function sweep(M, speed, offsets) {

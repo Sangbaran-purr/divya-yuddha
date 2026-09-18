@@ -1950,6 +1950,25 @@ enemy row plays no segment and no clip). Re-pointed to v2: **M59** (the pack), *
 corners make the Vajra-class reading available again, and it reads **max 1**, true black; the re-point also caught LAB-21's packer writing "structurally unavailable" unconditionally — Pashupatastra's manifest carries that stale note beside a measured 0, and is not repacked because EXPORT-1 ships it byte-identical), **M63** (the scale law), **E16/E19** (the
 26-cell budget) and **E17** (81 cells, `enemy-half-top`, 0.93 of the half, top flush on both seats).
 
+## EXPORT-4: the device matrix — the lab's side
+
+The effect player (`lib/effectclip.js`) carries two new sizing laws, recorded in the manifests by the packer and replayed by **M64**
+over the game's measured matrix (`src/device_matrix.json`, 16 screens):
+
+- **The fitted law** (`scaleRule.heightCap`): a plate recorded as a fraction of the enemy half keeps that fraction of the half's
+  WIDTH but is never taller than `heightCap` x the half's HEIGHT. Landscape halves are wide and short (998x230 on a 1280x800 laptop),
+  so the width-only law hung Brahmastra 928x522 over a 230 px half; fitted, it is 408x230. No phone ever engages the clamp.
+- **The card floor** (`scaleRule.cardFloorOfHalfH`, 0.294): a card-width clip treats its card as at least 0.294 x the half's height
+  wide. Idle on the 360/375/390 phones (the value sits just under the narrowest card ratio there, the 390 px Hero card); it engages
+  where the field outgrows the cards and lands Vajra's height near 0.84 of the half.
+
+**Pashupatastra converts** to the fitted law at 1.047 of the half's width (its certified 375 px plate, 390.6 on the measured 373 px
+half — the LAB-22 table's 1.06 came from a rounded 72 px card; the measured card is 71.1) and **hangs top-flush** like Brahmastra. Its
+12 px token top band — the LAB-21 positional dependency, which held only while the centred plate happened to sit flush on a phone —
+is **resolved by anchor**: the hard cut now hides at the half boundary on every screen.
+
+All five effect atlases repack byte-identical; every impact cell is unchanged. The lab page's `halfOf` reports the half's height too.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

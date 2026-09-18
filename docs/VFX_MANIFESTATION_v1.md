@@ -377,3 +377,37 @@ Z3. TOP-FLUSH, AS A FRACTION OF THE HALF. The game takes LAB-22's player
     carries into the game: re-rule if the anchor or the scale changes.
 Z4. TIMING. The impact (the landing, cell 26) lands on the first destroy
     at 1443 ms Normal / 866 ms Fast; wire-clock cost 0.
+
+## AMENDMENT 2026-09-19 — THE DEVICE MATRIX (EXPORT-4)
+
+AA1. MEASURED, NOT ASSUMED. The live game's drawn geometry was
+    measured on 16 viewports (4 phones, 8 tablets portrait and
+    landscape, 4 laptops) and is kept as src/device_matrix.json. Every
+    rule below is argued from it, and the checks replay it.
+AA2. THE ACTOR RUNG BY DRAWN SIZE. An actor takes 512 when it draws
+    taller than 420 device px (card height x 2.1 x min(DPR, 2)), else
+    256. 420 sits just over the most any phone draws (407), so every
+    phone keeps the rung the owner approved; DPR-1 laptops stay on 256
+    (they draw at most 318 px, less than the phone). Retina laptops at
+    1440 px and wider, the 1194x834 iPad and the 12.9-inch iPad Pro
+    take 512. Fallback: 512 -> 256 -> the classic path. The rung is
+    decided at play from the live card; prefetch takes the layout's
+    implied rung.
+AA3. THE FITTED LAW for the row weapons (Brahmastra 0.93, Pashupatastra
+    1.047): the plate's width is the certified fraction of the enemy
+    half's width, clamped so its height never exceeds the half's
+    height. It never engages on a phone; it fixes the landscape
+    overflow (Brahmastra at 1280x800: 928x522 -> 408x230).
+AA4. PASHUPATASTRA converts to the fitted law and hangs TOP-FLUSH. Its
+    token top band's hard cut hides at the half boundary on every
+    screen: the LAB-21 positional dependency is RESOLVED BY ANCHOR.
+AA5. THE CARD FLOOR for the single-target strikes (Vajra, both
+    Sudarshana clips): they stay card-width, but a card counts as at
+    least 0.294 x the half's height wide — just under the narrowest
+    card ratio on the 390 px phone — so where the field outgrows the
+    cards (430 px phones, portrait tablets, the iPad Pro) the strike's
+    height lands near 0.84 of the half. Both Sudarshana clips size from
+    the same floored width, so the disc hand-off is unchanged.
+AA6. UNCHANGED: every atlas byte-identical; every impact pin and beat
+    timing; the 375 px phone in rung, plate and timing (Pashupatastra's
+    width to within 0.1 px, its position moved top-flush by ruling).

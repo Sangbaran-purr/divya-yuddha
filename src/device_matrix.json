@@ -1,0 +1,476 @@
+{
+ "about": "EXPORT-4 \u2014 the device matrix: the live game's real drawn geometry, measured in the browser at each viewport (a fresh load, a laid board: the enemy half, a board Unit card and a Hero card, CSS px). Layout depends on CSS px only; device px = CSS px x min(DPR, 2) for the actor stage. The checks size every plate and pick every actor rung from these numbers.",
+ "measuredAt": "27ff6de",
+ "phoneApproved": [
+  360,
+  375,
+  390,
+  430
+ ],
+ "viewports": [
+  {
+   "tier": "phone",
+   "vw": 360,
+   "vh": 800,
+   "layout": "portrait",
+   "half": {
+    "w": 358,
+    "h": 214
+   },
+   "card": {
+    "w": 68.9,
+    "h": 91.8
+   },
+   "hero": {
+    "w": 68.3,
+    "h": 91
+   },
+   "path": {
+    "len": 268.6,
+    "angle": -108.4
+   },
+   "platesBefore": {
+    "vajra": 310.4,
+    "pashupata": 378.5,
+    "brahmastra": 332.9,
+    "sud_invoke": 276.8,
+    "sud_strike": 166.6
+   }
+  },
+  {
+   "tier": "phone",
+   "vw": 375,
+   "vh": 812,
+   "layout": "portrait",
+   "half": {
+    "w": 373,
+    "h": 228.7
+   },
+   "card": {
+    "w": 71.1,
+    "h": 94.8
+   },
+   "hero": {
+    "w": 70.5,
+    "h": 94
+   },
+   "path": {
+    "len": 287.2,
+    "angle": -108.5
+   },
+   "platesBefore": {
+    "vajra": 320.3,
+    "pashupata": 390.6,
+    "brahmastra": 346.9,
+    "sud_invoke": 285.6,
+    "sud_strike": 171.9
+   }
+  },
+  {
+   "tier": "phone",
+   "vw": 390,
+   "vh": 844,
+   "layout": "portrait",
+   "half": {
+    "w": 388,
+    "h": 244.7
+   },
+   "card": {
+    "w": 72.6,
+    "h": 96.8
+   },
+   "hero": {
+    "w": 72,
+    "h": 96
+   },
+   "path": {
+    "len": 299.8,
+    "angle": -109.1
+   },
+   "platesBefore": {
+    "vajra": 327,
+    "pashupata": 398.8,
+    "brahmastra": 360.8,
+    "sud_invoke": 291.6,
+    "sud_strike": 175.6
+   }
+  },
+  {
+   "tier": "phone",
+   "vw": 430,
+   "vh": 932,
+   "layout": "portrait",
+   "half": {
+    "w": 428,
+    "h": 288.7
+   },
+   "card": {
+    "w": 72.6,
+    "h": 96.8
+   },
+   "hero": {
+    "w": 72,
+    "h": 96
+   },
+   "path": {
+    "len": 327.4,
+    "angle": -111.1
+   },
+   "platesBefore": {
+    "vajra": 327,
+    "pashupata": 398.8,
+    "brahmastra": 398,
+    "sud_invoke": 291.6,
+    "sud_strike": 175.6
+   }
+  },
+  {
+   "tier": "tablet",
+   "vw": 768,
+   "vh": 1024,
+   "layout": "portrait",
+   "half": {
+    "w": 518,
+    "h": 336.8
+   },
+   "card": {
+    "w": 72.7,
+    "h": 96.9
+   },
+   "hero": {
+    "w": 72,
+    "h": 96
+   },
+   "path": {
+    "len": 367.5,
+    "angle": -116.3
+   },
+   "platesBefore": {
+    "vajra": 327.5,
+    "pashupata": 399.4,
+    "brahmastra": 481.7,
+    "sud_invoke": 292,
+    "sud_strike": 175.6
+   }
+  },
+  {
+   "tier": "tablet",
+   "vw": 810,
+   "vh": 1080,
+   "layout": "portrait",
+   "half": {
+    "w": 518,
+    "h": 374
+   },
+   "card": {
+    "w": 72.8,
+    "h": 97
+   },
+   "hero": {
+    "w": 72,
+    "h": 96
+   },
+   "path": {
+    "len": 384.3,
+    "angle": -115.1
+   },
+   "platesBefore": {
+    "vajra": 327.9,
+    "pashupata": 399.9,
+    "brahmastra": 481.7,
+    "sud_invoke": 292.4,
+    "sud_strike": 175.6
+   }
+  },
+  {
+   "tier": "tablet",
+   "vw": 834,
+   "vh": 1194,
+   "layout": "portrait",
+   "half": {
+    "w": 518,
+    "h": 431
+   },
+   "card": {
+    "w": 72.7,
+    "h": 96.9
+   },
+   "hero": {
+    "w": 72,
+    "h": 96
+   },
+   "path": {
+    "len": 410.3,
+    "angle": -113.4
+   },
+   "platesBefore": {
+    "vajra": 327.5,
+    "pashupata": 399.4,
+    "brahmastra": 481.7,
+    "sud_invoke": 292,
+    "sud_strike": 175.6
+   }
+  },
+  {
+   "tier": "tablet",
+   "vw": 1024,
+   "vh": 768,
+   "layout": "landscape",
+   "half": {
+    "w": 919.6,
+    "h": 213.6
+   },
+   "card": {
+    "w": 65.8,
+    "h": 87.8
+   },
+   "hero": {
+    "w": 65.3,
+    "h": 87
+   },
+   "path": {
+    "len": 430.4,
+    "angle": -143.8
+   },
+   "platesBefore": {
+    "vajra": 296.4,
+    "pashupata": 361.5,
+    "brahmastra": 855.2,
+    "sud_invoke": 264.3,
+    "sud_strike": 159.2
+   }
+  },
+  {
+   "tier": "tablet",
+   "vw": 1024,
+   "vh": 1366,
+   "layout": "landscape",
+   "half": {
+    "w": 919.6,
+    "h": 512.6
+   },
+   "card": {
+    "w": 113.7,
+    "h": 151.6
+   },
+   "hero": {
+    "w": 112.5,
+    "h": 150
+   },
+   "path": {
+    "len": 594.1,
+    "angle": -123
+   },
+   "platesBefore": {
+    "vajra": 512.2,
+    "pashupata": 624.6,
+    "brahmastra": 855.2,
+    "sud_invoke": 456.7,
+    "sud_strike": 274.3
+   }
+  },
+  {
+   "tier": "tablet",
+   "vw": 1080,
+   "vh": 810,
+   "layout": "landscape",
+   "half": {
+    "w": 970,
+    "h": 234.6
+   },
+   "card": {
+    "w": 73.5,
+    "h": 98
+   },
+   "hero": {
+    "w": 72.8,
+    "h": 97
+   },
+   "path": {
+    "len": 462.8,
+    "angle": -142.8
+   },
+   "platesBefore": {
+    "vajra": 331.1,
+    "pashupata": 403.8,
+    "brahmastra": 902.1,
+    "sud_invoke": 295.2,
+    "sud_strike": 177.5
+   }
+  },
+  {
+   "tier": "tablet",
+   "vw": 1194,
+   "vh": 834,
+   "layout": "landscape",
+   "half": {
+    "w": 998,
+    "h": 246.6
+   },
+   "card": {
+    "w": 78.1,
+    "h": 104.1
+   },
+   "hero": {
+    "w": 77.3,
+    "h": 103
+   },
+   "path": {
+    "len": 481.3,
+    "angle": -142.2
+   },
+   "platesBefore": {
+    "vajra": 351.8,
+    "pashupata": 429,
+    "brahmastra": 928.1,
+    "sud_invoke": 313.7,
+    "sud_strike": 188.5
+   }
+  },
+  {
+   "tier": "tablet",
+   "vw": 1366,
+   "vh": 1024,
+   "layout": "landscape",
+   "half": {
+    "w": 998,
+    "h": 341.6
+   },
+   "card": {
+    "w": 113.5,
+    "h": 151.4
+   },
+   "hero": {
+    "w": 112.5,
+    "h": 150
+   },
+   "path": {
+    "len": 549.6,
+    "angle": -131.3
+   },
+   "platesBefore": {
+    "vajra": 511.3,
+    "pashupata": 623.5,
+    "brahmastra": 928.1,
+    "sud_invoke": 455.9,
+    "sud_strike": 274.3
+   }
+  },
+  {
+   "tier": "laptop",
+   "vw": 1280,
+   "vh": 800,
+   "layout": "landscape",
+   "half": {
+    "w": 998,
+    "h": 229.6
+   },
+   "card": {
+    "w": 71.9,
+    "h": 95.9
+   },
+   "hero": {
+    "w": 71.3,
+    "h": 95
+   },
+   "path": {
+    "len": 471.4,
+    "angle": -144.4
+   },
+   "platesBefore": {
+    "vajra": 323.9,
+    "pashupata": 395,
+    "brahmastra": 928.1,
+    "sud_invoke": 288.8,
+    "sud_strike": 173.9
+   }
+  },
+  {
+   "tier": "laptop",
+   "vw": 1440,
+   "vh": 900,
+   "layout": "landscape",
+   "half": {
+    "w": 998,
+    "h": 279.6
+   },
+   "card": {
+    "w": 90.7,
+    "h": 121
+   },
+   "hero": {
+    "w": 90,
+    "h": 120
+   },
+   "path": {
+    "len": 503.3,
+    "angle": -138
+   },
+   "platesBefore": {
+    "vajra": 408.6,
+    "pashupata": 498.3,
+    "brahmastra": 928.1,
+    "sud_invoke": 364.3,
+    "sud_strike": 219.5
+   }
+  },
+  {
+   "tier": "laptop",
+   "vw": 1680,
+   "vh": 1050,
+   "layout": "landscape",
+   "half": {
+    "w": 998,
+    "h": 354.6
+   },
+   "card": {
+    "w": 113.5,
+    "h": 151.4
+   },
+   "hero": {
+    "w": 112.5,
+    "h": 150
+   },
+   "path": {
+    "len": 554.5,
+    "angle": -130.9
+   },
+   "platesBefore": {
+    "vajra": 511.3,
+    "pashupata": 623.5,
+    "brahmastra": 928.1,
+    "sud_invoke": 455.9,
+    "sud_strike": 274.3
+   }
+  },
+  {
+   "tier": "laptop",
+   "vw": 1920,
+   "vh": 1080,
+   "layout": "landscape",
+   "half": {
+    "w": 998,
+    "h": 369.6
+   },
+   "card": {
+    "w": 113.4,
+    "h": 151.2
+   },
+   "hero": {
+    "w": 112.5,
+    "h": 150
+   },
+   "path": {
+    "len": 560.2,
+    "angle": -130.4
+   },
+   "platesBefore": {
+    "vajra": 510.8,
+    "pashupata": 623,
+    "brahmastra": 928.1,
+    "sud_invoke": 455.5,
+    "sud_strike": 274.3
+   }
+  }
+ ]
+}

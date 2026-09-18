@@ -1,5 +1,5 @@
 {
-  "about": "EXPORT-1/2 \u2014 the premium presentation routing table. `routes`: the Astras that play an additive effect clip on the game's own beats (EXPORT-1; Brahmastra's rebuilt clip joins in EXPORT-3). `actors`: the Heroes whose play manifests as an actor (EXPORT-2) \u2014 AWAKEN, EMERGE, ACT, SETTLE, native exits, in place, at the 256 rung only, Full in every mode. Remove a card's entry and it returns to its classic presentation by a data edit, no revert. A clip or actor that is not ready, or fails, at its moment falls back to the classic path (owner ruling EXPORT-1/7: yesterday's game, never absence).",
+  "about": "EXPORT-1/2 \u2014 the premium presentation routing table. `routes`: the Astras that play an additive effect clip on the game's own beats (EXPORT-1; Brahmastra's rebuilt clip joins in EXPORT-3). `actors`: the Heroes whose play manifests as an actor (EXPORT-2) \u2014 AWAKEN, EMERGE, ACT, SETTLE, native exits, in place, at the rung their drawn size needs (EXPORT-4: 512 above 420 device px, else 256), Full in every mode. Remove a card's entry and it returns to its classic presentation by a data edit, no revert. A clip or actor that is not ready, or fails, at its moment falls back to the classic path (owner ruling EXPORT-1/7: yesterday's game, never absence).",
   "version": 2,
   "routes": {
     "vajra": {
@@ -18,13 +18,13 @@
       "spec": "effects/pashupata/manifest.json",
       "replaces": "sprPashupatastra",
       "moment": "play",
-      "anchor": "enemy-half-centre"
+      "anchor": "enemy-half-top (fitted: 1.047 of the half's width, never taller than the half)"
     },
     "brahmastra": {
       "spec": "effects/brahmastra/manifest.json",
       "replaces": "sprBrahmastra",
       "moment": "play",
-      "anchor": "enemy-half-top (0.93 of the half, top flush)"
+      "anchor": "enemy-half-top (fitted: 0.93 of the half's width, never taller than the half)"
     }
   },
   "pinned": {
@@ -33,108 +33,176 @@
   "actors": {
     "indra": {
       "manifest": "actors/indra/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "hanuman": {
       "manifest": "actors/hanuman/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "varuna": {
       "manifest": "actors/varuna/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "agni": {
       "manifest": "actors/agni/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "mahabali": {
       "manifest": "actors/mahabali/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "shukra": {
       "manifest": "actors/shukra/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "mahishi": {
       "manifest": "actors/mahishi/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "vritra": {
       "manifest": "actors/vritra/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "garuda": {
       "manifest": "actors/garuda/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "kartikeya": {
       "manifest": "actors/kartikeya/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "vasuki": {
       "manifest": "actors/vasuki/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "takshaka": {
       "manifest": "actors/takshaka/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "shesha": {
       "manifest": "actors/shesha/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "padmavati": {
       "manifest": "actors/padmavati/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "kulika": {
       "manifest": "actors/kulika/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "sugriva": {
       "manifest": "actors/sugriva/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "angad": {
       "manifest": "actors/angad/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "anjana": {
       "manifest": "actors/anjana/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "makardhwaja": {
       "manifest": "actors/makardhwaja/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     },
     "rahu": {
       "manifest": "actors/rahu/manifest.json",
-      "rung": 256,
-      "exit": "native"
+      "exit": "native",
+      "rungs": [
+        512,
+        256
+      ]
     }
   },
   "actorDefaults": {
     "tempo": 0.6,
     "fizzle_ms": 1500
   },
-  "factionFx": "factionfx.json"
+  "factionFx": "factionfx.json",
+  "actorRungRule": {
+    "drawnPxOver": 420,
+    "drawnPx": "card height x 2.1 x min(devicePixelRatio, 2)",
+    "above": 512,
+    "else": 256,
+    "fallback": "512 -> 256 -> the classic path",
+    "why": "EXPORT-4 ruling 4: 420 is just over the largest height any phone draws (407 device px), so every phone keeps the rung the owner approved"
+  }
 }

@@ -159,7 +159,8 @@
     "frame": 83,
     "spanSrc": 946,
     "spanCell": 223.06,
-    "cardWidths": 2.0
+    "cardWidths": 2.0,
+    "cardFloorOfHalfH": 0.294
   },
   "audit": {
     "range": [

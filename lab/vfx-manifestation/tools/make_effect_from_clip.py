@@ -28,6 +28,7 @@ RING_ROW = 20
 EFFECTS = {
     # LAB-19 ruling: S1, the strike alone. The charge phase (f000–f084) stays in the source, unused (a possible cast cinematic, not built).
     "vajra": {"label": "Vajra", "clip": "vajra/vajra_black.mp4", "card_id": "vajra", "range": (85, 120), "impact": 93, "impact_window": (90, 100),
+              "card_floor": 0.294,   # EXPORT-4 ruling 2: THE CARD FLOOR — a card counts as at least 0.294 x the half height wide (just under the narrowest card ratio on the 390 px phone: its Hero card, 72 / 244.7 = 0.2942; a Unit is 72.6 / 244.7 = 0.2967; the lowest of the phones whose cards still grow with the field); it engages only where the field outgrows the cards
               "cell_px": 448, "fade_in": 4, "fade_tail": 10, "feather_top": 64, "feather_bottom": 64,
               "scale_frame": 112, "card_widths": 2.4, "beam_half": 70, "ring_floor": 780,
               "contract": {"trigger": "destroy", "abilityName": "Vajra", "anchor": "target-card-centre", "castSound": "sfx_astra", "impactSound": "sfx_unit_destroy",
@@ -35,10 +36,12 @@ EFFECTS = {
     # LAB-20 · THE FIRST CHAIN: Sudarshana Chakra (Mythic). An INVOCATION clip at the caster's half centre (the game's own throw origin),
     # handed off to a STRIKE clip on the removed Hero, whose ring-snap lands on the game's bite. Two clips, decoded one after the other (E1).
     "sudarshana_invoke": {"kind": "chain-clip", "role": "invoke", "label": "Sudarshana invocation", "clip": "sudarshana/sudarshana_invoke_black.mp4", "card_id": "sudarshana",
+              "card_floor": 0.294,   # EXPORT-4 ruling 2: THE CARD FLOOR — a card counts as at least 0.294 x the half height wide (just under the narrowest card ratio on the 390 px phone: its Hero card, 72 / 244.7 = 0.2942; a Unit is 72.6 / 244.7 = 0.2967; the lowest of the phones whose cards still grow with the field); it engages only where the field outgrows the cards
               "range": (83, 98), "impact": None, "cell_px": 448, "fade_in": 3, "fade_out": 4, "fade_tail": 0,   # the last spin revolutions into the tilt-flat throw; f099+ runs off the left edge
               "feather_top": 0, "feather_bottom": 48, "feather_left": 32, "feather_right": 32, "anchor_frame": 83,
               "scale": {"feature": "disc", "frame": 83, "card_widths": 2.0}},
     "sudarshana_strike": {"kind": "chain-clip", "role": "strike", "label": "Sudarshana strike", "clip": "sudarshana/sudarshana_strike_black.mp4", "card_id": "sudarshana",
+              "card_floor": 0.294,   # EXPORT-4 ruling 2: THE CARD FLOOR — a card counts as at least 0.294 x the half height wide (just under the narrowest card ratio on the 390 px phone: its Hero card, 72 / 244.7 = 0.2942; a Unit is 72.6 / 244.7 = 0.2967; the lowest of the phones whose cards still grow with the field); it engages only where the field outgrows the cards
               "range": (34, 88), "impact": 53, "impact_window": (50, 56), "cell_px": 288, "fade_in": 0, "fade_out": 0, "fade_tail": 10,   # ends before the f090+ red-contour burst (a reshoot candidate)
               "feather_top": 64, "feather_bottom": 64, "feather_left": 0, "feather_right": 0, "anchor_frame": 53, "body_frame": 50,
               "scale": {"feature": "burst span", "frame": 85, "card_widths": 2.4},
@@ -69,7 +72,7 @@ EFFECTS = {
               # whole plate, and they are not the same unit (STEP-0 priced this plate at "2.4 cw" by reading LAB-21's ring labels as plate labels;
               # at the game's 72 px cards the plate it measured is 4.8 cw of plate width). The classic sprBrahmastra is 1.04 x the half — the size
               # precedent this card must not shrink under.
-              "scale": {"feature": "plate width (the clip's content box)", "frame": 30, "half_fraction": 0.93,
+              "scale": {"feature": "plate width (the clip's content box)", "frame": 30, "half_fraction": 0.93, "height_cap": 1.0,   # EXPORT-4 ruling 1: THE FITTED LAW — never taller than the half (the landscape overflow fix)
                         "card_widths": 4.82,   # DERIVED: 0.93 x 373 px half / 72 px card at the 375 px phone layout — commentary, not the law
                         "measured": {"method": "the game's board (board_bg, cover, no overlay) at the game's own 375 px phone proportions — enemy half 373 x 229, card 72 px, bare median 66; the real vignetted atlas; top-flush",
                                      "halfFraction0.93": {"plate": "347x195", "impact": {"frame": 30, "blownOut": 0.142, "halfMedianLuma": 83}, "bloom": {"frame": 62, "blownOut": 0.249, "halfMedianLuma": 95},
@@ -101,10 +104,13 @@ EFFECTS = {
               "range": (0, 59), "impact": 24, "impact_rule": "positional",   # S1: the clip starts AT the beat; the impact cell is POSITIONAL — the pin's job is alignment, the columns are already landed
               "cell_px": 352, "cell_px_fallback": 320, "fade_in": 4, "fade_tail": 10,
               "feather_top": 12, "feather_bottom": 96, "feather_left": 96, "feather_right": 128,   # the top band is a TOKEN: the vortex rim runs within 16 px of the top edge at f026. Accepted ONLY because the plate's top edge sits flush with the half boundary (owner ruling LAB-21/3 — a POSITIONAL DEPENDENCY, re-ruled if the anchor or scale ever changes)
-              "anchor_region": "top",
-              "scale": {"feature": "vortex span", "frame": 30, "card_widths": 4.1},
+              "anchor_region": "top-flush",   # EXPORT-4 ruling 3: TOP-FLUSH (the Brahmastra cure) — the token top band's hard cut hides at the half boundary on every screen
+              "anchor_note": "the top band is a 12 px token because the vortex rim runs within 16 px of the top edge at f026; its hard cut is hidden because the plate's top sits flush with the enemy half's top edge — the LAB-21 positional dependency, RESOLVED BY ANCHOR in EXPORT-4 (while the plate was centred it held only on phones)",
+              # EXPORT-4 ruling 3: CONVERTED to the fitted half law. 1.047 = the certified 375 px plate (390.6 px on the measured 373 px half; the LAB-22
+              # README estimated 1.06 from a rounded 72 px card, the measured card is 71.1 px). cardWidths 4.1 stays as derived commentary only
+              "scale": {"feature": "vortex span", "frame": 30, "card_widths": 4.1, "half_fraction": 1.047, "height_cap": 1.0},
               "guard": {"kind": "blob", "thr": 170, "top_frac": 0.60},
-              "contract": {"trigger": "damage", "abilityName": "Pashupatastra", "anchor": "enemy-half-centre", "castSound": "sfx_astra", "impactSound": "sfx_debuff",
+              "contract": {"trigger": "damage", "abilityName": "Pashupatastra", "anchor": "enemy-half-top", "castSound": "sfx_astra", "impactSound": "sfx_debuff",
                            "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 0, "crackAfterMs": 40, "destroyDwellMs": 600, "awaited": False}},
 }
 E1_CAP = 3072 * 1536 * 4   # the effect layer's hi-rung class (LAB-19)
@@ -190,7 +196,7 @@ def main_chain_clip(key):
         "fps": round(fps), "timing": "native", "cellPx": max(cw, ch), "cellSize": {"w": cw, "h": ch},
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height} for i, c, cx, cy in placed],
         "impact": kept.index(impact) if impact is not None else None, "anchor": anchor,
-        "scaleRule": {"feature": C["scale"]["feature"], "frame": sf, "spanSrc": span, "spanCell": round(span * s, 2), "cardWidths": C["scale"]["card_widths"]},
+        "scaleRule": {"feature": C["scale"]["feature"], "frame": sf, "spanSrc": span, "spanCell": round(span * s, 2), "cardWidths": C["scale"]["card_widths"], **({"cardFloorOfHalfH": C["card_floor"]} if C.get("card_floor") else {})},
         "audit": {"range": [a, b], "droppedHead": [0, a - 1] if a > 0 else None, "droppedTail": [b + 1, N - 1] if b < N - 1 else None,
                   "anchorFrame": C["anchor_frame"], "anchorPoint": list(CORE), "coreDriftMax": round(drift, 1),
                   "box": [x0, y0, x1, y1], "scale": round(s, 5), "ground": {"cornersMax": corners, "farMax": far, "farMeanMax": round(far_mean, 3)}, "edges": edges,
@@ -344,7 +350,7 @@ def main(key):
         "fps": round(fps), "timing": "native", "cellPx": max(cw, ch), "cellSize": {"w": cw, "h": ch},
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height} for i, c, cx, cy in placed],
         "impact": kept.index(impact), "anchor": anchor,
-        "scaleRule": {"ringFrame": C["scale_frame"], "ringDiameterSrc": ring_d, "ringDiameterCell": round(ring_d * s, 2), "cardWidths": C["card_widths"]},
+        "scaleRule": {"ringFrame": C["scale_frame"], "ringDiameterSrc": ring_d, "ringDiameterCell": round(ring_d * s, 2), "cardWidths": C["card_widths"], **({"cardFloorOfHalfH": C["card_floor"]} if C.get("card_floor") else {})},
         "contract": C["contract"],
         "audit": {"range": [a, b], "droppedHead": [0, a - 1] if a > 0 else None, "droppedTail": [b + 1, N - 1] if b < N - 1 else None,
                   "impactSrc": impact, "impactWindow": list(C["impact_window"]), "impactChange": round(change[impact], 2), "impactPoint": list(IMP),
@@ -556,7 +562,7 @@ def main_vignette(key):
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height} for i, c, cx, cy in placed],
         "impact": kept.index(impact), "anchor": anchor,
         "scaleRule": {"feature": C["scale"]["feature"], "frame": sf, "spanSrc": span, "spanCell": round(span * s, 2), "cardWidths": C["scale"]["card_widths"],
-                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "halfFraction": C["scale"].get("half_fraction"), "legibility": C["scale"].get("measured"),
+                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "halfFraction": C["scale"].get("half_fraction"), "heightCap": C["scale"].get("height_cap"), "legibility": C["scale"].get("measured"),
                       "note": ("THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only — LAB-21's ring-based cw and a plate-based cw are not the same unit"
                                if C["scale"].get("half_fraction") else "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board")},
         "contract": C["contract"],
@@ -571,7 +577,7 @@ def main_vignette(key):
                   "edges": dict(edges, of=len(kept)),
                   "fadeIn": [[i, fades[i]] for i in kept[:n_in]], "fadeTail": [[i, fades[i]] for i in kept[-n_tail:]],
                   "vignette": guard, "guardKind": C["guard"]["kind"], "guardTailStart": tail0,
-                  "anchorRule": ({"kind": "top-flush", "place": "enemy-half-top", "dependency": "the top band is 0 because the beam and the crown touch the top edge on every frame; the cut is hidden only because the plate's top sits flush with the enemy half's top edge (owner ruling LAB-22/4) — RE-RULE if the anchor or the scale changes"}
+                  "anchorRule": ({"kind": "top-flush", "place": "enemy-half-top", "dependency": C.get("anchor_note", "the top band is 0 because the beam and the crown touch the top edge on every frame; the cut is hidden only because the plate's top sits flush with the enemy half's top edge (owner ruling LAB-22/4) — RE-RULE if the anchor or the scale changes")}
                                  if C["anchor_region"] == "top-flush" else {"kind": "core-point", "place": "enemy-half"})},
     }
     with open(os.path.join(out, "manifest.json"), "w") as fh: json.dump(manifest, fh, indent=2); fh.write("\n")

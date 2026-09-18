@@ -502,8 +502,8 @@
   ],
   "impact": 24,
   "anchor": {
-    "x": 174.7,
-    "y": 71.3
+    "x": 176.0,
+    "y": 0.0
   },
   "scaleRule": {
     "feature": "vortex span",
@@ -511,13 +511,16 @@
     "spanSrc": 1430,
     "spanCell": 262.71,
     "cardWidths": 4.1,
-    "fallbackCardWidths": null,
-    "note": "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board"
+    "ruledDefaultCardWidths": null,
+    "halfFraction": 1.047,
+    "heightCap": 1.0,
+    "legibility": null,
+    "note": "THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only \u2014 LAB-21's ring-based cw and a plate-based cw are not the same unit"
   },
   "contract": {
     "trigger": "damage",
     "abilityName": "Pashupatastra",
-    "anchor": "enemy-half-centre",
+    "anchor": "enemy-half-top",
     "castSound": "sfx_astra",
     "impactSound": "sfx_debuff",
     "castHitStopMs": 110,
@@ -543,8 +546,8 @@
       "why": "the clip starts at the beat (S1); the impact cell is the one the first resolution cue lands on"
     },
     "corePoint": [
-      951,
-      388
+      948,
+      1079
     ],
     "scale": 0.18372,
     "box": [
@@ -563,7 +566,7 @@
     "ground": {
       "cornersMax": 161,
       "farMax": 0,
-      "method": "the frame-filling class leaves no region > 300 px from content, so farMax is structurally unavailable; the ground is stated on the bake metric instead",
+      "method": "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) \u2014 stated beside the bake metric",
       "zeroShareMin": 0.30113,
       "pedestal1to4ShareMax": 0.0268
     },
@@ -676,6 +679,11 @@
       }
     },
     "guardKind": "blob",
-    "guardTailStart": 50
+    "guardTailStart": 50,
+    "anchorRule": {
+      "kind": "top-flush",
+      "place": "enemy-half-top",
+      "dependency": "the top band is a 12 px token because the vortex rim runs within 16 px of the top edge at f026; its hard cut is hidden because the plate's top sits flush with the enemy half's top edge \u2014 the LAB-21 positional dependency, RESOLVED BY ANCHOR in EXPORT-4 (while the plate was centred it held only on phones)"
+    }
   }
 }
