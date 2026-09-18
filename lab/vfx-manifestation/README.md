@@ -1838,6 +1838,118 @@ Four lab anchors moved with the export, none of them hand-edited around a failur
 
 The live game carries its own suite for the export, `src/test_manifest.js` (30 checks), which never references this lab.
 
+## LAB-22: Brahmastra rebuilt — the descent and the bloom
+
+The owner's regenerated clip (`sources/brahmastra/brahmastra_v2_black.mp4`, sha256 `1b7b192c2158…`, 1916×1080, 24 fps, 121 frames,
+true black: exact-zero share ≥ 29.6% of every frame, the 1–4 pedestal ≤ 2.03%) replaces the LAB-21 reject. The v1 source stays on disk
+and the v1 pack stays in git at `c0b57ee`; the packer keeps its recipe on record as `brahmastra_v1`.
+
+### The arc, measured (and where the brief's estimates moved)
+
+| phase | frames | how it was read |
+|---|---|---|
+| the fall | f000–f014 | the orb is already mid-fall at f000 (the cone enters from the top edge) and drops a steady ~10.5 px/frame |
+| **the landing** | **f029–f031** | the steepest 2-frame rise of the ground band's blow-out is **f030**; the orb merges into the disc at f027–f028 |
+| the ground flash | peak f040 | 27.8% of the ground band blown out — there is **no** frame-wide white-out near f048 |
+| the bloom | f058–f065 | the added-light rise is a **plateau**, not a step (f062 +5.88, f059 +5.80) |
+| the aftermath | f069–f120 | the cloud keeps churning (mean frame change 6.44, the same as during the bloom) |
+
+### v1's failure beside v2's pass — the test this rebuild existed for
+
+The posterization measure was first **calibrated on v1**, where LAB-21 found the defect: vivid pure yellow (hue 50–70°, saturation and
+value > 0.8) and its connected blocks ≥ 200 px. It reproduces LAB-21's record, then reads v2 the same way.
+
+| frame | **v1** (LAB-21 reject) | LAB-21 recorded | **v2** |
+|---|---|---|---|
+| f084 | 320 px | 630 px | 215 px, 0 blocks |
+| f090 | 3,754 px, 2 blocks | 3,956 px, 3 blocks | 225 px, 0 blocks |
+| f102 | 22,400 px, 35 blocks | — | 203 px, 0 blocks |
+| f120 | **52,301 px, 52 blocks** | **53,556 px, 51 blocks** | **628 px, 0 blocks** |
+
+Across f060–f120 v2 never forms a block. At native resolution the late cloud is continuous volumetric fire; composited additively over
+the real board it reads as fire, not blocks. The one late blemish, a hard-edged tear in the top-right corner at f120, lies after the portion.
+
+### The fringe, per range
+
+- **Red contours — PASS (LAB-20's flame edge).** The disc rim early (3.1% of the frame at f000) and the fire-skirt edge late (2.7–3.2% from
+  f078): red on the darker side of the edge (luma ~62–74 under it, ~88–107 six px inward), dark-gap 0.2–1.1%, band 1.9–3.8 px native —
+  about one device pixel at game scale. On the board it reads as a faint warm edge.
+- **The disc-centre tears — handled by the portion.** Black voids with flat, saturated red lips inside the ring: **17,475 px at f000,
+  1,595 by f014**, ~600 px of residue under the flash from f016. The portion starts at f004 (the timing forces it anyway), so the worst
+  frames are gone and the rest fall inside the 4-cell fade-in and the cast hold, where they read as a small crater slit.
+- **The yellow-green speck — out of the portion.** Posterized speckle along the tears' upper edge: 3,293 px at **f000 only** (130 px at
+  f001, then under 300 px of near-white tint). The portion starts after it.
+
+### The pack
+
+| | v1 (LAB-21, reject) | **v2 (LAB-22)** |
+|---|---|---|
+| portion | f051–f090, 40 cells | **f004–f084, 81 cells** |
+| impact | cell 24 = f075, escalation step | **cell 26 = f030, the LANDING** |
+| cellPx / atlas | 416 · 3764×1182 · 16.97 MB | **288 · 4062×986 · 15.28 MB** (858 KB webp) |
+| vignette (top/bottom/left/right) | 48 / 64 / 96 / 96 on the ring | **0 / 64 / 128 / 128 on the column** |
+| anchor | core point on the enemy half's centre | **top-flush on the enemy half** |
+| scale | ring = 2.0 card widths | **0.93 of the enemy half** |
+
+**The impact is the landing (owner ruling 1).** The units die as the orb meets the disc; the bloom is their absence — the Sudarshana
+precedent, where the seizure is the kill and the spectacle is aftermath. The detonation could not be the impact: the index budget is 26
+cells (the cast hold divided by the native frame time, at every speed), and the bloom sits 58 frames in, so pinning it would start the clip
+1.7 s *before* the play. The impact rule is new (`landing`) and measured in the packer, which refuses a disagreement with the ruled frame.
+
+**cellPx 288 (ruling 2).** The full aftermath outranks sharpness: volumetric fire forgives softness, and the churn is the rebuild's payoff.
+
+**Timings (verified in the lab page):** clip starts 35 ms after the play, impact on the first destroy at **1443 ms** Full / **866 ms**
+Fast, the bloom at 2.96–3.34 s, clip end 4422 ms Full / 2653 ms Fast. **Wire-clock cost 0** at both speeds.
+
+### The vignette, and the top-flush dependency
+
+The core is the beam, the column, the cap and ground zero (ruling 5); the **fire skirt is fringe** and fades into the bands. The packer's
+new `column` guard reads two bodies per frame — the upper body (rows 0–760 ≥ 150, closed, nearest the centre) and ground zero (rows
+700–1080 ≥ 235) — and no band reaches either, anywhere in the portion: clear margins bottom 76 px, left 142, right 251.
+
+**The top band is 0, and that is a positional dependency (ruling 4).** The beam, then the cloud's crown, touches the top edge on **all 81**
+kept frames, so the LAB-19 law allows no top band. The cut is hidden by placement instead: the plate's **top sits flush with the enemy
+half's top edge**, horizontally centred, so the beam falls in from beyond the field. No sky-fade (it would dim the crown). A new player
+placement, `enemy-half-top`, does this; a half that reports no top edge plays no clip (fail-open). **If the anchor or the scale ever
+changes, this must be re-ruled** — the same standing note as Pashupatastra's token top band.
+
+### The scale is a fraction of the enemy half — the units lesson
+
+STEP-0 priced this plate as "2.4 cw" and the ruling approved it on the measured legibility — but the multiplier was read off LAB-21's
+table, where "cw" measured the **ring** in card widths, not the plate. Built literally, "2.4 cw" of plate width is 173 px at the game's
+72 px cards: half the footprint of the classic 1.04 × half sprite, and not the plate the evidence was measured on. **Owner ruling
+LAB-22/3 (permanent): effect scale is recorded as a FRACTION OF THE ENEMY HALF; card widths are derived commentary only.** The player sizes
+a `halfFraction` plate off the half's own width, so the plate stays 0.93 of the half on any layout.
+
+Measured by the LAB-21 method — the game's board (`board_bg`, cover, no overlay), the real vignetted atlas — at the game's own 375 px
+proportions (enemy half 373×229, 72 px cards, bare median 66). The method re-measures LAB-21's own v1 pack at 22.9%/106 and 31.6%/168
+against its recorded 22.8%/106 and 31.6%/170.
+
+| v2 at 0.93 of the half (347×195) | blown out | median |
+|---|---|---|
+| **f030, the impact** (LAB-21's measuring frame) | **14.2%** | **83** — inside LAB-21's accepted 22.8% / 106 |
+| f062, the bloom | 24.9% | 95 |
+| f069, the worst frame | 26.0% | 112 — under LAB-21's rejected 31.6% / 170 |
+| f075, the fade tail begins | 24.1% | 118 |
+
+The scales already on the shelf, re-expressed in the same terms (commentary only — no repacks). Card-width plates change their fraction
+with the layout's card-to-half ratio; a half-fraction plate does not:
+
+| plate | recorded as | LAB-21 frame (card 64, half 355) | game at 375 px (card 72, half 373) |
+|---|---|---|---|
+| Brahmastra v1 (LAB-21) | ring = 2.0 cw | 275 px = **0.78** of the half | 309 px = **0.83** |
+| Pashupatastra | vortex span = 4.1 cw | 351 px = **0.99** | 395 px = **1.06** |
+| **Brahmastra v2** | **0.93 of the half** | 330 px = **0.93** | 347 px = **0.93** |
+| the classic `sprBrahmastra` | 1.04 × the half | 369 px | 388 px |
+
+### The fixtures re-run
+
+The LAB-21 Brahmastra fixtures carry over unchanged and pass against the v2 pack: F70 (the row wipe, both seats), F71/F77 (Hiranyakashipu
+dies to Brahmastra by name), F72 (the caster untouched), F73 ("overrides all shields", structurally) and the no-target negatives (an empty
+enemy row plays no segment and no clip). Re-pointed to v2: **M59** (the pack), **M61** (the column guard), **M62** (the ground — v2's early
+corners make the Vajra-class reading available again, and it reads **max 1**, true black; the re-point also caught LAB-21's packer writing "structurally unavailable" unconditionally — Pashupatastra's manifest carries that stale note beside a measured 0, and is not repacked because EXPORT-1 ships it byte-identical), **M63** (the scale law), **E16/E19** (the
+26-cell budget) and **E17** (81 cells, `enemy-half-top`, 0.93 of the half, top flush on both seats).
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

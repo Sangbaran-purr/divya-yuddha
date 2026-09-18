@@ -52,6 +52,7 @@
     if (!(m.anchor && num(m.anchor.x) && num(m.anchor.y))) e.push('anchor missing');
     else if (m.cellSize && (m.anchor.x < 0 || m.anchor.y < 0 || m.anchor.x > m.cellSize.w || m.anchor.y > m.cellSize.h)) e.push('anchor falls outside the cell');
     var sr = m.scaleRule; if (!(sr && (sr.ringDiameterCell > 0 || sr.spanCell > 0) && sr.cardWidths > 0)) e.push('scaleRule missing');
+    else if (sr.halfFraction != null && !(sr.halfFraction > 0 && sr.halfFraction <= 1.2)) e.push('halfFraction out of range');
     if (!member) e = e.concat(contractErrors(m.contract));
     else if (m.contract !== undefined) e.push('a chain member carries no contract (the chain does)');
     if (m.atlasSize && m.atlasSize.w * m.atlasSize.h * 4 > E1.capBytes) e.push('the atlas decodes past the E1 cap');
@@ -122,7 +123,7 @@
     var clip = !!(b.cast && b.strike) && mode !== 'reduced', segments = [], cues = [];
     if (clip && chained) segments.push({ role: 'invoke', clip: 0, start: T.invokeStart, end: T.handoffAt, frameMs: T.invokeFrameMs, place: 'caster-half' },
                                        { role: 'strike', clip: 1, start: T.strikeStart, end: T.strikeEnd, frameMs: T.frameMs, place: 'target', impact: spec.clips[1].impact });
-    else if (clip) segments.push({ role: 'strike', clip: 0, start: T.clipStart, end: T.clipEnd, frameMs: T.frameMs, place: k.anchor === 'enemy-half-centre' ? 'enemy-half' : 'target', impact: spec.impact });   // LAB-21: a BOARD-WIDE astra anchors on the caster's enemy half (the game's own row-plate anchor), not on one card
+    else if (clip) segments.push({ role: 'strike', clip: 0, start: T.clipStart, end: T.clipEnd, frameMs: T.frameMs, place: k.anchor === 'enemy-half-centre' ? 'enemy-half' : k.anchor === 'enemy-half-top' ? 'enemy-half-top' : 'target', impact: spec.impact });   // LAB-21: a BOARD-WIDE astra anchors on the caster's enemy half (the game's own row-plate anchor), not on one card
     if (b.cast) cues.push({ t: 0, cue: 'cast', sound: k.castSound });
     if (b.strike) {
       if (clip && chained) { cues.push({ t: T.invokeStart, cue: 'invoke-start' }); cues.push({ t: T.handoffAt, cue: 'handoff' }); }
@@ -142,7 +143,8 @@
   var spanOf = function (m) { return m.scaleRule.spanCell || m.scaleRule.ringDiameterCell; };
   // where a clip draws: its anchor on a point, sized so its scale feature spans cardWidths card widths
   function place(m, card) {
-    var s = m.scaleRule.cardWidths * card.w / spanOf(m);
+    // LAB-22 (owner ruling 3): a plate recorded as a FRACTION OF THE ENEMY HALF is sized off the half's own width; every other clip by card widths
+    var s = m.scaleRule.halfFraction ? m.scaleRule.halfFraction * card.halfW / m.cellSize.w : m.scaleRule.cardWidths * card.w / spanOf(m);
     return { scale: s, x: card.cx - m.anchor.x * s, y: card.cy - m.anchor.y * s, w: m.cellSize.w * s, h: m.cellSize.h * s };
   }
   // LAB-20b · the travel curve: the manifest's table (the trail's integral) linearly interpolated at u in [0, 1]
@@ -175,7 +177,7 @@
   // the game's T72 bakeAlpha, on raw RGBA bytes: alpha = the brightest channel
   function bake(d) { for (var i = 0; i < d.length; i += 4) { var r = d[i], g = d[i + 1], b = d[i + 2]; d[i + 3] = r > g ? (r > b ? r : b) : (g > b ? g : b); } return d; }
 
-  // THE PLAYER. env: now(), canvas, dpr, cardOf(uid) → {cx, cy, w}, halfOf(seat) → {cx, cy}, fieldCentreX(), loadAtlas(m) → atlas or Promise,
+  // THE PLAYER. env: now(), canvas, dpr, cardOf(uid) → {cx, cy, w}, halfOf(seat) → {cx, cy, top, w}, fieldCentreX(), loadAtlas(m) → atlas or Promise,
   // render(board), crack(uid, ms), removal(uid, ms), callout(uid, text), sound(name), onDone(result), onError(e), diag(step, detail)
   // LAB-20a · FAILS OPEN: the beats are never hostage to a decoration's decode. play() starts the timeline AT ONCE — the board drawn, the
   // cast cue at 0 ms, every beat on schedule — and each clip decodes ALONGSIDE; a clip that is not ready (or failed) simply does not draw.
@@ -224,8 +226,10 @@
       var places = p.segments.map(function (sg) {
         var m = clips[sg.clip];
         if (sg.place === 'target') return target ? place(m, target) : null;
-        var seat = sg.place === 'enemy-half' ? (p.casterSeat != null ? 1 - p.casterSeat : null) : p.casterSeat;   // LAB-21: the enemy half is the caster's opposite seat
+        var seat = (sg.place === 'enemy-half' || sg.place === 'enemy-half-top') ? (p.casterSeat != null ? 1 - p.casterSeat : null) : p.casterSeat;   // LAB-21: the enemy half is the caster's opposite seat
         var hh = seat != null && env.halfOf ? env.halfOf(seat) : null;
+        // LAB-22: TOP-FLUSH — the plate's anchor (its top-centre) on the enemy half's TOP edge; a half that reports no top plays no clip (fail-open)
+        if (sg.place === 'enemy-half-top') return hh && target && hh.top != null && (!m.scaleRule.halfFraction || hh.w > 0) ? place(m, { cx: hh.cx, cy: hh.top, w: target.w, halfW: hh.w }) : null;
         return hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w }) : null;   // the card width still sets the scale (cardWidths), the half sets the centre
       });
       if (st.loaded) release();

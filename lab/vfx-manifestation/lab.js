@@ -216,7 +216,7 @@
   const effect = window.EffectClip.createPlayer({
     now: () => clock.t, canvas: effectCanvas, get dpr() { return window.devicePixelRatio || 1; },
     cardOf: (uid) => { const r = rectOf(uid); return r ? { cx: r.x + r.w / 2, cy: r.y + r.h / 2, w: r.w } : null; },
-    halfOf: (seat) => { const h = document.querySelector('.half.' + sideOf(seat)), f = fieldRect(); if (!h) return null; const r = h.getBoundingClientRect(); return { cx: r.left - f.left + r.width / 2, cy: r.top - f.top + r.height / 2 }; },
+    halfOf: (seat) => { const h = document.querySelector('.half.' + sideOf(seat)), f = fieldRect(); if (!h) return null; const r = h.getBoundingClientRect(); return { cx: r.left - f.left + r.width / 2, cy: r.top - f.top + r.height / 2, top: r.top - f.top, w: r.width }; },   // LAB-22: top and width, for a top-flush plate sized as a fraction of the half
     fieldCentreX: () => fieldRect().width / 2,
     loadAtlas: loadEffectAtlas, render: (b) => render(b, []), sound: (name) => audio.play(name),
     crack: (uid, ms) => { const n = cardNode(uid); if (n) { n.style.setProperty('--crack-ms', Math.round(ms) + 'ms'); n.classList.add('crack'); } },

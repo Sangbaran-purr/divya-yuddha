@@ -53,7 +53,36 @@ EFFECTS = {
     # frame, no internal build, no ending. So: an ALL-EDGE VIGNETTE (not the top/bottom bands of the Vajra class), an anchor measured at the
     # clip's own core rather than a strike point, and a scale feature measured per clip — 2.4 card widths is the DEFAULT, not a law (owner
     # ruling LAB-21/3): the scale is whatever measured legibility allows over the real board.
-    "brahmastra": {"kind": "vignette-clip", "label": "Brahmastra", "clip": "brahmastra/brahmastra_black.mp4", "card_id": "brahmastra",
+    # LAB-22 · BRAHMASTRA REBUILT. The v2 clip (owner's regeneration) has a real arc: the orb falls (f000–f014, ~10.5 px/frame), LANDS on the
+    # ground disc (f029–f031, the steepest rise of the ground band's blow-out, f030), the ground flash peaks (f040), the mushroom BLOOMS (the
+    # added-light plateau f058–f065) and the cloud churns to f120. Owner ruling LAB-22/1: the impact is the LANDING, pinned to the destroy beat —
+    # the units die at the strike, the bloom is their absence (the Sudarshana precedent). The detonation cannot be pinned at 0 wire cost: its
+    # cell would sit 58 frames in and the clip would have to start 1.7 s before the play. Portion f004–f084: f000's posterized yellow-green speck
+    # and the widest disc tears (17,475 px at f000 → 1,595 by f014) fall before it or inside the fade-in and the cast hold.
+    "brahmastra": {"kind": "vignette-clip", "label": "Brahmastra", "clip": "brahmastra/brahmastra_v2_black.mp4", "card_id": "brahmastra",
+              "range": (4, 84), "impact": 30, "impact_rule": "landing", "impact_window": (26, 34),
+              "cell_px": 288, "fade_in": 4, "fade_tail": 10,   # ruling 2: the full aftermath plate outranks sharpness (15.28 MB under E1)
+              "feather_top": 0, "feather_bottom": 64, "feather_left": 128, "feather_right": 128,   # ruling 4: TOP 0 — the beam and the crown touch the top edge on every frame; ruling 5: the skirt is fringe
+              "anchor_region": "top-flush",   # ruling 4: the plate's TOP flush with the enemy half's top edge, horizontally centred — a POSITIONAL DEPENDENCY (re-ruled if the anchor or scale changes)
+              # OWNER RULING LAB-22/3 (as re-ruled after the units near-miss): THE SCALE IS A FRACTION OF THE ENEMY HALF — this plate is 0.93 of the
+              # half's width. Card widths are DERIVED COMMENTARY only: LAB-21's "cw" measured the RING in card widths, a plate-based "cw" measures the
+              # whole plate, and they are not the same unit (STEP-0 priced this plate at "2.4 cw" by reading LAB-21's ring labels as plate labels;
+              # at the game's 72 px cards the plate it measured is 4.8 cw of plate width). The classic sprBrahmastra is 1.04 x the half — the size
+              # precedent this card must not shrink under.
+              "scale": {"feature": "plate width (the clip's content box)", "frame": 30, "half_fraction": 0.93,
+                        "card_widths": 4.82,   # DERIVED: 0.93 x 373 px half / 72 px card at the 375 px phone layout — commentary, not the law
+                        "measured": {"method": "the game's board (board_bg, cover, no overlay) at the game's own 375 px phone proportions — enemy half 373 x 229, card 72 px, bare median 66; the real vignetted atlas; top-flush",
+                                     "halfFraction0.93": {"plate": "347x195", "impact": {"frame": 30, "blownOut": 0.142, "halfMedianLuma": 83}, "bloom": {"frame": 62, "blownOut": 0.249, "halfMedianLuma": 95},
+                                                          "worst": {"frame": 69, "blownOut": 0.260, "halfMedianLuma": 112}, "tailStart": {"frame": 75, "blownOut": 0.241, "halfMedianLuma": 118}},
+                                     "rejected_literal2.4cw": {"plate": "173x97", "halfFraction": 0.46, "impact": {"frame": 30, "blownOut": 0.028, "halfMedianLuma": 70}, "worst": {"frame": 62, "blownOut": 0.056, "halfMedianLuma": 72},
+                                                               "why": "half the footprint of the classic 1.04 x half sprite"},
+                                     "bars": {"lab21AcceptedAtImpact": {"blownOut": 0.228, "halfMedianLuma": 106}, "lab21Rejected": {"blownOut": 0.316, "halfMedianLuma": 170}},
+                                     "calibration": {"note": "the method re-measures LAB-21's own v1 pack at its recorded numbers", "v1At2.0cw": {"blownOut": 0.229, "halfMedianLuma": 106}, "v1At2.4cw": {"blownOut": 0.316, "halfMedianLuma": 168}}}},
+              "guard": {"kind": "column", "upper_rows": [0, 760], "upper_thr": 150, "ground_rows": [700, 1080], "ground_thr": 235},
+              "contract": {"trigger": "destroy", "abilityName": "Brahmastra", "anchor": "enemy-half-top", "castSound": "sfx_brahmastra", "impactSound": "sfx_unit_destroy",
+                           "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 0, "crackAfterMs": 40, "destroyDwellMs": 600, "awaited": False}},
+    # the LAB-21 v1 recipe, kept ON RECORD (not packed): its pack lives in git at c0b57ee; its late phase failed the posterization test
+    "brahmastra_v1": {"kind": "vignette-clip", "label": "Brahmastra (v1, LAB-21 reject)", "clip": "brahmastra/brahmastra_black.mp4", "card_id": "brahmastra",
               "range": (51, 90), "impact": 75, "impact_rule": "escalation", "impact_window": (66, 84),   # ends at f090: the f093+ vivid-yellow posterized phase is excluded (a reshoot candidate)
               "cell_px": 416, "fade_in": 4, "fade_tail": 10,
               "feather_top": 48, "feather_bottom": 64, "feather_left": 96, "feather_right": 96,
@@ -383,12 +412,27 @@ def main_vignette(key):
         impact = max(rise, key=rise.get)
         if impact != C["impact"]: sys.exit("the measured escalation step f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
         imp_note = {"rule": "escalation", "window": [w0, w1], "riseOver3Frames": round(rise[impact], 3)}
+    elif C["impact_rule"] == "landing":
+        # LAB-22: THE LANDING — the ground-touch. The ground disc's plane is read off the first frame (the rows whose bright extent spans
+        # > 1400 px); the ground band runs 60 rows above it to 120 below. The landing is the frame whose ground band blows out fastest
+        # (the steepest 2-frame rise in its >= 235 share) inside the window — the orb meeting the disc.
+        ext = []
+        for y in range(H):
+            xs = np.where(L[0][y] > 120)[0]; ext.append(int(xs.max() - xs.min()) if xs.size > 2 else 0)
+        D0 = min(y for y in range(H) if ext[y] > 1400); gb0, gb1 = max(0, D0 - 60), min(H, D0 + 120)
+        gbl = [float((L[i][gb0:gb1] >= 235).mean()) for i in range(N)]
+        w0, w1 = C["impact_window"]
+        rise = {i: gbl[i] - gbl[i - 2] for i in range(max(w0, 2), w1 + 1)}
+        impact = max(rise, key=rise.get)
+        if impact != C["impact"]: sys.exit("the measured landing f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
+        imp_note = {"rule": "landing", "window": [w0, w1], "groundBand": [gb0, gb1], "discPlaneRow": D0, "groundBlownRiseOver2Frames": round(rise[impact], 4),
+                    "groundBlownAtImpact": round(gbl[impact], 4), "why": "owner ruling LAB-22/1: the units die at the strike (the orb meeting the disc); the bloom is aftermath"}
     else:
         impact = C["impact"]; imp_note = {"rule": "positional", "why": "the clip starts at the beat (S1); the impact cell is the one the first resolution cue lands on"}
     if impact not in kept: sys.exit("the impact f%03d is outside the kept range" % impact)
 
     # THE ANCHOR: the clip's core — the brightest blurred point on the impact frame, inside the named region
-    reg = L[impact] if C["anchor_region"] == "frame" else L[impact][:int(H * 0.60)]
+    reg = L[impact] if C["anchor_region"] in ("frame", "top-flush") else L[impact][:int(H * 0.60)]
     blur = cv2.GaussianBlur(reg, (0, 0), 15); ay, ax = np.unravel_index(int(np.argmax(blur)), blur.shape); CORE = (int(ax), int(ay))
 
     # THE SCALE FEATURE, measured per clip
@@ -398,6 +442,8 @@ def main_vignette(key):
         G = C["guard"]; al = frames[sf].max(axis=2)
         band = np.hstack([al[:, max(0, CORE[0] - G["col_out"]):max(0, CORE[0] - G["col_in"])], al[:, CORE[0] + G["col_in"]:CORE[0] + G["col_out"]]]).max(axis=1)
         ys = np.where(band >= G["thr"])[0]; span = int(ys[-1] - ys[0] + 1) if ys.size else 0
+    elif C["scale"]["feature"].startswith("plate width"):
+        span = None   # LAB-22: the plate itself is the feature — set below from the content box (the whole plate spans cardWidths card widths)
     else:
         # the vortex's horizontal span: the widest bright body in the clip's top band
         G = C["guard"]; al = frames[sf].max(axis=2)
@@ -405,13 +451,14 @@ def main_vignette(key):
         m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (41, 41)))
         nl, _, st, _ = cv2.connectedComponentsWithStats(m, 8)
         k2 = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA])); span = int(st[k2, cv2.CC_STAT_WIDTH])
-    if span <= 0: sys.exit("the scale feature measured 0 px on f%03d" % sf)
+    if span is not None and span <= 0: sys.exit("the scale feature measured 0 px on f%03d" % sf)
 
     # the crop box: the union of content (luma > 4) over the kept frames
     x0, y0, x1, y1 = W, H, 0, 0
     for i in kept:
         ys, xs = np.where(L[i] > 4); x0, y0, x1, y1 = min(x0, int(xs.min())), min(y0, int(ys.min())), max(x1, int(xs.max()) + 1), max(y1, int(ys.max()) + 1)
     bw, bh = x1 - x0, y1 - y0
+    if span is None: span = bw
     edges = {e: sum(1 for i in kept if (sl(L[i], e) > 40).any()) for e in ("top", "bottom", "left", "right")}
 
     n_in, n_tail = C["fade_in"], C["fade_tail"]
@@ -422,7 +469,21 @@ def main_vignette(key):
 
     # THE CORE-BODY GUARD, per edge. A band may never reach the clip's core body; the frames where the body itself grows into a band are
     # NAMED and must lie inside the fade tail (the LAB-19 law). On this class the body reaches an edge on some frames, so naming is the answer.
+    KC = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (41, 41))
+    def column_body(i, rows, thr):
+        # the component nearest the centre column (>= 2000 px), after a 41 px close: the beam/cone → column → cap above, ground zero below
+        m = np.zeros((H, W), np.uint8); m[rows[0]:rows[1]] = (L[i][rows[0]:rows[1]] >= thr)
+        m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, KC); nl, _, st, _ = cv2.connectedComponentsWithStats(m, 8)
+        ks = [k for k in range(1, nl) if st[k, cv2.CC_STAT_AREA] >= 2000]
+        if not ks: return None
+        k = min(ks, key=lambda k: abs(st[k, 0] + st[k, 2] / 2.0 - W / 2.0)); bx, by, bw2, bh2 = int(st[k, 0]), int(st[k, 1]), int(st[k, 2]), int(st[k, 3])
+        return {"top": by, "bottom": H - (by + bh2), "left": bx, "right": W - (bx + bw2)}
     def core_margins(i):
+        if C["guard"]["kind"] == "column":
+            # LAB-22 (owner ruling 5): the core is the beam, the column, the cap and ground zero; the fire SKIRT is fringe and fades into the bands
+            G = C["guard"]; parts = [p for p in (column_body(i, G["upper_rows"], G["upper_thr"]), column_body(i, G["ground_rows"], G["ground_thr"])) if p]
+            if not parts: return {"top": H, "bottom": H, "left": W, "right": W}
+            return {e: min(p[e] for p in parts) for e in ("top", "bottom", "left", "right")}
         al = frames[i].max(axis=2)
         if C["guard"]["kind"] == "ring":
             G = C["guard"]
@@ -485,7 +546,8 @@ def main_vignette(key):
     atlas.save(os.path.join(out, "atlas.webp"), "WEBP", quality=90, method=6)
     for e in guard: guard[e]["cellPxAtScale"] = round(guard[e]["px"] * s, 1)
 
-    anchor = {"x": round((CORE[0] - x0) * s, 1), "y": round((CORE[1] - y0) * s, 1)}
+    # the anchor: the core point on a half's centre (LAB-21), or (LAB-22, ruling 4) the plate's TOP-CENTRE on the enemy half's top edge
+    anchor = {"x": round(cw / 2.0, 1), "y": 0.0} if C["anchor_region"] == "top-flush" else {"x": round((CORE[0] - x0) * s, 1), "y": round((CORE[1] - y0) * s, 1)}
     manifest = {
         "cardId": C["card_id"], "class": "effect-clip", "version": 1,
         "source": "Kling clip %s (sha256 %s\u2026, %d frames @ %d fps, %dx%d, black ground) \u2014 kept f%03d\u2013f%03d; packed by tools/make_effect_from_clip.py" % (os.path.basename(clip), sha[:12], N, round(fps), W, H, a, b),
@@ -494,19 +556,23 @@ def main_vignette(key):
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height} for i, c, cx, cy in placed],
         "impact": kept.index(impact), "anchor": anchor,
         "scaleRule": {"feature": C["scale"]["feature"], "frame": sf, "spanSrc": span, "spanCell": round(span * s, 2), "cardWidths": C["scale"]["card_widths"],
-                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "legibility": C["scale"].get("measured"),
-                      "note": "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board"},
+                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "halfFraction": C["scale"].get("half_fraction"), "legibility": C["scale"].get("measured"),
+                      "note": ("THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only — LAB-21's ring-based cw and a plate-based cw are not the same unit"
+                               if C["scale"].get("half_fraction") else "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board")},
         "contract": C["contract"],
         "audit": {"range": [a, b], "droppedHead": [0, a - 1] if a > 0 else None, "droppedTail": [b + 1, N - 1] if b < N - 1 else None,
                   "impactSrc": impact, "impact": imp_note, "corePoint": list(CORE), "scale": round(s, 5), "box": [x0, y0, x1, y1],
                   "cellPx": {"used": cell_px, "asked": C["cell_px"], "steppedDown": stepped},
                   "decodedBytes": AW * AH * 4, "e1CapBytes": E1_CAP,
                   "ground": {"cornersMax": corners, "farMax": far,
-                             "method": "the frame-filling class leaves no region > 300 px from content, so farMax is structurally unavailable; the ground is stated on the bake metric instead",
+                             "method": ("the frame-filling class leaves no region > 300 px from content, so farMax is structurally unavailable; the ground is stated on the bake metric instead" if far is None else
+                                        "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) — stated beside the bake metric"),
                              "zeroShareMin": round(zero_min, 5), "pedestal1to4ShareMax": round(ped_max, 5)},
                   "edges": dict(edges, of=len(kept)),
                   "fadeIn": [[i, fades[i]] for i in kept[:n_in]], "fadeTail": [[i, fades[i]] for i in kept[-n_tail:]],
-                  "vignette": guard, "guardKind": C["guard"]["kind"], "guardTailStart": tail0},
+                  "vignette": guard, "guardKind": C["guard"]["kind"], "guardTailStart": tail0,
+                  "anchorRule": ({"kind": "top-flush", "place": "enemy-half-top", "dependency": "the top band is 0 because the beam and the crown touch the top edge on every frame; the cut is hidden only because the plate's top sits flush with the enemy half's top edge (owner ruling LAB-22/4) — RE-RULE if the anchor or the scale changes"}
+                                 if C["anchor_region"] == "top-flush" else {"kind": "core-point", "place": "enemy-half"})},
     }
     with open(os.path.join(out, "manifest.json"), "w") as fh: json.dump(manifest, fh, indent=2); fh.write("\n")
 
