@@ -1,0 +1,924 @@
+{
+  "cardId": "brahmastra",
+  "class": "effect-clip",
+  "version": 1,
+  "source": "Kling clip brahmastra_v2_black.mp4 (sha256 1b7b192c2158\u2026, 121 frames @ 24 fps, 1916x1080, black ground) \u2014 kept f004\u2013f084; packed by tools/make_effect_from_clip.py",
+  "atlas": "atlas.webp",
+  "atlasSize": {
+    "w": 4062,
+    "h": 986
+  },
+  "channels": "rgb",
+  "blend": "add",
+  "alpha": "luminance",
+  "fps": 24,
+  "timing": "native",
+  "cellPx": 288,
+  "cellSize": {
+    "w": 288,
+    "h": 162
+  },
+  "cells": [
+    {
+      "name": "f004",
+      "src": 4,
+      "x": 2,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f005",
+      "src": 5,
+      "x": 292,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f006",
+      "src": 6,
+      "x": 582,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f007",
+      "src": 7,
+      "x": 872,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f008",
+      "src": 8,
+      "x": 1162,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f009",
+      "src": 9,
+      "x": 1452,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f010",
+      "src": 10,
+      "x": 1742,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f011",
+      "src": 11,
+      "x": 2032,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f012",
+      "src": 12,
+      "x": 2322,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f013",
+      "src": 13,
+      "x": 2612,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f014",
+      "src": 14,
+      "x": 2902,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f015",
+      "src": 15,
+      "x": 3192,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f016",
+      "src": 16,
+      "x": 3482,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f017",
+      "src": 17,
+      "x": 3772,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f018",
+      "src": 18,
+      "x": 2,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f019",
+      "src": 19,
+      "x": 292,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f020",
+      "src": 20,
+      "x": 582,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f021",
+      "src": 21,
+      "x": 872,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f022",
+      "src": 22,
+      "x": 1162,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f023",
+      "src": 23,
+      "x": 1452,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f024",
+      "src": 24,
+      "x": 1742,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f025",
+      "src": 25,
+      "x": 2032,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f026",
+      "src": 26,
+      "x": 2322,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f027",
+      "src": 27,
+      "x": 2612,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f028",
+      "src": 28,
+      "x": 2902,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f029",
+      "src": 29,
+      "x": 3192,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f030",
+      "src": 30,
+      "x": 3482,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f031",
+      "src": 31,
+      "x": 3772,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f032",
+      "src": 32,
+      "x": 2,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f033",
+      "src": 33,
+      "x": 292,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f034",
+      "src": 34,
+      "x": 582,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f035",
+      "src": 35,
+      "x": 872,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f036",
+      "src": 36,
+      "x": 1162,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f037",
+      "src": 37,
+      "x": 1452,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f038",
+      "src": 38,
+      "x": 1742,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f039",
+      "src": 39,
+      "x": 2032,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f040",
+      "src": 40,
+      "x": 2322,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f041",
+      "src": 41,
+      "x": 2612,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f042",
+      "src": 42,
+      "x": 2902,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f043",
+      "src": 43,
+      "x": 3192,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f044",
+      "src": 44,
+      "x": 3482,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f045",
+      "src": 45,
+      "x": 3772,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f046",
+      "src": 46,
+      "x": 2,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f047",
+      "src": 47,
+      "x": 292,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f048",
+      "src": 48,
+      "x": 582,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f049",
+      "src": 49,
+      "x": 872,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f050",
+      "src": 50,
+      "x": 1162,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f051",
+      "src": 51,
+      "x": 1452,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f052",
+      "src": 52,
+      "x": 1742,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f053",
+      "src": 53,
+      "x": 2032,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f054",
+      "src": 54,
+      "x": 2322,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f055",
+      "src": 55,
+      "x": 2612,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f056",
+      "src": 56,
+      "x": 2902,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f057",
+      "src": 57,
+      "x": 3192,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f058",
+      "src": 58,
+      "x": 3482,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f059",
+      "src": 59,
+      "x": 3772,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f060",
+      "src": 60,
+      "x": 2,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f061",
+      "src": 61,
+      "x": 292,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f062",
+      "src": 62,
+      "x": 582,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f063",
+      "src": 63,
+      "x": 872,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f064",
+      "src": 64,
+      "x": 1162,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f065",
+      "src": 65,
+      "x": 1452,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f066",
+      "src": 66,
+      "x": 1742,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f067",
+      "src": 67,
+      "x": 2032,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f068",
+      "src": 68,
+      "x": 2322,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f069",
+      "src": 69,
+      "x": 2612,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f070",
+      "src": 70,
+      "x": 2902,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f071",
+      "src": 71,
+      "x": 3192,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f072",
+      "src": 72,
+      "x": 3482,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f073",
+      "src": 73,
+      "x": 3772,
+      "y": 658,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f074",
+      "src": 74,
+      "x": 2,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f075",
+      "src": 75,
+      "x": 292,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f076",
+      "src": 76,
+      "x": 582,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f077",
+      "src": 77,
+      "x": 872,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f078",
+      "src": 78,
+      "x": 1162,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f079",
+      "src": 79,
+      "x": 1452,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f080",
+      "src": 80,
+      "x": 1742,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f081",
+      "src": 81,
+      "x": 2032,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f082",
+      "src": 82,
+      "x": 2322,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f083",
+      "src": 83,
+      "x": 2612,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f084",
+      "src": 84,
+      "x": 2902,
+      "y": 822,
+      "w": 288,
+      "h": 162
+    }
+  ],
+  "impact": 26,
+  "anchor": {
+    "x": 144.0,
+    "y": 0.0
+  },
+  "scaleRule": {
+    "feature": "plate width (the clip's content box)",
+    "frame": 30,
+    "spanSrc": 1916,
+    "spanCell": 288.0,
+    "cardWidths": 4.82,
+    "ruledDefaultCardWidths": null,
+    "halfFraction": 0.93,
+    "legibility": {
+      "method": "the game's board (board_bg, cover, no overlay) at the game's own 375 px phone proportions \u2014 enemy half 373 x 229, card 72 px, bare median 66; the real vignetted atlas; top-flush",
+      "halfFraction0.93": {
+        "plate": "347x195",
+        "impact": {
+          "frame": 30,
+          "blownOut": 0.142,
+          "halfMedianLuma": 83
+        },
+        "bloom": {
+          "frame": 62,
+          "blownOut": 0.249,
+          "halfMedianLuma": 95
+        },
+        "worst": {
+          "frame": 69,
+          "blownOut": 0.26,
+          "halfMedianLuma": 112
+        },
+        "tailStart": {
+          "frame": 75,
+          "blownOut": 0.241,
+          "halfMedianLuma": 118
+        }
+      },
+      "rejected_literal2.4cw": {
+        "plate": "173x97",
+        "halfFraction": 0.46,
+        "impact": {
+          "frame": 30,
+          "blownOut": 0.028,
+          "halfMedianLuma": 70
+        },
+        "worst": {
+          "frame": 62,
+          "blownOut": 0.056,
+          "halfMedianLuma": 72
+        },
+        "why": "half the footprint of the classic 1.04 x half sprite"
+      },
+      "bars": {
+        "lab21AcceptedAtImpact": {
+          "blownOut": 0.228,
+          "halfMedianLuma": 106
+        },
+        "lab21Rejected": {
+          "blownOut": 0.316,
+          "halfMedianLuma": 170
+        }
+      },
+      "calibration": {
+        "note": "the method re-measures LAB-21's own v1 pack at its recorded numbers",
+        "v1At2.0cw": {
+          "blownOut": 0.229,
+          "halfMedianLuma": 106
+        },
+        "v1At2.4cw": {
+          "blownOut": 0.316,
+          "halfMedianLuma": 168
+        }
+      }
+    },
+    "note": "THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only \u2014 LAB-21's ring-based cw and a plate-based cw are not the same unit"
+  },
+  "contract": {
+    "trigger": "destroy",
+    "abilityName": "Brahmastra",
+    "anchor": "enemy-half-top",
+    "castSound": "sfx_brahmastra",
+    "impactSound": "sfx_unit_destroy",
+    "castHitStopMs": 110,
+    "castHoldMs": 1000,
+    "flightMs": 0,
+    "crackAfterMs": 40,
+    "destroyDwellMs": 600,
+    "awaited": false
+  },
+  "audit": {
+    "range": [
+      4,
+      84
+    ],
+    "droppedHead": [
+      0,
+      3
+    ],
+    "droppedTail": [
+      85,
+      120
+    ],
+    "impactSrc": 30,
+    "impact": {
+      "rule": "landing",
+      "window": [
+        26,
+        34
+      ],
+      "groundBand": [
+        757,
+        937
+      ],
+      "discPlaneRow": 817,
+      "groundBlownRiseOver2Frames": 0.0511,
+      "groundBlownAtImpact": 0.1395,
+      "why": "owner ruling LAB-22/1: the units die at the strike (the orb meeting the disc); the bloom is aftermath"
+    },
+    "corePoint": [
+      1091,
+      883
+    ],
+    "scale": 0.15031,
+    "box": [
+      0,
+      0,
+      1916,
+      1080
+    ],
+    "cellPx": {
+      "used": 288,
+      "asked": 288,
+      "steppedDown": null
+    },
+    "decodedBytes": 16020528,
+    "e1CapBytes": 18874368,
+    "ground": {
+      "cornersMax": 1,
+      "farMax": 1,
+      "method": "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) \u2014 stated beside the bake metric",
+      "zeroShareMin": 0.32201,
+      "pedestal1to4ShareMax": 0.02031
+    },
+    "edges": {
+      "top": 81,
+      "bottom": 20,
+      "left": 31,
+      "right": 31,
+      "of": 81
+    },
+    "fadeIn": [
+      [
+        4,
+        0.2
+      ],
+      [
+        5,
+        0.4
+      ],
+      [
+        6,
+        0.6
+      ],
+      [
+        7,
+        0.8
+      ]
+    ],
+    "fadeTail": [
+      [
+        75,
+        1.0
+      ],
+      [
+        76,
+        0.8889
+      ],
+      [
+        77,
+        0.7778
+      ],
+      [
+        78,
+        0.6667
+      ],
+      [
+        79,
+        0.5556
+      ],
+      [
+        80,
+        0.4444
+      ],
+      [
+        81,
+        0.3333
+      ],
+      [
+        82,
+        0.2222
+      ],
+      [
+        83,
+        0.1111
+      ],
+      [
+        84,
+        0.0
+      ]
+    ],
+    "vignette": {
+      "top": {
+        "px": 0,
+        "cellPxAtScale": 0.0,
+        "coreMarginMin": 0,
+        "coreMarginMinAt": 4,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "bottom": {
+        "px": 64,
+        "cellPxAtScale": 9.6,
+        "coreMarginMin": 76,
+        "coreMarginMinAt": 74,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "left": {
+        "px": 128,
+        "cellPxAtScale": 19.2,
+        "coreMarginMin": 142,
+        "coreMarginMinAt": 84,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "right": {
+        "px": 128,
+        "cellPxAtScale": 19.2,
+        "coreMarginMin": 251,
+        "coreMarginMinAt": 84,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      }
+    },
+    "guardKind": "column",
+    "guardTailStart": 75,
+    "anchorRule": {
+      "kind": "top-flush",
+      "place": "enemy-half-top",
+      "dependency": "the top band is 0 because the beam and the crown touch the top edge on every frame; the cut is hidden only because the plate's top sits flush with the enemy half's top edge (owner ruling LAB-22/4) \u2014 RE-RULE if the anchor or the scale changes"
+    }
+  }
+}

@@ -1,18 +1,18 @@
 #!/usr/bin/env node
 'use strict';
-// src/test_manifest.js — EXPORT-1: the premium effects in the live game (Vajra, Sudarshana Chakra, Pashupatastra).
+// src/test_manifest.js — EXPORT-1/3: the premium effects in the live game (Vajra, Sudarshana Chakra, Pashupatastra; Brahmastra from EXPORT-3).
 //
 //   node src/test_manifest.js
 //
 // What it proves, from the SHIPPED files (index.html, assets/manifest/, src/engine.js) — never a copy of them:
-//   R · ROUTING       registry.json routes exactly the three effects; Brahmastra and Meghnad are absent and pinned
+//   R · ROUTING       registry.json routes exactly the four effects (Brahmastra joined in EXPORT-3); Meghnad is absent and pinned
 //   A · ASSETS        every routed manifest validates under the page's own player, atlases match their manifests, E1 holds
 //   T · TIMING        the clip's impact lands on the game's OWN resolution cue at every speed, read from the beat code's
 //                     own constants; no wire-clock cost
 //   F · FAIL-OPEN     the shipped glue, run on a fake clock: the beats never wait, a clip that is not ready or fails at its
 //                     moment hands the moment back to the classic sprite, a registry that cannot load plays every sprite
 //   W · THE WIRE      no new wire message types
-//   P · PINS          src/engine.js and the inlined engine unchanged; Brahmastra's sprite path and the Unit landing path
+//   P · PINS          src/engine.js and the inlined engine unchanged; Brahmastra's sprite (now its fallback) and the Unit landing path
 //                     byte-identical to the pre-export game; the inlined effect player is the exported module, verbatim
 const fs = require('fs'), path = require('path'), vm = require('vm'), crypto = require('crypto');
 const GAME = path.resolve(__dirname, '..'), MAN = path.join(GAME, 'assets', 'manifest');
@@ -26,17 +26,16 @@ const ok = (name, cond, detail) => { if (cond) { pass++; console.log('  ✓ ' + 
 const PIN = {
   engineJs: '3613706f3b736b3e367bfc063575902037b9b05e02ed1de9422bad7ee46520b9',
   inlinedEngine: 'd70e94b34248bf85c9a3bf00724a724e0997580fdadb16f3d8bfa753d79d8791',
-  brahmastraCall: '25c906ac0758cee2cc0f5bf852bcaa25e52e3d19eea0807288a788f3f9d9846b',
   sprBrahmastra: 'ca7898c5da25a7ec39b5beb28fb5196e14f111a5d69b3b812f03b41bca80166a',
   unitLanding: 'cd4ed62d5f7b67d61599a5f7d6e67c0ab9606adea88bc08d3bf5a6636e813011',
-  effectPlayer: '30219bcb370e74dcf75dfeb01b0ac2932376a91c7d4c69fc127bb650b5b27f6c',
+  effectPlayer: '3a780fe5ec52754c60b69268a6923fc5b80185e3ad549923641e7ef7ddd1141c',   // EXPORT-3: the LAB-22 player (enemy-half-top, halfFraction); EXPORT-1 shipped 30219bcb370e…
   wireTypes: ['leap', 'mulligan', 'pass', 'play', 'shield'],
   // EXPORT-2: the nine actor modules and the faction effects, as certified in the manifestation lab when the export was built
   // (recorded here, never read from the lab: nothing outside the lab may name it — its own rule G2)
   actorModules: {"boarddiff": "879fe41a315d53122fd1d9b03d7f47a5643f2e1c59e7a14bb7f9973d57957ede", "clashcontext": "eb87c50dc6cee9726445fa066aafc0a47ad3ca382cad20ba5c8cca185e6f6d94", "director": "7027e197441e3cc3b8cb9df104585eeb51300f761263b434a3403252961b51c0", "runner": "7a0b80b824ed294493d53360c2c1a93997068897394fd7b400bb5faa151ebc35", "manifest": "077314c6a55483546f06b08e83a453c174d5636366bb5079d981a2c8b3396408", "stagemath": "6deed7f01db143d210133a95b856981094e647b67d3cd9467f70506fa00b4979", "dissolve": "8e4efc39f2714ca917c8b8da5095d50c58b2237280c137b05ca63ffd53a59e59", "actorstage": "dec202561478b1046cfeebcf552d8d885912d6a4f1e74b112c3d14faad1f7241", "playback": "ba7fce765c96f70d9eda895dce27172f340fc9bcf1969ea3fdcf449325d55d5f"},
   factionFx: '7254d128bcec6c2d433281f4daa027d81b74b022dbe13fe81ba2be3efbf310dc',
 };
-const ROUTED = ['pashupata', 'sudarshana', 'vajra'];
+const ROUTED = ['brahmastra', 'pashupata', 'sudarshana', 'vajra'];
 const lineOf = (needle) => HTML.split('\n').find((l) => l.indexOf(needle) >= 0) || null;
 function fnBody(name) { const i = HTML.indexOf('function ' + name + '('); if (i < 0) return null; let d = 0; for (let k = HTML.indexOf('{', i); k < HTML.length; k++) { if (HTML[k] === '{') d++; else if (HTML[k] === '}' && !--d) return HTML.slice(i, k + 1); } return null; }
 function between(a, b) { const i = HTML.indexOf(a), j = HTML.indexOf(b, i + 1); return i >= 0 && j > i ? HTML.slice(i, j) : null; }
@@ -66,22 +65,23 @@ function webpSize(b) {
 console.log('── R · the routing table (assets/manifest/registry.json) ──');
 {
   const routes = REG.routes || {};
-  ok('R1 · exactly three routes — Vajra, Sudarshana Chakra, Pashupatastra (' + J(Object.keys(routes).sort()) + ')', J(Object.keys(routes).sort()) === J(ROUTED));
-  ok('R2 · each route names the classic sprite it replaces and the beat it owns: vajra → sprVajra at the destroy, sudarshana → sprSudarshana at the passive (the bite), pashupata → sprPashupatastra at the play (the cast)',
+  ok('R1 · exactly four routes — Vajra, Sudarshana Chakra, Pashupatastra, and (EXPORT-3) Brahmastra (' + J(Object.keys(routes).sort()) + ')', J(Object.keys(routes).sort()) === J(ROUTED));
+  ok('R2 · each route names the classic sprite it replaces and the beat it owns: vajra → sprVajra at the destroy, sudarshana → sprSudarshana at the passive (the bite), pashupata → sprPashupatastra and brahmastra → sprBrahmastra at the play (the cast)',
      routes.vajra && routes.vajra.replaces === 'sprVajra' && routes.vajra.moment === 'destroy' && routes.sudarshana && routes.sudarshana.replaces === 'sprSudarshana' && routes.sudarshana.moment === 'passive' &&
-     routes.pashupata && routes.pashupata.replaces === 'sprPashupatastra' && routes.pashupata.moment === 'play', J(routes));
-  ok('R3 · BRAHMASTRA AND MEGHNAD ARE NOT ROUTED — both are listed as pinned, and neither has an effect folder shipped',
-     !routes.brahmastra && !routes.meghnad && REG.pinned && REG.pinned.brahmastra && REG.pinned.meghnad &&
-     !fs.existsSync(path.join(MAN, 'effects', 'brahmastra')) && !fs.existsSync(path.join(MAN, 'effects', 'meghnad')));
+     routes.pashupata && routes.pashupata.replaces === 'sprPashupatastra' && routes.pashupata.moment === 'play' && routes.brahmastra && routes.brahmastra.replaces === 'sprBrahmastra' && routes.brahmastra.moment === 'play', J(routes));
+  ok('R3 · MEGHNAD IS NOT ROUTED — he is the only pinned entry and has no effect folder; BRAHMASTRA IS ROUTED (EXPORT-3: its pin is reversed now that the rebuilt LAB-22 clip re-ran the template) and ships its effect folder',
+     !routes.meghnad && REG.pinned && REG.pinned.meghnad && !REG.pinned.brahmastra && J(Object.keys(REG.pinned)) === J(['meghnad']) &&
+     !fs.existsSync(path.join(MAN, 'effects', 'meghnad')) && fs.existsSync(path.join(MAN, 'effects', 'brahmastra', 'manifest.json')));
   const castHook = "    if(isAstra && c) fxCast(c, ev, evs, snap);", bLine = lineOf("if(isAstra && c && c.id==='brahmastra')");
   const lines = HTML.split('\n'), hi = lines.findIndex((l) => l.indexOf(castHook) === 0);
-  ok('R4 · the cast hook starts a routed clip on the Astra\'s play beat, on the line immediately above the untouched Brahmastra line',
-     hi >= 0 && lines[hi + 1] === bLine && sha(bLine) === PIN.brahmastraCall);
+  ok('R4 · the cast hook starts a routed clip on the Astra\'s play beat, on the line immediately above Brahmastra\'s (now gated) line',
+     hi >= 0 && lines[hi + 1] === bLine && /if\(!fxOwnsMoment\('brahmastra', fire\)\) fire\(\);/.test(bLine));
   const gates = { pashupata: /if\(!fxOwnsMoment\('pashupata', fire\)\) fire\(\);/.test(HTML), vajra: /if\(ev\.abilityName==='Vajra' && dp && !fxOwnsMoment\('vajra'\)\) VFX\.sprVajra\(/.test(HTML),
-                  sudarshana: /if\(!fxOwnsMoment\('sudarshana'\)\) VFX\.sprSudarshana\(/.test(HTML) };
-  const bare = { vajra: (HTML.match(/VFX\.sprVajra\(/g) || []).length, sudarshana: (HTML.match(/VFX\.sprSudarshana\(/g) || []).length };
-  ok('R5 · each routed card\'s classic sprite is still called at its own moment, behind the clip\'s ownership test — and only there (sprVajra ' + bare.vajra + ' call site, sprSudarshana ' + bare.sudarshana + ')',
-     Object.values(gates).every(Boolean) && bare.vajra === 1 && bare.sudarshana === 1, J({ gates, bare }));
+                  sudarshana: /if\(!fxOwnsMoment\('sudarshana'\)\) VFX\.sprSudarshana\(/.test(HTML),
+                  brahmastra: /fire=\(\)=>VFX\.sprBrahmastra\(r\.left\+r\.width\/2, r\.top\+r\.height\*0\.5, r\.width\*1\.04\); if\(!fxOwnsMoment\('brahmastra', fire\)\) fire\(\);/.test(HTML) };
+  const bare = { vajra: (HTML.match(/VFX\.sprVajra\(/g) || []).length, sudarshana: (HTML.match(/VFX\.sprSudarshana\(/g) || []).length, brahmastra: (HTML.match(/VFX\.sprBrahmastra\(/g) || []).length };
+  ok('R5 · each routed card\'s classic sprite is still called at its own moment, behind the clip\'s ownership test — and only there (sprVajra ' + bare.vajra + ' call site, sprSudarshana ' + bare.sudarshana + ', sprBrahmastra ' + bare.brahmastra + ')',
+     Object.values(gates).every(Boolean) && bare.vajra === 1 && bare.sudarshana === 1 && bare.brahmastra === 1, J({ gates, bare }));
   ok('R6 · skipping the choreography (tap, backgrounding, the watchdog) and starting a new match both stand the clip down',
      /revealAllMaterializingHeroes\(\); \}catch\(e\)\{\} try\{ fxSkip\(\); \}catch\(e\)\{\} \}/.test(HTML) && /function resetChoreo\(\)\{ try\{ fxSkip\(\); \}catch\(e\)\{\}/.test(HTML));
   ok('R7 · the effect-clip canvas sits in the field at z6 with the flash moved to z7 (the GPU layer #vfxgpu shares z6; all below the choreography lock at z64)',
@@ -105,14 +105,14 @@ const SPECS = {}, ALLFILES = [];
     rows.push({ clip: path.basename(path.dirname(m.__file)), exists, px, want: m.atlasSize, bytes: m.atlasSize.w * m.atlasSize.h * 4, file: exists ? fs.statSync(ap).size : 0 });
   }
   ok('A2 · every atlas is present and decodes to exactly the size its manifest records (' + rows.map((r) => r.clip + ' ' + (r.px ? r.px.w + '×' + r.px.h : '?')).join(', ') + ')',
-     rows.length === 4 && rows.every((r) => r.exists && r.px && r.px.w === r.want.w && r.px.h === r.want.h), J(rows));
+     rows.length === 5 && rows.every((r) => r.exists && r.px && r.px.w === r.want.w && r.px.h === r.want.h), J(rows));
   ok('A3 · E1: each clip decodes under the effect layer\'s cap of ' + (EC.E1.capBytes / 1048576).toFixed(2) + ' MB (' + rows.map((r) => r.clip + ' ' + (r.bytes / 1048576).toFixed(2)).join(', ') + ' MB) and the player holds one clip decoded at a time',
      rows.every((r) => r.bytes <= EC.E1.capBytes) && EC.E1.oneAtATime === true);
   const all = [], walk = (d) => fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else all.push(path.relative(MAN, q)); });
   walk(MAN);
   const fxFiles = all.filter((f) => f.indexOf('effects/') === 0).sort();
-  ok('A4 · assets/manifest/effects holds exactly the chain and the four clips (' + fxFiles.length + ' files, ' + (rows.reduce((a, r) => a + r.file, 0) / 1048576).toFixed(2) + ' MB of atlas) — the actors (EXPORT-2) are inventoried in H3',
-     J(fxFiles) === J(['effects/pashupata/atlas.webp', 'effects/pashupata/manifest.json', 'effects/sudarshana/chain.json', 'effects/sudarshana_invoke/atlas.webp', 'effects/sudarshana_invoke/manifest.json',
+  ok('A4 · assets/manifest/effects holds exactly the chain and the five clips (' + fxFiles.length + ' files, ' + (rows.reduce((a, r) => a + r.file, 0) / 1048576).toFixed(2) + ' MB of atlas) — the actors (EXPORT-2) are inventoried in H3',
+     J(fxFiles) === J(['effects/brahmastra/atlas.webp', 'effects/brahmastra/manifest.json', 'effects/pashupata/atlas.webp', 'effects/pashupata/manifest.json', 'effects/sudarshana/chain.json', 'effects/sudarshana_invoke/atlas.webp', 'effects/sudarshana_invoke/manifest.json',
                        'effects/sudarshana_strike/atlas.webp', 'effects/sudarshana_strike/manifest.json', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json']), J(fxFiles));
   ALLFILES.push(...all);
 }
@@ -140,6 +140,7 @@ function cast(which) {
     vajra: { mine: ['Vajra'].concat(deva), theirs: asura, fac: ['devas', 'asuras'], lay: [[1, 'Kumbhakarna']], card: 'Vajra' },
     sudarshana: { mine: ['Sudarshana Chakra'].concat(deva), theirs: asura, fac: ['devas', 'asuras'], lay: [[1, 'Mahabali']], card: 'Sudarshana Chakra' },
     pashupata: { mine: ['Pashupatastra'].concat(asura), theirs: deva, fac: ['asuras', 'devas'], lay: [[1, 'Yama'], [0, 'Kumbhakarna'], [1, 'Marut']], card: 'Pashupatastra' },
+    brahmastra: { mine: ['Brahmastra'].concat(deva), theirs: asura, fac: ['devas', 'asuras'], lay: [[1, 'Kumbhakarna'], [0, 'Yama'], [1, 'Ravana']], card: 'Brahmastra' },
   }, S = setups[which];
   for (let seed = 1; seed < 500; seed++) {
     let x = seed; const rng = () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
@@ -242,9 +243,30 @@ const card = (id) => ({ id, n: id, t: 'astra' });
   // F7 · reduced motion and unrouted cards
   { const S = sandbox({ reduced: true }); await S.fx.fxBoot(); await S.fx.fxPrefetch('vajra'); await flush();
     const r1 = S.fx.fxCast(card('vajra'), castEv('vajra')[0], castEv('vajra'), {});
-    const S2 = sandbox(); await S2.fx.fxBoot(); const r2 = S2.fx.fxCast(card('brahmastra'), castEv('vajra')[0], castEv('vajra'), {}), r3 = S2.fx.fxCast(card('meghnad'), castEv('vajra')[0], castEv('vajra'), {});
-    ok('F7 · REDUCED MOTION plays no clip (the page\'s reduced path skips playEvent entirely; the glue refuses too), and an UNROUTED card — Brahmastra, Meghnad — returns at once with nothing noted: its presentation is exactly the old one',
+    const S2 = sandbox(); await S2.fx.fxBoot(); const r2 = S2.fx.fxCast(card('gandiva'), castEv('vajra')[0], castEv('vajra'), {}), r3 = S2.fx.fxCast(card('meghnad'), castEv('vajra')[0], castEv('vajra'), {});
+    ok('F7 · REDUCED MOTION plays no clip (the page\'s reduced path skips playEvent entirely; the glue refuses too), and an UNROUTED card — Gandiva Arrow, Meghnad — returns at once with nothing noted: its presentation is exactly the old one',
        r1 === null && r2 === null && r3 === null && S2.fx.FX.diag.length === 0 && S.logs.length + S2.logs.length === 0); }
+  // F9 · EXPORT-3: Brahmastra's moment IS the cast (like Pashupatastra) — a failure after it fires the classic sprite late, once
+  { const S = sandbox({ decodeFails: true }); await S.fx.fxBoot(); await S.fx.fxPrefetch('brahmastra'); await flush();
+    const r = S.fx.fxCast(card('brahmastra'), castEv('brahmastra')[0], castEv('brahmastra'), {});
+    let fired = 0; const owns = S.fx.fxOwnsMoment('brahmastra', () => { fired++; });
+    const firedAtCast = fired; await flush(); await flush(); S.tick(16);
+    const S2 = sandbox(); await S2.fx.fxBoot(); const r2 = S2.fx.fxCast(card('brahmastra'), castEv('brahmastra')[0], castEv('brahmastra'), {});
+    let fired2 = 0; const owns2 = S2.fx.fxOwnsMoment('brahmastra', () => { fired2++; });
+    ok('F9 · BRAHMASTRA FAILS OPEN (EXPORT-3): its clip holds the cast provisionally, and when the decode then fails the classic sprBrahmastra FIRES LATE, once — never absent; and a clip that is NOT READY at the cast never starts, so the sprite fires on the cast exactly as before',
+       !!r && owns === true && firedAtCast === 0 && fired === 1 && S.fx.FX.diag.some((d) => d.kind === 'fell-back' && /fired late/.test(d.why)) &&
+       r2 === null && owns2 === false && fired2 === 0, J({ owns, firedAtCast, fired, r2: r2 === null, owns2 })); }
+  // F10 · EXPORT-3: the rebuilt plate hangs TOP-FLUSH on the enemy half at 0.93 of its width, through the game's own halfOf
+  { const S = sandbox(); await S.fx.fxBoot(); await S.fx.fxPrefetch('brahmastra'); await flush();
+    const r = S.fx.fxCast(card('brahmastra'), castEv('brahmastra')[0], castEv('brahmastra'), {});
+    const pl = r && r.places && r.places[0], seg = r && r.plan.segments[0];
+    const S2 = sandbox(); await S2.fx.fxBoot(); await S2.fx.fxPrefetch('brahmastra'); await flush();
+    S2.ctx.document.querySelector = () => null;   // a board with no enemy half to hang on
+    const r2 = S2.fx.fxCast(card('brahmastra'), castEv('brahmastra')[0], castEv('brahmastra'), {});
+    ok('F10 · THE REBUILT PLATE HANGS TOP-FLUSH (EXPORT-3, LAB-22 ruling 4): the segment places "enemy-half-top" and the game\'s halfOf now reports the half\'s top and width, so the plate\'s top sits on the half\'s top edge (' + (pl && pl.y.toFixed(1)) + ' px), horizontally centred, ' + (pl && (pl.w / 355).toFixed(3)) + ' of the half\'s width (the ruled 0.93); with no half to hang on the player plays no plate (' + J(r2 && r2.places) + ') and the classic sprite keeps the moment',
+       !!pl && seg.place === 'enemy-half-top' && Math.abs(pl.y) < 0.01 && Math.abs(pl.x + pl.w / 2 - 177.5) < 0.01 && Math.abs(pl.w / 355 - 0.93) < 0.001 &&
+       /return \{ cx:r\.left-f\.left\+r\.width\/2, cy:r\.top-f\.top\+r\.height\/2, top:r\.top-f\.top, w:r\.width \}; \}/.test(GLUE) &&
+       (r2 === null || !r2.places || r2.places[0] === null), J({ pl, place: seg && seg.place, r2: r2 && r2.places })); }
   // F8 · the diagnostics never narrate and never console.log
   const NARR = /BLog\.lines\.push/.test(GLUE), LOGS = /console\.log\(/.test(GLUE);
   ok('F8 · THE DIAGNOSTICS ARE QUIET: the glue writes the console (warn, never log) and the battle log\'s BLog.fx field — never a narrated line, never a banner', !NARR && !LOGS && /BLog\.fx=BLog\.fx\|\|\[\]/.test(GLUE));
@@ -463,7 +485,7 @@ const card = (id) => ({ id, n: id, t: 'astra' });
   const engInline = between('<!-- ENGINE:START', '<!-- ENGINE:END');
   ok('P1 · src/engine.js is byte-identical to the pre-export game (sha256 ' + PIN.engineJs.slice(0, 12) + '…), and so is the engine inlined in index.html',
      sha(fs.readFileSync(path.join(GAME, 'src', 'engine.js'))) === PIN.engineJs && engInline && sha(engInline) === PIN.inlinedEngine);
-  ok('P2 · BRAHMASTRA PINNED: its call site and sprBrahmastra itself are byte-identical to the pre-export game', sha(lineOf("if(isAstra && c && c.id==='brahmastra')")) === PIN.brahmastraCall && sha(fnBody('sprBrahmastra')) === PIN.sprBrahmastra);
+  ok('P2 · BRAHMASTRA\'S CLASSIC SPRITE IS ITS FALLBACK (EXPORT-3 reverses the pin): sprBrahmastra itself is byte-identical to the pre-export game, and its one call site is the gated line R5 checks', sha(fnBody('sprBrahmastra')) === PIN.sprBrahmastra && (HTML.match(/VFX\.sprBrahmastra\(/g) || []).length === 1);
   ok('P3 · MEGHNAD PINNED: his presentation is the Unit landing path, byte-identical to the pre-export game, and nothing in the export names him', sha(lineOf('} else VFX.sprLanding(fac,')) === PIN.unitLanding && !/meghnad/i.test(GLUE));
   ok('P4 · the inlined effect player is the exported module, verbatim (sha256 ' + PIN.effectPlayer.slice(0, 12) + '…)', PLAYER_SRC && sha(PLAYER_SRC) === PIN.effectPlayer);
   ok('P5 · the page carries no console.log', !/console\.log\(/.test(HTML));

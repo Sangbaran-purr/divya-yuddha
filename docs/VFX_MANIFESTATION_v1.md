@@ -355,3 +355,25 @@ Y6. MEMORY. Compressed bytes are prefetched when a routed Hero enters
     a visible hand; the atlas decodes on play, alongside AWAKEN, and
     is released after SETTLE. One actor decoded at a time: the peak
     is the largest single actor (14.23 MB).
+
+## AMENDMENT 2026-09-18 — BRAHMASTRA JOINS THE PREMIUM SHELF (EXPORT-3)
+
+Z1. THE PIN IS REVERSED. Brahmastra's live presentation was pinned
+    (EXPORT-1/X10f) until the owner's rebuilt clip re-ran the template.
+    LAB-22 certified that clip (commit ce5e15a), so the registry now
+    routes it: the fourth premium effect, moment "play". Meghnad remains
+    the only pinned entry.
+Z2. THE CLASSIC SPRITE IS THE FALLBACK. sprBrahmastra stays in the
+    game byte-for-byte; its one call site is gated behind
+    fxOwnsMoment('brahmastra', fire), the Pashupatastra pattern. A clip
+    not ready at the cast never starts and the sprite fires on the cast
+    as before; a clip that fails after the cast fires the sprite late,
+    once — never absent.
+Z3. TOP-FLUSH, AS A FRACTION OF THE HALF. The game takes LAB-22's player
+    verbatim: a new "enemy-half-top" placement and plates recorded as a
+    fraction of the enemy half (Brahmastra: 0.93). The game's halfOf
+    now reports the half's top and width; a half that reports neither
+    plays no plate. The top-flush positional dependency (LAB-22/4)
+    carries into the game: re-rule if the anchor or the scale changes.
+Z4. TIMING. The impact (the landing, cell 26) lands on the first destroy
+    at 1443 ms Normal / 866 ms Fast; wire-clock cost 0.

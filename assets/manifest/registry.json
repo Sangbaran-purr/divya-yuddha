@@ -1,5 +1,5 @@
 {
-  "about": "EXPORT-1/2 \u2014 the premium presentation routing table. `routes`: the Astras that play an additive effect clip on the game's own beats (EXPORT-1). `actors`: the Heroes whose play manifests as an actor (EXPORT-2) \u2014 AWAKEN, EMERGE, ACT, SETTLE, native exits, in place, at the 256 rung only, Full in every mode. Remove a card's entry and it returns to its classic presentation by a data edit, no revert. A clip or actor that is not ready, or fails, at its moment falls back to the classic path (owner ruling EXPORT-1/7: yesterday's game, never absence).",
+  "about": "EXPORT-1/2 \u2014 the premium presentation routing table. `routes`: the Astras that play an additive effect clip on the game's own beats (EXPORT-1; Brahmastra's rebuilt clip joins in EXPORT-3). `actors`: the Heroes whose play manifests as an actor (EXPORT-2) \u2014 AWAKEN, EMERGE, ACT, SETTLE, native exits, in place, at the 256 rung only, Full in every mode. Remove a card's entry and it returns to its classic presentation by a data edit, no revert. A clip or actor that is not ready, or fails, at its moment falls back to the classic path (owner ruling EXPORT-1/7: yesterday's game, never absence).",
   "version": 2,
   "routes": {
     "vajra": {
@@ -19,10 +19,15 @@
       "replaces": "sprPashupatastra",
       "moment": "play",
       "anchor": "enemy-half-centre"
+    },
+    "brahmastra": {
+      "spec": "effects/brahmastra/manifest.json",
+      "replaces": "sprBrahmastra",
+      "moment": "play",
+      "anchor": "enemy-half-top (0.93 of the half, top flush)"
     }
   },
   "pinned": {
-    "brahmastra": "sprBrahmastra stays exactly as-is until the owner's rebuilt clip re-runs the template",
     "meghnad": "the lab's pilot and reference, never exported; his live presentation (the Unit landing path) stays exactly as it is"
   },
   "actors": {
