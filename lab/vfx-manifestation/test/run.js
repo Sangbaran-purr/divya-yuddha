@@ -1824,6 +1824,33 @@ console.log('\n── V · Vasuki Venom Strike: the rise at the cast, the flood 
      CASTF.concat(DRAINF).every((f) => f.engine.sha256 === engSha) && CASTF.every((f, s) => J(f.events.map((e) => e.type)) === J(['play']) && f.events[0].abilityName === 'Vasuki Venom Strike' && f.venomStrikeAfter === f.before.round && f.attackerSeat === s) &&
      DRAINF.every((f, s) => f.venomStrike && f.venomStrike.striker === s && f.attackerSeat === s && J(f.events.map((e) => e.type)) === J(['toast', 'venom', 'venom', 'venom', 'destroy']) && /−3$/.test(f.events[0].text) && f.after.round === f.before.round + 1),
      J({ reg: [!!REG.venomstrike, !!REG.venomstrike_flood], sha: CASTF.concat(DRAINF).map((f) => f.engine.sha256 === engSha) }));
+  // V14–V15 · EXPORT-6 · THE READY-ANCHORED RISE (owner ruling A, opt-in readyAnchor — the live game passes it): the rise's clock starts when its
+  // atlas is decoded, never at the cast — a slow decode still opens on cell 0; not decoded by the cast beat's settle → it stands down once
+  function raDrive(decodeAt, mode) {
+    let now = 0, pend = null, lateCalls = 0; const draws = [], rendered = [];
+    const g = { _op: 'source-over', setTransform() {}, clearRect() {}, drawImage(img, sx, sy) { draws.push({ sx, sy, t: now }); }, set globalCompositeOperation(v) { this._op = v; }, get globalCompositeOperation() { return this._op; }, globalAlpha: 1 };
+    const env = { now: () => now, canvas: { width: 750, height: 1200, getContext: () => g }, dpr: 2, halfOf: (s) => PH[s], render: (b) => rendered.push(b), sound() {}, onArmingLate: () => { lateCalls++; },
+      loadAtlas: (m) => ({ then(res) { pend = () => res({ source: {}, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() {} }); } }) };
+    const P = EC.createPlayer(env), f = CASTF[0], run = P.play(f, VR, { before: f.before, after: f.after }, { mode: mode || 'full', casterSeat: 0, readyAnchor: true });
+    let n = 0; while (!run.done && n++ < 3000) { now += 1000 / 60; if (pend && now >= decodeAt) { const p2 = pend; pend = null; p2(); } P.frame(now); }
+    const idx = draws.map((d) => VR.cells.findIndex((c) => c.x === d.sx && c.y === d.sy));
+    return { run, idx, first: idx[0], cells: new Set(idx).size, firstAt: draws.length ? draws[0].t : null, lateCalls, settleAt: run.log.settledAt, endAt: run.log.cues.filter((c) => c.cue === 'clip-end').map((c) => c.at)[0] };
+  }
+  const slow = [300, 900].map((d) => Object.assign({ d }, raDrive(d))), fastSlow = raDrive(500, 'fast'), atCast = raDrive(0);
+  ok('V14 · EXPORT-6 · THE READY-ANCHORED RISE (owner ruling A): with readyAnchor the rise\'s clock starts when its atlas is DECODED — a decode landing at ' + slow.map((x) => x.d).join(' / ') + ' ms still opens on CELL 0 (first cell drawn ' + slow.map((x) => x.first + ' at ' + Math.round(x.firstAt)).join(' / ') + ' ms) and plays all ' + VR.cells.length + ' cells, the clip ending its own length after that (' + slow.map((x) => Math.round(x.endAt)).join(' / ') + ' ms); the cast beat keeps its own settle (' + Math.round(slow[0].settleAt) + ' ms); a decode ready at the cast plays exactly as before. Never a partial play',
+     slow.concat([atCast]).every((x) => x.first === 0 && x.cells === 55 && x.lateCalls === 0 && x.run.log.clipStartedAt != null && Math.abs(x.endAt - x.run.log.clipStartedAt - x.run.plan.timeline.clipEnd) <= 1000 / 60 + 1e-6) &&
+     slow.every((x) => x.firstAt >= x.d - 1e-6 && x.firstAt < x.d + 1000 / 60 + 1e-6) && fastSlow.first === 0 && Math.abs(slow[0].settleAt - slow[0].run.plan.timeline.castBeatMs) <= 1000 / 60 + 1e-6,
+     J(slow.concat([atCast, fastSlow]).map((x) => [x.first, x.cells, Math.round(x.firstAt), Math.round(x.endAt), x.lateCalls])));
+  const raLate = raDrive(2000), raLateFast = raDrive(1000, 'fast');
+  ok('V15 · EXPORT-6 · PAST THE BOUND THE RISE STANDS DOWN: an atlas not decoded by the cast beat\'s settle (' + Math.round(raLate.run.plan.timeline.castBeatMs) + ' ms Normal / ' + Math.round(raLateFast.run.plan.timeline.castBeatMs) + ' ms Fast) never draws a cell — the page is told ONCE (env.onArmingLate, where the live glue fires the classic surge), the late decode is discarded, and the cast beat still settles on AFTER',
+     [raLate, raLateFast].every((x) => x.idx.length === 0 && x.lateCalls === 1 && x.run.log.armingLate != null && x.run.log.armingLate >= x.run.plan.timeline.castBeatMs - 1e-6 && x.run.log.armingLate < x.run.plan.timeline.castBeatMs + 1000 / 60 + 1e-6 && x.run.done) &&
+     J(raLate.run.log.cues.filter((c) => c.cue === 'settle').length) === '1', J([raLate, raLateFast].map((x) => [x.idx.length, x.lateCalls, Math.round(x.run.log.armingLate)])));
+  // V16 · EXPORT-6 · THE LIVE GAME CARRIES THE CERTIFIED PACKS, BYTE FOR BYTE (the lab may read the game; the game never reads the lab — G2)
+  const ex = ['venomstrike_rise', 'venomstrike_flood'].map((k) => ['atlas.webp', 'manifest.json'].map((f) => { const a = path.join(LAB, 'effects', k, f), b = path.join(GAME, 'assets', 'manifest', 'effects', k, f);
+    return { f: k + '/' + f, same: fs.existsSync(b) && sha256(fs.readFileSync(a)) === sha256(fs.readFileSync(b)), sha: sha256(fs.readFileSync(a)).slice(0, 12) }; })).flat();
+  const liveReg = JSON.parse(fs.readFileSync(path.join(GAME, 'assets', 'manifest', 'registry.json'), 'utf8')).routes.venomstrike;
+  ok('V16 · EXPORT-6 · THE LIVE GAME CARRIES THE CERTIFIED PACKS BYTE FOR BYTE: all four Vasuki pack files in assets/manifest equal this lab\'s certified packs (' + ex.map((x) => x.f + ' ' + x.sha + (x.same ? ' =' : ' ≠')).join(', ') + '), registered as one route — the rise at the cast (replacing sprVenomSurge), its nested drain the flood (replacing sprVenomDrain)',
+     ex.length === 4 && ex.every((x) => x.same) && liveReg && liveReg.spec === 'effects/venomstrike_rise/manifest.json' && liveReg.replaces === 'sprVenomSurge' && liveReg.drain && liveReg.drain.spec === 'effects/venomstrike_flood/manifest.json' && liveReg.drain.replaces === 'sprVenomDrain', J(ex));
 }
 
 console.log('\n── K · the sources rule (A7) ──');

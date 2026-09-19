@@ -28,7 +28,7 @@ const PIN = {
   inlinedEngine: 'd70e94b34248bf85c9a3bf00724a724e0997580fdadb16f3d8bfa753d79d8791',
   sprBrahmastra: 'ca7898c5da25a7ec39b5beb28fb5196e14f111a5d69b3b812f03b41bca80166a',
   unitLanding: 'cd4ed62d5f7b67d61599a5f7d6e67c0ab9606adea88bc08d3bf5a6636e813011',
-  effectPlayer: '5d3ba4b04935c7860faf0344d7d7f49326745d8f80c478df6f21fdad6f5e48e5',   // EXPORT-5: the beat gate (hold · cap · beat()); EXPORT-4 0be2d7225a54…: the fitted law + the card floor; EXPORT-3 shipped 3a780fe5ec52…, EXPORT-1 30219bcb370e…
+  effectPlayer: '3b6efc548057d68c2eb746e5db9964e2915d853c2053d1ff320021742f754224',   // EXPORT-6: the arming and empowered-drain moments, height-fit, bottom-flush halves, the ready-anchored rise; EXPORT-5 5d3ba4b04935…: the beat gate (hold · cap · beat()); EXPORT-4 0be2d7225a54…: the fitted law + the card floor; EXPORT-3 shipped 3a780fe5ec52…, EXPORT-1 30219bcb370e…
   wireTypes: ['leap', 'mulligan', 'pass', 'play', 'shield'],
   // EXPORT-2: the nine actor modules and the faction effects, as certified in the manifestation lab when the export was built
   // (recorded here, never read from the lab: nothing outside the lab may name it — its own rule G2)
@@ -37,6 +37,11 @@ const PIN = {
   // EXPORT-5 · THE DESIGN FREEZE: one digest over every certified file in assets/manifest (73 files — every atlas, manifest, chain, the
   // registry and the faction effects), recorded at 03b1e45. Nothing a resilience rung does may move it
   certifiedAssets: 'e0e131e84c6bc96a95e9661983e376fbd8d2a96daa3dc5044b5ddaa6d6844f60',
+  // EXPORT-6 · THE CERTIFIED SET EXTENDS 73 → 77 (owner ruling "Export Vasuki Venom in live game."): the four Vasuki Venom Strike pack files,
+  // byte-identical to the LAB-24 certified packs (hashes recorded here, never read from the lab — G2); the original 73 stay proven by the digest above
+  certifiedAssets77: '0458d8c9a47fbff23d9c705da4765de983135f15aa1a3308dc6fca2deb0e8e9e',
+  vasukiPacks: { 'effects/venomstrike_rise/atlas.webp': '785162af06d4bcd84de61660ac8a14141db6ef074d063decd582f162597fc447', 'effects/venomstrike_rise/manifest.json': '4e6cd20451e4cfbd6febb284a38b35ce8753c47ec9840b8c00a57d1b9e5e127c',
+                 'effects/venomstrike_flood/atlas.webp': '79f13107684a03a0c5154138ba2798c0e8ef875ff9ee8ed425fd999bf7502cac', 'effects/venomstrike_flood/manifest.json': 'e54b298bc8d0c0c75d140551302c606f73bb4e216006c5535848550b8de71928' },
 };
 const ROUTED = ['brahmastra', 'pashupata', 'sudarshana', 'vajra'];
 const lineOf = (needle) => HTML.split('\n').find((l) => l.indexOf(needle) >= 0) || null;
@@ -68,7 +73,7 @@ function webpSize(b) {
 console.log('── R · the routing table (assets/manifest/registry.json) ──');
 {
   const routes = REG.routes || {};
-  ok('R1 · exactly four routes — Vajra, Sudarshana Chakra, Pashupatastra, and (EXPORT-3) Brahmastra (' + J(Object.keys(routes).sort()) + ')', J(Object.keys(routes).sort()) === J(ROUTED));
+  ok('R1 · exactly five routes — Vajra, Sudarshana Chakra, Pashupatastra, (EXPORT-3) Brahmastra and (EXPORT-6) Vasuki Venom Strike (' + J(Object.keys(routes).sort()) + ')', J(Object.keys(routes).sort()) === J(ROUTED.concat(['venomstrike'])));
   ok('R2 · each route names the classic sprite it replaces and the beat it owns: vajra → sprVajra at the destroy, sudarshana → sprSudarshana at the passive (the bite), pashupata → sprPashupatastra and brahmastra → sprBrahmastra at the play (the cast)',
      routes.vajra && routes.vajra.replaces === 'sprVajra' && routes.vajra.moment === 'destroy' && routes.sudarshana && routes.sudarshana.replaces === 'sprSudarshana' && routes.sudarshana.moment === 'passive' &&
      routes.pashupata && routes.pashupata.replaces === 'sprPashupatastra' && routes.pashupata.moment === 'play' && routes.brahmastra && routes.brahmastra.replaces === 'sprBrahmastra' && routes.brahmastra.moment === 'play', J(routes));
@@ -114,9 +119,10 @@ const SPECS = {}, ALLFILES = [];
   const all = [], walk = (d) => fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else all.push(path.relative(MAN, q)); });
   walk(MAN);
   const fxFiles = all.filter((f) => f.indexOf('effects/') === 0).sort();
-  ok('A4 · assets/manifest/effects holds exactly the chain and the five clips (' + fxFiles.length + ' files, ' + (rows.reduce((a, r) => a + r.file, 0) / 1048576).toFixed(2) + ' MB of atlas) — the actors (EXPORT-2) are inventoried in H3',
+  ok('A4 · assets/manifest/effects holds exactly the chain and the seven clips (' + fxFiles.length + ' files, ' + (rows.reduce((a, r) => a + r.file, 0) / 1048576).toFixed(2) + ' MB of atlas) — the actors (EXPORT-2) are inventoried in H3',
      J(fxFiles) === J(['effects/brahmastra/atlas.webp', 'effects/brahmastra/manifest.json', 'effects/pashupata/atlas.webp', 'effects/pashupata/manifest.json', 'effects/sudarshana/chain.json', 'effects/sudarshana_invoke/atlas.webp', 'effects/sudarshana_invoke/manifest.json',
-                       'effects/sudarshana_strike/atlas.webp', 'effects/sudarshana_strike/manifest.json', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json']), J(fxFiles));
+                       'effects/sudarshana_strike/atlas.webp', 'effects/sudarshana_strike/manifest.json', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json',
+                       'effects/venomstrike_flood/atlas.webp', 'effects/venomstrike_flood/manifest.json', 'effects/venomstrike_rise/atlas.webp', 'effects/venomstrike_rise/manifest.json']), J(fxFiles));   /* EXPORT-6: + Vasuki Venom Strike's rise and flood */
   ALLFILES.push(...all);
 }
 
@@ -188,16 +194,16 @@ function sandbox(o) {
       const rel = abs(u).pathname; if (o.hold && o.hold(rel)) return new Promise(() => {});
       const p = read(u); if (!p) return Promise.resolve({ ok: false, status: 404 });
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(fs.readFileSync(p, 'utf8'))), blob: () => Promise.resolve(new Blob([fs.readFileSync(p)])) }); },
-    createImageBitmap: (b) => (o.decodeFails === true || (typeof o.decodeFails === 'function' && o.decodeFails())) ? Promise.reject(new Error('decode refused')) : Promise.resolve({ width: 64, height: 32, close() {} }),
+    createImageBitmap: (b) => (o.decodeFails === true || (typeof o.decodeFails === 'function' && o.decodeFails())) ? Promise.reject(new Error('decode refused')) : (o.decodeGate ? o.decodeGate.then(() => ({ width: 64, height: 32, close() {} })) : Promise.resolve({ width: 64, height: 32, close() {} })),
     Image: function () { const im = this; setTimeout(() => { if (im.onerror) im.onerror(); }, 0); },
-    document: { createElement: () => el, querySelector: () => o.halfRect ? Object.assign({}, el, { getBoundingClientRect: () => o.halfRect }) : el },
+    document: { createElement: () => el, querySelector: (sel) => o.halves && o.halves[sel] ? Object.assign({}, el, { getBoundingClientRect: () => o.halves[sel] }) : o.halfRect ? Object.assign({}, el, { getBoundingClientRect: () => o.halfRect }) : el },
     $: () => el, EffectClip: EC, G: { players: [{ hand: [] }, { hand: [] }] }, BLog: { fx: null },
     posOf: () => ({ cx: 120, top: 60, rect: { top: 40, height: 90, width: 64, left: 88 } }), halfSel: (s) => s ? '.half.opp' : '.half.me',
-    ownerPiOfUid: () => 0, reducedMotion: () => !!o.reduced, vfxT: () => 1.3,
+    ownerPiOfUid: (u) => (o.ownerPi ? o.ownerPi(u) : 0), reducedMotion: () => !!o.reduced, vfxT: () => 1.3,
   };
   ctx.window = ctx; ctx.URL.createObjectURL = ctx.URL.createObjectURL || (() => 'blob:x'); ctx.URL.revokeObjectURL = ctx.URL.revokeObjectURL || (() => {});
   vm.createContext(ctx);
-  vm.runInContext(GLUE + '\n;globalThis.__fx = { FX, fxBoot, fxPrefetch, fxPrefetchHands, fxReady, fxCast, fxOwnsMoment, fxOnError, fxSkip, fxClips, fxAtlasUrl, fxBeatFrom, fxLoadAtlas, ASSET_RETRY };', ctx);
+  vm.runInContext(GLUE + '\n;globalThis.__fx = { FX, fxBoot, fxPrefetch, fxPrefetchHands, fxReady, fxCast, fxOwnsMoment, fxOnError, fxSkip, fxClips, fxAtlasUrl, fxBeatFrom, fxLoadAtlas, ASSET_RETRY, fxRoute, VS, vsNoteCasts, vsStriker, vsDrainPick, fxVenomDrain, fxCastDrain };', ctx);
   return { ctx, fx: ctx.__fx, logs, warns, fetched, advance: (ms) => { now += ms; }, get now() { return now; }, tick: (ms) => { now += ms; if (ctx.__fx.FX.player && ctx.__fx.FX.run) ctx.__fx.FX.player.frame(now); } };
 }
 const flush = () => new Promise((r) => setTimeout(r, 5));
@@ -528,8 +534,11 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     // X1 · THE DESIGN FREEZE
     const all = []; (function walk(d) { fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else all.push(q); }); })(MAN); all.sort();
     const digest = sha(all.map((f) => path.relative(MAN, f) + ' ' + sha(fs.readFileSync(f))).join('\n'));
-    ok('X1 · THE DESIGN FREEZE (owner, binding): every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chain, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…): no atlas, portion, plate size, tempo, plan or impact frame moves in a resilience rung',
-       digest === PIN.certifiedAssets && all.length === 73, digest);
+    // EXPORT-6: the ORIGINAL 73 still reproduce the certified digest — every file byte-identical, the registry equal once its one new route is taken out
+    const NEW6 = Object.keys(PIN.vasukiPacks), regNoVS = (() => { const r = JSON.parse(fs.readFileSync(path.join(MAN, 'registry.json'), 'utf8')); delete r.routes.venomstrike; return JSON.stringify(r, null, 2).replace(/[\u007f-\uffff]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')) + '\n'; })();   // the registry is written ASCII-escaped (Python json.dumps)
+    const digest73 = sha(all.filter((f) => NEW6.indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regNoVS) : sha(fs.readFileSync(f)))).join('\n'));
+    ok('X1 · THE DESIGN FREEZE (owner, binding): every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chain, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…); EXPORT-6 extends it 73 → 77 with the four Vasuki pack files, and the ORIGINAL 73 still reproduce their certified digest ' + digest73.slice(0, 12) + '… (every file unchanged; the registry differs only by its one new route): no atlas, portion, plate size, tempo, plan or impact frame moves',
+       digest === PIN.certifiedAssets77 && all.length === 77 && digest73 === PIN.certifiedAssets, J({ digest, digest73 }));
 
     // the player on a fake clock: every drawn cell with its time, and the cues as they fired
     const RATE = 1000 / 60;
@@ -634,6 +643,166 @@ const card = (id) => ({ id, n: id, t: 'astra' });
       let decoded = false; try { await S2.mf.mfDecode('hanuman', 256); decoded = true; } catch (e) {}
       ok('X10 · THE RETRY, actors (owner ruling 4 — the EXPORT-4 per-render retry fixed): a permanently missing actor atlas costs exactly ' + n + ' fetches across 300 hand renders in 75 s, never one per render; a refused decode evicts the actor\'s bytes (' + evicted + '), the refetch after the backoff restores them (' + back + ') and they decode (' + decoded + ')',
          n === 4 && threw && evicted && back && decoded, J({ n, threw, evicted, back, decoded })); }
+  }
+
+  // ═══ Y · EXPORT-6: VASUKI VENOM STRIKE — the rise at the cast, the flood at the empowered drain ═══
+  console.log('\n── Y · Vasuki Venom Strike in the live game (EXPORT-6) ──');
+  {
+    const VSR = loadSpec(REG.routes.venomstrike.spec), VSF = loadSpec(REG.routes.venomstrike.drain.spec);
+    const shaOf = (rel) => sha(fs.readFileSync(path.join(MAN, rel)));
+    // Y1 · the packs are the certified lab packs (recorded here, never read from the lab — G2), registered as one route with a nested drain
+    const packs = Object.keys(PIN.vasukiPacks).map((rel) => ({ rel, ok: shaOf(rel) === PIN.vasukiPacks[rel] }));
+    const rt = REG.routes.venomstrike;
+    const sizes = [VSR, VSF].map((m) => { const b = fs.readFileSync(path.join(path.dirname(m.__file), m.atlas)), px = webpSize(b); return { px, want: m.atlasSize, bytes: b.length, dec: m.atlasSize.w * m.atlasSize.h * 4 }; });
+    ok('Y1 · THE TWO VASUKI PACKS ARE THE CERTIFIED LAB PACKS: all four files match the hashes recorded from the LAB-24 certification (' + packs.map((x) => x.rel.split('/')[1] + '/' + x.rel.split('/')[2] + (x.ok ? ' ✓' : ' ✗')).join(', ') + '), both validate under the page\'s own player — the RISE an arming clip (no impact), the FLOOD an empowered-drain clip (impact cell ' + VSF.impact + ' = f' + String(VSF.cells[VSF.impact].src).padStart(3, '0') + '), each sized as a HEIGHT fraction of its half (' + VSR.scaleRule.heightFraction + ') — and they are registered as ONE route: venomstrike → ' + rt.replaces + ' at the ' + rt.moment + ', its nested drain → ' + rt.drain.replaces + ' at the ' + rt.drain.moment + '. Atlases ' + sizes.map((z) => (z.bytes / 1024).toFixed(0) + ' KB, ' + (z.dec / 1048576).toFixed(2) + ' MB decoded').join(' · ') + ', each under the E1 cap',
+       packs.length === 4 && packs.every((x) => x.ok) && EC.validate(VSR).ok && EC.validate(VSF).ok && VSR.moment === 'arming' && VSR.impact === null && VSF.moment === 'empowered-drain' && VSF.impact === 14 && VSF.cells[14].src === 77 &&
+       VSR.scaleRule.heightFraction === 1 && VSF.scaleRule.heightFraction === 1 && VSR.scaleRule.halfFraction == null && rt.spec === 'effects/venomstrike_rise/manifest.json' && rt.replaces === 'sprVenomSurge' && rt.moment === 'play' &&
+       rt.drain && rt.drain.spec === 'effects/venomstrike_flood/manifest.json' && rt.drain.replaces === 'sprVenomDrain' && rt.drain.moment === 'drain' && sizes.every((z) => z.px && z.px.w === z.want.w && z.px.h === z.want.h && z.dec <= EC.E1.capBytes), J({ packs, sizes }));
+
+    // the engine's own Venom Strike boards (a small builder — the lab's fixtures are not read from here, G2)
+    function vsBuild(seat, o) {
+      o = o || {};
+      const deva = 1 - seat, nagaUnits = ['Naga Warrior', 'Naga Sadhu', 'Naga Archer', 'Naga Enchantress', 'Kaliya', 'Ulupi', 'Naga Hatchling', 'Ashvatara'];
+      const nd = (o.noStrike ? [] : ['Vasuki Venom Strike']).concat(o.twoStrikes ? ['Vasuki Venom Strike'] : [], o.karkotaka ? ['Karkotaka'] : [], nagaUnits).slice(0, 12);
+      const dd = ['Marut', 'Gandharva', 'Chandra Dev', 'Deva Soldier', 'Kubera', 'Narada', 'Urvashi', 'Brihaspati', 'Vishwakarma', 'Agni', 'Yama', 'Indra'];
+      for (let seed = 1; seed < 2000; seed++) {
+        let x = seed; const rng = () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
+        const decks = seat === 0 ? [nd, dd] : [dd, nd], sc = { p0Deck: decks[0], p1Deck: decks[1], p0Hand: decks[0].slice(0, 10), p1Hand: decks[1].slice(0, 10), mulligan: 0 };
+        if (o.deciding) sc.winTarget = 1;
+        const g = E.newGame({ rng, p0: 'You', p1: 'Opponent', realm: 'mrityulok', p0Faction: seat === 0 ? 'nagas' : 'devas', p1Faction: seat === 1 ? 'nagas' : 'devas', scenario: sc });
+        if (g.turn !== deva) continue;
+        let good = true; const act = (who, name) => { if (!good || g.turn !== who) { good = false; return; } if (name === 'pass') { E.pass(g, who); return; } const h = g.players[who].hand.findIndex((c) => c.n === name); if (h < 0 || E.playableIndices(g, who).indexOf(h) < 0) { good = false; return; } E.playCard(g, who, h); };
+        const out = { seat, casts: [] };
+        const dl = o.noEnemyUnits ? [] : ['Marut', 'Gandharva', 'Chandra Dev'], nl = (o.karkotaka ? ['Karkotaka'] : ['Naga Warrior']).concat(o.noStrike ? ['Naga Sadhu'] : ['Vasuki Venom Strike'], o.twoStrikes ? ['Vasuki Venom Strike'] : []);
+        if (o.noEnemyUnits) act(deva, 'pass');
+        for (let i = 0; i < Math.max(dl.length, nl.length) && good; i++) {
+          if (i < dl.length && g.turn === deva) act(deva, dl[i]);
+          if (i < nl.length && good) { const e0 = g.events.length; act(seat, nl[i]); if (nl[i] === 'Vasuki Venom Strike') out.casts.push(g.events.slice(e0)); }
+        }
+        if (!good) continue;
+        const rec = () => ({ round: g.round, striker: g.players[seat].venomStrike === g.round ? seat : (g.players[deva].venomStrike === g.round ? deva : -1), e0: g.events.length });
+        if (!g.players[1 - g.turn].passed) { const r = rec(); act(g.turn, 'pass'); if (!good) continue; out.firstPass = { events: g.events.slice(r.e0), striker: r.striker }; }
+        if (g.round !== 1 || g.over) continue;
+        const r = rec(); act(g.turn, 'pass'); if (!good || (g.round === 1 && !g.over)) continue;
+        out.drain = { events: g.events.slice(r.e0), striker: r.striker, over: !!g.over };
+        out.names = [g.players[0].name, g.players[1].name];
+        return out;
+      }
+      return null;
+    }
+    const VSB = [0, 1].map((s) => vsBuild(s));
+    const HALVES = { '.half.me': { left: 0, top: 322, width: 373, height: 229, right: 373, bottom: 551 }, '.half.opp': { left: 0, top: 91, width: 373, height: 229, right: 373, bottom: 320 } };
+    const gFor = (names, round, flags) => ({ round: round || 1, players: [0, 1].map((i) => ({ name: names[i], venomStrike: flags ? flags[i] : 0, units: [], heroes: [], discard: [], hand: [] })) });
+
+    // Y2 · the rise through the live glue, both seats: ready → the clip owns the cast (the classic surge held); not ready → the classic surge
+    const Y2 = [];
+    for (const seat of [0, 1]) {
+      const ev = VSB[seat].casts[0], S = sandbox({ halves: HALVES, ownerPi: () => seat }); await S.fx.fxBoot(); await S.fx.fxPrefetch('venomstrike'); await flush();
+      const r = S.fx.fxCast({ id: 'venomstrike', n: 'Vasuki Venom Strike', t: 'astra' }, ev[0], ev, {}); let fired = 0; const owns = S.fx.fxOwnsMoment('venomstrike', () => { fired++; });
+      const pl = r && r.places[0], half = seat === 0 ? HALVES['.half.me'] : HALVES['.half.opp'];
+      const Sn = sandbox({ halves: HALVES, ownerPi: () => seat }); await Sn.fx.fxBoot();
+      const rn = Sn.fx.fxCast({ id: 'venomstrike', n: 'Vasuki Venom Strike', t: 'astra' }, ev[0], ev, {}); let firedN = 0; const ownsN = Sn.fx.fxOwnsMoment('venomstrike', () => { firedN++; }); if (!ownsN) firedN++;
+      Y2.push({ seat, clip: !!(r && r.plan.clip), arming: !!(r && r.plan.arming), impactCues: r ? r.plan.cues.filter((c) => c.cue === 'impact').length : -1, place: r && r.plan.segments[0].place, owns, fired,
+                onCasterHalf: !!pl && Math.abs(pl.h - half.height) < 1e-6 && Math.abs(pl.y - half.top) < 1e-6 && Math.abs(pl.y + pl.h - half.bottom) < 1e-6, beatWant: S.fx.FX.beatWant, notReady: rn === null && !ownsN && firedN === 1 });
+    }
+    ok('Y2 · THE RISE, through the live glue, both seats: Venom Strike\'s cast starts an ARMING clip (no impact cue, no beat to wait for) on the CASTER\'s half — height-fit, top and bottom on the half\'s borders — and the clip owns the cast, so the classic sprVenomSurge is held (fired ' + Y2.map((x) => x.fired).join(' / ') + '); a cast whose bytes never arrived (a staked opponent\'s first cast: no hand to prefetch from) returns null and the classic surge fires, exactly as yesterday',
+       Y2.every((x) => x.clip && x.arming && x.impactCues === 0 && x.place === 'caster-half-bottom' && x.owns === true && x.fired === 0 && x.onCasterHalf && x.beatWant === null && x.notReady), J(Y2));
+
+    // Y3 · the ready-anchored rise (ruling A): a slow decode still opens on cell 0; past the cast beat's settle the classic surge fires once
+    const riseWith = async (seat, decodeAtMs) => {
+      let release = null; const gate = new Promise((res) => { release = res; });
+      const S = sandbox({ halves: HALVES, ownerPi: () => seat, decodeGate: gate }); await S.fx.fxBoot(); await S.fx.fxPrefetch('venomstrike'); await flush();
+      const ev = VSB[seat].casts[0], r = S.fx.fxCast({ id: 'venomstrike', n: 'Vasuki Venom Strike', t: 'astra' }, ev[0], ev, {});
+      let fired = 0; S.fx.fxOwnsMoment('venomstrike', () => { fired++; });
+      const t0 = S.now; let n = 0;
+      while (r && !r.done && n++ < 400) { if (decodeAtMs != null && release && S.now - t0 >= decodeAtMs) { release(); release = null; await flush(); await flush(); } S.tick(1000 / 60); }
+      return { r, first: r && r.log.drawn[0], cells: r && new Set(r.log.drawn).size, started: r && r.log.clipStartedAt, late: r && r.log.armingLate, fired, bound: r && r.plan.timeline.castBeatMs };
+    };
+    const y3 = [await riseWith(0, 300), await riseWith(1, 700)], y3late = [await riseWith(0, null), await riseWith(1, null)];
+    ok('Y3 · THE RISE IS NEVER PARTIAL (ruling A): with the decode landing ' + [300, 700].join(' / ') + ' ms after the cast, the rise still opens on CELL ' + y3.map((x) => x.first).join(' / ') + ' and plays all ' + VSR.cells.length + ' cells, its clock started at the decode (' + y3.map((x) => Math.round(x.started)).join(' / ') + ' ms) — and with no decode by the cast beat\'s settle (' + Math.round(y3late[0].bound) + ' ms) the rise stands down, never drawing a cell, and the classic sprVenomSurge fires ONCE (' + y3late.map((x) => x.fired).join(' / ') + ')',
+       y3.every((x) => x.first === 0 && x.cells === 55 && x.started >= 300 - 1 && x.late == null && x.fired === 0) && y3late.every((x) => x.r && x.r.log.drawn.length === 0 && x.late != null && x.fired === 1), J(y3.concat(y3late).map((x) => [x.first, x.cells, x.started && Math.round(x.started), x.late && Math.round(x.late), x.fired])));
+
+    // Y4 · the flood through the live glue: armed at the empowered toast, its eruption heard on the FIRST venom event (the EXPORT-5 gate)
+    const flood = async (seat, beatDelay) => {
+      const d = VSB[seat].drain, S = sandbox({ halves: HALVES, ownerPi: (u) => (VSB[seat].names && d.events.some((e) => e.type === 'venom' && e.targetUids.indexOf(u) >= 0)) ? 1 - seat : seat });
+      S.ctx.G = gFor(VSB[seat].names); await S.fx.fxBoot(); await S.fx.fxPrefetch('venomstrike:drain'); await flush();
+      const toast = d.events.find((e) => e.type === 'toast'); let fired = 0;
+      const picked = S.fx.vsDrainPick(toast, d.events, d.striker), owned = picked && S.fx.fxVenomDrain(toast, d.events, d.striker, {}, () => { fired++; });
+      const r = S.fx.FX.run; if (!r) return { picked, owned, fired, r: null };
+      const impactT = r.plan.cues.find((c) => c.cue === 'impact').t, t0 = S.now, firstVenom = d.events.find((e) => e.type === 'venom');
+      let beaten = beatDelay == null, n = 0;
+      while (!r.done && n++ < 600) { if (!beaten && S.now - t0 >= impactT + beatDelay) { S.fx.fxBeatFrom(firstVenom); beaten = true; } await flush(); S.tick(1000 / 60); }
+      if (!beaten) S.fx.fxBeatFrom(firstVenom);
+      const held = [...new Set((r.log.bySegment.strike || []).filter((c, i, a) => true))];
+      return { picked, owned, fired, r, impactT, impactAt: r.log.impactDrawnAt, beat: r.log.beat, cap: r.log.beatLateCap, place: r.plan.segments[0].place, seq: r.log.bySegment.strike || [] };
+    };
+    const onT = [await flood(0, -1000 / 60), await flood(1, -1000 / 60)], lateF = await flood(0, 1000), capF = await flood(1, 5000);
+    const heldCell = (x) => x.seq && x.seq.indexOf(14) > 0 ? x.seq[x.seq.indexOf(14) - 1] : null;
+    ok('Y4 · THE FLOOD, through the live glue: the empowered drain\'s toast is picked, the flood is armed on the ENEMY half (' + onT.map((x) => x.place).join(' / ') + ') and holds the classic plate; its eruption (cell 14 = f077) lands on the drain\'s FIRST venom beat — on time at ' + onT.map((x) => Math.round(x.impactAt)).join(' / ') + ' ms for a planned ' + Math.round(onT[0].impactT) + ' (no hold); a beat 1000 ms late holds the pre-impact cell (cell ' + heldCell(lateF) + ' = f076) and erupts on it (' + Math.round(lateF.impactAt) + ' ms); past the 1500 ms cap the flood stands down and the classic sprVenomDrain fires ONCE, on the late beat (' + capF.fired + ')',
+       onT.concat([lateF, capF]).every((x) => !!x.r) && onT.every((x) => x.picked && x.owned && x.fired === 0 && x.place === 'enemy-half-bottom' && x.beat === null && Math.abs(x.impactAt - x.impactT) <= 1000 / 60 + 1) &&
+       lateF.beat && Math.abs(lateF.beat.late - 1000) < 1000 / 60 + 1 && heldCell(lateF) === 13 && lateF.impactAt >= lateF.impactT + 1000 - 1 && lateF.fired === 0 && capF.cap != null && capF.impactAt == null && capF.fired === 1,
+       J({ onT: onT.map((x) => [x.impactAt, x.beat]), late: [lateF.beat, heldCell(lateF), lateF.impactAt], cap: [capF.cap, capF.fired] }));
+
+    // Y5–Y7 · THE TRUTH TABLE, from the engine: which drains flood (the pick), once per drain
+    const rows = [];
+    for (const seat of [0, 1]) for (const [k, o] of [['empowered', {}], ['twoStrikes', { twoStrikes: true }], ['deciding', { deciding: true }], ['ordinary', { noStrike: true }], ['karkotaka', { karkotaka: true }], ['noEnemyUnits', { noEnemyUnits: true }]]) {
+      const b = vsBuild(seat, o); if (!b) { rows.push({ seat, k, built: false }); continue; }
+      const S = sandbox({ halves: HALVES }); S.ctx.G = gFor(b.names);
+      const pickIn = (x) => x ? x.events.filter((e) => S.fx.vsDrainPick(e, x.events, x.striker)).length : 0;
+      rows.push({ seat, k, built: true, drainPicks: pickIn(b.drain), firstPassPicks: pickIn(b.firstPass), toasts: b.drain.events.filter((e) => e.type === 'toast').map((e) => e.text), venoms: b.drain.events.filter((e) => e.type === 'venom').length, striker: b.drain.striker, over: b.drain.over, casts: b.casts.length });
+    }
+    const R = (s, k) => rows.find((x) => x.seat === s && x.k === k);
+    ok('Y5 · THE FLOOD PLAYS where the engine empowers the drain (both seats): the empowered round-end drain (toast "' + R(0, 'empowered').toasts[0] + '", ' + R(0, 'empowered').venoms + ' Units drained) — picked ONCE; two Venom Strikes in one round (one flag, one drain) — once; the round that ends the match (the drain precedes the match check) — once',
+       [0, 1].every((s) => ['empowered', 'twoStrikes', 'deciding'].every((k) => R(s, k).built && R(s, k).drainPicks === 1 && R(s, k).striker === s)) && [0, 1].every((s) => R(s, 'twoStrikes').casts === 2 && R(s, 'deciding').over), J(rows));
+    ok('Y6 · NO FLOOD where the engine does not empower the drain (both seats): an ORDINARY drain (toast −1, no striker), a KARKOTAKA round (the round-end drain is skipped; only the flat −1 early tick fires, on the first pass) and NO enemy Units (no drain, no toast) — the pick never fires, so neither the flood nor the classic plate plays',
+       [0, 1].every((s) => R(s, 'ordinary').built && R(s, 'ordinary').drainPicks === 0 && R(s, 'ordinary').striker === -1 && R(s, 'karkotaka').drainPicks === 0 && R(s, 'karkotaka').firstPassPicks === 0 && R(s, 'karkotaka').toasts.length === 0 && R(s, 'noEnemyUnits').drainPicks === 0 && R(s, 'noEnemyUnits').toasts.length === 0), J(rows.filter((x) => ['ordinary', 'karkotaka', 'noEnemyUnits'].indexOf(x.k) >= 0)));
+    const one = onT.map((x, i) => ({ venoms: VSB[i].drain.events.filter((e) => e.type === 'venom').length, impacts: x.r ? x.r.plan.cues.filter((c) => c.cue === 'impact').length : 0, starts: x.r ? x.r.plan.cues.filter((c) => c.cue === 'clip-start').length : 0 }));
+    { const S = sandbox({ halves: HALVES, ownerPi: () => 1 }); S.ctx.G = gFor(VSB[0].names); await S.fx.fxBoot(); await S.fx.fxPrefetch('venomstrike:drain'); await flush();
+      const d = VSB[0].drain, toast = d.events.find((e) => e.type === 'toast'); S.fx.fxVenomDrain(toast, d.events, 0, {}, () => {});
+      const wants = []; for (const e of d.events.filter((x) => x.type === 'venom')) { wants.push(!!S.fx.FX.beatWant); S.fx.fxBeatFrom(e); }
+      ok('Y7 · ONE FLOOD PER DRAIN: the empowered drain hits ' + one.map((x) => x.venoms).join(' / ') + ' Units, one venom beat each, and the flood is ONE half-plate — one clip-start, one impact cue — and it hears only the FIRST venom beat (listening before each: ' + J(wants) + ')',
+         one.every((x) => x.venoms === 3 && x.impacts === 1 && x.starts === 1) && J(wants) === J([true, false, false]), J({ one, wants })); }
+
+    // Y8 · THE SIDE CHECK (ruling B): the striker's OWN drain names the drained player; a −3 toast naming the striker's own side is never picked
+    const y8 = [0, 1].map((seat) => { const d = VSB[seat].drain, S = sandbox(); S.ctx.G = gFor(VSB[seat].names);
+      const decoy = { type: 'toast', abilityName: 'Venom', text: 'Venom drains ' + VSB[seat].names[seat] + '’s Units −3' }, real = d.events.find((e) => e.type === 'toast'), evs = [decoy].concat(d.events);
+      return { seat, decoy: S.fx.vsDrainPick(decoy, evs, seat), real: S.fx.vsDrainPick(real, evs, seat) }; });
+    const site = between("if(ev.abilityName==='Venom'){", "factionToast(ev.abilityName, ev.text); await cDelay(620); return; }") || '';
+    ok('Y8 · THE DRAIN SIDE-CHECK (ruling B — it also corrects the classic plate in Naga mirrors): a −3 Venom toast that drains the STRIKER\'s own side (placed first) is not picked (' + y8.map((x) => x.decoy).join(' / ') + '), the real one is (' + y8.map((x) => x.real).join(' / ') + '); the drain site asks vsDrainPick and hands the moment to fxVenomDrain — sprVenomDrain is called only as that function\'s classic fallback, and sprVenomSurge only behind the rise\'s ownership test',
+       y8.every((x) => x.decoy === false && x.real === true) && /if\(vsDrainPick\(ev, evs, np\)\)\{/.test(site) && /fxVenomDrain\(ev, evs, np, snap, \(\)=>VFX\.sprVenomDrain\(/.test(site) &&
+       (HTML.match(/VFX\.sprVenomDrain\(/g) || []).length === 1 && (HTML.match(/VFX\.sprVenomSurge\(/g) || []).length === 1 && /fire=\(\)=>VFX\.sprVenomSurge\([^;]+\); if\(!fxOwnsMoment\('venomstrike', fire\)\) fire\(\);/.test(HTML), J(y8));
+
+    // Y9 · THE STAKED ROAD (ruling C): the striker from the cast's own play event, by ABSOLUTE seat
+    const y9 = (() => { const S = sandbox(); const ev = VSB[1].casts[0];
+      S.ctx.G = gFor(['You', 'Opponent'], 1); S.fx.vsNoteCasts(ev, 1); const fromEvent = S.fx.vsStriker();
+      S.ctx.G.round = 2; const stale = S.fx.vsStriker();
+      S.ctx.G = gFor(['You', 'Opponent'], 1, [1, 0]); const fromFlag = S.fx.vsStriker();
+      return { fromEvent, stale, fromFlag, cast: S.fx.VS.cast }; })();
+    const vsSrc = fnBody('vsStriker') || '', runA = HTML.slice(HTML.indexOf('function runAction(mutate, opts={}){'), HTML.indexOf('function runAction(mutate, opts={}){') + 3000);   // (fnBody stops at the opts={} default)
+    ok('Y9 · THE STAKED ROAD (ruling C): the staked view carries no venomStrike flag, so the cast\'s own play event is recorded (seat ' + (y9.cast && y9.cast.seat) + ', round ' + (y9.cast && y9.cast.round) + ') and names the striker (' + y9.fromEvent + '); a record from another round names no one (' + y9.stale + '); on the engine roads the flag answers (' + y9.fromFlag + '). The striker is an ABSOLUTE seat (vsStriker never reads ME/OPP — the old capture\'s relative seat is gone), captured before the mutate, the casts noted after it, and a new match forgets the last one\'s cast',
+       y9.fromEvent === 1 && y9.stale === -1 && y9.fromFlag === 0 && !/\bME\b|\bOPP\b/.test(vsSrc) && /venomStrikeNpAtAction = vsStriker\(\);/.test(runA) && /vsNoteCasts\(evs, opts\.actor\)/.test(runA) &&
+       runA.indexOf('venomStrikeNpAtAction = vsStriker()') < runA.indexOf('mutate();') && runA.indexOf('vsNoteCasts(evs') > runA.indexOf('mutate();') && /function resetChoreo\(\)\{[^\n]*VS\.cast=null;/.test(HTML), J(y9));
+
+    // Y10 · THE PREFETCH (ruling A: hand entry only): both packs' bytes arrive with the card; a failed drain fetch rides the shared retry, and fails open
+    const y10 = await (async () => { const S = sandbox(); S.ctx.G = { round: 1, players: [{ name: 'You', hand: [{ id: 'venomstrike' }] }, { name: 'Opponent', hand: [] }] }; await S.fx.fxBoot();
+      S.fx.fxPrefetchHands(); await flush(); await flush(); await flush();
+      const got = S.fetched.map((f) => f[0]), both = ['assets/manifest/effects/venomstrike_rise/atlas.webp', 'assets/manifest/effects/venomstrike_flood/atlas.webp'].every((u) => got.indexOf(u) >= 0);
+      const u = 'assets/manifest/effects/venomstrike_flood/atlas.webp', S2 = sandbox({ fetchFail: (rel) => rel === u, halves: HALVES }); S2.ctx.G = gFor(VSB[0].names); S2.ctx.G.players[0].hand = [{ id: 'venomstrike' }];
+      await S2.fx.fxBoot(); S2.fx.fxPrefetchHands(); await flush(); await flush(); await flush();
+      const rec = S2.fx.ASSET_RETRY.s[Object.keys(S2.fx.ASSET_RETRY.s).find((k) => /venomstrike_flood\/atlas/.test(k))] || null;
+      const d = VSB[0].drain, toast = d.events.find((e) => e.type === 'toast'); let fired = 0; const owned = S2.fx.fxVenomDrain(toast, d.events, 0, {}, () => { fired++; });
+      return { both, ready: [S.fx.fxReady('venomstrike'), S.fx.fxReady('venomstrike:drain')], retry: rec && { attempts: rec.attempts, inMs: Math.round(rec.nextAt - S2.now) }, owned, fired, riseReady: S2.fx.fxReady('venomstrike') }; })();
+    ok('Y10 · THE PREFETCH (ruling A — hand entry only, no match-start prefetch): Venom Strike entering a visible hand fetches BOTH packs\' bytes (rise and flood — decoded only at their own moments; ready ' + J(y10.ready) + '); a drain atlas that fails rides the shared retry (attempt ' + (y10.retry && y10.retry.attempts) + ', again in ' + (y10.retry && y10.retry.inMs) + ' ms), and a drain met without its bytes fails open — the classic sprVenomDrain fires (' + y10.fired + ') while the rise, fetched fine, stays ready',
+       y10.both && J(y10.ready) === J([true, true]) && y10.retry && y10.retry.attempts === 1 && y10.retry.inMs === 2000 && y10.owned === false && y10.fired === 1 && y10.riseReady === true && !/matchStart|startGame[^\n]*fxPrefetch/.test(fnBody('fxPrefetchHands') || ''), J(y10));
+
+    // Y11 · THE DEVICE MATRIX: both plates height-fit on all 16 measured screens; the side feather inside the portrait overhang
+    const DM = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports, fitRows = [];
+    DM.forEach((v) => [VSR, VSF].forEach((m) => { const H = v.half, p = EC.place(m, { cx: 0, cy: H.h, w: 0, halfW: H.w, halfH: H.h }), over = (p.w - H.w) / 2, fz = m.audit.vignette.left.px * p.w / m.audit.box[2];
+      fitRows.push({ vp: v.vw + 'x' + v.vh, m: m.moment, h: p.h, halfH: H.h, top: p.y, bottom: p.y + p.h, over: +over.toFixed(2), clear: +(over - fz).toFixed(2), layout: v.layout }); }));
+    const portrait = fitRows.filter((x) => x.over > 0);
+    ok('Y11 · THE DEVICE MATRIX: both plates placed on all ' + DM.length + ' measured screens (' + fitRows.length + ' placements) — each plate\'s height IS its half\'s height, its top and bottom on the half\'s borders; on the ' + (portrait.length / 2) + ' portrait screens it overhangs the half and its 54 px side feather lies wholly in that overhang (tightest clearance ' + Math.min(...portrait.map((x) => x.clear)).toFixed(2) + ' CSS px, the 360 px phone); on the ' + (fitRows.filter((x) => x.over <= 0).length / 2) + ' landscape screens it fits inside the half',
+       fitRows.length === 32 && fitRows.every((x) => Math.abs(x.h - x.halfH) < 1e-9 && Math.abs(x.top) < 1e-9 && Math.abs(x.bottom - x.halfH) < 1e-9) && portrait.length === 14 && portrait.every((x) => x.layout === 'portrait' && x.clear >= 0) &&
+       fitRows.filter((x) => x.over <= 0).every((x) => x.layout === 'landscape'), J(fitRows.filter((x) => x.clear < 0)));
   }
 
   // ═══ W · THE WIRE ═══

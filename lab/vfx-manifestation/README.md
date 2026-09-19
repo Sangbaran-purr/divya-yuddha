@@ -2019,6 +2019,19 @@ The lab page carries both plates: **venomstrike** (the rise, from the cast fixtu
 round-ending pass). The rise prefetches the flood's bytes when the card enters a hand; each decodes only at its own moment. Checks V1–V13,
 each proven against a mutant.
 
+## EXPORT-6: Vasuki Venom Strike enters the live game — the lab's side
+
+**Owner rulings, verbatim (2026-09-19).** "Export Vasuki Venom in live game." Then, on the STEP-0 decisions, "Go." — meaning: **A** hand-entry
+prefetch only (no match-start prefetch) and the ready-anchored rise approved; **B** the drain side-check approved (it also corrects the classic
+plate in Naga mirrors); **C** the staked-road striker derived from the cast's own play event approved (the classic drain plate and the flood become
+live on the staked road); **D** the flood ending a still-playing rise approved.
+
+The player (`lib/effectclip.js`) gains one opt-in option, `readyAnchor`, for ARMING clips only (the rise): the clip's clock starts when its atlas
+is DECODED, not at the cast, so a slow decode still opens on cell 0 — never a partial play. It is bounded by the cast beat's own settle (1,443 ms
+at Normal, 866 at Fast); past it the clip stands down, never drawing a cell, and `env.onArmingLate` lets the page fire the classic surge once. The
+lab page does not pass it (its plays are unchanged); the live game does. **V14/V15** prove both directions; **V16** proves the live game's four
+Vasuki pack files are this lab's certified packs byte for byte (the lab may read the game — the game never reads the lab).
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

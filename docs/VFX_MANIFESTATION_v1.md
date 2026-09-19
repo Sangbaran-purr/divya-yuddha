@@ -450,3 +450,45 @@ BB5. THE RETRY. One helper per asset URL covers effect specs and
     retry fetches fresh ones. Every step fails open to the classic
     path, and nothing waits on a retry. This also fixes the EXPORT-4
     actor prefetch, which retried on every render.
+
+## AMENDMENT 2026-09-19 — VASUKI VENOM STRIKE ENTERS THE LIVE GAME (EXPORT-6)
+
+CC1. THE RULINGS, verbatim. "Export Vasuki Venom in live game." Then, on the STEP-0
+    decisions, "Go." — meaning: A = hand-entry prefetch only (no match-start
+    prefetch) AND the ready-anchored rise approved; B = the drain side-check
+    approved (it also corrects the classic plate in Naga mirrors); C = the
+    staked-road striker derived from the cast's play event approved (the classic
+    drain plate and the flood become live on the staked road); D = the flood
+    ending a still-playing rise approved. Lanka Dahan is not in scope (reshoot).
+CC2. THE PACKS. The two LAB-24 packs (venomstrike_rise, venomstrike_flood) are
+    copied byte-identical into assets/manifest/effects/. The certified set
+    extends 73 -> 77; the original 73 are unchanged (the registry differs only by
+    its one new route). One route, "venomstrike": the RISE at the cast,
+    replacing sprVenomSurge; its nested "drain" moment, the FLOOD at the
+    empowered round-end drain, replacing sprVenomDrain.
+CC3. THE RISE. An arming clip at the cast on the CASTER's half, height-fit and
+    bottom-flush, no impact, no beat gate, no wire clock. READY-ANCHORED: its
+    clock starts when its atlas is decoded, so it always opens on cell 0 (never
+    a partial play); if it is not decoded by the cast beat's settle (1,443 ms
+    Normal / 866 Fast) it stands down and the classic surge fires once.
+CC4. THE FLOOD. Armed at the empowered drain's toast — the striker's OWN drain,
+    naming the drained player (the striker's opponent), reading at least 3 — on
+    the ENEMY half; its eruption (cell 14 = f077) heard on that drain's FIRST
+    venom beat through the EXPORT-5 gate (late: the pre-impact cell holds; past
+    1,500 ms: the classic plate takes the beat). It starts 48 ms after the toast
+    (29 at Fast): no wire clock. One flood per drain. A rise still playing is
+    ended first: one effect decoded at a time, beside the one A5 actor.
+CC5. THE STRIKER, by ABSOLUTE seat. The engine roads hold it as
+    pl.venomStrike === round; the staked view does not (its flag is always 0),
+    so the cast's own play event is recorded (seat, round) and either answers.
+    This replaces the old capture, which returned a seat relative to ME while the
+    drain plate read it as absolute (right in solo, the wrong half at the wire's
+    seat 1). The same pick feeds the classic plate and the flood.
+CC6. THE PREFETCH. Hand entry only: Venom Strike entering a visible hand fetches
+    both packs' bytes on the shared 2/8/30 s retry; each decodes only at its own
+    moment. A staked opponent's first cast (no hand to see) plays the classic
+    surge, by fail-open.
+CC7. UNCHANGED. The engine; every sound (sfx_astra at the cast, the drain's own
+    synth tick; the packs bring no audio); the classic surge and plate as the
+    stand-down path everywhere — a player whose fetches or decodes all fail sees
+    exactly the game they saw before.

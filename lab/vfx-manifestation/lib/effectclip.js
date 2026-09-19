@@ -297,11 +297,15 @@
       // pre-impact cell (the weapon at maximum tension) until it does; past the cap the clip stands down and the classic sprite takes the beat
       var ic = p.cues.filter(function (c) { return c.cue === 'impact'; })[0], isg = p.segments[p.segments.length - 1];
       var gate = opts.beatGate && ic && p.clip ? { impactT: ic.t, deadMs: isg ? isg.frameMs : 0, capMs: opts.beatCapMs || 1500, state: 'wait', shift: 0, holdFrom: null, late: null } : null;
-      var run = { plan: p, spec: spec, clips: clips, boards: boards, target: target, places: places, t0: env.now(), next: 0, done: false, pin: opts.impactPin !== false, pending: null, current: -1, gate: gate, beatAt: null,
+      // EXPORT-6 · THE READY-ANCHORED RISE (owner ruling A, opt-in: the live game passes readyAnchor). An ARMING clip has no beat to keep, so its
+      // clock starts when its atlas is DECODED, not at the cast: a slow decode still opens on cell 0 (never a partial play). Bounded by the cast
+      // beat's own settle — past it the clip stands down, and env.onArmingLate lets the page fire the classic sprite once
+      var ra = opts.readyAnchor && p.arming && p.clip ? { bound: p.timeline.castBeatMs, shift: null, late: null } : null;
+      var run = { plan: p, spec: spec, clips: clips, boards: boards, target: target, places: places, t0: env.now(), next: 0, done: false, pin: opts.impactPin !== false, pending: null, current: -1, gate: gate, beatAt: null, ra: ra,
                   manifest: clips[p.segments.length ? p.segments[p.segments.length - 1].clip : 0],
                   place: places[places.length - 1] || null,
                   log: { cues: [], drawn: [], bySegment: {}, composite: [], impactDrawnAt: null, impactPinned: false, destroyCueAt: null, settledAt: null, crackAt: null, handoff: null, mirror: null,
-                         ready: {}, late: [], loadErrors: [], drawError: null, travel: [], travelPlan: null, beat: null, beatLateCap: null } };
+                         ready: {}, late: [], loadErrors: [], drawError: null, travel: [], travelPlan: null, beat: null, beatLateCap: null, clipStartedAt: null, armingLate: null } };
       p.segments.forEach(function (sg) { run.log.bySegment[sg.role] = []; });
       // LAB-20b: a travelling strike flies from the caster's half centre to the target's centre
       var ks = p.segments.map(function (sg) { return sg.role; }).indexOf('strike'), sm = ks >= 0 ? clips[p.segments[ks].clip] : null, hh2 = env.halfOf && p.casterSeat != null ? env.halfOf(p.casterSeat) : null;
@@ -387,9 +391,19 @@
         }
         tc = G.state === 'hold' ? G.impactT - 1e-3 : t - G.shift;                           // HOLD: the pre-impact cell (impact − 1), the travel pose at arrival
       }
-      try { while (run.next < cues.length && cues[run.next].t <= tc + 1e-6) { fire(run, cues[run.next], t); run.next++; } }
+      var A = run.ra, tcl = tc;
+      if (A) {
+        var sgA = run.plan.segments[0], rdy = sgA ? run.log.ready[sgA.role] : null;
+        if (A.shift == null && A.late == null && rdy != null && rdy <= A.bound + 1e-6) { A.shift = rdy; run.log.clipStartedAt = rdy; diag('arming-start', { at: Math.round(rdy) }); }
+        if (A.shift == null && A.late == null && t >= A.bound - 1e-6) {                  // not decoded by the cast beat's settle: stand down
+          A.late = t; run.log.armingLate = t; diag('arming-late', { at: Math.round(t), bound: Math.round(A.bound) }); release(); run.current = -2;
+          if (env.onArmingLate) env.onArmingLate(run);
+        }
+        tcl = A.shift != null ? t - A.shift : (A.late != null ? t : -1);                  // the clip's own clock: stopped until it is decoded
+      }
+      try { while (run.next < cues.length) { var cu = cues[run.next], ct = A && (cu.cue === 'clip-start' || cu.cue === 'clip-end') ? tcl : tc; if (cu.t > ct + 1e-6) break; fire(run, cu, t); run.next++; } }
       catch (e) { if (env.onError) env.onError(e); diag('cue-error', { at: Math.round(t), error: String(e && (e.message || e)) }); env.render(run.boards.after); finish(run, true); return; }
-      try { if (run.plan.clip) draw(run, tc, t); }
+      try { if (run.plan.clip && !(A && A.late != null)) draw(run, A ? tcl : tc, t); }
       catch (e) {
         // a DRAW error costs the decoration, never the beats: the clip is dropped, the timeline plays on to AFTER
         if (!run.log.drawError) { run.log.drawError = { at: t, error: String(e && (e.message || e)) }; diag('draw-error', { at: Math.round(t), error: run.log.drawError.error }); if (env.onError) env.onError(e); }

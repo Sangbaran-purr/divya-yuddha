@@ -25,6 +25,18 @@
       "replaces": "sprBrahmastra",
       "moment": "play",
       "anchor": "enemy-half-top (fitted: 0.93 of the half's width, never taller than the half)"
+    },
+    "venomstrike": {
+      "spec": "effects/venomstrike_rise/manifest.json",
+      "replaces": "sprVenomSurge",
+      "moment": "play",
+      "anchor": "caster-half-bottom (height-fit: 1.0 of the half's HEIGHT, bottom-flush); an arming clip, started when decoded, never partial",
+      "drain": {
+        "spec": "effects/venomstrike_flood/manifest.json",
+        "replaces": "sprVenomDrain",
+        "moment": "drain",
+        "anchor": "enemy-half-bottom (height-fit, bottom-flush); the empowered round-end Venom drain, its eruption on the drain's first venom beat"
+      }
     }
   },
   "pinned": {
