@@ -1,0 +1,499 @@
+{
+  "fixture": "venomstrike_play",
+  "ruling": "LAB-24 - Vasuki Venom Strike, the two-plate premium effect (owner ruling 2026-09-19, shape (c); ruling A height-fit). A TIMING fixture (the Rahu class): the Deva seat lays Marut, Gandharva and Chandra Dev; the Naga seat lays Naga Warrior and casts Vasuki Venom Strike - a flag-only Astra: the engine sets venomStrike to the round and emits `play` and nothing else. This fixture is THE CAST: the rise plays here, on the caster's half, with no impact.",
+  "engine": {
+    "file": "src/engine.js",
+    "sha256": "3613706f3b736b3e367bfc063575902037b9b05e02ed1de9422bad7ee46520b9"
+  },
+  "seed": 1,
+  "attackerSeat": 0,
+  "defenderSeat": 1,
+  "realm": "mrityulok",
+  "scenario": {
+    "p0": "{p0}",
+    "p1": "{p1}",
+    "p0Faction": "nagas",
+    "p1Faction": "devas",
+    "p0Deck": [
+      "Vasuki Venom Strike",
+      "Naga Warrior",
+      "Naga Sadhu",
+      "Naga Archer",
+      "Naga Enchantress",
+      "Kaliya",
+      "Ulupi",
+      "Naga Hatchling",
+      "Ashvatara"
+    ],
+    "p1Deck": [
+      "Marut",
+      "Gandharva",
+      "Chandra Dev",
+      "Deva Soldier",
+      "Kubera",
+      "Narada",
+      "Urvashi",
+      "Brihaspati",
+      "Vishwakarma",
+      "Agni",
+      "Yama",
+      "Indra"
+    ],
+    "mulligan": 0,
+    "winTarget": 2
+  },
+  "setup": [
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Marut",
+      "handIndex": 0
+    },
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Naga Warrior",
+      "handIndex": 1
+    },
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Gandharva",
+      "handIndex": 0
+    }
+  ],
+  "action": {
+    "seat": 0,
+    "type": "play",
+    "card": "Vasuki Venom Strike",
+    "handIndex": 0,
+    "targetUid": null,
+    "legal": true
+  },
+  "before": {
+    "round": 1,
+    "turn": 0,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "nagas",
+        "units": [
+          {
+            "uid": 2,
+            "id": "nagawarrior",
+            "n": "Naga Warrior",
+            "t": "unit",
+            "r": "C",
+            "power": 3,
+            "base": 3,
+            "eff": 3,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 1,
+            "id": "venomstrike",
+            "n": "Vasuki Venom Strike",
+            "t": "astra",
+            "r": "L",
+            "power": 0
+          },
+          {
+            "uid": 3,
+            "id": "nagasadhu",
+            "n": "Naga Sadhu",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 4,
+            "id": "nagaarcher",
+            "n": "Naga Archer",
+            "t": "unit",
+            "r": "U",
+            "power": 3
+          },
+          {
+            "uid": 5,
+            "id": "nagaenchantress",
+            "n": "Naga Enchantress",
+            "t": "unit",
+            "r": "U",
+            "power": 3
+          },
+          {
+            "uid": 6,
+            "id": "kaliya",
+            "n": "Kaliya",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 7,
+            "id": "ulupi",
+            "n": "Ulupi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 8,
+            "id": "nagahatchling",
+            "n": "Naga Hatchling",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 9,
+            "id": "ashvatara",
+            "n": "Ashvatara",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          }
+        ],
+        "discard": [],
+        "deckCount": 0,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "devas",
+        "units": [
+          {
+            "uid": 10,
+            "id": "marut",
+            "n": "Marut",
+            "t": "unit",
+            "r": "C",
+            "power": 3,
+            "base": 3,
+            "eff": 3,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 11,
+            "id": "gandharva",
+            "n": "Gandharva",
+            "t": "unit",
+            "r": "C",
+            "power": 2,
+            "base": 2,
+            "eff": 2,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 12,
+            "id": "surya",
+            "n": "Chandra Dev",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 13,
+            "id": "soldier",
+            "n": "Deva Soldier",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 14,
+            "id": "kubera",
+            "n": "Kubera",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 15,
+            "id": "saraswati",
+            "n": "Narada",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 16,
+            "id": "urvashi",
+            "n": "Urvashi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 17,
+            "id": "brihaspati",
+            "n": "Brihaspati",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          },
+          {
+            "uid": 18,
+            "id": "vishwakarma",
+            "n": "Vishwakarma",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 19,
+            "id": "agni",
+            "n": "Agni",
+            "t": "hero",
+            "r": "E",
+            "power": 5
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [
+          10
+        ],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "events": [
+    {
+      "round": 1,
+      "seq": 5,
+      "type": "play",
+      "sourceUid": 1,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Vasuki Venom Strike",
+      "text": "{p0} plays Vasuki Venom Strike"
+    }
+  ],
+  "log": [
+    "{p0} plays Vasuki Venom Strike — Cosmic Poison.",
+    "Vasuki Venom Strike — the Venom runs triple this round."
+  ],
+  "after": {
+    "round": 1,
+    "turn": 1,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "nagas",
+        "units": [
+          {
+            "uid": 2,
+            "id": "nagawarrior",
+            "n": "Naga Warrior",
+            "t": "unit",
+            "r": "C",
+            "power": 3,
+            "base": 3,
+            "eff": 3,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 3,
+            "id": "nagasadhu",
+            "n": "Naga Sadhu",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 4,
+            "id": "nagaarcher",
+            "n": "Naga Archer",
+            "t": "unit",
+            "r": "U",
+            "power": 3
+          },
+          {
+            "uid": 5,
+            "id": "nagaenchantress",
+            "n": "Naga Enchantress",
+            "t": "unit",
+            "r": "U",
+            "power": 3
+          },
+          {
+            "uid": 6,
+            "id": "kaliya",
+            "n": "Kaliya",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 7,
+            "id": "ulupi",
+            "n": "Ulupi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 8,
+            "id": "nagahatchling",
+            "n": "Naga Hatchling",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 9,
+            "id": "ashvatara",
+            "n": "Ashvatara",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          }
+        ],
+        "discard": [
+          "venomstrike"
+        ],
+        "deckCount": 0,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "devas",
+        "units": [
+          {
+            "uid": 10,
+            "id": "marut",
+            "n": "Marut",
+            "t": "unit",
+            "r": "C",
+            "power": 3,
+            "base": 3,
+            "eff": 3,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 11,
+            "id": "gandharva",
+            "n": "Gandharva",
+            "t": "unit",
+            "r": "C",
+            "power": 2,
+            "base": 2,
+            "eff": 2,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 12,
+            "id": "surya",
+            "n": "Chandra Dev",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 13,
+            "id": "soldier",
+            "n": "Deva Soldier",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 14,
+            "id": "kubera",
+            "n": "Kubera",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 15,
+            "id": "saraswati",
+            "n": "Narada",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 16,
+            "id": "urvashi",
+            "n": "Urvashi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 17,
+            "id": "brihaspati",
+            "n": "Brihaspati",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          },
+          {
+            "uid": 18,
+            "id": "vishwakarma",
+            "n": "Vishwakarma",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 19,
+            "id": "agni",
+            "n": "Agni",
+            "t": "hero",
+            "r": "E",
+            "power": 5
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [
+          10
+        ],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "venomStrikeAfter": 1,
+  "diff": {
+    "entered": [],
+    "left": [],
+    "changed": []
+  }
+}

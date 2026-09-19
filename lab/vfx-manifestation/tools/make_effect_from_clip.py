@@ -112,6 +112,50 @@ EFFECTS = {
               "guard": {"kind": "blob", "thr": 170, "top_frac": 0.60},
               "contract": {"trigger": "damage", "abilityName": "Pashupatastra", "anchor": "enemy-half-top", "castSound": "sfx_astra", "impactSound": "sfx_debuff",
                            "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 0, "crackAfterMs": 40, "destroyDwellMs": 600, "awaited": False}},
+    # LAB-24 · VASUKI VENOM STRIKE — ONE SOURCE CLIP, TWO PLATES (owner ruling 2026-09-19, shape (c)). The Astra is a flag-only cast (engine:
+    # pl.venomStrike=g.round, nothing emitted beyond `play`); its payoff is the round-end Venom drain. So the clip is cut in two at the serpent's
+    # strike onset: the RISE (coils, eye-flare, orbiting drops) plays at the CAST on the CASTER's half, an arming visual with NO impact; the
+    # FLOOD (streams strike down, the flood erupts) plays at the EMPOWERED DRAIN on the ENEMY half, its eruption pinned to that drain's first
+    # `venom` beat. The spectral serpent is ADMITTED under the v4a carve-out (the serpent is the Astra's own weapon-source; its dark scale body
+    # reading as see-through under additive is accepted as a ghost serpent). OWNER RULING A (2026-09-19, "Let's try A; if it doesn't work, we go
+    # for a reshoot."): HEIGHT-FIT — the plate's HEIGHT is 1.0 x its half's HEIGHT (the authored unit is a HEIGHT fraction, never a width one:
+    # the LAB-22 near-miss) and its width follows the clip (1.774 x the half height), BOTTOM-FLUSH. So the top and bottom cuts sit on the half's
+    # own borders on every viewport: NO top band, NO bottom band (the serpent's head and eye-flare stay at full brightness; the core-body guard
+    # holds by geometry, not by feathering). On portrait screens the plate is wider than its half and the overhang is drawn; the overhang's outer
+    # edges carry a 54 px side feather under the LAB-22/5 splash-fringe precedent, declared ONLY for the sideways spill beyond the half's width
+    # (rise: empty dark margin; flood: the sideways venom splash) — 54 source px is the narrowest overhang of the device matrix (the 360 px
+    # phone, 54.64), so the feather's inner boundary lies outside the half on every portrait viewport. 288 px cells, a 6-cell fade-in, a 10-cell baked fade tail
+    # (the source never decays — LAB-23: 0.925 -> 0.969 of peak over f100-f120). The pack asserts no true duplicate in either range (mean |d|
+    # vs the previous frame < 0.6, the standing rule), so keep_duplicates is not needed.
+    "venomstrike_rise": {"kind": "vignette-clip", "label": "Vasuki Venom Strike (the rise)", "clip": "vasuki_venom/vasuki_venom_v1.mp4", "card_id": "venomstrike",
+              "clip_md5": "f69ee6e3822b662fbe02a3ee39bb7ed9", "moment": "arming",
+              # f000-f054: the arming pose. The strike onset is MEASURED: the first frame whose serpent-head region grows a new bright
+              # component >= 1800 px — f055, where the head turns and the jaws open; the drops leave their orbit from f060 (LAB-24 STEP 0)
+              "range": (0, 54), "impact": None, "impact_rule": "none", "strike_onset": {"window": (48, 62), "region": [250, 520, 1080, 1500], "minArea": 1800, "expect": 55},
+              "cell_px": 288, "fade_in": 6, "fade_tail": 10, "dedup_mae": 0.6,
+              "feather_top": 0, "feather_bottom": 0, "feather_left": 54, "feather_right": 54, "side_fringe": "matrix",
+              "anchor_region": "bottom-flush", "anchor_place": "caster-half-bottom",
+              "scale": {"feature": "plate height (the clip's content box)", "frame": 30, "height_fraction": 1.0, "card_widths": 5.64},
+              "guard": {"kind": "blob", "thr": 170, "top_frac": 0.80, "fringe_cols": "side_fringe"},
+              "contract": {"trigger": "play", "abilityName": "Vasuki Venom Strike", "anchor": "caster-half-bottom", "castSound": "sfx_astra", "impactSound": None,
+                           "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 0, "exitKind": "none", "awaited": False,
+                           "moment": "arming", "note": "the cast emits `play` only (+3 ms, LAB-23); the rise starts AT the cast (S1, positional) and has no impact cell - nothing resolves at the cast"}},
+    "venomstrike_flood": {"kind": "vignette-clip", "label": "Vasuki Venom Strike (the flood)", "clip": "vasuki_venom/vasuki_venom_v1.mp4", "card_id": "venomstrike",
+              "clip_md5": "f69ee6e3822b662fbe02a3ee39bb7ed9", "moment": "empowered-drain",
+              # f063-f120: 14 lead cells before the eruption f077. The game's round-end Venom toast (the drain's announcement; the empowered drain
+              # is identified by it) holds 620 ms (x vfxT) before the drain's FIRST `venom` beat; 14 cells (758 ms at Normal) start the clip 48 ms
+              # after the toast, so the wire-clock cost is 0 (15 cells would start it 6.5 ms before the toast). The central stream's first contact
+              # (~f070) and the drops' launch are inside; the head's wind-up f055-f062 is in neither plate.
+              "range": (63, 120), "impact": 77, "impact_rule": "groundband", "impact_window": (66, 84), "ground_ring_frame": 30,
+              "cell_px": 288, "fade_in": 6, "fade_tail": 10, "dedup_mae": 0.6,
+              "feather_top": 0, "feather_bottom": 0, "feather_left": 54, "feather_right": 54, "side_fringe": "matrix",
+              "anchor_region": "bottom-flush", "anchor_place": "enemy-half-bottom",
+              "scale": {"feature": "plate height (the clip's content box)", "frame": 90, "height_fraction": 1.0, "card_widths": 5.64},
+              "guard": {"kind": "blob", "thr": 170, "top_frac": 0.80, "fringe_cols": "side_fringe"},
+              "contract": {"trigger": "venom", "abilityName": "Venom", "anchor": "enemy-half-bottom", "castSound": "venom", "impactSound": "venom",
+                           "castHitStopMs": 0, "castHoldMs": 620, "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 575, "exitKind": "none", "awaited": False,
+                           "moment": "empowered-drain", "castEvent": {"type": "toast", "abilityName": "Venom"}, "minDrain": 3,
+                           "note": "the plan's cast is the EMPOWERED round-end Venom toast (the striker's own drain, amount >= 3 = base 1 + the strike's +2); the impact is that drain's FIRST `venom` beat; one flood per drain whatever the Unit count; both sounds are the game's own synth drain tick, unchanged"}},
 }
 E1_CAP = 3072 * 1536 * 4   # the effect layer's hi-rung class (LAB-19)
 
@@ -383,6 +427,7 @@ def main(key):
         ft, fb, C["feather_bottom"], ring_low, ring_low_at, guard_frames[0], guard_frames[-1], room, [["f%03d" % i, fades[i]] for i in into], [fades[i] for i in kept[:n_in]], [fades[i] for i in kept[-n_tail:]]))
     print("atlas %dx%d · %.1f KB · decoded %.2f MB · cells %dx%d · anchor %s" % (AW, AH, os.path.getsize(os.path.join(out, "atlas.webp")) / 1024, AW * AH * 4 / 1048576, cw, ch, anchor))
 
+def sf_core(C): return C["scale"]["frame"]   # LAB-24: an arming clip (no impact) reads its core off its scale frame
 
 def main_vignette(key):
     # LAB-21: the VIGNETTE CLASS — a single strike clip whose content fills the frame and crosses EVERY edge in EVERY frame. Three things
@@ -391,10 +436,28 @@ def main_vignette(key):
     # (3) the scale feature is measured per clip and the card-width figure is whatever measured legibility allows (2.4 is a default, not a law).
     C = EFFECTS[key]; clip = os.path.join(LAB, "sources", C["clip"])
     if not os.path.exists(clip): sys.exit("the source clip is not at " + clip)
+    if C.get("clip_md5") and hashlib.md5(open(clip, "rb").read()).hexdigest() != C["clip_md5"]: sys.exit("the source clip's md5 is not the staged %s - STOP" % C["clip_md5"])   # LAB-24: provenance before any decode
     frames, fps = decode(clip); N = len(frames); H, W = frames[0].shape[:2]
     sha = hashlib.sha256(open(clip, "rb").read()).hexdigest()
     L = [luma(f) for f in frames]
     a, b = C["range"]; kept = list(range(a, b + 1))
+    extra = {}
+    if C.get("strike_onset"):
+        # LAB-24: the rise ends BEFORE the strike. Onset = the first frame in the window whose head region grows a bright yellow-green component >= minArea
+        so = C["strike_onset"]; y0r, y1r, x0r, x1r = so["region"]; onset = None; areas = {}
+        for i in range(so["window"][0], so["window"][1] + 1):
+            f = frames[i][y0r:y1r, x0r:x1r].astype(np.int16); m = ((f[..., 1] > 200) & (f[..., 0] > 140) & (f[..., 2] < 120)).astype(np.uint8)
+            n2, _, st2, _ = cv2.connectedComponentsWithStats(m, 8); big = int(st2[1:, cv2.CC_STAT_AREA].max()) if n2 > 1 else 0; areas["f%03d" % i] = big
+            if onset is None and big >= so["minArea"]: onset = i
+        if onset != so["expect"]: sys.exit("the measured strike onset f%s disagrees with the ruled f%03d" % (onset, so["expect"]))
+        if b != onset - 1: sys.exit("the rise must end on the frame before the strike onset (f%03d), not f%03d" % (onset - 1, b))
+        extra["strikeOnset"] = {"frame": onset, "rule": "the first frame whose head region grows a bright component >= %d px" % so["minArea"], "areas": areas}
+    if C.get("dedup_mae") is not None:
+        # LAB-24: the standing duplicate rule, asserted (the vignette class keeps its whole range; a true duplicate would be a wasted cell)
+        mae = [float(np.abs(frames[i].astype(np.int16) - frames[i - 1].astype(np.int16)).mean()) for i in kept[1:]]
+        dups = [kept[k + 1] for k, v in enumerate(mae) if v < C["dedup_mae"]]
+        if dups: sys.exit("true duplicates in the kept range (mean |d| < %.1f): f%s - STOP (keep_duplicates is a ruling)" % (C["dedup_mae"], ", f".join("%03d" % i for i in dups)))
+        extra["dedup"] = {"rule": "mean |d| vs the previous frame < %.1f is a true duplicate" % C["dedup_mae"], "trueDuplicates": 0, "minNeighbourMae": round(min(mae), 3), "minAt": "f%03d" % kept[1 + int(np.argmin(mae))], "keepDuplicates": False}
 
     # THE GROUND, on the game's own bake metric (alpha = max(R,G,B), T72 bakeAlpha). METHOD NOTE: the Vajra-class "brightest pixel > 300 px
     # from any content" is STRUCTURALLY UNAVAILABLE here — the content leaves no such region — so the ground is stated as the exact-zero
@@ -433,12 +496,25 @@ def main_vignette(key):
         if impact != C["impact"]: sys.exit("the measured landing f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
         imp_note = {"rule": "landing", "window": [w0, w1], "groundBand": [gb0, gb1], "discPlaneRow": D0, "groundBlownRiseOver2Frames": round(rise[impact], 4),
                     "groundBlownAtImpact": round(gbl[impact], 4), "why": "owner ruling LAB-22/1: the units die at the strike (the orb meeting the disc); the bloom is aftermath"}
+    elif C["impact_rule"] == "groundband":
+        # LAB-24: THE FLOOD ERUPTS - the ground ring's plane is read off a ring frame (the widest bright row in the bottom third); the ground band
+        # runs 80 rows above it to 40 below. The eruption is the steepest 2-frame rise of that band's ADDED light inside the window
+        rf = C["ground_ring_frame"]; ext = [int((L[rf][y] > 150).sum()) for y in range(H)]; lo = int(H * 0.66); ring = lo + int(np.argmax(ext[lo:]))
+        gb0, gb1 = ring - 80, min(H, ring + 40)
+        gba = [float((frames[i][gb0:gb1].astype(np.float32) * (frames[i][gb0:gb1].max(axis=2).astype(np.float32) / 255.0)[..., None]).mean()) for i in range(N)]
+        w0, w1 = C["impact_window"]; rise = {i: gba[i] - gba[i - 2] for i in range(max(w0, 2), w1 + 1)}
+        impact = max(rise, key=rise.get)
+        if impact != C["impact"]: sys.exit("the measured eruption f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
+        imp_note = {"rule": "groundband", "window": [w0, w1], "ringRow": ring, "groundBand": [gb0, gb1], "addedLightRiseOver2Frames": round(rise[impact], 3),
+                    "why": "the flood erupts where the streams land; the drain's first `venom` beat drains a Unit, and the eruption is pinned to it"}
+    elif C["impact_rule"] == "none":
+        impact = None; imp_note = {"rule": "none", "why": "an ARMING visual: the cast resolves nothing (flag-only), so the rise has no impact cell and no beat gate"}
     else:
         impact = C["impact"]; imp_note = {"rule": "positional", "why": "the clip starts at the beat (S1); the impact cell is the one the first resolution cue lands on"}
-    if impact not in kept: sys.exit("the impact f%03d is outside the kept range" % impact)
+    if impact is not None and impact not in kept: sys.exit("the impact f%03d is outside the kept range" % impact)
 
     # THE ANCHOR: the clip's core — the brightest blurred point on the impact frame, inside the named region
-    reg = L[impact] if C["anchor_region"] in ("frame", "top-flush") else L[impact][:int(H * 0.60)]
+    reg = L[impact if impact is not None else sf_core(C)] if C["anchor_region"] in ("frame", "top-flush", "bottom-flush") else L[impact][:int(H * 0.60)]
     blur = cv2.GaussianBlur(reg, (0, 0), 15); ay, ax = np.unravel_index(int(np.argmax(blur)), blur.shape); CORE = (int(ax), int(ay))
 
     # THE SCALE FEATURE, measured per clip
@@ -448,7 +524,7 @@ def main_vignette(key):
         G = C["guard"]; al = frames[sf].max(axis=2)
         band = np.hstack([al[:, max(0, CORE[0] - G["col_out"]):max(0, CORE[0] - G["col_in"])], al[:, CORE[0] + G["col_in"]:CORE[0] + G["col_out"]]]).max(axis=1)
         ys = np.where(band >= G["thr"])[0]; span = int(ys[-1] - ys[0] + 1) if ys.size else 0
-    elif C["scale"]["feature"].startswith("plate width"):
+    elif C["scale"]["feature"].startswith("plate width") or C["scale"]["feature"].startswith("plate height"):   # LAB-24: a height-fit plate is the plate too
         span = None   # LAB-22: the plate itself is the feature — set below from the content box (the whole plate spans cardWidths card widths)
     else:
         # the vortex's horizontal span: the widest bright body in the clip's top band
@@ -500,12 +576,23 @@ def main_vignette(key):
             l, r = (int(xs[0]), W - 1 - int(xs[-1])) if xs.size else (W, W)
             return {"top": t, "bottom": bo, "left": l, "right": r}
         G = C["guard"]; m = np.zeros(al.shape, np.uint8); t2 = int(H * G["top_frac"]); m[:t2] = (al[:t2] >= G["thr"])
+        if G.get("fringe_cols") and fringe: m[:, :fringe["cols"][0]] = 0; m[:, fringe["cols"][1]:] = 0   # LAB-24: the declared side spill is not core
         m = cv2.morphologyEx(m, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (41, 41)))
         nl, _, st, _ = cv2.connectedComponentsWithStats(m, 8)
         if nl < 2: return {"top": H, "bottom": H, "left": W, "right": W}
         k3 = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
         bx, by, bwid, bhgt = (int(st[k3, cv2.CC_STAT_LEFT]), int(st[k3, cv2.CC_STAT_TOP]), int(st[k3, cv2.CC_STAT_WIDTH]), int(st[k3, cv2.CC_STAT_HEIGHT]))
         return {"top": by, "bottom": H - (by + bhgt), "left": bx, "right": W - (bx + bwid)}
+    fringe = None
+    if C.get("side_fringe") == "matrix":
+        # LAB-24 (ruling A): the side feather must lie in the portrait overhang on EVERY viewport of the game's measured matrix (read-only)
+        VPS = json.load(open(os.path.join(LAB, "..", "..", "src", "device_matrix.json")))["viewports"]; asp = W / float(H)
+        over = [(1080.0 * (asp - v["half"]["w"] / float(v["half"]["h"])) / 2.0, "%dx%d" % (v["vw"], v["vh"])) for v in VPS if v["half"]["w"] / float(v["half"]["h"]) < asp]
+        bound = min(over); S = int(bound[0])
+        if C["feather_left"] > S or C["feather_right"] > S: sys.exit("the side feather (%d/%d px) exceeds the narrowest overhang %.2f px (%s) - it would feather inside the half" % (C["feather_left"], C["feather_right"], bound[0], bound[1]))
+        fringe = {"cols": [S, W - S], "boundSrcPx": round(bound[0], 2), "boundViewport": bound[1], "overhangingViewports": len(over),
+                  "declaration": "LAB-22/5 splash-fringe precedent, scope: ONLY the sideways spill beyond the half's width (source columns outside [%d, %d)); the serpent's body and head and the flood's central mass are never inside a feather zone" % (S, W - S)}
+        extra["sideFringe"] = fringe
     marg = {i: core_margins(i) for i in kept}
     bands = {"top": C["feather_top"], "bottom": C["feather_bottom"], "left": C["feather_left"], "right": C["feather_right"]}
     guard = {}
@@ -553,21 +640,22 @@ def main_vignette(key):
     for e in guard: guard[e]["cellPxAtScale"] = round(guard[e]["px"] * s, 1)
 
     # the anchor: the core point on a half's centre (LAB-21), or (LAB-22, ruling 4) the plate's TOP-CENTRE on the enemy half's top edge
-    anchor = {"x": round(cw / 2.0, 1), "y": 0.0} if C["anchor_region"] == "top-flush" else {"x": round((CORE[0] - x0) * s, 1), "y": round((CORE[1] - y0) * s, 1)}
+    anchor = ({"x": round(cw / 2.0, 1), "y": 0.0} if C["anchor_region"] == "top-flush" else {"x": round(cw / 2.0, 1), "y": float(ch)} if C["anchor_region"] == "bottom-flush"
+              else {"x": round((CORE[0] - x0) * s, 1), "y": round((CORE[1] - y0) * s, 1)})   # LAB-24: BOTTOM-FLUSH - the plate's bottom-centre on its half's bottom edge
     manifest = {
         "cardId": C["card_id"], "class": "effect-clip", "version": 1,
         "source": "Kling clip %s (sha256 %s\u2026, %d frames @ %d fps, %dx%d, black ground) \u2014 kept f%03d\u2013f%03d; packed by tools/make_effect_from_clip.py" % (os.path.basename(clip), sha[:12], N, round(fps), W, H, a, b),
         "atlas": "atlas.webp", "atlasSize": {"w": AW, "h": AH}, "channels": "rgb", "blend": "add", "alpha": "luminance",
         "fps": round(fps), "timing": "native", "cellPx": max(cw, ch), "cellSize": {"w": cw, "h": ch},
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height} for i, c, cx, cy in placed],
-        "impact": kept.index(impact), "anchor": anchor,
+        "impact": kept.index(impact) if impact is not None else None, "anchor": anchor, **({"moment": C["moment"]} if C.get("moment") else {}),
         "scaleRule": {"feature": C["scale"]["feature"], "frame": sf, "spanSrc": span, "spanCell": round(span * s, 2), "cardWidths": C["scale"]["card_widths"],
-                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "halfFraction": C["scale"].get("half_fraction"), "heightCap": C["scale"].get("height_cap"), "legibility": C["scale"].get("measured"),
+                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "halfFraction": C["scale"].get("half_fraction"), "heightCap": C["scale"].get("height_cap"), **({"heightFraction": C["scale"]["height_fraction"], "unit": "HEIGHT FRACTION OF THE HALF (owner ruling A, LAB-24): the plate's HEIGHT is heightFraction x its half's HEIGHT and its width follows the clip's aspect. This is NOT a width fraction (halfFraction is absent on purpose - the LAB-22 near-miss)"} if C["scale"].get("height_fraction") else {}), "legibility": C["scale"].get("measured"),
                       "note": ("THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only — LAB-21's ring-based cw and a plate-based cw are not the same unit"
                                if C["scale"].get("half_fraction") else "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board")},
         "contract": C["contract"],
         "audit": {"range": [a, b], "droppedHead": [0, a - 1] if a > 0 else None, "droppedTail": [b + 1, N - 1] if b < N - 1 else None,
-                  "impactSrc": impact, "impact": imp_note, "corePoint": list(CORE), "scale": round(s, 5), "box": [x0, y0, x1, y1],
+                  "impactSrc": impact, "impact": imp_note, **extra, **({"provenance": {"parent": os.path.basename(clip), "md5": C["clip_md5"], "sha256": sha, "rule": "an effect clip has no identity master; its provenance parent is the md5-verified source clip itself, and every plate cut from it records the same parent"}} if C.get("clip_md5") else {}), "corePoint": list(CORE), "scale": round(s, 5), "box": [x0, y0, x1, y1],
                   "cellPx": {"used": cell_px, "asked": C["cell_px"], "steppedDown": stepped},
                   "decodedBytes": AW * AH * 4, "e1CapBytes": E1_CAP,
                   "ground": {"cornersMax": corners, "farMax": far,
@@ -578,13 +666,14 @@ def main_vignette(key):
                   "fadeIn": [[i, fades[i]] for i in kept[:n_in]], "fadeTail": [[i, fades[i]] for i in kept[-n_tail:]],
                   "vignette": guard, "guardKind": C["guard"]["kind"], "guardTailStart": tail0,
                   "anchorRule": ({"kind": "top-flush", "place": "enemy-half-top", "dependency": C.get("anchor_note", "the top band is 0 because the beam and the crown touch the top edge on every frame; the cut is hidden only because the plate's top sits flush with the enemy half's top edge (owner ruling LAB-22/4) — RE-RULE if the anchor or the scale changes")}
-                                 if C["anchor_region"] == "top-flush" else {"kind": "core-point", "place": "enemy-half"})},
+                                 if C["anchor_region"] == "top-flush" else {"kind": "bottom-flush", "place": C["anchor_place"], "dependency": "the bottom band is 0 because the ground ring touches the bottom edge on every frame; the cut is hidden only because the plate's bottom sits flush with its half's bottom edge (LAB-24) - RE-RULE if the anchor or the scale changes"}
+                                 if C["anchor_region"] == "bottom-flush" else {"kind": "core-point", "place": "enemy-half"})},
     }
     with open(os.path.join(out, "manifest.json"), "w") as fh: json.dump(manifest, fh, indent=2); fh.write("\n")
 
     tw = 300; th = int(round(tw * ch / cw)); cols = 6; rows = (len(placed) + cols - 1) // cols
     sheet = Image.new("RGB", (cols * tw, rows * (th + 20) + 28), (12, 12, 12)); d = ImageDraw.Draw(sheet)
-    d.text((8, 8), "%s effect clip \u00b7 %d cells f%03d\u2013f%03d \u00b7 impact f%03d (cell %d) \u00b7 cell %dx%d \u00b7 atlas %dx%d \u00b7 %.2f MB decoded" % (C["label"], len(placed), a, b, impact, kept.index(impact), cw, ch, AW, AH, AW * AH * 4 / 1048576), fill=(235, 210, 150))
+    d.text((8, 8), "%s effect clip \u00b7 %d cells f%03d\u2013f%03d \u00b7 impact f%03d (cell %d) \u00b7 cell %dx%d \u00b7 atlas %dx%d \u00b7 %.2f MB decoded" % (C["label"], len(placed), a, b, impact if impact is not None else -1, kept.index(impact) if impact is not None else -1, cw, ch, AW, AH, AW * AH * 4 / 1048576), fill=(235, 210, 150))
     for k2, (i, c, _, _) in enumerate(placed):
         ox, oy = (k2 % cols) * tw, 28 + (k2 // cols) * (th + 20)
         t = c.resize((tw, th), Image.LANCZOS); sheet.paste(t, (ox, oy + 20)); td = ImageDraw.Draw(sheet)
@@ -594,7 +683,8 @@ def main_vignette(key):
 
     print("clip %d frames @ %.0f fps \u00b7 %dx%d \u00b7 ground: corners max %d, far %s, exact-zero share min %.2f%%, pedestal(1-4) max %.2f%%" % (N, fps, W, H, corners, far, 100 * zero_min, 100 * ped_max))
     print("kept f%03d\u2013f%03d (%d cells) \u00b7 impact f%03d (cell %d, %s) \u00b7 core at %s \u00b7 %s on f%03d = %d px (%.2f cell px) at %.1f card widths" % (
-        a, b, len(kept), impact, kept.index(impact), imp_note["rule"], CORE, C["scale"]["feature"], sf, span, span * s, C["scale"]["card_widths"]))
+        a, b, len(kept), impact if impact is not None else -1, kept.index(impact) if impact is not None else -1, imp_note["rule"], CORE, C["scale"]["feature"], sf, span, span * s, C["scale"]["card_widths"]))
+    if extra: print("LAB-24 audit: dedup %s · strike onset %s" % (json.dumps(extra.get("dedup")), extra.get("strikeOnset", {}).get("frame")))
     print("box x %d\u2013%d y %d\u2013%d = %dx%d \u00b7 edges touched: %s of %d frames" % (x0, x1, y0, y1, bw, bh, ", ".join("%s %d" % (e, edges[e]) for e in ("top", "bottom", "left", "right")), len(kept)))
     for e in ("top", "bottom", "left", "right"):
         gg = guard[e]

@@ -1040,7 +1040,7 @@ templateActor({ label: 'M45 · LAB-18 · RAHU BY THE TEMPLATE (the last card: a 
   const vc = EC.validateChain(SU.C, [I, S]), swapped = EC.validateChain(SU.C, [S, I]), sum = bytesOf(I) + bytesOf(S);
   ok('M56 · LAB-20 · THE CHAIN AND E1, UNCHANGED: effects/sudarshana/chain.json names the invocation then the strike and carries the contract; a chain in the wrong order is refused. Each clip is under the per-clip cap (' + (bytesOf(I) / 1048576).toFixed(2) + ' and ' + (bytesOf(S) / 1048576).toFixed(2) + ' MB of ' + (EC.E1.capBytes / 1048576).toFixed(2) + '), and the pair would be ' + (sum / 1048576).toFixed(2) + ' MB together — PAST the cap — which is exactly why they decode ONE AFTER THE OTHER: the invocation at the cast, released at the handoff, then the strike. The per-play fallback amendment (both at 256: 16.3 MB) is recorded as available but unused',
      vc.ok && !swapped.ok && SU.C.class === 'effect-chain' && SU.C.cardName === 'Sudarshana Chakra' && J(SU.C.clips.map((c) => c.role)) === J(['invoke', 'strike']) && sum > EC.E1.capBytes &&
-     J(fs.readdirSync(path.join(LAB, 'effects')).sort()) === J(['brahmastra', 'pashupata', 'sudarshana', 'sudarshana_invoke', 'sudarshana_strike', 'vajra']) && J(fs.readdirSync(path.join(LAB, 'effects', 'sudarshana'))) === J(['chain.json']), vc.errors.join('; '));
+     J(fs.readdirSync(path.join(LAB, 'effects')).sort()) === J(['brahmastra', 'pashupata', 'sudarshana', 'sudarshana_invoke', 'sudarshana_strike', 'vajra', 'venomstrike_flood', 'venomstrike_rise'])   /* LAB-24: Vasuki Venom Strike's two plates join the inventory */ && J(fs.readdirSync(path.join(LAB, 'effects', 'sudarshana'))) === J(['chain.json']), vc.errors.join('; '));
   // the removal contract, read from the game's source
   const G_HTML = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8'), a0 = G_HTML.indexOf("if (ev.type==='passive' && ev.abilityName==='Sudarshana')"), blk = G_HTML.slice(a0, G_HTML.indexOf("if (ev.type==='passive' && ev.abilityName==='Nagapasha')"));
   const pins = { throwFromCasterHalf: /const caster=1-ownerPiOfUid\(u\), ch=document\.querySelector\(halfSel\(caster\)\);/.test(blk), flight380: /VFX\.sprSudarshana\(dp\.cx, dp\.rect\.top\+dp\.rect\.height\/2, dp\.rect\.width, fx, fy, 380\);/.test(blk) && /await cDelay\(380\);/.test(blk),
@@ -1677,6 +1677,155 @@ console.log('\n── M/E · the Mythic shelf (LAB-21) ──');
 }
 
 // ═══ K · THE SOURCES (A7) ═══
+// ═══ V · VASUKI VENOM STRIKE — ONE CLIP, TWO PLATES (LAB-24) ═══
+console.log('\n── V · Vasuki Venom Strike: the rise at the cast, the flood at the empowered drain (LAB-24) ──');
+{
+  const rd = (p) => JSON.parse(fs.readFileSync(path.join(LAB, p), 'utf8'));
+  const VR = rd('effects/venomstrike_rise/manifest.json'), VF = rd('effects/venomstrike_flood/manifest.json');
+  const CASTF = [0, 1].map((s) => rd('fixtures/venomstrike_seat' + s + '.json')), DRAINF = [0, 1].map((s) => rd('fixtures/venomstrike_flood_seat' + s + '.json'));
+  const MATRIX = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports;
+  const { buildVenomStrike } = require(path.join(LAB, 'fixtures', 'make_fixture.js'));
+  // the 375 px phone's real halves (the game board, measured): seat 1 on top, seat 0 below
+  const PH = { 1: { cx: 187.5, cy: 205.6, top: 91, w: 373, h: 229.2 }, 0: { cx: 187.5, cy: 436.8, top: 322.2, w: 373, h: 229.2 } };
+  function vworld(o) {
+    o = o || {};
+    const draws = [], sounds = [], rendered = [], cracks = [], caps = []; let now = 0, live = 0, maxLive = 0, loads = 0, tf = [1, 0, 0, 1, 0, 0];
+    const g = { _op: 'source-over', setTransform() { tf = [].slice.call(arguments); }, clearRect() {}, drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) { draws.push({ img, sx, sy, dx, dy, dw, dh, op: this.globalCompositeOperation, tf: tf.slice(), t: now }); },
+      set globalCompositeOperation(v) { this._op = v; }, get globalCompositeOperation() { return this._op; }, globalAlpha: 1 };
+    const env = { now: () => now, canvas: { width: 750, height: 1200, getContext: () => g }, dpr: 2, halfOf: (s) => (o.halves || PH)[s],
+      loadAtlas: (m) => { loads++; live++; maxLive = Math.max(maxLive, live); return { source: { __effect: m.moment }, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() { live--; } }; },
+      render: (b) => rendered.push(b), sound: (n) => sounds.push(n), crack: (u) => cracks.push(u), onBeatLateCap: () => caps.push(now) };
+    const P = EC.createPlayer(env);
+    return { P, draws, sounds, rendered, cracks, caps, step: (ms) => { now += ms; P.frame(now); }, get now() { return now; }, set now(v) { now = v; }, get live() { return live; }, get maxLive() { return maxLive; }, get loads() { return loads; } };
+  }
+  function vdrive(f, spec, seat, mode, o) {
+    o = o || {};
+    const W = o.W || vworld(o), run = W.P.play(f, spec, { before: f.before, after: f.after }, { mode, casterSeat: seat, beatGate: !!o.gate });
+    const ic = run.plan.cues.filter((c) => c.cue === 'impact')[0], cell = spec.impact != null ? spec.cells[spec.impact] : null;
+    let impactFrame = null, cueFrame = null, n = 0, beaten = o.beatAt == null;
+    while (!run.done && n++ < 3000) {
+      const d0 = W.draws.length, c0 = run.log.cues.length;
+      if (!beaten && W.now + 1000 / 60 >= o.beatAt) { const next = W.now + 1000 / 60; W.now = o.beatAt; W.P.beat(); beaten = true; W.now = next - 1000 / 60; }   // the beat lands between frames; the frame grid is untouched
+      W.step(1000 / 60);
+      if (cell && impactFrame == null && W.draws.slice(d0).some((d) => d.sx === cell.x && d.sy === cell.y)) impactFrame = n;
+      if (run.log.cues.slice(c0).some((c) => c.cue === 'impact')) cueFrame = n;
+    }
+    return { W, run, ic, impactFrame, cueFrame, stats: W.P.stats() };
+  }
+  const cellIx = (spec, d) => spec.cells.findIndex((c) => c.x === d.sx && c.y === d.sy);
+  const onHalf = (d, h) => Math.abs(d.dh / 2 - h.h) < 1e-6 && Math.abs((d.dy + d.dh) / 2 - (h.top + h.h)) < 1e-6 && Math.abs(d.dy / 2 - h.top) < 1e-6 && Math.abs((d.dx + d.dw / 2) / 2 - h.cx) < 1e-6;   // device px → CSS (dpr 2)
+
+  // V1 · the packs: provenance, cuts, the impact, the fades, the duplicate rule, E1
+  const A = (m) => m.audit, same = A(VR).provenance && A(VF).provenance && A(VR).provenance.sha256 === A(VF).provenance.sha256 && A(VR).provenance.md5 === 'f69ee6e3822b662fbe02a3ee39bb7ed9' && A(VF).provenance.md5 === A(VR).provenance.md5;
+  const names = (m) => m.cells.map((c) => c.name), seq = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => 'f' + String(a + i).padStart(3, '0'));
+  const fadesOk = (m) => m.audit.fadeIn.length === 6 && m.audit.fadeIn[0][1] < 0.2 && m.audit.fadeTail.length === 10 && m.audit.fadeTail[9][1] === 0 && m.audit.fadeTail[0][1] === 1;
+  const e1 = (m) => m.atlasSize.w * m.atlasSize.h * 4;
+  ok('V1 · LAB-24 · ONE CLIP, TWO PLATES, one provenance parent: both packs record the md5-verified source (md5 f69ee6e3…, sha256 ' + A(VR).provenance.sha256.slice(0, 12) + '…) — an effect clip has no identity master, so the clip itself is the parent. THE RISE f000–f054 (' + VR.cells.length + ' cells), ending the frame before the MEASURED strike onset f' + A(VR).strikeOnset.frame + ' (the head turns, the jaws open); no impact, moment "arming". THE FLOOD f063–f120 (' + VF.cells.length + ' cells), its impact cell ' + VF.impact + ' = f' + String(VF.cells[VF.impact].src).padStart(3, '0') + ', the steepest rise of the ground band\'s added light (rule ' + A(VF).impact.rule + '). Both: a 6-cell fade-in, a 10-cell baked fade tail ending at 0, no true duplicate (min neighbour |d| ' + A(VR).dedup.minNeighbourMae + ' / ' + A(VF).dedup.minNeighbourMae + ' against the 0.6 rule), 288 px cells, decoded ' + (e1(VR) / 1048576).toFixed(2) + ' / ' + (e1(VF) / 1048576).toFixed(2) + ' MB of the ' + (EC.E1.capBytes / 1048576).toFixed(2) + ' MB E1 cap',
+     same && EC.validate(VR).ok && EC.validate(VF).ok && J(names(VR)) === J(seq(0, 54)) && J(names(VF)) === J(seq(63, 120)) && VR.impact === null && VR.moment === 'arming' && VF.moment === 'empowered-drain' &&
+     A(VR).strikeOnset.frame === 55 && VF.impact === 14 && VF.cells[14].src === 77 && A(VF).impact.rule === 'groundband' && fadesOk(VR) && fadesOk(VF) && A(VR).dedup.trueDuplicates === 0 && A(VF).dedup.trueDuplicates === 0 &&
+     VR.cellPx === 288 && VF.cellPx === 288 && e1(VR) <= EC.E1.capBytes && e1(VF) <= EC.E1.capBytes, J({ VR: EC.validate(VR), VF: EC.validate(VF), impact: VF.impact }));
+
+  // V2 · THE UNITS LAW: a HEIGHT fraction, never a width one — the plate's height IS its half's height on all 16 measured viewports
+  const fit = [];
+  MATRIX.forEach((v) => [VR, VF].forEach((m) => { const H = v.half, p = EC.place(m, { cx: 0, cy: H.h, w: 0, halfW: H.w, halfH: H.h });
+    fit.push({ vp: v.vw + 'x' + v.vh, m: m.moment, w: p.w, h: p.h, top: p.y, bottom: p.y + p.h, halfW: H.w, halfH: H.h }); }));
+  const both = JSON.parse(JSON.stringify(VR)); both.scaleRule.halfFraction = 1;
+  ok('V2 · LAB-24 · THE UNITS LAW (owner ruling A, the LAB-22 near-miss answered): each plate is authored as a HEIGHT FRACTION of its half — scaleRule.heightFraction ' + VR.scaleRule.heightFraction + ', halfFraction ABSENT, the unit written out ("' + VR.scaleRule.unit.slice(0, 40) + '…") — and a manifest carrying both units is refused. Placed on all ' + MATRIX.length + ' measured viewports (both plates, ' + fit.length + ' placements), the plate\'s height equals the half\'s height and its bottom-flush top and bottom sit exactly on the half\'s own borders; its width follows the clip (1.774 x the height)',
+     VR.scaleRule.heightFraction === 1 && VF.scaleRule.heightFraction === 1 && VR.scaleRule.halfFraction == null && VF.scaleRule.halfFraction == null && /HEIGHT FRACTION OF THE HALF/.test(VR.scaleRule.unit) && /HEIGHT FRACTION OF THE HALF/.test(VF.scaleRule.unit) &&
+     /plate height/.test(VR.scaleRule.feature) && !EC.validate(both).ok && fit.length === 32 &&
+     fit.every((x) => Math.abs(x.h - x.halfH) < 1e-9 && Math.abs(x.top - 0) < 1e-9 && Math.abs(x.bottom - x.halfH) < 1e-9 && Math.abs(x.w - x.h * 288 / 162) < 1e-9), J(fit.filter((x) => Math.abs(x.h - x.halfH) >= 1e-9).slice(0, 3)));
+
+  // V3 · THE OVERHANG AND THE FEATHER'S INNER BOUNDARY — the side feather lies in the sideways spill beyond the half on every portrait viewport
+  const fr = A(VR).sideFringe, feather = (m) => [m.audit.vignette.left.px, m.audit.vignette.right.px];
+  const geo = MATRIX.map((v) => { const H = v.half, w = H.h * 1916 / 1080, over = (w - H.w) / 2, fz = Math.max(feather(VR)[0], feather(VF)[0], feather(VR)[1], feather(VF)[1]) * w / 1916;
+    return { vp: v.vw + 'x' + v.vh, layout: v.layout, over: +over.toFixed(2), featherCss: +fz.toFixed(2), clearOfHalf: +(over - fz).toFixed(2) }; });
+  const port = geo.filter((x) => x.over > 0), land = geo.filter((x) => x.over <= 0);
+  ok('V3 · LAB-24 · THE OVERHANG, AND WHERE THE FEATHER STOPS: on the ' + port.length + ' portrait viewports the plate is wider than its half and the overhang is DRAWN (the player never clips an effect to the half — it draws on the field-wide layer); the 54 px side feather (the LAB-22/5 splash-fringe precedent, declared ONLY for the sideways spill beyond the half — source columns outside [' + fr.cols.join(', ') + ')) lies ENTIRELY in that overhang: its inner boundary clears the half\'s edge by ' + port.map((x) => x.vp + ' ' + x.clearOfHalf).join(' · ') + ' CSS px, the tightest being the ' + fr.boundViewport + ' phone the feather was sized from. On the ' + land.length + ' landscape viewports the plate fits inside the half (no overhang)',
+     port.length === 7 && land.length === 9 && port.every((x) => x.layout === 'portrait' && x.clearOfHalf >= 0) && land.every((x) => x.layout === 'landscape') && fr.boundViewport === '360x800' && J(fr.cols) === J([54, 1862]) &&
+     J(feather(VR)) === J([54, 54]) && J(feather(VF)) === J([54, 54]) && J(A(VF).sideFringe) === J(fr), J(geo));
+
+  // V4 · THE TOP IS NEVER FEATHERED, AND THE CORE-BODY GUARD HOLDS (spatial bands only; the temporal fades are not bands)
+  const guardOk = (m) => ['top', 'bottom', 'left', 'right'].every((e) => m.audit.vignette[e].bodyInBandOutsideTail.length === 0);
+  ok('V4 · LAB-24 · NO TOP BAND, NO BOTTOM BAND: the serpent\'s head and eye-flare stay at full brightness (top band ' + VR.audit.vignette.top.px + ' px on both plates, bottom ' + VR.audit.vignette.bottom.px + '); the core-body guard stands exactly as written and passes on every edge of both plates (the core reaches the top at margin ' + VR.audit.vignette.top.coreMarginMin + ' — satisfied by GEOMETRY, the height-fit, not by a feather). Anchor: the plate\'s bottom-centre (' + VR.anchor.x + ', ' + VR.anchor.y + ') on the half\'s bottom edge — the rise on the CASTER\'s half, the flood on the ENEMY half',
+     [VR, VF].every((m) => m.audit.vignette.top.px === 0 && m.audit.vignette.bottom.px === 0 && guardOk(m) && m.anchor.x === m.cellSize.w / 2 && m.anchor.y === m.cellSize.h && m.audit.anchorRule.kind === 'bottom-flush') &&
+     VR.contract.anchor === 'caster-half-bottom' && VF.contract.anchor === 'enemy-half-bottom' && VR.audit.anchorRule.place === 'caster-half-bottom' && VF.audit.anchorRule.place === 'enemy-half-bottom', J([VR.audit.vignette, VF.audit.vignette]));
+
+  // V5 · THE RISE, driven: both seats × Full / Fast / Reduced
+  const RISE = []; [0, 1].forEach((s) => ['full', 'fast', 'reduced'].forEach((mode) => RISE.push(Object.assign({ s, mode }, vdrive(CASTF[s], VR, s, mode)))));
+  ok('V5 · LAB-24 · THE RISE, driven both seats × Full / Fast / Reduced: an ARMING visual — it starts AT the cast (clip-start 0 ms, wire-clock cost 0), has NO impact cue and no beat gate, draws every cell in order with "lighter" on the CASTER\'s half (height-fit, bottom-flush — top and bottom on the half\'s borders), upright, while the cast beat keeps its own settle (the board on AFTER at ' + Math.round(RISE[0].run.plan.timeline.castBeatMs) + ' / ' + Math.round(RISE[1].run.plan.timeline.castBeatMs) + ' ms) and the rise runs on to ' + Math.round(RISE[0].run.plan.timeline.clipEnd) + ' / ' + Math.round(RISE[1].run.plan.timeline.clipEnd) + ' ms; sound: sfx_astra only (unchanged); memory back to 0. Reduced: no clip, no decode, sfx_astra and AFTER',
+     RISE.every((r) => { const p = r.run.plan, cues = p.cues.map((c) => c.cue);
+       if (r.mode === 'reduced') return !p.clip && r.W.loads === 0 && r.W.draws.length === 0 && J(r.W.sounds) === J(['sfx_astra']) && J(r.W.rendered[r.W.rendered.length - 1]) === J(CASTF[r.s].after);
+       const idx = r.W.draws.map((d) => cellIx(VR, d));
+       return p.clip && p.arming && cues.indexOf('impact') < 0 && !r.ic && p.segments[0].start === 0 && p.timeline.waitCostMs === 0 && idx.every((x, i) => i === 0 || x >= idx[i - 1]) && (r.mode !== 'full' || new Set(idx).size === 55) &&
+         r.W.draws.every((d) => d.op === 'lighter' && onHalf(d, PH[r.s]) && J(d.tf) === J([1, 0, 0, 1, 0, 0]) && d.dw > 0) && J(r.W.sounds) === J(['sfx_astra']) && r.W.cracks.length === 0 &&
+         J(r.W.rendered[r.W.rendered.length - 1]) === J(CASTF[r.s].after) && r.stats.decodedBytes === 0 && r.W.live === 0 && r.W.maxLive === 1; }), J(RISE.map((r) => [r.s, r.mode, r.run.plan.clip, r.W.draws.length, r.W.sounds])));
+
+  // V6 · THE FLOOD, driven: both seats × Full / Fast — the eruption on the drain's first venom beat
+  const FLOOD = []; [0, 1].forEach((s) => ['full', 'fast'].forEach((mode) => FLOOD.push(Object.assign({ s, mode }, vdrive(DRAINF[s], VF, s, mode)))));
+  ok('V6 · LAB-24 · THE FLOOD, driven both seats × Full / Fast: the plan\'s cast is the EMPOWERED round-end Venom toast, its impact that drain\'s FIRST venom beat (' + FLOOD.map((r) => Math.round(r.ic.t)).join(' / ') + ' ms = the toast\'s 620 ms hold x speed); the impact cell (f077) is first drawn on the SAME FRAME the impact cue fires (' + FLOOD.map((r) => r.impactFrame + '=' + r.cueFrame).join(', ') + '); the clip starts ' + FLOOD.map((r) => Math.round(r.run.plan.timeline.clipStart)).join(' / ') + ' ms after the toast (wire-clock cost 0); every draw on the ENEMY half (the drained seat), height-fit and bottom-flush, upright; no card is cracked; the sounds are the game\'s own drain tick at the toast and at the beat (unchanged); memory back to 0',
+     FLOOD.every((r) => { const p = r.run.plan; return p.clip && p.drain && p.drain.drainedSeat === 1 - r.s && r.impactFrame != null && r.impactFrame === r.cueFrame && p.timeline.clipStart >= 0 && p.timeline.waitCostMs === 0 &&
+       Math.abs(r.ic.t - 620 * EC.SPEED[r.mode] * EC.CHOREO_SPEED) < 1e-6 && r.W.draws.length > 0 && r.W.draws.every((d) => d.op === 'lighter' && onHalf(d, PH[1 - r.s]) && J(d.tf) === J([1, 0, 0, 1, 0, 0]) && d.dw > 0) &&
+       r.W.cracks.length === 0 && J(r.W.sounds) === J(['venom', 'venom']) && r.stats.decodedBytes === 0 && r.W.live === 0; }), J(FLOOD.map((r) => [r.s, r.mode, r.impactFrame, r.cueFrame, r.W.sounds, r.run.plan.drain])));
+
+  // V7 · THE TRUTH TABLE, every row from the real engine (both seats): the flood fires on the empowered drain and ONLY there
+  const TT = []; [0, 1].forEach((s) => [['empowered', {}], ['ordinary', { noStrike: true }], ['karkotaka', { karkotaka: true }], ['noEnemyUnits', { noEnemyUnits: true }], ['twoStrikes', { twoStrikes: true }], ['deciding', { deciding: true }]].forEach(([k, o]) => {
+    const b = buildVenomStrike(s, o), rows = [['drain', b.drain]].concat(b.firstPass ? [['firstPass', b.firstPass]] : []);
+    rows.forEach(([which, f]) => { const p = EC.plan(f, VF, { mode: 'full', casterSeat: s }); TT.push({ s, k, which, clip: p.clip, impacts: p.cues.filter((c) => c.cue === 'impact').length, toasts: f.events.filter((e) => e.type === 'toast').map((e) => e.text.replace(/\{p[01]\}/, 'X')), venoms: f.events.filter((e) => e.type === 'venom').length, over: !!f.matchOver }); });
+    if (b.cast) TT.push({ s, k, which: 'cast', clip: EC.plan(b.cast, VR, { mode: 'full', casterSeat: s }).clip });
+  }));
+  const row = (s, k, w) => TT.find((x) => x.s === s && x.k === k && x.which === w);
+  ok('V7 · LAB-24 · THE TIMING TRUTH TABLE, both directions, every row read from the real engine (both seats): the FLOOD plays on the EMPOWERED round-end drain (toast "−3", ' + row(0, 'empowered', 'drain').venoms + ' Units drained, ONE flood) and on the round that ends the match (the drain precedes the match check), and on two Venom Strikes in one round (one flag, one drain, one flood); it does NOT play on an ORDINARY drain (toast "−1"), on a KARKOTAKA round (the round-end drain is skipped — only the flat −1 early tick fires, on the first pass), or with NO enemy Units (no drain at all: no toast). The rise plays on every cast',
+     [0, 1].every((s) => { const e = row(s, 'empowered', 'drain'), o = row(s, 'ordinary', 'drain'), kd = row(s, 'karkotaka', 'drain'), kf = row(s, 'karkotaka', 'firstPass'), n = row(s, 'noEnemyUnits', 'drain'), t = row(s, 'twoStrikes', 'drain'), d = row(s, 'deciding', 'drain');
+       return e.clip && e.impacts === 1 && J(e.toasts) === J(['Venom drains X’s Units −3']) && e.venoms === 3 && !o.clip && J(o.toasts) === J(['Venom drains X’s Units −1']) && o.venoms > 0 &&
+         !kd.clip && kd.toasts.length === 0 && !kf.clip && J(kf.toasts) === J(['Venom drains X’s Units −1']) && !n.clip && n.toasts.length === 0 && t.clip && t.impacts === 1 && t.toasts.length === 1 && d.clip && d.over &&
+         ['empowered', 'karkotaka', 'noEnemyUnits', 'twoStrikes', 'deciding'].every((k) => row(s, k, 'cast').clip) && !row(s, 'ordinary', 'cast'); }), J(TT));
+
+  // V8 · THE DRAIN'S SIDE: a toast that drains the STRIKER's own side is never the flood's cast
+  const syn = [0, 1].map((s) => { const f = JSON.parse(JSON.stringify(DRAINF[s])), mine = f.before.seats[s].units.filter((u) => u && !u.ghost).map((u) => u.uid);
+    const own = [{ type: 'toast', abilityName: 'Venom', text: 'Venom drains ' + f.scenario['p' + s] + '’s Units −3' }].concat(mine.map((u) => ({ type: 'venom', abilityName: 'Venom', targetUids: [u], amount: -3, text: '☠' })));
+    f.events = own.concat(f.events); return { s, n: own.length, p: EC.plan(f, VF, { mode: 'full', casterSeat: s }) }; });
+  ok('V8 · LAB-24 · THE DRAIN\'S SIDE: the striker\'s OWN drain names the ENEMY player — a batch that also carries a −3 toast draining the striker\'s own Units (placed FIRST) still casts the flood from the real one (event ' + syn.map((x) => x.p.drain && x.p.drain.toast).join(' / ') + ', after the ' + syn.map((x) => x.n).join(' / ') + ' decoys), on the drained seat',
+     syn.every((x) => x.p.clip && x.p.drain && x.p.drain.toast === x.n && x.p.drain.drainedSeat === 1 - x.s), J(syn.map((x) => x.p.drain)));
+
+  // V9 · ONE FLOOD FOR MANY UNITS: a half-plate, not per-target
+  const one = FLOOD.filter((r) => r.mode === 'full').map((r) => { const idx = r.W.draws.map((d) => cellIx(VF, d)), runs = idx.filter((x, i) => x === VF.impact && idx[i - 1] !== VF.impact).length;
+    return { s: r.s, venoms: DRAINF[r.s].events.filter((e) => e.type === 'venom').length, firstBeat: r.run.plan.drain.firstBeat, firstVenom: DRAINF[r.s].events.findIndex((e) => e.type === 'venom'), impacts: r.run.plan.cues.filter((c) => c.cue === 'impact').length, starts: r.run.plan.cues.filter((c) => c.cue === 'clip-start').length, impactRuns: runs, loads: r.W.loads }; });
+  ok('V9 · LAB-24 · ONE FLOOD PER DRAIN: the empowered drain hits ' + one.map((x) => x.venoms).join(' / ') + ' Units (one venom beat each), and the flood is ONE half-plate — one clip-start, one impact cue, pinned to the FIRST venom beat (event ' + one.map((x) => x.firstBeat).join(' / ') + '), its impact cell drawn in one contiguous run, one decode',
+     one.every((x) => x.venoms === 3 && x.firstBeat === x.firstVenom && x.impacts === 1 && x.starts === 1 && x.impactRuns === 1 && x.loads === 1), J(one));
+
+  // V10 · THE BEAT GATE ON THE FLOOD (EXPORT-5, unchanged): on time = byte-identical; late = the pre-impact cell (f076) holds; past the cap = stand down
+  const base = vdrive(DRAINF[0], VF, 0, 'full'), onT = vdrive(DRAINF[0], VF, 0, 'full', { gate: true, beatAt: base.ic.t });
+  const late = vdrive(DRAINF[0], VF, 0, 'full', { gate: true, beatAt: base.ic.t + 1000 }), cap = vdrive(DRAINF[0], VF, 0, 'full', { gate: true, beatAt: base.ic.t + 5000 });
+  const heldCells = [...new Set(late.W.draws.filter((d) => d.t > base.ic.t + 20 && d.t < base.ic.t + 980).map((d) => VF.cells[cellIx(VF, d)].src))];
+  const riseGate = EC.plan(CASTF[0], VR, { mode: 'full', casterSeat: 0 });
+  ok('V10 · LAB-24 · THE EXPORT-5 BEAT LAW ON THE FLOOD: an on-time drain beat is byte-identical to the ungated player (' + base.W.draws.length + ' draws); a beat 1000 ms LATE holds the PRE-IMPACT cell f' + heldCells.join(',') + ' through the wait and lands the eruption on the beat (drawn at ' + Math.round(late.run.log.impactDrawnAt) + ' for a beat at ' + Math.round(base.ic.t + 1000) + '); past the 1500 ms cap the flood stands down, its eruption never drawn, the glue told once. The rise has no impact, so no gate ever holds it',
+     J(onT.W.draws.map((d) => [d.sx, d.sy, Math.round(d.t * 1000)])) === J(base.W.draws.map((d) => [d.sx, d.sy, Math.round(d.t * 1000)])) && J(heldCells) === J([76]) &&
+     late.run.log.impactDrawnAt >= base.ic.t + 1000 && late.run.log.impactDrawnAt - (base.ic.t + 1000) <= 1000 / 60 + 1 && cap.run.log.beatLateCap != null && cap.run.log.impactDrawnAt == null && cap.W.caps.length === 1 &&
+     !riseGate.cues.some((c) => c.cue === 'impact'), J({ heldCells, late: late.run.log.beat, cap: cap.run.log.beatLateCap }));
+
+  // V11 · E1: the rise and the flood decode ONE AT A TIME — the rise is released before the flood decodes
+  const W11 = vworld(); vdrive(CASTF[0], VR, 0, 'full', { W: W11 }); const afterRise = { decoded: W11.P.stats().decodedBytes, live: W11.live };
+  vdrive(DRAINF[0], VF, 0, 'full', { W: W11 }); const st11 = W11.P.stats();
+  const W11b = vworld(), rr = W11b.P.play(CASTF[0], VR, { before: CASTF[0].before, after: CASTF[0].after }, { mode: 'full', casterSeat: 0 }); for (let i = 0; i < 40; i++) W11b.step(1000 / 60);
+  const midLive = W11b.live; W11b.P.play(DRAINF[0], VF, { before: DRAINF[0].before, after: DRAINF[0].after }, { mode: 'full', casterSeat: 0 }); for (let i = 0; i < 10; i++) W11b.step(1000 / 60);
+  ok('V11 · LAB-24 · E1, ONE PLATE DECODED AT A TIME: the rise decodes at the cast and is released at its end (0 MB after it) before the flood decodes at the drain; a flood arriving while the rise still plays ends the rise first (live atlases ' + midLive + ' → ' + W11b.live + ', never two). Peak ' + (st11.peak / 1048576).toFixed(2) + ' MB = the flood alone, under the ' + (EC.E1.capBytes / 1048576).toFixed(2) + ' MB cap — beside the one A5 actor as before',
+     afterRise.decoded === 0 && afterRise.live === 0 && st11.loads === 2 && st11.releases === 2 && W11.maxLive === 1 && st11.peak === e1(VF) && st11.decodedBytes === 0 && midLive === 1 && W11b.maxLive === 1 && rr.done, J({ afterRise, st11, midLive, maxLive: W11b.maxLive }));
+
+  // V12 · THE SEATS: logical halves, upright, never mirrored
+  const seatsOk = [0, 1].map((s) => ({ s, riseHalf: RISE.find((r) => r.s === s && r.mode === 'full').W.draws.every((d) => onHalf(d, PH[s])), floodHalf: FLOOD.find((r) => r.s === s && r.mode === 'full').W.draws.every((d) => onHalf(d, PH[1 - s])) }));
+  ok('V12 · LAB-24 · BOTH SEATS: the plates attach to LOGICAL halves — the rise to the CASTER\'s (seat 0 below, seat 1 on top), the flood to the ENEMY\'s (the other one) — every draw with the identity transform (upright, no rotation) and a positive width (never mirrored); the picture is the same plate on either seat, only its half changes',
+     seatsOk.every((x) => x.riseHalf && x.floodHalf) && RISE.concat(FLOOD).every((r) => r.W.draws.every((d) => J(d.tf) === J([1, 0, 0, 1, 0, 0]) && d.dw > 0 && d.dh > 0)), J(seatsOk));
+
+  // V13 · THE WIRING AND THE FIXTURES
+  const LJ = fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8'), engSha = sha256(fs.readFileSync(path.join(GAME, 'src', 'engine.js')));
+  ok('V13 · LAB-24 · THE LAB PAGE AND ITS FIXTURES: the registry carries both plates (venomstrike = the rise, with the card art; venomstrike_flood = the flood) and the rise prefetches the flood\'s BYTES when the card enters a hand (decoded only at its own moment); the fixtures come from the current engine (sha ' + engSha.slice(0, 12) + '…): the cast emits play and nothing else and leaves venomStrike = the round; the round-ending pass records the striker BEFORE the action (endRound wipes the flag) and emits toast, venom ×3, destroy',
+     REG.venomstrike && REG.venomstrike.effect === '../effects/venomstrike_rise/manifest.json' && REG.venomstrike.fixture === 'venomstrike' && J(REG.venomstrike.prefetchAlso) === J(['venomstrike_flood']) && REG.venomstrike.art === 'Nagas_Astra_VasukiVenomStrike_rLegendary.png' &&
+     REG.venomstrike_flood && REG.venomstrike_flood.effect === '../effects/venomstrike_flood/manifest.json' && !REG.venomstrike_flood.art && /\(\(REG\[cardId\] && REG\[cardId\]\.prefetchAlso\) \|\| \[\]\)\.forEach\(\(id\) => prefetchEffect\(id\)/.test(LJ) &&
+     CASTF.concat(DRAINF).every((f) => f.engine.sha256 === engSha) && CASTF.every((f, s) => J(f.events.map((e) => e.type)) === J(['play']) && f.events[0].abilityName === 'Vasuki Venom Strike' && f.venomStrikeAfter === f.before.round && f.attackerSeat === s) &&
+     DRAINF.every((f, s) => f.venomStrike && f.venomStrike.striker === s && f.attackerSeat === s && J(f.events.map((e) => e.type)) === J(['toast', 'venom', 'venom', 'venom', 'destroy']) && /−3$/.test(f.events[0].text) && f.after.round === f.before.round + 1),
+     J({ reg: [!!REG.venomstrike, !!REG.venomstrike_flood], sha: CASTF.concat(DRAINF).map((f) => f.engine.sha256 === engSha) }));
+}
+
 console.log('\n── K · the sources rule (A7) ──');
 {
   const tracked = git(['ls-files']).split('\n').filter(Boolean);

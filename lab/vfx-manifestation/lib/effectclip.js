@@ -47,16 +47,21 @@
     });
     var member = m.role === 'invoke' || m.role === 'strike';
     if (m.role !== undefined && !member) e.push('role must be "invoke" or "strike"');
+    if (m.moment !== undefined && m.moment !== 'arming' && m.moment !== 'empowered-drain') e.push('moment must be "arming" or "empowered-drain"');
     if (m.role === 'invoke') { if (m.impact !== null) e.push('an invocation has no impact cell'); }
+    else if (m.moment === 'arming') { if (m.impact !== null) e.push('an arming clip has no impact cell'); }   // LAB-24: the cast resolves nothing — no impact, no beat gate
     else if (!(Number.isInteger(m.impact) && cells && m.impact >= 0 && m.impact < cells.length)) e.push('impact must name a cell');
     if (!(m.anchor && num(m.anchor.x) && num(m.anchor.y))) e.push('anchor missing');
     else if (m.cellSize && (m.anchor.x < 0 || m.anchor.y < 0 || m.anchor.x > m.cellSize.w || m.anchor.y > m.cellSize.h)) e.push('anchor falls outside the cell');
     var sr = m.scaleRule; if (!(sr && (sr.ringDiameterCell > 0 || sr.spanCell > 0) && sr.cardWidths > 0)) e.push('scaleRule missing');
+    else if (sr.heightFraction != null && sr.halfFraction != null) e.push('a plate is sized by ONE unit: heightFraction or halfFraction, never both');
+    else if (sr.heightFraction != null && !(sr.heightFraction > 0 && sr.heightFraction <= 1)) e.push('heightFraction out of range');
     else if (sr.halfFraction != null && !(sr.halfFraction > 0 && sr.halfFraction <= 1.2)) e.push('halfFraction out of range');
     else if (sr.heightCap != null && !(sr.heightCap > 0 && sr.heightCap <= 1)) e.push('heightCap out of range');
     else if (sr.cardFloorOfHalfH != null && !(sr.cardFloorOfHalfH > 0 && sr.cardFloorOfHalfH < 1)) e.push('cardFloorOfHalfH out of range');
     if (!member) e = e.concat(contractErrors(m.contract));
     else if (m.contract !== undefined) e.push('a chain member carries no contract (the chain does)');
+    if (m.moment === 'empowered-drain' && !(m.contract && m.contract.castEvent && m.contract.castEvent.type && m.contract.castEvent.abilityName && num(m.contract.minDrain))) e.push('an empowered-drain clip names its cast event and its minimum drain');
     if (m.atlasSize && m.atlasSize.w * m.atlasSize.h * 4 > E1.capBytes) e.push('the atlas decodes past the E1 cap');
     return { ok: e.length === 0, errors: e };
   }
@@ -81,10 +86,33 @@
   var clipsOf = function (spec) { return spec.class === 'effect-chain' ? spec.clips : [spec]; };
 
   // the cast and the strike this batch carries: the play of the card, and its resolution event (null when the card found no mark)
+  // LAB-24 · THE EMPOWERED DRAIN (Vasuki Venom Strike's payoff). The cast of this plan is the round-end Venom TOAST of the striker's OWN drain
+  // (the empowered one: amount >= minDrain = base 1 + the strike's +2, naming the drained = enemy player), and its strike is that drain's FIRST
+  // `venom` beat on an enemy Unit. The striker is the seat whose venomStrike equalled the round BEFORE the action (the batch records it, captured
+  // pre-mutate — endRound wipes the flag). No striker, no empowered toast, or no drained Unit → no clip: an ordinary drain never floods.
+  function drainOf(batch, k) {
+    var ev = (batch && batch.events) || [], vs = batch && batch.venomStrike, none = { cast: null, strike: null, targetUid: null, drain: null };
+    if (!vs || vs.striker == null) return none;
+    var drained = 1 - vs.striker, names = batch.scenario ? [batch.scenario.p0, batch.scenario.p1] : null, seatOf = {};
+    if (batch.before) batch.before.seats.forEach(function (s, i) { (s.units || []).concat(s.heroes || []).forEach(function (c) { if (c) seatOf[c.uid] = i; }); });
+    var amt = function (t) { var mm = /[\u2212-](\d+)/.exec(t || ''); return mm ? +mm[1] : 0; };
+    for (var i = 0; i < ev.length; i++) {
+      var e = ev[i]; if (e.type !== k.castEvent.type || e.abilityName !== k.castEvent.abilityName) continue;
+      if (amt(e.text) < k.minDrain) continue;                                                 // an ordinary (or Karkotaka flat −1) drain is never the empowered one
+      if (names && (e.text || '').indexOf(names[drained]) < 0) continue;                      // the striker's OWN drain names the drained player
+      for (var j = i + 1; j < ev.length && ev[j].type !== k.castEvent.type; j++) {
+        var v = ev[j]; if (v.type === k.trigger && v.abilityName === k.abilityName && v.targetUids && seatOf[v.targetUids[0]] === drained) return { cast: e, strike: v, targetUid: null, drain: { toast: i, firstBeat: j, amount: amt(e.text), drainedSeat: drained } };
+      }
+      return none;
+    }
+    return none;
+  }
   function fromBatch(batch, spec) {
+    if (spec.class !== 'effect-chain' && spec.moment === 'empowered-drain') return drainOf(batch, contractOf(spec));
     var ev = (batch && batch.events) || [], k = contractOf(spec);
     var name = spec.class === 'effect-chain' ? spec.chain.cardName : null;   // a chain's cast is named by its card (Sudarshana Chakra), its resolution by the ability (Sudarshana)
     var cast = ev[0] && ev[0].type === 'play' && (ev[0].abilityName === k.abilityName || (name && ev[0].abilityName === name)) ? ev[0] : null;
+    if (spec.class !== 'effect-chain' && spec.moment === 'arming') return { cast: cast, strike: null, arming: true, targetUid: null };   // LAB-24: the cast is the moment
     var strike = ev.filter(function (x) { return x.type === k.trigger && x.abilityName === k.abilityName; })[0] || null;
     return { cast: cast, strike: strike, targetUid: strike && strike.targetUids && strike.targetUids.length ? strike.targetUids[0] : null };
   }
@@ -105,6 +133,12 @@
     return { vfxT: vfxT, frameMs: frameMs, leadMs: leadMs, totalMs: totalMs, castBeatMs: B.castBeatMs, destroyAt: B.destroyAt, clipStart: clipStart, impactAt: clipStart + m.impact * frameMs,
              crackAt: B.crackAt, beatEnd: B.beatEnd, clipEnd: clipStart + totalMs, waitCostMs: Math.max(0, -clipStart) };
   }
+  // LAB-24 · an ARMING clip: it starts AT the cast (S1, positional) and runs its length; the cast beat's own settle is unchanged. No impact.
+  function armingTimeline(m, speed, choreo) {
+    var vfxT = vfxOf(speed, choreo), k = m.contract, frameMs = 1000 / m.fps * vfxT, totalMs = m.cells.length * frameMs;
+    return { vfxT: vfxT, frameMs: frameMs, leadMs: 0, totalMs: totalMs, castBeatMs: (k.castHitStopMs + k.castHoldMs) * vfxT, destroyAt: null, clipStart: 0, impactAt: null,
+             crackAt: null, beatEnd: (k.castHitStopMs + k.castHoldMs) * vfxT, clipEnd: totalMs, waitCostMs: 0 };
+  }
   // the chain (LAB-20): the strike's impact cell on the bite; the invocation ends exactly where the strike begins (the handoff), and starts
   // its own length before — no dead time, no overlap, by construction. The wire-clock cost is whatever the chain would need before the cast
   function chainTimeline(chain, clips, speed, choreo) {
@@ -120,25 +154,29 @@
   // spec: a clip manifest (one clip) or { class: 'effect-chain', chain, clips: [invoke, strike] }
   function plan(batch, spec, opts) {
     opts = opts || {};
-    var mode = SPEED[opts.mode] != null ? opts.mode : 'full', chained = spec.class === 'effect-chain', k = contractOf(spec), b = fromBatch(batch, spec);
-    var T = chained ? chainTimeline(spec.chain, spec.clips, SPEED[mode], opts.choreoSpeed) : timeline(spec, SPEED[mode], opts.choreoSpeed);
-    var clip = !!(b.cast && b.strike) && mode !== 'reduced', segments = [], cues = [];
+    var mode = SPEED[opts.mode] != null ? opts.mode : 'full', chained = spec.class === 'effect-chain', k = contractOf(spec), b = fromBatch(batch, spec), arming = !!b.arming;
+    var T = chained ? chainTimeline(spec.chain, spec.clips, SPEED[mode], opts.choreoSpeed) : arming ? armingTimeline(spec, SPEED[mode], opts.choreoSpeed) : timeline(spec, SPEED[mode], opts.choreoSpeed);
+    var clip = !!(b.cast && (b.strike || arming)) && mode !== 'reduced', segments = [], cues = [];
+    var HALF_PLACES = { 'enemy-half-centre': 'enemy-half', 'enemy-half-top': 'enemy-half-top', 'enemy-half-bottom': 'enemy-half-bottom', 'caster-half-bottom': 'caster-half-bottom' };
     if (clip && chained) segments.push({ role: 'invoke', clip: 0, start: T.invokeStart, end: T.handoffAt, frameMs: T.invokeFrameMs, place: 'caster-half' },
                                        { role: 'strike', clip: 1, start: T.strikeStart, end: T.strikeEnd, frameMs: T.frameMs, place: 'target', impact: spec.clips[1].impact });
-    else if (clip) segments.push({ role: 'strike', clip: 0, start: T.clipStart, end: T.clipEnd, frameMs: T.frameMs, place: k.anchor === 'enemy-half-centre' ? 'enemy-half' : k.anchor === 'enemy-half-top' ? 'enemy-half-top' : 'target', impact: spec.impact });   // LAB-21: a BOARD-WIDE astra anchors on the caster's enemy half (the game's own row-plate anchor), not on one card
+    else if (clip) segments.push({ role: 'strike', clip: 0, start: T.clipStart, end: T.clipEnd, frameMs: T.frameMs, place: HALF_PLACES[k.anchor] || 'target', impact: spec.impact });   // LAB-21: a BOARD-WIDE astra anchors on the caster's enemy half (the game's own row-plate anchor), not on one card
     if (b.cast) cues.push({ t: 0, cue: 'cast', sound: k.castSound });
     if (b.strike) {
       if (clip && chained) { cues.push({ t: T.invokeStart, cue: 'invoke-start' }); cues.push({ t: T.handoffAt, cue: 'handoff' }); }
       else if (clip) cues.push({ t: T.clipStart, cue: 'clip-start' });
       cues.push({ t: T.impactAt, cue: 'impact', sound: k.impactSound, uid: b.targetUid });
-      cues.push({ t: T.crackAt, cue: k.exitKind === 'removal' ? 'removal' : 'crack', uid: b.targetUid, ms: (k.exitKind === 'removal' ? k.exitMs : 520) * T.vfxT });
+      if (k.exitKind !== 'none') cues.push({ t: T.crackAt, cue: k.exitKind === 'removal' ? 'removal' : 'crack', uid: b.targetUid, ms: (k.exitKind === 'removal' ? k.exitMs : 520) * T.vfxT });   // LAB-24: a drain cracks no card
       if (T.calloutAt != null) cues.push({ t: T.calloutAt, cue: 'callout', uid: b.targetUid, text: chained ? spec.chain.cardName : null });
       cues.push({ t: T.beatEnd, cue: 'settle' });
       if (clip) cues.push({ t: chained ? T.strikeEnd : T.clipEnd, cue: 'clip-end' });
-    } else cues.push({ t: T.castBeatMs, cue: 'settle' });
+    } else {
+      if (clip && arming) { cues.push({ t: T.clipStart, cue: 'clip-start' }); cues.push({ t: T.clipEnd, cue: 'clip-end' }); }   // LAB-24: the rise runs its length past the cast's settle
+      cues.push({ t: T.castBeatMs, cue: 'settle' });
+    }
     cues.forEach(function (c) { if (c.sound === null) delete c.sound; });
     cues.sort(function (x, y) { return x.t - y.t; });
-    return { mode: mode, chained: chained, clip: clip, strike: !!b.strike, targetUid: b.targetUid, casterSeat: opts.casterSeat != null ? opts.casterSeat : null,
+    return { mode: mode, chained: chained, clip: clip, strike: !!b.strike, arming: arming, drain: b.drain || null, targetUid: b.targetUid, casterSeat: opts.casterSeat != null ? opts.casterSeat : null,
              timeline: T, segments: segments, cues: cues, end: cues[cues.length - 1].t };
   }
 
@@ -146,7 +184,10 @@
   // where a clip draws: its anchor on a point, sized so its scale feature spans cardWidths card widths
   function place(m, card) {
     var sr = m.scaleRule, s;
-    if (sr.halfFraction) {
+    if (sr.heightFraction) {
+      // LAB-24 (owner ruling A): HEIGHT-FIT — the plate's HEIGHT is heightFraction x its half's HEIGHT; the width follows the clip. Top and bottom cuts sit on the half's own borders
+      s = sr.heightFraction * card.halfH / m.cellSize.h;
+    } else if (sr.halfFraction) {
       // LAB-22 (owner ruling 3): a plate recorded as a FRACTION OF THE ENEMY HALF is sized off the half's own width;
       // EXPORT-4 (ruling 1) THE FITTED LAW: clamped so the plate is never taller than heightCap x the half (landscape halves are wide and short)
       s = sr.halfFraction * card.halfW / m.cellSize.w;
@@ -240,8 +281,10 @@
       var places = p.segments.map(function (sg) {
         var m = clips[sg.clip];
         if (sg.place === 'target') return target ? place(m, withHalf(target, hE)) : null;
-        var seat = (sg.place === 'enemy-half' || sg.place === 'enemy-half-top') ? (p.casterSeat != null ? 1 - p.casterSeat : null) : p.casterSeat;   // LAB-21: the enemy half is the caster's opposite seat
+        var seat = (sg.place === 'enemy-half' || sg.place === 'enemy-half-top' || sg.place === 'enemy-half-bottom') ? (p.casterSeat != null ? 1 - p.casterSeat : null) : p.casterSeat;   // LAB-21: the enemy half is the caster's opposite seat
         var hh = seat != null && env.halfOf ? env.halfOf(seat) : null;
+        // LAB-24: BOTTOM-FLUSH on a LOGICAL half (the caster's, or its enemy's) — the plate's bottom-centre on the half's bottom edge; no half height, no clip (fail-open)
+        if (sg.place === 'enemy-half-bottom' || sg.place === 'caster-half-bottom') return hh && hh.top != null && hh.h > 0 && hh.w > 0 ? place(m, { cx: hh.cx, cy: hh.top + hh.h, w: 0, halfW: hh.w, halfH: hh.h }) : null;
         // LAB-22: TOP-FLUSH — the plate's anchor (its top-centre) on the enemy half's TOP edge; a half that reports no top plays no clip (fail-open)
         // EXPORT-4: a height-capped plate needs the half's height (no height, no clip — it could not be kept inside the half)
         if (sg.place === 'enemy-half-top') return hh && target && hh.top != null && (!m.scaleRule.halfFraction || hh.w > 0) && (!m.scaleRule.heightCap || hh.h > 0) ? place(m, { cx: hh.cx, cy: hh.top, w: target.w, halfW: hh.w, halfH: hh.h }) : null;

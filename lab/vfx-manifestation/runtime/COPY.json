@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "03b1e456906928bed783578911bb769183c11524",
+    "gameCommit": "c95a50355e26840c596a2bc76f2aa4ba3f8c110c",
     "startLine": 10576,
     "endLine": 11311,
     "lines": 736,
@@ -323,6 +323,16 @@
       "to": "art/Devas_Astra_SudarshanaChakra_rMythic.png",
       "bytes": 435494,
       "sha256": "ea4827d8790e54e392298ba4f189b3050d9c5ab06e2a630df74c89da25914239",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Nagas_Astra_VasukiVenomStrike_rLegendary.png",
+      "to": "art/Nagas_Astra_VasukiVenomStrike_rLegendary.png",
+      "bytes": 428882,
+      "sha256": "fdc827652468f1f9ae9c765f9e24b37dca900587517eaae6423f0d5b9c8c3728",
       "px": {
         "w": 750,
         "h": 1050

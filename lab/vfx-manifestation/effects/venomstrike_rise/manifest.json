@@ -1,0 +1,700 @@
+{
+  "cardId": "venomstrike",
+  "class": "effect-clip",
+  "version": 1,
+  "source": "Kling clip vasuki_venom_v1.mp4 (sha256 fa5e4258d9a2\u2026, 121 frames @ 24 fps, 1916x1080, black ground) \u2014 kept f000\u2013f054; packed by tools/make_effect_from_clip.py",
+  "atlas": "atlas.webp",
+  "atlasSize": {
+    "w": 4062,
+    "h": 658
+  },
+  "channels": "rgb",
+  "blend": "add",
+  "alpha": "luminance",
+  "fps": 24,
+  "timing": "native",
+  "cellPx": 288,
+  "cellSize": {
+    "w": 288,
+    "h": 162
+  },
+  "cells": [
+    {
+      "name": "f000",
+      "src": 0,
+      "x": 2,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f001",
+      "src": 1,
+      "x": 292,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f002",
+      "src": 2,
+      "x": 582,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f003",
+      "src": 3,
+      "x": 872,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f004",
+      "src": 4,
+      "x": 1162,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f005",
+      "src": 5,
+      "x": 1452,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f006",
+      "src": 6,
+      "x": 1742,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f007",
+      "src": 7,
+      "x": 2032,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f008",
+      "src": 8,
+      "x": 2322,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f009",
+      "src": 9,
+      "x": 2612,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f010",
+      "src": 10,
+      "x": 2902,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f011",
+      "src": 11,
+      "x": 3192,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f012",
+      "src": 12,
+      "x": 3482,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f013",
+      "src": 13,
+      "x": 3772,
+      "y": 2,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f014",
+      "src": 14,
+      "x": 2,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f015",
+      "src": 15,
+      "x": 292,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f016",
+      "src": 16,
+      "x": 582,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f017",
+      "src": 17,
+      "x": 872,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f018",
+      "src": 18,
+      "x": 1162,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f019",
+      "src": 19,
+      "x": 1452,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f020",
+      "src": 20,
+      "x": 1742,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f021",
+      "src": 21,
+      "x": 2032,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f022",
+      "src": 22,
+      "x": 2322,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f023",
+      "src": 23,
+      "x": 2612,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f024",
+      "src": 24,
+      "x": 2902,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f025",
+      "src": 25,
+      "x": 3192,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f026",
+      "src": 26,
+      "x": 3482,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f027",
+      "src": 27,
+      "x": 3772,
+      "y": 166,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f028",
+      "src": 28,
+      "x": 2,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f029",
+      "src": 29,
+      "x": 292,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f030",
+      "src": 30,
+      "x": 582,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f031",
+      "src": 31,
+      "x": 872,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f032",
+      "src": 32,
+      "x": 1162,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f033",
+      "src": 33,
+      "x": 1452,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f034",
+      "src": 34,
+      "x": 1742,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f035",
+      "src": 35,
+      "x": 2032,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f036",
+      "src": 36,
+      "x": 2322,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f037",
+      "src": 37,
+      "x": 2612,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f038",
+      "src": 38,
+      "x": 2902,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f039",
+      "src": 39,
+      "x": 3192,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f040",
+      "src": 40,
+      "x": 3482,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f041",
+      "src": 41,
+      "x": 3772,
+      "y": 330,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f042",
+      "src": 42,
+      "x": 2,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f043",
+      "src": 43,
+      "x": 292,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f044",
+      "src": 44,
+      "x": 582,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f045",
+      "src": 45,
+      "x": 872,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f046",
+      "src": 46,
+      "x": 1162,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f047",
+      "src": 47,
+      "x": 1452,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f048",
+      "src": 48,
+      "x": 1742,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f049",
+      "src": 49,
+      "x": 2032,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f050",
+      "src": 50,
+      "x": 2322,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f051",
+      "src": 51,
+      "x": 2612,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f052",
+      "src": 52,
+      "x": 2902,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f053",
+      "src": 53,
+      "x": 3192,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    },
+    {
+      "name": "f054",
+      "src": 54,
+      "x": 3482,
+      "y": 494,
+      "w": 288,
+      "h": 162
+    }
+  ],
+  "impact": null,
+  "anchor": {
+    "x": 144.0,
+    "y": 162.0
+  },
+  "moment": "arming",
+  "scaleRule": {
+    "feature": "plate height (the clip's content box)",
+    "frame": 30,
+    "spanSrc": 1916,
+    "spanCell": 288.0,
+    "cardWidths": 5.64,
+    "ruledDefaultCardWidths": null,
+    "halfFraction": null,
+    "heightCap": null,
+    "heightFraction": 1.0,
+    "unit": "HEIGHT FRACTION OF THE HALF (owner ruling A, LAB-24): the plate's HEIGHT is heightFraction x its half's HEIGHT and its width follows the clip's aspect. This is NOT a width fraction (halfFraction is absent on purpose - the LAB-22 near-miss)",
+    "legibility": null,
+    "note": "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board"
+  },
+  "contract": {
+    "trigger": "play",
+    "abilityName": "Vasuki Venom Strike",
+    "anchor": "caster-half-bottom",
+    "castSound": "sfx_astra",
+    "impactSound": null,
+    "castHitStopMs": 110,
+    "castHoldMs": 1000,
+    "flightMs": 0,
+    "crackAfterMs": 0,
+    "destroyDwellMs": 0,
+    "exitKind": "none",
+    "awaited": false,
+    "moment": "arming",
+    "note": "the cast emits `play` only (+3 ms, LAB-23); the rise starts AT the cast (S1, positional) and has no impact cell - nothing resolves at the cast"
+  },
+  "audit": {
+    "range": [
+      0,
+      54
+    ],
+    "droppedHead": null,
+    "droppedTail": [
+      55,
+      120
+    ],
+    "impactSrc": null,
+    "impact": {
+      "rule": "none",
+      "why": "an ARMING visual: the cast resolves nothing (flag-only), so the rise has no impact cell and no beat gate"
+    },
+    "strikeOnset": {
+      "frame": 55,
+      "rule": "the first frame whose head region grows a bright component >= 1800 px",
+      "areas": {
+        "f048": 305,
+        "f049": 279,
+        "f050": 241,
+        "f051": 365,
+        "f052": 405,
+        "f053": 518,
+        "f054": 928,
+        "f055": 2579,
+        "f056": 2090,
+        "f057": 2586,
+        "f058": 656,
+        "f059": 1643,
+        "f060": 1623,
+        "f061": 2918,
+        "f062": 2212
+      }
+    },
+    "dedup": {
+      "rule": "mean |d| vs the previous frame < 0.6 is a true duplicate",
+      "trueDuplicates": 0,
+      "minNeighbourMae": 5.728,
+      "minAt": "f037",
+      "keepDuplicates": false
+    },
+    "sideFringe": {
+      "cols": [
+        54,
+        1862
+      ],
+      "boundSrcPx": 54.64,
+      "boundViewport": "360x800",
+      "overhangingViewports": 7,
+      "declaration": "LAB-22/5 splash-fringe precedent, scope: ONLY the sideways spill beyond the half's width (source columns outside [54, 1862)); the serpent's body and head and the flood's central mass are never inside a feather zone"
+    },
+    "provenance": {
+      "parent": "vasuki_venom_v1.mp4",
+      "md5": "f69ee6e3822b662fbe02a3ee39bb7ed9",
+      "sha256": "fa5e4258d9a2cc5152598497b8f780bf65a394488ab08cb176a8b2209ced824e",
+      "rule": "an effect clip has no identity master; its provenance parent is the md5-verified source clip itself, and every plate cut from it records the same parent"
+    },
+    "corePoint": [
+      1186,
+      72
+    ],
+    "scale": 0.15031,
+    "box": [
+      0,
+      0,
+      1916,
+      1080
+    ],
+    "cellPx": {
+      "used": 288,
+      "asked": 288,
+      "steppedDown": null
+    },
+    "decodedBytes": 10691184,
+    "e1CapBytes": 18874368,
+    "ground": {
+      "cornersMax": 9,
+      "farMax": 5,
+      "method": "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) \u2014 stated beside the bake metric",
+      "zeroShareMin": 0.31069,
+      "pedestal1to4ShareMax": 0.03088
+    },
+    "edges": {
+      "top": 53,
+      "bottom": 55,
+      "left": 55,
+      "right": 55,
+      "of": 55
+    },
+    "fadeIn": [
+      [
+        0,
+        0.1429
+      ],
+      [
+        1,
+        0.2857
+      ],
+      [
+        2,
+        0.4286
+      ],
+      [
+        3,
+        0.5714
+      ],
+      [
+        4,
+        0.7143
+      ],
+      [
+        5,
+        0.8571
+      ]
+    ],
+    "fadeTail": [
+      [
+        45,
+        1.0
+      ],
+      [
+        46,
+        0.8889
+      ],
+      [
+        47,
+        0.7778
+      ],
+      [
+        48,
+        0.6667
+      ],
+      [
+        49,
+        0.5556
+      ],
+      [
+        50,
+        0.4444
+      ],
+      [
+        51,
+        0.3333
+      ],
+      [
+        52,
+        0.2222
+      ],
+      [
+        53,
+        0.1111
+      ],
+      [
+        54,
+        0.0
+      ]
+    ],
+    "vignette": {
+      "top": {
+        "px": 0,
+        "cellPxAtScale": 0.0,
+        "coreMarginMin": 0,
+        "coreMarginMinAt": 7,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "bottom": {
+        "px": 0,
+        "cellPxAtScale": 0.0,
+        "coreMarginMin": 216,
+        "coreMarginMinAt": 0,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "left": {
+        "px": 54,
+        "cellPxAtScale": 8.1,
+        "coreMarginMin": 451,
+        "coreMarginMinAt": 0,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "right": {
+        "px": 54,
+        "cellPxAtScale": 8.1,
+        "coreMarginMin": 320,
+        "coreMarginMinAt": 0,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      }
+    },
+    "guardKind": "blob",
+    "guardTailStart": 45,
+    "anchorRule": {
+      "kind": "bottom-flush",
+      "place": "caster-half-bottom",
+      "dependency": "the bottom band is 0 because the ground ring touches the bottom edge on every frame; the cut is hidden only because the plate's bottom sits flush with its half's bottom edge (LAB-24) - RE-RULE if the anchor or the scale changes"
+    }
+  }
+}

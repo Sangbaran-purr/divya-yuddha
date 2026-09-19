@@ -321,10 +321,81 @@ function buildPashupataCast(seat, opts) {
 }
 const buildPashupata = (seat) => buildPashupataCast(seat);
 
-module.exports = { build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK, buildSudarshana, buildSudarshanaCast, SUD_DECK, SUD_OPP_DECK, buildBrahmastra, buildBrahmastraCast, BRAHMA_DECK, BRAHMA_OPP_DECK, buildPashupata, buildPashupataCast, PASHU_DECK, PASHU_OPP_DECK };
+// LAB-24 · VASUKI VENOM STRIKE — the TIMING fixtures (the Rahu class: the payoff is not the cast). Owner ruling 2026-09-19, shape (c): the RISE
+// plays at the CAST (a flag-only Astra: engine `pl.venomStrike=g.round`, the only event is `play`), the FLOOD at the round-end Venom DRAIN when
+// that drain is EMPOWERED (drainAmount adds +2 while the caster's venomStrike equals the round). The drain lives in endRound → venomRoundEnd →
+// venomPassive: ONE `toast` (abilityName Venom, "Venom drains <enemy>’s Units −N") then one `venom` event per drained Unit. The Deva seat moves
+// first and lays its Units; the Naga seat lays a Unit, casts, and both pass — the ROUND-ENDING pass is the flood fixture's action. The striker is
+// captured BEFORE that action (endRound wipes pl.venomStrike and advances g.round — the game's own venomStrikeNpAtAction does the same).
+// Variants (the truth table, every row read from the real engine): noStrike (an ordinary −1 drain), karkotaka (the round-end passive is SKIPPED
+// while Karkotaka is on the Naga board — only the flat −1 early tick fires, on the FIRST pass), noEnemyUnits (no foes: no toast at all),
+// twoStrikes (two casts, one flag, one drain), deciding (winTarget 1: the round that ends the match still drains — the drain precedes the check).
+const VS_NAGA_UNITS = ['Naga Warrior', 'Naga Sadhu', 'Naga Archer', 'Naga Enchantress', 'Kaliya', 'Ulupi', 'Naga Hatchling', 'Ashvatara'];
+const VS_DEVA_UNITS = ['Marut', 'Gandharva', 'Chandra Dev', 'Deva Soldier', 'Kubera', 'Narada', 'Urvashi', 'Brihaspati', 'Vishwakarma', 'Agni', 'Yama', 'Indra'];
+function buildVenomStrike(seat, o) {
+  o = o || {};
+  const deva = 1 - seat;
+  const nagaDeck = (o.noStrike ? [] : ['Vasuki Venom Strike']).concat(o.twoStrikes ? ['Vasuki Venom Strike'] : [], o.karkotaka ? ['Karkotaka'] : [], VS_NAGA_UNITS).slice(0, 12);
+  const devaDeck = VS_DEVA_UNITS.slice(0, 12);
+  for (let seed = 1; seed < 2000; seed++) {
+    const E = freshEngine();
+    const decks = seat === 0 ? [nagaDeck, devaDeck] : [devaDeck, nagaDeck];
+    const sc = { p0Deck: decks[0], p1Deck: decks[1], p0Hand: HAND(decks[0]), p1Hand: HAND(decks[1]), mulligan: 0 };
+    if (o.deciding) sc.winTarget = 1;
+    const opts = { rng: seeded(seed), p0: '{p0}', p1: '{p1}', realm: 'mrityulok', p0Faction: seat === 0 ? 'nagas' : 'devas', p1Faction: seat === 1 ? 'nagas' : 'devas', scenario: sc };
+    const g = E.newGame(opts);
+    if (g.turn !== deva) continue;                                               // the Deva seat moves first: its Units are the drained row
+    const setup = [], ok = { v: true };
+    const act = (who, kind, name) => {
+      if (!ok.v || g.turn !== who) { ok.v = false; return null; }
+      if (kind === 'pass') { E.pass(g, who); setup.push({ seat: who, type: 'pass' }); return true; }
+      const h = g.players[who].hand.findIndex((c) => c.n === name); if (h < 0 || E.playableIndices(g, who).indexOf(h) < 0) { ok.v = false; return null; }
+      E.playCard(g, who, h); setup.push({ seat: who, type: 'play', card: name, handIndex: h }); return true;
+    };
+    const snap = () => ({ before: snapshot(E, g), ev0: g.events.length, log0: g.log.length });
+    const record = (s0, action, extra) => Object.assign({
+      engine: { file: 'src/engine.js', sha256: engineSha() }, seed, attackerSeat: seat, defenderSeat: deva, realm: 'mrityulok',
+      scenario: { p0: opts.p0, p1: opts.p1, p0Faction: opts.p0Faction, p1Faction: opts.p1Faction, p0Deck: decks[0], p1Deck: decks[1], mulligan: 0, winTarget: g.winTarget },
+      setup: setup.slice(0, action.setupLen), action: action.act, before: s0.before, events: g.events.slice(s0.ev0), log: g.log.slice(s0.log0).map((l) => l.msg), after: snapshot(E, g),
+    }, extra || {});
+    let castRec = null, firstPassRec = null;
+    const devaLays = o.noEnemyUnits ? [] : ['Marut', 'Gandharva', 'Chandra Dev'];
+    if (o.noEnemyUnits) act(deva, 'pass');
+    const nagaPlays = (o.karkotaka ? ['Karkotaka'] : ['Naga Warrior']).concat(o.noStrike ? ['Naga Sadhu'] : ['Vasuki Venom Strike'], o.twoStrikes ? ['Vasuki Venom Strike'] : []);
+    for (let i = 0; i < Math.max(devaLays.length, nagaPlays.length) && ok.v; i++) {
+      if (i < devaLays.length && g.turn === deva) act(deva, 'play', devaLays[i]);
+      if (i < nagaPlays.length && ok.v) {
+        const isCast = nagaPlays[i] === 'Vasuki Venom Strike' && !castRec;
+        const s0 = isCast ? snap() : null, n0 = setup.length;
+        act(seat, 'play', nagaPlays[i]);
+        if (isCast && ok.v) castRec = record(s0, { setupLen: n0, act: { seat, type: 'play', card: 'Vasuki Venom Strike', handIndex: setup[n0].handIndex, targetUid: null, legal: true } }, { venomStrikeAfter: g.players[seat].venomStrike });
+      }
+    }
+    if (!ok.v) continue;
+    if (devaLays.length && g.players[deva].units.filter((u) => !u.ghost).length !== devaLays.length) continue;   // every Deva Unit must stand to be drained
+    // both pass: the FIRST pass (the Karkotaka early tick fires here), then the ROUND-ENDING pass (the round-end drain)
+    if (!g.players[1 - g.turn].passed) {                                          // a first pass only if the other seat has not passed already (noEnemyUnits: the Deva passed at once)
+      const first = g.turn; const s0 = snap(), n0 = setup.length; act(first, 'pass');
+      if (!ok.v) continue;
+      firstPassRec = record(s0, { setupLen: n0, act: { seat: first, type: 'pass', card: 'Pass (the first pass)' } }, { venomStrike: g.players[seat].venomStrike === g.round ? { striker: seat, round: g.round, flag: g.players[seat].venomStrike } : null });
+    }
+    if (g.round !== 1 || g.over) continue;
+    const last = g.turn, striker = g.players[seat].venomStrike === g.round ? { striker: seat, round: g.round, flag: g.players[seat].venomStrike, capturedBefore: 'the round-ending action (endRound wipes the flag and advances the round)' } : null;
+    const s0 = snap(), n0 = setup.length; act(last, 'pass');
+    if (!ok.v || g.round === 1 && !g.over) continue;
+    const drain = record(s0, { setupLen: n0, act: { seat: last, type: 'pass', card: 'Pass (the round ends: the Venom drain)' } }, { venomStrike: striker, roundEnded: true, matchOver: !!g.over });
+    return { cast: castRec, firstPass: firstPassRec, drain, seed };
+  }
+  throw new Error('no seed in 1..1999 produced the Venom Strike board ' + JSON.stringify(o));
+}
+const VS_RULING = 'LAB-24 - Vasuki Venom Strike, the two-plate premium effect (owner ruling 2026-09-19, shape (c); ruling A height-fit). A TIMING fixture (the Rahu class): the Deva seat lays Marut, Gandharva and Chandra Dev; the Naga seat lays Naga Warrior and casts Vasuki Venom Strike - a flag-only Astra: the engine sets venomStrike to the round and emits `play` and nothing else. ';
+const buildVenomStrikeCast = (seat) => { const f = Object.assign({ fixture: 'venomstrike_play', ruling: VS_RULING + 'This fixture is THE CAST: the rise plays here, on the caster\'s half, with no impact.' }, buildVenomStrike(seat).cast); f.diff = boardDiff(f.before, f.after); return f; };
+const buildVenomStrikeDrain = (seat) => { const f = Object.assign({ fixture: 'venomstrike_drain', ruling: VS_RULING + 'This fixture is THE ROUND-ENDING PASS: endRound runs the round-end Venom drain, EMPOWERED (the toast reads −3: base 1 + the strike\'s +2), one toast then one venom event per Deva Unit - the flood plays here, on the enemy half, its eruption on the FIRST venom beat. The striker is recorded as captured BEFORE the action.' }, buildVenomStrike(seat).drain); f.diff = boardDiff(f.before, f.after); return f; };
+
+module.exports = { buildVenomStrike, buildVenomStrikeCast, buildVenomStrikeDrain, build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK, buildSudarshana, buildSudarshanaCast, SUD_DECK, SUD_OPP_DECK, buildBrahmastra, buildBrahmastraCast, BRAHMA_DECK, BRAHMA_OPP_DECK, buildPashupata, buildPashupataCast, PASHU_DECK, PASHU_OPP_DECK };
 
 if (require.main === module) {
-  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra], ['sudarshana', buildSudarshana], ['brahmastra', buildBrahmastra], ['pashupata', buildPashupata]])) for (const seat of [0, 1]) {
+  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra], ['sudarshana', buildSudarshana], ['brahmastra', buildBrahmastra], ['pashupata', buildPashupata], ['venomstrike', buildVenomStrikeCast], ['venomstrike_flood', buildVenomStrikeDrain]])) for (const seat of [0, 1]) {
     const f = make(seat), out = path.join(__dirname, name + '_seat' + seat + '.json');
     fs.writeFileSync(out, JSON.stringify(f, null, 2) + '\n');
     console.log('wrote ' + path.relative(GAME, out) + ' — seed ' + f.seed + ', ' + f.events.length + ' events (' + f.events.map((e) => e.type).join(', ') + '), changed: ' +

@@ -1978,6 +1978,47 @@ impact and calls `env.onBeatLateCap`. `draw()` now takes the plan clock (cells, 
 clip logs honest times. Gate off, which is how the lab page plays, nothing changes: all 749 lab checks still pass, and every atlas
 and manifest is byte-identical under the design freeze.
 
+## LAB-24: Vasuki Venom Strike — one clip, two plates (height-fit)
+
+**Owner rulings, verbatim.** 2026-09-19: "Proceed with Vasuki venom, lanka dahan goes for reshoot." Then, after the STEP-0 stop on the
+all-edge vignette: "Let's try A; if it doesn't work, we go for a reshoot." Shape (c) is ruled (two plates from one clip), the spectral serpent
+is admitted under the v4a carve-out (the serpent is the Astra's own weapon-source; its dark scale body reading see-through under additive is a
+ghost serpent), and ruling A is HEIGHT-FIT. Lanka Dahan is out of this rung (reshoot). This rung ends at the owner's device pass, not a commit.
+
+**The card, from the engine.** Vasuki Venom Strike (Naga, Legendary Astra) is flag-only: the cast sets `venomStrike = round` and emits `play`
+and nothing else. Its payoff is the round-end Venom drain (`endRound` → `venomRoundEnd` → `venomPassive`): one `toast` ("Venom drains
+<enemy>'s Units −N") then one `venom` event per drained Unit. The game holds 620 ms (× speed) after the toast before the first Unit drains.
+
+- **The rise** — f000–f054, 55 cells at 288 (10.20 MB decoded, 706 KB). It ends the frame before the MEASURED strike onset f055 (the head
+  turns, the jaws open; the drops leave their orbit from f060). An ARMING visual: it starts AT the cast on the CASTER's half, with no impact
+  and no beat gate (S1, positional); the cast beat keeps its own settle. Sound unchanged: `sfx_astra`.
+- **The flood** — f063–f120, 58 cells at 288 (12.74 MB, 883 KB). Its eruption f077 (cell 14, the steepest rise of the ground band's added
+  light) is pinned to the empowered drain's FIRST `venom` beat, on the ENEMY half. The toast is the identifier: the striker's own drain
+  (captured before the round-ending action — `endRound` wipes the flag), naming the enemy player, reading at least −3 (base 1 + the strike's
+  +2). Fourteen lead cells start the clip 48 ms after the toast (fifteen would start it 6.5 ms before it): wire-clock cost 0. One flood per
+  drain, whatever the Unit count. The head's wind-up f055–f062 is in neither plate. Sound unchanged: the game's own synth drain tick.
+- **The truth table**, every row from the real engine (both seats): the flood plays on the empowered drain, on two Venom Strikes in one round
+  (one flag, one drain), and on the round that ends the match (the drain precedes the match check); it does NOT play on an ordinary −1
+  drain, on a Karkotaka round (the round-end drain is skipped there; only the flat −1 early tick fires, on the first pass), or with no enemy
+  Units (no drain, no toast).
+- **Height-fit (ruling A).** Each plate is authored as a HEIGHT FRACTION of its half — `scaleRule.heightFraction: 1.0`, `halfFraction`
+  absent, the unit written out in the manifest (the LAB-22 near-miss). Bottom-flush, so the top and bottom cuts sit on the half's own borders
+  on all 16 measured viewports: no top band and no bottom band — the serpent's head and eye-flare stay at full brightness, and the core-body
+  guard holds by geometry, exactly as written.
+- **The side fringe (LAB-22/5 precedent), its scope recorded:** on the 7 portrait viewports the plate is wider than its half and the overhang
+  is drawn (the player draws on the field-wide layer and never clips to the half; on a phone part of the overhang passes the screen's own
+  edge). The overhang's outer edges carry a 54 px side feather, declared ONLY for the sideways spill beyond the half's width (rise: empty
+  dark margin; flood: the sideways venom splash). 54 source px is the narrowest overhang in the matrix (the 360 px phone, 54.64), so the
+  feather's inner boundary lies outside the half on every portrait viewport; the serpent's body and head and the flood's central mass are
+  never inside a feather zone. On the 9 landscape viewports the plate fits inside the half.
+- **Budget.** 288 px cells draw at 2.6× (phones) to 5.3× (portrait tablets) and 6.3× (the 12.9-inch iPad Pro portrait). E1 holds: one
+  plate decoded at a time (the rise is released before the flood decodes), beside the one A5 actor. A7: the two atlases, manifests and
+  fixtures plus the card art add 2.03 MB.
+
+The lab page carries both plates: **venomstrike** (the rise, from the cast fixture) and **venomstrike_flood** (the flood, from the
+round-ending pass). The rise prefetches the flood's bytes when the card enters a hand; each decodes only at its own moment. Checks V1–V13,
+each proven against a mutant.
+
 ## Notes for the next rungs
 
 ### LAB-2: the after-effect lands after the fizzle, from the board difference

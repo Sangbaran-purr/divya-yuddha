@@ -210,6 +210,7 @@
   }
   // LAB-20a: an effect card's manifests and atlas bytes are fetched when it enters a hand (the actor pattern) — the tap-to-cue path fetches nothing
   function prefetchEffect(cardId) {
+    ((REG[cardId] && REG[cardId].prefetchAlso) || []).forEach((id) => prefetchEffect(id).catch(report));   // LAB-24: a card with a later moment (Venom Strike's flood) fetches that plate's BYTES too — decoded only at its own moment
     return effectManifestFor(cardId).then((spec) => { if (!spec) return; (spec.class === 'effect-chain' ? spec.clips : [spec]).forEach((m) => effectBlob(m).catch(report)); diagLog('prefetch', { card: cardId }); });
   }
   const cardNode = (uid) => el('field').querySelector('.bc[data-uid="' + uid + '"]');
