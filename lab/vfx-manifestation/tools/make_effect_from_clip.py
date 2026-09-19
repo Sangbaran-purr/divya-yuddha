@@ -156,6 +156,37 @@ EFFECTS = {
                            "castHitStopMs": 0, "castHoldMs": 620, "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 575, "exitKind": "none", "awaited": False,
                            "moment": "empowered-drain", "castEvent": {"type": "toast", "abilityName": "Venom"}, "minDrain": 3,
                            "note": "the plan's cast is the EMPOWERED round-end Venom toast (the striker's own drain, amount >= 3 = base 1 + the strike's +2); the impact is that drain's FIRST `venom` beat; one flood per drain whatever the Unit count; both sounds are the game's own synth drain tick, unchanged"}},
+    # LAB-25 · LANKA DAHAN — TWO SOURCES, TWO PLATES, THE GAME'S OWN ORDER (owner rulings 2026-09-19: "The fire clip is for the opponent the
+    # restoration clip is for the allied party." and "Go." — package S: SEQUENTIAL, no E1 amendment; the gold on the classic wash timer, burn +
+    # 1125 ms x vfxT; seat 1 resolved by DIVIDER-FLUSH; the units law a WIDTH fraction 1.0, height-capped). The FIRE strikes the enemy half on
+    # the first damage beat; it is released, THEN the GOLD decodes and blesses the caster's half, positional, no impact. Neither clip touches
+    # its top or bottom edge on any frame, so no top/bottom band is needed; both run edge to edge sideways, and the side feathers are declared
+    # fringe at the half's side borders (the wall and the mist continuing past the half). The core-body guard stays in force.
+    "lankadahan_fire": {"kind": "vignette-clip", "label": "Lanka Dahan (the fire)", "clip": "lanka_dahan/lanka_fire_v2.mp4", "card_id": "lankadahan", "role": "strike",
+              "clip_md5": "60e945a32835ed08dcc4a8c4ebaac7d8",
+              # f062-f114: 26 lead cells before the impact f088 (the pillars joining the wall - the steepest wall-cover rise in its window), so the
+              # clip starts 35 ms after the cast at Normal (21 at Fast), and 27 cells after it (1125 x vfxT ms) - ending EXACTLY at the gold's start
+              "range": (62, 114), "impact": 88, "impact_rule": "wallcover", "impact_window": (80, 96),
+              "sticker_frames": [70, 88, 100, 110], "sticker_max": 1.5, "cell_px": 288, "fade_in": 6, "fade_tail": 10, "dedup_mae": 0.6,
+              "feather_top": 0, "feather_bottom": 0, "feather_left": 96, "feather_right": 96, "side_fringe": "fixed",
+              "anchor_region": "divider-flush", "anchor_place": "enemy-half-divider",
+              "scale": {"feature": "plate width (the clip's content box)", "frame": 88, "half_fraction": 1.0, "height_cap": 1.0, "card_widths": 5.18, "width_unit": True},
+              "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0, "fringe_cols": "side_fringe"}},
+    "lankadahan_gold": {"kind": "vignette-clip", "label": "Lanka Dahan (the gold)", "clip": "lanka_dahan/lanka_gold_v3.mp4", "card_id": "lankadahan", "role": "afterglow",
+              "clip_md5": "976e121af9726c775d2570428baf80b3",
+              # f000-f109: the whole blessing up to the measured REFRAME ONSET f110 (from f110 the clip recedes inside hard vertical cuts) - the
+              # range must end the frame before it. No impact: an afterglow, started positionally on the classic wash timer
+              "range": (0, 109), "impact": None, "impact_rule": "none", "reframe_onset": {"expect": 110, "stepThr": 15},
+              "sticker_frames": [30, 60, 90], "sticker_max": 1.5, "cell_px": 288, "fade_in": 6, "fade_tail": 10, "dedup_mae": 0.6,
+              "feather_top": 0, "feather_bottom": 0, "feather_left": 96, "feather_right": 96, "side_fringe": "fixed",
+              "anchor_region": "divider-flush", "anchor_place": "caster-half-divider",
+              "scale": {"feature": "plate width (the clip's content box)", "frame": 90, "half_fraction": 1.0, "height_cap": 1.0, "card_widths": 5.18, "width_unit": True},
+              "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0, "fringe_cols": "side_fringe"}},
+    "lankadahan": {"kind": "chain2", "card_id": "lankadahan", "card_name": "Lanka Dahan", "clips": ["lankadahan_fire", "lankadahan_gold"],
+              "contract": {"trigger": "damage", "abilityName": "Lanka Dahan", "castSound": "sfx_astra", "impactSound": "sfx_debuff",
+                           "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 0, "crackAfterMs": 0, "exitKind": "none", "destroyDwellMs": 577,
+                           "afterglowDelayMs": 1125, "anchor": "enemy-half-divider", "afterglowAnchor": "caster-half-divider", "awaited": False,
+                           "note": "the fire's impact on the FIRST damage beat (+1447 ms at Normal); the gold on the classic wash timer - (18/16) x vfxT x 1000 after the burn, 1462 ms at Normal, 877 at Fast - fire first, inspiration second, never simultaneous"}},
 }
 E1_CAP = 3072 * 1536 * 4   # the effect layer's hi-rung class (LAB-19)
 
@@ -301,6 +332,20 @@ def main_chain(key):
              "handoff": "sequential: the invocation is released at the handoff, then the strike decodes (E1: one effect clip decoded at a time)",
              "contract": C["contract"]}
     if scale_from is not None: chain["travel"] = {"scaleFrom": scale_from, "scaleTo": 1.0, "why": "the invocation disc (%.1f card widths on screen) hands off in place to the strike disc (%.3f card widths): the strike layer eases from the one to the other on the travel curve, receding as it flies" % (inv["scaleRule"]["cardWidths"], stk["travel"]["bodyWidthSrc"] * stk["scaleRule"]["cardWidths"] / stk["scaleRule"]["spanSrc"])}
+    out = os.path.join(LAB, "effects", key); os.makedirs(out, exist_ok=True)
+    with open(os.path.join(out, "chain.json"), "w") as fh: json.dump(chain, fh, indent=2); fh.write("\n")
+    print("chain %s: %s" % (key, [c["manifest"] for c in chain["clips"]]))
+
+
+def main_chain2(key):
+    # LAB-25: a STRIKE then an AFTERGLOW (the reverse of LAB-20's invoke then strike): the strike carries the impact, the afterglow starts at a
+    # fixed delay after it; the strike is released at the handoff before the afterglow decodes (E1: one effect clip decoded at a time)
+    C = EFFECTS[key]
+    for k in C["clips"]: main_vignette(k)
+    chain = {"cardId": C["card_id"], "cardName": C["card_name"], "class": "effect-chain", "shape": "strike-afterglow", "version": 1,
+             "clips": [{"role": EFFECTS[k]["role"], "manifest": "../" + k + "/manifest.json"} for k in C["clips"]],
+             "handoff": "sequential: the strike (the fire) is released at the handoff, then the afterglow (the gold) decodes (E1: one effect clip decoded at a time)",
+             "contract": C["contract"]}
     out = os.path.join(LAB, "effects", key); os.makedirs(out, exist_ok=True)
     with open(os.path.join(out, "chain.json"), "w") as fh: json.dump(chain, fh, indent=2); fh.write("\n")
     print("chain %s: %s" % (key, [c["manifest"] for c in chain["clips"]]))
@@ -452,6 +497,18 @@ def main_vignette(key):
         if onset != so["expect"]: sys.exit("the measured strike onset f%s disagrees with the ruled f%03d" % (onset, so["expect"]))
         if b != onset - 1: sys.exit("the rise must end on the frame before the strike onset (f%03d), not f%03d" % (onset - 1, b))
         extra["strikeOnset"] = {"frame": onset, "rule": "the first frame whose head region grows a bright component >= %d px" % so["minArea"], "areas": areas}
+    if C.get("reframe_onset"):
+        # LAB-25: the clip RECEDES inside hard vertical cuts at its end (a reframe) — the onset is the first frame whose lit columns stop short of
+        # a side edge with a hard step; the range must end the frame before it
+        ro = C["reframe_onset"]; onset = None
+        for i in range(N):
+            al = frames[i].max(axis=2); cm = al.astype(np.float32).mean(axis=0); lit = np.where((al > 12).any(axis=0))[0]
+            if lit.size and (lit.min() >= 2 or lit.max() <= W - 3):
+                x0r, x1r = int(lit.min()), int(lit.max()); step = max(float(cm[x0r + 3] - cm[max(0, x0r - 3)]), float(cm[x1r - 3] - cm[min(W - 1, x1r + 3)]))
+                if step > ro["stepThr"]: onset = i; break
+        if onset != ro["expect"]: sys.exit("the measured reframe onset f%s disagrees with the ruled f%03d" % (onset, ro["expect"]))
+        if b != onset - 1: sys.exit("the range must end the frame before the reframe onset (f%03d), not f%03d" % (onset - 1, b))
+        extra["reframeOnset"] = {"frame": onset, "rule": "the first frame whose lit columns stop short of a side edge behind a hard step > %d luma" % ro["stepThr"]}
     if C.get("dedup_mae") is not None:
         # LAB-24: the standing duplicate rule, asserted (the vignette class keeps its whole range; a true duplicate would be a wasted cell)
         mae = [float(np.abs(frames[i].astype(np.int16) - frames[i - 1].astype(np.int16)).mean()) for i in kept[1:]]
@@ -507,14 +564,26 @@ def main_vignette(key):
         if impact != C["impact"]: sys.exit("the measured eruption f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
         imp_note = {"rule": "groundband", "window": [w0, w1], "ringRow": ring, "groundBand": [gb0, gb1], "addedLightRiseOver2Frames": round(rise[impact], 3),
                     "why": "the flood erupts where the streams land; the drain's first `venom` beat drains a Unit, and the eruption is pinned to it"}
+    elif C["impact_rule"] == "wallcover":
+        # LAB-25: THE WALL JOINS — the ground line is the widest bright row (Rec.709 luma > 150) in the lower 70%, its mode over the clip; the
+        # wall cover is the share of columns lit in the band 220..40 rows above it; the impact is its steepest 3-frame rise inside the window
+        L7 = np.array([0.2126, 0.7152, 0.0722], np.float32)
+        gl = [int(np.argmax(((frames[i][int(H * 0.3):].astype(np.float32) @ L7) > 150).sum(axis=1))) + int(H * 0.3) for i in range(N)]
+        G = int(np.bincount(gl).argmax()); cov = [float((((frames[i][G - 220:G - 40].astype(np.float32) @ L7) > 150).any(axis=0)).mean()) for i in range(N)]
+        w0, w1 = C["impact_window"]; rise = {i: cov[i] - cov[i - 3] for i in range(max(w0, 3), w1 + 1)}
+        impact = max(rise, key=rise.get)
+        if impact != C["impact"]: sys.exit("the measured wall-join f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
+        imp_note = {"rule": "wallcover", "window": [w0, w1], "groundLineMode": G, "groundLineRange": [min(gl), max(gl)], "coverRiseOver3Frames": round(rise[impact], 3),
+                    "why": "the pillars join the wall: the fire lands on the first damage beat"}
     elif C["impact_rule"] == "none":
-        impact = None; imp_note = {"rule": "none", "why": "an ARMING visual: the cast resolves nothing (flag-only), so the rise has no impact cell and no beat gate"}
+        impact = None; imp_note = ({"rule": "none", "why": "an AFTERGLOW: it starts on the game's own wash timer after the burn (positional, the classic delay x vfxT), so it has no impact cell and no beat gate"}
+                                   if C.get("role") == "afterglow" else {"rule": "none", "why": "an ARMING visual: the cast resolves nothing (flag-only), so the rise has no impact cell and no beat gate"})   # LAB-25
     else:
         impact = C["impact"]; imp_note = {"rule": "positional", "why": "the clip starts at the beat (S1); the impact cell is the one the first resolution cue lands on"}
     if impact is not None and impact not in kept: sys.exit("the impact f%03d is outside the kept range" % impact)
 
     # THE ANCHOR: the clip's core — the brightest blurred point on the impact frame, inside the named region
-    reg = L[impact if impact is not None else sf_core(C)] if C["anchor_region"] in ("frame", "top-flush", "bottom-flush") else L[impact][:int(H * 0.60)]
+    reg = L[impact if impact is not None else sf_core(C)] if C["anchor_region"] in ("frame", "top-flush", "bottom-flush", "divider-flush") else L[impact][:int(H * 0.60)]
     blur = cv2.GaussianBlur(reg, (0, 0), 15); ay, ax = np.unravel_index(int(np.argmax(blur)), blur.shape); CORE = (int(ax), int(ay))
 
     # THE SCALE FEATURE, measured per clip
@@ -583,7 +652,24 @@ def main_vignette(key):
         k3 = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
         bx, by, bwid, bhgt = (int(st[k3, cv2.CC_STAT_LEFT]), int(st[k3, cv2.CC_STAT_TOP]), int(st[k3, cv2.CC_STAT_WIDTH]), int(st[k3, cv2.CC_STAT_HEIGHT]))
         return {"top": by, "bottom": H - (by + bhgt), "left": bx, "right": W - (bx + bwid)}
+    if C.get("sticker_frames"):
+        # LAB-25: THE STICKER PIN (the LAB-23 rejection test, recorded): a painted contour is a saturated-red rim much redder than the interior
+        # it wraps (the rejected v1 read 9.4-22x). On the outer 6 px of the lit region vs the region inside it; natural fire reads < 1.5
+        W709 = np.array([0.2126, 0.7152, 0.0722], np.float32); stk = {}
+        for i in C["sticker_frames"]:
+            x = frames[i].astype(np.float32); r_, g_, b_ = x[..., 0], x[..., 1], x[..., 2]; cont = (x.max(axis=2) > 40).astype(np.uint8); red = (r_ > 140) & (g_ < 0.5 * r_) & (b_ < 0.3 * r_)
+            edge = cont - cv2.erode(cont, np.ones((13, 13), np.uint8)); onE = float(red[edge > 0].mean()) if edge.any() else 0.0; ins = float(red[(cont > 0) & (edge == 0)].mean()) if ((cont > 0) & (edge == 0)).any() else 0.0
+            inner = cv2.erode(cont, np.ones((25, 25), np.uint8)) - cv2.erode(cont, np.ones((37, 37), np.uint8)); lum = x @ W709
+            stk["f%03d" % i] = {"redOnOutline": round(onE, 3), "redInside": round(ins, 3), "outlineOverInside": round(onE / max(ins, 1e-6), 2), "darkInnerLine": round(float((lum[inner > 0] < 40).mean()) if inner.any() else 0.0, 3)}
+        worst = max(v["outlineOverInside"] for v in stk.values())
+        if worst > C["sticker_max"]: sys.exit("a sticker contour: outline/inside %.2f > %.2f - STOP" % (worst, C["sticker_max"]))
+        extra["sticker"] = {"rule": "saturated red on the outer 6 px of the lit region over the red inside it; a painted contour (the rejected v1, LAB-23) reads 9.42-21.97, natural light < %.1f" % C["sticker_max"], "max": worst, "frames": stk}
     fringe = None
+    if C.get("side_fringe") == "fixed":
+        # LAB-25: width-fit 1.0 puts the plate's sides ON the half's side borders; the side feather is declared fringe there (the wall and the mist
+        # continuing past the half) — scope: the outer feather columns only
+        S = C["feather_left"]; fringe = {"cols": [S, W - S], "declaration": "LAB-22/5 splash-fringe precedent, scope: ONLY the outer %d source columns each side, which sit at the half's side borders under width-fit 1.0 (the wall and the mist running on past the half)" % S}
+        extra["sideFringe"] = fringe
     if C.get("side_fringe") == "matrix":
         # LAB-24 (ruling A): the side feather must lie in the portrait overhang on EVERY viewport of the game's measured matrix (read-only)
         VPS = json.load(open(os.path.join(LAB, "..", "..", "src", "device_matrix.json")))["viewports"]; asp = W / float(H)
@@ -641,6 +727,7 @@ def main_vignette(key):
 
     # the anchor: the core point on a half's centre (LAB-21), or (LAB-22, ruling 4) the plate's TOP-CENTRE on the enemy half's top edge
     anchor = ({"x": round(cw / 2.0, 1), "y": 0.0} if C["anchor_region"] == "top-flush" else {"x": round(cw / 2.0, 1), "y": float(ch)} if C["anchor_region"] == "bottom-flush"
+              else {"x": round(cw / 2.0, 1), "y": round(ch / 2.0, 1)} if C["anchor_region"] == "divider-flush"
               else {"x": round((CORE[0] - x0) * s, 1), "y": round((CORE[1] - y0) * s, 1)})   # LAB-24: BOTTOM-FLUSH - the plate's bottom-centre on its half's bottom edge
     manifest = {
         "cardId": C["card_id"], "class": "effect-clip", "version": 1,
@@ -650,10 +737,10 @@ def main_vignette(key):
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height} for i, c, cx, cy in placed],
         "impact": kept.index(impact) if impact is not None else None, "anchor": anchor, **({"moment": C["moment"]} if C.get("moment") else {}),
         "scaleRule": {"feature": C["scale"]["feature"], "frame": sf, "spanSrc": span, "spanCell": round(span * s, 2), "cardWidths": C["scale"]["card_widths"],
-                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "halfFraction": C["scale"].get("half_fraction"), "heightCap": C["scale"].get("height_cap"), **({"heightFraction": C["scale"]["height_fraction"], "unit": "HEIGHT FRACTION OF THE HALF (owner ruling A, LAB-24): the plate's HEIGHT is heightFraction x its half's HEIGHT and its width follows the clip's aspect. This is NOT a width fraction (halfFraction is absent on purpose - the LAB-22 near-miss)"} if C["scale"].get("height_fraction") else {}), "legibility": C["scale"].get("measured"),
+                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "halfFraction": C["scale"].get("half_fraction"), "heightCap": C["scale"].get("height_cap"), **({"unit": "WIDTH FRACTION OF THE HALF (owner ruling LAB-25, package S): the plate's WIDTH is halfFraction x its half's WIDTH, never taller than heightCap x the half's HEIGHT (the fitted law). This is NOT a height fraction (the LAB-22 near-miss)"} if C["scale"].get("width_unit") else {}), **({"heightFraction": C["scale"]["height_fraction"], "unit": "HEIGHT FRACTION OF THE HALF (owner ruling A, LAB-24): the plate's HEIGHT is heightFraction x its half's HEIGHT and its width follows the clip's aspect. This is NOT a width fraction (halfFraction is absent on purpose - the LAB-22 near-miss)"} if C["scale"].get("height_fraction") else {}), "legibility": C["scale"].get("measured"),
                       "note": ("THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only — LAB-21's ring-based cw and a plate-based cw are not the same unit"
                                if C["scale"].get("half_fraction") else "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board")},
-        "contract": C["contract"],
+        **({"role": C["role"]} if C.get("role") else {"contract": C["contract"]}),
         "audit": {"range": [a, b], "droppedHead": [0, a - 1] if a > 0 else None, "droppedTail": [b + 1, N - 1] if b < N - 1 else None,
                   "impactSrc": impact, "impact": imp_note, **extra, **({"provenance": {"parent": os.path.basename(clip), "md5": C["clip_md5"], "sha256": sha, "rule": "an effect clip has no identity master; its provenance parent is the md5-verified source clip itself, and every plate cut from it records the same parent"}} if C.get("clip_md5") else {}), "corePoint": list(CORE), "scale": round(s, 5), "box": [x0, y0, x1, y1],
                   "cellPx": {"used": cell_px, "asked": C["cell_px"], "steppedDown": stepped},
@@ -667,7 +754,8 @@ def main_vignette(key):
                   "vignette": guard, "guardKind": C["guard"]["kind"], "guardTailStart": tail0,
                   "anchorRule": ({"kind": "top-flush", "place": "enemy-half-top", "dependency": C.get("anchor_note", "the top band is 0 because the beam and the crown touch the top edge on every frame; the cut is hidden only because the plate's top sits flush with the enemy half's top edge (owner ruling LAB-22/4) — RE-RULE if the anchor or the scale changes")}
                                  if C["anchor_region"] == "top-flush" else {"kind": "bottom-flush", "place": C["anchor_place"], "dependency": "the bottom band is 0 because the ground ring touches the bottom edge on every frame; the cut is hidden only because the plate's bottom sits flush with its half's bottom edge (LAB-24) - RE-RULE if the anchor or the scale changes"}
-                                 if C["anchor_region"] == "bottom-flush" else {"kind": "core-point", "place": "enemy-half"})},
+                                 if C["anchor_region"] == "bottom-flush" else {"kind": "divider-flush", "place": C["anchor_place"], "dependency": "the plate's edge nearest the divider sits ON the divider (its bottom on the upper half, its top on the lower half); neither clip touches its top or bottom edge, so no cut hides there (LAB-25)"}
+                                 if C["anchor_region"] == "divider-flush" else {"kind": "core-point", "place": "enemy-half"})},
     }
     with open(os.path.join(out, "manifest.json"), "w") as fh: json.dump(manifest, fh, indent=2); fh.write("\n")
 
@@ -698,4 +786,4 @@ def main_vignette(key):
 if __name__ == "__main__":
     k = sys.argv[1] if len(sys.argv) > 1 else "vajra"
     kind = EFFECTS.get(k, {}).get("kind")
-    main_chain(k) if kind == "chain" else main_chain_clip(k) if kind == "chain-clip" else main_vignette(k) if kind == "vignette-clip" else main(k)
+    main_chain2(k) if kind == "chain2" else main_chain(k) if kind == "chain" else main_chain_clip(k) if kind == "chain-clip" else main_vignette(k) if kind == "vignette-clip" else main(k)

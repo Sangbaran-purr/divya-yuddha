@@ -2,7 +2,7 @@
   "what": "the VFX runtime and one effect's assets, copied from the live game into the lab (VFX-LAB-1)",
   "source": {
     "file": "index.html",
-    "gameCommit": "961b66ae5026b7f09cf464642085b255a3f67c94",
+    "gameCommit": "f703d1353d79595e42136d40a11a3ae40b235a32",
     "startLine": 10633,
     "endLine": 11368,
     "lines": 736,
@@ -333,6 +333,16 @@
       "to": "art/Nagas_Astra_VasukiVenomStrike_rLegendary.png",
       "bytes": 428882,
       "sha256": "fdc827652468f1f9ae9c765f9e24b37dca900587517eaae6423f0d5b9c8c3728",
+      "px": {
+        "w": 750,
+        "h": 1050
+      }
+    },
+    {
+      "from": "assets/cards/Vanaras_Astra_LankaDahan_rLegendary.png",
+      "to": "art/Vanaras_Astra_LankaDahan_rLegendary.png",
+      "bytes": 464168,
+      "sha256": "7b90de64602c8688422e05c4e792433b28ccbfe93704bf0b50d3d9a6b5cf8a1a",
       "px": {
         "w": 750,
         "h": 1050

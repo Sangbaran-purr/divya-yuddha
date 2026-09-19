@@ -392,10 +392,43 @@ const VS_RULING = 'LAB-24 - Vasuki Venom Strike, the two-plate premium effect (o
 const buildVenomStrikeCast = (seat) => { const f = Object.assign({ fixture: 'venomstrike_play', ruling: VS_RULING + 'This fixture is THE CAST: the rise plays here, on the caster\'s half, with no impact.' }, buildVenomStrike(seat).cast); f.diff = boardDiff(f.before, f.after); return f; };
 const buildVenomStrikeDrain = (seat) => { const f = Object.assign({ fixture: 'venomstrike_drain', ruling: VS_RULING + 'This fixture is THE ROUND-ENDING PASS: endRound runs the round-end Venom drain, EMPOWERED (the toast reads −3: base 1 + the strike\'s +2), one toast then one venom event per Deva Unit - the flood plays here, on the enemy half, its eruption on the FIRST venom beat. The striker is recorded as captured BEFORE the action.' }, buildVenomStrike(seat).drain); f.diff = boardDiff(f.before, f.after); return f; };
 
-module.exports = { buildVenomStrike, buildVenomStrikeCast, buildVenomStrikeDrain, build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK, buildSudarshana, buildSudarshanaCast, SUD_DECK, SUD_OPP_DECK, buildBrahmastra, buildBrahmastraCast, BRAHMA_DECK, BRAHMA_OPP_DECK, buildPashupata, buildPashupataCast, PASHU_DECK, PASHU_OPP_DECK };
+// LAB-25 · LANKA DAHAN — the fire and the gold (owner rulings 2026-09-19: "The fire clip is for the opponent the restoration clip is for the allied
+// party." and "Go."). The Asura seat lays three Units; the Vanara seat lays two and casts Lanka Dahan: the engine emits play, then one damage per
+// enemy Unit (deal 2) — the FIRE lands on the first — and raises every friendly Unit +1 with NO event (the GOLD rides the game's own wash timer).
+const LD_VANARA = ['Lanka Dahan'].concat(VANARA_UNITS.slice(0, 11)), LD_ASURA = ['Ravana', 'Kalanemi', 'Narakasura', 'Vibhishana', 'Bana Asura', 'Maricha', 'Tataka', 'Kumbhakarna', 'Meghnad', 'Asura Berserker', 'Kali Asura', 'Mahabali'];
+function buildLankaDahan(seat) {
+  const opp = 1 - seat;
+  for (let seed = 1; seed < 2000; seed++) {
+    const E = freshEngine();
+    const decks = seat === 0 ? [LD_VANARA, LD_ASURA] : [LD_ASURA, LD_VANARA];
+    const sc = { p0Deck: decks[0], p1Deck: decks[1], p0Hand: HAND(decks[0]), p1Hand: HAND(decks[1]), mulligan: 0 };
+    const o = { rng: seeded(seed), p0: '{p0}', p1: '{p1}', realm: 'mrityulok', p0Faction: seat === 0 ? 'vanaras' : 'asuras', p1Faction: seat === 1 ? 'vanaras' : 'asuras', scenario: sc };
+    const g = E.newGame(o);
+    if (g.turn !== opp) continue;
+    const setup = []; let ok = true;
+    const lay = (who, name) => { const h = g.players[who].hand.findIndex((c) => c.n === name); if (h < 0 || g.turn !== who || E.playableIndices(g, who).indexOf(h) < 0) { ok = false; return; } E.playCard(g, who, h); setup.push({ seat: who, type: 'play', card: name, handIndex: h }); };
+    const theirs = ['Ravana', 'Kalanemi', 'Narakasura'], mine = ['Nala', 'Neela'];
+    for (let i = 0; i < 3 && ok; i++) { lay(opp, theirs[i]); if (ok && i < 2) lay(seat, mine[i]); }
+    if (!ok || g.turn !== seat) continue;
+    if (g.players[opp].units.filter((u) => !u.ghost).length !== 3) continue;
+    const lh = g.players[seat].hand.findIndex((c) => c.id === 'lankadahan'), legal = E.playableIndices(g, seat).indexOf(lh) >= 0;
+    if (!legal) continue;
+    const before = snapshot(E, g), ev0 = g.events.length, log0 = g.log.length;
+    E.playCard(g, seat, lh);
+    const after = snapshot(E, g);
+    return { fixture: 'lankadahan_play', ruling: 'LAB-25 - Lanka Dahan, two plates from two sources, in the game\'s own order: the FIRE on the enemy half at the first damage beat, released, then the GOLD on the caster\'s half at the classic wash timer (burn + 1125 x vfxT ms). The Asura seat lays Ravana, Kalanemi and Narakasura; the Vanara seat lays Nala and Neela, then casts Lanka Dahan: play, then a damage (deal 2) per enemy Unit, and every friendly Unit +1 with no event',
+      engine: { file: 'src/engine.js', sha256: engineSha() }, seed, attackerSeat: seat, defenderSeat: opp, realm: 'mrityulok',
+      scenario: { p0: o.p0, p1: o.p1, p0Faction: o.p0Faction, p1Faction: o.p1Faction, p0Deck: decks[0], p1Deck: decks[1], mulligan: 0 },
+      setup, action: { seat, type: 'play', card: 'Lanka Dahan', handIndex: lh, targetUid: null, legal },
+      before, events: g.events.slice(ev0), log: g.log.slice(log0).map((l) => l.msg), after, diff: boardDiff(before, after) };
+  }
+  throw new Error('no seed in 1..1999 produced the Lanka Dahan board');
+}
+
+module.exports = { buildLankaDahan, buildVenomStrike, buildVenomStrikeCast, buildVenomStrikeDrain, build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK, buildSudarshana, buildSudarshanaCast, SUD_DECK, SUD_OPP_DECK, buildBrahmastra, buildBrahmastraCast, BRAHMA_DECK, BRAHMA_OPP_DECK, buildPashupata, buildPashupataCast, PASHU_DECK, PASHU_OPP_DECK };
 
 if (require.main === module) {
-  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra], ['sudarshana', buildSudarshana], ['brahmastra', buildBrahmastra], ['pashupata', buildPashupata], ['venomstrike', buildVenomStrikeCast], ['venomstrike_flood', buildVenomStrikeDrain]])) for (const seat of [0, 1]) {
+  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra], ['sudarshana', buildSudarshana], ['brahmastra', buildBrahmastra], ['pashupata', buildPashupata], ['venomstrike', buildVenomStrikeCast], ['venomstrike_flood', buildVenomStrikeDrain], ['lankadahan', buildLankaDahan]])) for (const seat of [0, 1]) {
     const f = make(seat), out = path.join(__dirname, name + '_seat' + seat + '.json');
     fs.writeFileSync(out, JSON.stringify(f, null, 2) + '\n');
     console.log('wrote ' + path.relative(GAME, out) + ' — seed ' + f.seed + ', ' + f.events.length + ' events (' + f.events.map((e) => e.type).join(', ') + '), changed: ' +

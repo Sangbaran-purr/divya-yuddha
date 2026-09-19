@@ -226,12 +226,14 @@
     onDone: (res) => { lastEffect = res; }, onError: report, diag: diagLog,
   });
   function formatEffectPlan(p, spec) {
-    const T = p.timeline, r = (x) => Math.round(x), chained = spec.class === 'effect-chain', strike = chained ? spec.clips[1] : spec;
+    const T = p.timeline, r = (x) => Math.round(x), chained = spec.class === 'effect-chain', glow = chained && spec.chain.shape === 'strike-afterglow', strike = glow ? spec.clips[0] : chained ? spec.clips[1] : spec;
     const what = !p.strike ? 'no strike: the card found no mark — nothing plays' : !p.clip ? 'no clip (Reduced)'
+      : glow ? 'STRIKE THEN AFTERGLOW · fire ' + strike.cells.length + ' cells on the enemy half, impact cell ' + strike.impact + ' (' + strike.cells[strike.impact].name + ') on the first damage beat; released, then the gold ' + spec.clips[1].cells.length + ' cells on the caster\'s half'   // LAB-25
       : chained ? 'CHAIN · invocation ' + spec.clips[0].cells.length + ' cells, then strike ' + strike.cells.length + ' cells at ' + (1000 / T.frameMs).toFixed(2) + '/s, impact cell ' + strike.impact + ' (' + strike.cells[strike.impact].name + ') on the bite'
       : strike.cells.length + ' cells at ' + (1000 / T.frameMs).toFixed(2) + '/s, impact cell ' + strike.impact + ' (' + strike.cells[strike.impact].name + ')';
     return 'EFFECT ' + (chained ? 'CHAIN' : 'CLIP') + ' · ' + spec.cardId + ' · ' + p.mode + ' (vfxT ' + T.vfxT.toFixed(2) + ') · ' + what + '\n' +
-      (chained ? 'invocation ' + r(T.invokeStart) + '–' + r(T.handoffAt) + ' ms → handoff → strike to ' + r(T.strikeEnd) + ' ms; the bite ' + r(T.impactAt) + ' ms' : 'lead ' + r(T.leadMs) + ' ms inside the cast beat ' + r(T.castBeatMs) + ' ms') +
+      (glow ? 'fire ' + r(T.strikeStart) + '–' + r(T.handoffAt) + ' ms (the burn ' + r(T.impactAt) + ' ms) → released → gold ' + r(T.afterglowStart) + '–' + r(T.afterglowEnd) + ' ms (the burn + ' + r(T.afterglowStart - T.impactAt) + ' ms, the classic wash timer)'
+       : chained ? 'invocation ' + r(T.invokeStart) + '–' + r(T.handoffAt) + ' ms → handoff → strike to ' + r(T.strikeEnd) + ' ms; the bite ' + r(T.impactAt) + ' ms' : 'lead ' + r(T.leadMs) + ' ms inside the cast beat ' + r(T.castBeatMs) + ' ms') +
       ' → wire-clock cost ' + r(T.waitCostMs) + ' ms\n\n' +
       p.cues.map((c) => ('      ' + r(c.t)).slice(-6) + ' ms  ' + c.cue + (c.sound ? ' · ' + c.sound : '') + (c.uid != null ? ' · uid ' + c.uid : '')).join('\n');
   }

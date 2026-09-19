@@ -45,10 +45,10 @@
       if (!(num(c.x) && num(c.y) && c.w > 0 && c.h > 0)) e.push('cell ' + i + ' has no rectangle');
       else if (m.atlasSize && (c.x + c.w > m.atlasSize.w || c.y + c.h > m.atlasSize.h)) e.push('cell ' + i + ' falls outside the atlas');
     });
-    var member = m.role === 'invoke' || m.role === 'strike';
-    if (m.role !== undefined && !member) e.push('role must be "invoke" or "strike"');
+    var member = m.role === 'invoke' || m.role === 'strike' || m.role === 'afterglow';   // LAB-25: + the afterglow (a strike-then-afterglow chain's second plate)
+    if (m.role !== undefined && !member) e.push('role must be "invoke", "strike" or "afterglow"');
     if (m.moment !== undefined && m.moment !== 'arming' && m.moment !== 'empowered-drain') e.push('moment must be "arming" or "empowered-drain"');
-    if (m.role === 'invoke') { if (m.impact !== null) e.push('an invocation has no impact cell'); }
+    if (m.role === 'invoke' || m.role === 'afterglow') { if (m.impact !== null) e.push('an ' + (m.role === 'invoke' ? 'invocation' : 'afterglow') + ' has no impact cell'); }
     else if (m.moment === 'arming') { if (m.impact !== null) e.push('an arming clip has no impact cell'); }   // LAB-24: the cast resolves nothing — no impact, no beat gate
     else if (!(Number.isInteger(m.impact) && cells && m.impact >= 0 && m.impact < cells.length)) e.push('impact must name a cell');
     if (!(m.anchor && num(m.anchor.x) && num(m.anchor.y))) e.push('anchor missing');
@@ -78,7 +78,11 @@
     if (!chain || chain.class !== 'effect-chain') e.push('class must be "effect-chain"');
     if (!(chain && typeof chain.cardName === 'string')) e.push('cardName missing (the cast event carries the card name)');
     e = e.concat(contractErrors(chain && chain.contract));
-    if (!(Array.isArray(clips) && clips.length === 2 && clips[0].role === 'invoke' && clips[1].role === 'strike')) e.push('a chain is an invocation then a strike');
+    if (chain && chain.shape === 'strike-afterglow') {   // LAB-25: a strike then an afterglow, the afterglow a fixed delay after the impact
+      if (!(Array.isArray(clips) && clips.length === 2 && clips[0].role === 'strike' && clips[1].role === 'afterglow')) e.push('a strike-afterglow chain is a strike then an afterglow');
+      if (!(chain.contract && num(chain.contract.afterglowDelayMs) && chain.contract.afterglowDelayMs >= 0)) e.push('a strike-afterglow chain names its afterglow delay');
+    }
+    else if (!(Array.isArray(clips) && clips.length === 2 && clips[0].role === 'invoke' && clips[1].role === 'strike')) e.push('a chain is an invocation then a strike');
     (clips || []).forEach(function (m, i) { var v = validate(m); if (!v.ok) e.push('clip ' + i + ': ' + v.errors.join('; ')); if (chain && m.cardId !== chain.cardId) e.push('clip ' + i + ' is another card'); });
     return { ok: e.length === 0, errors: e };
   }
@@ -139,6 +143,15 @@
     return { vfxT: vfxT, frameMs: frameMs, leadMs: 0, totalMs: totalMs, castBeatMs: (k.castHitStopMs + k.castHoldMs) * vfxT, destroyAt: null, clipStart: 0, impactAt: null,
              crackAt: null, beatEnd: (k.castHitStopMs + k.castHoldMs) * vfxT, clipEnd: totalMs, waitCostMs: 0 };
   }
+  // LAB-25 · a STRIKE then an AFTERGLOW: the strike's impact cell on the beat; the afterglow starts afterglowDelayMs x vfxT after the impact (the
+  // game's own timer for the second plate), and the strike is released there — it ends there by construction (the pack range makes it so)
+  function afterglowTimeline(chain, clips, speed, choreo) {
+    var vfxT = vfxOf(speed, choreo), B = beats(chain.contract, vfxT), str = clips[0], aft = clips[1];
+    var frameMs = 1000 / str.fps * vfxT, aftFrameMs = 1000 / aft.fps * vfxT, strikeStart = B.impactAt - str.impact * frameMs, handoffAt = B.impactAt + chain.contract.afterglowDelayMs * vfxT;
+    return { vfxT: vfxT, frameMs: frameMs, afterglowFrameMs: aftFrameMs, castBeatMs: B.castBeatMs, impactAt: B.impactAt, crackAt: B.crackAt, calloutAt: null, beatEnd: B.beatEnd,
+             strikeStart: strikeStart, strikeEnd: strikeStart + str.cells.length * frameMs, handoffAt: handoffAt, afterglowStart: handoffAt, afterglowEnd: handoffAt + aft.cells.length * aftFrameMs,
+             leadMs: str.impact * frameMs, waitCostMs: Math.max(0, -strikeStart) };
+  }
   // the chain (LAB-20): the strike's impact cell on the bite; the invocation ends exactly where the strike begins (the handoff), and starts
   // its own length before — no dead time, no overlap, by construction. The wire-clock cost is whatever the chain would need before the cast
   function chainTimeline(chain, clips, speed, choreo) {
@@ -155,21 +168,25 @@
   function plan(batch, spec, opts) {
     opts = opts || {};
     var mode = SPEED[opts.mode] != null ? opts.mode : 'full', chained = spec.class === 'effect-chain', k = contractOf(spec), b = fromBatch(batch, spec), arming = !!b.arming;
-    var T = chained ? chainTimeline(spec.chain, spec.clips, SPEED[mode], opts.choreoSpeed) : arming ? armingTimeline(spec, SPEED[mode], opts.choreoSpeed) : timeline(spec, SPEED[mode], opts.choreoSpeed);
+    var glow = chained && spec.chain.shape === 'strike-afterglow';
+    var T = glow ? afterglowTimeline(spec.chain, spec.clips, SPEED[mode], opts.choreoSpeed) : chained ? chainTimeline(spec.chain, spec.clips, SPEED[mode], opts.choreoSpeed) : arming ? armingTimeline(spec, SPEED[mode], opts.choreoSpeed) : timeline(spec, SPEED[mode], opts.choreoSpeed);
     var clip = !!(b.cast && (b.strike || arming)) && mode !== 'reduced', segments = [], cues = [];
     var HALF_PLACES = { 'enemy-half-centre': 'enemy-half', 'enemy-half-top': 'enemy-half-top', 'enemy-half-bottom': 'enemy-half-bottom', 'caster-half-bottom': 'caster-half-bottom' };
-    if (clip && chained) segments.push({ role: 'invoke', clip: 0, start: T.invokeStart, end: T.handoffAt, frameMs: T.invokeFrameMs, place: 'caster-half' },
+    if (clip && glow) segments.push({ role: 'strike', clip: 0, start: T.strikeStart, end: Math.min(T.strikeEnd, T.handoffAt), frameMs: T.frameMs, place: k.anchor, impact: spec.clips[0].impact },
+                                    { role: 'afterglow', clip: 1, start: T.afterglowStart, end: T.afterglowEnd, frameMs: T.afterglowFrameMs, place: k.afterglowAnchor, impact: null });
+    else if (clip && chained) segments.push({ role: 'invoke', clip: 0, start: T.invokeStart, end: T.handoffAt, frameMs: T.invokeFrameMs, place: 'caster-half' },
                                        { role: 'strike', clip: 1, start: T.strikeStart, end: T.strikeEnd, frameMs: T.frameMs, place: 'target', impact: spec.clips[1].impact });
     else if (clip) segments.push({ role: 'strike', clip: 0, start: T.clipStart, end: T.clipEnd, frameMs: T.frameMs, place: HALF_PLACES[k.anchor] || 'target', impact: spec.impact });   // LAB-21: a BOARD-WIDE astra anchors on the caster's enemy half (the game's own row-plate anchor), not on one card
     if (b.cast) cues.push({ t: 0, cue: 'cast', sound: k.castSound });
     if (b.strike) {
-      if (clip && chained) { cues.push({ t: T.invokeStart, cue: 'invoke-start' }); cues.push({ t: T.handoffAt, cue: 'handoff' }); }
+      if (clip && glow) { cues.push({ t: T.strikeStart, cue: 'clip-start' }); cues.push({ t: T.handoffAt, cue: 'handoff' }); }
+      else if (clip && chained) { cues.push({ t: T.invokeStart, cue: 'invoke-start' }); cues.push({ t: T.handoffAt, cue: 'handoff' }); }
       else if (clip) cues.push({ t: T.clipStart, cue: 'clip-start' });
       cues.push({ t: T.impactAt, cue: 'impact', sound: k.impactSound, uid: b.targetUid });
       if (k.exitKind !== 'none') cues.push({ t: T.crackAt, cue: k.exitKind === 'removal' ? 'removal' : 'crack', uid: b.targetUid, ms: (k.exitKind === 'removal' ? k.exitMs : 520) * T.vfxT });   // LAB-24: a drain cracks no card
       if (T.calloutAt != null) cues.push({ t: T.calloutAt, cue: 'callout', uid: b.targetUid, text: chained ? spec.chain.cardName : null });
       cues.push({ t: T.beatEnd, cue: 'settle' });
-      if (clip) cues.push({ t: chained ? T.strikeEnd : T.clipEnd, cue: 'clip-end' });
+      if (clip) cues.push({ t: glow ? T.afterglowEnd : chained ? T.strikeEnd : T.clipEnd, cue: 'clip-end' });
     } else {
       if (clip && arming) { cues.push({ t: T.clipStart, cue: 'clip-start' }); cues.push({ t: T.clipEnd, cue: 'clip-end' }); }   // LAB-24: the rise runs its length past the cast's settle
       cues.push({ t: T.castBeatMs, cue: 'settle' });
@@ -255,7 +272,7 @@
     function loadSegment(run, k) {
       var sg = run.plan.segments[k], m = run.clips[sg.clip], t0 = Date.now(), tStart = env.now() - run.t0;
       run.current = k; diag('load-start', { role: sg.role, at: Math.round(tStart) });
-      var h = sg.role === 'strike' && k > 0 ? run.log.handoff : null;
+      var h = k > 0 ? run.log.handoff : null;   // LAB-25: the second segment of either chain shape
       var ready = function (x) {
         if (!x) return fail(new Error('the ' + sg.role + ' atlas loader returned nothing'));
         var t = env.now() - run.t0;
@@ -283,6 +300,13 @@
         if (sg.place === 'target') return target ? place(m, withHalf(target, hE)) : null;
         var seat = (sg.place === 'enemy-half' || sg.place === 'enemy-half-top' || sg.place === 'enemy-half-bottom') ? (p.casterSeat != null ? 1 - p.casterSeat : null) : p.casterSeat;   // LAB-21: the enemy half is the caster's opposite seat
         var hh = seat != null && env.halfOf ? env.halfOf(seat) : null;
+        // LAB-25: DIVIDER-FLUSH on a LOGICAL half — the plate's edge nearest the divider sits ON it (its bottom on the upper half, its top on the lower)
+        if (sg.place === 'enemy-half-divider' || sg.place === 'caster-half-divider') {
+          var hs = sg.place === 'enemy-half-divider' ? (p.casterSeat != null ? 1 - p.casterSeat : null) : p.casterSeat, hd = hs != null && env.halfOf ? env.halfOf(hs) : null, ho = hs != null && env.halfOf ? env.halfOf(1 - hs) : null;
+          if (!(hd && ho && hd.top != null && ho.top != null && hd.h > 0 && hd.w > 0)) return null;
+          var pd = place(m, { cx: hd.cx, cy: 0, w: 0, halfW: hd.w, halfH: hd.h }), upper = hd.top < ho.top;
+          return { scale: pd.scale, x: hd.cx - pd.w / 2, y: upper ? hd.top + hd.h - pd.h : hd.top, w: pd.w, h: pd.h };
+        }
         // LAB-24: BOTTOM-FLUSH on a LOGICAL half (the caster's, or its enemy's) — the plate's bottom-centre on the half's bottom edge; no half height, no clip (fail-open)
         if (sg.place === 'enemy-half-bottom' || sg.place === 'caster-half-bottom') return hh && hh.top != null && hh.h > 0 && hh.w > 0 ? place(m, { cx: hh.cx, cy: hh.top + hh.h, w: 0, halfW: hh.w, halfH: hh.h }) : null;
         // LAB-22: TOP-FLUSH — the plate's anchor (its top-centre) on the enemy half's TOP edge; a half that reports no top plays no clip (fail-open)

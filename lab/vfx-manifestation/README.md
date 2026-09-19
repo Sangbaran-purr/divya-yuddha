@@ -2046,3 +2046,66 @@ So the manifestation's outcome must come from the board difference (`lib/boarddi
 - **No `lethal` for Heroes.** Hero power floors at 0 and the death sweep checks Units only.
 - **No `shielded` for Heroes.** Dharma Shield covers Units only.
 - **Ruling A1:** a single actor, nothing depicted on the target. The board shows the outcome.
+
+## LAB-25: Lanka Dahan, the fire strikes and the gold blesses, in the game's own order
+
+**Owner rulings (2026-09-19, verbatim):** "The fire clip is for the opponent the restoration clip is for the allied party." and "Go." on the STEP-0 decisions (package S):
+
+- **E1 shape (S):** the effects play one after the other, so E1 needs no amendment.
+- **Gold timing:** the classic wash timer, the burn + 1,462 ms × speed (877 ms at Fast).
+- **Seat 1:** resolved by divider-flush, which gives 100% portrait coverage for both seats.
+- **Anchor:** divider-flush, sized to 1.0 of the half's width with a height cap. The unit is a WIDTH fraction.
+
+**Two sources, two plates.** Both packs are cut by `tools/make_effect_from_clip.py`, and each checks its source's md5 before decoding.
+- **`lankadahan_fire`:** `lanka_fire_v2.mp4` (md5 60e945a3…), frames f062–f114, 53 cells at 288 px.
+  - The impact is cell 26 = f088. It is measured by the new `wallcover` rule: the steepest 3-frame rise of the wall's lit-column share in the band above the ground line (+0.127, window f080–f096).
+  - Atlas 4062×366, 306,070 B; 5.67 MB decoded.
+- **`lankadahan_gold`:** `lanka_gold_v3.mp4` (md5 976e121a…), frames f000–f109, 110 cells at 288 px, no impact.
+  - The pack measures the clip's reframe at f110 (hard vertical cuts), checks that it is f110, and ends the range the frame before it.
+  - Atlas 4062×858, 680,356 B; 13.29 MB decoded.
+- **Common to both plates:**
+  - a 6-cell fade-in and a 10-cell baked tail;
+  - no true duplicate frames;
+  - no top or bottom band, because neither clip touches its top or bottom edge;
+  - 96 px side feathers, declared fringe: under the width-fit they sit on the half's side borders;
+  - the core-body guard unchanged;
+  - a sticker pin recorded: the outline/inside red ratio is at most 0.93 for the fire and 0 for the gold. The packer stops above 1.5; the rejected v1 read 9.42–21.97.
+
+**The chain** (`effects/lankadahan/chain.json`) uses the new shape `strike-afterglow`:
+- The fire's impact cell lands on the cast's FIRST `damage` beat, through the EXPORT-5 gate:
+  - an on-time beat plays byte-identical to the ungated player;
+  - a late beat holds cell 25 = f087;
+  - a beat more than 1,500 ms late stands the fire down, and the gold never decodes.
+- The fire starts 34.7 / 20.8 ms after the cast (Normal / Fast) and costs 0 ms of wire clock.
+- At burn + `afterglowDelayMs` 1125 × vfxT the fire is RELEASED, and then the gold decodes. This is the game's own `(18/16)*vfxT()*1000` timer, pinned from its source. The gold is positional, has no gate and no impact, and opens on f000.
+- The two plates are never on screen together and never decoded together. Together they come to 18.96 MB, which is over the 18.00 MB cap.
+- The sounds are unchanged: sfx_astra at the cast and the debuff blip on the damage beat.
+
+**Placement.** `enemy-half-divider` (the fire) and `caster-half-divider` (the gold):
+- Each plate is centred, with the edge nearest the divider sitting on the divider.
+- Each is sized to 1.0 of the half's width, capped at the half's height. The cap only engages on landscape screens.
+- Placement is upright on both seats.
+
+**Fixtures:** `lankadahan_seat0/1.json` are recorded from the engine.
+- Setup: the Asura seat lays Ravana, Kalanemi and Narakasura; the Vanara seat lays Nala and Neela and casts Lanka Dahan.
+- The events are `play, damage×3`.
+- The friendly +1 carries no event.
+
+**Checks:** L1–L12 were added, bringing the lab suite from 766 to 778. Each check is proven falsifiable by a named mutant:
+
+| Mutant | Check that fails |
+|---|---|
+| gold aligned to the burn | L6 |
+| gold including f110 | L1 |
+| fire on the wrong half | L8 |
+| handoff not releasing first | L7 |
+| gate off | L5 |
+| width/height swap | L2 |
+| top band | L3 |
+| cast beat moved | L4 |
+| fixture edited | L9 |
+| sticker contour | L10 |
+| art dropped | L11 |
+| afterglow delay not required | L12 |
+
+The game's asset retry (2 / 8 / 30 s) belongs to the export and is recorded, not re-implemented here.

@@ -1,0 +1,35 @@
+{
+  "cardId": "lankadahan",
+  "cardName": "Lanka Dahan",
+  "class": "effect-chain",
+  "shape": "strike-afterglow",
+  "version": 1,
+  "clips": [
+    {
+      "role": "strike",
+      "manifest": "../lankadahan_fire/manifest.json"
+    },
+    {
+      "role": "afterglow",
+      "manifest": "../lankadahan_gold/manifest.json"
+    }
+  ],
+  "handoff": "sequential: the strike (the fire) is released at the handoff, then the afterglow (the gold) decodes (E1: one effect clip decoded at a time)",
+  "contract": {
+    "trigger": "damage",
+    "abilityName": "Lanka Dahan",
+    "castSound": "sfx_astra",
+    "impactSound": "sfx_debuff",
+    "castHitStopMs": 110,
+    "castHoldMs": 1000,
+    "flightMs": 0,
+    "crackAfterMs": 0,
+    "exitKind": "none",
+    "destroyDwellMs": 577,
+    "afterglowDelayMs": 1125,
+    "anchor": "enemy-half-divider",
+    "afterglowAnchor": "caster-half-divider",
+    "awaited": false,
+    "note": "the fire's impact on the FIRST damage beat (+1447 ms at Normal); the gold on the classic wash timer - (18/16) x vfxT x 1000 after the burn, 1462 ms at Normal, 877 at Fast - fire first, inspiration second, never simultaneous"
+  }
+}

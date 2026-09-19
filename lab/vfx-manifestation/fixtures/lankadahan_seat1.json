@@ -1,0 +1,673 @@
+{
+  "fixture": "lankadahan_play",
+  "ruling": "LAB-25 - Lanka Dahan, two plates from two sources, in the game's own order: the FIRE on the enemy half at the first damage beat, released, then the GOLD on the caster's half at the classic wash timer (burn + 1125 x vfxT ms). The Asura seat lays Ravana, Kalanemi and Narakasura; the Vanara seat lays Nala and Neela, then casts Lanka Dahan: play, then a damage (deal 2) per enemy Unit, and every friendly Unit +1 with no event",
+  "engine": {
+    "file": "src/engine.js",
+    "sha256": "3613706f3b736b3e367bfc063575902037b9b05e02ed1de9422bad7ee46520b9"
+  },
+  "seed": 2,
+  "attackerSeat": 1,
+  "defenderSeat": 0,
+  "realm": "mrityulok",
+  "scenario": {
+    "p0": "{p0}",
+    "p1": "{p1}",
+    "p0Faction": "asuras",
+    "p1Faction": "vanaras",
+    "p0Deck": [
+      "Ravana",
+      "Kalanemi",
+      "Narakasura",
+      "Vibhishana",
+      "Bana Asura",
+      "Maricha",
+      "Tataka",
+      "Kumbhakarna",
+      "Meghnad",
+      "Asura Berserker",
+      "Kali Asura",
+      "Mahabali"
+    ],
+    "p1Deck": [
+      "Lanka Dahan",
+      "Nala",
+      "Neela",
+      "Jambavan",
+      "Kesari",
+      "Tara",
+      "Dwivida",
+      "Mainda",
+      "Sharabha",
+      "Vanara Scout",
+      "Vanara Warrior",
+      "Dadhimukha"
+    ],
+    "mulligan": 0
+  },
+  "setup": [
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Ravana",
+      "handIndex": 0
+    },
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Nala",
+      "handIndex": 1
+    },
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Kalanemi",
+      "handIndex": 0
+    },
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Neela",
+      "handIndex": 1
+    },
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Narakasura",
+      "handIndex": 0
+    }
+  ],
+  "action": {
+    "seat": 1,
+    "type": "play",
+    "card": "Lanka Dahan",
+    "handIndex": 0,
+    "targetUid": null,
+    "legal": true
+  },
+  "before": {
+    "round": 1,
+    "turn": 1,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "asuras",
+        "units": [
+          {
+            "uid": 1,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 13,
+            "base": 7,
+            "eff": 13,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 2,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 5,
+            "base": 5,
+            "eff": 5,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 3,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 7,
+            "base": 5,
+            "eff": 7,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 4,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 5,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 6,
+            "id": "maricha",
+            "n": "Maricha",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 7,
+            "id": "tataka",
+            "n": "Tataka",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 8,
+            "id": "kumbha",
+            "n": "Kumbhakarna",
+            "t": "unit",
+            "r": "E",
+            "power": 8
+          },
+          {
+            "uid": 9,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 10,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "vanaras",
+        "units": [
+          {
+            "uid": 14,
+            "id": "nala",
+            "n": "Nala",
+            "t": "unit",
+            "r": "E",
+            "power": 3,
+            "base": 5,
+            "eff": 3,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 15,
+            "id": "neela",
+            "n": "Neela",
+            "t": "unit",
+            "r": "R",
+            "power": 3,
+            "base": 5,
+            "eff": 3,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 13,
+            "id": "lankadahan",
+            "n": "Lanka Dahan",
+            "t": "astra",
+            "r": "L",
+            "power": 0
+          },
+          {
+            "uid": 16,
+            "id": "jambavan",
+            "n": "Jambavan",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 17,
+            "id": "kesari",
+            "n": "Kesari",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 18,
+            "id": "tara",
+            "n": "Tara",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 19,
+            "id": "dwivida",
+            "n": "Dwivida",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 20,
+            "id": "mainda",
+            "n": "Mainda",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 21,
+            "id": "sharabha",
+            "n": "Sharabha",
+            "t": "unit",
+            "r": "U",
+            "power": 3
+          },
+          {
+            "uid": 22,
+            "id": "scout",
+            "n": "Vanara Scout",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          }
+        ],
+        "discard": [
+          "scout"
+        ],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "events": [
+    {
+      "round": 1,
+      "seq": 12,
+      "type": "play",
+      "sourceUid": 13,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Lanka Dahan",
+      "text": "{p1} plays Lanka Dahan"
+    },
+    {
+      "round": 1,
+      "seq": 13,
+      "type": "damage",
+      "sourceUid": null,
+      "targetUids": [
+        1
+      ],
+      "amount": -2,
+      "abilityName": "Lanka Dahan",
+      "text": "−2"
+    },
+    {
+      "round": 1,
+      "seq": 14,
+      "type": "damage",
+      "sourceUid": null,
+      "targetUids": [
+        2
+      ],
+      "amount": -2,
+      "abilityName": "Lanka Dahan",
+      "text": "−2"
+    },
+    {
+      "round": 1,
+      "seq": 15,
+      "type": "damage",
+      "sourceUid": null,
+      "targetUids": [
+        3
+      ],
+      "amount": -2,
+      "abilityName": "Lanka Dahan",
+      "text": "−2"
+    }
+  ],
+  "log": [
+    "{p1} plays Lanka Dahan — Fire of Hanuman.",
+    "Lanka Dahan blazes across the field.",
+    "Ravana takes 2 damage (Lanka Dahan) → 11.",
+    "Kalanemi takes 2 damage (Lanka Dahan) → 3.",
+    "Narakasura takes 2 damage (Lanka Dahan) → 5.",
+    "The fire inspires the host: all Vanara Units +1."
+  ],
+  "after": {
+    "round": 1,
+    "turn": 0,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "asuras",
+        "units": [
+          {
+            "uid": 1,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 11,
+            "base": 7,
+            "eff": 11,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 2,
+            "id": "kalanemi",
+            "n": "Kalanemi",
+            "t": "unit",
+            "r": "R",
+            "power": 3,
+            "base": 5,
+            "eff": 3,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 3,
+            "id": "naraka",
+            "n": "Narakasura",
+            "t": "unit",
+            "r": "R",
+            "power": 5,
+            "base": 5,
+            "eff": 5,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 4,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 5,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 6,
+            "id": "maricha",
+            "n": "Maricha",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 7,
+            "id": "tataka",
+            "n": "Tataka",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 8,
+            "id": "kumbha",
+            "n": "Kumbhakarna",
+            "t": "unit",
+            "r": "E",
+            "power": 8
+          },
+          {
+            "uid": 9,
+            "id": "meghnad",
+            "n": "Meghnad",
+            "t": "unit",
+            "r": "R",
+            "power": 6
+          },
+          {
+            "uid": 10,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "vanaras",
+        "units": [
+          {
+            "uid": 14,
+            "id": "nala",
+            "n": "Nala",
+            "t": "unit",
+            "r": "E",
+            "power": 4,
+            "base": 5,
+            "eff": 4,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 15,
+            "id": "neela",
+            "n": "Neela",
+            "t": "unit",
+            "r": "R",
+            "power": 4,
+            "base": 5,
+            "eff": 4,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": null,
+        "hand": [
+          {
+            "uid": 16,
+            "id": "jambavan",
+            "n": "Jambavan",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 17,
+            "id": "kesari",
+            "n": "Kesari",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 18,
+            "id": "tara",
+            "n": "Tara",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 19,
+            "id": "dwivida",
+            "n": "Dwivida",
+            "t": "unit",
+            "r": "R",
+            "power": 5
+          },
+          {
+            "uid": 20,
+            "id": "mainda",
+            "n": "Mainda",
+            "t": "unit",
+            "r": "U",
+            "power": 4
+          },
+          {
+            "uid": 21,
+            "id": "sharabha",
+            "n": "Sharabha",
+            "t": "unit",
+            "r": "U",
+            "power": 3
+          },
+          {
+            "uid": 22,
+            "id": "scout",
+            "n": "Vanara Scout",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          }
+        ],
+        "discard": [
+          "scout",
+          "lankadahan"
+        ],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      }
+    ]
+  },
+  "diff": {
+    "entered": [],
+    "left": [],
+    "changed": [
+      {
+        "uid": 1,
+        "id": "ravana",
+        "n": "Ravana",
+        "seat": 0,
+        "zone": "units",
+        "power": {
+          "from": 13,
+          "to": 11,
+          "delta": -2
+        },
+        "eff": {
+          "from": 13,
+          "to": 11,
+          "delta": -2
+        }
+      },
+      {
+        "uid": 2,
+        "id": "kalanemi",
+        "n": "Kalanemi",
+        "seat": 0,
+        "zone": "units",
+        "power": {
+          "from": 5,
+          "to": 3,
+          "delta": -2
+        },
+        "eff": {
+          "from": 5,
+          "to": 3,
+          "delta": -2
+        }
+      },
+      {
+        "uid": 3,
+        "id": "naraka",
+        "n": "Narakasura",
+        "seat": 0,
+        "zone": "units",
+        "power": {
+          "from": 7,
+          "to": 5,
+          "delta": -2
+        },
+        "eff": {
+          "from": 7,
+          "to": 5,
+          "delta": -2
+        }
+      },
+      {
+        "uid": 14,
+        "id": "nala",
+        "n": "Nala",
+        "seat": 1,
+        "zone": "units",
+        "power": {
+          "from": 3,
+          "to": 4,
+          "delta": 1
+        },
+        "eff": {
+          "from": 3,
+          "to": 4,
+          "delta": 1
+        }
+      },
+      {
+        "uid": 15,
+        "id": "neela",
+        "n": "Neela",
+        "seat": 1,
+        "zone": "units",
+        "power": {
+          "from": 3,
+          "to": 4,
+          "delta": 1
+        },
+        "eff": {
+          "from": 3,
+          "to": 4,
+          "delta": 1
+        }
+      }
+    ]
+  }
+}

@@ -1040,7 +1040,7 @@ templateActor({ label: 'M45 · LAB-18 · RAHU BY THE TEMPLATE (the last card: a 
   const vc = EC.validateChain(SU.C, [I, S]), swapped = EC.validateChain(SU.C, [S, I]), sum = bytesOf(I) + bytesOf(S);
   ok('M56 · LAB-20 · THE CHAIN AND E1, UNCHANGED: effects/sudarshana/chain.json names the invocation then the strike and carries the contract; a chain in the wrong order is refused. Each clip is under the per-clip cap (' + (bytesOf(I) / 1048576).toFixed(2) + ' and ' + (bytesOf(S) / 1048576).toFixed(2) + ' MB of ' + (EC.E1.capBytes / 1048576).toFixed(2) + '), and the pair would be ' + (sum / 1048576).toFixed(2) + ' MB together — PAST the cap — which is exactly why they decode ONE AFTER THE OTHER: the invocation at the cast, released at the handoff, then the strike. The per-play fallback amendment (both at 256: 16.3 MB) is recorded as available but unused',
      vc.ok && !swapped.ok && SU.C.class === 'effect-chain' && SU.C.cardName === 'Sudarshana Chakra' && J(SU.C.clips.map((c) => c.role)) === J(['invoke', 'strike']) && sum > EC.E1.capBytes &&
-     J(fs.readdirSync(path.join(LAB, 'effects')).sort()) === J(['brahmastra', 'pashupata', 'sudarshana', 'sudarshana_invoke', 'sudarshana_strike', 'vajra', 'venomstrike_flood', 'venomstrike_rise'])   /* LAB-24: Vasuki Venom Strike's two plates join the inventory */ && J(fs.readdirSync(path.join(LAB, 'effects', 'sudarshana'))) === J(['chain.json']), vc.errors.join('; '));
+     J(fs.readdirSync(path.join(LAB, 'effects')).sort()) === J(['brahmastra', 'lankadahan', 'lankadahan_fire', 'lankadahan_gold', 'pashupata', 'sudarshana', 'sudarshana_invoke', 'sudarshana_strike', 'vajra', 'venomstrike_flood', 'venomstrike_rise'])   /* LAB-24: Vasuki Venom Strike's two plates join the inventory; LAB-25: Lanka Dahan's chain and its two plates */ && J(fs.readdirSync(path.join(LAB, 'effects', 'sudarshana'))) === J(['chain.json']), vc.errors.join('; '));
   // the removal contract, read from the game's source
   const G_HTML = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8'), a0 = G_HTML.indexOf("if (ev.type==='passive' && ev.abilityName==='Sudarshana')"), blk = G_HTML.slice(a0, G_HTML.indexOf("if (ev.type==='passive' && ev.abilityName==='Nagapasha')"));
   const pins = { throwFromCasterHalf: /const caster=1-ownerPiOfUid\(u\), ch=document\.querySelector\(halfSel\(caster\)\);/.test(blk), flight380: /VFX\.sprSudarshana\(dp\.cx, dp\.rect\.top\+dp\.rect\.height\/2, dp\.rect\.width, fx, fy, 380\);/.test(blk) && /await cDelay\(380\);/.test(blk),
@@ -1851,6 +1851,155 @@ console.log('\n── V · Vasuki Venom Strike: the rise at the cast, the flood 
   const liveReg = JSON.parse(fs.readFileSync(path.join(GAME, 'assets', 'manifest', 'registry.json'), 'utf8')).routes.venomstrike;
   ok('V16 · EXPORT-6 · THE LIVE GAME CARRIES THE CERTIFIED PACKS BYTE FOR BYTE: all four Vasuki pack files in assets/manifest equal this lab\'s certified packs (' + ex.map((x) => x.f + ' ' + x.sha + (x.same ? ' =' : ' ≠')).join(', ') + '), registered as one route — the rise at the cast (replacing sprVenomSurge), its nested drain the flood (replacing sprVenomDrain)',
      ex.length === 4 && ex.every((x) => x.same) && liveReg && liveReg.spec === 'effects/venomstrike_rise/manifest.json' && liveReg.replaces === 'sprVenomSurge' && liveReg.drain && liveReg.drain.spec === 'effects/venomstrike_flood/manifest.json' && liveReg.drain.replaces === 'sprVenomDrain', J(ex));
+}
+
+// ═══ L · LANKA DAHAN — THE FIRE STRIKES, THE GOLD BLESSES (LAB-25) ═══
+console.log('\n── L · Lanka Dahan: the fire on the first damage beat, released, then the gold on the classic wash timer (LAB-25) ──');
+{
+  const rd = (p) => JSON.parse(fs.readFileSync(path.join(LAB, p), 'utf8'));
+  const LC = rd('effects/lankadahan/chain.json'), LF = rd('effects/lankadahan_fire/manifest.json'), LG = rd('effects/lankadahan_gold/manifest.json');
+  const SPEC = { class: 'effect-chain', chain: LC, clips: [LF, LG], cardId: LC.cardId };
+  const FXL = [0, 1].map((s) => rd('fixtures/lankadahan_seat' + s + '.json'));
+  const MATRIX = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports;
+  const { buildLankaDahan } = require(path.join(LAB, 'fixtures', 'make_fixture.js'));
+  const e1 = (m) => m.atlasSize.w * m.atlasSize.h * 4, R = (x) => Math.round(x), names = (m) => m.cells.map((c) => c.name);
+  const seq = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => 'f' + String(a + i).padStart(3, '0'));
+  // the 375 px phone's real halves (the game board, measured): seat 1 on top, seat 0 below
+  const PH = { 1: { cx: 187.5, cy: 205.6, top: 91, w: 373, h: 229.2 }, 0: { cx: 187.5, cy: 436.8, top: 322.2, w: 373, h: 229.2 } };
+  function lworld(o) {
+    o = o || {};
+    const draws = [], sounds = [], diags = [], caps = []; let now = 0, live = 0, maxLive = 0, loads = 0, tf = [1, 0, 0, 1, 0, 0];
+    const g = { _op: 'source-over', setTransform() { tf = [].slice.call(arguments); }, clearRect() {}, drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) { draws.push({ role: img.__role, sx, sy, dx, dy, dw, dh, op: this.globalCompositeOperation, tf: tf.slice(), t: now }); },
+      set globalCompositeOperation(v) { this._op = v; }, get globalCompositeOperation() { return this._op; }, globalAlpha: 1 };
+    const env = { now: () => now, canvas: { width: 750, height: 1200, getContext: () => g }, dpr: 2, halfOf: (s) => (o.halves || PH)[s],
+      loadAtlas: (m) => { loads++; live++; maxLive = Math.max(maxLive, live); diags.push(['decode', m.role, live]); return { source: { __role: m.role }, bytes: e1(m), close() { live--; } }; },
+      render: () => {}, sound: (n) => sounds.push([n, now]), onBeatLateCap: () => caps.push(now), diag: (step, d) => diags.push([step, d && d.role, live]) };
+    const P = EC.createPlayer(env);
+    return { P, draws, sounds, diags, caps, step: (ms) => { now += ms; P.frame(now); }, get now() { return now; }, set now(v) { now = v; }, get live() { return live; }, get maxLive() { return maxLive; }, get loads() { return loads; } };
+  }
+  function ldrive(f, seat, mode, o) {
+    o = o || {};
+    const W = o.W || lworld(o), run = W.P.play(f, o.spec || SPEC, { before: f.before, after: f.after }, { mode, casterSeat: seat, beatGate: !!o.gate });
+    const ic = run.plan.cues.filter((c) => c.cue === 'impact')[0], cell = LF.cells[LF.impact];
+    let impactFrame = null, cueFrame = null, n = 0, beaten = o.beatAt == null;
+    while (!run.done && n++ < 3000) {
+      const d0 = W.draws.length, c0 = run.log.cues.length;
+      if (!beaten && W.now + 1000 / 60 >= o.beatAt) { const next = W.now + 1000 / 60; W.now = o.beatAt; W.P.beat(); beaten = true; W.now = next - 1000 / 60; }
+      W.step(1000 / 60);
+      if (impactFrame == null && W.draws.slice(d0).some((d) => d.role === 'strike' && d.sx === cell.x && d.sy === cell.y)) impactFrame = n;
+      if (run.log.cues.slice(c0).some((c) => c.cue === 'impact')) cueFrame = n;
+    }
+    return { W, run, ic, impactFrame, cueFrame, stats: W.P.stats() };
+  }
+  const srcOf = (m, d) => { const c = m.cells.find((x) => x.x === d.sx && x.y === d.sy); return c ? c.src : null; };
+  const flushOn = (d, h, upper, m) => Math.abs(d.dw / 2 - Math.min(h.w, h.h * m.cellSize.w / m.cellSize.h)) < 1 && (upper ? Math.abs((d.dy + d.dh) / 2 - (h.top + h.h)) < 1e-6 : Math.abs(d.dy / 2 - h.top) < 1e-6) && Math.abs((d.dx + d.dw / 2) / 2 - h.cx) < 1e-6;
+
+  // L1 · THE PACKS: provenance, the cuts, the impact, the reframe exclusion, the fades, the duplicate rule, E1
+  const A = (m) => m.audit, fadesOk = (m) => A(m).fadeIn.length === 6 && A(m).fadeIn[0][1] < 0.2 && A(m).fadeTail.length === 10 && A(m).fadeTail[9][1] === 0 && A(m).fadeTail[0][1] === 1;
+  const lastG = +names(LG)[names(LG).length - 1].slice(1);
+  ok('L1 · LAB-25 · TWO SOURCES, TWO PLATES, each behind its md5 gate: THE FIRE (lanka_fire_v2, md5 ' + A(LF).provenance.md5.slice(0, 8) + '…) f062–f114, ' + LF.cells.length + ' cells, its impact cell ' + LF.impact + ' = f' + A(LF).impactSrc + ' — MEASURED (rule "' + A(LF).impact.rule + '": the steepest 3-frame rise of the wall\'s lit-column share in the band above the ground line, +' + A(LF).impact.coverRiseOver3Frames + ', window f' + A(LF).impact.window.join('–f') + '), the pillars joining the wall; THE GOLD (lanka_gold_v3, md5 ' + A(LG).provenance.md5.slice(0, 8) + '…) f000–f' + String(lastG).padStart(3, '0') + ', ' + LG.cells.length + ' cells, NO impact, ending BEFORE the clip\'s measured reframe at f' + A(LG).reframeOnset.frame + ' (hard vertical cuts from there — excluded). Both: 288 px cells, a 6-cell fade-in, a 10-cell baked tail ending at 0, no true duplicate (min neighbour |d| ' + A(LF).dedup.minNeighbourMae + ' / ' + A(LG).dedup.minNeighbourMae + '), decoded ' + (e1(LF) / 1048576).toFixed(2) + ' / ' + (e1(LG) / 1048576).toFixed(2) + ' MB — ' + ((e1(LF) + e1(LG)) / 1048576).toFixed(2) + ' MB together, PAST the ' + (EC.E1.capBytes / 1048576).toFixed(2) + ' MB E1 cap, which is why they decode one after the other',
+     A(LF).provenance.md5 === '60e945a32835ed08dcc4a8c4ebaac7d8' && A(LG).provenance.md5 === '976e121af9726c775d2570428baf80b3' && A(LF).provenance.sha256 !== A(LG).provenance.sha256 &&
+     J(names(LF)) === J(seq(62, 114)) && LF.impact === 26 && LF.cells[26].src === 88 && A(LF).impactSrc === 88 && A(LF).impact.rule === 'wallcover' && LF.role === 'strike' &&
+     J(names(LG)) === J(seq(0, 109)) && lastG < A(LG).reframeOnset.frame && A(LG).reframeOnset.frame === 110 && LG.impact === null && A(LG).impactSrc === null && LG.role === 'afterglow' &&
+     LF.cellPx === 288 && LG.cellPx === 288 && fadesOk(LF) && fadesOk(LG) && A(LF).dedup.trueDuplicates === 0 && A(LG).dedup.trueDuplicates === 0 &&
+     e1(LF) <= EC.E1.capBytes && e1(LG) <= EC.E1.capBytes && e1(LF) + e1(LG) > EC.E1.capBytes && EC.validate(LF).ok && EC.validate(LG).ok, J({ f: names(LF).slice(-2), g: names(LG).slice(-2), reframe: A(LG).reframeOnset }));
+
+  // L2 · THE UNITS LAW, divider-flush, on the whole device matrix, both seats
+  const fit = [];
+  MATRIX.forEach((v) => [0, 1].forEach((seat) => {
+    const up = { top: 60, h: v.half.h, w: v.half.w, cx: v.vw / 2, cy: 60 + v.half.h / 2 }, lo = { top: 60 + v.half.h, h: v.half.h, w: v.half.w, cx: v.vw / 2, cy: 60 + 1.5 * v.half.h };
+    const halves = { 1: up, 0: lo }, W = lworld({ halves }), run = W.P.play(FXL[seat], SPEC, { before: FXL[seat].before, after: FXL[seat].after }, { mode: 'full', casterSeat: seat });
+    run.places.forEach((p, k) => {
+      const hs = k === 0 ? 1 - seat : seat, h = halves[hs], upper = hs === 1, m = k === 0 ? LF : LG, wFit = h.w * m.cellSize.h / m.cellSize.w <= h.h;
+      fit.push({ vp: v.vw + 'x' + v.vh, layout: v.layout, seat, k, cover: p.w / h.w, inside: p.w <= h.w + 1e-6 && p.h <= h.h + 1e-6 && p.y >= h.top - 1e-6 && p.y + p.h <= h.top + h.h + 1e-6,
+                 flush: upper ? Math.abs(p.y + p.h - (h.top + h.h)) < 1e-6 : Math.abs(p.y - h.top) < 1e-6, centred: Math.abs(p.x + p.w / 2 - h.cx) < 1e-6, law: wFit ? Math.abs(p.w - h.w) < 1e-6 : Math.abs(p.h - h.h) < 1e-6 });
+    });
+    W.P.skip();
+  }));
+  const portrait = fit.filter((x) => x.layout === 'portrait'), capped = [...new Set(fit.filter((x) => x.cover < 0.999).map((x) => x.vp))];
+  const both = JSON.parse(JSON.stringify(LF)); both.scaleRule.heightFraction = 1;
+  ok('L2 · LAB-25 · THE UNITS LAW (recorded unambiguously): both plates are authored as a WIDTH FRACTION of their half — scaleRule.halfFraction ' + LF.scaleRule.halfFraction + ', heightCap ' + LF.scaleRule.heightCap + ', heightFraction ABSENT, the unit written out ("' + LF.scaleRule.unit.slice(0, 30) + '…") — and a manifest carrying both units is refused. DIVIDER-FLUSH on all ' + MATRIX.length + ' measured viewports × both seats × both plates (' + fit.length + ' placements): the plate\'s edge nearest the divider sits ON it (its bottom on the upper half, its top on the lower), centred, inside the half, and the law holds — the plate is the half\'s full width unless that would make it taller than the half, then exactly the half\'s height. Portrait coverage ' + (Math.min(...portrait.map((x) => x.cover)) * 100).toFixed(0) + '% of the half\'s width on every portrait screen, both seats; the height cap engages only on ' + (capped.join(', ') || 'none'),
+     LF.scaleRule.halfFraction === 1 && LG.scaleRule.halfFraction === 1 && LF.scaleRule.heightCap === 1 && LG.scaleRule.heightCap === 1 && LF.scaleRule.heightFraction === undefined && LG.scaleRule.heightFraction === undefined &&
+     /^WIDTH FRACTION OF THE HALF/.test(LF.scaleRule.unit) && /^WIDTH FRACTION OF THE HALF/.test(LG.scaleRule.unit) && !EC.validate(both).ok &&
+     fit.length === MATRIX.length * 4 && fit.every((x) => x.inside && x.flush && x.centred && x.law) && portrait.length > 0 && portrait.every((x) => Math.abs(x.cover - 1) < 1e-9) && A(LF).anchorRule.kind === 'divider-flush' && A(LG).anchorRule.kind === 'divider-flush',
+     J(fit.filter((x) => !(x.inside && x.flush && x.centred && x.law)).slice(0, 4)));
+
+  // L3 · THE GUARD, THE BANDS, THE SIDE FRINGE
+  const vg = (m) => A(m).vignette, bands = [LF, LG].map((m) => ({ top: vg(m).top.px, bottom: vg(m).bottom.px, left: vg(m).left.px, right: vg(m).right.px, body: ['top', 'bottom', 'left', 'right'].every((e) => !vg(m)[e].bodyInBand.length), edgesTB: A(m).edges.top + A(m).edges.bottom }));
+  ok('L3 · LAB-25 · NO TOP BAND, NO BOTTOM BAND — neither clip ever touches its top or bottom edge (' + bands.map((b) => b.edgesTB).join(' / ') + ' frames), so divider-flush hides no cut and the core-body guard (blob, unchanged) passes on every edge of both plates, the core no nearer the top than ' + vg(LF).top.coreMarginMin + ' / ' + vg(LG).top.coreMarginMin + ' px. The 96 px SIDE feathers are declared FRINGE (the LAB-22/5 splash-fringe precedent, scope: source columns outside [' + A(LF).sideFringe.cols.join(', ') + ')) — under width-fit 1.0 those columns sit ON the half\'s side borders (the wall and the mist running on past the half)',
+     bands.every((b) => b.top === 0 && b.bottom === 0 && b.left === 96 && b.right === 96 && b.body && b.edgesTB === 0) && J(A(LF).sideFringe.cols) === J([96, 1820]) && J(A(LG).sideFringe.cols) === J([96, 1820]) &&
+     A(LF).guardKind === 'blob' && A(LG).guardKind === 'blob', J(bands));
+
+  // L4 · THE FIRE ON THE FIRST DAMAGE BEAT, both seats × Full / Fast / Reduced
+  const FIRE = [];
+  [0, 1].forEach((s) => ['full', 'fast'].forEach((mode) => { const r = ldrive(FXL[s], s, mode); FIRE.push(Object.assign(r, { s, mode })); }));
+  const RED = [0, 1].map((s) => ldrive(FXL[s], s, 'reduced'));
+  const firstDmg = (f) => f.events.find((e) => e.type === 'damage' && e.abilityName === 'Lanka Dahan');
+  ok('L4 · LAB-25 · THE FIRE, driven both seats × Full / Fast: the plan\'s strike is the cast\'s FIRST damage event (Lanka Dahan, on an enemy Unit), its impact cell f088 first drawn on the SAME FRAME the impact cue fires (' + FIRE.map((r) => r.impactFrame + '=' + r.cueFrame).join(', ') + ') at ' + FIRE.map((r) => R(r.ic.t)).join(' / ') + ' ms = the cast beat (110 + 1000) x vfxT; the fire starts ' + FIRE.map((r) => r.run.plan.timeline.strikeStart.toFixed(1)).join(' / ') + ' ms after the cast (26 cells before the burn), wire-clock cost ' + FIRE.map((r) => r.run.plan.timeline.waitCostMs).join(' / ') + '; every fire draw "lighter". Sounds unchanged: sfx_astra at the cast, the debuff blip on the damage beat. Reduced: no clip, no decode, sfx_astra and AFTER',
+     FIRE.every((r) => { const T = r.run.plan.timeline, d = firstDmg(FXL[r.s]); return r.run.plan.strike && r.run.plan.targetUid === d.targetUids[0] && FXL[r.s].before.seats[1 - r.s].units.some((u) => u.uid === r.run.plan.targetUid) &&
+       r.impactFrame != null && r.impactFrame === r.cueFrame && Math.abs(r.ic.t - 1110 * T.vfxT) < 1e-6 && T.strikeStart > 0 && Math.abs(T.strikeStart - (r.ic.t - 26 * T.frameMs)) < 1e-6 && T.waitCostMs === 0 &&
+       r.W.draws.filter((d2) => d2.role === 'strike').every((d2) => d2.op === 'lighter') && J(r.W.sounds.map((x) => x[0])) === J(['sfx_astra', 'sfx_debuff']) && r.W.sounds[1][1] >= r.ic.t; }) &&
+     RED.every((r) => !r.run.plan.clip && r.W.loads === 0 && r.W.draws.length === 0 && J(r.W.sounds.map((x) => x[0])) === J(['sfx_astra', 'sfx_debuff'])), J(FIRE.map((r) => ({ s: r.s, m: r.mode, i: r.impactFrame, c: r.cueFrame, snd: r.W.sounds }))));
+
+  // L5 · THE EXPORT-5 GATE ON THE FIRE: on time byte-identical; late holds f087; past the cap the fire stands down and the gold never decodes
+  const base = ldrive(FXL[0], 0, 'full'), onT = ldrive(FXL[0], 0, 'full', { gate: true, beatAt: base.ic.t });
+  const late = ldrive(FXL[0], 0, 'full', { gate: true, beatAt: base.ic.t + 1000 }), capR = ldrive(FXL[0], 0, 'full', { gate: true, beatAt: base.ic.t + 5000 });
+  const held = [...new Set(late.W.draws.filter((d) => d.role === 'strike' && d.t > base.ic.t + 20 && d.t < base.ic.t + 980).map((d) => srcOf(LF, d)))];
+  const goldAt = (r) => (r.W.draws.find((d) => d.role === 'afterglow') || {}).t;
+  ok('L5 · LAB-25 · THE EXPORT-5 BEAT LAW ON THE FIRE: an on-time damage beat is byte-identical to the ungated player (' + base.W.draws.length + ' draws); a beat 1000 ms LATE holds cell 25 = f' + held.join(',') + ' (the wall at maximum tension) through the wait, lands f088 on the beat (drawn at ' + R(late.run.log.impactDrawnAt) + ' for a beat at ' + R(base.ic.t + 1000) + ') and the gold follows the REAL burn (first gold ' + R(goldAt(late)) + ' ms = the late beat + 1462); past the 1500 ms cap the fire stands down — f088 never drawn, the gold never decoded (' + capR.W.loads + ' decode), the glue told once (it fires sprLankaFire / sprLankaWash)',
+     J(onT.W.draws.map((d) => [d.role, d.sx, d.sy, Math.round(d.t * 1000)])) === J(base.W.draws.map((d) => [d.role, d.sx, d.sy, Math.round(d.t * 1000)])) && J(held) === J([87]) &&
+     late.run.log.impactDrawnAt >= base.ic.t + 1000 && late.run.log.impactDrawnAt - (base.ic.t + 1000) <= 1000 / 60 + 1 && goldAt(late) >= base.ic.t + 1000 + 1462.5 - 1e-6 && goldAt(late) - (base.ic.t + 1000 + 1462.5) <= 1000 / 60 + 1 &&
+     capR.run.log.beatLateCap != null && capR.run.log.impactDrawnAt == null && capR.W.caps.length === 1 && capR.W.loads === 1 && !capR.W.draws.some((d) => d.role === 'afterglow'), J({ held, late: late.run.log.beat, goldLate: goldAt(late), cap: capR.run.log.beatLateCap, capLoads: capR.W.loads }));
+
+  // L6 · THE GOLD ON THE CLASSIC WASH TIMER — positional, no gate, no impact
+  const G_HTML = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8'), lb = G_HTML.slice(G_HTML.indexOf("else if (ev.type==='damage' && ev.abilityName==='Lanka Dahan')"), G_HTML.indexOf("else if (ev.type==='damage' && ev.abilityName==='Lanka Dahan')") + 2400);
+  const washPin = /VFX\.sprLankaFire\(/.test(lb) && /\}, \(18\/16\)\*vfxT\(\)\*1000\);/.test(lb) && lb.indexOf('sprLankaFire') < lb.indexOf('sprLankaWash');
+  const gl = FIRE.map((r) => { const T = r.run.plan.timeline, sg = r.run.plan.segments[1], gd = r.W.draws.filter((d) => d.role === 'afterglow'); return { s: r.s, m: r.mode, delay: sg.start - T.impactAt, want: LC.contract.afterglowDelayMs * T.vfxT, first: gd.length ? srcOf(LG, gd[0]) : null, firstAt: gd.length ? gd[0].t : null, start: sg.start, cells: new Set(gd.map((d) => srcOf(LG, d))).size }; });
+  ok('L6 · LAB-25 · THE GOLD ON THE GAME\'S OWN WASH TIMER: the classic branch fires sprLankaFire on the first damage beat and sprLankaWash (18/16) x vfxT x 1000 ms later (read from the game\'s source) — afterglowDelayMs ' + LC.contract.afterglowDelayMs + ' = 18/16 x 1000; the gold starts the burn + ' + gl.filter((x) => x.s === 0).map((x) => x.delay.toFixed(1) + ' (' + x.m + ')').join(' / ') + ' ms, POSITIONAL (no gate, no impact cue — the plan has exactly one impact, the fire\'s), opens on cell 0 (f000) and draws its ' + LG.cells.length + ' cells on the CASTER\'s half. Fire first, gold second, never simultaneous',
+     washPin && LC.contract.afterglowDelayMs === 18 / 16 * 1000 && LC.shape === 'strike-afterglow' && LC.contract.afterglowAnchor === 'caster-half-divider' && LC.contract.anchor === 'enemy-half-divider' &&
+     gl.every((x) => Math.abs(x.delay - x.want) < 1e-6 && x.first === 0 && x.firstAt >= x.start - 1e-6 && x.firstAt - x.start <= 1000 / 60 + 1e-6 && x.cells === LG.cells.length) &&
+     Math.abs(gl.find((x) => x.m === 'full').delay - 1462.5) < 1e-6 && Math.abs(gl.find((x) => x.m === 'fast').delay - 877.5) < 1e-6 &&
+     FIRE.every((r) => r.run.plan.cues.filter((c) => c.cue === 'impact').length === 1 && r.run.plan.segments[1].impact === null), J(gl));
+
+  // L7 · E1: THE HANDOFF RELEASES THE FIRE FIRST, then the gold decodes — never two, never both drawn in one frame
+  const W7 = base.W, st7 = base.stats, dg = W7.diags, hi = dg.findIndex((d) => d[0] === 'handoff'), rel = hi - 1, dec = dg.findIndex((d, i) => i > hi && d[0] === 'decode');   // handoff(): release() THEN the handoff is logged THEN the gold loads
+  const frames7 = {}; W7.draws.forEach((d) => { (frames7[d.t] = frames7[d.t] || new Set()).add(d.role); });
+  const lastFire = Math.max(...W7.draws.filter((d) => d.role === 'strike').map((d) => d.t)), firstGold = Math.min(...W7.draws.filter((d) => d.role === 'afterglow').map((d) => d.t));
+  ok('L7 · LAB-25 · E1, ONE PLATE DECODED AT A TIME: at the handoff the fire is RELEASED (live atlases ' + dg[rel][2] + ') before the gold decodes (event order release → decode: ' + rel + ' < ' + dec + '); ' + st7.loads + ' decodes, ' + st7.releases + ' releases, at most ' + W7.maxLive + ' live; the last fire cell ' + R(lastFire) + ' ms, the first gold cell ' + R(firstGold) + ' ms — no frame draws both. Peak ' + (st7.peak / 1048576).toFixed(2) + ' MB = the gold alone, under the cap; 0 MB after the play',
+     hi > 0 && dg[rel][0] === 'release' && dec > hi && dg[rel][1] === 'strike' && dg[rel][2] === 0 && dg[dec][1] === 'afterglow' && dg[dec][2] === 1 && W7.maxLive === 1 && st7.loads === 2 && st7.releases === 2 &&
+     st7.peak === e1(LG) && st7.decodedBytes === 0 && lastFire < firstGold && Object.values(frames7).every((s) => s.size === 1), J({ hi, rel, dec, around: dg.slice(hi - 1, hi + 4), maxLive: W7.maxLive, st7: { loads: st7.loads, releases: st7.releases } }));
+
+  // L8 · THE SEATS: logical halves, upright, never mirrored
+  const seat8 = FIRE.filter((r) => r.mode === 'full').map((r) => ({ s: r.s, fire: r.W.draws.filter((d) => d.role === 'strike').every((d) => flushOn(d, PH[1 - r.s], 1 - r.s === 1, LF)), gold: r.W.draws.filter((d) => d.role === 'afterglow').every((d) => flushOn(d, PH[r.s], r.s === 1, LG)) }));
+  ok('L8 · LAB-25 · BOTH SEATS: the FIRE attaches to the ENEMY\'s logical half and the GOLD to the CASTER\'s — seat 0 casts: fire on top (its bottom on the divider), gold below (its top on the divider); seat 1 casts: the mirror of that — every draw with the identity transform (upright, no rotation) and a positive width (never mirrored); the picture is the same plate on either seat, only its half changes',
+     seat8.every((x) => x.fire && x.gold) && FIRE.every((r) => r.W.draws.length > 0 && r.W.draws.every((d) => J(d.tf) === J([1, 0, 0, 1, 0, 0]) && d.dw > 0 && d.dh > 0)), J(seat8));
+
+  // L9 · THE FIXTURES, from the current engine, both directions of the timing doctrine
+  const engSha = sha256(fs.readFileSync(path.join(GAME, 'src', 'engine.js')));
+  const fx9 = FXL.map((f, s) => { const cs = f.attackerSeat, ens = new Set(f.before.seats[1 - cs].units.map((u) => u.uid)), mine = new Set(f.before.seats[cs].units.map((u) => u.uid));
+    return { s, same: J(f) === J(buildLankaDahan(s)), sha: f.engine.sha256 === engSha, types: f.events.map((e) => e.type).join(','), dmgOnEnemy: f.events.filter((e) => e.type === 'damage').every((e) => e.abilityName === 'Lanka Dahan' && e.amount === -2 && ens.has(e.targetUids[0])),
+             silentBless: f.diff.changed.filter((c) => mine.has(c.uid)).length === mine.size && f.diff.changed.filter((c) => mine.has(c.uid)).every((c) => c.eff.to - c.eff.from === 1) && !f.events.some((e) => e.type === 'buff') }; });
+  const noDmg = JSON.parse(JSON.stringify(FXL[0])); noDmg.events = noDmg.events.filter((e) => e.type !== 'damage'); const pN = EC.plan(noDmg, SPEC, { mode: 'full', casterSeat: 0 });
+  ok('L9 · LAB-25 · THE FIXTURES come from the current engine (sha ' + engSha.slice(0, 12) + '…) and regenerate byte-identical, both seats: the Asura seat lays Ravana, Kalanemi and Narakasura, the Vanara seat lays Nala and Neela and casts Lanka Dahan — events ' + fx9[0].types + ' (deal 2 to each enemy Unit), and every friendly Unit +1 with NO event (the gold carries the blessing the engine does not announce). Both directions: with its damage beats the chain plays (fire then gold); a cast whose damage never comes (an all-Ratri board emits none) plays NO clip and just settles — the fire has no beat to land on',
+     fx9.every((x) => x.same && x.sha && x.types === 'play,damage,damage,damage' && x.dmgOnEnemy && x.silentBless) && FIRE.every((r) => r.run.plan.clip && r.run.plan.segments.length === 2) && !pN.clip && !pN.strike && pN.segments.length === 0, J({ fx9, pN: { clip: pN.clip, cues: pN.cues } }));
+
+  // L10 · THE STICKER / RIM PINS
+  const stF = A(LF).sticker, stG = A(LG).sticker;
+  ok('L10 · LAB-25 · THE STICKER PIN (the LAB-23 rejection test, recorded in the packs): saturated red on the outer 6 px of the lit region over the red inside it — the fire reads ' + Object.entries(stF.frames).map(([k, v]) => k + ' ' + v.outlineOverInside).join(' · ') + ' (max ' + stF.max + ': the red is the fire\'s own body, not a painted contour; the rejected v1 read 9.42–21.97), the gold ' + stG.max + ' (no red at all). The packer STOPs past 1.5',
+     stF && stG && stF.max <= 1.5 && stF.max >= 0.5 && stG.max === 0 && Object.keys(stF.frames).length === 4 && Object.keys(stG.frames).length === 3 && Object.values(stF.frames).every((v) => v.redInside > 0.4 && v.darkInnerLine < 0.1), J({ stF: stF && stF.max, stG: stG && stG.max }));
+
+  // L11 · THE LAB PAGE: registry, prefetch of both packs, the plan readout; the export's retry recorded
+  const LJ = fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8'), rg = REG.lankadahan, bytes11 = ['lankadahan_fire', 'lankadahan_gold'].map((d) => fs.statSync(path.join(LAB, 'effects', d, 'atlas.webp')).size + fs.statSync(path.join(LAB, 'effects', d, 'manifest.json')).size).reduce((a, b) => a + b, 0) + fs.statSync(path.join(LAB, 'effects', 'lankadahan', 'chain.json')).size;
+  ok('L11 · LAB-25 · THE LAB PAGE: the registry carries Lanka Dahan (the chain, its fixture, the card art ' + (rg && rg.art) + '); a chain card prefetches BOTH packs\' bytes when it enters a hand (' + (bytes11 / 1048576).toFixed(2) + ' MB: the two atlases, their manifests and the chain), each decoded only at its own moment; the plan readout names the shape (fire → released → gold). The game\'s asset retry (backoff 2 / 8 / 30 s) is the export\'s, recorded here and not re-implemented',
+     rg && rg.effect === '../effects/lankadahan/chain.json' && rg.fixture === 'lankadahan' && rg.art === 'Vanaras_Astra_LankaDahan_rLegendary.png' && fs.existsSync(path.join(LAB, 'art', rg.art)) &&
+     /\(spec\.class === 'effect-chain' \? spec\.clips : \[spec\]\)\.forEach\(\(m\) => effectBlob\(m\)/.test(LJ) && /glow = chained && spec\.chain\.shape === 'strike-afterglow'/.test(LJ) &&
+     /const ASSET_RETRY = \{ backoffMs:\[2000, 8000, 30000\]/.test(G_HTML) && bytes11 > 900000 && bytes11 < 1200000, J({ rg, bytes11 }));
+
+  // L12 · THE CHAIN SHAPE IS VALIDATED
+  const sw = JSON.parse(JSON.stringify(LC)), nod = JSON.parse(JSON.stringify(LC)); delete nod.contract.afterglowDelayMs;
+  ok('L12 · LAB-25 · THE STRIKE-AFTERGLOW SHAPE: effects/lankadahan/chain.json names the fire (strike) then the gold (afterglow) and validates; the same clips in the wrong order, or a chain without its afterglow delay, are refused; an afterglow with an impact cell is refused; the Sudarshana invoke→strike chain still validates unchanged',
+     EC.validateChain(LC, [LF, LG]).ok && !EC.validateChain(sw, [LG, LF]).ok && !EC.validateChain(nod, [LF, LG]).ok && !EC.validate(Object.assign({}, LG, { impact: 5 })).ok &&
+     EC.validateChain(SU.C, [SU.I, SU.S]).ok, J(EC.validateChain(LC, [LF, LG])));
 }
 
 console.log('\n── K · the sources rule (A7) ──');
