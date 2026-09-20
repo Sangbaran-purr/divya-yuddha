@@ -2109,3 +2109,18 @@ So the manifestation's outcome must come from the board difference (`lib/boarddi
 | afterglow delay not required | L12 |
 
 The game's asset retry (2 / 8 / 30 s) belongs to the export and is recorded, not re-implemented here.
+
+## EXPORT-7: Lanka Dahan enters the live game
+
+**Owner rulings (2026-09-19, verbatim):** "Export." Then "Go." on the STEP-0 decisions, meaning:
+- the frozen set goes 77 → 82: five files, because the chain.json rides with the two packs (the Sudarshana precedent);
+- the gold's cold decode is accepted as measured (option a), with the lab player verbatim;
+- the caster seat comes from the first damage target, and the Astra-uid lookup (with its silent seat-0 fallback) is retired for this route;
+- an empty caster half is washed by the gold, matching classic;
+- a zero-damage cast plays nothing, matching classic;
+- the +1 floaters stay on the classic timer in both paths.
+
+**Lab-side effects:**
+- The game's classic wash timer moved, unchanged, into the export glue (`fxLankaBurn`). L6 now reads it from there, so the check still pins the game's own `(18/16)*vfxT()*1000`.
+- `tools/copy_runtime.js` was re-run: the VFX module moved lines and is byte-identical.
+- G1 re-anchors at the export commit.

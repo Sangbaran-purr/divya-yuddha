@@ -28,7 +28,7 @@ const PIN = {
   inlinedEngine: 'd70e94b34248bf85c9a3bf00724a724e0997580fdadb16f3d8bfa753d79d8791',
   sprBrahmastra: 'ca7898c5da25a7ec39b5beb28fb5196e14f111a5d69b3b812f03b41bca80166a',
   unitLanding: 'cd4ed62d5f7b67d61599a5f7d6e67c0ab9606adea88bc08d3bf5a6636e813011',
-  effectPlayer: '3b6efc548057d68c2eb746e5db9964e2915d853c2053d1ff320021742f754224',   // EXPORT-6: the arming and empowered-drain moments, height-fit, bottom-flush halves, the ready-anchored rise; EXPORT-5 5d3ba4b04935…: the beat gate (hold · cap · beat()); EXPORT-4 0be2d7225a54…: the fitted law + the card floor; EXPORT-3 shipped 3a780fe5ec52…, EXPORT-1 30219bcb370e…
+  effectPlayer: 'ad4f573c2e2f23bac1be225a42da34290f0de7b216861dba72e29f62c5bee8c7',   // EXPORT-7 (the LAB-25 player, verbatim): the afterglow role, the strike-afterglow chain and its timeline, the second-segment handoff, divider-flush halves; EXPORT-6 3b6efc548057…: the arming and empowered-drain moments, height-fit, bottom-flush halves, the ready-anchored rise; EXPORT-5 5d3ba4b04935…: the beat gate (hold · cap · beat()); EXPORT-4 0be2d7225a54…: the fitted law + the card floor; EXPORT-3 shipped 3a780fe5ec52…, EXPORT-1 30219bcb370e…
   wireTypes: ['leap', 'mulligan', 'pass', 'play', 'shield'],
   // EXPORT-2: the nine actor modules and the faction effects, as certified in the manifestation lab when the export was built
   // (recorded here, never read from the lab: nothing outside the lab may name it — its own rule G2)
@@ -42,6 +42,12 @@ const PIN = {
   certifiedAssets77: '0458d8c9a47fbff23d9c705da4765de983135f15aa1a3308dc6fca2deb0e8e9e',
   vasukiPacks: { 'effects/venomstrike_rise/atlas.webp': '785162af06d4bcd84de61660ac8a14141db6ef074d063decd582f162597fc447', 'effects/venomstrike_rise/manifest.json': '4e6cd20451e4cfbd6febb284a38b35ce8753c47ec9840b8c00a57d1b9e5e127c',
                  'effects/venomstrike_flood/atlas.webp': '79f13107684a03a0c5154138ba2798c0e8ef875ff9ee8ed425fd999bf7502cac', 'effects/venomstrike_flood/manifest.json': 'e54b298bc8d0c0c75d140551302c606f73bb4e216006c5535848550b8de71928' },
+  // EXPORT-7 · THE CERTIFIED SET EXTENDS 77 → 82 (owner rulings "Export." then "Go."): Lanka Dahan's chain and its two packs, byte-identical to the
+  // LAB-25 certified packs (hashes recorded here, never read from the lab — G2); the 77 and the 73 stay proven by the digests above
+  certifiedAssets82: '61464fbc935158c3261856fb62a185105fa82a32044f95b943b7c86a702d5cca',
+  lankaPacks: { 'effects/lankadahan/chain.json': '3b5008108ab3dfb82998d330e5cf23b3830ad11c960faae21895cb978abf2a09',
+                'effects/lankadahan_fire/manifest.json': '9b4f186f112e72fa9afd9466c935a525bfade4b7e225c2e1389f9f356219d267', 'effects/lankadahan_fire/atlas.webp': 'dbf204d87c2241b139943474f06ed5307849196a9a3a0e6242c3b3ddf1875f21',
+                'effects/lankadahan_gold/manifest.json': 'dc843358b241d8cdb0c7ef0252cdd81c30a228040024f08d9ba9561bf0684c70', 'effects/lankadahan_gold/atlas.webp': '06a0a8e0cfc618142e096851e3fb1df935f44625cf8461dc26b618789ca1525a' },
 };
 const ROUTED = ['brahmastra', 'pashupata', 'sudarshana', 'vajra'];
 const lineOf = (needle) => HTML.split('\n').find((l) => l.indexOf(needle) >= 0) || null;
@@ -73,7 +79,7 @@ function webpSize(b) {
 console.log('── R · the routing table (assets/manifest/registry.json) ──');
 {
   const routes = REG.routes || {};
-  ok('R1 · exactly five routes — Vajra, Sudarshana Chakra, Pashupatastra, (EXPORT-3) Brahmastra and (EXPORT-6) Vasuki Venom Strike (' + J(Object.keys(routes).sort()) + ')', J(Object.keys(routes).sort()) === J(ROUTED.concat(['venomstrike'])));
+  ok('R1 · exactly six routes — Vajra, Sudarshana Chakra, Pashupatastra, (EXPORT-3) Brahmastra, (EXPORT-6) Vasuki Venom Strike and (EXPORT-7) Lanka Dahan (' + J(Object.keys(routes).sort()) + ')', J(Object.keys(routes).sort()) === J(ROUTED.concat(['venomstrike', 'lankadahan']).sort()));
   ok('R2 · each route names the classic sprite it replaces and the beat it owns: vajra → sprVajra at the destroy, sudarshana → sprSudarshana at the passive (the bite), pashupata → sprPashupatastra and brahmastra → sprBrahmastra at the play (the cast)',
      routes.vajra && routes.vajra.replaces === 'sprVajra' && routes.vajra.moment === 'destroy' && routes.sudarshana && routes.sudarshana.replaces === 'sprSudarshana' && routes.sudarshana.moment === 'passive' &&
      routes.pashupata && routes.pashupata.replaces === 'sprPashupatastra' && routes.pashupata.moment === 'play' && routes.brahmastra && routes.brahmastra.replaces === 'sprBrahmastra' && routes.brahmastra.moment === 'play', J(routes));
@@ -119,10 +125,10 @@ const SPECS = {}, ALLFILES = [];
   const all = [], walk = (d) => fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else all.push(path.relative(MAN, q)); });
   walk(MAN);
   const fxFiles = all.filter((f) => f.indexOf('effects/') === 0).sort();
-  ok('A4 · assets/manifest/effects holds exactly the chain and the seven clips (' + fxFiles.length + ' files, ' + (rows.reduce((a, r) => a + r.file, 0) / 1048576).toFixed(2) + ' MB of atlas) — the actors (EXPORT-2) are inventoried in H3',
-     J(fxFiles) === J(['effects/brahmastra/atlas.webp', 'effects/brahmastra/manifest.json', 'effects/pashupata/atlas.webp', 'effects/pashupata/manifest.json', 'effects/sudarshana/chain.json', 'effects/sudarshana_invoke/atlas.webp', 'effects/sudarshana_invoke/manifest.json',
+  ok('A4 · assets/manifest/effects holds exactly the two chains and the nine clips (' + fxFiles.length + ' files, ' + (rows.reduce((a, r) => a + r.file, 0) / 1048576).toFixed(2) + ' MB of atlas) — the actors (EXPORT-2) are inventoried in H3',
+     J(fxFiles) === J(['effects/brahmastra/atlas.webp', 'effects/brahmastra/manifest.json', 'effects/lankadahan/chain.json', 'effects/lankadahan_fire/atlas.webp', 'effects/lankadahan_fire/manifest.json', 'effects/lankadahan_gold/atlas.webp', 'effects/lankadahan_gold/manifest.json', 'effects/pashupata/atlas.webp', 'effects/pashupata/manifest.json', 'effects/sudarshana/chain.json', 'effects/sudarshana_invoke/atlas.webp', 'effects/sudarshana_invoke/manifest.json',
                        'effects/sudarshana_strike/atlas.webp', 'effects/sudarshana_strike/manifest.json', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json',
-                       'effects/venomstrike_flood/atlas.webp', 'effects/venomstrike_flood/manifest.json', 'effects/venomstrike_rise/atlas.webp', 'effects/venomstrike_rise/manifest.json']), J(fxFiles));   /* EXPORT-6: + Vasuki Venom Strike's rise and flood */
+                       'effects/venomstrike_flood/atlas.webp', 'effects/venomstrike_flood/manifest.json', 'effects/venomstrike_rise/atlas.webp', 'effects/venomstrike_rise/manifest.json']), J(fxFiles));   /* EXPORT-6: + Vasuki Venom Strike's rise and flood; EXPORT-7: + Lanka Dahan's chain, fire and gold */
   ALLFILES.push(...all);
 }
 
@@ -199,11 +205,11 @@ function sandbox(o) {
     document: { createElement: () => el, querySelector: (sel) => o.halves && o.halves[sel] ? Object.assign({}, el, { getBoundingClientRect: () => o.halves[sel] }) : o.halfRect ? Object.assign({}, el, { getBoundingClientRect: () => o.halfRect }) : el },
     $: () => el, EffectClip: EC, G: { players: [{ hand: [] }, { hand: [] }] }, BLog: { fx: null },
     posOf: () => ({ cx: 120, top: 60, rect: { top: 40, height: 90, width: 64, left: 88 } }), halfSel: (s) => s ? '.half.opp' : '.half.me',
-    ownerPiOfUid: (u) => (o.ownerPi ? o.ownerPi(u) : 0), reducedMotion: () => !!o.reduced, vfxT: () => 1.3,
+    ownerPiOfUid: (u) => (o.ownerPi ? o.ownerPi(u) : 0), reducedMotion: () => !!o.reduced, vfxT: () => 1.3, choreoSkip: false,
   };
   ctx.window = ctx; ctx.URL.createObjectURL = ctx.URL.createObjectURL || (() => 'blob:x'); ctx.URL.revokeObjectURL = ctx.URL.revokeObjectURL || (() => {});
   vm.createContext(ctx);
-  vm.runInContext(GLUE + '\n;globalThis.__fx = { FX, fxBoot, fxPrefetch, fxPrefetchHands, fxReady, fxCast, fxOwnsMoment, fxOnError, fxSkip, fxClips, fxAtlasUrl, fxBeatFrom, fxLoadAtlas, ASSET_RETRY, fxRoute, VS, vsNoteCasts, vsStriker, vsDrainPick, fxVenomDrain, fxCastDrain };', ctx);
+  vm.runInContext(GLUE + '\n;globalThis.__fx = { FX, fxBoot, fxPrefetch, fxPrefetchHands, fxReady, fxCast, fxOwnsMoment, fxOnError, fxSkip, fxClips, fxAtlasUrl, fxBeatFrom, fxLoadAtlas, ASSET_RETRY, fxRoute, VS, vsNoteCasts, vsStriker, vsDrainPick, fxVenomDrain, fxCastDrain, fxGlow, fxSeatFromTarget, fxChainLive, fxLankaBurn };', ctx);
   return { ctx, fx: ctx.__fx, logs, warns, fetched, advance: (ms) => { now += ms; }, get now() { return now; }, tick: (ms) => { now += ms; if (ctx.__fx.FX.player && ctx.__fx.FX.run) ctx.__fx.FX.player.frame(now); } };
 }
 const flush = () => new Promise((r) => setTimeout(r, 5));
@@ -534,11 +540,14 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     // X1 · THE DESIGN FREEZE
     const all = []; (function walk(d) { fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else all.push(q); }); })(MAN); all.sort();
     const digest = sha(all.map((f) => path.relative(MAN, f) + ' ' + sha(fs.readFileSync(f))).join('\n'));
-    // EXPORT-6: the ORIGINAL 73 still reproduce the certified digest — every file byte-identical, the registry equal once its one new route is taken out
-    const NEW6 = Object.keys(PIN.vasukiPacks), regNoVS = (() => { const r = JSON.parse(fs.readFileSync(path.join(MAN, 'registry.json'), 'utf8')); delete r.routes.venomstrike; return JSON.stringify(r, null, 2).replace(/[\u007f-\uffff]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0')) + '\n'; })();   // the registry is written ASCII-escaped (Python json.dumps)
-    const digest73 = sha(all.filter((f) => NEW6.indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regNoVS) : sha(fs.readFileSync(f)))).join('\n'));
-    ok('X1 · THE DESIGN FREEZE (owner, binding): every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chain, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…); EXPORT-6 extends it 73 → 77 with the four Vasuki pack files, and the ORIGINAL 73 still reproduce their certified digest ' + digest73.slice(0, 12) + '… (every file unchanged; the registry differs only by its one new route): no atlas, portion, plate size, tempo, plan or impact frame moves',
-       digest === PIN.certifiedAssets77 && all.length === 77 && digest73 === PIN.certifiedAssets, J({ digest, digest73 }));
+    // EXPORT-7: the 77 reproduce their digest (the five Lanka files out, the registry without its one new route), and the ORIGINAL 73 theirs
+    const esc = (t) => t.replace(/[\u007f-\uffff]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
+    const regWithout = (drop) => { const r = JSON.parse(fs.readFileSync(path.join(MAN, 'registry.json'), 'utf8')); drop.forEach((k) => delete r.routes[k]); return esc(JSON.stringify(r, null, 2)) + '\n'; };
+    const digestOf = (out, drop) => sha(all.filter((f) => out.indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regWithout(drop)) : sha(fs.readFileSync(f)))).join('\n'));
+    const NEW7 = Object.keys(PIN.lankaPacks), NEW6 = Object.keys(PIN.vasukiPacks);
+    const digest77 = digestOf(NEW7, ['lankadahan']), digest73 = digestOf(NEW7.concat(NEW6), ['lankadahan', 'venomstrike']);
+    ok('X1 · THE DESIGN FREEZE (owner, binding): every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chains, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…); EXPORT-7 extends it 77 → 82 with Lanka Dahan\'s chain and its two packs, the 77 still reproduce their digest (' + digest77.slice(0, 12) + '…, the registry without its one new route) and the ORIGINAL 73 theirs (' + digest73.slice(0, 12) + '…)',
+       digest === PIN.certifiedAssets82 && all.length === 82 && digest77 === PIN.certifiedAssets77 && digest73 === PIN.certifiedAssets, J({ digest, digest77, digest73 }));
 
     // the player on a fake clock: every drawn cell with its time, and the cues as they fired
     const RATE = 1000 / 60;
@@ -803,6 +812,171 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     ok('Y11 · THE DEVICE MATRIX: both plates placed on all ' + DM.length + ' measured screens (' + fitRows.length + ' placements) — each plate\'s height IS its half\'s height, its top and bottom on the half\'s borders; on the ' + (portrait.length / 2) + ' portrait screens it overhangs the half and its 54 px side feather lies wholly in that overhang (tightest clearance ' + Math.min(...portrait.map((x) => x.clear)).toFixed(2) + ' CSS px, the 360 px phone); on the ' + (fitRows.filter((x) => x.over <= 0).length / 2) + ' landscape screens it fits inside the half',
        fitRows.length === 32 && fitRows.every((x) => Math.abs(x.h - x.halfH) < 1e-9 && Math.abs(x.top) < 1e-9 && Math.abs(x.bottom - x.halfH) < 1e-9) && portrait.length === 14 && portrait.every((x) => x.layout === 'portrait' && x.clear >= 0) &&
        fitRows.filter((x) => x.over <= 0).every((x) => x.layout === 'landscape'), J(fitRows.filter((x) => x.clear < 0)));
+  }
+
+  // ═══ Z · EXPORT-7: LANKA DAHAN — the fire at the first damage beat, released, then the gold on the classic wash timer ═══
+  console.log('\n── Z · Lanka Dahan in the live game (EXPORT-7) ──');
+  {
+    const LK = loadSpec(REG.routes.lankadahan.spec), LF = LK.clips[0], LG = LK.clips[1], rt = REG.routes.lankadahan, K = LK.chain.contract;
+    const lkCard = { id: 'lankadahan', n: 'Lanka Dahan', t: 'astra' };
+    const LK_NONE = { done: true, places: [null, null], plan: { clip: false, casterSeat: null, segments: [{}, {}], cues: [] }, log: { bySegment: {}, cues: [], ready: {}, loadErrors: [], drawn: [], impactDrawnAt: null, beat: null, beatLateCap: null } };
+    // the engine's own Lanka Dahan boards (a small builder — the lab's fixtures are not read from here, G2)
+    function lkBuild(seat, o) {
+      o = o || {};
+      const V = ['Lanka Dahan', 'Nala', 'Neela', 'Angad', 'Sugriva', 'Tara', 'Jambavan', 'Vanara Warrior', 'Vanara Scout', 'Riksha', 'Mainda', 'Kesari'];
+      const A = ['Ravana', 'Kalanemi', 'Narakasura', 'Tataka', 'Maricha', 'Kumbhakarna', 'Meghnad', 'Asura Berserker', 'Kali Asura', 'Mahabali', 'Bana Asura', 'Vibhishana'];
+      let x = 7; const rng = () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
+      const decks = seat === 0 ? [V, A] : [A, V];
+      const g = E.newGame({ rng, p0: 'You', p1: 'Opponent', realm: 'mrityulok', p0Faction: seat === 0 ? 'vanaras' : 'asuras', p1Faction: seat === 1 ? 'vanaras' : 'asuras',
+        scenario: { p0Deck: decks[0], p1Deck: decks[1], p0Hand: decks[0].slice(0, 10), p1Hand: decks[1].slice(0, 10), mulligan: 0 } });
+      const put = (pl, names, pw) => names.forEach((n) => { const i = pl.hand.findIndex((c) => c.n === n); const c = pl.hand.splice(i, 1)[0]; if (pw != null) { c.power = pw; c.base = pw; } pl.units.push(c); });
+      put(g.players[1 - seat], o.foes || ['Ravana', 'Kalanemi', 'Narakasura'], o.foePw); put(g.players[seat], o.friends || ['Nala', 'Neela']);
+      g.turn = seat; const e0 = g.events.length, h = g.players[seat].hand.findIndex((c) => c.id === 'lankadahan'), legal = E.playableIndices(g, seat).indexOf(h) >= 0;
+      if (legal) E.playCard(g, seat, h);
+      const own = {}; g.players.forEach((pl, pi) => pl.units.concat(pl.heroes, pl.discard).forEach((c) => { if (c && c.uid != null) own[c.uid] = pi; }));
+      return { seat, legal, events: g.events.slice(e0), own };
+    }
+    const LKB = [0, 1].map((s) => lkBuild(s));
+    const HL = { '.half.me': { left: 0, top: 322, width: 373, height: 229, right: 373, bottom: 551 }, '.half.opp': { left: 0, top: 91, width: 373, height: 229, right: 373, bottom: 320 } };
+    const halfOfSeat = (s) => (s ? HL['.half.opp'] : HL['.half.me']);
+    const firstDmg = (b) => b.events.find((e) => e.type === 'damage' && e.abilityName === 'Lanka Dahan');
+    const timersOn = (S) => { const q = []; S.ctx.setTimeout = (fn, ms) => { q.push({ fn, ms }); return q.length; }; return { q, run: () => { while (q.length) q.shift().fn(); } }; };
+    // one Lanka cast through the live glue on a fake clock. The engine's own beat reaches fxBeatFrom at the planned impact + beatDelay
+    async function lkRun(seat, o) {
+      o = o || {};
+      const b = o.b || LKB[seat], decodes = [];
+      const S = sandbox(Object.assign({ halves: HL, ownerPi: o.ownerPi || ((u) => (b.own[u] != null ? b.own[u] : 0)) }, o.sb || {}));
+      if (o.vfxT) S.ctx.vfxT = () => o.vfxT;
+      await S.fx.fxBoot(); await S.fx.fxPrefetch('lankadahan'); await flush();
+      const cib = S.ctx.createImageBitmap; S.ctx.createImageBitmap = (x) => { decodes.push(S.fx.FX.player ? S.fx.FX.player.stats().loadedRole : null); return cib(x); };
+      const r = S.fx.fxCast(lkCard, b.events[0], b.events, {});
+      if (!r) return { S, r: LK_NONE, decodes, frames: [], impactT: NaN, t0: S.now };   // not cast: a dead run that fails every check honestly (never a throw)
+      const impactT = r.plan.cues.find((c) => c.cue === 'impact').t, t0 = S.now, fd = firstDmg(b), frames = [];
+      let beaten = o.beatDelay === undefined ? false : false, n = 0;
+      const delay = o.beatDelay == null ? -1000 / 60 : o.beatDelay;
+      while (!r.done && n++ < (o.maxTicks || 700)) {
+        if (!beaten && S.now - t0 >= impactT + delay) { S.fx.fxBeatFrom(fd); beaten = true; }
+        const a = (r.log.bySegment.strike || []).length, g0 = (r.log.bySegment.afterglow || []).length;
+        await flush(); S.tick(1000 / 60);
+        frames.push([((r.log.bySegment.strike || []).length > a) ? 1 : 0, ((r.log.bySegment.afterglow || []).length > g0) ? 1 : 0]);
+        if (o.stopAt && S.now - t0 >= o.stopAt) break;
+      }
+      return { S, r, b, impactT, t0, decodes, frames };
+    }
+
+    // Z1 · the packs are the certified lab packs, registered as ONE route with its nested wash
+    const packs = Object.keys(PIN.lankaPacks).map((rel) => ({ rel, ok: sha(fs.readFileSync(path.join(MAN, rel))) === PIN.lankaPacks[rel] }));
+    const sizes = [LF, LG].map((m) => { const b2 = fs.readFileSync(path.join(path.dirname(m.__file), m.atlas)), px = webpSize(b2); return { px, want: m.atlasSize, bytes: b2.length, dec: m.atlasSize.w * m.atlasSize.h * 4 }; });
+    ok('Z1 · LANKA DAHAN\'S CHAIN AND TWO PACKS ARE THE CERTIFIED LAB FILES: all five match the hashes recorded from the LAB-25 certification (' + packs.map((x) => x.rel.split('/').slice(1).join('/') + (x.ok ? ' ✓' : ' ✗')).join(', ') + '); the chain validates under the page\'s own player — shape strike-afterglow, the FIRE (impact cell ' + LF.impact + ' = f' + String(LF.cells[LF.impact].src).padStart(3, '0') + ') then the GOLD (no impact, f000–f' + String(LG.cells[LG.cells.length - 1].src).padStart(3, '0') + '), each a WIDTH fraction of its half; registered as one route: lankadahan → ' + rt.replaces + ' at the ' + rt.moment + ', its nested wash → ' + rt.wash.replaces + '. Atlases ' + sizes.map((z) => (z.bytes / 1024).toFixed(0) + ' KB, ' + (z.dec / 1048576).toFixed(2) + ' MB decoded').join(' · ') + ' — each under E1, together past it (one at a time)',
+       packs.length === 5 && packs.every((x) => x.ok) && EC.validateChain(LK.chain, LK.clips).ok && LK.chain.shape === 'strike-afterglow' && LF.role === 'strike' && LF.impact === 26 && LF.cells[26].src === 88 && LG.role === 'afterglow' && LG.impact === null &&
+       LG.cells[LG.cells.length - 1].src === 109 && LF.scaleRule.halfFraction === 1 && LG.scaleRule.halfFraction === 1 && rt.spec === 'effects/lankadahan/chain.json' && rt.replaces === 'sprLankaFire' && rt.moment === 'damage' &&
+       rt.wash && rt.wash.spec === 'effects/lankadahan_gold/manifest.json' && rt.wash.replaces === 'sprLankaWash' && sizes.every((z) => z.px && z.px.w === z.want.w && z.px.h === z.want.h && z.dec <= EC.E1.capBytes) && sizes[0].dec + sizes[1].dec > EC.E1.capBytes, J({ packs, sizes }));
+
+    // Z2 · the page's player is the LAB-25 player, verbatim, and knows the new shape
+    const sw = JSON.parse(JSON.stringify(LK.chain));
+    ok('Z2 · THE PAGE\'S PLAYER IS THE LAB-25 PLAYER, VERBATIM (sha256 ' + sha(PLAYER_SRC || '').slice(0, 12) + '…): it knows the strike-afterglow shape — the Lanka chain validates, the same clips in the wrong order are refused, a chain without its afterglow delay is refused — and the Sudarshana invoke→strike chain still validates',
+       sha(PLAYER_SRC || '') === PIN.effectPlayer && EC.validateChain(LK.chain, LK.clips).ok && !EC.validateChain(sw, [LG, LF]).ok && (() => { const c = JSON.parse(JSON.stringify(LK.chain)); delete c.contract.afterglowDelayMs; return !EC.validateChain(c, LK.clips).ok; })() &&
+       (() => { const su = loadSpec(REG.routes.sudarshana.spec); return EC.validateChain(su.chain, su.clips).ok; })());
+
+    // Z3 · registration only
+    ok('Z3 · REGISTRATION ONLY: the registry gains exactly one route (lankadahan) and nothing else moves — with it taken out, the registry is byte-identical to the certified 77 (X1 proves the digest); the route names the chain, the beat it owns (the damage) and the classic pair it replaces',
+       J(Object.keys(REG.routes)) === J(['vajra', 'sudarshana', 'pashupata', 'brahmastra', 'venomstrike', 'lankadahan']) && J(Object.keys(rt).sort()) === J(['anchor', 'moment', 'replaces', 'spec', 'wash']) && J(Object.keys(rt.wash).sort()) === J(['anchor', 'moment', 'replaces', 'spec']));
+
+    // Z4 · the fire's impact on the FIRST damage beat through the EXPORT-5 gate; past the cap the gold never decodes and the classic pair fires once each
+    const onT = [await lkRun(0), await lkRun(1)], lateR = await lkRun(0, { beatDelay: 1000 }), capR = await lkRun(1, { beatDelay: 5000, maxTicks: 260 });
+    const held = (x) => { const q = x.r.log.bySegment.strike || [], i = q.indexOf(26); return i > 0 ? q[i - 1] : null; };
+    const capPair = (() => { const T = timersOn(capR.S); let fire = 0, wash = 0, fl = 0; capR.S.fx.fxBeatFrom(firstDmg(LKB[1])); capR.S.fx.fxLankaBurn(() => fire++, () => wash++, () => fl++); T.run(); return { fire, wash, fl }; })();
+    ok('Z4 · THE FIRE ON THE FIRST DAMAGE BEAT (the EXPORT-5 gate): on time its impact cell f088 is drawn within a frame of the planned impact (' + onT.map((x) => Math.round(x.r.log.impactDrawnAt) + ' for ' + Math.round(x.impactT)).join(' / ') + ' ms), no hold; a beat 1000 ms LATE holds cell ' + held(lateR) + ' (f087) and lands f088 on the beat; past the 1500 ms cap the fire stands down — f088 never drawn, the GOLD NEVER DECODED (' + capR.decodes.length + ' decode) — and at the late beat the classic pair fires once each (fire ' + capPair.fire + ', wash ' + capPair.wash + ', floaters ' + capPair.fl + ')',
+       onT.every((x) => x.r && x.r.plan.clip && x.r.log.beat === null && Math.abs(x.r.log.impactDrawnAt - x.impactT) <= 1000 / 60 + 1) && held(lateR) === 25 && lateR.r.log.beat && Math.abs(lateR.r.log.beat.late - 1000) <= 1000 / 60 + 1 &&
+       lateR.r.log.impactDrawnAt >= lateR.impactT + 1000 - 1 && capR.r.log.beatLateCap != null && capR.r.log.impactDrawnAt == null && capR.decodes.length === 1 && capR.r.log.ready.afterglow == null &&
+       capPair.fire === 1 && capPair.wash === 1 && capPair.fl === 1, J({ onT: onT.map((x) => [x.r.log.impactDrawnAt, x.impactT]), held: held(lateR), cap: [capR.r.log.beatLateCap, capR.decodes], capPair }));
+
+    // Z5 · the gold on the classic wash timer, positional, released-before-decode, never two, never both in one frame
+    const fastR = await lkRun(0, { vfxT: 0.78 });
+    const hand = (x) => { const h = x.r.log.cues.find((c) => c.cue === 'handoff'), i = x.r.log.cues.find((c) => c.cue === 'impact'); return h && i ? h.planned - i.planned : null; };
+    const lateGold = (() => { const h = lateR.r.log.cues.find((c) => c.cue === 'handoff'); return h && lateR.r.log.beat ? h.at - lateR.r.log.beat.at : null; })();   // the handoff after the REAL (late) beat
+    const burnSrc = fnBody('fxLankaBurn') || '';
+    ok('Z5 · THE GOLD ON THE GAME\'S OWN WASH TIMER: it starts the burn + ' + [hand(onT[0]), hand(fastR)].map((v) => v && v.toFixed(1)).join(' / ') + ' ms (Normal / Fast = (18/16) x vfxT x 1000 — the page\'s own timer, the same one the classic wash rides), POSITIONAL: behind a late beat it follows the REAL burn (handoff ' + (lateGold != null ? lateGold.toFixed(0) : '?') + ' ms after it); the fire is RELEASED before the gold decodes (the player\'s loaded atlas at each decode: ' + J(onT[0].decodes) + '), never two decoded, and no frame draws both plates (' + onT[0].frames.filter((f) => f[0] && f[1]).length + ' frames)',
+       [0, 1].every((i) => Math.abs(hand(onT[i]) - 1462.5) < 1e-6) && Math.abs(hand(fastR) - 877.5) < 1e-6 && lateGold != null && Math.abs(lateGold - 1462.5) <= 1000 / 60 + 1 &&
+       K.afterglowDelayMs === 18 / 16 * 1000 && /\(18\/16\)\*vfxT\(\)\*1000/.test(burnSrc) && onT.every((x) => J(x.decodes) === J([null, null]) && !x.frames.some((f) => f[0] && f[1]) && (x.r.log.bySegment.afterglow || [])[0] === 0) &&
+       onT.every((x) => x.r.plan.segments[1].impact === null && x.r.plan.cues.filter((c) => c.cue === 'impact').length === 1), J({ n: [hand(onT[0]), hand(fastR)], lateGold, decodes: onT.map((x) => x.decodes) }));
+
+    // Z6 · the damage beat: the chain owns the burn when its FIRE is decoded (the gold decodes later); the floaters always; never both, never neither
+    const owned = await (async () => { const x = await lkRun(0, { stopAt: 1500 }), T = timersOn(x.S); let fire = 0, wash = 0, fl = 0; const f = () => fire++, w = () => wash++;
+      x.S.fx.fxLankaBurn(f, w, () => fl++); const pendAfterBeat = x.S.fx.FX.pendingFire === f; T.run(); return { fire, wash, fl, pendAfterBeat, pendWash: x.S.fx.FX.pendingFire === w, gold: x.r.log.ready.afterglow }; })();
+    const notDecoded = await (async () => { const S = sandbox({ halves: HL, ownerPi: (u) => (LKB[0].own[u] != null ? LKB[0].own[u] : 0), decodeGate: new Promise(() => {}) }); await S.fx.fxBoot(); await S.fx.fxPrefetch('lankadahan'); await flush();
+      S.fx.fxCast(lkCard, LKB[0].events[0], LKB[0].events, {}); S.tick(16); const T = timersOn(S); let fire = 0, wash = 0, fl = 0; S.fx.fxLankaBurn(() => fire++, () => wash++, () => fl++); T.run(); return { fire, wash, fl, run: S.fx.FX.run }; })();
+    const goldFails = await (async () => { let k = 0; const x = await lkRun(0, { stopAt: 1500, sb: { decodeFails: () => ++k === 2 } }), T = timersOn(x.S); let fire = 0, wash = 0, fl = 0;
+      x.S.fx.fxLankaBurn(() => fire++, () => wash++, () => fl++); T.run(); for (let i = 0; i < 120 && !x.r.done; i++) { await flush(); x.S.tick(1000 / 60); } return { fire, wash, fl, errs: x.r.log.loadErrors.length }; })();
+    ok('Z6 · THE BURN BEAT IS OWNED BY THE FIRE: with the fire decoded the chain owns the moment even though its GOLD is not (' + owned.gold + ') — the classic burn and wash stay silent (' + owned.fire + ' / ' + owned.wash + '), each held as the late fallback, and the +1 floaters still ride the classic timer (' + owned.fl + '); the fire NOT decoded by the beat → the classic pair, once each (' + notDecoded.fire + ' / ' + notDecoded.wash + ', floaters ' + notDecoded.fl + '), the chain stood down; a GOLD that fails to decode after the fire owned the burn fires the classic wash late, once (' + goldFails.wash + ', the burn ' + goldFails.fire + ')',
+       owned.fire === 0 && owned.wash === 0 && owned.fl === 1 && owned.pendAfterBeat && owned.pendWash && owned.gold == null && notDecoded.fire === 1 && notDecoded.wash === 1 && notDecoded.fl === 1 && notDecoded.run === null &&
+       goldFails.errs === 1 && goldFails.wash === 1 && goldFails.fire === 0 && goldFails.fl === 1, J({ owned, notDecoded, goldFails }));
+
+    // Z7 · the caster seat from the FIRST damage target (both seats, and a staked-shaped view whose spent Astra has no uid)
+    const z7 = [];
+    for (const seat of [0, 1]) for (const staked of [false, true]) {
+      const b = LKB[seat], src = b.events[0].sourceUid, S = sandbox({ halves: HL, ownerPi: (u) => (staked && u === src ? 0 : (b.own[u] != null ? b.own[u] : 0)) });
+      await S.fx.fxBoot(); await S.fx.fxPrefetch('lankadahan'); await flush();
+      const r = S.fx.fxCast(lkCard, b.events[0], b.events, {}), e = halfOfSeat(1 - seat), c = halfOfSeat(seat), pf = r && r.places[0], pg = r && r.places[1];
+      const flush2 = (p, h, upper) => !!p && Math.abs(p.w - Math.min(h.width, p.w)) < 1e-6 && (upper ? Math.abs(p.y + p.h - h.bottom) < 1e-6 : Math.abs(p.y - h.top) < 1e-6);
+      z7.push({ seat, staked, caster: r && r.plan.casterSeat, fireOnEnemy: flush2(pf, e, 1 - seat === 1), goldOnCaster: flush2(pg, c, seat === 1) });
+    }
+    ok('Z7 · THE CASTER SEAT FROM THE FIRST DAMAGE TARGET (ruling): both seats, the engine\'s own events, and a STAKED-shaped view whose spent Astra carries no uid (the lookup would answer seat 0): the caster is ' + z7.map((x) => x.caster).join(' / ') + ' — the FIRE sits divider-flush on the ENEMY half and the GOLD on the CASTER\'s, every time',
+       z7.every((x) => x.caster === x.seat && x.fireOnEnemy && x.goldOnCaster), J(z7));
+
+    // Z8 · the engine's edge cases
+    const allDie = lkBuild(0, { foes: ['Ravana', 'Kalanemi'], foePw: 2 }), emptyMine = lkBuild(0, { friends: [] }), noFoes = lkBuild(0, { foes: [] });
+    const z8 = await (async () => { const S = sandbox({ halves: HL, ownerPi: (u) => (allDie.own[u] != null ? allDie.own[u] : 0) }); await S.fx.fxBoot(); await S.fx.fxPrefetch('lankadahan'); await flush();
+      const r = S.fx.fxCast(lkCard, allDie.events[0], allDie.events, {}), wants = []; for (const e of allDie.events.filter((x) => x.type === 'damage' || x.type === 'destroy')) { wants.push([e.type, !!S.fx.FX.beatWant]); S.fx.fxBeatFrom(e); }
+      const S2 = sandbox({ halves: HL, ownerPi: (u) => (emptyMine.own[u] != null ? emptyMine.own[u] : 0) }); await S2.fx.fxBoot(); await S2.fx.fxPrefetch('lankadahan'); await flush();
+      const r2 = S2.fx.fxCast(lkCard, emptyMine.events[0], emptyMine.events, {});
+      const S3 = sandbox({ halves: HL }); await S3.fx.fxBoot(); await S3.fx.fxPrefetch('lankadahan'); await flush();
+      const r3 = S3.fx.fxCast(lkCard, { type: 'play', abilityName: 'Lanka Dahan', sourceUid: 1 }, [{ type: 'play', abilityName: 'Lanka Dahan', sourceUid: 1 }], {});
+      return { types: allDie.events.map((e) => e.type).join(','), clip: !!(r && r.plan.clip), wants, empty: { clip: !!(r2 && r2.plan.clip), gold: !!(r2 && r2.places[1]) }, zero: r3 }; })();
+    const branch = between("else if (ev.type==='damage' && ev.abilityName==='Lanka Dahan')", "ft=ev.text||String(ev.amount); fk='down heavy'; }") || '';
+    ok('Z8 · THE ENGINE\'S EDGE CASES: every enemy dies (' + z8.types + ') — the gate hears ONLY the first damage (listening before each: ' + J(z8.wants) + '); the caster\'s board EMPTY — the chain still plays and the gold washes the empty half, as the classic wash does (ruling); NO enemy Unit — the engine refuses the cast (' + noFoes.legal + '); a ZERO-damage cast (every hit prevented: only the play event) plans no clip and the burn branch never runs — nothing plays, as classic (ruling)',
+       z8.clip && J(z8.wants) === J([['damage', true], ['destroy', false], ['damage', false], ['destroy', false]]) && z8.empty.clip && z8.empty.gold && noFoes.legal === false && z8.zero === null &&
+       /if\(ev===evs\.find\(e=>e\.type==='damage'&&e\.abilityName==='Lanka Dahan'\)\)\{/.test(branch) && /fxLankaBurn\(fire, wash, floats\);/.test(branch) && (HTML.match(/fxLankaBurn\(fire, wash, floats\);/g) || []).length === 1 &&
+       (HTML.match(/VFX\.sprLankaFire\(/g) || []).length === 1 && (HTML.match(/VFX\.sprLankaWash\(/g) || []).length === 1, J(z8));
+
+    // Z9 · the prefetch: both packs with the card; both-ready rule; fails open to the classic pair
+    const z9 = await (async () => { const S = sandbox(); S.ctx.G = { round: 1, players: [{ name: 'You', hand: [{ id: 'lankadahan' }] }, { name: 'Opponent', hand: [] }] }; await S.fx.fxBoot();
+      S.fx.fxPrefetchHands(); await flush(); await flush(); await flush();
+      const got = S.fetched.map((f) => f[0]), both = ['assets/manifest/effects/lankadahan_fire/atlas.webp', 'assets/manifest/effects/lankadahan_gold/atlas.webp'].every((u) => got.indexOf(u) >= 0);
+      const u = 'assets/manifest/effects/lankadahan_gold/atlas.webp', S2 = sandbox({ fetchFail: (rel) => rel === u, halves: HL, ownerPi: (x) => (LKB[0].own[x] != null ? LKB[0].own[x] : 0) });
+      S2.ctx.G = { round: 1, players: [{ name: 'You', hand: [{ id: 'lankadahan' }] }, { name: 'Opponent', hand: [] }] }; await S2.fx.fxBoot(); S2.fx.fxPrefetchHands(); await flush(); await flush(); await flush();
+      const rec = S2.fx.ASSET_RETRY.s[Object.keys(S2.fx.ASSET_RETRY.s).find((k) => /lankadahan_gold\/atlas/.test(k))] || null;
+      const r = S2.fx.fxCast(lkCard, LKB[0].events[0], LKB[0].events, {}), T = timersOn(S2); let fire = 0, wash = 0; S2.fx.fxLankaBurn(() => fire++, () => wash++, () => {}); T.run();
+      return { both, ready: S.fx.fxReady('lankadahan'), fireOnly: S2.fx.fxReady('lankadahan'), retry: rec && { attempts: rec.attempts, inMs: Math.round(rec.nextAt - S2.now) }, cast: r, fire, wash }; })();
+    ok('Z9 · THE PREFETCH (hand entry): Lanka Dahan entering a visible hand fetches BOTH packs\' bytes (ready ' + z9.ready + '); with the gold\'s bytes missing the chain is NOT ready (' + z9.fireOnly + ') — a failed atlas rides the shared retry (attempt ' + (z9.retry && z9.retry.attempts) + ', again in ' + (z9.retry && z9.retry.inMs) + ' ms) — the cast plans nothing and the classic pair plays, once each (' + z9.fire + ' / ' + z9.wash + '): a page whose fetches all fail sees today\'s game',
+       z9.both && z9.ready === true && z9.fireOnly === false && z9.retry && z9.retry.attempts === 1 && z9.retry.inMs === 2000 && z9.cast === null && z9.fire === 1 && z9.wash === 1, J(z9));
+
+    // Z10 · the device matrix, through the page's own player
+    const DM = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports, fit = [];
+    DM.forEach((v) => [0, 1].forEach((seat) => {
+      const up = { cx: v.vw / 2, cy: 60 + v.half.h / 2, top: 60, w: v.half.w, h: v.half.h }, lo = { cx: v.vw / 2, cy: 60 + 1.5 * v.half.h, top: 60 + v.half.h, w: v.half.w, h: v.half.h }, H = { 1: up, 0: lo };
+      const P = EC.createPlayer({ now: () => 0, canvas: null, dpr: 2, halfOf: (s) => H[s], loadAtlas: () => ({ source: {}, bytes: 0, close() {} }), render() {}, sound() {} });
+      const run = P.play({ events: LKB[seat].events }, LK, { before: null, after: null }, { mode: 'full', casterSeat: seat });
+      run.places.forEach((p, k) => { const hs = k === 0 ? 1 - seat : seat, h = H[hs], m = k === 0 ? LF : LG, wFit = h.w * m.cellSize.h / m.cellSize.w <= h.h;
+        fit.push({ vp: v.vw + 'x' + v.vh, layout: v.layout, cover: p.w / h.w, ok: p.w <= h.w + 1e-6 && p.h <= h.h + 1e-6 && (hs === 1 ? Math.abs(p.y + p.h - (h.top + h.h)) < 1e-6 : Math.abs(p.y - h.top) < 1e-6) && Math.abs(p.x + p.w / 2 - h.cx) < 1e-6 && (wFit ? Math.abs(p.w - h.w) < 1e-6 : Math.abs(p.h - h.h) < 1e-6) }); });
+      P.skip();
+    }));
+    const port = fit.filter((x) => x.layout === 'portrait'), capped = [...new Set(fit.filter((x) => x.cover < 0.999).map((x) => x.vp))];
+    ok('Z10 · THE DEVICE MATRIX, through the page\'s own player: all ' + DM.length + ' measured screens × both seats × both plates (' + fit.length + ' placements) — divider-flush (the edge nearest the divider on it), centred, inside the half, the full width of the half unless that would be taller than the half and then exactly its height; portrait coverage ' + (Math.min(...port.map((x) => x.cover)) * 100).toFixed(0) + '% of the width; the height cap engages only on ' + capped.join(', '),
+       fit.length === DM.length * 4 && fit.every((x) => x.ok) && port.length > 0 && port.every((x) => Math.abs(x.cover - 1) < 1e-9), J(fit.filter((x) => !x.ok).slice(0, 4)));
+
+    // Z11 · a skipped action ends the chain and leaves no wash behind
+    const z11 = await (async () => { const x = await lkRun(0, { stopAt: 3300 }), T = timersOn(x.S); let fire = 0, wash = 0, fl = 0; x.S.fx.fxLankaBurn(() => fire++, () => wash++, () => fl++);
+      const goldDrawn = (x.r.log.bySegment.afterglow || []).length; x.S.fx.fxSkip(); x.S.ctx.choreoSkip = true; T.run(); const after = (x.r.log.bySegment.afterglow || []).length; x.S.tick(1000 / 60);
+      return { goldDrawn, done: x.r.done, run: x.S.fx.FX.run, fire, wash, fl, grew: (x.r.log.bySegment.afterglow || []).length - after }; })();
+    ok('Z11 · SKIP: a skipped action mid-gold (' + z11.goldDrawn + ' gold cells drawn) ends the chain — the run is done and released, nothing draws after — and the classic wash timer, finding the skip, fires nothing (wash ' + z11.wash + ', floaters ' + z11.fl + '); skipChoreo (through fastForwardChoreo) and resetChoreo both stand the clip down',
+       z11.goldDrawn > 0 && z11.done && z11.run === null && z11.wash === 0 && z11.fl === 0 && z11.grew === 0 && /fastForwardChoreo\(\)/.test(fnBody('skipChoreo') || '') && /fxSkip\(\)/.test(fnBody('fastForwardChoreo') || '') && /fxSkip\(\)/.test(fnBody('resetChoreo') || '') && /if\(choreoSkip\) return;/.test(burnSrc), J(z11));
+
+    // Z12 · reduced motion: the classic path
+    const z12 = await (async () => { const S = sandbox({ halves: HL, reduced: true, ownerPi: (u) => (LKB[0].own[u] != null ? LKB[0].own[u] : 0) }); await S.fx.fxBoot(); await S.fx.fxPrefetch('lankadahan'); await flush();
+      const r = S.fx.fxCast(lkCard, LKB[0].events[0], LKB[0].events, {}), T = timersOn(S); let fire = 0, wash = 0; S.fx.fxLankaBurn(() => fire++, () => wash++, () => {}); T.run(); return { r, fire, wash }; })();
+    ok('Z12 · REDUCED MOTION keeps the classic path: no clip is cast (' + z12.r + '), the classic pair is asked for once each (' + z12.fire + ' / ' + z12.wash + ') and each sprite itself stands down under reduced motion, exactly as before',
+       z12.r === null && z12.fire === 1 && z12.wash === 1 && /function sprLankaFire\(cxp,cyp,boardW\)\{ if\(reducedMotion\(\)\|\|!ready\) return false;/.test(HTML) && /function sprLankaWash\(cxp,cyp,boardW\)\{ if\(reducedMotion\(\)\|\|!ready\) return false;/.test(HTML), J(z12));
   }
 
   // ═══ W · THE WIRE ═══

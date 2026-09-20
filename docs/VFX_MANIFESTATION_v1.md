@@ -492,3 +492,46 @@ CC7. UNCHANGED. The engine; every sound (sfx_astra at the cast, the drain's own
     synth tick; the packs bring no audio); the classic surge and plate as the
     stand-down path everywhere — a player whose fetches or decodes all fail sees
     exactly the game they saw before.
+
+## AMENDMENT 2026-09-19 — LANKA DAHAN ENTERS THE LIVE GAME (EXPORT-7)
+
+DD1. THE RULINGS, verbatim. "Export." Then, on the STEP-0 decisions, "Go." —
+    meaning: the frozen set 77 -> 82 confirmed (five files — the chain.json rides
+    with the two packs, the Sudarshana precedent); the gold's cold decode = (a)
+    accept the measured loss, the lab player verbatim; the caster seat derived
+    from the first damage target (the Astra-uid lookup with its silent seat-0
+    fallback is retired for this route); an empty caster half = the gold washes
+    it, matching classic; a zero-damage cast = nothing plays, matching classic;
+    the +1 floaters stay on the classic timer in both paths.
+DD2. THE PACKS. The LAB-25 chain and its two packs (effects/lankadahan/chain.json,
+    lankadahan_fire, lankadahan_gold) are copied byte-identical into
+    assets/manifest/effects/. The certified set extends 77 -> 82; the 77 and the
+    original 73 reproduce their digests (the registry differs only by its one new
+    route). One route, "lankadahan": the chain at the damage beat, the FIRE
+    replacing sprLankaFire; its nested "wash", the GOLD, replacing sprLankaWash.
+DD3. THE PLAYER. The page's inlined player is the LAB-25 player, verbatim: the
+    afterglow role, the strike-afterglow chain and its timeline, the
+    second-segment handoff, the divider-flush halves.
+DD4. THE FIRE. Cast at the play beat (the ordinary routed-Astra hook) on the
+    ENEMY half, width-fit 1.0 of the half's width, height-capped, divider-flush.
+    Its impact (cell 26 = f088) is heard on the cast's FIRST damage event through
+    the EXPORT-5 gate: on time byte-identical; late, f087 holds; past 1,500 ms it
+    stands down, the gold never decodes, and the classic pair fires once each. It
+    starts ~35 ms after the cast (21 at Fast): no wire clock.
+DD5. THE GOLD. At the burn + (18/16) x vfxT x 1000 (1,462.5 ms Normal, 877.5
+    Fast), the game's own wash timer, positional (no gate, no impact), on the
+    CASTER's half, divider-flush. The fire is released BEFORE the gold decodes:
+    never two decoded, no frame draws both. Its cold decode (54 ms desktop, ~104 at
+    4x CPU, ~140 at 6x) may skip its first fade-in cells — accepted (DD1).
+DD6. THE BURN BEAT. The chain owns the classic burn and wash only if its FIRE is
+    decoded by the first damage beat; otherwise the classic pair plays on the
+    classic timer. A clip failing after the beat fires the classic burn (or, for
+    the gold, the classic wash) late: never both, never neither. The +1 floaters
+    ride the classic timer in both paths (DD1).
+DD7. THE CASTER SEAT. The other side of the first damage target, on every road —
+    measured: on the staked road a spent Astra's uid is recovered only through the
+    Hall's lastMove card id; the damage target needs no such lookup (DD1).
+DD8. UNCHANGED. The engine; every sound (sfx_astra at the cast, the debuff blips
+    on the damage beats; the packs bring no audio); the classic pair as the
+    stand-down path everywhere — a player whose fetches or decodes all fail sees
+    exactly the game they saw before. A zero-damage cast plays nothing, as classic.

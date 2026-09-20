@@ -1,0 +1,686 @@
+{
+  "cardId": "lankadahan",
+  "class": "effect-clip",
+  "version": 1,
+  "source": "Kling clip lanka_fire_v2.mp4 (sha256 228186cda01d\u2026, 121 frames @ 24 fps, 1916x1080, black ground) \u2014 kept f062\u2013f114; packed by tools/make_effect_from_clip.py",
+  "atlas": "atlas.webp",
+  "atlasSize": {
+    "w": 4062,
+    "h": 366
+  },
+  "channels": "rgb",
+  "blend": "add",
+  "alpha": "luminance",
+  "fps": 24,
+  "timing": "native",
+  "cellPx": 288,
+  "cellSize": {
+    "w": 288,
+    "h": 89
+  },
+  "cells": [
+    {
+      "name": "f062",
+      "src": 62,
+      "x": 2,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f063",
+      "src": 63,
+      "x": 292,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f064",
+      "src": 64,
+      "x": 582,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f065",
+      "src": 65,
+      "x": 872,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f066",
+      "src": 66,
+      "x": 1162,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f067",
+      "src": 67,
+      "x": 1452,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f068",
+      "src": 68,
+      "x": 1742,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f069",
+      "src": 69,
+      "x": 2032,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f070",
+      "src": 70,
+      "x": 2322,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f071",
+      "src": 71,
+      "x": 2612,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f072",
+      "src": 72,
+      "x": 2902,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f073",
+      "src": 73,
+      "x": 3192,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f074",
+      "src": 74,
+      "x": 3482,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f075",
+      "src": 75,
+      "x": 3772,
+      "y": 2,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f076",
+      "src": 76,
+      "x": 2,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f077",
+      "src": 77,
+      "x": 292,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f078",
+      "src": 78,
+      "x": 582,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f079",
+      "src": 79,
+      "x": 872,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f080",
+      "src": 80,
+      "x": 1162,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f081",
+      "src": 81,
+      "x": 1452,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f082",
+      "src": 82,
+      "x": 1742,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f083",
+      "src": 83,
+      "x": 2032,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f084",
+      "src": 84,
+      "x": 2322,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f085",
+      "src": 85,
+      "x": 2612,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f086",
+      "src": 86,
+      "x": 2902,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f087",
+      "src": 87,
+      "x": 3192,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f088",
+      "src": 88,
+      "x": 3482,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f089",
+      "src": 89,
+      "x": 3772,
+      "y": 93,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f090",
+      "src": 90,
+      "x": 2,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f091",
+      "src": 91,
+      "x": 292,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f092",
+      "src": 92,
+      "x": 582,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f093",
+      "src": 93,
+      "x": 872,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f094",
+      "src": 94,
+      "x": 1162,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f095",
+      "src": 95,
+      "x": 1452,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f096",
+      "src": 96,
+      "x": 1742,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f097",
+      "src": 97,
+      "x": 2032,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f098",
+      "src": 98,
+      "x": 2322,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f099",
+      "src": 99,
+      "x": 2612,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f100",
+      "src": 100,
+      "x": 2902,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f101",
+      "src": 101,
+      "x": 3192,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f102",
+      "src": 102,
+      "x": 3482,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f103",
+      "src": 103,
+      "x": 3772,
+      "y": 184,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f104",
+      "src": 104,
+      "x": 2,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f105",
+      "src": 105,
+      "x": 292,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f106",
+      "src": 106,
+      "x": 582,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f107",
+      "src": 107,
+      "x": 872,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f108",
+      "src": 108,
+      "x": 1162,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f109",
+      "src": 109,
+      "x": 1452,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f110",
+      "src": 110,
+      "x": 1742,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f111",
+      "src": 111,
+      "x": 2032,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f112",
+      "src": 112,
+      "x": 2322,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f113",
+      "src": 113,
+      "x": 2612,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    },
+    {
+      "name": "f114",
+      "src": 114,
+      "x": 2902,
+      "y": 275,
+      "w": 288,
+      "h": 89
+    }
+  ],
+  "impact": 26,
+  "anchor": {
+    "x": 144.0,
+    "y": 44.5
+  },
+  "scaleRule": {
+    "feature": "plate width (the clip's content box)",
+    "frame": 88,
+    "spanSrc": 1916,
+    "spanCell": 288.0,
+    "cardWidths": 5.18,
+    "ruledDefaultCardWidths": null,
+    "halfFraction": 1.0,
+    "heightCap": 1.0,
+    "unit": "WIDTH FRACTION OF THE HALF (owner ruling LAB-25, package S): the plate's WIDTH is halfFraction x its half's WIDTH, never taller than heightCap x the half's HEIGHT (the fitted law). This is NOT a height fraction (the LAB-22 near-miss)",
+    "legibility": null,
+    "note": "THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only \u2014 LAB-21's ring-based cw and a plate-based cw are not the same unit"
+  },
+  "role": "strike",
+  "audit": {
+    "range": [
+      62,
+      114
+    ],
+    "droppedHead": [
+      0,
+      61
+    ],
+    "droppedTail": [
+      115,
+      120
+    ],
+    "impactSrc": 88,
+    "impact": {
+      "rule": "wallcover",
+      "window": [
+        80,
+        96
+      ],
+      "groundLineMode": 688,
+      "groundLineRange": [
+        646,
+        699
+      ],
+      "coverRiseOver3Frames": 0.127,
+      "why": "the pillars join the wall: the fire lands on the first damage beat"
+    },
+    "dedup": {
+      "rule": "mean |d| vs the previous frame < 0.6 is a true duplicate",
+      "trueDuplicates": 0,
+      "minNeighbourMae": 5.071,
+      "minAt": "f065",
+      "keepDuplicates": false
+    },
+    "sticker": {
+      "rule": "saturated red on the outer 6 px of the lit region over the red inside it; a painted contour (the rejected v1, LAB-23) reads 9.42-21.97, natural light < 1.5",
+      "max": 0.93,
+      "frames": {
+        "f070": {
+          "redOnOutline": 0.397,
+          "redInside": 0.572,
+          "outlineOverInside": 0.69,
+          "darkInnerLine": 0.011
+        },
+        "f088": {
+          "redOnOutline": 0.531,
+          "redInside": 0.641,
+          "outlineOverInside": 0.83,
+          "darkInnerLine": 0.02
+        },
+        "f100": {
+          "redOnOutline": 0.548,
+          "redInside": 0.678,
+          "outlineOverInside": 0.81,
+          "darkInnerLine": 0.024
+        },
+        "f110": {
+          "redOnOutline": 0.614,
+          "redInside": 0.661,
+          "outlineOverInside": 0.93,
+          "darkInnerLine": 0.031
+        }
+      }
+    },
+    "sideFringe": {
+      "cols": [
+        96,
+        1820
+      ],
+      "declaration": "LAB-22/5 splash-fringe precedent, scope: ONLY the outer 96 source columns each side, which sit at the half's side borders under width-fit 1.0 (the wall and the mist running on past the half)"
+    },
+    "provenance": {
+      "parent": "lanka_fire_v2.mp4",
+      "md5": "60e945a32835ed08dcc4a8c4ebaac7d8",
+      "sha256": "228186cda01d55a90c7638ff24aa0dfc50f04275dbf63e7e8066ee6d52028036",
+      "rule": "an effect clip has no identity master; its provenance parent is the md5-verified source clip itself, and every plate cut from it records the same parent"
+    },
+    "corePoint": [
+      1616,
+      661
+    ],
+    "scale": 0.15031,
+    "box": [
+      0,
+      237,
+      1916,
+      832
+    ],
+    "cellPx": {
+      "used": 288,
+      "asked": 288,
+      "steppedDown": null
+    },
+    "decodedBytes": 5946768,
+    "e1CapBytes": 18874368,
+    "ground": {
+      "cornersMax": 1,
+      "farMax": 1,
+      "method": "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) \u2014 stated beside the bake metric",
+      "zeroShareMin": 0.67488,
+      "pedestal1to4ShareMax": 0.02126
+    },
+    "edges": {
+      "top": 0,
+      "bottom": 0,
+      "left": 53,
+      "right": 25,
+      "of": 53
+    },
+    "fadeIn": [
+      [
+        62,
+        0.1429
+      ],
+      [
+        63,
+        0.2857
+      ],
+      [
+        64,
+        0.4286
+      ],
+      [
+        65,
+        0.5714
+      ],
+      [
+        66,
+        0.7143
+      ],
+      [
+        67,
+        0.8571
+      ]
+    ],
+    "fadeTail": [
+      [
+        105,
+        1.0
+      ],
+      [
+        106,
+        0.8889
+      ],
+      [
+        107,
+        0.7778
+      ],
+      [
+        108,
+        0.6667
+      ],
+      [
+        109,
+        0.5556
+      ],
+      [
+        110,
+        0.4444
+      ],
+      [
+        111,
+        0.3333
+      ],
+      [
+        112,
+        0.2222
+      ],
+      [
+        113,
+        0.1111
+      ],
+      [
+        114,
+        0.0
+      ]
+    ],
+    "vignette": {
+      "top": {
+        "px": 0,
+        "cellPxAtScale": 0.0,
+        "coreMarginMin": 254,
+        "coreMarginMinAt": 85,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "bottom": {
+        "px": 0,
+        "cellPxAtScale": 0.0,
+        "coreMarginMin": 323,
+        "coreMarginMinAt": 114,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "left": {
+        "px": 96,
+        "cellPxAtScale": 14.4,
+        "coreMarginMin": 96,
+        "coreMarginMinAt": 62,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "right": {
+        "px": 96,
+        "cellPxAtScale": 14.4,
+        "coreMarginMin": 96,
+        "coreMarginMinAt": 69,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      }
+    },
+    "guardKind": "blob",
+    "guardTailStart": 105,
+    "anchorRule": {
+      "kind": "divider-flush",
+      "place": "enemy-half-divider",
+      "dependency": "the plate's edge nearest the divider sits ON the divider (its bottom on the upper half, its top on the lower half); neither clip touches its top or bottom edge, so no cut hides there (LAB-25)"
+    }
+  }
+}

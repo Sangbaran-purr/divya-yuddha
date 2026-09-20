@@ -37,6 +37,18 @@
         "moment": "drain",
         "anchor": "enemy-half-bottom (height-fit, bottom-flush); the empowered round-end Venom drain, its eruption on the drain's first venom beat"
       }
+    },
+    "lankadahan": {
+      "spec": "effects/lankadahan/chain.json",
+      "replaces": "sprLankaFire",
+      "moment": "damage",
+      "anchor": "enemy-half-divider (width-fit: 1.0 of the half's WIDTH, never taller than the half; the edge nearest the divider on it); the fire's impact on the cast's FIRST damage beat",
+      "wash": {
+        "spec": "effects/lankadahan_gold/manifest.json",
+        "replaces": "sprLankaWash",
+        "moment": "wash",
+        "anchor": "caster-half-divider (width-fit, the edge nearest the divider on it); the chain's afterglow at the burn + (18/16) x vfxT x 1000, decoded only after the fire is released"
+      }
     }
   },
   "pinned": {
