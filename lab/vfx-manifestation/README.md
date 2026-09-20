@@ -2124,3 +2124,33 @@ The game's asset retry (2 / 8 / 30 s) belongs to the export and is recorded, not
 - The game's classic wash timer moved, unchanged, into the export glue (`fxLankaBurn`). L6 now reads it from there, so the check still pins the game's own `(18/16)*vfxT()*1000`.
 - `tools/copy_runtime.js` was re-run: the VFX module moved lines and is byte-identical.
 - G1 re-anchors at the export commit.
+
+## LAB-26: Chaos Surge, the spell-surge vortex
+
+**Owner rulings (2026-09-20, verbatim):** the rung opened with a certified clip and the message "Chaos."; then "Go." on the STEP-0 decisions, meaning:
+
+1. **Scope amendment** to the 2026-09-16 premium ruling: a FOURTH premium track exists — faction-mechanic effects — opened by Chaos Surge. (`docs/VFX_MANIFESTATION_v1.md` records it at export time; this README carries it until then.)
+2. **Frequency shape:** the premium vortex plays ONLY on spell surges (+3 — the Astra, Mantra and Chandrahas paths). The floor surge (+1, first Unit play of a round) ALWAYS keeps the classic presentation. Asserted both directions.
+3. **Anchor:** unit-anchored, 2.4 card widths, centred on the blessed Unit's card (anchor uid = the buff event's `targetUids[0]`).
+4. **Beat:** gated impact. The Surge's toast starts the clip (within a frame, 0 ms wire clock); the corona snap is the impact cell pinned to the buff beat under the EXPORT-5 law (on time byte-identical; late holds the pre-snap cell; past 1,500 ms it stands down to classic).
+5. **Collision rule B:** a live premium effect clip yields at the Surge's toast — released before the Surge decodes (the LAB-25 law), cutting only its remaining cells (measured: in practice only fade-tail cells, alpha ≤ 0.67).
+
+**The pack** (`chaossurge`, one clip, one portion):
+- Source `chaos_surge_v1.mp4`, md5 `596a30ec…`, **1920×1080** (recorded as such — not the usual 1916), 24 fps, 121 frames.
+- Portion **f061–f110, 50 cells at 288 px**. The 14 lead cells put the clip's start within a frame of the toast, whose hold is 620 ms × speed.
+- Impact **cell 14 = f075**, measured by the new `coronasnap` rule: the steepest 3-frame rise of the lit share inside f066–f090.
+- A 6-cell fade-in and a 10-cell baked tail carry the whole decay; the source never fades (0.946 → 0.885 across f100–f120).
+- The f119/f120 duplicate pair lies outside the portion by construction.
+- Atlas 618.9 KB; **14.72 MB decoded**, under the 18.00 MB cap.
+
+**Geometry:** the plate's CENTRE sits on the blessed Unit's card centre — the new `centre` anchor kind and the `unit-card-centre` place. It draws 2.4 card widths across; the unit is a card-width multiple, never a fraction of a half.
+- ⚠ The clip is **not edge-free**: haze touches the top in 29 of the 50 kept frames (never above luma 115) and the bottom in 0 (up to 58 elsewhere in the clip). It carries a **16 px top feather and a 48 px bottom feather**, no side bands (the content stops 296/294 px short of each side).
+- The lit core (≥170) comes no nearer than 19 px to the top and 83 px to the bottom, so neither band ever eats it; the core-body guard passes on every edge.
+
+**The runtime** needed only two things, both lab-only: the `spell-surge` moment (`surgeOf` — the cast is the Surge's own toast, the strike is the first buff whose amount reaches `minAmount` 3) and the packer's `centre` anchor. The existing target-anchored place carries the drawing, so no new placement branch was needed.
+
+**Fixtures:** six engine-recorded boards × both seats — `spell` (Astra), `mantra`, `floorsurge`, `double` (Chandrahas), `collision` (Pashupatastra with one enemy Unit) and `nounits` (the engine emits nothing at all).
+
+**Checks:** CS1–CS12 added; the lab suite goes 778 → **790**. Each is proven falsifiable by a named mutant (snap off by a frame; tail duplicates kept; a top band eating the corona; gate off; the anchor from the wrong uid; the card-width unit swapped; the floor surge playing premium; the spell classification inverted; the collision rule inverted; the match-start prefetch missing; the second surge in an action playing premium; the mechanic route keyed like a card).
+
+**Prefetch:** a mechanic has no card, so no hand can carry it — the page fetches its bytes at MATCH START when an Asura is seated on either seat.

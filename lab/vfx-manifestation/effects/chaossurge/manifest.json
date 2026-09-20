@@ -1,0 +1,671 @@
+{
+  "cardId": "chaossurge",
+  "class": "effect-clip",
+  "version": 1,
+  "source": "Kling clip chaos_surge_v1.mp4 (sha256 2c5f53bacba8\u2026, 121 frames @ 24 fps, 1920x1080, black ground) \u2014 kept f061\u2013f110; packed by tools/make_effect_from_clip.py",
+  "atlas": "atlas.webp",
+  "atlasSize": {
+    "w": 4062,
+    "h": 950
+  },
+  "channels": "rgb",
+  "blend": "add",
+  "alpha": "luminance",
+  "fps": 24,
+  "timing": "native",
+  "cellPx": 288,
+  "cellSize": {
+    "w": 288,
+    "h": 235
+  },
+  "cells": [
+    {
+      "name": "f061",
+      "src": 61,
+      "x": 2,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f062",
+      "src": 62,
+      "x": 292,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f063",
+      "src": 63,
+      "x": 582,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f064",
+      "src": 64,
+      "x": 872,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f065",
+      "src": 65,
+      "x": 1162,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f066",
+      "src": 66,
+      "x": 1452,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f067",
+      "src": 67,
+      "x": 1742,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f068",
+      "src": 68,
+      "x": 2032,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f069",
+      "src": 69,
+      "x": 2322,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f070",
+      "src": 70,
+      "x": 2612,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f071",
+      "src": 71,
+      "x": 2902,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f072",
+      "src": 72,
+      "x": 3192,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f073",
+      "src": 73,
+      "x": 3482,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f074",
+      "src": 74,
+      "x": 3772,
+      "y": 2,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f075",
+      "src": 75,
+      "x": 2,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f076",
+      "src": 76,
+      "x": 292,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f077",
+      "src": 77,
+      "x": 582,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f078",
+      "src": 78,
+      "x": 872,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f079",
+      "src": 79,
+      "x": 1162,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f080",
+      "src": 80,
+      "x": 1452,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f081",
+      "src": 81,
+      "x": 1742,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f082",
+      "src": 82,
+      "x": 2032,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f083",
+      "src": 83,
+      "x": 2322,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f084",
+      "src": 84,
+      "x": 2612,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f085",
+      "src": 85,
+      "x": 2902,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f086",
+      "src": 86,
+      "x": 3192,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f087",
+      "src": 87,
+      "x": 3482,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f088",
+      "src": 88,
+      "x": 3772,
+      "y": 239,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f089",
+      "src": 89,
+      "x": 2,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f090",
+      "src": 90,
+      "x": 292,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f091",
+      "src": 91,
+      "x": 582,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f092",
+      "src": 92,
+      "x": 872,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f093",
+      "src": 93,
+      "x": 1162,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f094",
+      "src": 94,
+      "x": 1452,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f095",
+      "src": 95,
+      "x": 1742,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f096",
+      "src": 96,
+      "x": 2032,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f097",
+      "src": 97,
+      "x": 2322,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f098",
+      "src": 98,
+      "x": 2612,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f099",
+      "src": 99,
+      "x": 2902,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f100",
+      "src": 100,
+      "x": 3192,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f101",
+      "src": 101,
+      "x": 3482,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f102",
+      "src": 102,
+      "x": 3772,
+      "y": 476,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f103",
+      "src": 103,
+      "x": 2,
+      "y": 713,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f104",
+      "src": 104,
+      "x": 292,
+      "y": 713,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f105",
+      "src": 105,
+      "x": 582,
+      "y": 713,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f106",
+      "src": 106,
+      "x": 872,
+      "y": 713,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f107",
+      "src": 107,
+      "x": 1162,
+      "y": 713,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f108",
+      "src": 108,
+      "x": 1452,
+      "y": 713,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f109",
+      "src": 109,
+      "x": 1742,
+      "y": 713,
+      "w": 288,
+      "h": 235
+    },
+    {
+      "name": "f110",
+      "src": 110,
+      "x": 2032,
+      "y": 713,
+      "w": 288,
+      "h": 235
+    }
+  ],
+  "impact": 14,
+  "anchor": {
+    "x": 144.0,
+    "y": 117.5
+  },
+  "moment": "spell-surge",
+  "scaleRule": {
+    "feature": "plate width (the clip's content box)",
+    "frame": 86,
+    "spanSrc": 1325,
+    "spanCell": 288.0,
+    "cardWidths": 2.4,
+    "ruledDefaultCardWidths": null,
+    "halfFraction": null,
+    "heightCap": null,
+    "legibility": null,
+    "note": "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board"
+  },
+  "contract": {
+    "trigger": "buff",
+    "abilityName": "Chaos Surge",
+    "anchor": "unit-card-centre",
+    "castSound": "sfx_chaos_surge",
+    "impactSound": null,
+    "castHitStopMs": 0,
+    "castHoldMs": 620,
+    "flightMs": 0,
+    "crackAfterMs": 0,
+    "destroyDwellMs": 0,
+    "exitKind": "none",
+    "awaited": false,
+    "moment": "spell-surge",
+    "castEvent": {
+      "type": "toast",
+      "abilityName": "Chaos Surge"
+    },
+    "minAmount": 3,
+    "note": "the cast is the Surge's own toast (620 ms x speed, the game's hold); the impact is the FIRST spell surge's buff beat (+3 or more - the +1 floor surge is never premium); the sounds are the game's own (sfx_chaos_surge on the toast), unchanged"
+  },
+  "audit": {
+    "range": [
+      61,
+      110
+    ],
+    "droppedHead": [
+      0,
+      60
+    ],
+    "droppedTail": [
+      111,
+      120
+    ],
+    "impactSrc": 75,
+    "impact": {
+      "rule": "coronasnap",
+      "window": [
+        66,
+        90
+      ],
+      "litRiseOver3Frames": 0.0214,
+      "litAtSnap": 0.0489,
+      "why": "the vortex becomes the corona: the Surge's +3 lands on the buff beat, and the snap is pinned to it"
+    },
+    "dedup": {
+      "rule": "mean |d| vs the previous frame < 0.6 is a true duplicate",
+      "trueDuplicates": 0,
+      "minNeighbourMae": 0.707,
+      "minAt": "f107",
+      "keepDuplicates": false
+    },
+    "sticker": {
+      "rule": "saturated red on the outer 6 px of the lit region over the red inside it; a painted contour (the rejected v1, LAB-23) reads 9.42-21.97, natural light < 1.5",
+      "max": 0.48,
+      "frames": {
+        "f065": {
+          "redOnOutline": 0.017,
+          "redInside": 0.161,
+          "outlineOverInside": 0.1,
+          "darkInnerLine": 0.778
+        },
+        "f075": {
+          "redOnOutline": 0.056,
+          "redInside": 0.262,
+          "outlineOverInside": 0.22,
+          "darkInnerLine": 0.561
+        },
+        "f086": {
+          "redOnOutline": 0.104,
+          "redInside": 0.217,
+          "outlineOverInside": 0.48,
+          "darkInnerLine": 0.604
+        },
+        "f100": {
+          "redOnOutline": 0.084,
+          "redInside": 0.182,
+          "outlineOverInside": 0.46,
+          "darkInnerLine": 0.631
+        }
+      }
+    },
+    "provenance": {
+      "parent": "chaos_surge_v1.mp4",
+      "md5": "596a30ecb98eb912c4394c57f98e4122",
+      "sha256": "2c5f53bacba8327149965c0c85f45706d16532797a84d77b3ac42baf28b8fa79",
+      "rule": "an effect clip has no identity master; its provenance parent is the md5-verified source clip itself, and every plate cut from it records the same parent"
+    },
+    "corePoint": [
+      848,
+      190
+    ],
+    "scale": 0.21736,
+    "box": [
+      294,
+      0,
+      1619,
+      1080
+    ],
+    "cellPx": {
+      "used": 288,
+      "asked": 288,
+      "steppedDown": null
+    },
+    "decodedBytes": 15435600,
+    "e1CapBytes": 18874368,
+    "ground": {
+      "cornersMax": 0,
+      "farMax": 0,
+      "method": "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) \u2014 stated beside the bake metric",
+      "zeroShareMin": 0.56031,
+      "pedestal1to4ShareMax": 0.03053
+    },
+    "edges": {
+      "top": 29,
+      "bottom": 0,
+      "left": 0,
+      "right": 0,
+      "of": 50
+    },
+    "fadeIn": [
+      [
+        61,
+        0.1429
+      ],
+      [
+        62,
+        0.2857
+      ],
+      [
+        63,
+        0.4286
+      ],
+      [
+        64,
+        0.5714
+      ],
+      [
+        65,
+        0.7143
+      ],
+      [
+        66,
+        0.8571
+      ]
+    ],
+    "fadeTail": [
+      [
+        101,
+        1.0
+      ],
+      [
+        102,
+        0.8889
+      ],
+      [
+        103,
+        0.7778
+      ],
+      [
+        104,
+        0.6667
+      ],
+      [
+        105,
+        0.5556
+      ],
+      [
+        106,
+        0.4444
+      ],
+      [
+        107,
+        0.3333
+      ],
+      [
+        108,
+        0.2222
+      ],
+      [
+        109,
+        0.1111
+      ],
+      [
+        110,
+        0.0
+      ]
+    ],
+    "vignette": {
+      "top": {
+        "px": 16,
+        "cellPxAtScale": 3.5,
+        "coreMarginMin": 19,
+        "coreMarginMinAt": 87,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "bottom": {
+        "px": 48,
+        "cellPxAtScale": 10.4,
+        "coreMarginMin": 83,
+        "coreMarginMinAt": 90,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "left": {
+        "px": 0,
+        "cellPxAtScale": 0.0,
+        "coreMarginMin": 358,
+        "coreMarginMinAt": 84,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      },
+      "right": {
+        "px": 0,
+        "cellPxAtScale": 0.0,
+        "coreMarginMin": 319,
+        "coreMarginMinAt": 99,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": []
+      }
+    },
+    "guardKind": "blob",
+    "guardTailStart": 101,
+    "anchorRule": {
+      "kind": "centre",
+      "place": "unit-card-centre",
+      "dependency": "the plate's CENTRE sits on the blessed Unit's card centre (LAB-26, the unit-anchored mode); the top and bottom feathers carry the faint edge haze, and the lit core never enters either band (measured)"
+    }
+  }
+}

@@ -1,0 +1,621 @@
+{
+  "fixture": "chaossurge_double",
+  "ruling": "LAB-26 - CHAOS SURGE, the Asura faction mechanic (the fourth premium track): the CHANDRAHAS double: the artifact is on the board, so the Astra surges TWICE — the first is premium, the second keeps classic. The engine emits the Surge's toast, then a buff on ONE random friendly Unit; the blessed Unit is the anchor",
+  "engine": {
+    "file": "src/engine.js",
+    "sha256": "3613706f3b736b3e367bfc063575902037b9b05e02ed1de9422bad7ee46520b9"
+  },
+  "seed": 1,
+  "attackerSeat": 0,
+  "defenderSeat": 1,
+  "realm": "mrityulok",
+  "scenario": {
+    "p0": "{p0}",
+    "p1": "{p1}",
+    "p0Faction": "asuras",
+    "p1Faction": "devas",
+    "p0Deck": [
+      "Tamasa",
+      "Pashupatastra",
+      "Chandrahas",
+      "Ahamkara",
+      "Ravana",
+      "Bana Asura",
+      "Vibhishana",
+      "Asura Berserker",
+      "Kali Asura",
+      "Maricha",
+      "Kalanemi",
+      "Narakasura"
+    ],
+    "p1Deck": [
+      "Chandra Dev",
+      "Pavamana",
+      "Dharma Kavacha",
+      "Yama",
+      "Brihaspati",
+      "Gandharva",
+      "Deva Soldier",
+      "Kubera",
+      "Narada",
+      "Urvashi",
+      "Vishwakarma",
+      "Marut"
+    ],
+    "mulligan": 0
+  },
+  "setup": [
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Chandra Dev",
+      "handIndex": 0
+    },
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Bana Asura",
+      "handIndex": 5
+    },
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Pavamana",
+      "handIndex": 0
+    },
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Vibhishana",
+      "handIndex": 5
+    },
+    {
+      "seat": 1,
+      "type": "play",
+      "card": "Dharma Kavacha",
+      "handIndex": 0
+    },
+    {
+      "seat": 0,
+      "type": "play",
+      "card": "Chandrahas",
+      "handIndex": 2
+    },
+    {
+      "seat": 1,
+      "type": "pass"
+    }
+  ],
+  "action": {
+    "seat": 0,
+    "type": "play",
+    "card": "Tamasa",
+    "handIndex": 0,
+    "targetUid": null,
+    "legal": true
+  },
+  "before": {
+    "round": 1,
+    "turn": 0,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "asuras",
+        "units": [
+          {
+            "uid": 6,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 10,
+            "base": 6,
+            "eff": 10,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 7,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4,
+            "base": 4,
+            "eff": 4,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": {
+          "uid": 3,
+          "id": "chandrahas",
+          "n": "Chandrahas",
+          "t": "artifact",
+          "r": "R",
+          "power": 0,
+          "base": 0,
+          "eff": 0,
+          "venom": 0,
+          "bound": false,
+          "ghost": false
+        },
+        "hand": [
+          {
+            "uid": 1,
+            "id": "tamasa",
+            "n": "Tamasa",
+            "t": "astra",
+            "r": "R",
+            "power": 0
+          },
+          {
+            "uid": 2,
+            "id": "pashupata",
+            "n": "Pashupatastra",
+            "t": "astra",
+            "r": "M",
+            "power": 0
+          },
+          {
+            "uid": 4,
+            "id": "ahamkara",
+            "n": "Ahamkara",
+            "t": "mantra",
+            "r": "U",
+            "power": 0
+          },
+          {
+            "uid": 5,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 7
+          },
+          {
+            "uid": 8,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 9,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 10,
+            "id": "maricha",
+            "n": "Maricha",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          }
+        ],
+        "discard": [],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "devas",
+        "units": [
+          {
+            "uid": 13,
+            "id": "surya",
+            "n": "Chandra Dev",
+            "t": "unit",
+            "r": "E",
+            "power": 6,
+            "base": 6,
+            "eff": 6,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": {
+          "uid": 15,
+          "id": "kavacha",
+          "n": "Dharma Kavacha",
+          "t": "artifact",
+          "r": "R",
+          "power": 0,
+          "base": 0,
+          "eff": 0,
+          "venom": 0,
+          "bound": false,
+          "ghost": false
+        },
+        "hand": [
+          {
+            "uid": 16,
+            "id": "yama",
+            "n": "Yama",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 17,
+            "id": "brihaspati",
+            "n": "Brihaspati",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          },
+          {
+            "uid": 18,
+            "id": "gandharva",
+            "n": "Gandharva",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 19,
+            "id": "soldier",
+            "n": "Deva Soldier",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 20,
+            "id": "kubera",
+            "n": "Kubera",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 21,
+            "id": "saraswati",
+            "n": "Narada",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 22,
+            "id": "urvashi",
+            "n": "Urvashi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          }
+        ],
+        "discard": [
+          "pavamana"
+        ],
+        "deckCount": 2,
+        "shieldUids": [
+          13
+        ],
+        "passed": true,
+        "roundWins": 0
+      }
+    ]
+  },
+  "events": [
+    {
+      "round": 1,
+      "seq": 12,
+      "type": "play",
+      "sourceUid": 1,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Tamasa",
+      "text": "{p0} plays Tamasa"
+    },
+    {
+      "round": 1,
+      "seq": 13,
+      "type": "toast",
+      "sourceUid": null,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Chaos Surge",
+      "text": "Chaos Surge!"
+    },
+    {
+      "round": 1,
+      "seq": 14,
+      "type": "buff",
+      "sourceUid": 6,
+      "targetUids": [
+        6
+      ],
+      "amount": 3,
+      "abilityName": "Chaos Surge",
+      "text": "+3"
+    },
+    {
+      "round": 1,
+      "seq": 15,
+      "type": "toast",
+      "sourceUid": null,
+      "targetUids": [],
+      "amount": null,
+      "abilityName": "Chaos Surge",
+      "text": "Chaos Surge!"
+    },
+    {
+      "round": 1,
+      "seq": 16,
+      "type": "buff",
+      "sourceUid": 6,
+      "targetUids": [
+        6
+      ],
+      "amount": 3,
+      "abilityName": "Chaos Surge",
+      "text": "+3"
+    },
+    {
+      "round": 1,
+      "seq": 17,
+      "type": "buff",
+      "sourceUid": 6,
+      "targetUids": [
+        6
+      ],
+      "amount": 2,
+      "abilityName": "Bana Asura",
+      "text": "+2"
+    }
+  ],
+  "log": [
+    "{p0} plays Tamasa — The Darkness Weapon.",
+    "Tamasa smothers {p1}’s next turn.",
+    "Chandrahas doubles Tamasa!",
+    "Tamasa smothers {p1}’s next turn.",
+    "Chaos Surge! Bana Asura +3 → 13.",
+    "Chaos Surge! Bana Asura +3 → 16.",
+    "Bana Asura’s arms multiply (+2 → 18)."
+  ],
+  "after": {
+    "round": 1,
+    "turn": 0,
+    "over": false,
+    "realm": "mrityulok",
+    "seats": [
+      {
+        "faction": "asuras",
+        "units": [
+          {
+            "uid": 6,
+            "id": "bana",
+            "n": "Bana Asura",
+            "t": "unit",
+            "r": "E",
+            "power": 18,
+            "base": 6,
+            "eff": 18,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          },
+          {
+            "uid": 7,
+            "id": "vibhishana",
+            "n": "Vibhishana",
+            "t": "unit",
+            "r": "U",
+            "power": 4,
+            "base": 4,
+            "eff": 4,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": {
+          "uid": 3,
+          "id": "chandrahas",
+          "n": "Chandrahas",
+          "t": "artifact",
+          "r": "R",
+          "power": 0,
+          "base": 0,
+          "eff": 0,
+          "venom": 0,
+          "bound": false,
+          "ghost": false
+        },
+        "hand": [
+          {
+            "uid": 2,
+            "id": "pashupata",
+            "n": "Pashupatastra",
+            "t": "astra",
+            "r": "M",
+            "power": 0
+          },
+          {
+            "uid": 4,
+            "id": "ahamkara",
+            "n": "Ahamkara",
+            "t": "mantra",
+            "r": "U",
+            "power": 0
+          },
+          {
+            "uid": 5,
+            "id": "ravana",
+            "n": "Ravana",
+            "t": "unit",
+            "r": "E",
+            "power": 7
+          },
+          {
+            "uid": 8,
+            "id": "berserker",
+            "n": "Asura Berserker",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 9,
+            "id": "kali",
+            "n": "Kali Asura",
+            "t": "unit",
+            "r": "C",
+            "power": 3
+          },
+          {
+            "uid": 10,
+            "id": "maricha",
+            "n": "Maricha",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          }
+        ],
+        "discard": [
+          "tamasa"
+        ],
+        "deckCount": 2,
+        "shieldUids": [],
+        "passed": false,
+        "roundWins": 0
+      },
+      {
+        "faction": "devas",
+        "units": [
+          {
+            "uid": 13,
+            "id": "surya",
+            "n": "Chandra Dev",
+            "t": "unit",
+            "r": "E",
+            "power": 6,
+            "base": 6,
+            "eff": 6,
+            "venom": 0,
+            "bound": false,
+            "ghost": false
+          }
+        ],
+        "heroes": [],
+        "artifact": {
+          "uid": 15,
+          "id": "kavacha",
+          "n": "Dharma Kavacha",
+          "t": "artifact",
+          "r": "R",
+          "power": 0,
+          "base": 0,
+          "eff": 0,
+          "venom": 0,
+          "bound": false,
+          "ghost": false
+        },
+        "hand": [
+          {
+            "uid": 16,
+            "id": "yama",
+            "n": "Yama",
+            "t": "unit",
+            "r": "E",
+            "power": 6
+          },
+          {
+            "uid": 17,
+            "id": "brihaspati",
+            "n": "Brihaspati",
+            "t": "unit",
+            "r": "E",
+            "power": 5
+          },
+          {
+            "uid": 18,
+            "id": "gandharva",
+            "n": "Gandharva",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 19,
+            "id": "soldier",
+            "n": "Deva Soldier",
+            "t": "unit",
+            "r": "C",
+            "power": 2
+          },
+          {
+            "uid": 20,
+            "id": "kubera",
+            "n": "Kubera",
+            "t": "unit",
+            "r": "R",
+            "power": 3
+          },
+          {
+            "uid": 21,
+            "id": "saraswati",
+            "n": "Narada",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          },
+          {
+            "uid": 22,
+            "id": "urvashi",
+            "n": "Urvashi",
+            "t": "unit",
+            "r": "R",
+            "power": 4
+          }
+        ],
+        "discard": [
+          "pavamana"
+        ],
+        "deckCount": 2,
+        "shieldUids": [
+          13
+        ],
+        "passed": true,
+        "roundWins": 0
+      }
+    ]
+  },
+  "diff": {
+    "entered": [],
+    "left": [],
+    "changed": [
+      {
+        "uid": 6,
+        "id": "bana",
+        "n": "Bana Asura",
+        "seat": 0,
+        "zone": "units",
+        "power": {
+          "from": 10,
+          "to": 18,
+          "delta": 8
+        },
+        "eff": {
+          "from": 10,
+          "to": 18,
+          "delta": 8
+        }
+      }
+    ]
+  }
+}

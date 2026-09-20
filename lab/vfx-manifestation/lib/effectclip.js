@@ -47,7 +47,7 @@
     });
     var member = m.role === 'invoke' || m.role === 'strike' || m.role === 'afterglow';   // LAB-25: + the afterglow (a strike-then-afterglow chain's second plate)
     if (m.role !== undefined && !member) e.push('role must be "invoke", "strike" or "afterglow"');
-    if (m.moment !== undefined && m.moment !== 'arming' && m.moment !== 'empowered-drain') e.push('moment must be "arming" or "empowered-drain"');
+    if (m.moment !== undefined && m.moment !== 'arming' && m.moment !== 'empowered-drain' && m.moment !== 'spell-surge') e.push('moment must be "arming", "empowered-drain" or "spell-surge"');   // LAB-26: + the faction-mechanic track
     if (m.role === 'invoke' || m.role === 'afterglow') { if (m.impact !== null) e.push('an ' + (m.role === 'invoke' ? 'invocation' : 'afterglow') + ' has no impact cell'); }
     else if (m.moment === 'arming') { if (m.impact !== null) e.push('an arming clip has no impact cell'); }   // LAB-24: the cast resolves nothing — no impact, no beat gate
     else if (!(Number.isInteger(m.impact) && cells && m.impact >= 0 && m.impact < cells.length)) e.push('impact must name a cell');
@@ -111,7 +111,27 @@
     }
     return none;
   }
+  // LAB-26 · THE SPELL SURGE (Chaos Surge, the Asura faction mechanic — the fourth premium track). The cast of this plan is the Surge's own
+  // TOAST (the game holds it 620 ms x speed) and its strike is the FIRST buff of the action whose amount reaches minAmount — the +3 spell
+  // surge from an Astra, a Mantra or Chandrahas. The +1 FLOOR surge (the first Unit play of a round) never reaches minAmount, so it plans no
+  // clip and keeps the classic presentation (owner ruling 2); a second surge in the same action (the Chandrahas double) is not the first, so
+  // it keeps the classic too. The blessed Unit — the buff's own target — is the anchor.
+  function surgeOf(batch, k) {
+    var ev = (batch && batch.events) || [], none = { cast: null, strike: null, targetUid: null, surge: null };
+    var strike = null, si = -1;
+    for (var i = 0; i < ev.length; i++) {
+      var e = ev[i];
+      if (e.type === k.trigger && e.abilityName === k.abilityName && e.amount >= k.minAmount && e.targetUids && e.targetUids.length) { strike = e; si = i; break; }
+    }
+    if (!strike) return none;
+    var cast = null;
+    for (var j = si - 1; j >= 0; j--) { var c = ev[j]; if (c.type === k.castEvent.type && c.abilityName === k.castEvent.abilityName) { cast = c; break; } }
+    if (!cast) return none;                                                   // the toast IS the cast: no toast, no premium surge
+    var total = ev.filter(function (x) { return x.type === k.trigger && x.abilityName === k.abilityName; }).length;
+    return { cast: cast, strike: strike, targetUid: strike.targetUids[0], surge: { amount: strike.amount, index: si, surgesInAction: total } };
+  }
   function fromBatch(batch, spec) {
+    if (spec.class !== 'effect-chain' && spec.moment === 'spell-surge') return surgeOf(batch, contractOf(spec));
     if (spec.class !== 'effect-chain' && spec.moment === 'empowered-drain') return drainOf(batch, contractOf(spec));
     var ev = (batch && batch.events) || [], k = contractOf(spec);
     var name = spec.class === 'effect-chain' ? spec.chain.cardName : null;   // a chain's cast is named by its card (Sudarshana Chakra), its resolution by the ability (Sudarshana)

@@ -1040,7 +1040,7 @@ templateActor({ label: 'M45 · LAB-18 · RAHU BY THE TEMPLATE (the last card: a 
   const vc = EC.validateChain(SU.C, [I, S]), swapped = EC.validateChain(SU.C, [S, I]), sum = bytesOf(I) + bytesOf(S);
   ok('M56 · LAB-20 · THE CHAIN AND E1, UNCHANGED: effects/sudarshana/chain.json names the invocation then the strike and carries the contract; a chain in the wrong order is refused. Each clip is under the per-clip cap (' + (bytesOf(I) / 1048576).toFixed(2) + ' and ' + (bytesOf(S) / 1048576).toFixed(2) + ' MB of ' + (EC.E1.capBytes / 1048576).toFixed(2) + '), and the pair would be ' + (sum / 1048576).toFixed(2) + ' MB together — PAST the cap — which is exactly why they decode ONE AFTER THE OTHER: the invocation at the cast, released at the handoff, then the strike. The per-play fallback amendment (both at 256: 16.3 MB) is recorded as available but unused',
      vc.ok && !swapped.ok && SU.C.class === 'effect-chain' && SU.C.cardName === 'Sudarshana Chakra' && J(SU.C.clips.map((c) => c.role)) === J(['invoke', 'strike']) && sum > EC.E1.capBytes &&
-     J(fs.readdirSync(path.join(LAB, 'effects')).sort()) === J(['brahmastra', 'lankadahan', 'lankadahan_fire', 'lankadahan_gold', 'pashupata', 'sudarshana', 'sudarshana_invoke', 'sudarshana_strike', 'vajra', 'venomstrike_flood', 'venomstrike_rise'])   /* LAB-24: Vasuki Venom Strike's two plates join the inventory; LAB-25: Lanka Dahan's chain and its two plates */ && J(fs.readdirSync(path.join(LAB, 'effects', 'sudarshana'))) === J(['chain.json']), vc.errors.join('; '));
+     J(fs.readdirSync(path.join(LAB, 'effects')).sort()) === J(['brahmastra', 'chaossurge', 'lankadahan', 'lankadahan_fire', 'lankadahan_gold', 'pashupata', 'sudarshana', 'sudarshana_invoke', 'sudarshana_strike', 'vajra', 'venomstrike_flood', 'venomstrike_rise'])   /* LAB-24: Vasuki Venom Strike's two plates join the inventory; LAB-25: Lanka Dahan's chain and its two plates; LAB-26: Chaos Surge's vortex */ && J(fs.readdirSync(path.join(LAB, 'effects', 'sudarshana'))) === J(['chain.json']), vc.errors.join('; '));
   // the removal contract, read from the game's source
   const G_HTML = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8'), a0 = G_HTML.indexOf("if (ev.type==='passive' && ev.abilityName==='Sudarshana')"), blk = G_HTML.slice(a0, G_HTML.indexOf("if (ev.type==='passive' && ev.abilityName==='Nagapasha')"));
   const pins = { throwFromCasterHalf: /const caster=1-ownerPiOfUid\(u\), ch=document\.querySelector\(halfSel\(caster\)\);/.test(blk), flight380: /VFX\.sprSudarshana\(dp\.cx, dp\.rect\.top\+dp\.rect\.height\/2, dp\.rect\.width, fx, fy, 380\);/.test(blk) && /await cDelay\(380\);/.test(blk),
@@ -2002,6 +2002,146 @@ console.log('\n── L · Lanka Dahan: the fire on the first damage beat, relea
   ok('L12 · LAB-25 · THE STRIKE-AFTERGLOW SHAPE: effects/lankadahan/chain.json names the fire (strike) then the gold (afterglow) and validates; the same clips in the wrong order, or a chain without its afterglow delay, are refused; an afterglow with an impact cell is refused; the Sudarshana invoke→strike chain still validates unchanged',
      EC.validateChain(LC, [LF, LG]).ok && !EC.validateChain(sw, [LG, LF]).ok && !EC.validateChain(nod, [LF, LG]).ok && !EC.validate(Object.assign({}, LG, { impact: 5 })).ok &&
      EC.validateChain(SU.C, [SU.I, SU.S]).ok, J(EC.validateChain(LC, [LF, LG])));
+}
+
+// ═══ CS · CHAOS SURGE — THE SPELL-SURGE VORTEX (LAB-26) ═══
+console.log('\n── C · Chaos Surge: the vortex on the blessed Unit, at the spell surge (LAB-26) ──');
+{
+  const rd = (q) => JSON.parse(fs.readFileSync(path.join(LAB, q), 'utf8'));
+  const CS = rd('effects/chaossurge/manifest.json'), A = CS.audit;
+  const KINDS = ['spell', 'mantra', 'floorsurge', 'double', 'collision', 'nounits'];
+  const FX26 = {}; KINDS.forEach((k) => { FX26[k] = [0, 1].map((s) => rd('fixtures/chaossurge_' + k + '_seat' + s + '.json')); });
+  const { buildChaosSurge } = require(path.join(LAB, 'fixtures', 'make_fixture.js'));
+  const MATRIX = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports;
+  const e1 = (m) => m.atlasSize.w * m.atlasSize.h * 4, names = (m) => m.cells.map((c) => c.name);
+  const seq = (a, b) => Array.from({ length: b - a + 1 }, (_, i) => 'f' + String(a + i).padStart(3, '0'));
+  const CARD = { cx: 187.5, cy: 250, w: 71.3, h: 95 };   // a card on the 375 phone board
+  function cworld(o) {
+    o = o || {};
+    const draws = [], sounds = [], diags = [], caps = []; let now = 0, live = 0, maxLive = 0, loads = 0, tf = [1, 0, 0, 1, 0, 0];
+    const g = { _op: 'source-over', setTransform() { tf = [].slice.call(arguments); }, clearRect() {}, drawImage(img, sx, sy, sw, sh, dx, dy, dw, dh) { draws.push({ role: img.__role, sx, sy, dx, dy, dw, dh, op: this.globalCompositeOperation, tf: tf.slice(), t: now }); },
+      set globalCompositeOperation(v) { this._op = v; }, get globalCompositeOperation() { return this._op; }, globalAlpha: 1 };
+    const env = { now: () => now, canvas: { width: 750, height: 1200, getContext: () => g }, dpr: 2,
+      cardOf: (uid) => (o.cardOf ? o.cardOf(uid) : (uid != null ? CARD : null)), halfOf: () => ({ cx: 187.5, cy: 205.6, top: 91, w: 373, h: 229.2 }),
+      loadAtlas: (m) => { loads++; live++; maxLive = Math.max(maxLive, live); diags.push(['decode', m.moment, live]); return { source: { __role: 'strike' }, bytes: e1(m), close() { live--; } }; },
+      render: () => {}, sound: (n) => sounds.push([n, now]), onBeatLateCap: () => caps.push(now), diag: (step, d) => diags.push([step, d && d.role, live]) };
+    const P = EC.createPlayer(env);
+    return { P, draws, sounds, diags, caps, env, step: (ms) => { now += ms; P.frame(now); }, get now() { return now; }, set now(v) { now = v; }, get live() { return live; }, get maxLive() { return maxLive; }, get loads() { return loads; } };
+  }
+  function cdrive(f, o) {
+    o = o || {};
+    const W = o.W || cworld(o), run = W.P.play(f, o.spec || CS, { before: f.before, after: f.after }, { mode: o.mode || 'full', casterSeat: f.attackerSeat, beatGate: !!o.gate });
+    if (!run.plan.clip) return { W, run, ic: null };
+    const ic = run.plan.cues.filter((c) => c.cue === 'impact')[0], cell = CS.cells[CS.impact], t0 = W.now;
+    let beaten = o.beatDelay == null, n = 0, impactFrame = null, cueFrame = null;
+    const delay = o.beatDelay == null ? -1000 / 60 : o.beatDelay;
+    while (!run.done && n++ < 700) {
+      if (!beaten && W.now - t0 >= ic.t + delay) { W.P.beat(); beaten = true; }
+      const d0 = W.draws.length, c0 = run.log.cues.length;
+      W.step(1000 / 60);
+      if (impactFrame == null && W.draws.slice(d0).some((d) => d.sx === cell.x && d.sy === cell.y)) impactFrame = n;
+      if (run.log.cues.slice(c0).some((c) => c.cue === 'impact')) cueFrame = n;
+    }
+    return { W, run, ic, t0, impactFrame, cueFrame };
+  }
+  const srcOf = (d) => { const c = CS.cells.find((x) => x.x === d.sx && x.y === d.sy); return c ? c.src : null; };
+
+  // CS1 · the pack: provenance, the portion, the measured snap, the fades, the duplicate tail excluded, E1
+  ok('CS1 · THE CHAOS SURGE PACK (one clip, one portion): the md5-gated source (' + A.provenance.md5.slice(0, 8) + '…, 1920x1080 — recorded as such) cut f061–f110, ' + CS.cells.length + ' cells at 288 px; the impact is cell ' + CS.impact + ' = f' + A.impactSrc + ', MEASURED by the corona-snap rule (the steepest 3-frame rise of the lit share, +' + A.impact.litRiseOver3Frames + ' in the window f' + A.impact.window.join('–f') + '); a 6-cell fade-in and a 10-cell baked tail carry the clip (the source never decays: 0.946 → 0.885 over f100–f120); the f119/f120 duplicate pair lies OUTSIDE the portion by construction (no true duplicate inside: min neighbour |d| ' + A.dedup.minNeighbourMae + '); atlas ' + (fs.statSync(path.join(LAB, 'effects/chaossurge/atlas.webp')).size / 1024).toFixed(0) + ' KB, decoded ' + (e1(CS) / 1048576).toFixed(2) + ' MB under the ' + (EC.E1.capBytes / 1048576).toFixed(2) + ' MB cap',
+     A.provenance.md5 === '596a30ecb98eb912c4394c57f98e4122' && J(names(CS)) === J(seq(61, 110)) && CS.cells.length === 50 && CS.impact === 14 && CS.cells[14].src === 75 && A.impactSrc === 75 && A.impact.rule === 'coronasnap' &&
+     CS.cellPx === 288 && A.fadeIn.length === 6 && A.fadeTail.length === 10 && A.fadeTail[9][1] === 0 && A.fadeTail[0][1] === 1 && A.dedup.trueDuplicates === 0 && names(CS).indexOf('f119') < 0 && names(CS).indexOf('f120') < 0 &&
+     e1(CS) <= EC.E1.capBytes && EC.validate(CS).ok && CS.moment === 'spell-surge', J({ cells: CS.cells.length, impact: CS.impact, dedup: A.dedup }));
+
+  // CS2 · the bands: the faint edge haze is feathered, the lit core never enters either band, the sides are free
+  const vg = A.vignette;
+  ok('CS2 · THE BANDS AND THE GUARD: the clip is not edge-free — its haze touches the top in ' + A.edges.top + ' of ' + A.edges.of + ' kept frames (never brighter than luma 115) and the bottom in ' + A.edges.bottom + ' — so it carries a ' + vg.top.px + ' px top feather and a ' + vg.bottom.px + ' px bottom feather, and NO side bands (the content stops 296/294 px short of each side). The core-body guard passes on every edge: the lit core comes no nearer than ' + vg.top.coreMarginMin + ' px to the top and ' + vg.bottom.coreMarginMin + ' px to the bottom, and no body lies in any band',
+     vg.top.px === 16 && vg.bottom.px === 48 && vg.left.px === 0 && vg.right.px === 0 && vg.top.coreMarginMin >= 19 && vg.bottom.coreMarginMin >= 48 &&
+     ['top', 'bottom', 'left', 'right'].every((e) => !vg[e].bodyInBand.length) && A.guardKind === 'blob' && A.edges.left === 0 && A.edges.right === 0, J(vg));
+
+  // CS3 · the sticker pin (the record: natural light, the 1.5 gate stands)
+  ok('CS3 · THE STICKER PIN: saturated red on the outer 6 px of the lit region over the red inside it reads ' + Object.entries(A.sticker.frames).map(([k, v]) => k + ' ' + v.outlineOverInside).join(' · ') + ' (max ' + A.sticker.max + ') — the red IS the vortex, not a painted contour; the packer stops past ' + 1.5,
+     A.sticker && A.sticker.max === 0.48 && A.sticker.max <= 1.5 && Object.keys(A.sticker.frames).length === 4 && Object.values(A.sticker.frames).every((v) => v.redInside > 0.1), J(A.sticker.max));
+
+  // CS4 · the spell surge: the toast starts the clip, the snap lands on the buff beat, both seats and both speeds
+  const SP = [];
+  for (const seat of [0, 1]) for (const mode of ['full', 'fast']) { const r = cdrive(FX26.spell[seat], { mode }); SP.push(Object.assign(r, { seat, mode })); }
+  const blessed = (f) => f.events.find((e) => e.type === 'buff' && e.abilityName === 'Chaos Surge').targetUids[0];
+  ok('CS4 · THE SPELL SURGE, both seats × Full / Fast: the plan\'s cast is the Surge\'s own TOAST and its strike the first +3 buff; the clip starts ' + SP.map((r) => r.run.plan.timeline.clipStart.toFixed(1)).join(' / ') + ' ms after the toast (wire-clock cost ' + SP.map((r) => r.run.plan.timeline.waitCostMs).join(' / ') + ') and the corona snap (cell 14 = f075) is drawn on the SAME FRAME the impact cue fires (' + SP.map((r) => r.impactFrame + '=' + r.cueFrame).join(', ') + ') at ' + SP.map((r) => Math.round(r.ic.t)).join(' / ') + ' ms — the game\'s own 620 ms toast hold x speed; every draw "lighter" and anchored on the BLESSED Unit (the buff\'s own target)',
+     SP.every((r) => { const T = r.run.plan.timeline, f = FX26.spell[r.seat]; return r.run.plan.clip && r.run.plan.targetUid === blessed(f) && Math.abs(r.ic.t - 620 * T.vfxT) < 1e-6 && T.clipStart > 0 && T.waitCostMs === 0 &&
+       Math.abs(T.clipStart - (r.ic.t - 14 * T.frameMs)) < 1e-6 && r.impactFrame != null && r.impactFrame === r.cueFrame && r.W.draws.every((d) => d.op === 'lighter') && r.run.plan.segments[0].place === 'target'; }),
+     J(SP.map((r) => ({ seat: r.seat, mode: r.mode, start: r.run.plan.timeline.clipStart, ic: r.ic.t, i: r.impactFrame, c: r.cueFrame }))));
+
+  // CS5 · the floor surge is never premium; a second surge in one action is never premium
+  const floorPlans = [0, 1].map((s) => EC.plan(FX26.floorsurge[s], CS, { mode: 'full', casterSeat: FX26.floorsurge[s].attackerSeat }));
+  const dbl = [0, 1].map((s) => EC.plan(FX26.double[s], CS, { mode: 'full', casterSeat: FX26.double[s].attackerSeat }));
+  const dblSurges = [0, 1].map((s) => FX26.double[s].events.filter((e) => e.type === 'buff' && e.abilityName === 'Chaos Surge'));
+  const none = [0, 1].map((s) => EC.plan(FX26.nounits[s], CS, { mode: 'full', casterSeat: FX26.nounits[s].attackerSeat }));
+  ok('CS5 · WHICH SURGES ARE PREMIUM (owner ruling 2): the +1 FLOOR surge (the first Unit play of a round — the engine\'s EXP-J) plans NO clip on either seat, so it keeps the classic wash and mark; the CHANDRAHAS DOUBLE fires ' + dblSurges[0].length + ' surges in one action and the plan takes the FIRST (+' + dblSurges[0][0].amount + ') — the second keeps classic; a cast with NO friendly Units emits nothing at all (' + FX26.nounits[0].events.map((e) => e.type).join(', ') + ') and plans no clip',
+     floorPlans.every((p, i) => !p.clip && !p.strike && FX26.floorsurge[i].events.filter((e) => e.type === 'buff' && e.abilityName === 'Chaos Surge').every((e) => e.amount === 1)) &&
+     dbl.every((p, i) => p.clip && p.targetUid === dblSurges[i][0].targetUids[0] && dblSurges[i].length === 2 && dblSurges[i].every((e) => e.amount === 3)) &&
+     none.every((p) => !p.clip && !p.strike) && FX26.nounits.every((f) => !f.events.some((e) => e.abilityName === 'Chaos Surge')),
+     J({ floor: floorPlans.map((p) => p.clip), dbl: dbl.map((p) => p.clip), none: none.map((p) => p.clip) }));
+
+  // CS6 · the gate on the buff beat (EXPORT-5): on time byte-identical, late holds the pre-snap cell, past the cap it stands down
+  const base = cdrive(FX26.spell[0]), onT = cdrive(FX26.spell[0], { gate: true, beatDelay: -1000 / 60 });
+  const late = cdrive(FX26.spell[0], { gate: true, beatDelay: 1000 }), capR = cdrive(FX26.spell[0], { gate: true, beatDelay: 5000 });
+  const held = [...new Set(late.W.draws.filter((d) => d.t > base.ic.t + 20 && d.t < base.ic.t + 980).map(srcOf))];
+  ok('CS6 · THE EXPORT-5 GATE ON THE SNAP: an on-time buff beat is byte-identical to the ungated player (' + base.W.draws.length + ' draws); a beat 1000 ms LATE holds cell 13 = f' + held.join(',') + ' (the vortex at full spin, the corona not yet struck) and lands f075 on the beat (drawn at ' + Math.round(late.run.log.impactDrawnAt) + ' for a beat at ' + Math.round(base.ic.t + 1000) + '); past the 1500 ms cap the clip stands down, the snap never drawn, the page told once — and the classic wash and mark take the surge',
+     J(onT.W.draws.map((d) => [d.sx, d.sy, Math.round(d.t * 1000)])) === J(base.W.draws.map((d) => [d.sx, d.sy, Math.round(d.t * 1000)])) && J(held) === J([74]) &&
+     late.run.log.beat && Math.abs(late.run.log.beat.late - 1000) <= 1000 / 60 + 1 && late.run.log.impactDrawnAt >= base.ic.t + 1000 - 1 &&
+     capR.run.log.beatLateCap != null && capR.run.log.impactDrawnAt == null && capR.W.caps.length === 1, J({ held, late: late.run.log.beat, cap: capR.run.log.beatLateCap }));
+
+  // CS7 · the anchor: the plate's centre on the blessed Unit's card, 2.4 card widths, upright, both seats
+  const pl = (card) => EC.place(CS, card), P375 = pl(CARD);
+  const halfProbe = [EC.place(CS, Object.assign({ halfW: 373, halfH: 229 }, CARD)).w, EC.place(CS, Object.assign({ halfW: 998, halfH: 230 }, CARD)).w];   // the unit is the CARD's width: a half of any size must not move the plate
+  const anchored = SP.filter((r) => r.mode === 'full').map((r) => { const p = r.run.places[0]; return { seat: r.seat, centredX: Math.abs(p.x + p.w / 2 - CARD.cx) < 1e-6, centredY: Math.abs(p.y + p.h / 2 - CARD.cy) < 1e-6, w: p.w, upright: r.W.draws.every((d) => J(d.tf) === J([1, 0, 0, 1, 0, 0]) && d.dw > 0 && d.dh > 0) }; });
+  ok('CS7 · UNIT-ANCHORED (owner ruling 3): the plate\'s CENTRE (' + CS.anchor.x + ', ' + CS.anchor.y + ' in the cell) sits on the BLESSED Unit\'s card centre — the buff event\'s own target — and it draws ' + CS.scaleRule.cardWidths + ' card widths across (' + P375.w.toFixed(1) + ' x ' + P375.h.toFixed(1) + ' px on a ' + CARD.w + ' px card). The unit is recorded unambiguously: a CARD-WIDTH multiple of the blessed card, never a fraction of a half (halfFraction and heightFraction are both absent). Upright on both seats, never mirrored',
+     A.anchorRule.kind === 'centre' && A.anchorRule.place === 'unit-card-centre' && CS.contract.anchor === 'unit-card-centre' && Math.abs(CS.anchor.x - CS.cellSize.w / 2) < 0.6 && Math.abs(CS.anchor.y - CS.cellSize.h / 2) < 0.6 &&
+     CS.scaleRule.cardWidths === 2.4 && CS.scaleRule.halfFraction == null && CS.scaleRule.heightFraction == null && Math.abs(P375.w - 2.4 * CARD.w) < 1e-6 &&
+     halfProbe.every((w) => Math.abs(w - 2.4 * CARD.w) < 1e-6) &&
+     anchored.length === 2 && anchored.every((x) => x.centredX && x.centredY && x.upright), J(anchored));
+
+  // CS8 · the device matrix: the blessed card's own width sets the plate on every screen
+  const fit = [];
+  MATRIX.forEach((v) => [v.card.w, v.hero.w].forEach((cw2, k) => { const p = EC.place(CS, { cx: 100, cy: 100, w: cw2 });
+    fit.push({ vp: v.vw + 'x' + v.vh, kind: k ? 'hero' : 'unit', w: p.w, ratio: p.w / (2.4 * cw2), upscale: p.w / CS.cellSize.w, centred: Math.abs(p.x + p.w / 2 - 100) < 1e-6 && Math.abs(p.y + p.h / 2 - 100) < 1e-6 }); }));
+  const ups = fit.map((x) => x.upscale);
+  ok('CS8 · THE DEVICE MATRIX: placed on all ' + MATRIX.length + ' measured screens against both card sizes (' + fit.length + ' placements), the plate is always exactly 2.4 x the blessed card\'s width and always centred on it — ' + Math.min(...fit.map((x) => x.w)).toFixed(0) + '–' + Math.max(...fit.map((x) => x.w)).toFixed(0) + ' px drawn, so the 288 px cell is drawn at ' + Math.min(...ups).toFixed(2) + '–' + Math.max(...ups).toFixed(2) + 'x (a downscale on every screen: never upscaled)',
+     fit.length === MATRIX.length * 2 && fit.every((x) => Math.abs(x.ratio - 1) < 1e-9 && x.centred) && Math.max(...ups) <= 1, J(fit.filter((x) => !x.centred || Math.abs(x.ratio - 1) > 1e-9).slice(0, 3)));
+
+  // CS9 · E1 and the collision (owner ruling 5): a live clip is RELEASED before the Surge decodes
+  const W9 = cworld(), pash = rd('effects/pashupata/manifest.json');
+  const other = W9.P.play({ events: [{ type: 'play', abilityName: 'Pashupatastra', sourceUid: 1 }, { type: 'damage', abilityName: 'Pashupatastra', targetUids: [2], amount: -3 }] }, pash, { before: null, after: null }, { mode: 'full', casterSeat: 0 });
+  for (let i = 0; i < 30; i++) W9.step(1000 / 60);
+  const midLive = W9.live, st0 = W9.P.stats();
+  const dg0 = W9.diags.length;
+  const surgeRun = W9.P.play(FX26.collision[0], CS, { before: null, after: null }, { mode: 'full', casterSeat: FX26.collision[0].attackerSeat });
+  W9.step(1000 / 60);
+  const st9 = W9.P.stats(), seqd = W9.diags.slice(dg0).map((d) => d[0]), rel9 = seqd.indexOf('release'), dec9 = seqd.indexOf('decode');
+  ok('CS9 · E1 AND THE COLLISION (owner ruling 5): the Pashupatastra clip is still drawing when the Surge\'s toast arrives (the measured 1-enemy case: its plan ends 405 ms after that toast) — starting the Surge ENDS that live clip first (the player\'s own skip-before-play), so its atlas is RELEASED and only then does the vortex decode (live atlases ' + midLive + ' → ' + W9.live + ', never two; ' + st9.loads + ' decodes, ' + st9.releases + ' releases). The Surge\'s own decode is ' + (e1(CS) / 1048576).toFixed(2) + ' MB, under the cap, beside the one A5 actor',
+     midLive === 1 && W9.maxLive === 1 && st9.loads === 2 && st9.releases >= 1 && !!surgeRun.plan.clip && other.done === true && st9.peak <= EC.E1.capBytes &&
+     rel9 >= 0 && dec9 > rel9, J({ midLive, maxLive: W9.maxLive, order: seqd.slice(0, 4), rel9, dec9, st9: { loads: st9.loads, releases: st9.releases } }));
+
+  // CS10 · the fixtures: the engine's own boards, both seats, regenerating byte-identical
+  const engSha = sha256(fs.readFileSync(path.join(GAME, 'src', 'engine.js')));
+  const fx = KINDS.map((k) => ({ k, same: [0, 1].every((s) => J(FX26[k][s]) === J(buildChaosSurge(k)(s))), sha: [0, 1].every((s) => FX26[k][s].engine.sha256 === engSha),
+    events: FX26[k][0].events.map((e) => e.type).join(',') }));
+  ok('CS10 · THE FIXTURES come from the current engine (sha ' + engSha.slice(0, 12) + '…) and regenerate byte-identical, both seats, over all six boards: ' + fx.map((x) => x.k + ' [' + x.events + ']').join(' · ') + ' — the Asura seat lays its bodies, the Deva seat spends its turns on cards that move no board, and the action under test emits the Surge\'s own toast and buff',
+     fx.every((x) => x.same && x.sha) && FX26.spell[0].events.some((e) => e.type === 'toast' && e.abilityName === 'Chaos Surge') && FX26.collision[0].action.card === 'Pashupatastra' &&
+     FX26.double[0].events.filter((e) => e.type === 'toast').length === 2 && FX26.nounits[0].events.length === 1, J(fx));
+
+  // CS11 · the lab page: the route is keyed by the MECHANIC, and its bytes arrive at match start when an Asura is seated
+  const LJ = fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8'), reg = REG.chaossurge;
+  ok('CS11 · THE LAB PAGE: this is the first route keyed by a MECHANIC and not a card — the registry entry carries mechanic:true and its faction (' + (reg && reg.faction) + '), no card id, no rarity and no card art; because no hand can carry a mechanic, the page fetches its bytes at MATCH START when that faction is seated on EITHER seat, and never through the hand-entry path',
+     reg && reg.mechanic === true && reg.faction === 'asuras' && reg.effect === '../effects/chaossurge/manifest.json' && reg.fixture === 'chaossurge_spell' && reg.rarity === null && !reg.art &&
+     /if \(e && e\.mechanic && e\.effect && \[0, 1\]\.some\(\(seat\) => F\.before\.seats\[seat\]\.faction === e\.faction\)\) prefetchEffect\(id\)/.test(LJ), J(reg && { mechanic: reg.mechanic, faction: reg.faction, art: reg.art || null }));
+
+  // CS12 · the sounds and the classic beats are untouched in both paths
+  const surgeSrc = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8');
+  ok('CS12 · THE SOUNDS AND THE CLASSIC BEATS ARE THE GAME\'S OWN, both paths: the Surge\'s toast still fires sfx_chaos_surge and holds 620 ms, and the +' + 3 + ' floater still lands — the clip plays no sound of its own beyond that cast cue (' + J(SP[0].W.sounds.map((x) => x[0])) + ') and never touches the toast, the hold or the floater',
+     CS.contract.castSound === 'sfx_chaos_surge' && CS.contract.impactSound === null && CS.contract.castHoldMs === 620 && CS.contract.castHitStopMs === 0 && CS.contract.exitKind === 'none' &&
+     J(SP[0].W.sounds.map((x) => x[0])) === J(['sfx_chaos_surge']) && /if\(a==='Chaos Surge'\) return \{file:'sfx_chaos_surge'\};/.test(surgeSrc) && /factionToast\(ev\.abilityName, ev\.text\); await cDelay\(620\); return; \}/.test(surgeSrc) &&
+     /VFX\.sprChaosWash\(/.test(surgeSrc) && /VFX\.sprChaosMark\(/.test(surgeSrc), J(SP[0].W.sounds));
 }
 
 console.log('\n── K · the sources rule (A7) ──');

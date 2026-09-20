@@ -162,6 +162,27 @@ EFFECTS = {
     # the first damage beat; it is released, THEN the GOLD decodes and blesses the caster's half, positional, no impact. Neither clip touches
     # its top or bottom edge on any frame, so no top/bottom band is needed; both run edge to edge sideways, and the side feathers are declared
     # fringe at the half's side borders (the wall and the mist continuing past the half). The core-body guard stays in force.
+    # LAB-26 · CHAOS SURGE — THE SPELL-SURGE VORTEX (owner rulings 2026-09-20: "Chaos." then "Go."). The FOURTH premium track: a FACTION
+    # MECHANIC, not a card (scope amendment, ruling 1). The Asura player's Astra/Mantra/Chandrahas surge (+3) blesses ONE random friendly
+    # Unit; the floor surge (+1, the first Unit play of a round) keeps the classic presentation (ruling 2). The portion is snap-centred:
+    # f061-f110, 14 lead cells before the corona snap (f075) so the clip starts within a frame of the Surge's toast (the toast holds
+    # 620 x vfxT = 806 ms at Normal; 14 cells = 758 ms) at 0 ms wire clock - the Vasuki flood's shape. The f119/f120 duplicate pair is
+    # outside the portion by construction. UNIT-ANCHORED (ruling 3): the plate's centre on the blessed Unit's card, 2.4 card widths wide
+    # (the old vocabulary - a default, not a law). Top/bottom feathers carry the faint edge haze (top <= luma 115, bottom <= 58 inside the
+    # portion); the lit core (>=170) comes no nearer than 19 px to the top and 52 px to the bottom, so neither band ever eats it.
+    "chaossurge": {"kind": "vignette-clip", "label": "Chaos Surge (the spell-surge vortex)", "clip": "chaos_surge/chaos_surge_v1.mp4", "card_id": "chaossurge",
+              "clip_md5": "596a30ecb98eb912c4394c57f98e4122", "moment": "spell-surge",
+              "range": (61, 110), "impact": 75, "impact_rule": "coronasnap", "impact_window": (66, 90),
+              "cell_px": 288, "fade_in": 6, "fade_tail": 10, "dedup_mae": 0.6,
+              "sticker_frames": [65, 75, 86, 100], "sticker_max": 1.5,
+              "feather_top": 16, "feather_bottom": 48, "feather_left": 0, "feather_right": 0,
+              "anchor_region": "centre", "anchor_place": "unit-card-centre",
+              "scale": {"feature": "plate width (the clip's content box)", "frame": 86, "card_widths": 2.4},
+              "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0},
+              "contract": {"trigger": "buff", "abilityName": "Chaos Surge", "anchor": "unit-card-centre", "castSound": "sfx_chaos_surge", "impactSound": None,
+                           "castHitStopMs": 0, "castHoldMs": 620, "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 0, "exitKind": "none", "awaited": False,
+                           "moment": "spell-surge", "castEvent": {"type": "toast", "abilityName": "Chaos Surge"}, "minAmount": 3,
+                           "note": "the cast is the Surge's own toast (620 ms x speed, the game's hold); the impact is the FIRST spell surge's buff beat (+3 or more - the +1 floor surge is never premium); the sounds are the game's own (sfx_chaos_surge on the toast), unchanged"}},
     "lankadahan_fire": {"kind": "vignette-clip", "label": "Lanka Dahan (the fire)", "clip": "lanka_dahan/lanka_fire_v2.mp4", "card_id": "lankadahan", "role": "strike",
               "clip_md5": "60e945a32835ed08dcc4a8c4ebaac7d8",
               # f062-f114: 26 lead cells before the impact f088 (the pillars joining the wall - the steepest wall-cover rise in its window), so the
@@ -575,6 +596,15 @@ def main_vignette(key):
         if impact != C["impact"]: sys.exit("the measured wall-join f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
         imp_note = {"rule": "wallcover", "window": [w0, w1], "groundLineMode": G, "groundLineRange": [min(gl), max(gl)], "coverRiseOver3Frames": round(rise[impact], 3),
                     "why": "the pillars join the wall: the fire lands on the first damage beat"}
+    elif C["impact_rule"] == "coronasnap":
+        # LAB-26: THE CORONA SNAPS — the spiral converts into the lightning corona; the impact is the steepest 3-frame rise of the LIT share
+        # (pixels over 150 of the whole frame) inside the window. The same shape as wallcover, read over the frame instead of a ground band
+        lit = [float((frames[i].max(axis=2) > 150).mean()) for i in range(N)]
+        w0, w1 = C["impact_window"]; rise = {i: lit[i] - lit[i - 3] for i in range(max(w0, 3), w1 + 1)}
+        impact = max(rise, key=rise.get)
+        if impact != C["impact"]: sys.exit("the measured corona snap f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
+        imp_note = {"rule": "coronasnap", "window": [w0, w1], "litRiseOver3Frames": round(rise[impact], 4), "litAtSnap": round(lit[impact], 4),
+                    "why": "the vortex becomes the corona: the Surge's +3 lands on the buff beat, and the snap is pinned to it"}
     elif C["impact_rule"] == "none":
         impact = None; imp_note = ({"rule": "none", "why": "an AFTERGLOW: it starts on the game's own wash timer after the burn (positional, the classic delay x vfxT), so it has no impact cell and no beat gate"}
                                    if C.get("role") == "afterglow" else {"rule": "none", "why": "an ARMING visual: the cast resolves nothing (flag-only), so the rise has no impact cell and no beat gate"})   # LAB-25
@@ -583,7 +613,7 @@ def main_vignette(key):
     if impact is not None and impact not in kept: sys.exit("the impact f%03d is outside the kept range" % impact)
 
     # THE ANCHOR: the clip's core — the brightest blurred point on the impact frame, inside the named region
-    reg = L[impact if impact is not None else sf_core(C)] if C["anchor_region"] in ("frame", "top-flush", "bottom-flush", "divider-flush") else L[impact][:int(H * 0.60)]
+    reg = L[impact if impact is not None else sf_core(C)] if C["anchor_region"] in ("frame", "top-flush", "bottom-flush", "divider-flush", "centre") else L[impact][:int(H * 0.60)]
     blur = cv2.GaussianBlur(reg, (0, 0), 15); ay, ax = np.unravel_index(int(np.argmax(blur)), blur.shape); CORE = (int(ax), int(ay))
 
     # THE SCALE FEATURE, measured per clip
@@ -726,7 +756,8 @@ def main_vignette(key):
     for e in guard: guard[e]["cellPxAtScale"] = round(guard[e]["px"] * s, 1)
 
     # the anchor: the core point on a half's centre (LAB-21), or (LAB-22, ruling 4) the plate's TOP-CENTRE on the enemy half's top edge
-    anchor = ({"x": round(cw / 2.0, 1), "y": 0.0} if C["anchor_region"] == "top-flush" else {"x": round(cw / 2.0, 1), "y": float(ch)} if C["anchor_region"] == "bottom-flush"
+    anchor = ({"x": round(cw / 2.0, 1), "y": round(ch / 2.0, 1)} if C["anchor_region"] == "centre"
+              else {"x": round(cw / 2.0, 1), "y": 0.0} if C["anchor_region"] == "top-flush" else {"x": round(cw / 2.0, 1), "y": float(ch)} if C["anchor_region"] == "bottom-flush"
               else {"x": round(cw / 2.0, 1), "y": round(ch / 2.0, 1)} if C["anchor_region"] == "divider-flush"
               else {"x": round((CORE[0] - x0) * s, 1), "y": round((CORE[1] - y0) * s, 1)})   # LAB-24: BOTTOM-FLUSH - the plate's bottom-centre on its half's bottom edge
     manifest = {
@@ -755,7 +786,8 @@ def main_vignette(key):
                   "anchorRule": ({"kind": "top-flush", "place": "enemy-half-top", "dependency": C.get("anchor_note", "the top band is 0 because the beam and the crown touch the top edge on every frame; the cut is hidden only because the plate's top sits flush with the enemy half's top edge (owner ruling LAB-22/4) — RE-RULE if the anchor or the scale changes")}
                                  if C["anchor_region"] == "top-flush" else {"kind": "bottom-flush", "place": C["anchor_place"], "dependency": "the bottom band is 0 because the ground ring touches the bottom edge on every frame; the cut is hidden only because the plate's bottom sits flush with its half's bottom edge (LAB-24) - RE-RULE if the anchor or the scale changes"}
                                  if C["anchor_region"] == "bottom-flush" else {"kind": "divider-flush", "place": C["anchor_place"], "dependency": "the plate's edge nearest the divider sits ON the divider (its bottom on the upper half, its top on the lower half); neither clip touches its top or bottom edge, so no cut hides there (LAB-25)"}
-                                 if C["anchor_region"] == "divider-flush" else {"kind": "core-point", "place": "enemy-half"})},
+                                 if C["anchor_region"] == "divider-flush" else {"kind": "centre", "place": C["anchor_place"], "dependency": "the plate's CENTRE sits on the blessed Unit's card centre (LAB-26, the unit-anchored mode); the top and bottom feathers carry the faint edge haze, and the lit core never enters either band (measured)"}
+                                 if C["anchor_region"] == "centre" else {"kind": "core-point", "place": "enemy-half"})},
     }
     with open(os.path.join(out, "manifest.json"), "w") as fh: json.dump(manifest, fh, indent=2); fh.write("\n")
 

@@ -425,10 +425,72 @@ function buildLankaDahan(seat) {
   throw new Error('no seed in 1..1999 produced the Lanka Dahan board');
 }
 
-module.exports = { buildLankaDahan, buildVenomStrike, buildVenomStrikeCast, buildVenomStrikeDrain, build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK, buildSudarshana, buildSudarshanaCast, SUD_DECK, SUD_OPP_DECK, buildBrahmastra, buildBrahmastraCast, BRAHMA_DECK, BRAHMA_OPP_DECK, buildPashupata, buildPashupataCast, PASHU_DECK, PASHU_OPP_DECK };
+// LAB-26 · CHAOS SURGE — the Asura faction mechanic (owner rulings 2026-09-20: "Chaos." then "Go."). Six boards, both seats. The Asura seat lays
+// Units, then takes the action under test; the engine emits the Surge's own `toast` and a `buff` on ONE random friendly Unit — +3 from an Astra,
+// a Mantra or Chandrahas (the premium vortex), +1 from the first Unit play of a round (the classic floor surge, ruling 2).
+const CS_ASURA = ['Tamasa', 'Pashupatastra', 'Chandrahas', 'Ahamkara', 'Ravana', 'Bana Asura', 'Vibhishana', 'Asura Berserker', 'Kali Asura', 'Maricha', 'Kalanemi', 'Narakasura'];   // the laid bodies are the harmless ones (Bana/Vibhishana/Berserker): nothing of theirs removes or drains an enemy Unit
+const CS_DEVA = ['Chandra Dev', 'Pavamana', 'Dharma Kavacha', 'Yama', 'Brihaspati', 'Gandharva', 'Deva Soldier', 'Kubera', 'Narada', 'Urvashi', 'Vishwakarma', 'Marut'];   // Pavamana (nothing to cleanse) and Dharma Kavacha (a shield-cap passive) are the Deva seat's harmless turn-fillers: no Unit enters, no board moves   // Pavamana and Gayatri are the opponent's harmless fillers: nothing to cleanse, nothing in the discard — no board change
+const CS_KINDS = {
+  spell:      { card: 'Tamasa',               note: 'the ASTRA path: a spell surge (+3) on a random friendly Unit — the premium vortex', foes: 1, mine: 2, floor: false },
+  mantra:     { card: 'Ahamkara',             note: 'the MANTRA path (EXP-H): a spell surge (+3) — the premium vortex', foes: 1, mine: 2, floor: false },
+  floorsurge: { card: 'Ravana',               note: 'the FLOOR surge (EXP-J): the first Unit play of a round surges for +1 — CLASSIC always, never premium', foes: 1, mine: 0, floor: true },
+  double:     { card: 'Tamasa',               note: 'the CHANDRAHAS double: the artifact is on the board, so the Astra surges TWICE — the first is premium, the second keeps classic', foes: 1, mine: 2, floor: false, chandrahas: true },
+  collision:  { card: 'Pashupatastra',        note: 'the COLLISION (ruling 5): a routed premium Astra with ONE enemy Unit — its own clip is still running when the Surge toast arrives (measured 405 ms), so it yields', foes: 1, mine: 2, floor: false },
+  nounits:    { card: 'Tamasa',               note: 'NO friendly Units: the engine truth — chaosSurge finds no Unit, the loop skips and NOTHING is emitted (no toast, no buff)', foes: 1, mine: 0, floor: false },
+};
+function buildChaosSurge(kind) {
+  const K = CS_KINDS[kind];
+  return function (seat) {
+    const opp = 1 - seat;
+    for (let seed = 1; seed < 3000; seed++) {
+      const E = freshEngine();
+      const decks = seat === 0 ? [CS_ASURA, CS_DEVA] : [CS_DEVA, CS_ASURA];
+      const sc = { p0Deck: decks[0], p1Deck: decks[1], p0Hand: HAND(decks[0]), p1Hand: HAND(decks[1]), mulligan: 0 };
+      const o = { rng: seeded(seed), p0: '{p0}', p1: '{p1}', realm: 'mrityulok', p0Faction: seat === 0 ? 'asuras' : 'devas', p1Faction: seat === 1 ? 'asuras' : 'devas', scenario: sc };
+      const g = E.newGame(o);
+      if (g.turn !== opp) continue;
+      const setup = []; let ok = true;
+      const lay = (who, name) => { const h = g.players[who].hand.findIndex((c) => c.n === name); if (h < 0 || g.turn !== who || E.playableIndices(g, who).indexOf(h) < 0) { ok = false; return; } E.playCard(g, who, h); setup.push({ seat: who, type: 'play', card: name, handIndex: h }); };
+      // the board is laid in the engine's own alternating turn order; where the Asura seat needs more bodies than the Deva seat, the Deva
+      // seat spends its turn on Pavamana (nothing to cleanse → no board change), so the counts under test stay exact
+      const theirs = ['Chandra Dev', 'Yama', 'Brihaspati'], mine = ['Bana Asura', 'Vibhishana', 'Asura Berserker'];
+      const mineList = mine.slice(0, K.mine).concat(K.chandrahas ? ['Chandrahas'] : []);
+      const turns = Math.max(K.foes, mineList.length);
+      for (let i = 0; i < turns && ok; i++) {
+        lay(opp, i < K.foes ? theirs[i] : ['Pavamana', 'Dharma Kavacha'][i - K.foes]);
+        if (ok && i < mineList.length) lay(seat, mineList[i]);
+      }
+      if (!ok) continue;
+      if (g.players[seat].units.filter((u) => !u.ghost).length !== K.mine) continue;
+      if (g.players[opp].units.filter((u) => !u.ghost).length !== K.foes) continue;   // the enemy side is exact too (Pashupatastra's legality rests on it)
+      if (g.turn !== seat) { E.pass(g, opp); setup.push({ seat: opp, type: 'pass' }); }   // the Deva seat passes the turn back: the board under test is already laid
+      if (g.turn !== seat) continue;
+      // the floor surge needs a round with NO surge yet; every other kind is armed so the floor cannot steal the moment
+      if (K.floor) { if (g.players[seat].chaosThisRound) continue; } else if (!g.players[seat].chaosThisRound) g.players[seat].chaosThisRound = true;
+      const ah = g.players[seat].hand.findIndex((c) => c.n === K.card), legal = ah >= 0 && E.playableIndices(g, seat).indexOf(ah) >= 0;
+      if (!legal) continue;
+      const before = snapshot(E, g), ev0 = g.events.length, log0 = g.log.length;
+      E.playCard(g, seat, ah);
+      const evs = g.events.slice(ev0), surges = evs.filter((e) => e.type === 'buff' && e.abilityName === 'Chaos Surge');
+      const want = kind === 'nounits' ? 0 : kind === 'double' ? 2 : 1;
+      if (surges.length !== want) continue;
+      if (K.floor && !(surges.length === 1 && surges[0].amount === 1)) continue;
+      if (!K.floor && surges.some((e) => e.amount !== 3)) continue;
+      const after = snapshot(E, g);
+      return { fixture: 'chaossurge_' + kind, ruling: 'LAB-26 - CHAOS SURGE, the Asura faction mechanic (the fourth premium track): ' + K.note + '. The engine emits the Surge\'s toast, then a buff on ONE random friendly Unit; the blessed Unit is the anchor',
+        engine: { file: 'src/engine.js', sha256: engineSha() }, seed, attackerSeat: seat, defenderSeat: opp, realm: 'mrityulok',
+        scenario: { p0: o.p0, p1: o.p1, p0Faction: o.p0Faction, p1Faction: o.p1Faction, p0Deck: decks[0], p1Deck: decks[1], mulligan: 0 },
+        setup, action: { seat, type: 'play', card: K.card, handIndex: ah, targetUid: null, legal },
+        before, events: evs, log: g.log.slice(log0).map((l) => l.msg), after, diff: boardDiff(before, after) };
+    }
+    throw new Error('no seed in 1..2999 produced the Chaos Surge board for ' + kind);
+  };
+}
+
+module.exports = { buildChaosSurge, CS_KINDS, buildLankaDahan, buildVenomStrike, buildVenomStrikeCast, buildVenomStrikeDrain, build, buildIndra, buildBali, buildVaruna, forEntry, buildHeroEntry, HERO_ENTRIES, snapshot, ASURA_DECK, DEVA_DECK, VANARA_DECK, buildVajra, buildVajraCast, VAJRA_DECK, buildSudarshana, buildSudarshanaCast, SUD_DECK, SUD_OPP_DECK, buildBrahmastra, buildBrahmastraCast, BRAHMA_DECK, BRAHMA_OPP_DECK, buildPashupata, buildPashupataCast, PASHU_DECK, PASHU_OPP_DECK };
 
 if (require.main === module) {
-  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra], ['sudarshana', buildSudarshana], ['brahmastra', buildBrahmastra], ['pashupata', buildPashupata], ['venomstrike', buildVenomStrikeCast], ['venomstrike_flood', buildVenomStrikeDrain], ['lankadahan', buildLankaDahan]])) for (const seat of [0, 1]) {
+  for (const [name, make] of [['meghnad', build]].concat(Object.keys(HERO_ENTRIES).map((k) => [HERO_ENTRIES[k].fixture.replace('_play', ''), forEntry(k)]), [['vajra', buildVajra], ['sudarshana', buildSudarshana], ['brahmastra', buildBrahmastra], ['pashupata', buildPashupata], ['venomstrike', buildVenomStrikeCast], ['venomstrike_flood', buildVenomStrikeDrain], ['lankadahan', buildLankaDahan], ...Object.keys(CS_KINDS).map((k) => ['chaossurge_' + k, buildChaosSurge(k)])])) for (const seat of [0, 1]) {
     const f = make(seat), out = path.join(__dirname, name + '_seat' + seat + '.json');
     fs.writeFileSync(out, JSON.stringify(f, null, 2) + '\n');
     console.log('wrote ' + path.relative(GAME, out) + ' — seed ' + f.seed + ', ' + f.events.length + ' events (' + f.events.map((e) => e.type).join(', ') + '), changed: ' +

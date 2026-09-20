@@ -124,6 +124,8 @@
   function prefetchHands() {
     if (!F) return;
     [0, 1].forEach((seat) => F.before.seats[seat].hand.forEach((c) => { if (REG[c.id] && REG[c.id].manifest) prefetch(c.id).catch(report); else if (REG[c.id] && REG[c.id].effect) prefetchEffect(c.id).catch(report); }));   // LAB-20a: effects too
+    // LAB-26: a FACTION-MECHANIC route is not a card — no hand can carry it. Its bytes arrive at MATCH START when its faction is seated on EITHER seat
+    Object.keys(REG).forEach((id) => { const e = REG[id]; if (e && e.mechanic && e.effect && [0, 1].some((seat) => F.before.seats[seat].faction === e.faction)) prefetchEffect(id).catch(report); });
   }
   function prefetchedBytes() { let n = 0; Object.keys(prefetched).forEach((k) => { if (prefetched[k].done) n += prefetched[k].done.bytes; }); return n; }
   // at play, for a play that shows the actor: decode the prefetched bytes (fetching now only if no hand prefetch happened)
