@@ -21,6 +21,7 @@ const GAME = path.resolve(__dirname, '..');
 const W3 = process.env.DY_WEB3 || path.resolve(GAME, '..', 'divya-yuddha-web3');
 const MS = path.join(W3, 'services', 'match-server');
 let pass = 0, fail = 0;
+const ASYNC_TAIL = [];   // checks that need a real timer (EXPORT-8's ready-anchored waiter); drained before the summary
 const ok = (n, c, d) => { if (c) { pass++; console.log('  ✓ ' + n); } else { fail++; console.log('  ✖ ' + n + (d ? '\n      ' + d : '')); } };
 
 const HTML_PATH = process.env.DY_WIRE_HTML || path.join(GAME, 'index.html');   // override = the negative proof (point it at a pre-BW1 copy)
@@ -628,5 +629,142 @@ console.log('\n── 6 · GL-2 the recorder: free mirror · staked adapter · s
   }
 }
 
-console.log('\n' + (fail === 0 ? '✓ ALL ' + pass + ' WIRE CHECKS PASS' : '✖ ' + fail + ' FAILURES / ' + pass + ' passed'));
-process.exit(fail === 0 ? 0 : 1);
+
+// ══ EXPORT-8 — THE PREMIUM EFFECTS REACH THE OPPONENT'S CLIENT ════════════════════════════════════════════════
+// The fault MP-FIX-1 STEP-0 measured: on the STAKED road the opponent's hand is a COUNT behind the wall
+// (viewToState builds it {uid:null,id:null,hidden:true}), so fxPrefetchHands / mfPrefetchHands — which walk HANDS —
+// can never see a single routed card of the caster's. The receiver requested only its OWN atlas, the remote cast
+// found no bytes, and the effect stood down to classic on the one client that did not cast it. The seat's FACTION
+// is public, so the pool that seat can ever cast is knowable without breaching the wall. These checks pin that.
+{
+  const E = require(path.join(GAME, 'src', 'engine.js'));   // the game's own decks: faction -> its printed pool
+  // extractFn takes the first `{` AFTER the signature, which for `runAction(mutate, opts={})` is the DEFAULT
+  // PARAMETER — it returns the signature alone (34 chars). Latent until EXPORT-8 became the first check to
+  // extract such a function; no earlier check was weakened (runAction is the only extracted one with a default).
+  // This reads the body by the next top-level `function` instead, which is enough for a source assertion.
+  const bodyOf = (name) => { const i = UI.indexOf('function ' + name + '('); if (i < 0) return ''; const j = UI.indexOf('\nfunction ', i + 1); return UI.slice(i, j < 0 ? UI.length : j); };
+  const poolFn = extractFn(UI, 'prefetchFactionPool');
+  ok('EXPORT-8: prefetchFactionPool exists on the frame', !!poolFn && poolFn.length > 0);
+  const startFn = stripComments(extractFn(UI, 'startWireMatch'));
+  // the staked branch is the one that owns a view; the free branch builds an engine from a seed
+  const stakedHalf = startFn.slice(startFn.indexOf('viewToState(st.view, null)'));
+  ok('EXPORT-8: it is called at the STAKED start — the first moment the receiver knows the opponent\'s faction',
+     /prefetchFactionPool\(G\.players\[OPP\]\.faction\)/.test(stakedHalf));
+  ok('EXPORT-8: the FREE road is untouched — no pool call on the seed branch (hands are visible there; the existing hand prefetch already reaches the caster)',
+     (startFn.match(/prefetchFactionPool\(/g) || []).length === 1);
+  ok('EXPORT-8: the call cannot stop a match start — it is wrapped, and its result is never awaited',
+     /try\s*\{\s*prefetchFactionPool\([^)]*\);\s*\}\s*catch/.test(stakedHalf) && !/await\s+prefetchFactionPool/.test(stakedHalf));
+
+  // ── BEHAVIOUR: drive the REAL extracted function against recording stubs ──
+  function drive(faction, opts) {
+    opts = opts || {};
+    const fxAsked = [], mfAsked = [], notes = [];
+    const sandbox = {
+      DECKS: E.DECKS,
+      FX: { routes: opts.routes || { pashupata: {}, venomstrike: { drain: true } }, boot: null, specs: {}, blobs: {} },
+      MF: { reg: opts.reg || { mahabali: {}, shukra: {}, rahu: {}, vritra: {}, mahishi: {}, vasuki: {} }, boot: null, specs: {}, blobs: {}, diag: [] },
+      fxBoot: () => null, mfBoot: () => null,
+      fxReady: (id) => !!(opts.ready || {})[id],
+      mfReady: (id) => !!(opts.ready || {})[id],
+      fxPrefetch: (id) => fxAsked.push(id),
+      mfPrefetch: (id, rung) => mfAsked.push(id + '@' + rung),
+      mfLayoutRung: () => opts.rung || 256,
+      mfNote: (k, d) => notes.push(Object.assign({ kind: k }, d)),
+    };
+    const keys = Object.keys(sandbox);
+    const fn = new Function(...keys, poolFn + '; return prefetchFactionPool(' + JSON.stringify(faction) + ');');
+    const ret = fn(...keys.map((k) => sandbox[k]));
+    return { fxAsked, mfAsked, notes, ret };
+  }
+  const asu = drive('asuras');
+  const asuraHeroes = E.DECKS.asuras.map((c) => c.id).filter((id) => ['mahabali', 'shukra', 'rahu', 'vritra', 'mahishi'].indexOf(id) >= 0);
+  ok('EXPORT-8: the OPPONENT faction\'s routed HERO actors are enqueued at the device rung (' + asu.mfAsked.join(',') + ')',
+     asuraHeroes.length > 0 && asuraHeroes.every((id) => asu.mfAsked.indexOf(id + '@256') >= 0), asu.mfAsked.join(','));
+  ok('EXPORT-8: and that faction\'s routed CLIPS are enqueued too (Pashupatastra is the Asura clip)',
+     asu.fxAsked.indexOf('pashupata') >= 0, asu.fxAsked.join(','));
+  ok('EXPORT-8: a card of ANOTHER faction is never pulled in — the pool is exactly the seat\'s own printed pool',
+     asu.mfAsked.indexOf('vasuki@256') < 0 && asu.mfAsked.indexOf('indra@256') < 0, asu.mfAsked.join(','));
+  const nag = drive('nagas');
+  ok('EXPORT-8: a routed card that declares a DRAIN clip enqueues the drain with it (Venom Strike\'s flood, EXPORT-6)',
+     nag.fxAsked.indexOf('venomstrike') >= 0 && nag.fxAsked.indexOf('venomstrike:drain') >= 0, nag.fxAsked.join(','));
+  const ready = {}; E.DECKS.asuras.forEach((c) => { ready[c.id] = true; });
+  const again = drive('asuras', { ready });
+  ok('EXPORT-8: nothing already in hand is refetched — a resync through the same start costs zero requests',
+     again.mfAsked.length === 0 && again.fxAsked.length === 0, again.mfAsked.concat(again.fxAsked).join(','));
+  ok('EXPORT-8: the rung follows the device law — a big-card layout asks for 512, a phone for 256',
+     drive('asuras', { rung: 512 }).mfAsked.every((x) => /@512$/.test(x)) && asu.mfAsked.every((x) => /@256$/.test(x)));
+
+  // ── MUTANT: the pre-EXPORT-8 frame (the call removed) asks for nothing of the caster's ──
+  {
+    const mutant = stakedHalf.replace(/try\s*\{\s*prefetchFactionPool\([^)]*\);\s*\}\s*catch\s*\(e\)\s*\{\}/, '');
+    ok('EXPORT-8 MUTANT RED: strip the call and the staked start enqueues nothing for the opponent\'s faction — the STEP-0 fault, reproduced',
+       mutant !== stakedHalf && !/prefetchFactionPool\(/.test(mutant));
+  }
+  // ── EXPORT-8 ruling 1a: the EARLIEST prefetch, on BOTH roads ──
+  ok('EXPORT-8: the FREE road prefetches both hands\' routed cards the instant newGame has dealt — not when the board first renders',
+     /newGame\(\{[\s\S]*?\}\);\s*(?:\/\/[^\n]*\n\s*)*try\s*\{\s*fxPrefetchHands\(\);\s*mfPrefetchHands\(\);\s*\}\s*catch/.test(startFn));
+  ok('EXPORT-8: exactly ONE early call per road — the free seed branch prefetches hands, the staked view branch prefetches the faction pool',
+     (startFn.match(/fxPrefetchHands\(\);\s*mfPrefetchHands\(\)/g) || []).length === 1 &&
+     (startFn.match(/prefetchFactionPool\(/g) || []).length === 1);
+  ok('EXPORT-8: hand-entry prefetch SURVIVES as the incremental path for later draws (render still calls it)',
+     /try\{\s*fxPrefetchHands\(\);\s*\}catch\(e\)\{\}\s*try\{\s*mfPrefetchHands\(\);\s*\}catch\(e\)\{\}/.test(stripComments(extractFn(UI, 'render'))));
+
+  // ── EXPORT-8 ruling 1b: the READY-ANCHORED START, driven for real ──
+  // (async: the waiter is a real timer, so these run in the async tail below and the summary waits for them)
+  ASYNC_TAIL.push(async () => {
+    const waitFn = extractFn(UI, 'mfReadyWait');
+    ok('EXPORT-8: mfReadyWait exists, and the window is the EXPORT-6 Vasuki-rise precedent through the same vfxT (1110 x 1.3 = 1443 ms Normal, x 0.78 = 866 ms Fast)',
+       !!waitFn && /MF_READY_WINDOW_BASE\s*=\s*1110/.test(UI) && /MF_READY_WINDOW_BASE \* vfxT\(\)/.test(UI));
+    // drive the REAL waiter: bytes that land INSIDE the window, and bytes that land after it
+    function runWaiter(landAtMs, windowMs) {
+      let ready = landAtMs === 0, polls = 0, settled = 0;   // 0 = already decoded BEFORE the cast (the warm case)
+      const timer = ready ? null : setTimeout(() => { ready = true; }, landAtMs);
+      const sandbox = {
+        mfReady: () => { polls++; return ready; },
+        mfPickRung: () => (ready ? 256 : null),
+        performance: { now: () => Date.now() },
+      };
+      const keys = Object.keys(sandbox);
+      const fn = new Function(...keys, waitFn + '; return mfReadyWait("x", 256, ' + windowMs + ');');
+      return fn(...keys.map((k) => sandbox[k])).then((v) => { settled++; if (timer) clearTimeout(timer); return { v, polls, settled, pollsAtSettle: polls }; })
+        .then((r) => new Promise((res) => setTimeout(() => res(Object.assign(r, { pollsAfter: polls })), 300)));
+    }
+    const inWin = await runWaiter(200, 900);
+    ok('EXPORT-8: COLD remote cast — bytes landing INSIDE the window resolve the waiter true, so the actor runs (this is the measured race, and today\'s red)',
+       inWin.v === true, JSON.stringify(inWin));
+    ok('EXPORT-8: and the waiter STOPS polling once it has settled — it never fires twice and leaves no retry storm behind',
+       inWin.pollsAfter === inWin.pollsAtSettle, 'polls at settle ' + inWin.pollsAtSettle + ' -> after ' + inWin.pollsAfter);
+    const lateWin = await runWaiter(5000, 250);
+    ok('EXPORT-8: bytes landing AFTER the window resolve FALSE — absent for a Hero, classic for an Astra, exactly as today; no throw',
+       lateWin.v === false, JSON.stringify(lateWin));
+    ok('EXPORT-8: and a late waiter also stops polling at the window — bounded, never an open-ended spin',
+       lateWin.pollsAfter === lateWin.pollsAtSettle, 'polls at settle ' + lateWin.pollsAtSettle + ' -> after ' + lateWin.pollsAfter);
+    const warm = await runWaiter(0, 900);
+    ok('EXPORT-8: a WARM cast never waits — the waiter short-circuits before any timer, so a ready cast is byte-identical to today',
+       warm.v === true && warm.pollsAtSettle === 0, JSON.stringify(warm));
+    // the gate itself: REMOTE only, and today's note kept for local
+    const mani = stripComments(extractFn(UI, 'mfManifest'));
+    ok('EXPORT-8: the wait is for REMOTE casts ONLY — a local cast keeps today\'s immediate not-ready-at-play stand-down',
+       /const remoteCast = \(typeof actionActorSeat!=='undefined' && actionActorSeat!=null && typeof ME!=='undefined' && actionActorSeat!==ME\)/.test(mani) &&
+       /if\(remoteCast\)\{/.test(mani) && /not-ready-at-play/.test(mani) && /not-ready-in-window/.test(mani));
+    ok('EXPORT-8: and an UNBOUND seat reads as local — a standalone evaluation (src/test_manifest.js sandboxes mfManifest) can never inherit the remote wait',
+       /typeof actionActorSeat!=='undefined'/.test(mani) && /typeof ME!=='undefined'/.test(mani));
+    ok('EXPORT-8: actionActorSeat is captured per action by runAction, so the gate knows remote from local',
+       /actionActorSeat = \(opts && opts\.actor!=null\)/.test(stripComments(bodyOf('runAction'))));
+  });
+  // ── W1: the wire itself is untouched by any of this ──
+  ok('EXPORT-8: W1 holds — no wire MESSAGE type, field or send path changed; decoration is downstream of runAction and adds 0 ms to the wire clock',
+     !/wirePost\(|wireSend\(/.test(stripComments(extractFn(UI, 'mfManifest'))) &&
+     !/wirePost\(|wireSend\(/.test(stripComments(extractFn(UI, 'prefetchFactionPool'))) &&
+     !/wirePost\(|wireSend\(/.test(stripComments(extractFn(UI, 'mfReadyWait'))));
+
+  // ── the beat gate on the receiving side (measured 4763ms for a 3-event slice; here the structural pin) ──
+  ok('EXPORT-8: a staked view is applied THROUGH runAction, so a remote slice choreographs beat by beat (measured: a 3-event slice held the lock 4763ms — a real lead before impact, not one flat frame)',
+     /runAction\(\s*\(\)\s*=>\s*\{\s*G\s*=\s*viewToState\(v, G\);\s*\}/.test(stripComments(extractFn(UI, 'applyView'))));
+}
+
+(async () => {
+  for (const t of ASYNC_TAIL) { try { await t(); } catch (e) { fail++; console.log('  ✖ async check threw: ' + (e && e.message)); } }
+  console.log('\n' + (fail === 0 ? '✓ ALL ' + pass + ' WIRE CHECKS PASS' : '✖ ' + fail + ' FAILURES / ' + pass + ' passed'));
+  process.exit(fail === 0 ? 0 : 1);
+})();

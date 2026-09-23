@@ -535,3 +535,199 @@ DD8. UNCHANGED. The engine; every sound (sfx_astra at the cast, the debuff blips
     on the damage beats; the packs bring no audio); the classic pair as the
     stand-down path everywhere — a player whose fetches or decodes all fail sees
     exactly the game they saw before. A zero-damage cast plays nothing, as classic.
+
+## AMENDMENT 2026-09-23 — THE PREMIUM EFFECTS REACH THE OPPONENT'S CLIENT (EXPORT-8)
+
+OWNER RULINGS, 2026-09-23, verbatim:
+
+  "I approve all your recommendations."
+
+meaning, as put to him and approved:
+
+  (1) at STAKED match start the receiver prefetches the routed launch
+      pool of the OPPONENT'S FACTION (public via the seat's faction;
+      that faction's routed Hero actors at the device's rung + its
+      routed premium Astra/Mantra clips) — own-hand prefetch
+      unchanged; free road unchanged (hands visible, prefetch already
+      correct); everything keeps failing open to classic; 0 ms wire
+      clock.
+
+  (2) STANDING LAW — REMOTE-CAST PROOF: no export is proven until a
+      genuine remote cast has been seen on the RECEIVING client, on
+      both roads, in a real browser (not jsdom, not the AI on the same
+      machine). Record it beside the EXPORT-5 laws.
+
+### THE FAULT (measured, MP-FIX-1 STEP-0)
+
+The owner reported that Hero actors and the premium Astra effects play
+only on the client that cast them. The first suspicion — that the
+wire-apply path bypasses the premium glue — is WRONG and the code
+refutes it: both roads land in `runAction` (`wireDrain` → `wireApply`
+on the free road, `applyView` on the staked road), so the same
+`playEvent` beats, the same `fxCast`, the same Hero-actor gate.
+
+The real gate is BYTES. Every premium path needs its atlas already
+prefetched (`fxReady` / `mfPickRung`); otherwise it stands down and the
+classic sprite plays — which is why a remote Astra still showed
+something and a remote Hero showed nothing (a Hero has no classic
+sprite). Prefetch is driven by HAND CONTENTS
+(`fxPrefetchHands` / `mfPrefetchHands` walk both hands).
+
+  * STAKED — a structural gap. `viewToState` builds the opponent's hand
+    as `{uid:null, id:null, hidden:true}` (a count behind the wall), so
+    those helpers can never see one routed card of the caster's.
+    Measured: the receiver requested only its OWN atlas.
+  * FREE — NOT a structural gap. Both hands are in the frame's own
+    engine, and the receiver does request the caster's cards.
+
+### WHAT EXPORT-8 CHANGES
+
+`prefetchFactionPool(faction)`, called from `startWireMatch`'s STAKED
+branch at the first moment the receiver knows `oppFaction`. It walks
+that faction's printed pool and enqueues its routed Hero actors and
+routed clips (with a route's `drain` clip, EXPORT-6) through the SAME
+helpers and the same shared 2/8/30 backoff. Never awaited, wrapped in
+try/catch, 0 ms on the wire clock; any failure leaves exactly today's
+classic path. The wall is untouched: a faction's pool is printed and
+public — it is not the hand.
+
+RUNG: at match start no board card is drawn yet, so `mfLayoutRung`
+reads 256 — the phone rung, and the cheap one. A later desktop cast
+that wants 512 finds 256 present and takes it under `mfPickRung`'s
+quiet `rung-fell-back` note, rather than finding nothing.
+
+COST, measured on disk (the bytes this adds per staked match):
+
+    devas    7.1 MB @256   (16.4 MB @512)   indra agni varuna kartikeya garuda + vajra brahmastra sudarshana
+    asuras   6.2 MB @256   (17.3 MB @512)   mahabali shukra rahu vritra mahishi + pashupata
+    vanaras  4.4 MB @256   (10.8 MB @512)   hanuman sugriva angad makardhwaja anjana + lankadahan
+    nagas    4.9 MB @256   (12.4 MB @512)   vasuki takshaka shesha padmavati kulika + venomstrike
+
+  ⚠ FLAGGED TO THE OWNER: 4.4–7.1 MB at staked match start, on the
+  device's rung. That is real on a phone on mobile data. The ruling was
+  explicit and this is built as ruled; the number is recorded here so a
+  later rung can narrow it (e.g. the heroes only, or on first sight).
+
+### THE BEAT GATE ON THE RECEIVING SIDE (STEP-0 left this unmeasured)
+
+MEASURED, staked receiver, a 3-event slice (play → damage → destroy):
+the choreography held the lock **4,763 ms**. Beats HOLD — a remote
+slice choreographs beat by beat with a real lead before impact, not one
+flat frame. A staked view is applied THROUGH `runAction`, which is why.
+
+### THE FREE ROAD — A SECOND CAUSE, REPORTED NOT FIXED
+
+Ruling (2) was applied to this rung and the free road FAILED it, so
+per the build's own instruction nothing was changed there. What the
+two-client browser proof found:
+
+  A cold remote cast — the FIRST cast of a routed card — lands while the
+  receiver's prefetch for that card is still in flight. Every clause of
+  the Hero gate reads true moments later, but at the instant of the cast
+  the bytes were not there, `mfPickRung` returned null, and the actor
+  stood down with no note. Re-running the IDENTICAL cast with the bytes
+  warm ran the premium actor on the receiver (`rahu`, rung 512, no
+  fallback). Same code, same client, same cast — byte-readiness was the
+  only variable.
+
+  So the free-road fault is a RACE between hand-entry prefetch and the
+  first remote cast, not a structural gap. The caster never sees it: its
+  card sat in hand through the mulligan and many renders. This is the
+  owner's to rule.
+
+### STANDING LAW — REMOTE-CAST PROOF (beside the EXPORT-5 laws)
+
+  No export is proven until a genuine remote cast has been seen on the
+  RECEIVING client, on both roads, in a real browser — not jsdom, not
+  the AI on the same machine.
+
+  Why it now exists: jsdom reaches the actor path and then dies at
+  `URL.createObjectURL`, so a headless pass can look like proof while
+  proving nothing about what the opponent SEES. The race above is
+  invisible to every non-browser harness, and to the caster.
+
+### AMENDMENT 2026-09-23 (RESUME) — THE FREE-ROAD RACE FOLDED IN
+
+OWNER RULINGS, 2026-09-23, verbatim: **"Go."** on the three STEP
+decisions, which were put to him as:
+
+  (1) free-road race → (a) prefetch the routed pool at the EARLIEST
+      moment on BOTH roads — match start (free: both hands' routed
+      cards the instant hands are known; staked: the opponent-faction
+      pool as built) — never "when the hands render"; (b)
+      READY-ANCHORED START for Hero actors and no-impact premium
+      plates on remote casts: if bytes are not decoded at the cast,
+      the manifestation starts when they land, bounded by the cast
+      beat's settle window (the EXPORT-6 Vasuki-rise precedent,
+      1,443/866 ms Normal/Fast); past the window it stays absent for
+      Heroes / classic for Astras, exactly as today. Impact-gated
+      clips keep the EXPORT-5 law unchanged.
+
+  (2) the staked pool stays as built (4.4–7.1 MB @256, once per staked
+      match); follow-up queued, NOT this rung: skip the pool when
+      `navigator.connection.saveData` is set.
+
+  (3) the staked half of the remote-cast-proof law is completed AFTER
+      the sync against the LIVE match server (HALL-SYNC-4's live
+      verification) — recorded here as the proof plan.
+
+**(1a) THE EARLIEST MOMENT.** On the free road that is the line after
+`newGame` has dealt, inside `startWireMatch` — both hands' routed cards
+are knowable there. The hand-entry call inside `render()` stays as the
+INCREMENTAL path for cards drawn later; it is no longer the only
+trigger. The staked call site is unchanged.
+
+**(1b) THE READY-ANCHORED START.** `mfReadyWait(id, want, ms)` — a
+REMOTE cast that finds no bytes waits for them, bounded by
+`MF_READY_WINDOW_BASE (1110) * vfxT()` = **1,443 ms Normal / 866 ms
+Fast**, the EXPORT-6 precedent through the same scaling the beats use.
+On decode inside the window it manifests in place (`ready-anchored`
+note); past it, `not-ready-in-window` and exactly today's behaviour.
+A LOCAL cast never waits — it keeps today's immediate stand-down, so a
+player's own act is byte-identical to before. The waiter settles once,
+stops polling, starts no fetch of its own, and touches no wire message.
+
+**PROVEN IN A REAL BROWSER (the new law, applied):**
+
+  * The identical cold sequence that FAILED before EXPORT-8 now runs.
+    Fresh page (`MF.blobs` 0 at load and at start), match, mulligans,
+    then seat 0's routed Hero relayed as a remote cast: `actorRan
+    true`, rahu at rung 256 with the documented `rung-fell-back` (it
+    wanted 512, took the 256 that was present). Here **(1a) alone won
+    the race** — the bytes were ready by cast time.
+  * The waiter was then exercised by FORCING the loss: `MF.blobs` and
+    `MF.blobP` cleared immediately before the cast (`rahuReady false`,
+    `mfPickRung null`). The **`ready-anchored`** note fired, the actor
+    ran at rung 512, and the composite shows Rahu manifesting over the
+    opponent's half on the RECEIVING client.
+
+**HARNESS BUG FOUND AND WORKED AROUND (reported, not silently fixed):**
+`extractFn` in `src/test_wire.js` takes the first `{` after a
+signature, which for `runAction(mutate, opts={})` is the DEFAULT
+PARAMETER — it returns the signature alone. Latent until EXPORT-8
+became the first check to extract such a function; `runAction` is the
+only extracted function with a default, so no earlier check was
+weakened. The EXPORT-8 checks read that body by the next top-level
+`function` instead.
+
+**THE PROOF PLAN for the staked half (ruling 3).** After HALL-SYNC-4
+carries EXPORT-8 to divyayuddha.games, the law is completed live: two
+clients, a real staked table on the live match server, seat 0 casts a
+routed Hero and a premium Astra (and Vasuki's drain and Lanka's pair),
+and seat 1's screen is captured. Until that is done, the staked half of
+this export is proven by driven checks and a jsdom drive only — and is
+recorded as such, not as seen.
+
+**TWO STRUCTURAL COUPLINGS THIS RUNG WALKED INTO (recorded for the next
+reader, both caught by guards rather than by review):**
+
+  * **A top-level declaration ABOVE the VFX module moves it.** The lab
+    pins that module by LINE RANGE plus a sha. `actionActorSeat` first
+    landed above it, and R1 went red with the honest detail "0 lines
+    differ" — the bytes were untouched, only the range had shifted. New
+    top-level declarations belong BELOW the module; the one added here
+    says so in place.
+  * **The game may not name the lab, even in a comment.** The comment
+    explaining the above originally cited the lab path and its COPY
+    file, and G2 ("nothing outside lab/ references the lab") went red
+    at once. The constraint is now documented without the reference.
