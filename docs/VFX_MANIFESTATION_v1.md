@@ -731,3 +731,79 @@ reader, both caught by guards rather than by review):**
     explaining the above originally cited the lab path and its COPY
     file, and G2 ("nothing outside lab/ references the lab") went red
     at once. The constraint is now documented without the reference.
+
+---
+
+## AMENDMENT 2026-09-24 — EXPORT-9: the rung the device wants, and the room a phone has
+
+Player reports from the live Hall: **Hero graphics hazy/blurry** on desktop, and **cards could be larger** on phones.
+Owner rulings, 2026-09-24: *"Go."* on Part B option 2 and Part C options 1 + 3.
+
+### E1 · Why a retina desktop drew a phone's atlas
+
+`mfLayoutRung()` read the rung off a **board card**, and at match start there is none — so `mfDrawnPx(null)` was 0 and
+every device answered **256**. EXPORT-8's staked faction pool then fetched 256, and `mfPickRung`'s "ready beats right"
+meant the 512 the device wanted was **never asked for again**: `mfManifest` only prefetches when *neither* rung is
+ready. Measured upscale, 16-matrix × DPR 2:
+
+| viewport | actor (device px) | wants | drew @256 | now @512 |
+|---|---|---|---|---|
+| 1440×900 | 508 | 512 | **1.99×** | 0.99× |
+| 1366×1024 · 1680×1050 · 1920×1080 | 636 | 512 | **2.48×** | 1.24× |
+| 1024×1366 | 637 | 512 | **2.49×** | 1.24× |
+| every phone | 386–407 | 256 | 1.51–1.59× | — |
+
+### E2 · What shipped
+
+**`mfCardH()`** answers without a board card: a real card first, else the half's own `--mini-h` (which `sizeBoard`
+writes from the room the half has, before anything is played), else the cap this width would apply. `mfLayoutRung()`
+is computed from it. The law is unchanged — card h × 2.1 × min(DPR,2) > `MF_RUNG_PX` (420).
+
+**"Ready now, right next."** `mfPickRung` still draws whatever is here — a first cast must never be absent — but a
+cast that had to settle now calls `mfUpgradeRung(id, want)`, which asks **once** (`MF_UPGRADED` latches before the
+fetch) so the next cast draws right.
+
+**The pool** keeps 256 first, always. Only once those bytes have **landed** does a desktop-class client
+(`DPR ≥ 2 && innerWidth ≥ 1024`) **and** one whose own rung is 512 go back for the 512 pool — in the background,
+off the wire's clock, fail-open. The second condition is a narrowing of the ruled gate and is deliberate: a
+1024×768 retina screen is desktop-class but draws 368 device px, where 256 **is** the right rung; pooling 512 there
+would be ~28 MB of nothing. **A phone never reaches it** — the owner's standing phone ruling is 256.
+
+Measured in a real browser at 1440×900 DPR 2: `faction-pool rung 256 want 512 ×44 cards`, then
+`faction-pool-512 ×5`; with only 256 ready the first cast drew **256** and asked once (`indra@512`), a second cast
+in the same window drew 256 and asked **nothing more**, and once the upgrade landed the next cast drew **512** —
+630 device px, so **2.46× → 1.23×**.
+
+### E3 · The phone cap, and why it stops at 100
+
+`sizeBoard` already computed what a card *could* be (at 390×844 it wanted 184) and the cap held it at 96. The cap
+is now **100** — the last value under the rung's flip: 100 × 2.1 × 2 = **420**, which is not *above* 420, so phones
+keep 256. **101 would flip them to wanting 512**, and with no 512 phone pool they would fall back to 256 at a worse
+upscale: bigger cards would mean a blurrier Hero. `mfPhoneCapUnderFlip()` holds the relationship; test_manifest
+U11/U12 pin it with a mutant.
+
+**The rails** were 54/70 and are now **50/66**. The ruled "~44/58" cannot ship: the deck stack ends at **47** and
+the score pills begin at **63**, so 44 would put cards under the stack and 58 under the pills. 50/66 keeps a 3px
+rail gap; with the row's own 6px padding the card edge is 9px clear of both, and the 8px it buys is what lets three
+100-tall cards still stand unscrolled.
+
+**And the cap now answers width as well as height.** It was height-only, so a narrow phone got the same card as a
+wide one and simply scrolled sooner — at 360×800 three cards did **not** stand unscrolled *before* this rung either
+(240 wanted, 234 available). `perW` is the height at which `MINI_FIT_N` (3) cards still stand in *this* row:
+
+| phone | row width | card | three fit |
+|---|---|---|---|
+| 360×800 | 234 → 242 | 96 → **96** | 228 → 237 ≤ 242 ✓ (was 240 > 234 ✗) |
+| 375×812 | 249 → 257 | 96 → **100** | ✓ |
+| 390×844 | 264 → 272 | 96 → **100** | ✓ |
+| 430×932 | 304 → 312 | 96 → **100** | ✓ |
+
+A desktop row allows ~370, so `MINI_MAX_DESK` (150) is untouched.
+
+### E4 · What did NOT change, and one honest limit
+
+The engine is untouched (sha `3613706f…` before and after) and `node src/test.js` is byte-identical. The board's
+**dead vertical space is only slightly reduced** — at 390×844, 258 px → 254 px with one card down. Most of that band
+belongs to *empty rows*, and filling it would need a card far past the rung's flip. That is the trade the owner
+ruled against for now; the player's actual complaint — "cards could be larger" — is answered by +4% linear / +8.5%
+area on every phone but the narrowest, where the row's width had already bound.

@@ -979,6 +979,97 @@ const card = (id) => ({ id, n: id, t: 'astra' });
        z12.r === null && z12.fire === 1 && z12.wash === 1 && /function sprLankaFire\(cxp,cyp,boardW\)\{ if\(reducedMotion\(\)\|\|!ready\) return false;/.test(HTML) && /function sprLankaWash\(cxp,cyp,boardW\)\{ if\(reducedMotion\(\)\|\|!ready\) return false;/.test(HTML), J(z12));
   }
 
+  // ═══ U · EXPORT-9 — THE RUNG THE DEVICE ACTUALLY WANTS, AND THE ROOM A PHONE ACTUALLY HAS ═══
+  //  STEP-0 measured the blur: the faction pool read its rung off a BOARD CARD, and at match start there is none,
+  //  so every device pooled 256 — and because a ready rung beat a wanted one, nothing ever asked for 512 again.
+  //  A retina laptop drew a 256 cell at 1.99x (1440x900) and 2.48x (1920x1080). These checks pin the three pieces
+  //  of the fix and the phone cap that must not cross the rung's flip.
+  console.log('\n── U · EXPORT-9: the device rung, the upgrade, the phone fit ──');
+  {
+    const DM = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports;
+    const RUNG_PX = Number((HTML.match(/const MF_RUNG_PX = (\d+);/) || [])[1]);
+    const MINI_MAX = Number((HTML.match(/const MINI_MIN=\d+, MINI_MAX=(\d+),/) || [])[1]);
+    const MINI_MAX_DESK = Number((HTML.match(/MINI_MAX_DESK=(\d+)/) || [])[1]);
+    const wantRung = (px) => (px > RUNG_PX ? 512 : 256);
+    const drawn = (cardH, dpr) => cardH * 2.1 * Math.min(2, dpr);
+
+    ok('U1 · the rung law is still the ruled one — card height × 2.1 × min(DPR,2), 512 above ' + RUNG_PX + 'px',
+       RUNG_PX === 420 && /const mfWantRung = \(px\)=> px > MF_RUNG_PX \? 512 : 256;/.test(HTML));
+
+    // U2 · the DEVICE rung: the empty board must no longer answer 256 for a retina desktop
+    const cardHSrc = fnBody('mfCardH') || '';
+    ok('U2 · mfCardH answers without a board card: a real card first, else the half\'s own --mini-h, else the cap this width would apply',
+       /#field \.bc\[data-uid\]/.test(cardHSrc) && /--mini-h/.test(cardHSrc) && /MINI_MAX_DESK/.test(cardHSrc) && /MINI_MAX/.test(cardHSrc), cardHSrc.slice(0, 160));
+    ok('U3 · and mfLayoutRung is computed from it, not from a board card that may not exist yet',
+       /const mfLayoutRung = \(\)=> mfWantRung\(mfCardH\(\)\*2\.1\*Math\.min\(2, \(typeof window!=='undefined' && window\.devicePixelRatio\)\|\|1\)\);/.test(HTML));
+
+    // U4 · the 16-matrix × DPR 1/2 table from STEP-0, recomputed here
+    const rows = [];
+    DM.forEach((v) => [1, 2].forEach((dpr) => {
+      const capped = Math.min(v.card.h, v.vw >= 1024 ? MINI_MAX_DESK : MINI_MAX);
+      rows.push({ vp: v.vw + 'x' + v.vh, dpr, px: drawn(v.card.h, dpr), want: wantRung(drawn(v.card.h, dpr)), phone: v.tier === 'phone', capped });
+    }));
+    const retinaBig = rows.filter((r) => r.dpr === 2 && r.want === 512);
+    const phones2 = rows.filter((r) => r.phone && r.dpr === 2);
+    ok('U4 · the matrix agrees with STEP-0: ' + retinaBig.length + ' retina screens want 512 (' + retinaBig.map((r) => r.vp).join(', ') + ') and every phone at DPR 2 still wants 256',
+       retinaBig.length > 0 && retinaBig.every((r) => !r.phone) && phones2.length === 4 && phones2.every((r) => r.want === 256), J(phones2));
+    const worst = Math.max(...retinaBig.map((r) => r.px / 256));
+    ok('U5 · and that is the blur, in one number: those screens drew a 256 cell at up to ' + worst.toFixed(2) + '× — the 512 pool puts them at ' + (worst / 2).toFixed(2) + '×',
+       worst >= 1.5 && worst / 2 < 1.5);
+
+    // U6-U10 · READY NOW, RIGHT NEXT
+    const pickSrc = fnBody('mfPickRung') || '', upSrc = fnBody('mfUpgradeRung') || '';
+    ok('U6 · a cast that had to settle for the lower rung ASKS for the one it wanted — the first cast still draws, the next draws right',
+       /if\(r !== want && rungs\.indexOf\(want\) >= 0\) mfUpgradeRung\(id, want\);/.test(pickSrc) && /return r;/.test(pickSrc), pickSrc.slice(0, 220));
+    ok('U7 · and it asks ONCE — a cast is a trigger, never a fetch loop (the id:rung is latched before the fetch)',
+       /if\(MF_UPGRADED\[k\]\) return false; MF_UPGRADED\[k\]=true;/.test(upSrc) && upSrc.indexOf('MF_UPGRADED[k]=true') < upSrc.indexOf('mfPrefetch'), upSrc);
+    {   // behaviour: drive the REAL mfPickRung and mfUpgradeRung, as they ship
+      const mk = (upgrade) => { const asked = [];
+        const fn = new Function('mfWantRung', 'mfRungs', 'mfReady', 'mfNote', 'mfPrefetch',
+          'const MF_UPGRADED = {};\n' + (upgrade ? upSrc : 'function mfUpgradeRung(){ return false; }') + '\n' + pickSrc + '\nreturn mfPickRung;');
+        return { pick: fn((px) => (px > 420 ? 512 : 256), () => [256, 512], (id, r) => (r || 256) === 256, () => {}, (id, r) => asked.push(id + '@' + r)), asked }; };
+      const live = mk(true);
+      const first = live.pick('indra', 508), second = live.pick('indra', 508), third = live.pick('indra', 508);
+      ok('U8 · driven: with only 256 ready a retina cast DRAWS 256 (never nothing) and asks for 512 exactly once across three casts',
+         first === 256 && second === 256 && third === 256 && live.asked.length === 1 && live.asked[0] === 'indra@512', J({ first, second, third, asked: live.asked }));
+      const phone = mk(true); const p1 = phone.pick('indra', 406);
+      ok('U9 · a PHONE cast wants 256, gets 256, and asks for nothing — no 512 is ever pulled onto a phone',
+         p1 === 256 && phone.asked.length === 0, J({ p1, asked: phone.asked }));
+      const mutant = mk(false); mutant.pick('indra', 508); mutant.pick('indra', 508);
+      ok('U10 · MUTANT: take the upgrade away and the cast asks for nothing — the screen stays at 256 for ever, which is the fault',
+         mutant.asked.length === 0, J(mutant.asked));
+    }
+
+    // U11-U15 · THE PHONE FIT
+    ok('U11 · the phone cap rose to ' + MINI_MAX + ' and stops UNDER the rung flip: ' + MINI_MAX + ' × 2.1 × 2 = ' + (MINI_MAX * 4.2) + ', not above ' + RUNG_PX,
+       MINI_MAX === 100 && wantRung(MINI_MAX * 2.1 * 2) === 256 && /const mfPhoneCapUnderFlip = \(\)=> mfWantRung\(MINI_MAX\*2\.1\*2\) === 256;/.test(HTML));
+    ok('U12 · MUTANT: one pixel more and the phone wants 512 — with no phone pool it would fall back to 256 at a WORSE upscale',
+       wantRung((MINI_MAX + 1) * 2.1 * 2) === 512);
+    ok('U13 · the desktop cap is untouched at ' + MINI_MAX_DESK, MINI_MAX_DESK === 150);
+
+    // U15 · three cards still stand unscrolled on every phone row, with the trimmed rails
+    const RAIL_L = Number((HTML.match(/\.zbody\{[^}]*padding:2px (\d+)px 2px (\d+)px/) || [])[2]);
+    const RAIL_R = Number((HTML.match(/\.zbody\{[^}]*padding:2px (\d+)px 2px (\d+)px/) || [])[1]);
+    const STACK_R = 47, PILLS_L = 63;
+    const FIT_N = Number((HTML.match(/MINI_FIT_N=(\d+)/) || [])[1]);
+    const ROW_PAD_X = Number((HTML.match(/ROW_PAD_X=(\d+)/) || [])[1]);
+    const ROW_GAP_X = Number((HTML.match(/ROW_GAP_X=(\d+)/) || [])[1]);
+    //  sizeBoard's OWN arithmetic, recomputed here: the cap is the height at which FIT_N cards still stand in this
+    //  row, and never more than the phone cap. 360x800 is the one that binds — three cards did not stand there
+    //  BEFORE this rung either (240 wanted, 234 available), so the width cap is what makes the promise true.
+    const eff = (rowW) => Math.min(MINI_MAX, Math.floor(((rowW - 2 * ROW_PAD_X - (FIT_N - 1) * ROW_GAP_X) / FIT_N) / 0.75));
+    const phones = DM.filter((v) => v.tier === 'phone').map((v) => {
+      const rowW = v.half.w - RAIL_L - RAIL_R, h = eff(rowW);
+      return { vp: v.vw + 'x' + v.vh, rowW: +rowW.toFixed(1), card: h, was: 96, need: +(FIT_N * (h * 0.75) + (FIT_N - 1) * ROW_GAP_X + 2 * ROW_PAD_X).toFixed(1), fits: FIT_N * (h * 0.75) + (FIT_N - 1) * ROW_GAP_X + 2 * ROW_PAD_X <= rowW };
+    });
+    ok('U14 · the rails clear their furniture by measurement: left ' + RAIL_L + ' > the deck stack\'s ' + STACK_R + ', right ' + RAIL_R + ' > the score pills\' ' + PILLS_L + ' (the ruled 44/58 would have put cards under both)',
+       RAIL_L === 50 && RAIL_R === 66 && RAIL_L > STACK_R && RAIL_R > PILLS_L);
+    ok('U15 · and ' + FIT_N + ' cards still stand unscrolled on EVERY phone row, at the card size each row can hold: ' + phones.map((t) => t.vp + ' → ' + t.card + 'px').join(', '),
+       phones.length === 4 && phones.every((t) => t.fits) && phones.every((t) => t.card >= 96), J(phones));
+    ok('U16 · and every phone but the narrowest takes the full ' + MINI_MAX + ' — the cap only gives way where three cards would not fit',
+       phones.filter((t) => t.card === MINI_MAX).length === 3 && phones.filter((t) => t.card < MINI_MAX).every((t) => t.vp === '360x800'), J(phones));
+  }
+
   // ═══ W · THE WIRE ═══
   console.log('\n── W · the wire ──');
   const types = [...new Set([...HTML.matchAll(/wireSend\(\{\s*type:\s*'([a-z_]+)'/g)].map((m) => m[1]))].sort();

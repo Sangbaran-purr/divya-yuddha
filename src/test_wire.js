@@ -667,8 +667,10 @@ console.log('\n── 6 · GL-2 the recorder: free mirror · staked adapter · s
       fxReady: (id) => !!(opts.ready || {})[id],
       mfReady: (id) => !!(opts.ready || {})[id],
       fxPrefetch: (id) => fxAsked.push(id),
-      mfPrefetch: (id, rung) => mfAsked.push(id + '@' + rung),
+      mfPrefetch: (id, rung) => { mfAsked.push(id + '@' + rung); return Promise.resolve({}); },
       mfLayoutRung: () => opts.rung || 256,
+      mfRungs: (id) => opts.rungs || [256, 512],                 // EXPORT-9: the ladder an actor declares
+      mfDesktopClass: () => !!opts.desktop,                      // EXPORT-9: the ruled gate (DPR>=2 && width>=1024)
       mfNote: (k, d) => notes.push(Object.assign({ kind: k }, d)),
     };
     const keys = Object.keys(sandbox);
@@ -691,8 +693,37 @@ console.log('\n── 6 · GL-2 the recorder: free mirror · staked adapter · s
   const again = drive('asuras', { ready });
   ok('EXPORT-8: nothing already in hand is refetched — a resync through the same start costs zero requests',
      again.mfAsked.length === 0 && again.fxAsked.length === 0, again.mfAsked.concat(again.fxAsked).join(','));
-  ok('EXPORT-8: the rung follows the device law — a big-card layout asks for 512, a phone for 256',
-     drive('asuras', { rung: 512 }).mfAsked.every((x) => /@512$/.test(x)) && asu.mfAsked.every((x) => /@256$/.test(x)));
+  // ── EXPORT-9 (B2) — THE POOL IS 256 FIRST, ALWAYS; THE RIGHT RUNG FOLLOWS IT ──────────────────────────────
+  //  EXPORT-8 asked for whatever rung the layout named, and the layout named 256 because the board was empty; the
+  //  check below used to assert that a 512 layout asked for 512 outright. It does not any more, and it must not:
+  //  the FIRST remote cast has to find bytes, and 256 is the pool that lands in time. This check went RED on the
+  //  EXPORT-9 change, which is the point of pinning a policy rather than a behaviour.
+  const deskWant512 = drive('asuras', { rung: 512, desktop: true });
+  ok('EXPORT-9: the pool asks 256 FIRST on every device — the rung that makes a first cast possible at all',
+     deskWant512.mfAsked.length > 0 && deskWant512.mfAsked.every((x) => /@256$/.test(x)) && asu.mfAsked.every((x) => /@256$/.test(x)),
+     deskWant512.mfAsked.join(','));
+  ok('EXPORT-9: and it says so — the note carries the rung it fetched AND the rung the device wants',
+     deskWant512.notes.some((n) => n.kind === 'faction-pool' && n.rung === 256 && n.want === 512),
+     JSON.stringify(deskWant512.notes.filter((n) => /faction-pool/.test(n.kind))));
+  ASYNC_TAIL.push(async () => {
+    await new Promise((r) => setTimeout(r, 30));   // the chained pass waits on the 256 blobs; one turn of the wheel
+    ok('EXPORT-9: on a desktop that WANTS 512, a second pass follows once the 256 pool has landed — never before it',
+       deskWant512.mfAsked.some((x) => /@512$/.test(x)) &&
+       deskWant512.mfAsked.findIndex((x) => /@512$/.test(x)) > deskWant512.mfAsked.findIndex((x) => /@256$/.test(x)),
+       deskWant512.mfAsked.join(','));
+    ok('EXPORT-9: and every actor in the pool is upgraded, with a note naming the count',
+       deskWant512.notes.some((n) => n.kind === 'faction-pool-512' && n.cards > 0),
+       JSON.stringify(deskWant512.notes.filter((n) => /faction-pool/.test(n.kind))));
+    const phone = drive('asuras', { rung: 256, desktop: false });
+    const deskSmall = drive('asuras', { rung: 256, desktop: true });     // 1024x768 retina: desktop-class, but 256 IS right
+    await new Promise((r) => setTimeout(r, 30));
+    ok('EXPORT-9: a PHONE never pools 512 — the owner\'s standing phone ruling, kept structurally',
+       phone.mfAsked.every((x) => /@256$/.test(x)) && !phone.notes.some((n) => n.kind === 'faction-pool-512'),
+       phone.mfAsked.join(','));
+    ok('EXPORT-9: nor does a desktop-class screen that DRAWS small — 512 follows the device\'s rung, not its badge',
+       deskSmall.mfAsked.every((x) => /@256$/.test(x)) && !deskSmall.notes.some((n) => n.kind === 'faction-pool-512'),
+       deskSmall.mfAsked.join(','));
+  });
 
   // ── MUTANT: the pre-EXPORT-8 frame (the call removed) asks for nothing of the caster's ──
   {
