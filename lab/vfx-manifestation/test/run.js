@@ -27,6 +27,13 @@ const LAB_BASE = 'e2f4c19';   // GL-3 — the game commit the lab began from
 // begins "EXPORT-<n>:" — with no allowlist. Before the first export exists it is still the commit the lab began from.
 const RULE_BASE = (() => { try { const h = cp.execFileSync('git', ['log', '-1', '--format=%h', '--extended-regexp', '--grep=^EXPORT-[0-9]+: '], { cwd: GAME }).toString().trim(); return h || LAB_BASE; } catch (e) { return LAB_BASE; } })();
 const DOC = 'docs/VFX_MANIFESTATION_v1.md';
+// A8, NARROWED (owner ruling 2026-09-30, option 2). G1 forbids every tracked change outside lab/ while the lab runs.
+// Two things are exempt and only two: the ruling doc, and a ROOT-LEVEL continuation doc named for its own date —
+// those files ARE ruling docs by another name, and writing one must not cost the guard its green. The anchors matter:
+// a continuation file in a subfolder is NOT exempt (the path carries a '/', which ^…$ refuses), and no other root .md
+// is exempt either. Widen this and the rule stops meaning anything.
+const CONT_DOC = /^CONTINUATION_\d{4}-\d{2}-\d{2}\.md$/;
+const exemptFromG1 = (p) => p === DOC || CONT_DOC.test(p);
 let pass = 0, fail = 0;
 const ok = (n, c, d) => { if (c) { pass++; console.log('  ✓ ' + n); } else { fail++; console.log('  ✖ ' + n + (d ? '\n      ' + d : '')); } };
 const J = (x) => JSON.stringify(x);
@@ -2717,11 +2724,55 @@ console.log('\n── P · the page ──');
 // ═══ G · THE RULE ═══
 console.log('\n── G · the experiment rule ──');
 {
-  const changed = git(['diff', '--name-only', RULE_BASE, '--']).split('\n').filter(Boolean);
-  const staged = git(['diff', '--cached', '--name-only']).split('\n').filter(Boolean);
-  const untracked = git(['ls-files', '--others', '--exclude-standard', '--', 'docs', 'src', 'index.html', 'scripts', 'tools', 'test']).split('\n').filter(Boolean);
-  const outside = [...new Set(changed.concat(staged))].filter((p) => p.indexOf('lab/') !== 0 && p !== DOC);
-  ok('G1 · no tracked change outside lab/ since ' + (RULE_BASE === LAB_BASE ? 'the lab began (' + LAB_BASE + ')' : 'the last ruled export commit (' + RULE_BASE + ', re-anchored per EXPORT-1 ruling 6)') + ' — committed, staged or in the working tree — except the ruling doc (A8)', outside.length === 0, outside.join(', '));
+  // ⚠ THE PROBE USED TO BE COMPUTED AND THROWN AWAY. G1's own words promised "committed, staged OR IN THE WORKING
+  //   TREE", but `outside` was built from `changed` and `staged` alone, so an untracked file under docs/, src/,
+  //   index.html, scripts/, tools/ or test/ was invisible to it — which is exactly how a continuation doc could sit
+  //   at the root for days with the suite reading green. Ruling 2026-09-30 (b): the probe now feeds the verdict.
+  const g1sets = () => ({
+    changed: git(['diff', '--name-only', RULE_BASE, '--']).split('\n').filter(Boolean),
+    staged: git(['diff', '--cached', '--name-only']).split('\n').filter(Boolean),
+    untracked: git(['ls-files', '--others', '--exclude-standard', '--', 'docs', 'src', 'index.html', 'scripts', 'tools', 'test']).split('\n').filter(Boolean),
+  });
+  const g1outside = (sets) => [...new Set(sets.changed.concat(sets.staged).concat(sets.untracked))]
+    .filter((p) => p.indexOf('lab/') !== 0 && !exemptFromG1(p));
+  const outside = g1outside(g1sets());
+  ok('G1 · no change outside lab/ since ' + (RULE_BASE === LAB_BASE ? 'the lab began (' + LAB_BASE + ')' : 'the last ruled export commit (' + RULE_BASE + ', re-anchored per EXPORT-1 ruling 6)') + ' — committed, staged OR UNTRACKED in the working tree — except the ruling doc and a root-level CONTINUATION_YYYY-MM-DD.md (A8)', outside.length === 0, outside.join(', '));
+
+  // ── G1a/G1b: the guard's own proofs. The rule above is only worth its green if the exemption is exactly as narrow
+  //    as it was ruled, and if the untracked probe really reaches the verdict rather than sitting beside it.
+  const exemptCases = [
+    ['CONTINUATION_2026-09-27.md', true,  'a root continuation doc, named for its date'],
+    ['CONTINUATION_2026-09-24.md', true,  'and the one already committed'],
+    ['docs/VFX_MANIFESTATION_v1.md', true, 'the ruling doc itself'],
+    ['NOTES.md', false, 'any OTHER root .md is not exempt'],
+    ['README.md', false, 'including this one'],
+    ['docs/CONTINUATION_2026-09-27.md', false, 'a continuation doc in a subfolder is NOT exempt'],
+    ['src/CONTINUATION_2026-09-27.md', false, 'nor in src/'],
+    ['CONTINUATION_2026-9-7.md', false, 'nor a name that only looks like a date'],
+    ['CONTINUATION_2026-09-27.md.bak', false, 'nor one with anything after the .md'],
+    ['xCONTINUATION_2026-09-27.md', false, 'nor one with anything before the C'],
+  ];
+  const wrong = exemptCases.filter(([p, want]) => exemptFromG1(p) !== want).map(([p]) => p);
+  ok('G1a · the A8 exemption is EXACTLY the ruling doc and a root-level CONTINUATION_YYYY-MM-DD.md — ' +
+     exemptCases.length + ' names checked, every other .md at the root and every continuation doc in a subfolder is refused',
+     wrong.length === 0, 'misjudged: ' + wrong.join(', '));
+
+  // the untracked half, proven by making one and looking for it in the VERDICT, not in the probe
+  {
+    const probe = path.join(GAME, 'src', '.g1_untracked_probe.tmp');
+    let seen = null, base = null;
+    try {
+      base = g1outside(g1sets());
+      fs.writeFileSync(probe, 'temporary — the G1 untracked proof\n');
+      seen = g1outside(g1sets());
+    } finally { try { fs.unlinkSync(probe); } catch (e) {} }
+    const after = g1outside(g1sets());
+    ok('G1b · an UNTRACKED file outside lab/ reaches G1\'s verdict (src/.g1_untracked_probe.tmp appears while it exists, and the probe file is removed again)',
+       seen !== null && seen.indexOf('src/.g1_untracked_probe.tmp') >= 0 &&
+       base.indexOf('src/.g1_untracked_probe.tmp') < 0 && after.indexOf('src/.g1_untracked_probe.tmp') < 0 &&
+       !fs.existsSync(probe),
+       J({ inVerdict: seen && seen.indexOf('src/.g1_untracked_probe.tmp') >= 0, leftBehind: fs.existsSync(probe) }));
+  }
   const codeFiles = git(['ls-files']).split('\n').filter((p) => p && p.indexOf('lab/') !== 0 && /\.(html|js|mjs|cjs|json|sh|py|css)$/.test(p));
   const refs = codeFiles.filter((p) => { try { return /vfx-manifestation|lab\/vfx/.test(fs.readFileSync(path.join(GAME, p), 'utf8')); } catch (e) { return false; } });
   ok('G2 · nothing outside lab/ references the lab: ' + codeFiles.length + ' tracked code files scanned, 0 mention it', refs.length === 0, refs.join(', '));
@@ -2734,7 +2785,8 @@ console.log('\n── G · the experiment rule ──');
   const mustKeep = ['lab/vfx-manifestation/runtime/assets/vfx/game/sheets/vfx_surge_1.png', 'lab/vfx-manifestation/actors/meghnad/atlas.webp', 'lab/vfx-manifestation/index.html'];
   ok('G4 · A7: Kling sources, clips, frames, matted frames and the matting venv are git-ignored; the lab\'s committed files (the packed actor atlas included) are not',
      mustIgnore.every(ignored) && !mustKeep.some(ignored), J(mustIgnore.filter((p) => !ignored(p)).concat(mustKeep.filter(ignored))));
-  if (untracked.length) console.log('    (untracked files outside lab/ under docs/src/scripts/tools/test, not a lab change: ' + untracked.join(', ') + ')');
+  // (this used to print those untracked files as a NOTE — "not a lab change" — while G1's verdict ignored them.
+  //  Ruling 2026-09-30 (b) reversed that judgement: they are now named by G1 itself, so the note would only repeat it.)
 }
 
 // ═══ D · THE RULING ═══
