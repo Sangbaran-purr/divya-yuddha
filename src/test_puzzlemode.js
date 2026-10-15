@@ -47,6 +47,9 @@ if (process.argv.indexOf('--mutants') >= 0) {
     ['animate the setup', "knownUids = boardUidSet(); lastPowers = {}; lastRoundLen = G.roundHistory.length;", "knownUids = new Set(); lastPowers = {}; lastRoundLen = 0;", 'position', /silent/],
     ['load effects the position cannot trigger', 'VFX.loadSheets(sheets);', 'VFX.loadMatchSheets(currentFactions.p0, currentFactions.p1);', 'loading', /only the position's sheets/],
     ['play music', ".filter(([k])=>!(PUZZLE_MODE && (k==='menu'||k==='battle')))", '', 'sound', /music/],
+    ['show the header line in a puzzle', ', body.puzzle header .title, body.puzzle header .roundbox{', '{', 'position', /header line/],
+    ['always offer the Leap', 'toast(PE.canLeap(G,ME) ?', 'toast(true ?', 'rules', /no Leap left/],
+    ['never offer the Leap', 'toast(PE.canLeap(G,ME) ?', 'toast(false ?', 'rules', /Leap is still legal/],
   ];
   let caught = 0;
   for (const [name, from, to, grp, want] of M) {
@@ -75,7 +78,7 @@ if (group('code')) {
   const bStart = code.indexOf('const PUZZLE_MODE ='), bEnd = code.indexOf('\nfunction pump(){');
   const outside = (code.slice(0, bStart) + code.slice(bEnd)).split('\n').filter((l) => /PUZZLE_MODE|pzActionStart|pzMay\(|pzPump\(|loadSheets|body\.puzzle/.test(l)).map((l) => l.trim());
   const HOOKS = [
-    "body.puzzle #gearbtn, body.puzzle #unbindbtn, body.puzzle #shieldbtn{ display:none !important; }",
+    "body.puzzle #gearbtn, body.puzzle #unbindbtn, body.puzzle #shieldbtn, body.puzzle header .title, body.puzzle header .roundbox{ display:none !important; }",
     "loading=Promise.all(Object.entries(AUDIO_SRC).filter(([k])=>!(PUZZLE_MODE && (k==='menu'||k==='battle'))).map(async ([k,url])=>{",
     "preloadSprites, loadMatchSheets, loadSheets:(keys)=>(keys||[]).forEach(loadSheet)",
     "if (PUZZLE_MODE) pzActionStart(evStart);",
@@ -229,7 +232,10 @@ async function main() {
     ok('silent: no conch armed, no mulligan, no realm sweep — the realm chip shows the realm', T.conchPending === false && $(w, 'mulligan').classList.contains('hidden') &&
        !$(w, 'realmchip').classList.contains('hidden') && $(w, 'realmname').textContent === E.REALM_INFO[P.realm].name);
     ok('speed fixed at Normal even when the player chose Fast (and the player\'s setting is left as it was)', T.speedMult === 1 && w.localStorage.getItem('dy_speed') === 'fast');
-    ok('the settings, shield and unbind buttons are hidden in a puzzle (CSS on body.puzzle)', /body\.puzzle #gearbtn, body\.puzzle #unbindbtn, body\.puzzle #shieldbtn\{ display:none !important; \}/.test(HTML));
+    ok('the settings, shield and unbind buttons are hidden in a puzzle (CSS on body.puzzle)', /body\.puzzle #gearbtn, body\.puzzle #unbindbtn, body\.puzzle #shieldbtn, /.test(HTML));
+    const disp = (sel) => { const n = w.document.querySelector(sel); return n ? w.getComputedStyle(n).display : 'missing'; };
+    ok('the header line and the round label are hidden in a puzzle; the realm chip stays (owner ruling 2026-10-15)',
+       disp('header .title') === 'none' && disp('header .roundbox') === 'none' && disp('#realmchip') !== 'none', J({ title: disp('header .title'), round: disp('header .roundbox'), chip: disp('#realmchip') }));
     ok('loaded: the parent is told the id and what loads', ld && ld.id === P.id && Array.isArray(ld.sheets) && Array.isArray(ld.clips) && Array.isArray(ld.actors));
     ok('no rewards: the page never records a puzzle as a match (matchRecorded is set, no result face)', $(w, 'gameover').classList.contains('hidden') && F.errs.length === 0, J(F.errs.slice(0, 3)));
   }
@@ -300,9 +306,27 @@ async function main() {
     const h1 = me.hand.length;
     w.startPlay(free(plays[1]), null);
     await until(() => !T.choreoActive, 30000);
-    ok('one card per try: the first card plays, a second is refused with a plain line', h1 === h0 - 1 && me.hand.length === h1 && /One play only/.test(w.document.body.textContent), J({ h0, h1, now: me.hand.length }));
+    const lastToast = () => { const t = w.document.querySelectorAll('.mutetoast'); return t.length ? t[t.length - 1].textContent : null; };
+    ok('one card per try: the first card plays, a second is refused — with no Leap left: "You\'ve made your play. End your turn."',
+       h1 === h0 - 1 && me.hand.length === h1 && !T.Q.canLeap(T.G, T.ME) && lastToast() === "You've made your play. End your turn.", J({ h0, h1, now: me.hand.length, toast: lastToast() }));
     $(w, 'passbtn').click();
     const r2 = await result(F, 2);
+    {   // the Leap case, on its own page: a Vanara position where, after the card, a Leap is still legal
+      let pick = null;
+      for (const x of SOLVED) { if (x.P.you.faction !== 'vanaras' || pick) continue;
+        for (const c of x.s.plays.filter((p) => !p.pass && !p.target)) { const g = PZ.load(x.P, E), i = g.players[0].hand.findIndex((h) => h.n === c.play);
+          E.playCard(g, 0, i, null, null); if (!g.over && g.turn === 0 && E.canLeap(g, 0)) { pick = { P: x.P, card: c.play, other: x.s.plays.find((p) => !p.pass && p.play !== c.play) }; break; } } }
+      const FL = boot('?puzzle=1');
+      await load(FL, pick.P);
+      const TL = FL.T, meL = TL.G.players[TL.ME];
+      FL.w.doPlay(meL.hand.findIndex((h) => h.n === pick.card), null, null, null);
+      await until(() => !TL.choreoActive && TL.Pz.cardPlayed, 30000);
+      const hL = meL.hand.length;
+      FL.w.startPlay(meL.hand.findIndex((h) => h.n === pick.other.play), null);
+      const tl = FL.w.document.querySelectorAll('.mutetoast'), tlast = tl.length ? tl[tl.length - 1].textContent : null;
+      ok('…and where a Leap is still legal: "You\'ve made your play. Leap or end your turn." (a Vanara position)',
+         !!pick && TL.Q.canLeap(TL.G, TL.ME) && meL.hand.length === hL && tlast === "You've made your play. Leap or end your turn.", J({ toast: tlast }));
+    }
     ok('End turn scores the round and reports it: the result, the score, the events and the timings', r2 && typeof r2.win === 'boolean' && Number.isInteger(r2.you) && Number.isInteger(r2.them) &&
        Array.isArray(r2.events) && r2.steps.length === 2 && r2.steps[0].kind === 'play' && r2.steps[1].kind === 'end' && r2.steps.every((x) => x.ms >= 0) && r2.wallMs >= 0, J(r2 && r2.steps));
     const hAfter = me.hand.length, posts = F.posted.length;
@@ -406,6 +430,7 @@ async function main() {
     const { w, T } = F;
     ok('no puzzle words, no puzzle class, PASS ROUND, the intro gates the launch as before', F.posted.length === 0 && !w.document.body.classList.contains('puzzle') &&
        $(w, 'passbtn').textContent === 'PASS ROUND' && !$(w, 'introv').classList.contains('hidden'));
+    ok('the live battle keeps its header line and round label', w.getComputedStyle(w.document.querySelector('header .title')).display !== 'none' && w.getComputedStyle(w.document.querySelector('header .roundbox')).display !== 'none');
     w.startGame();
     ok('a vs-AI match keeps the both-hands prefetch and the faction sheets (fxPrefetchHands / mfPrefetchHands are the battle\'s own)',
        /for\(const pl of G\.players\)/.test(String(w.fxPrefetchHands)) && /for\(const pl of G\.players\)/.test(String(w.mfPrefetchHands)) &&
