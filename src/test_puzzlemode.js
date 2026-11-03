@@ -342,24 +342,37 @@ async function main() {
   // ═══ 5 · LOADING ═══
   if (group('loading')) {
     console.log('\n── 5 · loading: only what the position can trigger ──');
-    // the referee's own table (read from the battle's effect code, not from the frame): shared status quartet + per puzzle
+    // THE REFEREE (ARCADE-1 ruling 7, 2026-11-03: it follows the LIVE puzzle list — the old fixed 14-row table broke as the
+    // site's job added puzzles). Each puzzle's row is DERIVED from its own position on the game's engine, by the referee's own
+    // copy of the battle's trigger rules: the status quartet; my faction's landing if a Unit or Hero is a legal play; my Chaos
+    // Surge on an Asura side; each legal play's own sheets (Brihaspati speaks the last Mantra again); a ward, an aegis, Tripura,
+    // a Naga's Ananta Coil or a Venom Strike drain on the board. Clips = my legal plays the registry routes; actors = my legal
+    // plays the registry manifests. It is a copy on purpose: a change to the frame's table that the referee did not make shows red.
     const SHARED = ['damage', 'buff', 'shield', 'venom'];
-    const EXPECT = {
-      'dp-2026-10-15': { sheets: ['c1a_deva'], clips: [] },
-      'dp-2026-10-16': { sheets: ['landing_naga'], clips: [] },
-      'dp-2026-10-17': { sheets: ['landing_vanara', 'ramanaam', 'kishkindhaoath_fire'], clips: [] },
-      'dp-2026-10-18': { sheets: ['landing_asura', 'chaos_wash', 'chaos_mark', 'tamasa'], clips: [] },
-      'dp-2026-10-19': { sheets: ['landing_vanara', 'gandiva', 'lankadahan_fire', 'lankadahan_wash', 'kishkindhaoath_fire'], clips: ['lankadahan'] },
-      'dp-2026-10-20': { sheets: ['c1a_deva', 'vajra', 'pavamana'], clips: ['vajra'] },
-      'dp-2026-10-21': { sheets: ['chaos_wash', 'chaos_mark', 'pashupatastra', 'nagastra', 'ahamkara'], clips: ['pashupata'] },
-      'dp-2026-10-22': { sheets: ['c1a_deva', 'sudarshana', 'vajra'], clips: ['sudarshana', 'vajra'] },
-      'dp-2026-10-23': { sheets: ['landing_asura', 'chaos_wash', 'chaos_mark'], clips: [] },
-      'dp-2026-10-24': { sheets: ['landing_naga', 'mohini', 'nagapasha'], clips: [] },
-      'dp-2026-10-25': { sheets: ['landing_vanara', 'lankadahan_fire', 'lankadahan_wash', 'gandiva', 'ramanaam', 'kishkindhaoath_fire'], clips: ['lankadahan'] },
-      'dp-2026-10-26': { sheets: ['c1a_deva', 'ahamkara'], clips: [] },
-      'dp-2026-10-27': { sheets: ['landing_naga', 'patala'], clips: [] },
-      'dp-2026-10-28': { sheets: ['c1a_deva', 'amrita_bless', 'amrita_revive', 'pavamana'], clips: [] },
-    };
+    const REF_LANDING = { devas: 'c1a_deva', asuras: 'landing_asura', vanaras: 'landing_vanara', nagas: 'landing_naga' };
+    const REF_PLAY_SHEETS = { brahmastra: ['brahmastra'], pashupata: ['pashupatastra'], tamasa: ['tamasa'],
+      amrita: ['amrita_bless', 'amrita_revive'], kishkindhacrown: ['kishkindhacrown'], ramasignet: ['ramasignet'], chandrahas: ['chandrahas'],
+      patala: ['patala'], anantacoil: ['anantacoil', 'anantacoil_birth'], tripura: ['tripura_rise', 'tripura_fall'], kavacha: ['kavacha'],
+      gayatri: ['gayatri'], venomstrike: ['venomstrike_surge', 'venomstrike_drain'], pavamana: ['pavamana'], ramanaam: ['ramanaam'],
+      kishkindhaoath: ['kishkindhaoath_cast', 'kishkindhaoath_fire'], vajra: ['vajra'], sarpasatra: ['sarpasatra_a', 'sarpasatra_b'],
+      gandiva: ['gandiva'], sudarshana: ['sudarshana'], nagapasha: ['nagapasha'], ahamkara: ['ahamkara'], sanjivani: ['sanjivani'],
+      mohini: ['mohini'], mrityunjaya: ['mrityunjaya'], sanjeevani: ['sanjeevani'], nagastra: ['nagastra'], lankadahan: ['lankadahan_fire', 'lankadahan_wash'] };
+    const REG = JSON.parse(fs.readFileSync(path.join(GAME, 'assets', 'manifest', 'registry.json'), 'utf8'));
+    function referee(P) {
+      const g = PZ.load(P, E), me = g.players[0], plays = E.playableIndices(g, 0).map((i) => me.hand[i]), ids = plays.map((c) => c.id);
+      if (ids.indexOf('brihaspati') >= 0 && g.lastMantra) ids.push(g.lastMantra);
+      const units = g.players.flatMap((p) => p.units.filter((u) => !u.ghost)), vsDrain = g.players.some((p) => p.venomStrike === g.round);
+      const sheets = SHARED.slice();
+      if (plays.some((c) => c.t === 'unit' || c.t === 'hero')) sheets.push(REF_LANDING[me.faction]);
+      if (me.faction === 'asuras') sheets.push('chaos_wash', 'chaos_mark');
+      ids.forEach((id) => (REF_PLAY_SHEETS[id] || []).forEach((k) => sheets.push(k)));
+      if (units.some((u) => u.ward)) sheets.push('kishkindhaoath_fire');
+      if (units.some((u) => u.aegis)) sheets.push('amrita_revive');
+      g.players.forEach((p) => { if (p.artifact && p.artifact.id === 'tripura') sheets.push('tripura_fall'); if (p.artifact && p.artifact.id === 'anantacoil' && p.faction === 'nagas') sheets.push('anantacoil_birth'); });
+      if (vsDrain) sheets.push('venomstrike_drain');
+      const clips = ids.filter((id) => REG.routes[id]).concat(vsDrain && REG.routes.venomstrike && REG.routes.venomstrike.drain ? ['venomstrike'] : []);
+      return { sheets: [...new Set(sheets)], clips, actors: ids.filter((id) => REG.actors[id]) };
+    }
     const CLIP_DIR = (d) => /^lankadahan/.test(d) ? 'lankadahan' : /^sudarshana/.test(d) ? 'sudarshana' : /^venomstrike/.test(d) ? 'venomstrike' : d;
     const sort = (a) => [...new Set(a)].sort();
     const rows = [];
@@ -370,15 +383,15 @@ async function main() {
       const sheets = sort(F.images.filter((u) => /assets\/vfx\/game\//.test(u)).map((u) => /vfx_([a-z0-9_]+)\.png/.exec(u)[1]));
       const clips = sort(F.fetched.filter((u) => /\/assets\/manifest\/effects\//.test(u)).map((u) => CLIP_DIR(u.split('/assets/manifest/effects/')[1].split('/')[0])));
       const actors = sort(F.fetched.filter((u) => /\/assets\/manifest\/actors\/[^/]+\//.test(u)).map((u) => u.split('/assets/manifest/actors/')[1].split('/')[0]));
-      const want = EXPECT[P.id];
-      rows.push({ id: P.id, sheets, want: sort(SHARED.concat(want.sheets)), clips, wantClips: sort(want.clips), actors, said: sort(ld.sheets), saidClips: sort(ld.clips), saidActors: ld.actors });
+      const want = referee(P);
+      rows.push({ id: P.id, sheets, want: sort(want.sheets), clips, wantClips: sort(want.clips), actors, wantActors: sort(want.actors), said: sort(ld.sheets), saidClips: sort(ld.clips), saidActors: sort(ld.actors) });
     }
-    ok('only the position\'s sheets: every puzzle fetches exactly the sheets its plays and board can trigger (the referee\'s table), no faction set',
+    ok('only the position\'s sheets: every live puzzle (' + rows.length + ') fetches exactly the sheets its plays and board can trigger (the referee, derived from each position), no faction set',
        rows.every((x) => J(x.sheets) === J(x.want) && J(x.said) === J(x.want)), J(rows.filter((x) => J(x.sheets) !== J(x.want) || J(x.said) !== J(x.want)).map((x) => [x.id, x.sheets, x.want]).slice(0, 3)));
     ok('only the position\'s premium clips: each puzzle fetches the clips of its own legal plays and nothing else — none for the opponent\'s passed hand',
        rows.every((x) => J(x.clips) === J(x.wantClips) && J(x.saidClips) === J(x.wantClips)), J(rows.filter((x) => J(x.clips) !== J(x.wantClips) || J(x.saidClips) !== J(x.wantClips)).map((x) => [x.id, x.clips, x.wantClips]).slice(0, 3)));
-    ok('no Hero actor anywhere: no batch-1 puzzle has a legal Hero play (a Hero held in hand but not playable is not fetched)',
-       rows.every((x) => x.actors.length === 0 && x.saidActors.length === 0), J(rows.filter((x) => x.actors.length).map((x) => [x.id, x.actors])));
+    ok('only the position\'s Hero actors: an actor is fetched only for a legal Hero play the registry manifests (a Hero held but not playable is not fetched) — ' + rows.filter((x) => x.wantActors.length).length + ' of ' + rows.length + ' puzzles have one',
+       rows.every((x) => J(x.actors) === J(x.wantActors) && J(x.saidActors) === J(x.wantActors)), J(rows.filter((x) => J(x.actors) !== J(x.wantActors) || J(x.saidActors) !== J(x.wantActors)).map((x) => [x.id, x.actors, x.wantActors]).slice(0, 3)));
     // coverage: every sheet the battle can draw is either loaded by puzzle mode when its trigger is present, or never drawn
     const code = strip(HTML), names = /const SHEET_NAMES=\[([^\]]+)\]/.exec(code)[1].match(/'([a-z0-9_]+)'/g).map((x) => x.slice(1, -1));
     const blk = code.slice(code.indexOf('const PUZZLE_MODE ='), code.indexOf('\nfunction pump(){'));
