@@ -1,0 +1,12 @@
+# ARCADE-1 · the clip law (VFX lab ruling A7, carried over): Kling sources and matted frames are NEVER committed.
+# Only packed atlases and manifests are. Report the tracked total on every lab commit.
+sources/
+frames/
+matted/
+clips/
+*.mp4
+*.mov
+*.mkv
+tools/.venv/
+__pycache__/
+.DS_Store

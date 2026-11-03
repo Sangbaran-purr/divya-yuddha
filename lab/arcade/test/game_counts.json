@@ -1,0 +1,15 @@
+{
+  "what": "the game's own suites and their exact counts, recorded at LAW_BASE (6b946e0) before the arcade lab began — every lab commit must leave them exactly so (node lab/arcade/test/run.js --game)",
+  "suites": [
+    { "file": "test.js", "expect": { "match": "✓ ALL INVARIANTS PASS" } },
+    { "file": "test_scenario.js", "expect": { "pass": 50 } },
+    { "file": "test_venom.js", "expect": { "pass": 38 } },
+    { "file": "test_story.js", "expect": { "pass": 69 } },
+    { "file": "test_count_hook.js", "expect": { "pass": 10 } },
+    { "file": "test_logpanel.js", "expect": { "pass": 29 } },
+    { "file": "test_wire.js", "expect": { "pass": 81 } },
+    { "file": "test_manifest.js", "expect": { "pass": 102 } },
+    { "file": "test_narrator.js", "expect": { "pass": 35 } },
+    { "file": "test_puzzlemode.js", "env": "DY_WEB", "expect": { "knownFail": { "pass": 85, "fail": 1, "why": "section 5's fixed load table has no row for puzzles the site added after it was written — red before the lab began, not the lab's to fix" } } }
+  ]
+}

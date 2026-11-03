@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="robots" content="noindex, nofollow">
+<meta name="lab-stamp" content="7caf2cf948eb">
+<title>Arcade lab</title>
+<link rel="stylesheet" href="ui/app.css?v=7caf2cf948eb">
+</head>
+<body>
+<!-- ARCADE-1 lab (docs/ARCADE_v1.md). Unlinked; nothing in the live game loads it. R0–R2: placeholder box fighters. -->
+<div id="rotate"><div><div class="rot-icon">⟲</div><p>Turn your phone sideways to fight.</p></div></div>
+
+<section id="setup" class="screen">
+  <h1>Arcade · box fighters</h1>
+  <p class="hint">Lab build R0–R2. Pick the order your three Heroes fight in, then the opponent.</p>
+  <div class="row-label">Your lineup (tap in fighting order)</div>
+  <div id="lineup" class="chips"></div>
+  <div class="row-label">Opponent</div>
+  <div id="levels" class="chips"></div>
+  <button id="go" class="big" type="button" disabled>Fight</button>
+  <details class="keys"><summary>How to play</summary>
+    <p><b>Keyboard:</b> A / D or ← → move · W or ↑ jump · S or ↓ crouch · J light · K heavy · L special (needs a full meter) · Shift block (or hold back) · P or Esc pause · H show hitboxes.</p>
+    <p><b>Touch (landscape):</b> put your left thumb anywhere on the left half — the stick appears there; push to move, up to jump, down to crouch. Right side: Light, Heavy, Special, Block.</p>
+    <p>Heavy is a high attack — crouch under it. Light must be blocked. Jump over a low projectile.</p>
+  </details>
+</section>
+
+<section id="game" class="screen" hidden>
+  <div id="stage"></div>
+  <div id="hud">
+    <div class="side s0"><div class="name" id="n0"></div><div class="bar hp"><i id="hp0"></i></div><div class="bar meter"><i id="m0"></i></div><div class="pips" id="w0"></div></div>
+    <div class="mid"><div id="timer">60</div><button id="pausebtn" type="button" aria-label="Pause">II</button></div>
+    <div class="side s1"><div class="name" id="n1"></div><div class="bar hp"><i id="hp1"></i></div><div class="bar meter"><i id="m1"></i></div><div class="pips" id="w1"></div></div>
+  </div>
+  <div id="banner" hidden></div>
+  <div id="touch" hidden>
+    <div id="stickzone"><div id="stick" hidden><div id="knob"></div></div></div>
+    <div id="buttons"></div>
+  </div>
+</section>
+
+<div id="pause" class="overlay" hidden><div class="panel"><h2>Paused</h2><button id="resume" class="big" type="button">Resume</button><button id="quit" type="button">Quit to lineup</button></div></div>
+<div id="result" class="overlay" hidden><div class="panel"><h2 id="res-title"></h2><div id="res-rounds"></div><button id="again" class="big" type="button">Fight again</button><button id="change" type="button">Change lineup</button></div></div>
+
+<script src="core/moves.js?v=7caf2cf948eb"></script>
+<script src="core/rng.js?v=7caf2cf948eb"></script>
+<script src="core/fight.js?v=7caf2cf948eb"></script>
+<script src="core/ai.js?v=7caf2cf948eb"></script>
+<script src="core/match.js?v=7caf2cf948eb"></script>
+<script src="ui/controls.js?v=7caf2cf948eb"></script>
+<script src="ui/scene.js?v=7caf2cf948eb"></script>
+<script type="module" src="ui/app.js?v=7caf2cf948eb"></script>
+</body>
+</html>

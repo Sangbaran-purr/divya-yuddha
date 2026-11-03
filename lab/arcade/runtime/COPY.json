@@ -1,0 +1,13 @@
+{
+  "what": "the arcade lab's own copy of the game's Pixi runtime (ARCADE-1 R0, lab law: the lab carries its own copies)",
+  "files": [
+    {
+      "to": "runtime/pixi.min.mjs",
+      "from": "assets/vendor/pixi.min.mjs",
+      "gameCommit": "6b946e0db50c91ae33c83119cd938e30c0845aeb",
+      "version": "8.19.0",
+      "bytes": 798434,
+      "sha256": "28fefb52eeb15bb3e087533456bafc53e91af70932af4dd046ff2938ec3edd0e"
+    }
+  ]
+}
