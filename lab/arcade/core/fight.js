@@ -34,11 +34,25 @@
   }
 
   function arch(f) { return M.ARCH[f.arch]; }
+  // a move as THIS fighter performs it: the template, with its archetype's reach and recovery applied to light and heavy
+  var MOVE_OF = {};
+  function moveOf(f, name) {
+    name = name || f.move;
+    var a = arch(f), base = M.MOVES[name];
+    if (name === "special" || !(a.reachPx || a.recoveryAdd)) return base;
+    var k = f.arch + ":" + name;
+    if (!MOVE_OF[k]) {
+      var m = JSON.parse(JSON.stringify(base));
+      m.recovery += a.recoveryAdd || 0; m.box.x1 += a.reachPx || 0;
+      MOVE_OF[k] = m;
+    }
+    return MOVE_OF[k];
+  }
   function grounded(f) { return f.y === 0; }
   function crouching(f) { return f.state === "crouch" || f.state === "cblock"; }
   function actionable(f) { return f.state === "idle" || f.state === "walkf" || f.state === "walkb" || f.state === "crouch" || f.state === "block" || f.state === "cblock"; }
   function moveTotal(m) { return m.startup + m.active + m.recovery; }
-  function isActive(f) { if (f.state !== "attack") return false; var m = M.MOVES[f.move]; return f.mf >= m.startup && f.mf < m.startup + m.active; }
+  function isActive(f) { if (f.state !== "attack") return false; var m = moveOf(f); return f.mf >= m.startup && f.mf < m.startup + m.active; }
   function fwdBit(f) { return f.facing === 1 ? BTN.R : BTN.L; }
   function backBit(f) { return f.facing === 1 ? BTN.L : BTN.R; }
   function guarding(f, inp) { return !!(inp & BTN.BL) || !!(inp & backBit(f)); }
@@ -76,7 +90,7 @@
   }
 
   function cancelOpen(f) {
-    var m = M.MOVES[f.move];
+    var m = moveOf(f);
     return f.connected && f.mf >= m.startup && f.mf < m.startup + m.active + m.cancelAfter;
   }
 
@@ -88,7 +102,7 @@
       return;
     }
     if (f.state === "attack") {
-      var m = M.MOVES[f.move];
+      var m = moveOf(f);
       if (cancelOpen(f)) {
         var allowed = m.cancel.filter(function (k) { return !(k === "light" && f.chain >= M.CHAIN_MAX); });
         var next = pickBuffered(f, allowed);
@@ -167,7 +181,7 @@
   function hitbox(f) {
     if (!isActive(f) || f.hitDone) return null;
     if (f.move === "special" && arch(f).special === "projectile") return null;   // the projectile carries the hit
-    var b = M.MOVES[f.move].box;
+    var b = moveOf(f).box;
     var xa = f.x + f.facing * px(b.x0), xb = f.x + f.facing * px(b.x1);
     return { x0: Math.min(xa, xb), x1: Math.max(xa, xb), y0: f.y + px(b.y0), y1: f.y + px(b.y1) };
   }
@@ -179,7 +193,7 @@
     var hits = [];
     g.f.forEach(function (att, i) {
       var def = g.f[1 - i], hb = hitbox(att);
-      if (hb && overlap(hb, hurtbox(def))) hits.push({ att: att, def: def, move: M.MOVES[att.move], mul: arch(att).dmg, dir: att.facing });
+      if (hb && overlap(hb, hurtbox(def))) hits.push({ att: att, def: def, move: moveOf(att), mul: arch(att).dmg, dir: att.facing });
     });
     g.proj = g.proj.filter(function (p) {
       var def = g.f[1 - p.owner];
@@ -251,5 +265,5 @@
 
   return { U: U, STAGE_W: STAGE_W, WALL: WALL, PUSH: PUSH, BUFFER: BUFFER, BTN: BTN, newFight: newFight, step: step,
     snapshot: snapshot, restore: restore, hash: hash, hurtbox: hurtbox, hitbox: hitbox, projBox: projBox, isActive: isActive,
-    crouching: crouching, actionable: actionable, cancelOpen: cancelOpen };
+    crouching: crouching, actionable: actionable, cancelOpen: cancelOpen, moveOf: moveOf };
 });

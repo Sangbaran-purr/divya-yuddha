@@ -7,7 +7,26 @@
   else root.ARC_SCENE = factory(root.ARC_MOVES, root.ARC_FIGHT);
 })(this, function (M, F) {
   "use strict";
-  var VIEW_W = 960, VIEW_H = 540, GROUND_Y = 470;
+  var VIEW_W = 960, VIEW_H = 540, GROUND_Y = 470, STANCE_LOGICAL = 220;   // a fighter's stance is as tall as its standing hurtbox
+
+  // THE CLIP TEST: which cell of a real fighter's sheet shows now — or null, and the box is drawn instead.
+  //   idle  loops at the sheet's own 12 fps on the fight clock;
+  //   light is stretched onto the game's own phases: the startup cells across the startup frames, the contact cell across the
+  //         active frames, the recovery cells across the recovery (the archetype's own length — Meghnad's is 2 frames longer).
+  // Every other state has no art yet (ruling: other moves stay boxes).
+  function artCell(g, f, man) {
+    if (!man) return null;
+    var ci = man.cellIndex;
+    if (f.state === "idle") { var n = ci.idle.length; return { move: "idle", cell: ci.idle[Math.floor(g.frame * man.fpsOut / 60) % n] }; }
+    if (f.state === "attack" && f.move === "light") {
+      var m = F.moveOf(f), L = ci.light;
+      if (f.mf < m.startup) return { move: "light", phase: "startup", cell: L.startup[Math.floor(f.mf * L.startup.length / m.startup)] };
+      if (f.mf < m.startup + m.active) return { move: "light", phase: "active", cell: L.active[Math.floor((f.mf - m.startup) * L.active.length / m.active)] };
+      var r = f.mf - m.startup - m.active;
+      return { move: "light", phase: "recovery", cell: L.recovery[Math.min(L.recovery.length - 1, Math.floor(r * L.recovery.length / m.recovery))] };
+    }
+    return null;
+  }
 
   // the camera follows the midpoint of the two fighters and never shows past the stage ends
   function cameraX(g) {
@@ -22,7 +41,8 @@
   function build(g, opts) {
     opts = opts || {};
     var cam = cameraX(g), out = [];
-    function rect(r, fill, alpha, tag, stroke) { out.push({ k: "rect", x: r.x, y: r.y, w: r.w, h: r.h, fill: fill, alpha: alpha == null ? 1 : alpha, stroke: stroke || null, tag: tag || "" }); }
+    var layer = "bg";
+    function rect(r, fill, alpha, tag, stroke) { out.push({ k: "rect", layer: layer, x: r.x, y: r.y, w: r.w, h: r.h, fill: fill, alpha: alpha == null ? 1 : alpha, stroke: stroke || null, tag: tag || "" }); }
     // the placeholder arena: sky, a far band that scrolls slowly (so movement reads), the ground
     rect({ x: 0, y: 0, w: VIEW_W, h: 300 }, 0x2a1d10, 1, "sky");
     rect({ x: 0, y: 300, w: VIEW_W, h: GROUND_Y - 300 }, 0x3a2914, 1, "far");
@@ -37,25 +57,36 @@
     g.f.forEach(function (f) {
       var hero = M.HEROES[f.hero], hb = toView(F.hurtbox(f), cam);
       var flash = !opts.reducedMotion && g.hitstop > 0 && f.state === "hitstun";
-      var color = flash ? 0xffffff : f.state === "ko" ? 0x555555 : hero.color;
-      rect(hb, color, f.state === "ko" ? 0.5 : 0.9, "body" + f.side, f.state === "blockstun" || f.state === "block" || f.state === "cblock" ? { width: 3, color: 0x7fe0ff } : null);
+      var man = hero.fighter && opts.fighters ? opts.fighters[hero.fighter] : null, art = artCell(g, f, man);
+      layer = "body";
+      if (art) {
+        // a real fighter: the cell, its feet pivot on the fighter's ground point, its stance scaled to the hurtbox's height
+        var rung = opts.rung || "hi";
+        out.push({ k: "sprite", layer: "body", tag: "sprite" + f.side, fighter: hero.fighter, rung: rung, cell: art.cell, move: art.move, phase: art.phase || null,
+          x: f.x / F.U - cam, y: GROUND_Y - f.y / F.U, scale: STANCE_LOGICAL / man.stance.heightPx[rung], flip: f.facing === -1, alpha: 1 });
+      } else {
+        var color = flash ? 0xffffff : f.state === "ko" ? 0x555555 : hero.color;
+        rect(hb, color, f.state === "ko" ? 0.5 : 0.9, "body" + f.side, f.state === "blockstun" || f.state === "block" || f.state === "cblock" ? { width: 3, color: 0x7fe0ff } : null);
+        // a "face" on the front edge, so facing reads
+        var faceX = f.facing === 1 ? hb.x + hb.w - 10 : hb.x;
+        rect({ x: faceX, y: hb.y + 14, w: 10, h: 18 }, 0x120c05, 0.9, "face" + f.side);
+      }
+      layer = "fx";
       // a side marker over the head (gold = you, red = the opponent), so a mirror match reads
       rect({ x: hb.x + hb.w / 2 - 14, y: hb.y - 14, w: 28, h: 6 }, f.side === 0 ? 0xe8c874 : 0xd8574a, 0.95, "marker" + f.side);
-      // a "face" on the front edge, so facing reads
-      var faceX = f.facing === 1 ? hb.x + hb.w - 10 : hb.x;
-      rect({ x: faceX, y: hb.y + 14, w: 10, h: 18 }, 0x120c05, 0.9, "face" + f.side);
-      // the move in progress: startup shows a thin wind-up bar, active shows the real hitbox
+      // the move in progress: startup shows a thin wind-up bar, active shows the real hitbox (over real art: only with H)
       var box = F.hitbox(f);
-      if (box) rect(toView(box, cam), 0xff4030, 0.55, "hitbox" + f.side);
-      else if (f.state === "attack" && !F.isActive(f) && f.mf < M.MOVES[f.move].startup) {
-        var w = 8 + 40 * f.mf / M.MOVES[f.move].startup;
+      if (box && (!art || opts.debug)) rect(toView(box, cam), 0xff4030, art ? 0.4 : 0.55, "hitbox" + f.side);
+      else if (!art && f.state === "attack" && !F.isActive(f) && f.mf < F.moveOf(f).startup) {
+        var w = 8 + 40 * f.mf / F.moveOf(f).startup;
         rect({ x: f.facing === 1 ? hb.x + hb.w : hb.x - w, y: hb.y + 60, w: w, h: 6 }, 0xffb060, 0.7, "windup" + f.side);
       }
-      if (opts.debug) out.push({ k: "rect", x: hb.x, y: hb.y, w: hb.w, h: hb.h, fill: null, alpha: 1, stroke: { width: 1, color: 0x60ff90 }, tag: "hurt" + f.side });
+      if (opts.debug) out.push({ k: "rect", layer: "fx", x: hb.x, y: hb.y, w: hb.w, h: hb.h, fill: null, alpha: 1, stroke: { width: 1, color: 0x60ff90 }, tag: "hurt" + f.side });
     });
+    layer = "fx";
     g.proj.forEach(function (p) { rect(toView(F.projBox(p), cam), 0xffd76a, 0.95, "proj" + p.owner); });
     return { cam: cam, shapes: out };
   }
 
-  return { VIEW_W: VIEW_W, VIEW_H: VIEW_H, GROUND_Y: GROUND_Y, cameraX: cameraX, build: build };
+  return { VIEW_W: VIEW_W, VIEW_H: VIEW_H, GROUND_Y: GROUND_Y, STANCE_LOGICAL: STANCE_LOGICAL, cameraX: cameraX, artCell: artCell, build: build };
 });

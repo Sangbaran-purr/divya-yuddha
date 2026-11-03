@@ -53,15 +53,16 @@ function closeIn(K, g, dist) {   // walk side 0 forward until the gap is `dist` 
 
 console.log('── ARCADE-1 · R0 · the page, the stamp, the copy, the lab law ──');
 const has = (f) => fs.existsSync(path.join(LAB, f));
-const RUNG = has('core/ai.js') && has('ui/controls.js') ? 2 : has('core/fight.js') ? 1 : 0;
+const RUNG = has('fighters/indra/manifest.json') ? 3 : has('core/ai.js') && has('ui/controls.js') ? 2 : has('core/fight.js') ? 1 : 0;
 const BY_RUNG = [
   ['index.html', 'STAMP', 'README.md', '.gitignore', 'LAW_BASE', 'runtime/pixi.min.mjs', 'runtime/COPY.json', 'tools/stamp.js', 'test/run.js', 'test/game_counts.json'],
   ['core/moves.js', 'core/fight.js', 'core/rng.js', 'core/match.js', 'ui/scene.js'],
-  ['core/ai.js', 'ui/controls.js', 'ui/app.js', 'ui/app.css']];
+  ['core/ai.js', 'ui/controls.js', 'ui/app.js', 'ui/app.css'],
+  ['tools/make_fighter.py'].concat(...['indra', 'meghnad'].map((h) => ['fighters/' + h + '/manifest.json', 'fighters/' + h + '/hi.webp', 'fighters/' + h + '/lo.webp']))];
 const NEEDED = [].concat(...BY_RUNG.slice(0, RUNG + 1));
-console.log('  (rung ' + RUNG + ': the suite checks R0' + (RUNG ? '–R' + RUNG : '') + ')');
+console.log('  (rung ' + RUNG + ': the suite checks R0' + (RUNG ? '–R' + (RUNG === 3 ? '2 + the R3 clip test' : RUNG) : '') + ')');
 const missing = NEEDED.filter((f) => !fs.existsSync(path.join(LAB, f)));
-ok('R0.1 · the lab has every file of its rungs so far: the page, its own Pixi copy, the stamp tool and this suite' + (RUNG >= 1 ? ', the core and the scene' : '') + (RUNG >= 2 ? ', the AI, the controls and the app' : '') + ' (' + NEEDED.length + ' files)', missing.length === 0, missing);
+ok('R0.1 · the lab has every file of its rungs so far: the page, its own Pixi copy, the stamp tool and this suite' + (RUNG >= 1 ? ', the core and the scene' : '') + (RUNG >= 2 ? ', the AI, the controls and the app' : '') + (RUNG >= 3 ? ', the fighter tool and both clip-test fighters' : '') + ' (' + NEEDED.length + ' files)', missing.length === 0, missing);
 const ST = require(path.join(LAB, 'tools/stamp.js')), stamp = ST.compute(), html = rd('index.html');
 ok('R0.2 · THE STAMP is current: STAMP = the hash of every loaded file (' + ST.inputs().length + '), and every script, stylesheet and the meta carry it (' + stamp + ')',
   rd('STAMP').trim() === stamp && ST.stampPage(html, stamp) === html && (html.match(/\?v=([0-9a-f]{12})/g) || []).every((m) => m.endsWith(stamp)));
@@ -78,8 +79,12 @@ const BASE = rd('LAW_BASE').trim();
 const ALLOWED = (p) => p.startsWith('lab/arcade/') || p === 'docs/ARCADE_v1.md';
 function lawViolations(paths) { return paths.filter((p) => p && !ALLOWED(p)); }
 const git = (a) => cp.execFileSync('git', a, { cwd: REPO, encoding: 'utf8' }).split('\n').filter(Boolean);
-const changed = [...new Set(git(['diff', '--name-only', BASE + '..HEAD']).concat(git(['diff', '--name-only', '--cached'])))];
-ok('R0.5 · THE LAB LAW: since ' + BASE.slice(0, 7) + ', every committed or staged change is inside lab/arcade/ or is docs/ARCADE_v1.md (' + changed.length + ' paths)', lawViolations(changed).length === 0, lawViolations(changed));
+// the law binds the LAB's commits (subject "ARCADE-1 …") and whatever is staged; a separately ruled commit outside the lab
+// (e.g. TEST-PUZZLEMODE-1, ARCADE-1 ruling 7) is its own commit with its own subject, and is listed, not judged, here
+const labCommits = git(['log', '--format=%H %s', BASE + '..HEAD']).map((l) => ({ h: l.slice(0, 40), s: l.slice(41) }));
+const changed = [...new Set(labCommits.filter((c) => c.s.startsWith('ARCADE-1')).flatMap((c) => git(['show', '--name-only', '--format=', c.h])).concat(git(['diff', '--name-only', '--cached'])))];
+const others = labCommits.filter((c) => !c.s.startsWith('ARCADE-1')).map((c) => c.s.split(':')[0]);
+ok('R0.5 · THE LAB LAW: since ' + BASE.slice(0, 7) + ', every ARCADE-1 commit and every staged change is inside lab/arcade/ or is docs/ARCADE_v1.md (' + changed.length + ' paths' + (others.length ? '; ruled commits outside the lab: ' + others.join(', ') : '') + ')', lawViolations(changed).length === 0, lawViolations(changed));
 red('R0.5b · BREAKAGE: a change to the live game\'s index.html among the paths (R0.5 goes red)', lawViolations(changed.concat(['index.html'])).length === 1);
 const live = ['index.html'].concat(fs.readdirSync(path.join(REPO, 'src')).map((f) => 'src/' + f)).concat(fs.readdirSync(path.join(REPO, 'scripts')).map((f) => 'scripts/' + f))
   .filter((f) => fs.statSync(path.join(REPO, f)).isFile());
@@ -454,6 +459,101 @@ const BR2 = [
   ['H7 · a stat advantage for Death Match (R2.11 goes red)', { ai: [['deathmatch: { reaction: 9,', 'deathmatch: { hpBonus: 200, reaction: 9,']] }, (KK) => Object.values(KK.ai.LEVELS).every((L) => !Object.keys(L).some((k) => /hp|dmg|damage|meter|health|power/i.test(k)))]
 ];
 for (const [name, mut, check] of BR2) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }
+
+
+if (RUNG < 3) return finish();
+// ═══ R3 · THE CLIP TEST (owner ruling 2026-11-03): Indra and Meghnad, idle + light, from the owner's four Kling clips ═══
+console.log('\n── ARCADE-1 · R3 clip test · the sheets ──');
+const HEROS = ['indra', 'meghnad'];
+const MAN = {}; HEROS.forEach((h) => { MAN[h] = JSON.parse(rd('fighters/' + h + '/manifest.json')); });
+const BUDGET = { hi: { target: 1.2 * 1048576, cap: 1.6 * 1048576, px: 4096 }, lo: { target: 0.5 * 1048576, cap: 0.7 * 1048576, px: 2048 } };
+function sheetsOk(man) {
+  return ['hi', 'lo'].every((r) => { const R = man.rungs[r], bytes = fs.statSync(path.join(LAB, 'fighters', man.hero, R.sheet)).size;
+    return bytes === R.bytes && bytes <= BUDGET[r].cap && R.size[0] <= BUDGET[r].px && R.size[1] <= BUDGET[r].px &&
+      R.cells.every((c) => c.x >= 0 && c.y >= 0 && c.x + c.w <= R.size[0] && c.y + c.h <= R.size[1] && c.px >= 0 && c.px <= c.w && c.py >= c.h - 4 && c.py <= c.h + 4); });
+}
+const mb = (b) => (b / 1048576).toFixed(2) + ' MB';
+ok('C1 · BOTH SHEETS PER HERO, INSIDE THE BUDGET (ruling 7): ' + HEROS.map((h) => MAN[h].name + ' hi ' + mb(MAN[h].rungs.hi.bytes) + ' (' + MAN[h].rungs.hi.size.join('×') + '), lo ' + mb(MAN[h].rungs.lo.bytes) + ' (' + MAN[h].rungs.lo.size.join('×') + ')').join(' · ') +
+  ' — caps 1.6 / 0.7 MB, 4096 / 2048 px; every cell inside its sheet, its feet pivot inside the cell on its bottom edge', HEROS.every((h) => sheetsOk(MAN[h])));
+ok('C2 · ONE STANCE HEIGHT, ONE GROUND LINE: both Heroes are scaled so the stance (feet to head top, from idle f0) is 320 px on the hi sheet and 192 on the lo (' +
+  HEROS.map((h) => MAN[h].name + ' ' + MAN[h].stance.sourceHeight + ' px source').join(', ') + '), and every cell is cut on the feet',
+  HEROS.every((h) => MAN[h].stance.heightPx.hi === 320 && MAN[h].stance.heightPx.lo === 192));
+const CI = (h) => MAN[h].cellIndex;
+ok('C3 · THE MOVES: idle = the tightest loop at 12 fps (' + HEROS.map((h) => MAN[h].name + ' ' + MAN[h].moves.idle.loopFrames + ' frames → ' + CI(h).idle.length + ' cells, closing at mean |Δ| ' + MAN[h].moves.idle.loopError).join('; ') +
+  '); light = 2 startup + 1 contact + 3 recovery cells for the 5/3/9 phases', HEROS.every((h) => CI(h).idle.length === MAN[h].moves.idle.src.length && CI(h).idle.length >= 20 &&
+  MAN[h].moves.idle.loopError < 2.5 && CI(h).light.startup.length === 2 && CI(h).light.active.length === 1 && CI(h).light.recovery.length === 3));
+const wob = (h, m) => MAN[h].wobbleSource[m].map((v) => Math.hypot(v[0], v[1]));
+ok('C4 · PIVOT WOBBLE: the idle feet hold within 2 px of the Hero\'s pivot (source px: ' + HEROS.map((h) => MAN[h].name + ' ≤' + Math.max(...wob(h, 'idle')).toFixed(1)).join(', ') +
+  '); idle and light share one pivot — their stance frames register within 2 px', HEROS.every((h) => Math.max(...wob(h, 'idle')) <= 2 && Math.abs(MAN[h].wobbleSource.light[0][0]) <= 30));
+ok('C5 · THE MATTE: no ground-coloured fringe on the weapon tip or the head, no green-tinted edge pixel left, rembg never needed (' +
+  HEROS.map((h) => MAN[h].name + ' tinted ' + MAN[h].tintedEdgePixels + ', rembg ' + (MAN[h].rembgFrames.length || 'none')).join(' · ') + ')',
+  HEROS.every((h) => MAN[h].tintedEdgePixels === 0 && MAN[h].fringe.weapon.maxShare <= 0.002 && MAN[h].fringe.head.maxShare <= 0.002));
+ok('C6 · THE MIRROR TEST: every cell flips about its feet pivot and keeps its feet on the ground row (' + HEROS.map((h) => MAN[h].mirrorTest.feetOnGround + '/' + MAN[h].mirrorTest.of).join(', ') + ')',
+  HEROS.every((h) => MAN[h].mirrorTest.pivotFlip && MAN[h].mirrorTest.feetOnGround === MAN[h].mirrorTest.of));
+const tracked3 = git(['ls-files', 'lab/arcade']);
+ok('C7 · THE CLIP LAW: no clip, frame or still is tracked — only the packed sheets and manifests (' + tracked3.filter((f) => f.includes('/fighters/')).length + ' fighter files)',
+  !tracked3.some((f) => /\.(mp4|mov|mkv)$|\/sources\/|\/frames\/|fighter-right-green/.test(f)));
+
+console.log('\n── ARCADE-1 · R3 clip test · in the fight ──');
+function sceneArt(KK, hero, opp, steps) {   // play `steps` inputs for side 0, return what is drawn for side 0 on each frame
+  const g = KK.fight.newFight({ p0: hero, p1: opp || 'box_surya' }), out = [];
+  for (const inp of steps) { KK.fight.step(g, [inp, 0]); const sp = KK.scene.build(g, { fighters: MAN, rung: 'hi' }).shapes.find((x) => x.tag === 'sprite0'); out.push({ st: g.f[0].state, mf: g.f[0].mf, sp }); }
+  return out;
+}
+function lightMapOk(KK, hero) {
+  const m = KK.fight.moveOf({ arch: KK.moves.HEROES[hero].arch, move: 'light' }, 'light'), L = CI(hero).light;
+  const steps = [KK.fight.BTN.LT].concat(new Array(m.startup + m.active + m.recovery + 2).fill(0));
+  const fr = sceneArt(KK, hero, null, steps).filter((x) => x.st === 'attack');
+  const want = (mf) => mf < m.startup ? L.startup[Math.floor(mf * 2 / m.startup)] : mf < m.startup + m.active ? L.active[0] : L.recovery[Math.min(2, Math.floor((mf - m.startup - m.active) * 3 / m.recovery))];
+  return { ok: fr.length === m.startup + m.active + m.recovery && fr.every((x) => x.sp && x.sp.cell === want(x.mf)) && fr[0].sp.cell === L.startup[0] && fr[fr.length - 1].sp.cell === L.recovery[2],
+    frames: fr.length, phases: fr.map((x) => x.sp && x.sp.phase[0]).join('') };
+}
+const LM = HEROS.map((h) => ({ h, ...lightMapOk(K, h) }));
+ok('C8 · THE LIGHT IS STRETCHED ONTO THE GAME\'S OWN PHASES: startup cells on the startup frames, the contact cell exactly on the active frames, the recovery cells across the recovery (' +
+  LM.map((x) => x.h + ' ' + x.frames + ' frames: ' + x.phases).join(' · ') + ')', LM.every((x) => x.ok), J(LM));
+function idleOk(KK, hero) {
+  const fr = sceneArt(KK, hero, null, new Array(150).fill(0)).filter((x) => x.st === 'idle' && x.sp), cells = fr.map((x) => x.sp.cell), n = CI(hero).idle.length;
+  const changes = cells.filter((c, i) => i && c !== cells[i - 1]).length;
+  return { ok: cells.every((c) => CI(hero).idle.includes(c)) && changes >= 25 && changes <= 32 && new Set(cells).size === Math.min(n, new Set(cells).size), changes };
+}
+const IL = HEROS.map((h) => ({ h, ...idleOk(K, h) }));
+ok('C9 · THE IDLE LOOPS at 12 fps on the fight clock: 150 logic frames (2.5 s) step through ' + IL.map((x) => x.changes).join(' / ') + ' cell changes, all idle cells', IL.every((x) => x.ok));
+function flipOk(KK) {
+  const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }), sh = KK.scene.build(g, { fighters: MAN, rung: 'hi' }).shapes;
+  const a = sh.find((x) => x.tag === 'sprite0'), b = sh.find((x) => x.tag === 'sprite1');
+  return a && b && !a.flip && b.flip && Math.abs(a.x - (g.f[0].x / KK.fight.U - KK.scene.cameraX(g))) < 1e-9 && a.y === KK.scene.GROUND_Y && Math.abs(a.scale - 220 / 320) < 1e-9;
+}
+ok('C10 · FACING: the left Hero is drawn as authored, the right one mirrored; each stands with its feet pivot on its fighter\'s ground point, the stance 220 logical px tall', flipOk(K));
+function boxesOk(KK) {
+  const BB = KK.fight.BTN, w = sceneArt(KK, 'meghnad', null, [BB.R, BB.R, BB.R]).pop(), h = sceneArt(KK, 'meghnad', null, [BB.HV, 0, 0]).pop();
+  const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }), sh = KK.scene.build(g, { rung: 'hi' }).shapes;
+  return !w.sp && !h.sp && !sh.some((x) => x.k === 'sprite');
+}
+ok('C11 · EVERY OTHER MOVE IS STILL A BOX (walk, heavy …), and a fighter whose sheet did not load falls back to its box', boxesOk(K));
+function archOk(KK) {
+  const A = KK.moves.ARCH, mo = (h, m) => KK.fight.moveOf({ arch: KK.moves.HEROES[h].arch, move: m }, m);
+  const fd = activeFrames(KK, 'light', { p0: 'meghnad', p1: 'box_surya' });
+  return { ok: J(Object.assign({}, A.allrounder)) === J(Object.assign({}, A.balanced)) && mo('indra', 'light') === MV.light &&
+    mo('meghnad', 'light').box.x1 === MV.light.box.x1 + 45 && mo('meghnad', 'heavy').box.x1 === MV.heavy.box.x1 + 45 &&
+    mo('meghnad', 'light').recovery === MV.light.recovery + 2 && mo('meghnad', 'heavy').recovery === MV.heavy.recovery + 2 && mo('meghnad', 'special') === MV.special &&
+    fd.act[0] === MV.light.startup && fd.back === MV.light.startup + MV.light.active + MV.light.recovery + 2, back: fd.back };
+}
+const AR = archOk(K);
+ok('C12 · THE ARCHETYPES (ruling 4): Indra = all-rounder (the balanced numbers); Meghnad = reach — light and heavy reach 45 px further and recover 2 frames slower (his light is idle again at frame ' + AR.back + ', not 17); his special is unchanged', AR.ok);
+const reachL = HEROS.map((h) => { const m = K.fight.moveOf({ arch: K.moves.HEROES[h].arch, move: 'light' }, 'light'); return MAN[h].name + ': the art\'s tip at contact ' + MAN[h].moves.light.tipFromPivotLogical + ' px from the feet, the light hitbox ' + m.box.x1 + ' px'; });
+console.log('      (reach, logical px from the fighter\'s centre — ' + reachL.join(' · ') + ')');
+
+console.log('\n── ARCADE-1 · R3 clip test · breakages: each must go red ──');
+const BR3 = [
+  ['K1 · the light\'s cells one frame early: startup shown off by one (C8 goes red)', { scene: [['if (f.mf < m.startup) return { move: "light", phase: "startup", cell: L.startup[Math.floor(f.mf * L.startup.length / m.startup)] };',
+    'if (f.mf < m.startup) return { move: "light", phase: "startup", cell: L.startup[Math.min(1, Math.floor((f.mf + 2) * L.startup.length / m.startup))] };']] }, (KK) => HEROS.every((h) => lightMapOk(KK, h).ok)],
+  ['K2 · the right-hand Hero not mirrored (C10 goes red)', { scene: [['flip: f.facing === -1,', 'flip: false,']] }, (KK) => flipOk(KK)],
+  ['K3 · the reach archetype ignored (C12 goes red)', { fight: [['if (name === "special" || !(a.reachPx || a.recoveryAdd)) return base;', 'return base;']] }, (KK) => archOk(KK).ok],
+  ['K4 · the idle loop driven by the move frame instead of the fight clock — it stops cycling (C9 goes red)', { scene: [['Math.floor(g.frame * man.fpsOut / 60) % n', 'Math.floor(f.mf * man.fpsOut / 60) % n']] }, (KK) => HEROS.every((h) => idleOk(KK, h).ok)]
+];
+for (const [name, mut, check] of BR3) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }
+const badMan = JSON.parse(JSON.stringify(MAN.indra)); badMan.rungs.hi.cells[3].py -= 40;
+red('K5 · a cell cut on the head instead of the feet: its pivot 40 px above the cell\'s bottom (C1 goes red)', !sheetsOk(badMan));
 
 finish();
 

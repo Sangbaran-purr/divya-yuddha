@@ -2,7 +2,7 @@
 
 The experiment ground for **ARCADE-1**: a real-time 1v1 fighting mode, player vs AI, in the browser. The rulings, the moveset template, the Kling clip card and the size budget are in `docs/ARCADE_v1.md`.
 
-**Status:** R0–R2. Box fighters (three placeholder Heroes) play a full best-of-three against the AI. Real Heroes start at R3 (Indra), then R4 (Meghnad on foot).
+**Status:** R0–R2 plus the R3 clip test. Three placeholder box Heroes plus **Indra and Meghnad**, whose idle and light are real art from the owner's Kling clips; every other move still draws as a box.
 
 ## The lab law
 
@@ -15,6 +15,7 @@ The experiment ground for **ARCADE-1**: a real-time 1v1 fighting mode, player vs
 
 - **On your machine:** start the repo's `static` server (`.claude/launch.json`, port 4599) and open `http://localhost:4599/lab/arcade/`.
 - **Pages, public but unlinked:** `https://sangbaran-purr.github.io/divya-yuddha/lab/arcade/`.
+- **`?opp=meghnad,indra,box_rakta`** fixes the opponent's lineup (three different Heroes). **`?rung=lo`** or **`?rung=hi`** forces a sheet rung; by default it is hi on a high-density or large screen, else lo.
 
 ## Play
 
@@ -47,6 +48,9 @@ Heavy is a high attack: crouch under it. Light is a mid: block it. The zoner and
 | `ui/app.js`, `ui/app.css` | The page: setup, the fixed-step loop, the HUD, pause, the result. Pixi draws; a Canvas 2D floor draws if Pixi can't start. |
 | `runtime/pixi.min.mjs` | The lab's own copy of the game's Pixi (`runtime/COPY.json` records where from and its sha256). |
 | `tools/stamp.js` | The stamp: a hash of every loaded file, on every URL, so Pages never serves a stale lab. |
+| `tools/make_fighter.py` | The fighter tool: Kling clips on green → a fighter (matte, feet pivot, one stance height, 12 fps frames, hi/lo sheets, mirror test) and contact sheets to `~/Desktop/DY_arcade_screens/`. Run it with the VFX lab's matting venv: `lab/vfx-manifestation/tools/.venv/bin/python -I lab/arcade/tools/make_fighter.py`. |
+| `fighters/<hero>/` | A fighter: `hi.webp`, `lo.webp` and `manifest.json` (each cell's rect and feet pivot, the move → cell lists, the measurements). |
+| `sources/<hero>/` | **Ignored.** The owner's Kling clips (`<hero>_NN_<move>.mp4`). Never committed. |
 | `test/run.js` | The lab suite, R0–R2, with breakages. `--game` also runs the game's suites at their exact counts. |
 
 ## Change, stamp, test

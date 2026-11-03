@@ -18,6 +18,25 @@ This is the one file of the arcade work outside `lab/`. The build lives in `lab/
 10. **The player counter's `'arcade'` finish is added at export only**, not now. It needs a site `count.js` change plus a dy-count change and redeploy; today neither accepts `'arcade'`.
 11. **Kling:** only Indra and Meghnad clips for now (about 36). The rest is decided after the R7 device verdict.
 
+### Rulings, second set (owner, 2026-11-03, the clip test)
+
+1. **Stance stills:** the owner's approved v2 stills are the step-0 anchors (record below). They are not committed anywhere outside `lab/`, and not in `lab/` either (the clip law).
+2. **Meghnad's weapon: the spear.**
+3. **The v1 roster is the 13 humanoid Heroes,** confirmed. Nagas, Garuda, Rahu and Vritra are out of v1. Mahabali needs standing clips.
+4. **Archetypes:** Indra = **all-rounder**; Meghnad = **reach** (the longest reach, slightly slower recovery). The others are ruled as their clips arrive.
+5. **AI difficulty and round length: no change yet;** the owner plays first. **Open:** Beginner is likely to become gentler; the target round length is 30–45 s (box rounds run about 10 s today).
+6. **The draw rule stands as built** (a drawn round is fought again at most twice, then goes to the larger health share).
+7. **`src/test_puzzlemode.js`** was fixed separately, outside the lab, in its own commit (TEST-PUZZLEMODE-1): its loading table now follows the live puzzle list.
+
+### The stance stills in use (ruling 1 of the second set)
+
+| Hero | File (owner's Downloads) | Size | sha256 (first 16) | Clips shot from it |
+|---|---|---|---|---|
+| Indra | `indra-fighter-right-green-1920x1080-v2.png` | 1920×1080 | `ad70b7c1228e2309` | `indra_01_idle`, `indra_06_light` |
+| Meghnad | `meghnad-fighter-right-green-1920x1080-v2.png` | 1920×1080 | `a1dafedcfd6e489c` | `meghnad_01_idle`, `meghnad_06_light` |
+
+They replace the earlier neutral identity masters in `assets/arcade/identity-masters/` as the anchors. Both show a fighting stance with the weapon in hand, true side profile, facing right, on green.
+
 ## The 21 Hero actors, classified (ruling 3)
 
 Checked against each actor pack in `lab/vfx-manifestation/actors/`. A v1 fighter must be able to stand, walk, crouch and jump in side profile.
@@ -85,12 +104,14 @@ Gameplay runs on fixed 60 Hz logic frames and the art is stretched onto those ph
 
 | Archetype | Health | Walk forward / back (px/frame) | Damage | Special |
 |---|---|---|---|---|
+| All-rounder (Indra) | 1000 | 4 / 3 | 100% | Projectile, 9 px/frame (the balanced numbers) |
+| Reach (Meghnad) | 1000 | 4 / 3 | 100% | Charge, 10 px/frame; light and heavy reach **+45 px**, recovery **+2 frames** |
 | Balanced | 1000 | 4 / 3 | 100% | Projectile, 9 px/frame |
 | Rushdown | 900 | 5 / 4 | 108% | Charge, 10 px/frame |
 | Zoner | 950 | 3 / 3 | 95% | Projectile, 11 px/frame |
 | Tank | 1150 | 3 / 2 | 100% | Charge, 8 px/frame |
 
-Which archetype each of the 13 Heroes gets is open (decision at R3).
+Indra and Meghnad are ruled. The other 11 are ruled as their clips arrive. Meghnad's special as a charge (a spear lunge) is my placeholder, still open.
 
 ## The AI (honest-AI rule)
 
@@ -150,6 +171,36 @@ From there the fighter tool (R3) does the rest, and the owner reviews a contact 
 
 **Mirroring:** everything is authored facing right and mirrored at runtime for the other side. A weapon hand flips; accepted.
 
+## The clip test (Indra and Meghnad: idle + light), 2026-11-03
+
+The tool is `lab/arcade/tools/make_fighter.py`, run with the matting venv. Contact sheets go to the owner's `~/Desktop/DY_arcade_screens/`.
+
+| | Indra | Meghnad |
+|---|---|---|
+| Clips | 121 frames, 24 fps, 1920×1080, ground RGB (24, 255, 12) | same |
+| Stance (idle f0) | ground row 969, feet x 636, stance 671 px | ground row 983, feet x 625, stance 681 px |
+| Idle loop | 55 frames (2.3 s), closing at mean \|Δ\| 1.7 on the figure → **28 cells** | 57 frames (2.4 s), \|Δ\| 0.7 → **29 cells** |
+| Light | wind-up f13, 40% f18, **contact f26**, hold to f41, back by f49 → cells f13 f18 · **f26** · f43 f45 f47 | wind-up f27, 40% f30, **contact f38**, hold to f49, back by f55 → f27 f30 · **f38** · f50 f52 f54 |
+| Pivot wobble (source px) | idle ≤ 1.3; light x −4.6…+12.1 (the lunge's foot) | idle ≤ 0.9; light x −4.6…+27.2 (the front foot steps) |
+| Idle ↔ light registration | 1.5 px | 1.8 px |
+| Sheets | hi 3984×978, 0.56 MB · lo 2022×594, 0.26 MB | hi 4009×1307, 0.59 MB · lo 1910×986, 0.28 MB |
+| Matte | 0 green-tinted edge pixels left (148,801 before the edge despill); no fringe on the Vajra or the crown; rembg never needed | 0 (39,853 before); spear tip and plume clean; rembg never needed |
+| Mirror | 34/34 cells flip about the feet, feet on the ground row | 35/35 |
+
+**What the tool does that the plan didn't spell out:**
+- **Edge despill.** Kling's green leaves a yellow-olive rim on skin and gold, especially on motion smear. Semi-transparent pixels, and the outermost 2 px of the figure, may not carry green above the mean of red and blue (+6). Opaque gold inside the rim is untouched.
+- **Contact = the sharpest frame early in the hold.** Kling's fast strikes smear their first frames; Indra's frame 19 is a one-frame overshoot, and at frame 20 the Vajra vanishes in the blur.
+- **The idle loop is measured on the figure, not the frame.** The green ground would otherwise make any near-still figure look looped.
+
+**The finding that needs a ruling: the art reaches much further than the template's hitboxes.**
+
+| | The weapon tip at contact, from the feet | The light hitbox's far edge |
+|---|---|---|
+| Indra | 199 logical px | 95 |
+| Meghnad | 370 logical px | 140 (with reach +45) |
+
+Even standing in idle, Meghnad's spear is held about 190 px forward, so at fighting distance it passes through the opponent.
+
 ## The size budget (ruling 7)
 
 | | Target | Cap |
@@ -183,7 +234,7 @@ The view is 960×540 logical, on a 1440-px-wide stage.
 | R0 | Page, own Pixi copy, stamp, test runner, lab-law check | Built |
 | R1 | The deterministic fight core + box fighters, keyboard play, the frame data above, cancels, hit-stop, block, crouch vs high, meter, health; the rounds stub | Built |
 | R2 | Touch controls, the 4-frame buffer, the three AI levels under the honest-AI rule, the headless ladder and mirror | Built |
-| R3 | Indra as a real fighter: the fighter tool, the hitbox editor | Needs Indra's clips |
+| R3 | Indra as a real fighter: the fighter tool, the hitbox editor | Clip test done (idle + light for Indra and Meghnad); the full 12-clip set and the hitbox editor follow |
 | R4 | Meghnad on foot + the arena + the specials (the Vajra effect reused) + sound | |
 | R5 | The 3-Hero lineup, best of three, HUD, timer, pause, reduced motion (a third real Hero or a box stand-in) | |
 | R6 | Recovery + coins on a fake clock (ruling 5) | |

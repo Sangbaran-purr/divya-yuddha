@@ -35,18 +35,24 @@
   var CELLS = { idle: 8, walkForward: 8, walkBack: 8, jump: 9, crouch: 4, light: 6, heavy: 9, special: 14, block: 3, hit: 4, ko: 10, win: 10 };
 
   // The archetype stat table (ruling 8: archetypes, not card power). dmg is a percentage applied to the template's damage.
+  // reachPx lengthens the light and heavy hitboxes' far edge; recoveryAdd lengthens their recovery (logic frames).
   var ARCH = {
+    allrounder: { hp: 1000, walkF: 4, walkB: 3, dmg: 100, special: "projectile", projSpeed: 9 },                      // Indra (owner ruling 4, 2026-11-03)
+    reach:      { hp: 1000, walkF: 4, walkB: 3, dmg: 100, special: "rush", rushSpeed: 10, reachPx: 45, recoveryAdd: 2 }, // Meghnad: longest reach, slightly slower recovery
     balanced: { hp: 1000, walkF: 4, walkB: 3, dmg: 100, special: "projectile", projSpeed: 9 },
     rushdown: { hp: 900,  walkF: 5, walkB: 4, dmg: 108, special: "rush", rushSpeed: 10 },
     zoner:    { hp: 950,  walkF: 3, walkB: 3, dmg: 95,  special: "projectile", projSpeed: 11 },
     tank:     { hp: 1150, walkF: 3, walkB: 2, dmg: 100, special: "rush", rushSpeed: 8 }
   };
 
-  // The roster. R0–R2 use three placeholder box Heroes; the real ones arrive from R3 with their clips.
+  // The roster: three placeholder box Heroes, and the slice's two real Heroes as their clips arrive.
   var HEROES = {
     box_surya: { id: "box_surya", name: "Box · Surya", arch: "balanced", color: 0xe8c874 },
     box_rakta: { id: "box_rakta", name: "Box · Rakta", arch: "rushdown", color: 0xd8574a },
-    box_varna: { id: "box_varna", name: "Box · Varna", arch: "zoner", color: 0x5aa7d8 }
+    box_varna: { id: "box_varna", name: "Box · Varna", arch: "zoner", color: 0x5aa7d8 },
+    // the clip test: real art for idle and light (fighters/<id>/); every other move still draws as a box
+    indra:   { id: "indra", name: "Indra", arch: "allrounder", color: 0xe8c874, fighter: "indra" },
+    meghnad: { id: "meghnad", name: "Meghnad", arch: "reach", color: 0x9b4fd1, fighter: "meghnad" }
   };
 
   return { BODY: BODY, MOVES: MOVES, CHAIN_MAX: CHAIN_MAX, METER: METER, JUMP: JUMP, PROJECTILE: PROJECTILE, FRICTION: FRICTION,
