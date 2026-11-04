@@ -8,6 +8,16 @@
       "version": "8.19.0",
       "bytes": 798434,
       "sha256": "28fefb52eeb15bb3e087533456bafc53e91af70932af4dd046ff2938ec3edd0e"
+    },
+    {
+      "to": "effects/vajra/",
+      "from": "lab/vfx-manifestation/effects/vajra/",
+      "labCommit": "d6fe0da639691a8e0e1e1ece40cd1b95a30fe851",
+      "sha256": {
+        "atlas.webp": "12858ebcd0a1723cd5300a4ceb37bfdb6a7fa3291a97b2e4f8ed8f02ea074240",
+        "manifest.json": "efed1a73ee0004f67feb9e498984b3bbe56ef2f02580d5d60bd7151f8370b912"
+      },
+      "why": "ARCADE-1 enhancement test: the VFX lab's Vajra strike, reused as Indra's special placeholder (owner ruling 2026-11-04)"
     }
   ]
 }

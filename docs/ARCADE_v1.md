@@ -201,6 +201,61 @@ The tool is `lab/arcade/tools/make_fighter.py`, run with the matting venv. Conta
 
 Even standing in idle, Meghnad's spear is held about 190 px forward, so at fighting distance it passes through the opponent.
 
+## The enhancement test (2026-11-04): does it feel better?
+
+Three switches on the lab page, each defaulting to the R0–R2 baseline, and a scripted bout so every mode shows the same fight. The fight core, its 60 Hz step and its frame data are unchanged; everything below is presentation (`ui/present.js`).
+
+| Switch | What it turns on |
+|---|---|
+| `fx=1` | Hit-flash, sparks (gold for Indra, dark red for Meghnad, blue on block), shake and punch-zoom on heavy and special, knockback and landing dust, ground shadows, a 2-ghost trail on strike frames, K.O. slow-mo (¼ speed, zoom 1.45), the Vajra pillar on Indra's special (the copied VFX-lab clip, `effects/vajra/`), and borrowed art for moves with no clip yet (any attack plays the light's cells, everything else loops the idle). |
+| `fps=24` / `fps=48` | The HD sheets (`fighters/<hero>/f24`, `f48`, stance 512 hi / 320 lo), with a 3-frame cross-fade when the art changes move. |
+| `cam=tight` | The dynamic camera: it follows the midpoint and zooms with distance, zoom = 960 / (gap + 420), clamped to 0.8–1.25, eased (k = 1 − e^(−6·dt)), never past the stage ends. |
+| `demo=1` | The demo bout on a loop. `capture=<name>` records it (with `tools/capture_server.js`). `perf=1` shows the probe; `cpu=N` stretches each frame's work N times. |
+
+**Recordings** (on the owner's Desktop, `DY_arcade_screens/`): `arcade_1_baseline`, `arcade_2_fx_tight_12fps`, `arcade_3_fx_tight_24fps`, `arcade_4_fx_tight_48fps` (MP4 + GIF each), frame strips for 1 and 4, and `indra_interp_artefacts.jpg` / `meghnad_interp_artefacts.jpg`.
+
+### The in-betweens (48 fps)
+
+The source clips are 24 fps, so 24 fps needs no invented frame. 48 fps needs one between every pair: made offline with OpenCV DIS optical flow both ways and premultiplied warp and blend. Each method was audited by re-making a real frame from its two neighbours.
+
+- **Idle: clean.** Error on the weapon at most 7.3/255 (Indra) and 14.6/255 (Meghnad). It reads as smoother breathing.
+- **The light: not usable.** On the fast strike the weapon error reaches 98/255: a doubled Vajra, a smeared hand, a green halo at the tip. So the tool takes the light's nearest real frame, and the light is never interpolated at any fps. A fast strike at 48 fps is therefore no smoother than at 24.
+
+### Measured (two fighters: Indra + Meghnad, idle + light only)
+
+Throttled browser runs, the demo bout, `cpu=4`, 960×540, Pixi WebGL. Frame work stayed under 1.2 ms on average at every setting. The worst single frame was the sheet upload: 566 ms at 48 fps hi, 150–200 ms at the others.
+
+| | Download (2 fighters) | Decoded graphics memory (2 fighters) | Sheet pages | fps at cpu 4 |
+|---|---|---|---|---|
+| 12 fps hi (baseline) | 1.20 MB | 36.5 MB | 1 each | 120 |
+| 12 fps lo | 0.56 MB | 12.3 MB | 1 each | 120 |
+| 24 fps hi | 3.82 MB | 155 MB | 1 + 2 | 120 |
+| 24 fps lo | 1.99 MB | 59 MB | 2 + 3 | 120 |
+| 48 fps hi | 7.93 MB | 301 MB | 2 + 4 | 112 |
+| 48 fps lo | 4.06 MB | 119 MB | 3 + 5 | 120 |
+| + `fx=1` | + 0.33 MB (Vajra atlas) | + 18.5 MB | 1 | no change |
+
+Projected to the full moveset (about 90 cells per fighter at 12 fps), a match of 6 fighters, and 2 in memory at once:
+
+| | One match download | Graphics memory (2 fighters) | vs the budget (4–6 MB low / 8.5–11 MB high; ≤48 / ≤96 MB) |
+|---|---|---|---|
+| 12 fps hi | 9.4 MB | 95 MB | Fits, at the edge |
+| 12 fps lo | 4.4 MB | 32 MB | Fits |
+| 24 fps lo | 17 MB | 169 MB | Over: 3.5× the memory |
+| 24 fps hi | 33 MB | 443 MB | Far over |
+| 48 fps (either) | 35–68 MB | 341–861 MB | Far over |
+
+The CPU is not the limit; graphics memory is. These numbers are for two moves only, and the HD sheets bust the cap already.
+
+### Recommendation
+
+**`fx=1` + `cam=tight` on the 12 fps sheets.** That is where the feel comes from (hit-flash, sparks, shake, the camera closing in, the K.O. slow-mo, the Vajra pillar), and it costs 0.33 MB and 18.5 MB of memory. 24 fps looks smoother in idle but cannot be afforded as the full set. 48 fps buys nothing on strikes, because the in-betweens ghost.
+
+Worth a ruling:
+1. Allow the cross-fade at 12 fps (today it is on only at ≥ 24).
+2. If smoothness is wanted, use 24 fps on the strike frames only (a handful of cells per move), not across the whole set.
+3. **Still open:** up close the art overlaps the opponent (Meghnad's spear passes through), because the hitboxes and push boxes are template-sized. The camera makes this more visible. This is the reach/spacing ruling from the clip test.
+
 ## The size budget (ruling 7)
 
 | | Target | Cap |
@@ -234,7 +289,7 @@ The view is 960×540 logical, on a 1440-px-wide stage.
 | R0 | Page, own Pixi copy, stamp, test runner, lab-law check | Built |
 | R1 | The deterministic fight core + box fighters, keyboard play, the frame data above, cancels, hit-stop, block, crouch vs high, meter, health; the rounds stub | Built |
 | R2 | Touch controls, the 4-frame buffer, the three AI levels under the honest-AI rule, the headless ladder and mirror | Built |
-| R3 | Indra as a real fighter: the fighter tool, the hitbox editor | Clip test done (idle + light for Indra and Meghnad); the full 12-clip set and the hitbox editor follow |
+| R3 | Indra as a real fighter: the fighter tool, the hitbox editor | Clip test and the enhancement test done (idle + light for Indra and Meghnad; fx, camera, 24/48 fps measured); the full 12-clip set and the hitbox editor follow |
 | R4 | Meghnad on foot + the arena + the specials (the Vajra effect reused) + sound | |
 | R5 | The 3-Hero lineup, best of three, HUD, timer, pause, reduced motion (a third real Hero or a box stand-in) | |
 | R6 | Recovery + coins on a fake clock (ruling 5) | |

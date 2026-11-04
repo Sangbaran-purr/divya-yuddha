@@ -16,7 +16,7 @@ const red = (name, cond) => ok(name + ' → red', cond);
 const J = JSON.stringify;
 
 // ── a loader that evaluates the core from source, optionally with mutations (the breakages) ──
-const FILES = { moves: 'core/moves.js', fight: 'core/fight.js', rng: 'core/rng.js', ai: 'core/ai.js', match: 'core/match.js', controls: 'ui/controls.js', scene: 'ui/scene.js' };
+const FILES = { moves: 'core/moves.js', fight: 'core/fight.js', rng: 'core/rng.js', ai: 'core/ai.js', match: 'core/match.js', controls: 'ui/controls.js', scene: 'ui/scene.js', present: 'ui/present.js', demo: 'ui/demo.js' };
 function load(mut) {
   mut = mut || {};
   const src = {};
@@ -27,7 +27,7 @@ function load(mut) {
     src[k] = s;
   }
   const cache = {};
-  const byPath = { './moves.js': 'moves', './fight.js': 'fight', './rng.js': 'rng', '../core/fight.js': 'fight', '../core/moves.js': 'moves' };
+  const byPath = { './moves.js': 'moves', './fight.js': 'fight', './rng.js': 'rng', '../core/fight.js': 'fight', '../core/moves.js': 'moves', './scene.js': 'scene' };
   function req(k) {
     if (cache[k]) return cache[k].exports;
     const module = { exports: {} }; cache[k] = module;
@@ -53,16 +53,19 @@ function closeIn(K, g, dist) {   // walk side 0 forward until the gap is `dist` 
 
 console.log('── ARCADE-1 · R0 · the page, the stamp, the copy, the lab law ──');
 const has = (f) => fs.existsSync(path.join(LAB, f));
+const ENH = has('ui/present.js');   // the enhancement test's files (checked as part of rung 3 once they exist)
 const RUNG = has('fighters/indra/manifest.json') ? 3 : has('core/ai.js') && has('ui/controls.js') ? 2 : has('core/fight.js') ? 1 : 0;
 const BY_RUNG = [
   ['index.html', 'STAMP', 'README.md', '.gitignore', 'LAW_BASE', 'runtime/pixi.min.mjs', 'runtime/COPY.json', 'tools/stamp.js', 'test/run.js', 'test/game_counts.json'],
   ['core/moves.js', 'core/fight.js', 'core/rng.js', 'core/match.js', 'ui/scene.js'],
   ['core/ai.js', 'ui/controls.js', 'ui/app.js', 'ui/app.css'],
   ['tools/make_fighter.py'].concat(...['indra', 'meghnad'].map((h) => ['fighters/' + h + '/manifest.json', 'fighters/' + h + '/hi.webp', 'fighters/' + h + '/lo.webp']))];
-const NEEDED = [].concat(...BY_RUNG.slice(0, RUNG + 1));
+const ENH_FILES = ['ui/present.js', 'ui/demo.js', 'tools/make_fighter_hd.py', 'tools/capture_server.js', 'tools/assemble_capture.py', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json']
+  .concat(...['indra', 'meghnad'].map((h) => ['f24', 'f48'].map((f) => 'fighters/' + h + '/' + f + '/manifest.json')));
+const NEEDED = [].concat(...BY_RUNG.slice(0, RUNG + 1)).concat(ENH ? ENH_FILES : []);
 console.log('  (rung ' + RUNG + ': the suite checks R0' + (RUNG ? '–R' + (RUNG === 3 ? '2 + the R3 clip test' : RUNG) : '') + ')');
 const missing = NEEDED.filter((f) => !fs.existsSync(path.join(LAB, f)));
-ok('R0.1 · the lab has every file of its rungs so far: the page, its own Pixi copy, the stamp tool and this suite' + (RUNG >= 1 ? ', the core and the scene' : '') + (RUNG >= 2 ? ', the AI, the controls and the app' : '') + (RUNG >= 3 ? ', the fighter tool and both clip-test fighters' : '') + ' (' + NEEDED.length + ' files)', missing.length === 0, missing);
+ok('R0.1 · the lab has every file of its rungs so far: the page, its own Pixi copy, the stamp tool and this suite' + (RUNG >= 1 ? ', the core and the scene' : '') + (RUNG >= 2 ? ', the AI, the controls and the app' : '') + (RUNG >= 3 ? ', the fighter tool and both clip-test fighters' : '') + (ENH ? ', the enhancement test (presentation, demo, HD tool, recorder, Vajra copy, f24/f48 sheets)' : '') + ' (' + NEEDED.length + ' files)', missing.length === 0, missing);
 const ST = require(path.join(LAB, 'tools/stamp.js')), stamp = ST.compute(), html = rd('index.html');
 ok('R0.2 · THE STAMP is current: STAMP = the hash of every loaded file (' + ST.inputs().length + '), and every script, stylesheet and the meta carry it (' + stamp + ')',
   rd('STAMP').trim() === stamp && ST.stampPage(html, stamp) === html && (html.match(/\?v=([0-9a-f]{12})/g) || []).every((m) => m.endsWith(stamp)));
@@ -90,7 +93,7 @@ const live = ['index.html'].concat(fs.readdirSync(path.join(REPO, 'src')).map((f
   .filter((f) => fs.statSync(path.join(REPO, f)).isFile());
 const leaks = live.filter((f) => /lab\/arcade/.test(fs.readFileSync(path.join(REPO, f), 'utf8')));
 ok('R0.6 · nothing in the live game names lab/arcade (' + live.length + ' files: index.html, src/, scripts/)', leaks.length === 0, leaks);
-const labJs = ['core/moves.js', 'core/fight.js', 'core/rng.js', 'core/ai.js', 'core/match.js', 'ui/controls.js', 'ui/scene.js', 'ui/app.js'].filter(has);
+const labJs = ['core/moves.js', 'core/fight.js', 'core/rng.js', 'core/ai.js', 'core/match.js', 'ui/controls.js', 'ui/scene.js', 'ui/app.js', 'ui/present.js', 'ui/demo.js'].filter(has);
 ok('R0.7 · no console.log in the page\'s code (' + labJs.length + ' files)', labJs.every((f) => !/console\.log/.test(rd(f))));
 const gi = rd('.gitignore');
 ok('R0.8 · the clip law is in place before any clip exists: sources/, frames/, matted/ and video files are ignored', ['sources/', 'frames/', 'matted/', '*.mp4', '*.mov'].every((p) => gi.includes(p)));
@@ -554,6 +557,108 @@ const BR3 = [
 for (const [name, mut, check] of BR3) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }
 const badMan = JSON.parse(JSON.stringify(MAN.indra)); badMan.rungs.hi.cells[3].py -= 40;
 red('K5 · a cell cut on the head instead of the feet: its pivot 40 px above the cell\'s bottom (C1 goes red)', !sheetsOk(badMan));
+
+
+if (ENH) {
+console.log('\n── ARCADE-1 · enhancement test · the switches, the camera, the HD sheets, the demo ──');
+const PR = K.present, DM = K.demo, SC = K.scene;
+function modesOk(KK) {
+  const d = KK.present.parseModes(''), j = KK.present.parseModes('?fx=1&fps=24&cam=tight'), bad = KK.present.parseModes('?fx=2&fps=30&cam=zoom&cpu=99');
+  return d.fx === false && d.fps === 12 && d.cam === 'wide' && !d.demo && !d.capture && d.cpu === 1 &&
+    j.fx && j.fps === 24 && j.cam === 'tight' && KK.present.parseModes('?fps=48').fps === 48 && KK.present.parseModes('?capture=x').demo &&
+    bad.fx === false && bad.fps === 12 && bad.cam === 'wide' && bad.cpu === 10;
+}
+ok('E1 · THE SWITCHES DEFAULT TO THE BASELINE: no query = fx off, 12 fps, the fixed wide camera, no demo; ?fx=1&fps=24|48&cam=tight turn each on; anything else falls back to the baseline', modesOk(K));
+function camAt(KK, gap, mode) {
+  const g = KK.fight.newFight({ p0: 'box_surya', p1: 'box_rakta' }), U = KK.fight.U, mid = KK.fight.STAGE_W / 2;
+  g.f[0].x = Math.round((mid - gap / 2) * U); g.f[1].x = Math.round((mid + gap / 2) * U);
+  return KK.scene.cameraTarget(g, mode);
+}
+function camOk(KK) {
+  const near = camAt(KK, 100, 'tight'), mid = camAt(KK, 400, 'tight'), far = camAt(KK, 900, 'tight'), wide = camAt(KK, 100, 'wide');
+  const eased = KK.scene.easeCamera({ x: 0, zoom: 1 }, { x: 100, zoom: 1.2 }, 1 / 60), first = KK.scene.easeCamera(null, near, 1 / 60);
+  return { ok: near.zoom === KK.scene.ZOOM_MAX && far.zoom === KK.scene.ZOOM_MIN && mid.zoom < near.zoom && mid.zoom > far.zoom && wide.zoom === 1 &&
+    eased.x > 0 && eased.x < 100 && eased.zoom > 1 && eased.zoom < 1.2 && first.x === near.x && first.zoom === near.zoom &&
+    near.x - KK.scene.VIEW_W / 2 / near.zoom >= 0 && far.x + KK.scene.VIEW_W / 2 / far.zoom <= KK.fight.STAGE_W + 1e-9,
+    z: [near.zoom, mid.zoom, far.zoom].map((v) => v.toFixed(2)).join(' → ') };
+}
+const CAM = camOk(K);
+ok('E2 · THE DYNAMIC CAMERA (cam=tight): zooms in close, out far, clamped to [' + SC.ZOOM_MIN + ', ' + SC.ZOOM_MAX + '] (gap 100 / 400 / 900 px → zoom ' + CAM.z + '), eases (one 60 Hz frame moves part-way), never shows past the stage ends; cam=wide stays at zoom 1', CAM.ok);
+function sameWide(KK) {   // the baseline scene is untouched: no opts.cam = the R0–R2 picture, shape for shape
+  const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }); for (let i = 0; i < 90; i++) KK.fight.step(g, [KK.fight.BTN.R, 0]);
+  const a = KK.scene.build(g, { fighters: MAN, rung: 'hi' }), b = KK.scene.build(g, { fighters: MAN, rung: 'hi', cam: KK.scene.cameraTarget(g, 'wide') });
+  return J(a.shapes) === J(b.shapes) && a.zoom === 1;
+}
+ok('E3 · the wide camera through the new path draws exactly the R0–R2 picture', sameWide(K));
+const HD = {}; for (const h of HEROS) for (const f of ['f24', 'f48']) HD[h + '/' + f] = JSON.parse(rd('fighters/' + h + '/' + f + '/manifest.json'));
+function hdOk(m, fps) {
+  const errs = [];
+  if (m.fpsOut !== fps) errs.push('fps');
+  if (m.stance.heightPx.hi !== 512 || m.stance.heightPx.lo !== 320) errs.push('stance');
+  for (const r of ['hi', 'lo']) {
+    const R = m.rungs[r], cap = r === 'hi' ? 4096 : 2048;
+    R.pages.forEach((p, i) => { if (p.size[0] > cap || p.size[1] > cap) errs.push(r + ' page ' + i + ' over ' + cap); if (!fs.existsSync(path.join(LAB, 'fighters', m.hero, 'f' + fps, p.sheet))) errs.push('missing ' + p.sheet); });
+    R.cells.forEach((c, i) => { const p = R.pages[c.page]; if (!p || c.x < 0 || c.y < 0 || c.x + c.w > p.size[0] || c.y + c.h > p.size[1] || c.px < 0 || c.px > c.w || c.py > c.h + 0.5) errs.push(r + ' cell ' + i); });
+    if (R.cells.length !== m.plan.length) errs.push(r + ' cells ≠ plan');
+  }
+  // the light's cells sit at fractional clip times but the tool takes the NEAREST REAL frame for them (make_fighter_hd.py) — so the
+  // manifest's in-between count must equal the idle cells at fractional times, i.e. no light cell is counted as an in-between
+  const idleFrac = m.plan.filter((p) => p[0] === 'idle' && p[2] !== Math.round(p[2])).length;
+  if (m.interpolated !== idleFrac) errs.push('in-betweens ' + m.interpolated + ' ≠ idle at fractional times ' + idleFrac);
+  const ci = m.cellIndex, L = ci.light, want = (fr) => Math.round(fr * fps / 60);
+  const arch = KK0().moves.HEROES[m.hero].arch, mv = KK0().fight.moveOf({ arch: arch, move: 'light' }, 'light');
+  if (L.startup.length !== want(mv.startup) || L.active.length !== Math.max(1, want(mv.active)) || L.recovery.length !== want(mv.recovery)) errs.push('light phases');
+  const all = ci.idle.concat(L.startup, L.active, L.recovery);
+  if (all.some((c) => !(c >= 0 && c < m.plan.length)) || ci.idle.some((c) => m.plan[c][0] !== 'idle')) errs.push('cellIndex');
+  return errs;
+}
+function KK0() { return K; }
+const HDE = Object.keys(HD).map((k) => ({ k, e: hdOk(HD[k], +k.split('/f')[1]) }));
+ok('E4 · THE HD SHEETS (f24, f48): every page within its rung (hi ≤4096, lo ≤2048) and on disk, every cell inside its page with its pivot inside the cell, the light time-mapped onto the archetype\'s own phases (round(frames × fps / 60) cells each) and NEVER interpolated — only idle may be (' +
+  Object.keys(HD).map((k) => k + ' ' + HD[k].plan.length + ' cells, ' + HD[k].interpolated + ' interpolated').join(' · ') + ')', HDE.every((x) => !x.e.length), J(HDE.filter((x) => x.e.length)));
+const AUD = Object.keys(HD).filter((k) => HD[k].interpolated).map((k) => ({ k, worst: Math.max(...HD[k].interpAudit.idle.map((a) => a.weapon)) }));
+ok('E5 · THE INTERPOLATION AUDIT (each in-between re-made from its real neighbours and compared): idle in-betweens hold within 16/255 on the weapon (' + AUD.map((a) => a.k + ' ≤' + a.worst).join(', ') + '; the fast strike measured up to ' + Math.max(...Object.values(HD).filter((m) => m.interpolated).flatMap((m) => m.interpAudit.lightFast.map((a) => a.weapon))) + ' — so the tool takes the light\'s nearest real frame)',
+  AUD.length === 2 && AUD.every((a) => a.worst <= 16) && lightReal(rd('tools/make_fighter_hd.py')));
+function lightReal(py) { return /if move == "light": fr = seq\[min\(len\(seq\) - 1, int\(round\(p\)\)\)\]/.test(py); }
+function demoRun(KK) {
+  const g = KK.fight.newFight({ p0: KK.demo.LINEUPS[0][0], p1: KK.demo.LINEUPS[1][0] }), D = KK.demo.create(), ev = [];
+  for (let i = 0; i < 3000 && !g.over; i++) KK.fight.step(g, KK.demo.inputs(D, g));
+  return { over: g.over, frame: g.frame, winner: g.winner, ko: g.f.some((f) => f.state === 'ko'), hits: g.events.filter((e) => e.t === 'hit').length, ev: J(g.events) };
+}
+const DA = demoRun(K), DB = demoRun(load());
+ok('E6 · THE DEMO BOUT is deterministic and ends in a K.O.: Indra vs Meghnad, ' + DA.hits + ' hits, K.O. at frame ' + DA.frame + ', the same event stream on a second run', DA.over && DA.ko && DA.hits >= 4 && DA.ev === DB.ev && DA.frame === DB.frame);
+function switchesOk(KK, man) {   // cross-fade only at fps ≥ 24; borrowed art only with fx; no presentation shape without fx
+  const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }), B2 = KK.fight.BTN;
+  const runP = (modes, fallback) => { const P = KK.present.create(modes), gg = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }); let fades = 0, extra = 0, borrowed = 0;
+    for (let i = 0; i < 60; i++) { KK.fight.step(gg, [i === 5 ? B2.LT : i === 30 ? B2.HV : 0, 0]); const b = KK.scene.build(gg, { fighters: man, rung: 'lo', fallback: fallback, cam: KK.present.camera(P, gg, null, 1 / 60) });
+      KK.present.tick(P, gg, b); const sh = KK.present.shapes(P, gg, b); fades += sh.filter((x) => /^fade/.test(x.tag)).length; extra += sh.length; if (gg.f[0].state === 'attack' && gg.f[0].move === 'heavy') borrowed += b.shapes.filter((x) => x.k === 'sprite' && x.side === 0).length; }
+    return { fades, extra, borrowed }; };
+  const base = runP(KK.present.parseModes(''), false), f24 = runP(KK.present.parseModes('?fps=24'), false), fx = runP(KK.present.parseModes('?fx=1'), true);
+  return { ok: base.fades === 0 && base.extra === 0 && base.borrowed === 0 && f24.fades > 0 && fx.borrowed > 0 && fx.extra > 0 && fx.fades === 0, base, f24, fx };
+}
+const SW = switchesOk(K, MAN);
+ok('E7 · EACH LOOK ONLY WITH ITS SWITCH: the baseline adds no shape, no cross-fade, no borrowed art; fps=24 cross-fades a move change (' + SW.f24.fades + ' fade shapes); fx=1 borrows art for the heavy (' + SW.fx.borrowed + ' frames) and adds its shadows/sparks (' + SW.fx.extra + ' shapes)', SW.ok, J(SW));
+const code = (f) => rd(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+const NOR = ['ui/present.js', 'ui/demo.js'].filter((f) => /Math\.random|Date\.now|performance\.now/.test(code(f)));
+ok('E8 · the presentation and the demo are deterministic: no Math.random, no clock (a capture of the same bout is the same video)', NOR.length === 0, NOR);
+const trackedE = git(['ls-files', 'lab/arcade']).concat(git(['diff', '--name-only', '--cached']));
+ok('E9 · the recorder\'s output is never tracked: captures/ is ignored and no capture frame or video is staged or committed', gi.includes('captures/') && !trackedE.some((f) => /\/captures\/|\.(mp4|gif)$/.test(f)));
+
+console.log('\n── ARCADE-1 · enhancement test · breakages: each must go red ──');
+const BRE = [
+  ['X1 · the camera zoom unclamped (E2 goes red)', { scene: [['var zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, VIEW_W / (dist + ZOOM_MARGIN)));', 'var zoom = VIEW_W / (dist + ZOOM_MARGIN);']] }, (KK) => camOk(KK).ok],
+  ['X2 · the camera snapping instead of easing (E2 goes red)', { scene: [['var k = 1 - Math.exp(-dt * 6);', 'var k = 1;']] }, (KK) => camOk(KK).ok],
+  ['X3 · fx on by default (E1 goes red)', { present: [['fx: q.fx === "1"', 'fx: q.fx !== "0"']] }, (KK) => modesOk(KK)],
+  ['X4 · the cross-fade at 12 fps too (E7 goes red)', { present: [['if (P.modes.fps >= 24 && L', 'if (L']] }, (KK) => switchesOk(KK, MAN).ok],
+  ['X5 · the demo\'s stated nudges dropped — a different bout, no K.O. on schedule (E6 goes red)', { demo: [['if (!D.nudged && s.nudge && both)', 'if (false)']] }, (KK) => { const r = demoRun(KK); return r.over && r.ko && r.ev === DA.ev; }]
+];
+for (const [name, mut, check] of BRE) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }
+const badHD = JSON.parse(J(HD['indra/f48'])); badHD.interpolated += 4;
+red('X6 · four light cells counted as in-betweens (E4 goes red)', hdOk(badHD, 48).length > 0);
+red('X6b · the tool interpolating the light like the idle (E5 goes red)', !lightReal(rd('tools/make_fighter_hd.py').replace('if move == "light": fr = seq[', 'if False: fr = seq[')));
+const badHD2 = JSON.parse(J(HD['meghnad/f24'])); badHD2.rungs.lo.cells[0].x = badHD2.rungs.lo.pages[badHD2.rungs.lo.cells[0].page].size[0] - 10;
+red('X7 · a cell running off its page (E4 goes red)', hdOk(badHD2, 24).length > 0);
+}
 
 finish();
 

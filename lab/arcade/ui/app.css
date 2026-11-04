@@ -56,3 +56,4 @@ button.big { border-color: var(--gold); color: var(--gold); font-weight: 600; le
 .panel { background: #1a1208; border: 1px solid var(--gold-dim); border-radius: 12px; padding: 1.2rem 1.4rem; min-width: 260px; display: flex; flex-direction: column; gap: .6rem; text-align: center; }
 .panel h2 { color: var(--gold); margin: 0 0 .3rem; }
 #res-rounds { font-size: .85rem; color: #cdbb8f; text-align: left; }
+#perf { position: absolute; left: 10px; bottom: 8px; font: 12px/1.3 ui-monospace, Menlo, monospace; color: #9fd39f; background: rgba(0,0,0,.5); padding: 2px 6px; border-radius: 4px; pointer-events: none; }

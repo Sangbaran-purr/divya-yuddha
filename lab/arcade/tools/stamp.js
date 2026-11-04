@@ -2,13 +2,13 @@
 'use strict';
 // tools/stamp.js — THE ARCADE LAB'S STAMP (the VFX lab's rule).   node lab/arcade/tools/stamp.js [--check]
 // Pages caches what it serves, so every URL the page loads carries ?v=<STAMP>: a content hash (sha256, 12 hex) of every file
-// the page loads — core/, ui/, runtime/, fighters/. index.html and STAMP carry the stamp, so they are not inputs.
+// the page loads — core/, ui/, runtime/, fighters/, effects/. index.html and STAMP carry the stamp, so they are not inputs.
 //   write (default): STAMP ← the hash; index.html ← the lab-stamp meta and ?v= on every script and stylesheet.
 //   --check:         exit 1 unless STAMP and index.html already carry the current hash (the suite runs this).
 // Run it after changing any lab file, before committing.
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const LAB = path.resolve(__dirname, '..');
-const DIRS = ['core', 'ui', 'runtime', 'fighters'];
+const DIRS = ['core', 'ui', 'runtime', 'fighters', 'effects'];
 const LOADED = /\.(js|mjs|json|css|png|webp|jpe?g|mp3)$/i;
 
 function walk(rel, out) {

@@ -14,18 +14,40 @@
   //   light is stretched onto the game's own phases: the startup cells across the startup frames, the contact cell across the
   //         active frames, the recovery cells across the recovery (the archetype's own length — Meghnad's is 2 frames longer).
   // Every other state has no art yet (ruling: other moves stay boxes).
-  function artCell(g, f, man) {
+  // fallback (the enhancement test's ?fx=1 only): a state with no clip yet borrows art — any attack plays the light's cells on
+  // its own phases, a KO holds the stance cell (the presentation tilts and fades it), everything else loops the idle.
+  function artCell(g, f, man, fallback) {
     if (!man) return null;
     var ci = man.cellIndex;
     if (f.state === "idle") { var n = ci.idle.length; return { move: "idle", cell: ci.idle[Math.floor(g.frame * man.fpsOut / 60) % n] }; }
-    if (f.state === "attack" && f.move === "light") {
+    if (f.state === "attack" && (f.move === "light" || fallback)) {
       var m = F.moveOf(f), L = ci.light;
       if (f.mf < m.startup) return { move: "light", phase: "startup", cell: L.startup[Math.floor(f.mf * L.startup.length / m.startup)] };
       if (f.mf < m.startup + m.active) return { move: "light", phase: "active", cell: L.active[Math.floor((f.mf - m.startup) * L.active.length / m.active)] };
       var r = f.mf - m.startup - m.active;
       return { move: "light", phase: "recovery", cell: L.recovery[Math.min(L.recovery.length - 1, Math.floor(r * L.recovery.length / m.recovery))] };
     }
-    return null;
+    if (!fallback) return null;
+    if (f.state === "ko") return { move: "ko", cell: ci.idle[0], borrowed: true };
+    var k = ci.idle.length; return { move: "idle", cell: ci.idle[Math.floor(g.frame * man.fpsOut / 60) % k], borrowed: true };
+  }
+
+  // THE DYNAMIC CAMERA (?cam=tight): it follows the midpoint and zooms with the fighters' distance — tight when close (a stance
+  // is then about half the screen's height), wider as they part, never past the stage ends. "wide" is the fixed R0–R2 camera.
+  var ZOOM_MAX = 1.25, ZOOM_MIN = 0.8, ZOOM_MARGIN = 420;
+  function cameraTarget(g, mode) {
+    var mid = (g.f[0].x + g.f[1].x) / 2 / F.U;
+    if (mode !== "tight") return { x: cameraX(g) + VIEW_W / 2, zoom: 1 };
+    var dist = Math.abs(g.f[1].x - g.f[0].x) / F.U;
+    var zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, VIEW_W / (dist + ZOOM_MARGIN)));
+    var half = VIEW_W / 2 / zoom;
+    return { x: Math.max(half, Math.min(F.STAGE_W - half, mid)), zoom: zoom };
+  }
+  // exponential easing toward the target; dt in seconds
+  function easeCamera(cam, target, dt) {
+    if (!cam) return { x: target.x, zoom: target.zoom };
+    var k = 1 - Math.exp(-dt * 6);
+    return { x: cam.x + (target.x - cam.x) * k, zoom: cam.zoom + (target.zoom - cam.zoom) * k };
   }
 
   // the camera follows the midpoint of the two fighters and never shows past the stage ends
@@ -40,7 +62,8 @@
 
   function build(g, opts) {
     opts = opts || {};
-    var cam = cameraX(g), out = [];
+    // opts.cam = {x, zoom}: the view is centred on x and scaled about the ground line; absent, the fixed camera as before
+    var cam = opts.cam ? opts.cam.x - VIEW_W / 2 : cameraX(g), out = [];
     var layer = "bg";
     function rect(r, fill, alpha, tag, stroke) { out.push({ k: "rect", layer: layer, x: r.x, y: r.y, w: r.w, h: r.h, fill: fill, alpha: alpha == null ? 1 : alpha, stroke: stroke || null, tag: tag || "" }); }
     // the placeholder arena: sky, a far band that scrolls slowly (so movement reads), the ground
@@ -57,12 +80,12 @@
     g.f.forEach(function (f) {
       var hero = M.HEROES[f.hero], hb = toView(F.hurtbox(f), cam);
       var flash = !opts.reducedMotion && g.hitstop > 0 && f.state === "hitstun";
-      var man = hero.fighter && opts.fighters ? opts.fighters[hero.fighter] : null, art = artCell(g, f, man);
+      var man = hero.fighter && opts.fighters ? opts.fighters[hero.fighter] : null, art = artCell(g, f, man, opts.fallback);
       layer = "body";
       if (art) {
         // a real fighter: the cell, its feet pivot on the fighter's ground point, its stance scaled to the hurtbox's height
         var rung = opts.rung || "hi";
-        out.push({ k: "sprite", layer: "body", tag: "sprite" + f.side, fighter: hero.fighter, rung: rung, cell: art.cell, move: art.move, phase: art.phase || null,
+        out.push({ k: "sprite", layer: "body", tag: "sprite" + f.side, side: f.side, fighter: hero.fighter, rung: rung, cell: art.cell, move: art.move, phase: art.phase || null, ko: art.move === "ko",
           x: f.x / F.U - cam, y: GROUND_Y - f.y / F.U, scale: STANCE_LOGICAL / man.stance.heightPx[rung], flip: f.facing === -1, alpha: 1 });
       } else {
         var color = flash ? 0xffffff : f.state === "ko" ? 0x555555 : hero.color;
@@ -85,8 +108,17 @@
     });
     layer = "fx";
     g.proj.forEach(function (p) { rect(toView(F.projBox(p), cam), 0xffd76a, 0.95, "proj" + p.owner); });
-    return { cam: cam, shapes: out };
+    if (opts.cam && opts.cam.zoom !== 1) {   // the zoom: about the screen's centre column and the ground line
+      var z = opts.cam.zoom, cx = VIEW_W / 2;
+      out.forEach(function (s) {
+        if (s.tag === "sky" || s.tag === "far" || s.tag === "ground" || s.tag === "groundline") return;
+        s.x = (s.x - cx) * z + cx; s.y = GROUND_Y - (GROUND_Y - s.y) * z;
+        if (s.k === "sprite") s.scale *= z; else { s.w *= z; s.h *= z; }
+      });
+    }
+    return { cam: cam, zoom: opts.cam ? opts.cam.zoom : 1, shapes: out };
   }
 
-  return { VIEW_W: VIEW_W, VIEW_H: VIEW_H, GROUND_Y: GROUND_Y, STANCE_LOGICAL: STANCE_LOGICAL, cameraX: cameraX, artCell: artCell, build: build };
+  return { VIEW_W: VIEW_W, VIEW_H: VIEW_H, GROUND_Y: GROUND_Y, STANCE_LOGICAL: STANCE_LOGICAL, cameraX: cameraX, artCell: artCell, build: build,
+    cameraTarget: cameraTarget, easeCamera: easeCamera, ZOOM_MAX: ZOOM_MAX, ZOOM_MIN: ZOOM_MIN };
 });

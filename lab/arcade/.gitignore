@@ -10,3 +10,5 @@ clips/
 tools/.venv/
 __pycache__/
 .DS_Store
+# the recorder's frames (tools/capture_server.js) — the assembled videos go to the owner's Desktop, never here
+captures/

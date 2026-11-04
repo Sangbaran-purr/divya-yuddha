@@ -2,7 +2,7 @@
 
 The experiment ground for **ARCADE-1**: a real-time 1v1 fighting mode, player vs AI, in the browser. The rulings, the moveset template, the Kling clip card and the size budget are in `docs/ARCADE_v1.md`.
 
-**Status:** R0–R2 plus the R3 clip test. Three placeholder box Heroes plus **Indra and Meghnad**, whose idle and light are real art from the owner's Kling clips; every other move still draws as a box.
+**Status:** R0–R2 plus the R3 clip test and the enhancement test (fx, camera, 24/48 fps; results in `docs/ARCADE_v1.md`). Three placeholder box Heroes plus **Indra and Meghnad**, whose idle and light are real art from the owner's Kling clips; every other move still draws as a box.
 
 ## The lab law
 
@@ -15,6 +15,8 @@ The experiment ground for **ARCADE-1**: a real-time 1v1 fighting mode, player vs
 
 - **On your machine:** start the repo's `static` server (`.claude/launch.json`, port 4599) and open `http://localhost:4599/lab/arcade/`.
 - **Pages, public but unlinked:** `https://sangbaran-purr.github.io/divya-yuddha/lab/arcade/`.
+- **The enhancement switches**, all off by default (the R0–R2 look): **`?fx=1`** (the feel layer), **`?fps=24`** or **`?fps=48`** (the HD sheets with a cross-fade), **`?cam=tight`** (the dynamic camera). **`?demo=1`** plays the scripted Indra-vs-Meghnad bout on a loop. **`?perf=1`** shows the probe (`window.__arcPerf()` in the console), and **`?cpu=4`** stretches each frame's work 4× to stand in for a slow phone. Example: `…/lab/arcade/?demo=1&fx=1&cam=tight`.
+- **Record a mode:** start `arcade-capture` (`.claude/launch.json`, port 4611) and open `http://localhost:4611/lab/arcade/?capture=<name>&fx=1&cam=tight`. It writes `<name>.mp4` and `<name>.gif` to `~/Desktop/DY_arcade_screens/`; the frames go to `captures/`, which is ignored.
 - **`?opp=meghnad,indra,box_rakta`** fixes the opponent's lineup (three different Heroes). **`?rung=lo`** or **`?rung=hi`** forces a sheet rung; by default it is hi on a high-density or large screen, else lo.
 
 ## Play
@@ -49,9 +51,14 @@ Heavy is a high attack: crouch under it. Light is a mid: block it. The zoner and
 | `runtime/pixi.min.mjs` | The lab's own copy of the game's Pixi (`runtime/COPY.json` records where from and its sha256). |
 | `tools/stamp.js` | The stamp: a hash of every loaded file, on every URL, so Pages never serves a stale lab. |
 | `tools/make_fighter.py` | The fighter tool: Kling clips on green → a fighter (matte, feet pivot, one stance height, 12 fps frames, hi/lo sheets, mirror test) and contact sheets to `~/Desktop/DY_arcade_screens/`. Run it with the VFX lab's matting venv: `lab/vfx-manifestation/tools/.venv/bin/python -I lab/arcade/tools/make_fighter.py`. |
+| `ui/present.js` | The presentation layer for the switches: sparks, flash, shake, dust, shadows, trail, cross-fade, the Vajra pillar. It only reads the fight, never changes it, and uses no randomness. |
+| `ui/demo.js` | The demo bout: Indra vs Meghnad, scripted through inputs only, plus three stated nudges (full meter before each special, Indra's health lowered so it ends on a K.O.). |
+| `tools/make_fighter_hd.py` | The HD fighter tool: `fighters/<hero>/f24/` and `f48/` (stance 512 hi / 320 lo, multi-page sheets, the light time-mapped onto its phases). The 48 fps idle in-betweens use OpenCV optical flow and are audited; the light always uses real frames. It writes `<hero>_interp_artefacts.jpg` to the Desktop folder. |
+| `tools/capture_server.js`, `tools/assemble_capture.py` | The recorder: serves the repo, takes the page's frames, writes MP4 + GIF. |
+| `effects/vajra/` | The Vajra clip, copied from the VFX lab (`runtime/COPY.json` records the source and its sha256). |
 | `fighters/<hero>/` | A fighter: `hi.webp`, `lo.webp` and `manifest.json` (each cell's rect and feet pivot, the move → cell lists, the measurements). |
 | `sources/<hero>/` | **Ignored.** The owner's Kling clips (`<hero>_NN_<move>.mp4`). Never committed. |
-| `test/run.js` | The lab suite, R0–R2, with breakages. `--game` also runs the game's suites at their exact counts. |
+| `test/run.js` | The lab suite, R0–R2, the clip test and the enhancement test, with breakages. `--game` also runs the game's suites at their exact counts. |
 
 ## Change, stamp, test
 
