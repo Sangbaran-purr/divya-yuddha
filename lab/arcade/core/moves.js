@@ -31,6 +31,11 @@
     // damage); pressing too early starts its own throw, which is grabbed in its startup. Otherwise the throw lands: dmg, a
     // knockdown, the thrower recovers AFTER frames. A whiffed throw recovers `recovery` frames — the risk. Two throws grabbing
     // on the same frame break each other.
+    // 13b THE AUTOMATIC COUNTER (owner ruling 5, third set; numbers proposed): a parry of a blow (not a shot) is followed, the moment
+    // the deflect's 6 frames end, by the clip's lunge strike. It lands on its first active frame whatever the distance — the attacker
+    // is still parried (stunned 30): 10 hit-stop + 6 deflect + 6 startup = the hit 12 frames into the stun. A landed hit: damage ×
+    // the archetype, hitstun, meter +8 / +5. Never blockable (a parried Hero cannot guard), never itself parried.
+    counter: { startup: 6, active: 2, recovery: 14, dmg: 90, chip: 0, hitstun: 20, blockstun: 0, hitstop: 8, push: 5, height: "mid", cancel: [], cancelAfter: 0, cells: 6 },
     throw: { startup: 5, active: 2, recovery: 20, dmg: 120, chip: 0, hitstop: 0, push: 0, height: "throw", range: 90,
       hold: 7, after: 16, techPush: 4, techStun: 14, cancel: [], cancelAfter: 0, cells: 10 }
   };
@@ -39,7 +44,7 @@
   // fall frames on the ground (sliding back at push, with friction), then getup frames rising; INVULNERABLE throughout —
   // no hit, shot or throw touches a fighter who is down or rising (no off-the-ground combos in v1). Actionable after.
   var KNOCKDOWN = { fall: 36, getup: 20, push: 6, cells: { fall: 8, getup: 6 } };
-  // 13 THE PARRY (owner ruling 5; frame data proposed). A press of Block (a fresh press, not a hold) opens a WINDOW of 6
+  // 13 THE PARRY (owner ruling 5, approved; the automatic counter above, ruling 5 of the third set). A press of Block (a fresh press, not a hold) opens a WINDOW of 6
   // frames; a hit that lands inside it is parried: no damage and no chip, PARRY.hitstop on both, the attacker is pushed back
   // and stunned stunAttacker frames, the parrier recovers in `recovery` — a +18 window, long enough to walk in and land even a
   // heavy (a guaranteed punish). Not spammable: every press starts a LOCKOUT, and no new window opens until it has run out,

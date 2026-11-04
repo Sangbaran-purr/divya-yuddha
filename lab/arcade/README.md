@@ -2,7 +2,7 @@
 
 The experiment ground for **ARCADE-1**: a real-time 1v1 fighting mode, player vs AI, in the browser. The rulings, the moveset template, the Kling clip card and the size budget are in `docs/ARCADE_v1.md`.
 
-**Status:** R0–R2, the R3 clip test, the enhancement test, and the owner's rulings after it (2026-11-04): fx and the tight camera are the defaults, a 3-frame cross-fade at 12 fps, the 24/48 fps sheets dropped (they live only in git history), the moveset grown to **15** (knockdown + get-up, parry, throw) and a gentler Beginner. Then (rulings of 2026-11-04, second set): **Indra fully animated** from his 13 Kling clips (every move but the throw, which borrows the light until clip 14), GPU-compressed pages (KTX2 / Basis) with a WebP fallback, idle at 8 fps, trimmed holds, 24 fps strike frames, reach from the art, Meghnad's Nagapasha, a Grab button. Meghnad's idle and light are placeholders until his reshoot; his other moves borrow. Three box Heroes remain for the AI ladder.
+**Status:** R0–R2, the R3 clip test, the enhancement test, and the owner's rulings after it (2026-11-04): fx and the tight camera are the defaults, a 3-frame cross-fade at 12 fps, the 24/48 fps sheets dropped (they live only in git history), the moveset grown to **15** (knockdown + get-up, parry, throw) and a gentler Beginner. Then (rulings of 2026-11-04, second set): **Indra fully animated** from his 14 Kling clips (the walk and the knockdown on interim cuts until their reshoots), GPU-compressed pages (KTX2 / Basis) with a WebP fallback, idle at 8 fps, trimmed holds, 24 fps strike frames, reach from the art, Meghnad's Nagapasha, a Grab button. Meghnad's idle and light are placeholders until his reshoot; his other moves borrow. Three box Heroes remain for the AI ladder.
 
 ## The lab law
 
@@ -15,7 +15,7 @@ The experiment ground for **ARCADE-1**: a real-time 1v1 fighting mode, player vs
 
 - **On your machine:** start the repo's `static` server (`.claude/launch.json`, port 4599) and open `http://localhost:4599/lab/arcade/`.
 - **Pages, public but unlinked:** `https://sangbaran-purr.github.io/divya-yuddha/lab/arcade/`.
-- **The look is fx on + the tight camera by default** (owner ruling 1, 2026-11-04). The switches stay for comparison: **`?fx=0`** turns the feel layer off, **`?cam=wide`** the fixed camera; **`?fx=0&cam=wide`** is the exact R0–R2 picture. **`?demo=1`** plays the scripted Indra-vs-Meghnad bout on a loop; **`?demo=moves`** walks Indra through every move (it ends on his win); **`?demo=ko`** shows his K.O. **`?tex=webp`** forces the WebP pages (the fallback); by default the page loads KTX2 wherever the GPU takes a compressed format. **`?perf=1`** shows the probe (`window.__arcPerf()` in the console), and **`?cpu=4`** stretches each frame's work 4× to stand in for a slow phone. Example: `…/lab/arcade/?demo=1`, or `…/lab/arcade/?demo=1&fx=0&cam=wide` for the old look.
+- **The look is fx on + the tight camera by default** (owner ruling 1, 2026-11-04). The switches stay for comparison: **`?fx=0`** turns the feel layer off, **`?cam=wide`** the fixed camera; **`?fx=0&cam=wide`** is the exact R0–R2 picture. **`?demo=1`** plays the scripted Indra-vs-Meghnad bout on a loop; **`?demo=moves`** walks Indra through every move (it ends on his win); **`?demo=ko`** shows his K.O. **`?tex=webp`** forces the WebP fallback (the lo pages resized ×0.75, under the lo memory cap); by default the page loads KTX2 wherever the GPU takes a compressed format. **`?perf=1`** shows the probe (`window.__arcPerf()` in the console), and **`?cpu=4`** stretches each frame's work 4× to stand in for a slow phone. Example: `…/lab/arcade/?demo=1`, or `…/lab/arcade/?demo=1&fx=0&cam=wide` for the old look.
 - **Record a mode:** start `arcade-capture` (`.claude/launch.json`, port 4611) and open `http://localhost:4611/lab/arcade/?capture=<name>` (add `&fx=0&cam=wide` for the baseline). It writes `<name>.mp4` and `<name>.gif` to `~/Desktop/DY_arcade_screens/`; the frames go to `captures/`, which is ignored.
 - **`?opp=meghnad,indra,box_rakta`** fixes the opponent's lineup (three different Heroes). **`?rung=lo`** or **`?rung=hi`** forces a sheet rung; by default it is hi on a high-density or large screen, else lo.
 
@@ -30,7 +30,7 @@ The experiment ground for **ARCADE-1**: a real-time 1v1 fighting mode, player vs
 | Heavy | K | Heavy |
 | Special (needs a full meter) | L | Special |
 | Block | Shift, or hold away from the opponent | Block, or push the stick away |
-| Parry | Tap Shift just before a hit lands (a fresh tap, at most once per 40 frames) | Tap Block just before a hit lands |
+| Parry (then an automatic counter) | Tap Shift just before a hit lands (a fresh tap, at most once per 40 frames) | Tap Block just before a hit lands |
 | Throw (close, beats a block) | U, or J + K together | Grab, or Light + Heavy together |
 | Break a throw | J + K while being grabbed | Light + Heavy while being grabbed |
 | Pause | P or Esc | II at the top |

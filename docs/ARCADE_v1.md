@@ -90,7 +90,7 @@ Gameplay runs on fixed 60 Hz logic frames and the art is stretched onto those ph
 | **10b** Knockdown + get-up | 8 + 6 | Down 36, rising 20 (after the hit's hit-stop) | Caused by any special that hits, any throw, and a heavy that **finishes a combo** (it lands on a Hero already in hitstun: light → heavy). A raw heavy only staggers. **Invulnerable** while down and rising: no hit, shot or throw lands (no off-the-ground combos) |
 | KO | 10 | — | Then the dissolve |
 | Win | 10 | — | |
-| **13** Parry | 5 | Window 6, lockout 40; parrier recovers 6, attacker stunned 30 | A **fresh tap of Block** opens a 6-frame window; a hit landing in it does nothing (no damage, no chip), hit-stop 10, the attacker is pushed back ~10 px and stunned. The parrier is free well before the attacker, so even a heavy (12-frame startup) is a guaranteed punish. Every tap starts a 40-frame lockout, so mashing parries at most one tap in 40 frames. A parried shot simply vanishes. Throws can't be parried |
+| **13** Parry → counter | 5 + 6 | Window 6, lockout 40; deflect 6, then the counter 6 / 2 / 14 (90 damage, guaranteed); attacker stunned 30 | A **fresh tap of Block** opens a 6-frame window; a hit landing in it does nothing (no damage, no chip), hit-stop 10, the attacker is pushed back ~10 px and stunned. The parrier is free well before the attacker, so even a heavy (12-frame startup) is a guaranteed punish. Every tap starts a 40-frame lockout, so mashing parries at most one tap in 40 frames. A parried shot simply vanishes. Throws can't be parried |
 | **14** Throw | 10 | 5 / 2 / 20 on a whiff; on a grab: hold 7, then thrower recovers 16 | **Light + Heavy together** (a light at most 2 frames old converts, in range). Range 90 px from the centre. **Unblockable:** it takes a Hero standing, walking, crouching, blocking, parried or mid-attack; never one in hit/blockstun, down, rising, in the air, parrying or already in a throw. 120 damage × the archetype, then a knockdown. **Throw-tech:** Light + Heavy during the 7-frame hold breaks it, both pushed apart, no damage. Pressing too early starts your own throw, which is grabbed in its startup. Two throws grabbing on one frame break each other |
 
 **Combat rules:**
@@ -420,6 +420,48 @@ Lo fits with levers 2 + 3, and only just (47.5 of 48). Hi fits only with lever 1
 - **Throw (14) is not supplied.** It borrows the light, and the thrown Hero plays the heavy stagger, then 10b.
 - **The parry's built-in lunge** (f58–66) is unused. If you want an automatic counter-strike, that is a rules change.
 - **Meghnad** is still today's sheets (idle + light). Every other move borrows, and his special is the Nagapasha shot over a borrowed light thrust.
+
+## Rulings on the Indra report + the throw clip (owner, 2026-11-04, third set)
+
+| # | Ruling | Outcome |
+|---|---|---|
+| 1 | Encoding: ETC1S on both rungs, UASTC off | The tool encodes ETC1S only. Indra hi 1.52 MB (27.4 dB), lo 0.69 MB (25.6 dB), both inside a fighter's cap |
+| 2 | Walk: interim = frames 41–79 only; the reshoot (a steady low-stance stride) replaces it | Cut: 19 cells (was 32). f41 and f79 are not the same point of the stride, so the seam is visible (|Δ| 39); the reshoot fixes it. Walk back = walk forward reversed |
+| 3 | Knockdown: interim = 11 K.O.'s backward fall (~60–90) into 10b's rise | Cut: fall f59–f91 (7 cells, shared with the K.O.'s, so they cost no extra memory), rise 10b f81–f101. The rise starts on hands and knees, so it pops from lying to kneeling until 10b is reshot backward |
+| 4 | The K.O.'s turn to camera | Accepted |
+| 5 | The parry becomes an automatic counter | **Done.** A parried blow (not a shot) flows from the deflect into the clip's lunge, 6 / 2 / 14 frames, cut from f43, f57, f61 (impact), f67–f79. It lands 22 frames after the parry (hit-stop 10 + deflect 6 + startup 6), while the attacker is still stunned (30), so it is guaranteed. **Proposed: 90 damage** (× the archetype), hitstun 20, meter +8 / +5 like a landed hit. The 6-frame window and 40-frame lockout are unchanged. Advanced and Death Match use it (200 fights: 2 and 1 counters); the Beginner never parries, so never counters |
+| 6 | The uncompressed fallback stays under the lo cap | **Done.** No compressed format (or `?tex=webp`, or the Canvas 2D floor) → the lo WebP pages, resized ×0.75 as they load (stance 144 px). Projection: 44.7 MB of 48 (70.7 unscaled). In the browser: 18.9 MB in all, with no seams between cells |
+| 7 | Nagapasha 50 / 80 / 40 | Approved, unchanged |
+| 8 | Throw clip 14 | **Cut:** reach + grab f41–f48 on the throw's startup and active frames (a whiff plays the reach's own cells back to stance), the pull-in f55–f73 over the grab's 7-frame hold (the tech window), then the knee's impact (f83, the sharpest of 78–86) the moment the engine applies the throw, back to stance by f100. The opponent's reaction and knockdown are the engine's. The tech escape shows the block art. Specks cut by isolation |
+
+**Indra now:** 148 cells.
+
+| Move | Cells | Move | Cells |
+|---|---|---|---|
+| Idle | 17 | Hit light / heavy | 3 / 4 |
+| Walk | 19 | Knockdown / get-up | 7 / 4 |
+| Jump | 8 | K.O. | 8 (its fall is shared with the knockdown) |
+| Crouch | 6 | Win | 10 |
+| Block | 8 | Parry | 3 |
+| Light | 7 | Counter | 6 |
+| Heavy | 11 | Throw / grab / knee | 4 / 3 / 4 |
+| Special | 16 | | |
+
+**Sheets:**
+
+| | hi | lo |
+|---|---|---|
+| KTX2 (WebP) | 1.52 MB (2.33) | 0.69 MB (1.11) |
+| GPU memory | 13.9 MB | 5.0 MB |
+
+**The projection** (2 fighters + arena + effects, strike frames in):
+
+| | lo | hi |
+|---|---|---|
+| Total | 21.0 / 48 MB | 63.5 / 96 MB |
+| If Meghnad's reshoot packs like Indra | 16.1 MB | 52.4 MB |
+| Without the levers | 86.9 MB | 209.1 MB |
+| 6 fighters' download | 4.2 / 6 MB | 9.1 / 11 MB |
 
 ## The size budget (ruling 7)
 

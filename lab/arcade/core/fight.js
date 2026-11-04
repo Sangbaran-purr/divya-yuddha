@@ -25,7 +25,7 @@
     var a = M.ARCH[hero.arch];
     return { side: side, hero: heroId, arch: hero.arch, x: px(side === 0 ? 520 : 920), y: 0, vx: 0, vy: 0, facing: side === 0 ? 1 : -1,
       hp: a.hp, hpMax: a.hp, meter: 0, state: "idle", move: null, mf: 0, connected: false, hitDone: false, chain: 0,
-      stun: 0, prev: 0, buf: { light: -1, heavy: -1, special: -1, up: -1 }, parryWin: -1, parryLock: 0, age: 0 };   // age: logic frames in this state (drives the art)
+      stun: 0, prev: 0, buf: { light: -1, heavy: -1, special: -1, up: -1 }, parryWin: -1, parryLock: 0, counterArmed: false, age: 0 };   // age: logic frames in this state (drives the art)
   }
 
   function newFight(opts) {
@@ -120,6 +120,7 @@
     if (TIMED[f.state]) {
       if (f.stun > 0) f.stun--;
       if (f.stun > 0 || !grounded(f) || f.state === "grab" || f.state === "grabbed") return;   // a throw ends in resolveGrabs
+      if (f.state === "parry" && f.counterArmed) { f.counterArmed = false; f.stun = 0; startMove(g, f, "counter"); return; }   // 13b: the deflect flows into the counter
       if (f.state === "knockdown") { f.state = "getup"; f.stun = M.KNOCKDOWN.getup; f.vx = 0; g.events.push({ t: "getup", side: f.side, frame: g.frame }); return; }
       f.state = "idle"; f.stun = 0; f.vx = 0;
       return;
@@ -213,6 +214,7 @@
     if (!isActive(f) || f.hitDone) return null;
     if (f.move === "special" && isShot(arch(f))) return null;   // the projectile carries the hit
     if (f.move === "throw") return null;                                          // a throw grabs (collide), it never hits
+    if (f.move === "counter") return null;                                        // the counter is guaranteed (collide), not boxed
     var b = moveOf(f).box;
     var xa = f.x + f.facing * px(b.x0), xb = f.x + f.facing * px(b.x1);
     return { x0: Math.min(xa, xb), x1: Math.max(xa, xb), y0: f.y + px(b.y0), y1: f.y + px(b.y1) };
@@ -232,6 +234,12 @@
       if (def.state === "ko" || INVUL[def.state]) return true;
       if (overlap(projBox(p), hurtbox(def))) { hits.push({ att: g.f[p.owner], def: def, move: p.kind === "naga" ? NAGA_MOVE : M.MOVES.special, name: "special", mul: p.dmgMul, dir: p.dir, proj: true, naga: p.kind === "naga" }); return false; }
       return true;
+    });
+    // 13b THE AUTOMATIC COUNTER lands on its first active frame on the Hero it parried (still stunned): guaranteed, no box
+    g.f.forEach(function (att, i) {
+      var def = g.f[1 - i];
+      if (att.state === "attack" && att.move === "counter" && isActive(att) && !att.hitDone && def.state === "parried")
+        hits.push({ att: att, def: def, move: M.MOVES.counter, name: "counter", mul: arch(att).dmg, dir: def.x > att.x ? 1 : -1 });
     });
     // throws grab on their active frames, unless the thrower is being hit this frame; two grabs on one frame break each other
     var grabs = [];
@@ -253,7 +261,7 @@
       if (!h.proj) { att.hitDone = true; att.connected = true; }
       // THE PARRY (ruling 5): a hit landing inside the defender's parry window does nothing to it; the attacker is pushed back and stunned
       if (grounded(def) && (actionable(def) || def.state === "blockstun") && def.parryWin >= 0) {
-        def.parryWin = -1; def.state = "parry"; def.stun = M.PARRY.recovery; def.vx = 0; def.move = null; def.mf = 0;
+        def.parryWin = -1; def.state = "parry"; def.stun = M.PARRY.recovery; def.vx = 0; def.move = null; def.mf = 0; def.counterArmed = !h.proj;
         if (!h.proj) { att.state = "parried"; att.stun = M.PARRY.stunAttacker; att.move = null; att.mf = 0; att.connected = false; att.vx = -h.dir * px(M.PARRY.push); }
         g.events.push({ t: "parry", side: def.side, by: att.side, move: h.name, proj: !!h.proj, frame: g.frame });
         stop = Math.max(stop, M.PARRY.hitstop);

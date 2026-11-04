@@ -21,12 +21,15 @@ fetch("STAMP?t=" + Date.now(), { cache: "no-store" }).then((r) => r.ok ? r.text(
 }).catch(() => {});
 
 // ── the real fighters: the 12 fps sheets (fighters/<hero>/) ──
-const RUNG = MODES.raw.rung === "lo" ? "lo" : MODES.raw.rung === "hi" ? "hi" :
+let RUNG = MODES.raw.rung === "lo" ? "lo" : MODES.raw.rung === "hi" ? "hi" :
   ((window.devicePixelRatio || 1) >= 1.5 || Math.max(innerWidth, innerHeight) >= 1000 ? "hi" : "lo");
 const FIGHTERS = {};   // fighter id → { man, imgs (an Image, or { __source } for a compressed page), cells, bytes, decoded, tex }
 const EFFECTS = {};    // "vajra" → { man, img, cells }
 const LOAD = { bytes: 0, decoded: 0, ms: 0, files: 0, tex: "webp", gpuFormat: null, transcodeMs: 0 };
 let PIXI_MOD = null;
+// THE UNCOMPRESSED FALLBACK (owner ruling 6, third set): a GPU with no compressed format (or ?tex=webp, or the Canvas 2D floor) loads the
+// LO pages, resized as they load, so the RGBA memory stays under the lo cap (tools/budget.js reads these numbers from here)
+const FALLBACK = { rung: "lo", scale: 0.75 };
 function loadImg(src) { const img = new Image(); img.src = src; return img.decode().then(() => img); }
 // the GPU's compressed formats, best first (basis transcoder target ↔ Pixi format)
 function detectCompressed() {
@@ -65,22 +68,29 @@ async function loadFighters() {
   const t0 = performance.now();
   const target = backend.startsWith("pixi") && MODES.raw.tex !== "webp" ? detectCompressed() : null;
   LOAD.tex = target ? "ktx2" : "webp"; LOAD.gpuFormat = target ? target.name : "RGBA8";
+  const fbScale = target ? 1 : FALLBACK.scale;
+  if (!target) { RUNG = FALLBACK.rung; LOAD.fallbackScale = FALLBACK.scale; }
   const ids = [...new Set(Object.values(M.HEROES).map((h) => h.fighter).filter(Boolean))];
   await Promise.all(ids.map(async (id) => {
     try {
       const base = "fighters/" + id + "/";
       const man = await (await fetch(base + "manifest.json?v=" + STAMP)).json();
       const Rg = man.rungs[RUNG], pages = Rg.pages;
-      let imgs, bytes = 0, decoded = 0, tex = "webp";
+      let imgs, bytes = 0, decoded = 0, tex = "webp", k = 1, cells = Rg.cells;
       try {
         if (!target) throw new Error("no compressed format");
         const got = await Promise.all(pages.map((p) => loadKtx2Page(base + p.ktx2 + "?v=" + STAMP, target)));
         imgs = got.map((x) => x.img); bytes = got.reduce((a, x) => a + x.bytes, 0); decoded = got.reduce((a, x) => a + x.gpu, 0); tex = "ktx2";
-      } catch (e) {   // the WebP fallback
-        imgs = await Promise.all(pages.map((p) => loadImg(base + p.webp + "?v=" + STAMP)));
-        bytes = pages.reduce((a, p) => a + p.bytes.webp, 0); decoded = pages.reduce((a, p) => a + p.size[0] * p.size[1] * 4, 0);
+      } catch (e) {   // the WebP fallback: the lo pages, resized as they load (each cell rect and pivot scaled; drawn 1/scale larger)
+        const s = target ? 1 : fbScale;
+        imgs = await Promise.all(pages.map(async (p) => {
+          const img = await loadImg(base + p.webp + "?v=" + STAMP);
+          return s === 1 ? img : createImageBitmap(img, { resizeWidth: Math.round(p.size[0] * s), resizeHeight: Math.round(p.size[1] * s), resizeQuality: "high" });
+        }));
+        bytes = pages.reduce((a, p) => a + p.bytes.webp, 0); decoded = pages.reduce((a, p) => a + Math.round(p.size[0] * s) * Math.round(p.size[1] * s) * 4, 0);
+        if (s !== 1) { k = 1 / s; cells = Rg.cells.map((c) => ({ page: c.page, x: c.x * s, y: c.y * s, w: c.w * s, h: c.h * s, px: c.px * s, py: c.py * s })); }
       }
-      FIGHTERS[id] = { man, imgs, cells: Rg.cells, bytes, decoded, tex };
+      FIGHTERS[id] = { man, imgs, cells, bytes, decoded, tex, k };
       LOAD.bytes += bytes; LOAD.decoded += decoded; LOAD.files += pages.length;
     } catch (e) { /* a fighter that fails to load stays a box */ }
   }));
@@ -100,7 +110,7 @@ const fighterMans = () => { const o = {}; for (const k in FIGHTERS) o[k] = FIGHT
 function cellOf(s) {   // the cell record and its image for a sprite shape
   if (s.atlas) { const E = EFFECTS[s.atlas]; if (!E) return null; const c = E.cells[s.cell]; return c && { c, img: E.img, ax: E.man.anchor.x / E.man.cellSize.w, ay: E.man.anchor.y / E.man.cellSize.h, k: E.k }; }
   const Fi = FIGHTERS[s.fighter], c = Fi && Fi.cells[s.cell];
-  return c && { c, img: Fi.imgs[c.page || 0], ax: c.px / c.w, ay: c.py / c.h };
+  return c && { c, img: Fi.imgs[c.page || 0], ax: c.px / c.w, ay: c.py / c.h, k: Fi.k };
 }
 
 // ── renderer: Pixi first, Canvas 2D floor. Layers, bottom to top: bg · shadow · under (fades, trails) · body · over (hit-flash) · fx · glow (additive) ──

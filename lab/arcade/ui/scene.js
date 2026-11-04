@@ -44,7 +44,7 @@
       return B ? idle(true) : null;
     }
     if (st === "attack") {
-      var mv = f.move, m = F.moveOf(f), own = A[mv] && mv !== "throw";
+      var mv = f.move, m = F.moveOf(f), own = !!A[mv];   // the throw and the counter have their own art once their clips are cut
       if (!own && !B) return null;
       var r = phaseAt(own ? A[mv] : A.light, f, m);
       return { move: own ? mv : mv, phase: r.phase, cell: r.cell, borrowed: own ? undefined : true };
@@ -66,8 +66,12 @@
     if (st === "knockdown") return A.knockdown ? { move: "knockdown", cell: spanAt(A.knockdown.span, age / KD_FALL) } : B ? { move: "knockdown", cell: A.idle.loop[0], borrowed: true } : null;
     if (st === "getup") return A.getup ? { move: "getup", cell: spanAt(A.getup.span, age / KD_UP) } : B ? idle(true) : null;
     if (st === "parry") return A.parry ? { move: "parry", cell: spanAt(A.parry.span, age / M.PARRY.recovery) } : B ? idle(true) : null;
-    if (st === "grab") return A.light ? { move: "throw", cell: A.light.phases.active[0][0], borrowed: true } : null;
-    if (st === "throwrec") { var T = A.light.phases.recovery; return { move: "throw", cell: spanAt(T.map(function (x) { return x[0]; }), age / M.MOVES.throw.after), borrowed: true }; }
+    // 14: the grab's hold plays the pull-in over the tech window; the throw's landing plays the knee strike, then back to stance
+    if (st === "grab") return A.throwGrab ? { move: "throwGrab", cell: spanAt(A.throwGrab.span, age / M.MOVES.throw.hold) } : A.light ? { move: "throw", cell: A.light.phases.active[0][0], borrowed: true } : null;
+    if (st === "throwrec") {
+      if (A.throwHit) return { move: "throwHit", cell: spanAt(A.throwHit.span, age / M.MOVES.throw.after) };
+      var T = A.light.phases.recovery; return { move: "throw", cell: spanAt(T.map(function (x) { return x[0]; }), age / M.MOVES.throw.after), borrowed: true };
+    }
     if (st === "ko") {
       var t = after || 0;
       if (A.ko) return { move: "ko", cell: t < A.ko.frames ? spanAt(A.ko.span, t / A.ko.frames) : A.ko.hold[0] };

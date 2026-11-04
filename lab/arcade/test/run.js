@@ -535,9 +535,24 @@ function parryOk(KK) {
     noDamage: g.f[1].hp - hp0 >= 0 && ev(g, 'parry')[0].proj === false, advantage: free0 - free1, punish: punish && punish.move,
     ok: false };
 }
-const PAR = parryOk(K); PAR.ok = PAR.contiguous && PAR.noDamage && PAR.advantage >= KK_heavyStartup() && PAR.punish === 'heavy';
+const PAR = parryOk(K); PAR.ok = PAR.contiguous && PAR.noDamage && PAR.advantage >= 0 && PAR.punish === 'counter';   // ruling 5, third set: the punish IS the automatic counter
 function KK_heavyStartup() { return K.moves.MOVES.heavy.startup; }
-ok('N4 · 13 THE PARRY: a fresh Block tap parries only inside its window — taps ' + PAR.win.length + ' frames before impact through the impact frame (' + J(PAR.win) + ', the heavy lands at ' + MV.heavy.startup + '); no damage; the parrier is free ' + PAR.advantage + ' frames before the attacker (≥ a heavy\'s ' + MV.heavy.startup + '-frame startup), so its heavy lands even though the attacker backs off at once — a guaranteed punish', PAR.ok, J(PAR));
+ok('N4 · 13 THE PARRY: a fresh Block tap parries only inside its window — taps ' + PAR.win.length + ' frames before impact through the impact frame (' + J(PAR.win) + ', the heavy lands at ' + MV.heavy.startup + '); no damage; the punish is the automatic counter (the first hit on the attacker is \'' + PAR.punish + '\', though it backs off at once), and the parrier is still free ' + PAR.advantage + ' frames before the attacker after it', PAR.ok, J(PAR));
+function counterOk(KK, hero) {   // 13b: a parried blow is answered by the automatic counter — guaranteed, a landed hit's damage and meter
+  const BB = KK.fight.BTN, C = KK.moves.MOVES.counter, h = hero || 'box_surya';
+  const g = closeIn(KK, KK.fight.newFight({ p0: 'box_surya', p1: h }), 60), m0 = [g.f[0].meter, g.f[1].meter], hp0 = g.f[0].hp;
+  let stunnedAtHit = null;
+  for (let i = 0; i < 90; i++) { KK.fight.step(g, [i === 0 ? BB.HV : (g.f[0].state === 'parried' ? 0 : BB.L), i === 10 ? BB.BL : 0]); const hit = g.events.find((e) => e.t === 'hit' && e.move === 'counter'); if (hit && stunnedAtHit === null) stunnedAtHit = hit.frame; }
+  const hit = g.events.find((e) => e.t === 'hit' && e.move === 'counter'), parry = g.events.find((e) => e.t === 'parry');
+  const shot = KK.fight.newFight({ p0: 'box_surya', p1: h }); shot.f[0].meter = 100;
+  for (let i = 0; i < 90; i++) { const p = shot.proj[0], gap = p ? Math.abs(p.x - shot.f[1].x) / KK.fight.U : 1e9; KK.fight.step(shot, [i === 0 ? BB.SP : 0, p && gap < 60 && gap > 40 ? BB.BL : 0]); }
+  return { ok: !!parry && !!hit && hp0 - g.f[0].hp === Math.floor(C.dmg * KK.moves.ARCH[KK.moves.HEROES[h].arch].dmg / 100) && g.f[1].meter - m0[1] === KK.moves.METER.onHit && g.f[0].meter - m0[0] === KK.moves.METER.onTaken &&
+    hit.frame - parry.frame === KK.moves.PARRY.hitstop + KK.moves.PARRY.recovery + C.startup && shot.events.some((e) => e.t === 'parry') && !shot.events.some((e) => e.t === 'move' && e.move === 'counter'),
+    dmg: hp0 - g.f[0].hp, after: hit && parry ? hit.frame - parry.frame : null, shotParried: shot.events.some((e) => e.t === 'parry') };
+}
+const CO = counterOk(K);
+ok('N4b · 13b THE AUTOMATIC COUNTER (ruling 5, third set): a parried blow is answered, ' + CO.after + ' frames after the parry (hit-stop ' + PA5.hitstop + ' + deflect ' + PA5.recovery + ' + startup ' + K.moves.MOVES.counter.startup + '), by a guaranteed lunge — ' + CO.dmg + ' damage, meter +8 / +5 like a landed hit — even though the attacker tries to back away; a parried SHOT gets no counter',
+  CO.ok, J(CO));
 function spamOk(KK) {
   const BB = KK.fight.BTN, g = KK.fight.newFight({ p0: 'box_surya', p1: 'box_surya' });
   let windows = 0, presses = 0;
@@ -592,6 +607,7 @@ function aiMoves(KK, x, y, n) {   // what each level does with the new moves ove
       if (e.t === 'parry') who(e.side).parry++;
       if (e.t === 'tech') who(e.side).tech++;
       if (e.t === 'move' && e.move === 'throw') who(e.side).throw++;
+      if (e.t === 'move' && e.move === 'counter') who(e.side).counter = (who(e.side).counter || 0) + 1;
       if (e.t === 'move' && e.move === 'special' && o.round === 0) who(e.side).special0++;
       if (e.t === 'move') { if (last[e.side] != null) who(e.side).gaps.push(e.frame - last[e.side]); last[e.side] = e.frame; }
     }
@@ -600,8 +616,8 @@ function aiMoves(KK, x, y, n) {   // what each level does with the new moves ove
 }
 const AB = aiMoves(K, 'beginner', 'advanced', 120), AD = aiMoves(K, 'beginner', 'deathmatch', 120), AA = aiMoves(K, 'advanced', 'deathmatch', 200);
 const sumB = (k) => AB.x[k] + AD.x[k];
-ok('N8 · THE BEGINNER NEVER PARRIES, THROWS OR TECHS (240 fights against Advanced and Death Match: ' + sumB('parry') + ' / ' + sumB('throw') + ' / ' + sumB('tech') + '), while the others use the new moves against each other (200 fights: Advanced ' + AA.x.parry + ' parries, ' + AA.x.throw + ' throws, ' + AA.x.tech + ' techs; Death Match ' + AA.y.parry + ' / ' + AA.y.throw + ' / ' + AA.y.tech + ')',
-  sumB('parry') === 0 && sumB('throw') === 0 && sumB('tech') === 0 && AA.x.parry > 0 && AA.x.throw > 0 && AA.y.parry > 0 && AA.y.throw > 0 && AA.x.tech + AA.y.tech > 0);
+ok('N8 · THE BEGINNER NEVER PARRIES (so never counters), THROWS OR TECHS (240 fights against Advanced and Death Match: ' + sumB('parry') + ' / ' + sumB('throw') + ' / ' + sumB('tech') + ', counters ' + ((AB.x.counter || 0) + (AD.x.counter || 0)) + '), while the others use the new moves against each other (200 fights: Advanced ' + AA.x.parry + ' parries → ' + (AA.x.counter || 0) + ' counters, ' + AA.x.throw + ' throws, ' + AA.x.tech + ' techs; Death Match ' + AA.y.parry + ' → ' + (AA.y.counter || 0) + ' / ' + AA.y.throw + ' / ' + AA.y.tech + ')',
+  sumB('parry') === 0 && sumB('throw') === 0 && sumB('tech') === 0 && !(AB.x.counter || AD.x.counter) && AA.x.counter > 0 && AA.y.counter > 0 && AA.x.parry > 0 && AA.x.throw > 0 && AA.y.parry > 0 && AA.y.throw > 0 && AA.x.tech + AA.y.tech > 0);
 function gentleOk(KK) {
   const L = KK.ai.LEVELS.beginner, st = aiMoves(KK, 'beginner', 'advanced', 120).x;
   const minGap = Math.min(...st.gaps);
@@ -625,6 +641,9 @@ const BR5 = [
   ['Y6 · a Beginner that throws and parries (N8 goes red)', { ai: [['parry: 0, throw: 0, tech: 0, specialFrom: 1', 'parry: 0.3, throw: 0.4, tech: 0, specialFrom: 1']] }, (KK) => { const s = aiMoves(KK, 'beginner', 'advanced', 60).x; return s.parry === 0 && s.throw === 0; }],
   ['Y7 · the Beginner\'s special allowed in round 1 (N9 goes red)', { ai: [['tech: 0, specialFrom: 1 }', 'tech: 0, specialFrom: 0 }']] }, (KK) => gentleOk(KK).ok],
   ['Y8 · the old Beginner back (reaction 18, blocks 40%, cancels, short gaps) (N9 goes red)', { ai: [['beginner:   { reaction: 27, block: 0.10, duck: 0.05, jumpProj: 0.15, cancel: 0, special: 0.5, attackGap: [24, 48]', 'beginner:   { reaction: 18, block: 0.40, duck: 0.10, jumpProj: 0.25, cancel: 0.15, special: 0.5, attackGap: [16, 40]']] }, (KK) => gentleOk(KK).ok],
+  ['Y10 · the counter never armed: a parry with no answer (N4b goes red)', { fight: [['def.counterArmed = !h.proj;', 'def.counterArmed = false;']] }, (KK) => counterOk(KK).ok],
+  ['Y11 · the counter armed after a parried shot too (N4b goes red)', { fight: [['def.counterArmed = !h.proj;', 'def.counterArmed = true;']] }, (KK) => counterOk(KK).ok],
+  ['Y12 · the counter boxed like an ordinary move: no guarantee (N4b goes red)', { fight: [['if (att.state === "attack" && att.move === "counter" && isActive(att) && !att.hitDone && def.state === "parried")', 'if (false)']] }, (KK) => counterOk(KK).ok],
   ['Y9 · a heavy that never knocks down, even as a combo finisher (N2 goes red)', { fight: [['(h.name === "heavy" && h.wasStun)', 'false']] }, (KK) => knockdownOk(KK).ok]
 ];
 for (const [name, mut, check] of BR5) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }
@@ -655,10 +674,8 @@ ok('C1 · THE PAGES (ruling 1): each fighter\'s cells on pages inside the rung (
   HEROS.map((h) => MAN[h].name + ' hi ' + MAN[h].rungs.hi.pages.length + ' page(s) ' + MAN[h].rungs.hi.encoding.chosen + ' ' + mb(ktx(h, 'hi')) + ' (WebP ' + mb(MAN[h].rungs.hi.pages.reduce((a, p) => a + p.bytes.webp, 0)) + '), lo ' + MAN[h].rungs.lo.pages.length + ' ' + MAN[h].rungs.lo.encoding.chosen + ' ' + mb(ktx(h, 'lo'))).join(' · '),
   SE.every((x) => !x.e.length), J(SE.filter((x) => x.e.length)));
 const ENCH = MAN.indra.rungs;
-ok('C1b · THE ENCODING, MEASURED (ruling 1: UASTC for hi, ETC1S for lo, or the measured best): the best quality whose download fits a fighter\'s cap (hi 1.6 / lo 0.7 MB) — Indra\'s full cut: ' +
-  ['hi', 'lo'].map((r) => r + ' ' + ENCH[r].encoding.candidates.map((c) => c.name + ' ' + (c.projectedBytes / 1048576).toFixed(2) + ' MB ' + c.psnr + ' dB').join(', ') + ' → ' + ENCH[r].encoding.chosen).join(' · ') + '; Meghnad follows the same choice',
-  ['hi', 'lo'].every((r) => ktx('indra', r) <= DLCAP[r] && ENCH[r].encoding.chosen === MAN.meghnad.rungs[r].encoding.chosen &&
-    ENCH[r].encoding.candidates.filter((c) => c.projectedBytes <= DLCAP[r]).every((c) => c.psnr <= ENCH[r].encoding.candidates.find((x) => x.name === ENCH[r].encoding.chosen).psnr)));
+ok('C1b · THE ENCODING (owner ruling 1, third set): ETC1S on both rungs, UASTC off — every fighter\'s pages ETC1S, and Indra\'s full cut inside each fighter\'s download cap (hi ' + mb(ktx('indra', 'hi')) + ' of 1.6 MB at ' + ENCH.hi.encoding.candidates[0].psnr + ' dB, lo ' + mb(ktx('indra', 'lo')) + ' of 0.7 MB at ' + ENCH.lo.encoding.candidates[0].psnr + ' dB)',
+  HEROS.every((h) => ['hi', 'lo'].every((r) => MAN[h].rungs[r].encoding.chosen === 'etc1s')) && ['hi', 'lo'].every((r) => ktx('indra', r) <= DLCAP[r]));
 function decodeOk(h) {   // every KTX2 page decodes with the LAB'S transcoder copy to its recorded size, and transcodes to ASTC, BC7 and ETC2
   const out = [];
   for (const r of ['hi', 'lo']) for (const p of MAN[h].rungs[r].pages) for (const fmt of ['rgba', 'astc', 'bc7', 'etc2']) {
@@ -675,11 +692,15 @@ ok('C1d · THE TRANSCODER COPY is recorded: runtime/basis/ matches the sha256 in
 ok('C2 · ONE STANCE HEIGHT, ONE GROUND LINE: both Heroes\' stance 320 px hi / 192 lo (' + HEROS.map((h) => MAN[h].name + ' ' + MAN[h].stance.sourceHeight + ' px source').join(', ') + '); each of Indra\'s clips registered to the stance by its own frame 0 (' +
   Object.entries(MAN.indra.sources).filter(([, s]) => Math.abs(s.registration[0]) > 1.5).map(([k, s]) => k + ' ' + s.registration[0] + ' px').join(', ') + ' shifted back)', HEROS.every((h) => MAN[h].stance.heightPx.hi === 320 && MAN[h].stance.heightPx.lo === 192));
 const A = MAN.indra.anim, NCELL = MAN.indra.rungs.hi.cells.length;
-const ANIM_KEYS = ['idle', 'walk', 'jump', 'crouch', 'light', 'heavy', 'special', 'block', 'hitLight', 'hitHeavy', 'knockdown', 'getup', 'ko', 'win', 'parry'];
+const ANIM_KEYS = ['idle', 'walk', 'jump', 'crouch', 'light', 'heavy', 'special', 'block', 'hitLight', 'hitHeavy', 'knockdown', 'getup', 'ko', 'win', 'parry', 'counter', 'throw', 'throwGrab', 'throwHit'];
 const animCells = (a) => [].concat(a.loop || [], a.span || [], a.enter || [], a.hold || [], ...(a.phases ? Object.values(a.phases).map((L) => L.map((x) => x[0])) : []));
 const perMove = Object.fromEntries(ANIM_KEYS.map((k) => [k, A[k] ? new Set(animCells(A[k])).size : 0]));
-ok('C3 · INDRA, THE FULL CUT: every animated move has art (' + Object.entries(perMove).map(([k, n]) => k + ' ' + n).join(', ') + ' cells; ' + NCELL + ' in all; walk back = the walk reversed, the throw borrows the light), every cell index valid',
+ok('C3 · INDRA, THE FULL CUT: every animated move has art (' + Object.entries(perMove).map(([k, n]) => k + ' ' + n).join(', ') + ' cells; ' + NCELL + ' in all; walk back = the walk reversed), every cell index valid',
   ANIM_KEYS.every((k) => A[k] && animCells(A[k]).length && animCells(A[k]).every((c) => c >= 0 && c < NCELL)));
+const cellSrc = (k) => MAN.indra.cellsSrc[k], srcIn = (L, clip, a, b) => L.every((k) => { const m = /^(\w+) f(\d+)$/.exec(cellSrc(k)); return m && m[1] === clip && +m[2] >= a && +m[2] <= b; });
+ok('C3d · THE INTERIM CUTS (third set): the walk is the steady stride f41–f79 only (rulings 2: ' + new Set(A.walk.loop).size + ' cells); the knockdown is 11 K.O.\'s backward fall (f60–f90) into 10b\'s rise (f81–f101) until 10b is reshot (ruling 3); the throw is clip 14 — reach f40–48, the pull-in, the knee\'s impact (f' + MAN.indra.moves.throwHit.impact + ', the sharpest of 78–86), back to stance',
+  srcIn(A.walk.loop, 'walk', 41, 79) && srcIn(A.knockdown.span, 'ko', 59, 91) && srcIn(A.getup.span, 'knockdown', 80, 102) && srcIn(A.throwHit.span.slice(0, 1), 'throw', 78, 86) &&
+  srcIn(A.throw.phases.startup.map((x) => x[0]), 'throw', 38, 47) && srcIn(A.counter.phases.active.map((x) => x[0]), 'parry', 58, 66));
 ok('C3b · IDLE AT 8 FPS (ruling 1): ' + MAN.indra.moves.idle.loopFrames + '-frame loop → ' + A.idle.loop.length + ' steps, ' + new Set(A.idle.loop).size + ' cells (at 12 fps it was ' + Math.ceil(MAN.indra.moves.idle.loopFrames / 2) + '); Meghnad\'s too (' + new Set(MAN.meghnad.anim.idle.loop).size + ')',
   A.idle.fps === 8 && MAN.meghnad.anim.idle.fps === 8 && A.idle.loop.length === Math.ceil(MAN.indra.moves.idle.loopFrames / 3));
 const holdsTrim = ['crouch', 'block', 'win'].map((k) => ({ k, steps: A[k].hold.length, cells: new Set(A[k].hold).size }));
@@ -735,7 +756,7 @@ ok('C10 · FACING: the left Hero is drawn as authored, the right one mirrored; e
 // every state Indra can be in → the move whose art shows (fallback off: so nothing is borrowed except the throw, which has no clip yet)
 function statesOk(KK) {
   const BB = KK.fight.BTN, S = KK.scene, seen = {}, want = { idle: 'idle', walkf: 'walk', walkb: 'walkBack', crouch: 'crouch', block: 'block', blockstun: 'block', jump: 'jump',
-    hitstun: ['hitLight', 'hitHeavy'], knockdown: 'knockdown', getup: 'getup', parry: 'parry', bound: 'hitHeavy', grab: 'throw', throwrec: 'throw' };
+    hitstun: ['hitLight', 'hitHeavy'], knockdown: 'knockdown', getup: 'getup', parry: 'parry', bound: 'hitHeavy', grab: 'throwGrab', throwrec: 'throwHit', 'attack:counter': 'counter', 'attack:throw': 'throw' };
   const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad', seconds: 99 }), D = KK.demo.create('moves');
   for (let i = 0; i < 4000 && !g.over; i++) {
     KK.fight.step(g, KK.demo.inputs(D, g));
@@ -745,10 +766,10 @@ function statesOk(KK) {
   const bad = Object.entries(want).filter(([st, mv]) => !seen[st] || [...seen[st]].some((x) => !(Array.isArray(mv) ? mv : [mv]).some((m) => x === m || x === m + '*')));
   const atk = ['light', 'heavy', 'special'].filter((m) => !seen['attack:' + m] || [...seen['attack:' + m]].some((x) => x !== m));
   const after = g.f[0].state === 'win' && S.build(g, { fighters: MAN, rung: 'hi', after: 200 }).shapes.find((x) => x.tag === 'sprite0').move === 'win';
-  return { ok: bad.length === 0 && atk.length === 0 && !!(seen['attack:throw'] || seen.grab) && after, bad, atk, seen: Object.fromEntries(Object.entries(seen).map(([k, v]) => [k, [...v]])) };
+  return { ok: bad.length === 0 && atk.length === 0 && after, bad, atk, seen: Object.fromEntries(Object.entries(seen).map(([k, v]) => [k, [...v]])) };
 }
 const STO = statesOk(K);
-ok('C11 · EVERY STATE INDRA CAN BE IN SHOWS ITS OWN ART through the every-move demo (' + Object.keys(STO.seen).length + ' states: ' + Object.entries(STO.seen).map(([k, v]) => k + '→' + v.join('/')).join(', ') + '); the throw borrows the light until clip 14', STO.ok, J({ bad: STO.bad, atk: STO.atk }));
+ok('C11 · EVERY STATE INDRA CAN BE IN SHOWS ITS OWN ART through the every-move demo (' + Object.keys(STO.seen).length + ' states: ' + Object.entries(STO.seen).map(([k, v]) => k + '→' + v.join('/')).join(', ') + '); nothing borrowed', STO.ok, J({ bad: STO.bad, atk: STO.atk }));
 function koOk(KK) {   // the K.O. plays over the frames after the fight ends, then holds its last still frame
   const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }); g.f[0].hp = 0; g.f[0].state = 'ko'; g.over = true;
   const at = (t) => KK.scene.build(g, { fighters: MAN, rung: 'hi', after: t }).shapes.find((x) => x.tag === 'sprite0');
@@ -858,6 +879,13 @@ const bf = (x) => x.toFixed(1);
 ok('M1 · RULING 1, THE PROJECTION DECIDES: with compressed textures, idle at 8 fps, trimmed holds and the half-size lo Vajra, the 15-move projection is lo ' + bf(BP.rungs.lo.total15Strike) + ' MB of ' + BP.rungs.lo.cap + ', hi ' + bf(BP.rungs.hi.total15Strike) + ' MB of ' + BP.rungs.hi.cap +
   ' (2 fighters + arena + effects, strike frames included; margin = at most ' + (BU.MARGIN * 100) + '% of the cap) → the 24 fps strike frames ' + (BP.strike24 ? 'ship' : 'stay out') + ', and the sheets agree', budgetOk(BP) && BP.rungs.lo.fitsWithMargin && BP.rungs.hi.fitsWithMargin);
 red('M2 · BREAKAGE: caps too small for the margin (lo 20 / hi 70) but the strike frames shipped (M1 goes red)', !budgetOk(BU.project({ lo: 20, hi: 70 })));
+const FB = BP.fallback;
+ok('M3 · THE UNCOMPRESSED FALLBACK (ruling 6, third set): with no compressed format (or ?tex=webp) the page loads the ' + FB.spec.rung + ' pages resized ×' + FB.spec.scale + ' → ' + bf(FB.total) + ' MB of the lo cap ' + FB.cap + ' (fighters ' + bf(FB.fighters) + ', arena ' + bf(FB.arena) + ', Vajra ' + bf(FB.effects) + '; unscaled it would be ' + bf(FB.unscaled) + ')',
+  FB.spec.rung === 'lo' && FB.fits && FB.unscaled > FB.cap);
+const appF = rd('ui/app.js');
+ok('M3b · …and the page does it: no compressed format → RUNG lo and each WebP page resized as it loads (createImageBitmap), every cell rect and pivot scaled, drawn 1 / scale larger',
+  /if \(!target\) \{ RUNG = FALLBACK\.rung;/.test(appF) && /createImageBitmap\(img, \{ resizeWidth: Math\.round\(p\.size\[0\] \* s\)/.test(appF) && /k = 1 \/ s; cells = Rg\.cells\.map/.test(appF));
+red('M4 · BREAKAGE: the fallback at full size (scale 1) is over the lo cap (M3 goes red)', (() => { const t = 4 * (BP.rungs.lo.indra.gpu + BP.rungs.lo.meghnadWorst) + 4 * BP.rungs.lo.arena + BP.rungs.lo.effects; return !(t <= FB.cap); })());
 const trackedE = git(['ls-files', 'lab/arcade']).concat(git(['diff', '--name-only', '--cached']));
 ok('E9 · the recorder\'s output is never tracked: captures/ is ignored and no capture frame or video is staged or committed', gi.includes('captures/') && !trackedE.some((f) => /\/captures\/|\.(mp4|gif)$/.test(f)));
 

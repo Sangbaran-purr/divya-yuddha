@@ -79,7 +79,7 @@
       me.state === "grab" || me.state === "throwrec" || me.state === "tech" || me.state === "bound") return finish(ai, 0);
 
     // a seen threat: the opponent's attack in startup/active and in reach → guard (decided once per attack)
-    var threat = op.state === "attack" && op.move && op.move !== "throw" && op.mf < M.MOVES[op.move].startup + M.MOVES[op.move].active;
+    var threat = op.state === "attack" && op.move && op.move !== "throw" && op.move !== "counter" && op.mf < M.MOVES[op.move].startup + M.MOVES[op.move].active;
     var reach = threat ? (op.move === "special" && M.ARCH[op.arch].special === "rush" ? 260 : F.moveOf({ hero: op.hero, arch: op.arch }, op.move).box.x1 + M.BODY.halfW + 20) : 0;
     if (threat && dist <= reach) {
       var id = op.move + "@" + (v.oppFrame - op.mf);

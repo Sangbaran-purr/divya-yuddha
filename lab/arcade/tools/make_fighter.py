@@ -60,8 +60,8 @@ FRAMES = {"light": (5, 3, 9), "heavy": (12, 4, 18), "special": (16, 8, 26)}   # 
 KO_SPAN = 60                         # logic frames the K.O. fall plays over before the last still frame holds
 # the KTX2 candidates per rung (ruling 1: UASTC for hi, ETC1S for lo, or the measured best): tried on page 0, PSNR on the premultiplied RGBA
 ETC1S_MAX = ["-etc1s", "-q", "255", "-max_endpoints", "16128", "-max_selectors", "16128"]
-ENC = {"hi": [("uastc", ["-uastc"]), ("uastc-rdo4", ["-uastc", "-lambda", "4"]), ("etc1s", ETC1S_MAX)],
-       "lo": [("etc1s", ETC1S_MAX), ("uastc-rdo4", ["-uastc", "-lambda", "4"]), ("uastc", ["-uastc"])]}
+# OWNER RULING (2026-11-04, third set): ETC1S on both rungs, UASTC off (it measured 35.8 dB but 4.9 MB a fighter on hi, 3× the cap)
+ENC = {"hi": [("etc1s", ETC1S_MAX)], "lo": [("etc1s", ETC1S_MAX)]}
 # THE CHOICE (ruling 1: "UASTC for hi, ETC1S for lo, or your measured best"): the best PSNR whose projected per-fighter download fits the
 # budget's cap (docs/ARCADE_v1.md: hi 1.6 MB, lo 0.7 MB); if none fits, the smallest
 DL_CAP = {"hi": 1.6 * 1048576, "lo": 0.7 * 1048576}
@@ -73,9 +73,10 @@ HEROES = {
         "clips": {"idle": "indra_01_idle.mp4", "walk": "indra_02_walk_forward.mp4", "jump": "indra_04_jump.mp4", "crouch": "indra_05_crouch.mp4",
                   "light": "indra_06_light.mp4", "heavy": "indra_07_heavy.mp4", "special": "indra_08_special.mp4", "block": "indra_09_block.mp4",
                   "hit": "indra_10_hit_reaction.mp4", "knockdown": "indra_10b_knockdown.mp4", "ko": "indra_11_ko.mp4", "win": "indra_12_win.mp4",
-                  "parry": "indra_13_counter_parry.mp4"},
+                  "parry": "indra_13_counter_parry.mp4", "throw": "indra_14_throw.mp4"},
         "cut": {
-            "walk":      {"clip": "walk", "search": [12, 110], "minLen": 24},
+            # walk (ruling 2 of the third set): the steady stride f41–f79 only, until the reshoot (a steady low-stance stride)
+            "walk":      {"clip": "walk", "range": [41, 79]},
             # the new hop: load 22–33, take-off 40–48, tucked peak 55–65, landing 72–84 → the 40-frame airtime from take-off to touch-down
             "jump":      {"clip": "jump", "span": [42, 82], "n": 8, "pivot": "feet", "look": 2},
             "crouch":    {"clip": "crouch", "enter": [28, 40], "nEnter": 2, "hold": [72, 96], "shadow": True},
@@ -90,7 +91,8 @@ HEROES = {
             "hitLight":  {"clip": "hit", "span": [30, 40], "n": 3},
             "hitHeavy":  {"clip": "hit", "span": [30, 54], "n": 5},
             # 10b: struck, falls to hands and knees (wired to knockdown), rises to stance (wired to get-up)
-            "knockdown": {"clip": "knockdown", "span": [12, 56], "n": 7},
+            # knockdown (ruling 3, interim until 10b is reshot backward): 11 KO's backward fall (60–90), then 10b's rise to stance
+            "knockdown": {"clip": "ko", "span": [60, 90], "n": 7},
             "getup":     {"clip": "knockdown", "span": [82, 100], "n": 4},
             # 11 KO: staggers 20–60 (tightened), falls onto the back 60–90, lies still — the last still frame holds
             "ko":        {"clip": "ko", "span": [22, 90], "n": 10, "lie": [100, 120]},
@@ -98,6 +100,14 @@ HEROES = {
             # 13: the deflect (30–42) is the parry; 46–56 skipped (a stray floating object, a shaft to the right edge); the lunge 58–66 is
             # not used (our parry has no built-in counter — the punish is the player's own move)
             "parry":     {"clip": "parry", "span": [30, 42], "n": 3, "skip": [[46, 56]]},
+            # the AUTOMATIC COUNTER (ruling 5): after the deflect, the clip's lunge strike (58–66), back to stance; 46–56 skipped
+            "counter":   {"clip": "parry", "frames": {"startup": [43, 57], "active": [62], "recovery": [68, 74, 80]}, "skip": [[46, 56]]},
+            # 14 THROW (ruling 8): reach + grab 40–48 on the throw's startup/active (a whiff plays the reach back to stance);
+            # the pull-in 52–74 during the grab's hold (the tech window); the knee strike — the sharpest frame of 78–86 — lands
+            # when the engine applies the throw, then back to stance by ~100
+            "throw":     {"clip": "throw", "frames": {"startup": [41, 44], "active": [48], "recovery": [44, 41, 100]}, "exact": True},   # a whiff plays the reach's own cells back
+            "throwGrab": {"clip": "throw", "span": [54, 74], "n": 3},
+            "throwHit":  {"clip": "throw", "impact": [78, 86], "span": [90, 100], "n": 3},
         }},
     # Meghnad: placeholders until the reshoot (ruling 5/7 — his current idle + light only; every other move borrows at run time)
     "meghnad": {"name": "Meghnad", "weapon": "spear", "still": "meghnad-fighter-right-green-1920x1080-v2.png",
@@ -520,16 +530,21 @@ def build(hero):
 
     # WALK — root motion removed by the torso; the tightest full cycle inside the search range; 12 fps
     if "walk" in cut:
-        c = clips["walk"]; w = cut["walk"]; a0, b0 = w["search"]
+        c = clips["walk"]; w = cut["walk"]
+        if "range" in w: a0, b0 = w["range"]
+        else: a0, b0 = w["search"]
         tor = {i: M_torso(c.m(i), stance_src) for i in range(a0, b0 + 1)}
-        best = None
-        for s in range(a0, a0 + 14):
-            for Lw in range(w["minLen"], 64):
-                if s + Lw > b0: break
-                e = figdiff(c.m(s), c.m(s + Lw), shiftB=tor[s] - tor[s + Lw])
-                if best is None or e < best[0]: best = (e, s, Lw)
-        e, s, Lw = best
-        off = tor[0] if 0 in tor else M_torso(c.m(0), stance_src)
+        if "range" in w:
+            s, Lw = a0, b0 - a0; e = figdiff(c.m(a0), c.m(b0), shiftB=tor[a0] - tor[b0])
+        else:
+            best = None
+            for s in range(a0, a0 + 14):
+                for Lw in range(w["minLen"], 64):
+                    if s + Lw > b0: break
+                    e = figdiff(c.m(s), c.m(s + Lw), shiftB=tor[s] - tor[s + Lw])
+                    if best is None or e < best[0]: best = (e, s, Lw)
+            e, s, Lw = best
+        off = M_torso(c.m(0), stance_src)
         base = piv("walk"); wsrc = list(range(s, s + Lw, 2))
         anim["walk"] = {"loop": [cell("walk", i, (base[0] + tor[i] - off, base[1]), "walk") for i in wsrc], "fps": FPS_OUT}
         moves_meta["walk"] = {"loop": [s, s + Lw], "loopError": round(e, 2), "rootTravelSource": round(max(tor.values()) - min(tor.values()), 1)}
@@ -576,10 +591,12 @@ def build(hero):
             look = list(range(curve["contact"], min(curve["contact"] + CONTACT_LOOK, curve["holdEnd"]) + 1))
             best = max(look, key=lambda i: M_sharp(c.m(i))); curve["firstAtReach"] = curve["contact"]; curve["contact"] = int(best); ph["active"] = [int(best)]
             phases = {p: ph[p] for p in ("startup", "active", "recovery")}; meta = {"curve": curve}
+        elif "frames" in sp:
+            phases = {p: [pick(c, t, 0 if sp.get("exact") else 1, sp.get("skip", [])) for t in L] for p, L in sp["frames"].items()}; meta = {}
         else:
             phases = {p: [pick(c, t, 1, sp.get("skip", [])) for t in even(r[0], r[1], sp["n"][p])] for p, r in sp["phases"].items()}; meta = {}
         out = {}
-        if STRIKE24:   # ruling 1: the strike frames at 24 fps — real source frames, more of them around contact
+        if STRIKE24 and move in FRAMES:   # ruling 1: the strike frames at 24 fps (light, heavy, special) — real source frames, more of them around contact
             if sp.get("auto"):
                 cu = meta["curve"]; ranges = {"startup": [cu["windup"], cu["contact"] - 1], "active": [cu["contact"], cu["contact"] + 3], "recovery": [cu["holdEnd"], cu["back"]]}
             else: ranges = sp["phases"]
@@ -605,11 +622,18 @@ def build(hero):
         moves_meta[move] = dict(meta, phases=phases, tipFromPivotLogical=tips[move])
         print("  %s: startup %s · active %s · recovery %s · the weapon tip at contact %.1f logical px from the feet" % (move, phases["startup"], phases["active"], phases["recovery"], tips[move]))
         return {"phases": out}
-    for mv in ("light", "heavy", "special"):
+    for mv in ("light", "heavy", "special", "counter", "throw"):
         if mv in cut: anim[mv] = attack(mv)
+    if "throwGrab" in cut: anim["throwGrab"] = {"span": span("throwGrab")}
+    if "throwHit" in cut:   # the knee's impact — the sharpest frame in its range — first, then the way back to stance
+        sp = cut["throwHit"]; c = clips["throw"]
+        imp = max(range(sp["impact"][0], sp["impact"][1] + 1), key=lambda i: M_sharp(c.m(i)))
+        rest = dedupe(c, [pick(c, t) for t in even(sp["span"][0], sp["span"][1], sp["n"])])
+        fr = [imp] + rest; moves_meta["throwHit"] = {"src": fr, "impact": int(imp)}
+        anim["throwHit"] = {"span": [cell("throw", i, grounded("throw", i, piv("throw")), "throwHit") for i in fr]}
     if "parry" in cut:
         c = clips["parry"]; tips["parry"] = round((max(M_front(c.m(i)) for i in moves_meta["parry"]["src"]) - piv("parry")[0]) * 220.0 / stance_src, 1)
-    for mv in ("jump", "hitLight", "hitHeavy", "knockdown", "getup", "parry", "ko"):
+    for mv in ("jump", "hitLight", "hitHeavy", "knockdown", "getup", "parry", "ko", "throwGrab", "throwHit"):
         if mv in moves_meta: print("  %s: frames %s%s" % (mv, moves_meta[mv]["src"], (" · lie (held) " + str(moves_meta[mv].get("lie"))) if mv == "ko" else ""))
     for mv in ("crouch", "block", "win"):
         if mv in moves_meta: print("  %s: enter %s · hold %s (%d distinct)" % (mv, moves_meta[mv]["enter"], moves_meta[mv]["hold"], len(set(moves_meta[mv]["hold"]))))
