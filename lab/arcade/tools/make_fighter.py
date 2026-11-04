@@ -75,8 +75,11 @@ HEROES = {
                   "hit": "indra_10_hit_reaction.mp4", "knockdown": "indra_10b_knockdown.mp4", "ko": "indra_11_ko.mp4", "win": "indra_12_win.mp4",
                   "parry": "indra_13_counter_parry.mp4", "throw": "indra_14_throw.mp4"},
         "cut": {
-            # walk (ruling 2 of the third set): the steady stride f41–f79 only, until the reshoot (a steady low-stance stride)
-            "walk":      {"clip": "walk", "range": [41, 79]},
+            # walk (the reshoot, 2026-11-04): one clean stride cycle f25–f92 of the low guarded stance; the clip's forward travel
+            # (~280 px) removed by PIVOT-TRACKING THE FEET (a straight line between the planted feet at f25 and f92, so the stride's
+            # own sway stays); sampled every 3rd source frame and played at 12 fps — 1.5× the shot speed (see the report: the game walks
+            # ~7× faster than the clip strides, so the feet skate; this narrows it and halves the cells)
+            "walk":      {"clip": "walk", "range": [25, 92], "root": "feet-linear", "step": 3},
             # the new hop: load 22–33, take-off 40–48, tucked peak 55–65, landing 72–84 → the 40-frame airtime from take-off to touch-down
             "jump":      {"clip": "jump", "span": [42, 82], "n": 8, "pivot": "feet", "look": 2},
             "crouch":    {"clip": "crouch", "enter": [28, 40], "nEnter": 2, "hold": [72, 96], "shadow": True},
@@ -88,20 +91,23 @@ HEROES = {
                           "cutBeyondTip": {"frames": [48, 86], "ref": 86, "margin": 6}},
             "block":     {"clip": "block", "enter": [12, 26], "nEnter": 2, "hold": [29, 53]},
             # hit: the light flinch is the first flinch, the heavy the full stagger; the mist puff (22–36) is cut by isolation
-            "hitLight":  {"clip": "hit", "span": [30, 40], "n": 3},
+            "hitLight":  {"clip": "hit", "frames": [31, 37, 41], "exact": True},   # the first flinch = the heavy stagger's first three cells (shared: the lo download cap)
             "hitHeavy":  {"clip": "hit", "span": [30, 54], "n": 5},
             # 10b: struck, falls to hands and knees (wired to knockdown), rises to stance (wired to get-up)
-            # knockdown (ruling 3, interim until 10b is reshot backward): 11 KO's backward fall (60–90), then 10b's rise to stance
-            "knockdown": {"clip": "ko", "span": [60, 90], "n": 7},
-            "getup":     {"clip": "knockdown", "span": [82, 100], "n": 4},
+            # 10b (the reshoot, 2026-11-04): hit 8–14, thrown backwards 14–30, lands on his back 30–48, a backward roll over the
+            # shoulder 48–66, rises through a crouch 70–80, stance by 88. The clip's leftward travel removed by the body's CENTROID
+            # (the engine slides him itself); from the landing on, his lowest point sits on the ground line (the roll included).
+            # The get-up is the approved 20 frames: the roll and rise (40 source frames) play ~5× faster than shot — see the report.
+            "knockdown": {"clip": "knockdown", "span": [8, 46], "n": 7, "root": "centroid", "groundFrom": 30},
+            "getup":     {"clip": "knockdown", "frames": [50, 56, 62, 72, 82], "root": "centroid", "groundFrom": 30},
             # 11 KO: staggers 20–60 (tightened), falls onto the back 60–90, lies still — the last still frame holds
-            "ko":        {"clip": "ko", "span": [22, 90], "n": 10, "lie": [100, 120]},
-            "win":       {"clip": "win", "enter": [24, 62], "nEnter": 6, "hold": [96, 120]},
+            "ko":        {"clip": "ko", "span": [22, 90], "n": 7, "lie": [100, 120]},
+            "win":       {"clip": "win", "enter": [24, 62], "nEnter": 4, "hold": [96, 120]},
             # 13: the deflect (30–42) is the parry; 46–56 skipped (a stray floating object, a shaft to the right edge); the lunge 58–66 is
             # not used (our parry has no built-in counter — the punish is the player's own move)
             "parry":     {"clip": "parry", "span": [30, 42], "n": 3, "skip": [[46, 56]]},
             # the AUTOMATIC COUNTER (ruling 5): after the deflect, the clip's lunge strike (58–66), back to stance; 46–56 skipped
-            "counter":   {"clip": "parry", "frames": {"startup": [43, 57], "active": [62], "recovery": [68, 74, 80]}, "skip": [[46, 56]]},
+            "counter":   {"clip": "parry", "frames": {"startup": [43, 57], "active": [62], "recovery": [68, 79]}, "skip": [[46, 56]]},
             # 14 THROW (ruling 8): reach + grab 40–48 on the throw's startup/active (a whiff plays the reach back to stance);
             # the pull-in 52–74 during the grab's hold (the tech window); the knee strike — the sharpest frame of 78–86 — lands
             # when the engine applies the throw, then back to stance by ~100
@@ -534,6 +540,10 @@ def build(hero):
         if "range" in w: a0, b0 = w["range"]
         else: a0, b0 = w["search"]
         tor = {i: M_torso(c.m(i), stance_src) for i in range(a0, b0 + 1)}
+        if w.get("root") == "feet-linear":   # the travel = a straight line between the PLANTED feet at the cycle's two ends (both feet
+            # down there; mid-stride the feet's mean jumps as a foot lifts, so it can't be fitted) — the loop then closes exactly in place
+            fa, fb = M_feet(c.m(a0))[1], M_feet(c.m(b0))[1]
+            tor = {int(i): fa + (fb - fa) * (i - a0) / (b0 - a0) for i in range(a0, b0 + 1)}
         if "range" in w:
             s, Lw = a0, b0 - a0; e = figdiff(c.m(a0), c.m(b0), shiftB=tor[a0] - tor[b0])
         else:
@@ -544,20 +554,26 @@ def build(hero):
                     e = figdiff(c.m(s), c.m(s + Lw), shiftB=tor[s] - tor[s + Lw])
                     if best is None or e < best[0]: best = (e, s, Lw)
             e, s, Lw = best
-        off = M_torso(c.m(0), stance_src)
-        base = piv("walk"); wsrc = list(range(s, s + Lw, 2))
+        off = M_torso(c.m(0), stance_src) if w.get("root") != "feet-linear" else 0.0
+        base = piv("walk") if w.get("root") != "feet-linear" else (0.0, piv("walk")[1])
+        wsrc = list(range(s, s + Lw, w.get("step", 2)))
         anim["walk"] = {"loop": [cell("walk", i, (base[0] + tor[i] - off, base[1]), "walk") for i in wsrc], "fps": FPS_OUT}
-        moves_meta["walk"] = {"loop": [s, s + Lw], "loopError": round(e, 2), "rootTravelSource": round(max(tor.values()) - min(tor.values()), 1)}
+        moves_meta["walk"] = {"loop": [s, s + Lw], "loopError": round(e, 2), "rootTravelSource": round(max(tor.values()) - min(tor.values()), 1), "root": w.get("root", "torso"), "step": w.get("step", 2)}
         print("  walk: cycle f%d–f%d (%d frames, |Δ| %.2f after the torso shift) → %d cells at 12 fps; the clip's own travel %.0f px removed" % (s, s + Lw, Lw, e, len(wsrc), moves_meta["walk"]["rootTravelSource"]))
 
+    def centroid_x(M): ys, xs = np.where(M["a"] > 0.5); return float(xs.mean()) + M["ox"]
     def span(move):
         sp = cut[move]; c = clips[sp["clip"]]; skip = sp.get("skip", [])
-        fr = [pick(c, t, sp.get("look", 1), skip) for t in even(sp["span"][0], sp["span"][1], sp["n"])]
+        if "frames" in sp: fr = [pick(c, t, 0 if sp.get("exact") else 1, skip) for t in sp["frames"]]
+        else: fr = [pick(c, t, sp.get("look", 1), skip) for t in even(sp["span"][0], sp["span"][1], sp["n"])]
         fr = dedupe(c, fr)
         ids = []
         for i in fr:
             p = piv(sp["clip"])
+            if sp.get("root") == "centroid":   # the clip's travel removed: the body's centroid keeps the stance's offset from the feet
+                M0 = c.m(0); p = (p[0] + centroid_x(c.m(i)) - centroid_x(M0), p[1])
             if sp.get("pivot") == "feet": p = (p[0], float(M_lowest(c.m(i))))
+            elif "groundFrom" in sp and i >= sp["groundFrom"]: p = (p[0], float(M_lowest(c.m(i))))   # on the ground line: lying, rolling, rising
             else: p = grounded(sp["clip"], i, p)
             ids.append(cell(sp["clip"], i, p, move))
         moves_meta[move] = {"src": fr}

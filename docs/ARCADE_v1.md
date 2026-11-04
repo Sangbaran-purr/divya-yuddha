@@ -463,6 +463,38 @@ Lo fits with levers 2 + 3, and only just (47.5 of 48). Hi fits only with lever 1
 | Without the levers | 86.9 MB | 209.1 MB |
 | 6 fighters' download | 4.2 / 6 MB | 9.1 / 11 MB |
 
+## Indra's reshoots: walk + knockdown (owner, 2026-11-04)
+
+- **02 walk forward (reshoot):** the low guarded stance. One clean stride cycle, f25–f92.
+  - The forward travel (271 px) is removed by tracking the feet: a straight line between the planted feet at f25 and f92. (The feet's mean jumps whenever a foot lifts, so it can't be fitted mid-stride.) The loop closes in place, seam |Δ| 19 (the interim cut was 39).
+  - 23 cells: every 3rd source frame, played at 12 fps, so the stride runs 1.5× faster than shot.
+  - Walk back = this reversed. Replaces the interim f41–79 cut.
+- **10b knockdown (reshoot):**
+  - **Knockdown:** f8–f47, 7 cells: hit, thrown back, onto his back.
+  - **Get-up:** f49, 55, 61, 71, 83, 5 cells: the backward roll and the rise through a crouch.
+  - The clip's leftward travel (about 400 source px) is removed by the body's centroid; the engine slides him itself.
+  - From the landing (f30) on, his lowest point sits on the ground line: lifted 2–12 px, the roll included.
+  - Replaces the interim K.O.-fall + old-rise combo, so the pop from lying to kneeling is gone.
+
+**For a ruling:**
+- **The get-up runs about 5× faster than shot.** The roll and rise are 40 source frames (1.7 s), squeezed into the approved 20-frame get-up (0.33 s). A get-up of about 40 frames would let it breathe. That is a frame-data ruling: the wake-up stays invulnerable throughout.
+- **The walk skates.** The clip strides about 33 logical px/s; the game walks 240 (4 px a frame), about 7× faster. Playing the stride at 1.5× narrows that to about 5×. A slower walk speed for real Heroes, or a faster stride, would close it.
+
+**To stay within the lo download cap** (0.7 MB a fighter), four cuts recover 8 cells:
+- the K.O. fall 7 cells, not 10;
+- the light flinch shares the heavy stagger's first three cells;
+- the win's entry 4 cells, not 6;
+- the counter's recovery 2 cells, not 3.
+
+**Indra now:** 148 cells.
+
+| | hi | lo |
+|---|---|---|
+| KTX2 (cap) | 1.55 MB (1.6) | 0.69 MB (0.7) |
+| GPU memory | 13.9 MB | 5.0 MB |
+| Projection, 2 fighters + arena + effects (cap) | 63.6 MB (96) | 21.0 MB (48) |
+| WebP fallback, lo ×0.75 | | 44.8 MB (48) |
+
 ## The size budget (ruling 7)
 
 | | Target | Cap |
