@@ -19,12 +19,13 @@
   function px(v) { return Math.round(v * U); }
   var G = px(M.JUMP.g), JUMP_V = px(M.JUMP.v0), FRICTION = px(M.FRICTION);
 
+  function isShot(a) { return a.special === "projectile" || a.special === "nagapasha"; }
   function newFighter(side, heroId) {
     var hero = M.HEROES[heroId]; if (!hero) throw new Error("unknown hero " + heroId);
     var a = M.ARCH[hero.arch];
     return { side: side, hero: heroId, arch: hero.arch, x: px(side === 0 ? 520 : 920), y: 0, vx: 0, vy: 0, facing: side === 0 ? 1 : -1,
       hp: a.hp, hpMax: a.hp, meter: 0, state: "idle", move: null, mf: 0, connected: false, hitDone: false, chain: 0,
-      stun: 0, prev: 0, buf: { light: -1, heavy: -1, special: -1, up: -1 }, parryWin: -1, parryLock: 0 };
+      stun: 0, prev: 0, buf: { light: -1, heavy: -1, special: -1, up: -1 }, parryWin: -1, parryLock: 0, age: 0 };   // age: logic frames in this state (drives the art)
   }
 
   function newFight(opts) {
@@ -34,15 +35,23 @@
   }
 
   function arch(f) { return M.ARCH[f.arch]; }
-  // a move as THIS fighter performs it: the template, with its archetype's reach and recovery applied to light and heavy
+  // a move as THIS fighter performs it: the template, with the Hero's reach from the art (ruling 5) and its archetype's reach and
+  // recovery applied to light and heavy. A Hero with no measured reach uses the template's box (the box Heroes, unchanged).
   var MOVE_OF = {};
+  function heroReach(h, name) {
+    var hero = M.HEROES[h]; if (!hero) return null;
+    if (hero.reach && hero.reach[name] != null) return hero.reach[name];
+    if (hero.reachFrom) return heroReach(hero.reachFrom, name);
+    return null;
+  }
   function moveOf(f, name) {
     name = name || f.move;
-    var a = arch(f), base = M.MOVES[name];
-    if ((name !== "light" && name !== "heavy") || !(a.reachPx || a.recoveryAdd)) return base;   // reach and recovery touch light and heavy only
-    var k = f.arch + ":" + name;
+    var a = arch(f), base = M.MOVES[name], r = (name === "light" || name === "heavy") && f.hero ? heroReach(f.hero, name) : null;
+    if ((name !== "light" && name !== "heavy") || !(a.reachPx || a.recoveryAdd || r != null)) return base;   // reach and recovery touch light and heavy only
+    var k = (f.hero || "") + ":" + f.arch + ":" + name;
     if (!MOVE_OF[k]) {
       var m = JSON.parse(JSON.stringify(base));
+      if (r != null) m.box.x1 = r;
       m.recovery += a.recoveryAdd || 0; m.box.x1 += a.reachPx || 0;
       MOVE_OF[k] = m;
     }
@@ -59,7 +68,7 @@
   // the states nothing can touch: down, rising, or locked in a throw (ruling 5: the wake-up is invulnerable; no OTG in v1)
   var INVUL = { knockdown: 1, getup: 1, grab: 1, grabbed: 1 };
   // the states that count down on f.stun and then free the fighter (knockdown → getup; grab/grabbed end in resolveGrabs)
-  var TIMED = { knockdown: 1, getup: 1, parry: 1, parried: 1, grab: 1, grabbed: 1, throwrec: 1, tech: 1 };
+  var TIMED = { knockdown: 1, getup: 1, parry: 1, parried: 1, grab: 1, grabbed: 1, throwrec: 1, tech: 1, bound: 1 };
   // who a throw can take: on the ground and not stunned, down, rising, in the air, parrying or already in a throw
   var UNTHROWABLE = { hitstun: 1, blockstun: 1, knockdown: 1, getup: 1, grab: 1, grabbed: 1, jump: 1, ko: 1, win: 1, tech: 1, parry: 1, throwrec: 1 };
   function throwable(f) { return grounded(f) && !UNTHROWABLE[f.state]; }
@@ -130,7 +139,7 @@
       }
       f.mf++;
       if (f.move === "special" && a.special === "rush") f.vx = isActive(f) ? f.facing * px(a.rushSpeed) : 0;
-      if (f.move === "special" && a.special === "projectile" && f.mf === m.startup) spawnProjectile(g, f);
+      if (f.move === "special" && isShot(a) && f.mf === m.startup) spawnProjectile(g, f);
       if (f.mf >= moveTotal(m)) { f.state = "idle"; f.move = null; f.mf = 0; f.vx = 0; f.chain = 0; }
       return;
     }
@@ -155,7 +164,8 @@
 
   function spawnProjectile(g, f) {
     if (g.proj.some(function (p) { return p.owner === f.side; })) return;   // one at a time
-    g.proj.push({ owner: f.side, x: f.x + f.facing * px(M.PROJECTILE.startX), dir: f.facing, speed: px(arch(f).projSpeed), dmgMul: arch(f).dmg });
+    var hero = M.HEROES[f.hero], sx = hero && hero.projX != null ? hero.projX : M.PROJECTILE.startX;   // Indra's Vajra leaves its tip (ruling 5)
+    g.proj.push({ owner: f.side, x: f.x + f.facing * px(sx), dir: f.facing, speed: px(arch(f).projSpeed), dmgMul: arch(f).dmg, kind: arch(f).special === "nagapasha" ? "naga" : "shot" });
     g.events.push({ t: "projectile", side: f.side, frame: g.frame });
   }
 
@@ -201,7 +211,7 @@
   }
   function hitbox(f) {
     if (!isActive(f) || f.hitDone) return null;
-    if (f.move === "special" && arch(f).special === "projectile") return null;   // the projectile carries the hit
+    if (f.move === "special" && isShot(arch(f))) return null;   // the projectile carries the hit
     if (f.move === "throw") return null;                                          // a throw grabs (collide), it never hits
     var b = moveOf(f).box;
     var xa = f.x + f.facing * px(b.x0), xb = f.x + f.facing * px(b.x1);
@@ -220,7 +230,7 @@
     g.proj = g.proj.filter(function (p) {
       var def = g.f[1 - p.owner];
       if (def.state === "ko" || INVUL[def.state]) return true;
-      if (overlap(projBox(p), hurtbox(def))) { hits.push({ att: g.f[p.owner], def: def, move: M.MOVES.special, name: "special", mul: p.dmgMul, dir: p.dir, proj: true }); return false; }
+      if (overlap(projBox(p), hurtbox(def))) { hits.push({ att: g.f[p.owner], def: def, move: p.kind === "naga" ? NAGA_MOVE : M.MOVES.special, name: "special", mul: p.dmgMul, dir: p.dir, proj: true, naga: p.kind === "naga" }); return false; }
       return true;
     });
     // throws grab on their active frames, unless the thrower is being hit this frame; two grabs on one frame break each other
@@ -260,6 +270,13 @@
       } else {
         var dmg = Math.floor(m.dmg * h.mul / 100);
         def.hp = Math.max(0, def.hp - dmg);
+        if (h.naga) {   // 6 NAGAPASHA: the coil binds — no knockdown, the bound Hero can't act (ruling 6)
+          def.state = "bound"; def.stun = M.NAGAPASHA.bind; def.move = null; def.mf = 0; def.chain = 0; def.vx = 0;
+          att.meter = Math.min(M.METER.max, att.meter + M.METER.onHit); def.meter = Math.min(M.METER.max, def.meter + M.METER.onTaken);
+          g.events.push({ t: "hit", side: def.side, by: att.side, move: "special", dmg: dmg, frame: g.frame });
+          g.events.push({ t: "bind", side: def.side, by: att.side, frames: M.NAGAPASHA.bind, frame: g.frame });
+          stop = Math.max(stop, m.hitstop); return;
+        }
         // 10b: a special, or a heavy that finishes a combo (it lands on a defender already in hitstun), knocks down
         var down = h.name === "special" || (h.name === "heavy" && h.wasStun);
         def.state = down ? "knockdown" : "hitstun"; def.stun = down ? M.KNOCKDOWN.fall : m.hitstun; def.move = null; def.mf = 0; def.chain = 0;
@@ -274,6 +291,7 @@
     g.hitstop = stop;
   }
 
+  var NAGA_MOVE = { dmg: M.NAGAPASHA.dmg, chip: M.NAGAPASHA.chip, hitstun: 0, blockstun: M.MOVES.special.blockstun, hitstop: M.MOVES.special.hitstop, push: 4 };
   function techBoth(g, a, d) {   // a throw broken: both pushed apart, no damage
     var dir = d.x > a.x ? 1 : d.x < a.x ? -1 : a.facing;
     [a, d].forEach(function (f) { f.state = "tech"; f.stun = M.MOVES.throw.techStun; f.move = null; f.mf = 0; f.hitDone = true; });
@@ -309,7 +327,7 @@
   function step(g, inputs) {
     if (g.over) return g;
     inputs = inputs || [0, 0];
-    var frozen = g.hitstop > 0;
+    var frozen = g.hitstop > 0, was = g.f.map(function (f) { return f.state; });
     g.f.forEach(function (f, i) { bufferInputs(f, inputs[i] | 0, frozen); });
     g.frame++;
     if (g.hitstop > 0) { g.hitstop--; return g; }   // hit-stop: both fighters freeze; the buffer still listens
@@ -317,6 +335,7 @@
     resolveGrabs(g);
     physics(g);
     collide(g, inputs);
+    g.f.forEach(function (f, i) { f.age = f.state === was[i] ? f.age + 1 : 0; });   // the art reads it: frames in this state (frozen in hit-stop)
     var dead = g.f.map(function (f) { return f.hp <= 0; });
     if (dead[0] || dead[1]) return finish(g, dead[0] && dead[1] ? null : dead[0] ? 1 : 0, "ko"), g;
     g.timer--;
@@ -337,5 +356,5 @@
 
   return { U: U, STAGE_W: STAGE_W, WALL: WALL, PUSH: PUSH, BUFFER: BUFFER, BTN: BTN, newFight: newFight, step: step,
     snapshot: snapshot, restore: restore, hash: hash, hurtbox: hurtbox, hitbox: hitbox, projBox: projBox, isActive: isActive,
-    crouching: crouching, actionable: actionable, cancelOpen: cancelOpen, moveOf: moveOf, throwable: throwable, INVUL: INVUL };
+    crouching: crouching, actionable: actionable, cancelOpen: cancelOpen, moveOf: moveOf, throwable: throwable, INVUL: INVUL, isShot: isShot, G: G, JUMP_V: JUMP_V };
 });

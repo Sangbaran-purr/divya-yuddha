@@ -110,13 +110,17 @@ Gameplay runs on fixed 60 Hz logic frames and the art is stretched onto those ph
 | Archetype | Health | Walk forward / back (px/frame) | Damage | Special |
 |---|---|---|---|---|
 | All-rounder (Indra) | 1000 | 4 / 3 | 100% | Projectile, 9 px/frame (the balanced numbers) |
-| Reach (Meghnad) | 1000 | 4 / 3 | 100% | Charge, 10 px/frame; light and heavy reach **+45 px**, recovery **+2 frames** |
+| Reach (Meghnad) | 1000 | 4 / 3 | 100% | **Nagapasha** (ruling 6): a serpent-coil shot, 10 px/frame, that **binds** on hit (50 frames, 80 damage, no knockdown) and is blockable for 40 chip. Light and heavy reach **Indra's + 45 px**, recovery **+2 frames** |
 | Balanced | 1000 | 4 / 3 | 100% | Projectile, 9 px/frame |
 | Rushdown | 900 | 5 / 4 | 108% | Charge, 10 px/frame |
 | Zoner | 950 | 3 / 3 | 95% | Projectile, 11 px/frame |
 | Tank | 1150 | 3 / 2 | 100% | Charge, 8 px/frame |
 
-Indra and Meghnad are ruled. The other 11 are ruled as their clips arrive. Meghnad's special as a charge (a spear lunge) is my placeholder, still open.
+Indra and Meghnad are ruled. The other 11 are ruled as their clips arrive.
+
+**Reach from the art (ruling 5, 2026-11-04).** A real Hero's light and heavy hitboxes end where the weapon's tip is at contact, measured by the fighter tool on the clips. Indra: light 198, heavy 210 logical px from the feet; his Vajra shot leaves the tip at 177. Meghnad's are Indra's + 45 until his reshoot is measured. The box Heroes keep the template boxes.
+
+**Difficulty (ruling 4): no change now.** Open: consider a middle level between Beginner and Advanced once real art is in.
 
 ## The AI (honest-AI rule)
 
@@ -138,7 +142,7 @@ Indra and Meghnad are ruled. The other 11 are ruled as their clips arrive. Meghn
 - Start from the Hero's identity master.
   - **Present for both slice Heroes** in `assets/arcade/identity-masters/`: side profile facing right, on green, 1024×1536.
   - They show a **neutral standing pose with no weapon**, so step 0 still has to be made from them.
-- The still: **fighting stance**, weight forward, weapon in hand (Indra: the Vajra; Meghnad: his bow or sword, your call), **true side profile facing right**.
+- The still: **fighting stance**, weight forward, weapon in hand (Indra: the Vajra; Meghnad: the spear **upright over the shoulder, nothing past the front knee** — ruling 5), **true side profile facing right**.
 - Background chroma green (RGB 0, 185, 62). Use magenta for a Hero dressed in green or teal.
 - Canvas **1920×1080**. The Hero about 640 px tall, feet on y = 1000, body centred near x = 700, leaving room in front for strikes.
 - No particles, no weapon glow.
@@ -148,25 +152,33 @@ Indra and Meghnad are ruled. The other 11 are ruled as their clips arrive. Meghn
 
 Every prompt starts: *"Static locked camera, side view, no camera movement, no zoom, full body always in frame, plain green background, no environment, no effects beyond the weapon, one action."*
 
+Every action line below ends with *"no lightning, no glow, no light or energy effects"* (ruling 8, 2026-11-04): Kling baked a lightning bolt into Indra's special and a floating shaft into his parry. The game draws its own effects.
+
 | # | Clip | Action line | Last frame = stance? |
 |---|---|---|---|
-| 1 | Idle | breathes and shifts weight in place, ready | Yes (loop) |
-| 2 | Walk forward | steps forward in place, two steps, stays centred | Yes (loop) |
-| 3 | Walk back | steps backward in place, guard up | Yes (only if reversing walk forward fails) |
-| 4 | Jump | crouches, leaps straight up, lands in stance | Yes |
-| 5 | Crouch | drops low into a guard and holds | No |
-| 6 | Light | one quick jab forward, returns to stance | Yes |
-| 7 | Heavy | one powerful overhead strike with the weapon, returns to stance | Yes |
-| 8 | Special | raises the weapon, divine energy gathers, hurls or unleashes it forward, returns to stance | Yes |
-| 9 | Block | raises both arms to guard and holds | No |
-| 10 | Hit reaction | flinches back from a blow to the chest, recovers to stance | Yes |
-| 10b | Knockdown + get-up | is struck hard and thrown back off the feet, lands flat on the back, lies a beat, then pushes up off the ground and rises back into the fighting stance | Yes |
-| 11 | KO | staggers and falls to the ground, lies still | No |
-| 12 | Win | raises the weapon in triumph, holds | No |
-| 13 | Parry | snaps the weapon across the body to deflect a blow coming from the front, a sharp short recoil, returns to stance | Yes |
-| 14 | Throw | steps in, seizes an unseen opponent at chest height with the free hand and hurls them over the shoulder to the ground behind, mimed with no second figure, returns to stance | Yes |
+| 1 | Idle | breathes and shifts weight in place, ready — no lightning, no glow, no light or energy effects | Yes (loop) |
+| 2 | Walk forward | steps forward in place, two steps, stays centred — no lightning, no glow, no light or energy effects | Yes (loop) |
+| 3 | Walk back | steps backward in place, guard up — no lightning, no glow, no light or energy effects | **Not shot by default.** Walk back = walk forward reversed, for every Hero (owner approved on Indra). Shoot 03 only if a Hero's reverse looks wrong |
+| 4 | Jump | a small low hop, head always inside the frame, lands in stance — no lightning, no glow, no light or energy effects (the engine supplies the height) | Yes |
+| 5 | Crouch | drops low into a one-knee guard and holds — no lightning, no glow, no light or energy effects | No |
+| 6 | Light | one quick jab forward, returns to stance — no lightning, no glow, no light or energy effects | Yes |
+| 7 | Heavy | one powerful overhead strike with the weapon, **a clear held impact pose**, returns to stance — no lightning, no glow, no light or energy effects | Yes |
+| 8 | Special | raises the weapon, drives it forward into **a clear held impact pose**, returns to stance — no lightning, no glow, no light or energy effects | Yes |
+| 9 | Block | raises both arms to guard and holds — no lightning, no glow, no light or energy effects | No |
+| 10 | Hit reaction | flinches back from a blow to the chest, recovers to stance — no lightning, no glow, no light or energy effects | Yes |
+| 10b | Knockdown + get-up | is struck hard and thrown back off the feet, lands flat on the back, lies a beat, then pushes up off the ground and rises back into the fighting stance — no lightning, no glow, no light or energy effects | Yes |
+| 11 | KO | staggers and falls to the ground, lies still — no lightning, no glow, no light or energy effects | No |
+| 12 | Win | raises the weapon in triumph, holds — no lightning, no glow, no light or energy effects | No |
+| 13 | Parry | snaps the weapon across the body to deflect a blow coming from the front, a sharp short recoil, returns to stance — no lightning, no glow, no light or energy effects | Yes |
+| 14 | Throw | steps in, seizes an unseen opponent at chest height with the free hand and hurls them over the shoulder to the ground behind, mimed with no second figure, returns to stance — no lightning, no glow, no light or energy effects | Yes |
 
-**Shoot order:** the original 12 first (1–12, in the order above), then **10b, 13, 14**. The fight core already plays all three as boxes (and, with fx, borrowed art), so they can arrive in any order without blocking anything.
+**Shoot order:** the original 12 first (1–12, in the order above, skipping 03), then **10b, 13, 14**. The fight core already plays all three as boxes (and, with fx, borrowed art), so they can arrive in any order without blocking anything.
+
+**Meghnad's reshoot (ruling 5):**
+- **New stance still:** the spear **upright over the shoulder**, nothing past the front knee. Today it is held out front, so even in idle it passes about 190 px into the opponent.
+- **Idle and light are reshot from that stance.** The light's action line: *"from the stance, one fast thrust of the spear forward, about one and a half body lengths, returns to stance — no lightning, no glow, no light or energy effects"*.
+- **His special (Nagapasha, ruling 6):** the clip shows only *"a spear thrust forward into a held casting pose, returns to stance"*. The serpent coil is the engine's own projectile, so no serpent appears in the clip.
+- **When the reshoots land:** his hitboxes are set from the art, keeping his archetype relative to Indra (reach +45, recovery +2 frames).
 
 **Step 2: curate.** Reject a clip for any of these:
 - the camera drifts or zooms;
@@ -176,7 +188,7 @@ Every prompt starts: *"Static locked camera, side view, no camera movement, no z
 
 Expect about 1.5 takes per clip.
 
-**Step 3: drop.** Put the clips in `lab/arcade/sources/<hero>/` (gitignored), named `<hero>_01_idle.mp4` … `<hero>_12_win.mp4`, and `<hero>_10b_knockdown.mp4`, `<hero>_13_parry.mp4`, `<hero>_14_throw.mp4`.
+**Step 3: drop.** Put the clips in `lab/arcade/sources/<hero>/` (gitignored), named `<hero>_01_idle.mp4` … `<hero>_12_win.mp4` (Indra's are `indra_02_walk_forward`, `indra_10_hit_reaction`, `indra_13_counter_parry` — the tool reads its own list), and `<hero>_10b_knockdown.mp4`, `<hero>_13_parry.mp4`, `<hero>_14_throw.mp4`.
 
 From there the fighter tool (R3) does the rest, and the owner reviews a contact sheet:
 - matte the clips;
@@ -318,6 +330,97 @@ Two fighters (Indra + Meghnad), arena and effects:
 
 Lo fits with levers 2 + 3, and only just (47.5 of 48). Hi fits only with lever 1, or with several of 2–5 together.
 
+## Indra's full moveset cut + the memory fix (owner rulings of 2026-11-04, second set)
+
+### The rulings and what was done
+
+| # | Ruling | Outcome |
+|---|---|---|
+| 1 | GPU-compressed textures (KTX2 / Basis) for the fighter pages and the arena, with a WebP fallback; idle at 8 fps; hold cells trimmed; a half-size lo Vajra; the strike frames back only if the 15-move projection fits both caps with margin | **Done. The projection now fits with margin, so the 24 fps strike frames ship.** The levers and their savings are in the tables below |
+| 2 | Frame data for knockdown, parry and throw approved | Unchanged |
+| 3 | Throw: keyboard Light + Heavy or U; touch a fifth Grab button, same size, never over Light or Heavy | Done. Grab sits on the top row (Grab · Special · Block over Light · Heavy). In the browser at 640×360 and 568×320: no overlaps, all in view, clear of the stick's half of the screen. The chord still throws on touch |
+| 4 | Difficulty: no change; a middle level is open | Noted (the archetype section) |
+| 5 | Reach from the art | **Indra:** light 198, heavy 210, the Vajra leaves at 177 (measured: 198.4 / 209.5 / 177.1). **Meghnad:** Indra's + 45 until his reshoot is measured. The AI spaces itself by its own reach |
+| 6 | Meghnad's special = Nagapasha | **A shot that binds:** 50 frames, 80 damage, no knockdown, so a follow-up lands; blockable for 40 chip. The coil is drawn as a teal serpent placeholder, and a bound Hero gets coil rings |
+| 7 | The strong edge despill as the tool's default, with a before/after | Done. **0 olive edge pixels** on every cell of both fighters (the clip-test rule left 1,106 on Indra's sample of 13 cells and 222 on Meghnad's). Solid gold is untouched. Before/after on the Desktop |
+| 8 | Clip card: held impact pose; no lightning, glow or energy; the jump as a low hop; Meghnad's stance and thrust; walk back = reversed | Done (the clip card) |
+| — | New 11 KO and 04 jump (owner messages during the work) | Both cut. KO: stagger tightened, fall, lie; the lying body lifted 12 px onto the ground; the speck dropped by isolation. Jump: 8 sharp cells from take-off to touch-down, the crown 34 px from the top at most |
+
+### Cells per move (Indra)
+
+| Move | Clip frames used | Cells | How it plays |
+|---|---|---|---|
+| Idle | f0–f55 loop | 17 | 8 fps loop; 19 steps, 2 near-duplicates merged |
+| Walk | f25–f88 cycle | 32 | 12 fps loop. Walk back = the walk reversed |
+| Jump | f43–f84 | 8 | Across the 40-frame airtime, each cell standing on its own lowest point |
+| Crouch | enter f27, f41 · hold f72–f96 | 6 | Entry, then a 1 s hold played forward and back (4 cells) |
+| Light | f12–f44 | 7 | The game's 5/3/9 phases, strike frames at 24 fps |
+| Heavy | f37–f93 (f50–58 skipped) | 11 | 12/4/18, strike frames at 24 fps |
+| Special | f23–f94 | 16 | 16/8/26, strike frames at 24 fps; the baked lightning cut beyond the Vajra's tip |
+| Block | enter f11, f27 · hold f29–f53 | 8 | Entry, then the hold; blockstun shows the guard |
+| Hit, light / heavy | f31–f40 / f31–f55 | 3 / 4 | Light = the first flinch; heavy = the full stagger, also used when parried, grabbed or bound |
+| Knockdown / get-up | f11–f57 / f81–f101 | 7 / 4 | The 36-frame fall, then the 20-frame rise |
+| K.O. | f23–f91, lie f118 | 11 | Over 60 frames after the fight ends, then the still frame holds |
+| Win | enter f23–f63 · hold f96–f120 | 10 | Raise, then the hold |
+| Parry | f31–f41 | 3 | The deflect only. The clip's lunge (f58–66) isn't used: the parry's punish is the player's own move |
+| Throw | — | 0 | Borrows the light until clip 14 arrives |
+| **Total** | | **147** | |
+
+### Sheets and encoding (measured)
+
+**Encoding choice** (ruling 1: "UASTC for hi, ETC1S for lo, or the measured best"). The tool takes the best PSNR whose download fits a fighter's cap. Indra's full cut:
+
+| Rung | Cap | UASTC | UASTC + RDO λ4 | ETC1S | Chosen |
+|---|---|---|---|---|---|
+| hi | 1.6 MB | 4.9 MB, 35.8 dB | 4.2 MB, 31.8 dB | 1.46 MB, 27.3 dB | ETC1S |
+| lo | 0.7 MB | 1.9 MB, 33.5 dB | 1.7 MB, 30.8 dB | 0.68 MB, 25.5 dB | ETC1S |
+
+- UASTC looks better but costs 3× the download. Indra's hi alone would be 4.9 MB, and six fighters about 30 MB against a match's 11.
+- ETC1S shows slight blockiness on cloth at 2× zoom and reads close to WebP at game size. **Your call if you want UASTC on hi.**
+
+**Sheets:**
+
+| | hi | lo |
+|---|---|---|
+| Indra pages | 1 page, 4096×3548 | 2 pages: 2048×1892 + 1972×632 |
+| Indra KTX2 / WebP | 1.46 / 2.33 MB | 0.70 / 1.11 MB |
+| Indra GPU memory, compressed / as RGBA | 13.9 / 55.4 MB | 4.9 / 19.5 MB |
+| Meghnad (placeholder, 22 cells) KTX2 | 0.27 MB | 0.14 MB |
+
+**In the browser** (Chrome on the owner's Mac): KTX2 → ASTC 4×4, Indra 14.5 MB on the GPU, transcoding 129 ms for both fighters. `?tex=webp` loads the fallback (92 MB in all, hi).
+
+### The projection (`tools/budget.js`): 2 fighters + arena + effects, 15 moves, strike frames included
+
+| | lo (cap 48, margin 36) | hi (cap 96, margin 72) |
+|---|---|---|
+| Indra, measured | 4.9 MB | 13.9 MB |
+| Meghnad, full set at today's spear-out density / packing like Indra | 9.8 / 4.9 MB | 24.9 / 13.9 MB |
+| Arena (compressed) + Vajra | 1.8 + 4.4 MB (the half-size copy) | 7.0 + 17.7 MB |
+| **Total** | **20.8 MB** (15.9 if the reshoot packs like Indra) | **63.4 MB** (52.4) |
+| Without the levers | 86.3 MB | 208.4 MB |
+| Saved by compressed textures | −49.2 MB | −137.1 MB |
+| Saved by idle at 8 fps (19 cells instead of 28) | −0.9 MB | −2.4 MB |
+| Saved by the hold trim (21 cells) | −2.1 MB | −5.5 MB |
+| Saved by the half-size Vajra | −13.2 MB | — |
+| The WebP fallback (no compressed format) | 70.1 MB: over | 200.5 MB: over |
+| Download: Indra / 6 fighters | 0.70 / 4.2 MB (caps 0.7 / 6) | 1.46 / 8.7 MB (caps 1.6 / 11) |
+
+**Decision:** the strike frames ship (light +1, heavy +3, special +6 cells for Indra). The suite pins it (M1).
+
+**Open: the fallback is over the cap.** A device with no compressed format at all is rare on WebGL (ETC2 is in every WebGL 2 phone, ASTC in most). For those devices, the fix would be the lo WebP pages plus fewer cells.
+
+### What in the clips doesn't work in play
+
+- **The walk is not a steady cycle.** The take goes from the wide stance (f25–33) into an upright stride (f41–79) and back to the stance. Its best loop (63 frames) closes at |Δ| 10.0, against the idle's 1.6. In play the stance-to-stride change reads as a pulse every 2.6 s, and the feet slide a little where the torso alignment removes the clip's 140 px of travel. **Reshoot as a steady stride that starts and ends mid-step,** or rule to cut only f41–79.
+- **The special is clean.** The baked lightning was cut beyond the tip (20–70 k pixels a frame), with no green halo left: semi-transparent pixels are no more than the clean frame's. No reshoot is needed for the matte. The bolt cost the drive's motion blur nothing.
+- **The knockdown falls forward,** to hands and knees toward the opponent, while the engine slides the Hero backward. It reads as a stumble, not being blown away. A take that falls backward would match.
+- **The K.O. turns toward the camera** mid-stagger (f36–60) before falling. Acceptable for a K.O.
+- **The crouch, K.O. and win clips started 17–19 px right of the stance.** Each is registered back by its own frame 0, so no visible jump.
+- **The win steps forward of the stance.** Its cells' feet sit up to 6 px (lo) left of the figure's foot. Harmless.
+- **Throw (14) is not supplied.** It borrows the light, and the thrown Hero plays the heavy stagger, then 10b.
+- **The parry's built-in lunge** (f58–66) is unused. If you want an automatic counter-strike, that is a rules change.
+- **Meghnad** is still today's sheets (idle + light). Every other move borrows, and his special is the Nagapasha shot over a borrowed light thrust.
+
 ## The size budget (ruling 7)
 
 | | Target | Cap |
@@ -351,7 +454,7 @@ The view is 960×540 logical, on a 1440-px-wide stage.
 | R0 | Page, own Pixi copy, stamp, test runner, lab-law check | Built |
 | R1 | The deterministic fight core + box fighters, keyboard play, the frame data above, cancels, hit-stop, block, crouch vs high, meter, health; the rounds stub | Built |
 | R2 | Touch controls, the 4-frame buffer, the three AI levels under the honest-AI rule, the headless ladder and mirror | Built |
-| R3 | Indra as a real fighter: the fighter tool, the hitbox editor | Clip test, enhancement test and its rulings done (idle + light for Indra and Meghnad; fx + tight camera default; 15-move template as placeholders; gentler Beginner); the full 15-clip set and the hitbox editor follow |
+| R3 | Indra as a real fighter: the fighter tool, the hitbox editor | **Indra fully animated** (13 clips; the throw borrows until clip 14), GPU-compressed pages, reach from the art, Nagapasha; Meghnad's reshoot and the hitbox editor follow |
 | R4 | Meghnad on foot + the arena + the specials (the Vajra effect reused) + sound | |
 | R5 | The 3-Hero lineup, best of three, HUD, timer, pause, reduced motion (a third real Hero or a box stand-in) | |
 | R6 | Recovery + coins on a fake clock (ruling 5) | |

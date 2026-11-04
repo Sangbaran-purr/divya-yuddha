@@ -61,12 +61,17 @@
   // reachPx lengthens the light and heavy hitboxes' far edge; recoveryAdd lengthens their recovery (logic frames).
   var ARCH = {
     allrounder: { hp: 1000, walkF: 4, walkB: 3, dmg: 100, special: "projectile", projSpeed: 9 },                      // Indra (owner ruling 4, 2026-11-03)
-    reach:      { hp: 1000, walkF: 4, walkB: 3, dmg: 100, special: "rush", rushSpeed: 10, reachPx: 45, recoveryAdd: 2 }, // Meghnad: longest reach, slightly slower recovery
+    reach:      { hp: 1000, walkF: 4, walkB: 3, dmg: 100, special: "nagapasha", projSpeed: 10, reachPx: 45, recoveryAdd: 2 }, // Meghnad: longest reach, slightly slower recovery; Nagapasha (ruling 6)
     balanced: { hp: 1000, walkF: 4, walkB: 3, dmg: 100, special: "projectile", projSpeed: 9 },
     rushdown: { hp: 900,  walkF: 5, walkB: 4, dmg: 108, special: "rush", rushSpeed: 10 },
     zoner:    { hp: 950,  walkF: 3, walkB: 3, dmg: 95,  special: "projectile", projSpeed: 11 },
     tank:     { hp: 1150, walkF: 3, walkB: 2, dmg: 100, special: "rush", rushSpeed: 8 }
   };
+
+  // 6 MEGHNAD'S NAGAPASHA (owner ruling 6, 2026-11-04; numbers proposed): the clip is a spear thrust into a held cast pose; the
+  // serpent coil is an in-engine projectile that BINDS on hit — the bound Hero can't act for `bind` frames (no knockdown: a follow-up
+  // is the point) — and is blockable with chip. Speed is the archetype's projSpeed.
+  var NAGAPASHA = { dmg: 80, chip: 40, bind: 50 };
 
   // The roster: three placeholder box Heroes, and the slice's two real Heroes as their clips arrive.
   var HEROES = {
@@ -74,10 +79,14 @@
     box_rakta: { id: "box_rakta", name: "Box · Rakta", arch: "rushdown", color: 0xd8574a },
     box_varna: { id: "box_varna", name: "Box · Varna", arch: "zoner", color: 0x5aa7d8 },
     // the clip test: real art for idle and light (fighters/<id>/); every other move still draws as a box
-    indra:   { id: "indra", name: "Indra", arch: "allrounder", color: 0xe8c874, fighter: "indra" },
-    meghnad: { id: "meghnad", name: "Meghnad", arch: "reach", color: 0x9b4fd1, fighter: "meghnad" }
+    // REACH FROM THE ART (owner ruling 5, 2026-11-04): Indra's hitboxes end where his weapon's tip is at contact, measured by the
+    // fighter tool on the clips (fighters/indra/manifest.json tipsLogical, logical px from the feet; the suite pins these to it):
+    // light 198 (the clip test's 198.7), heavy 210; the Vajra leaves the tip at 177 on the special.
+    indra:   { id: "indra", name: "Indra", arch: "allrounder", color: 0xe8c874, fighter: "indra", reach: { light: 198, heavy: 210 }, projX: 177 },
+    // Meghnad: placeholder sheets until the reshoot; his archetype stays RELATIVE TO INDRA — Indra's reach + 45, 2 frames slower
+    meghnad: { id: "meghnad", name: "Meghnad", arch: "reach", color: 0x9b4fd1, fighter: "meghnad", reachFrom: "indra" }
   };
 
-  return { BODY: BODY, MOVES: MOVES, KNOCKDOWN: KNOCKDOWN, PARRY: PARRY, CLIPS: CLIPS, CHAIN_MAX: CHAIN_MAX, METER: METER, JUMP: JUMP, PROJECTILE: PROJECTILE, FRICTION: FRICTION,
+  return { BODY: BODY, MOVES: MOVES, KNOCKDOWN: KNOCKDOWN, PARRY: PARRY, NAGAPASHA: NAGAPASHA, CLIPS: CLIPS, CHAIN_MAX: CHAIN_MAX, METER: METER, JUMP: JUMP, PROJECTILE: PROJECTILE, FRICTION: FRICTION,
     ROUND_SECONDS: ROUND_SECONDS, CELLS: CELLS, ARCH: ARCH, HEROES: HEROES };
 });

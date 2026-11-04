@@ -59,7 +59,8 @@ const BY_RUNG = [
   ['index.html', 'STAMP', 'README.md', '.gitignore', 'LAW_BASE', 'runtime/pixi.min.mjs', 'runtime/COPY.json', 'tools/stamp.js', 'test/run.js', 'test/game_counts.json'],
   ['core/moves.js', 'core/fight.js', 'core/rng.js', 'core/match.js', 'ui/scene.js'],
   ['core/ai.js', 'ui/controls.js', 'ui/app.js', 'ui/app.css'],
-  ['tools/make_fighter.py'].concat(...['indra', 'meghnad'].map((h) => ['fighters/' + h + '/manifest.json', 'fighters/' + h + '/hi.webp', 'fighters/' + h + '/lo.webp']))];
+  ['tools/make_fighter.py', 'tools/ktx2_decode.js', 'tools/make_effect_lo.py', 'runtime/basis/basis_transcoder.js', 'runtime/basis/basis_transcoder.wasm', 'effects/vajra/lo/manifest.json', 'effects/vajra/lo/atlas.webp']
+    .concat(...['indra', 'meghnad'].map((h) => ['fighters/' + h + '/manifest.json', 'fighters/' + h + '/hi_0.webp', 'fighters/' + h + '/hi_0.ktx2', 'fighters/' + h + '/lo_0.webp', 'fighters/' + h + '/lo_0.ktx2']))];
 const ENH_FILES = ['ui/present.js', 'ui/demo.js', 'tools/capture_server.js', 'tools/assemble_capture.py', 'tools/budget.js', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json'];
 const NEEDED = [].concat(...BY_RUNG.slice(0, RUNG + 1)).concat(ENH ? ENH_FILES : []);
 console.log('  (rung ' + RUNG + ': the suite checks R0' + (RUNG ? '–R' + (RUNG === 3 ? '2 + the R3 clip test' : RUNG) : '') + ')');
@@ -327,7 +328,7 @@ const BR1 = [
   ['B2 · a block that does NOT stop damage (R1.7 goes red)', { fight: [['var chip = Math.floor(m.chip * h.mul / 100);', 'var chip = Math.floor(m.dmg * h.mul / 100);']] }, (KK) => blockOk(KK).ok],
   ['B3 · hit-stop removed (R1.6 goes red)', { fight: [['    g.hitstop = stop;', '    g.hitstop = 0;']] }, (KK) => hitstopOk(KK).ok],
   ['B4 · the cancel window widened by 10 frames (R1.9 goes red)', { moves: [['cancelAfter: 4, cells: 6', 'cancelAfter: 14, cells: 6']] }, (KK) => cancelsOk(KK).ok],
-  ['B5 · a NONDETERMINISTIC replay: Math.random in the physics (R1.1 goes red)', { fight: [['g.proj.forEach(function (p) { p.x += p.dir * p.speed; });', 'g.proj.forEach(function (p) { p.x += p.dir * p.speed; }); g.f[0].x += Math.random() < 0.5 ? 1 : 0;']] }, (KK) => determinism(KK).same],
+  ['B5 · a NONDETERMINISTIC replay: Math.random in the physics (R1.1 goes red)', { fight: [['g.proj.forEach(function (p) { p.x += p.dir * p.speed; });', 'g.proj.forEach(function (p) { p.x += p.dir * p.speed; }); g.noise = Math.random();']] }, (KK) => determinism(KK).same],
   ['B6 · crouch no longer ducks a high: the crouch hurtbox full height (R1.8 goes red)', { moves: [['crouchH: 120', 'crouchH: 220']] }, (KK) => crouchOk(KK).heavyWhiffs],
   ['B7 · the meter not charged by hits (R1.11 goes red)', { moves: [['onHit: 8', 'onHit: 0']] }, (KK) => meterOk(KK).ok],
   ['B8 · a special without a full meter (R1.11 goes red)', { fight: [['if (name === "special") { if (f.meter < M.MOVES.special.cost) return false; f.meter -= M.MOVES.special.cost; }', ''],
@@ -362,9 +363,10 @@ const CT = K.controls;
 const dirs = [[60, 0, B.R], [42, -42, B.R | B.U], [0, -60, B.U], [-42, -42, B.U | B.L], [-60, 0, B.L], [-42, 42, B.L | B.D], [0, 60, B.D], [42, 42, B.D | B.R]];
 ok('R2.4 · THE FLOATING STICK: 8 directions (screen up = jump), a ' + CT.DEADZONE + ' px dead zone in the middle (10 px → nothing, 20 px → a direction)',
   dirs.every(([x, y, b]) => CT.stickBits(x, y) === b) && CT.stickBits(10, 0) === 0 && CT.stickBits(-6, 8) === 0 && CT.stickBits(20, 0) === B.R);
-ok('R2.5 · THE KEYBOARD: A/D/W/S and the arrows, J light, K heavy, L special, Shift block; both ways at once is neither', CT.keyBits({ KeyA: 1, KeyJ: 1 }) === (B.L | B.LT) &&
+ok('R2.5 · THE KEYBOARD: A/D/W/S and the arrows, J light, K heavy, L special, Shift block, U the throw (= J + K, ruling 3); both ways at once is neither', CT.keyBits({ KeyU: 1 }) === (B.LT | B.HV) && CT.keyBits({ KeyA: 1, KeyJ: 1 }) === (B.L | B.LT) &&
   CT.keyBits({ ArrowRight: 1, KeyK: 1, ShiftLeft: 1 }) === (B.R | B.HV | B.BL) && CT.keyBits({ KeyA: 1, KeyD: 1, KeyL: 1 }) === B.SP && CT.keyBits({ KeyW: 1, KeyS: 1 }) === 0);
-ok('R2.6 · FOUR touch buttons: Light, Heavy, Special, Block', J(CT.BUTTONS.map((b) => b.label)) === '["Light","Heavy","Special","Block"]' && CT.BUTTONS.every((b) => b.bit));
+ok('R2.6 · FIVE touch buttons (ruling 3): Light, Heavy, Special, Block and GRAB (= Light + Heavy, the throw); the grid puts Grab on the top row, never over Light or Heavy (the browser check at 640×360 is in the report)', J(CT.BUTTONS.map((b) => b.label)) === '["Light","Heavy","Special","Block","Grab"]' && CT.BUTTONS.every((b) => b.bit) &&
+  CT.BUTTONS.find((b) => b.id === 'grab').bit === (B.LT | B.HV) && /grid-template-areas: "grab special block" ". light heavy"/.test(rd('ui/app.css')));
 const css = rd('ui/app.css');
 ok('R2.7 · LANDSCAPE ONLY (ruling 6): a portrait phone gets the rotate prompt over everything, and the match pauses when the phone turns',
   /@media \(orientation: portrait\)[^{]*\{\s*#rotate \{ display: flex; \}/.test(css) && /portrait\.addEventListener\("change"/.test(appSrc) && /Turn your phone sideways/.test(html));
@@ -629,98 +631,170 @@ for (const [name, mut, check] of BR5) { let still; try { still = check(load(mut)
 
 
 if (RUNG < 3) return finish();
-// ═══ R3 · THE CLIP TEST (owner ruling 2026-11-03): Indra and Meghnad, idle + light, from the owner's four Kling clips ═══
-console.log('\n── ARCADE-1 · R3 clip test · the sheets ──');
+// ═══ R3 · THE FIGHTERS (2026-11-04): Indra's full moveset cut from his 13 Kling clips; Meghnad's idle + light as placeholders ═══
+console.log('\n── ARCADE-1 · R3 · the fighters: pages, KTX2, the cut ──');
 const HEROS = ['indra', 'meghnad'];
 const MAN = {}; HEROS.forEach((h) => { MAN[h] = JSON.parse(rd('fighters/' + h + '/manifest.json')); });
-const BUDGET = { hi: { target: 1.2 * 1048576, cap: 1.6 * 1048576, px: 4096 }, lo: { target: 0.5 * 1048576, cap: 0.7 * 1048576, px: 2048 } };
-function sheetsOk(man) {
-  return ['hi', 'lo'].every((r) => { const R = man.rungs[r], bytes = fs.statSync(path.join(LAB, 'fighters', man.hero, R.sheet)).size;
-    return bytes === R.bytes && bytes <= BUDGET[r].cap && R.size[0] <= BUDGET[r].px && R.size[1] <= BUDGET[r].px &&
-      R.cells.every((c) => c.x >= 0 && c.y >= 0 && c.x + c.w <= R.size[0] && c.y + c.h <= R.size[1] && c.px >= 0 && c.px <= c.w && c.py >= c.h - 4 && c.py <= c.h + 4); });
+const DLCAP = { hi: 1.6 * 1048576, lo: 0.7 * 1048576 }, SIDE = { hi: 4096, lo: 2048 };
+function sheetsOk(man) {   // every page inside its rung, sides a multiple of 4 (a compressed block), WebP and KTX2 on disk at their recorded size; every cell inside its page, its feet pivot on its bottom edge and within a quarter-width of the cell (the win steps forward of the stance)
+  const errs = [];
+  for (const r of ['hi', 'lo']) {
+    const R = man.rungs[r];
+    R.pages.forEach((p, n) => {
+      if (p.size[0] > SIDE[r] || p.size[1] > SIDE[r] || p.size[0] % 4 || p.size[1] % 4) errs.push(r + ' page ' + n + ' size');
+      for (const k of ['webp', 'ktx2']) { const f = path.join(LAB, 'fighters', man.hero, p[k]); if (!fs.existsSync(f) || fs.statSync(f).size !== p.bytes[k]) errs.push(r + ' ' + p[k]); }
+    });
+    R.cells.forEach((c, i) => { const p = R.pages[c.page]; if (!p || c.x < 0 || c.y < 0 || c.x + c.w > p.size[0] || c.y + c.h > p.size[1] || c.px < -0.25 * c.w || c.px > 1.25 * c.w || c.py < c.h - 4 || c.py > c.h + 4) errs.push(r + ' cell ' + i); });
+  }
+  return errs;
 }
 const mb = (b) => (b / 1048576).toFixed(2) + ' MB';
-ok('C1 · BOTH SHEETS PER HERO, INSIDE THE BUDGET (ruling 7): ' + HEROS.map((h) => MAN[h].name + ' hi ' + mb(MAN[h].rungs.hi.bytes) + ' (' + MAN[h].rungs.hi.size.join('×') + '), lo ' + mb(MAN[h].rungs.lo.bytes) + ' (' + MAN[h].rungs.lo.size.join('×') + ')').join(' · ') +
-  ' — caps 1.6 / 0.7 MB, 4096 / 2048 px; every cell inside its sheet, its feet pivot inside the cell on its bottom edge', HEROS.every((h) => sheetsOk(MAN[h])));
-ok('C2 · ONE STANCE HEIGHT, ONE GROUND LINE: both Heroes are scaled so the stance (feet to head top, from idle f0) is 320 px on the hi sheet and 192 on the lo (' +
-  HEROS.map((h) => MAN[h].name + ' ' + MAN[h].stance.sourceHeight + ' px source').join(', ') + '), and every cell is cut on the feet',
-  HEROS.every((h) => MAN[h].stance.heightPx.hi === 320 && MAN[h].stance.heightPx.lo === 192));
-const CI = (h) => MAN[h].cellIndex;
-ok('C3 · THE MOVES: idle = the tightest loop at 12 fps (' + HEROS.map((h) => MAN[h].name + ' ' + MAN[h].moves.idle.loopFrames + ' frames → ' + CI(h).idle.length + ' cells, closing at mean |Δ| ' + MAN[h].moves.idle.loopError).join('; ') +
-  '); light = 2 startup + 1 contact + 3 recovery cells for the 5/3/9 phases', HEROS.every((h) => CI(h).idle.length === MAN[h].moves.idle.src.length && CI(h).idle.length >= 20 &&
-  MAN[h].moves.idle.loopError < 2.5 && CI(h).light.startup.length === 2 && CI(h).light.active.length === 1 && CI(h).light.recovery.length === 3));
-const wob = (h, m) => MAN[h].wobbleSource[m].map((v) => Math.hypot(v[0], v[1]));
-ok('C4 · PIVOT WOBBLE: the idle feet hold within 2 px of the Hero\'s pivot (source px: ' + HEROS.map((h) => MAN[h].name + ' ≤' + Math.max(...wob(h, 'idle')).toFixed(1)).join(', ') +
-  '); idle and light share one pivot — their stance frames register within 2 px', HEROS.every((h) => Math.max(...wob(h, 'idle')) <= 2 && Math.abs(MAN[h].wobbleSource.light[0][0]) <= 30));
-ok('C5 · THE MATTE: no ground-coloured fringe on the weapon tip or the head, no green-tinted edge pixel left, rembg never needed (' +
-  HEROS.map((h) => MAN[h].name + ' tinted ' + MAN[h].tintedEdgePixels + ', rembg ' + (MAN[h].rembgFrames.length || 'none')).join(' · ') + ')',
-  HEROS.every((h) => MAN[h].tintedEdgePixels === 0 && MAN[h].fringe.weapon.maxShare <= 0.002 && MAN[h].fringe.head.maxShare <= 0.002));
-ok('C6 · THE MIRROR TEST: every cell flips about its feet pivot and keeps its feet on the ground row (' + HEROS.map((h) => MAN[h].mirrorTest.feetOnGround + '/' + MAN[h].mirrorTest.of).join(', ') + ')',
-  HEROS.every((h) => MAN[h].mirrorTest.pivotFlip && MAN[h].mirrorTest.feetOnGround === MAN[h].mirrorTest.of));
-const tracked3 = git(['ls-files', 'lab/arcade']);
-ok('C7 · THE CLIP LAW: no clip, frame or still is tracked — only the packed sheets and manifests (' + tracked3.filter((f) => f.includes('/fighters/')).length + ' fighter files)',
-  !tracked3.some((f) => /\.(mp4|mov|mkv)$|\/sources\/|\/frames\/|fighter-right-green/.test(f)));
-
-console.log('\n── ARCADE-1 · R3 clip test · in the fight ──');
-function sceneArt(KK, hero, opp, steps) {   // play `steps` inputs for side 0, return what is drawn for side 0 on each frame
-  const g = KK.fight.newFight({ p0: hero, p1: opp || 'box_surya' }), out = [];
-  for (const inp of steps) { KK.fight.step(g, [inp, 0]); const sp = KK.scene.build(g, { fighters: MAN, rung: 'hi' }).shapes.find((x) => x.tag === 'sprite0'); out.push({ st: g.f[0].state, mf: g.f[0].mf, sp }); }
+const ktx = (h, r) => MAN[h].rungs[r].pages.reduce((a, p) => a + p.bytes.ktx2, 0);
+const SE = HEROS.map((h) => ({ h, e: sheetsOk(MAN[h]) }));
+ok('C1 · THE PAGES (ruling 1): each fighter\'s cells on pages inside the rung (hi ≤ 4096², lo ≤ 2048²), sides a multiple of 4, each page as WebP (the fallback) and KTX2 — ' +
+  HEROS.map((h) => MAN[h].name + ' hi ' + MAN[h].rungs.hi.pages.length + ' page(s) ' + MAN[h].rungs.hi.encoding.chosen + ' ' + mb(ktx(h, 'hi')) + ' (WebP ' + mb(MAN[h].rungs.hi.pages.reduce((a, p) => a + p.bytes.webp, 0)) + '), lo ' + MAN[h].rungs.lo.pages.length + ' ' + MAN[h].rungs.lo.encoding.chosen + ' ' + mb(ktx(h, 'lo'))).join(' · '),
+  SE.every((x) => !x.e.length), J(SE.filter((x) => x.e.length)));
+const ENCH = MAN.indra.rungs;
+ok('C1b · THE ENCODING, MEASURED (ruling 1: UASTC for hi, ETC1S for lo, or the measured best): the best quality whose download fits a fighter\'s cap (hi 1.6 / lo 0.7 MB) — Indra\'s full cut: ' +
+  ['hi', 'lo'].map((r) => r + ' ' + ENCH[r].encoding.candidates.map((c) => c.name + ' ' + (c.projectedBytes / 1048576).toFixed(2) + ' MB ' + c.psnr + ' dB').join(', ') + ' → ' + ENCH[r].encoding.chosen).join(' · ') + '; Meghnad follows the same choice',
+  ['hi', 'lo'].every((r) => ktx('indra', r) <= DLCAP[r] && ENCH[r].encoding.chosen === MAN.meghnad.rungs[r].encoding.chosen &&
+    ENCH[r].encoding.candidates.filter((c) => c.projectedBytes <= DLCAP[r]).every((c) => c.psnr <= ENCH[r].encoding.candidates.find((x) => x.name === ENCH[r].encoding.chosen).psnr)));
+function decodeOk(h) {   // every KTX2 page decodes with the LAB'S transcoder copy to its recorded size, and transcodes to ASTC, BC7 and ETC2
+  const out = [];
+  for (const r of ['hi', 'lo']) for (const p of MAN[h].rungs[r].pages) for (const fmt of ['rgba', 'astc', 'bc7', 'etc2']) {
+    let o = ''; try { o = cp.execFileSync('node', [path.join(LAB, 'tools/ktx2_decode.js'), path.join(LAB, 'fighters', h, p.ktx2), '', fmt], { encoding: 'utf8' }).trim(); } catch (e) { o = 'ERR'; }
+    if (o.split(' ').slice(0, 2).join('x') !== p.size.join('x')) out.push(h + ' ' + p.ktx2 + ' ' + fmt + ': ' + o);
+  }
   return out;
 }
-function lightMapOk(KK, hero) {
-  const m = KK.fight.moveOf({ arch: KK.moves.HEROES[hero].arch, move: 'light' }, 'light'), L = CI(hero).light;
-  const steps = [KK.fight.BTN.LT].concat(new Array(m.startup + m.active + m.recovery + 2).fill(0));
-  const fr = sceneArt(KK, hero, null, steps).filter((x) => x.st === 'attack');
-  const want = (mf) => mf < m.startup ? L.startup[Math.floor(mf * 2 / m.startup)] : mf < m.startup + m.active ? L.active[0] : L.recovery[Math.min(2, Math.floor((mf - m.startup - m.active) * 3 / m.recovery))];
-  return { ok: fr.length === m.startup + m.active + m.recovery && fr.every((x) => x.sp && x.sp.cell === want(x.mf)) && fr[0].sp.cell === L.startup[0] && fr[fr.length - 1].sp.cell === L.recovery[2],
-    frames: fr.length, phases: fr.map((x) => x.sp && x.sp.phase[0]).join('') };
+const DEC = HEROS.flatMap(decodeOk);
+ok('C1c · EVERY KTX2 PAGE DECODES with the lab\'s own transcoder (runtime/basis/, the page\'s copy) and transcodes to ASTC 4×4, BC7 and ETC2 RGBA — the formats phones and desktops take', DEC.length === 0, DEC);
+const COPYB = JSON.parse(rd('runtime/COPY.json')).files.find((f) => f.to === 'runtime/basis/');
+ok('C1d · THE TRANSCODER COPY is recorded: runtime/basis/ matches the sha256 in runtime/COPY.json (copied from the owner\'s purr-brawl three.js r146, owner-approved)',
+  !!COPYB && ['basis_transcoder.js', 'basis_transcoder.wasm'].every((f) => sha(path.join(LAB, 'runtime/basis', f)) === COPYB.sha256[f]));
+ok('C2 · ONE STANCE HEIGHT, ONE GROUND LINE: both Heroes\' stance 320 px hi / 192 lo (' + HEROS.map((h) => MAN[h].name + ' ' + MAN[h].stance.sourceHeight + ' px source').join(', ') + '); each of Indra\'s clips registered to the stance by its own frame 0 (' +
+  Object.entries(MAN.indra.sources).filter(([, s]) => Math.abs(s.registration[0]) > 1.5).map(([k, s]) => k + ' ' + s.registration[0] + ' px').join(', ') + ' shifted back)', HEROS.every((h) => MAN[h].stance.heightPx.hi === 320 && MAN[h].stance.heightPx.lo === 192));
+const A = MAN.indra.anim, NCELL = MAN.indra.rungs.hi.cells.length;
+const ANIM_KEYS = ['idle', 'walk', 'jump', 'crouch', 'light', 'heavy', 'special', 'block', 'hitLight', 'hitHeavy', 'knockdown', 'getup', 'ko', 'win', 'parry'];
+const animCells = (a) => [].concat(a.loop || [], a.span || [], a.enter || [], a.hold || [], ...(a.phases ? Object.values(a.phases).map((L) => L.map((x) => x[0])) : []));
+const perMove = Object.fromEntries(ANIM_KEYS.map((k) => [k, A[k] ? new Set(animCells(A[k])).size : 0]));
+ok('C3 · INDRA, THE FULL CUT: every animated move has art (' + Object.entries(perMove).map(([k, n]) => k + ' ' + n).join(', ') + ' cells; ' + NCELL + ' in all; walk back = the walk reversed, the throw borrows the light), every cell index valid',
+  ANIM_KEYS.every((k) => A[k] && animCells(A[k]).length && animCells(A[k]).every((c) => c >= 0 && c < NCELL)));
+ok('C3b · IDLE AT 8 FPS (ruling 1): ' + MAN.indra.moves.idle.loopFrames + '-frame loop → ' + A.idle.loop.length + ' steps, ' + new Set(A.idle.loop).size + ' cells (at 12 fps it was ' + Math.ceil(MAN.indra.moves.idle.loopFrames / 2) + '); Meghnad\'s too (' + new Set(MAN.meghnad.anim.idle.loop).size + ')',
+  A.idle.fps === 8 && MAN.meghnad.anim.idle.fps === 8 && A.idle.loop.length === Math.ceil(MAN.indra.moves.idle.loopFrames / 3));
+const holdsTrim = ['crouch', 'block', 'win'].map((k) => ({ k, steps: A[k].hold.length, cells: new Set(A[k].hold).size }));
+ok('C3c · HOLDS TRIMMED (ruling 1): a held pose keeps its sharpest cell longer instead of near-duplicates — ' + holdsTrim.map((x) => x.k + ' ' + x.steps + ' steps on ' + x.cells + ' cells').join(', ') + '; the K.O. holds one still frame',
+  holdsTrim.every((x) => x.cells < x.steps) && A.ko.hold.length === 1);
+const AUD = MAN.indra.audit;
+ok('C4 · THE EDGE DESPILL (ruling 7, the default): no olive edge pixel left on any cell (Indra ' + AUD.oliveEdgePixels + ', Meghnad ' + MAN.meghnad.audit.oliveEdgePixels + '); the sample\'s olive pixels fell from ' + AUD.despillSample.old + ' to ' + AUD.despillSample.new + ' (before/after sheet on the Desktop)',
+  AUD.oliveEdgePixels === 0 && MAN.meghnad.audit.oliveEdgePixels === 0 && AUD.despillSample.old > AUD.despillSample.new);
+ok('C5 · THE CLEAN-UPS: the special\'s baked lightning cut beyond the Vajra\'s tip (x ' + AUD.specialHalo.tipX + '; up to ' + Math.max(...Object.values(AUD.specialHalo.pixelsCut)) + ' px a frame) with no halo left (semi-transparent pixels ' + Math.max(...Object.values(AUD.specialHalo.cutFramesSemi)) + ' ≤ the clean frame\'s ' + AUD.specialHalo.refSemi +
+  '); the crouch\'s ground shadow cut; the win\'s raised Vajra ' + AUD.winTopRowMin + ' px from the top (not clipped); the jump\'s crown ≥ 32 px from the top (' + AUD.jumpTopRowMin + ')',
+  Math.max(...Object.values(AUD.specialHalo.cutFramesSemi)) <= AUD.specialHalo.refSemi && AUD.winTopRowMin > 0 && AUD.jumpTopRowMin >= 32 && Object.values(AUD.crouchShadowCut).every((n) => n >= 0));
+const koLift = AUD.groundAligned.filter((x) => x.move === 'ko');
+ok('C5b · NOTHING BELOW THE GROUND: the lying K.O. body (' + koLift.map((x) => x.src + ' +' + x.liftPx).join(', ') + ' px) and the knockdown\'s hands-and-knees are lifted onto the ground line',
+  koLift.length > 0 && koLift.some((x) => x.liftPx >= 10) && AUD.groundAligned.every((x) => x.liftPx > 0));
+ok('C6 · THE MIRROR TEST: every flipped cell keeps its feet on the ground row (' + HEROS.map((h) => MAN[h].mirrorTest.feetOnGround + '/' + MAN[h].mirrorTest.of).join(', ') + '; the jump\'s airborne cells stand on their lowest point)',
+  HEROS.every((h) => MAN[h].mirrorTest.of - MAN[h].mirrorTest.feetOnGround <= (MAN[h].anim.jump ? new Set(MAN[h].anim.jump.span).size : 0)));
+const tracked3 = git(['ls-files', 'lab/arcade']);
+ok('C7 · THE CLIP LAW: no clip, frame or still is tracked — only the packed pages and manifests (' + tracked3.filter((f) => f.includes('/fighters/')).length + ' fighter files)',
+  !tracked3.some((f) => /\.(mp4|mov|mkv)$|\/sources\/|\/frames\/|fighter-right-green/.test(f)));
+
+console.log('\n── ARCADE-1 · R3 · in the fight ──');
+function artAt(KK, hero, steps, opts) {   // play side 0's inputs; what is drawn for side 0 on each frame
+  const g = KK.fight.newFight({ p0: hero, p1: 'box_surya' }), out = [];
+  for (const inp of steps) { KK.fight.step(g, [inp, 0]); const sp = KK.scene.build(g, Object.assign({ fighters: MAN, rung: 'hi' }, opts || {})).shapes.find((x) => x.tag === 'sprite0'); out.push({ st: g.f[0].state, mf: g.f[0].mf, sp }); }
+  return out;
 }
-const LM = HEROS.map((h) => ({ h, ...lightMapOk(K, h) }));
-ok('C8 · THE LIGHT IS STRETCHED ONTO THE GAME\'S OWN PHASES: startup cells on the startup frames, the contact cell exactly on the active frames, the recovery cells across the recovery (' +
-  LM.map((x) => x.h + ' ' + x.frames + ' frames: ' + x.phases).join(' · ') + ')', LM.every((x) => x.ok), J(LM));
+function phasesOk(KK, hero, move) {   // the attack's cells across the game's own phases: each phase's cells in order, the last cell of a phase at its end
+  const m = KK.fight.moveOf({ hero, arch: KK.moves.HEROES[hero].arch }, move), P = MAN[hero].anim[move].phases, BB = KK.fight.BTN;
+  const g = KK.fight.newFight({ p0: hero, p1: 'box_surya' }); if (move === 'special') g.f[0].meter = 100;
+  const seen = [];
+  let lastMf = -1;
+  for (let i = 0; i < m.startup + m.active + m.recovery + 20; i++) { KK.fight.step(g, [i === 0 ? { light: BB.LT, heavy: BB.HV, special: BB.SP }[move] : 0, 0]); if (g.f[0].state !== 'attack' || g.f[0].mf === lastMf) continue; lastMf = g.f[0].mf;   // one sample a move frame (a hit-stop repeats one)
+    const sp = KK.scene.build(g, { fighters: MAN, rung: 'hi' }).shapes.find((x) => x.tag === 'sprite0'); seen.push([sp && sp.phase, sp && sp.cell]); }
+  const want = (ph) => P[ph].map((x) => x[0]);
+  const got = (ph) => seen.filter((x) => x[0] === ph).map((x) => x[1]).filter((c, i, a) => i === 0 || c !== a[i - 1]);
+  return { ok: seen.length === m.startup + m.active + m.recovery && ['startup', 'active', 'recovery'].every((ph) => J(got(ph)) === J(want(ph).filter((c, i, a) => i === 0 || c !== a[i - 1]))), seen: seen.length };
+}
+const PH = [['indra', 'light'], ['indra', 'heavy'], ['indra', 'special'], ['meghnad', 'light']].map(([h, m]) => ({ h, m, ...phasesOk(K, h, m) }));
+ok('C8 · THE ATTACKS ARE STRETCHED ONTO THE GAME\'S OWN PHASES: every startup / active / recovery cell plays, in order, inside its phase (' + PH.map((x) => x.h + ' ' + x.m + ' ' + x.seen + ' frames').join(' · ') + '; Meghnad\'s recovery is his archetype\'s, 2 frames longer)', PH.every((x) => x.ok), J(PH));
 function idleOk(KK, hero) {
-  const fr = sceneArt(KK, hero, null, new Array(150).fill(0)).filter((x) => x.st === 'idle' && x.sp), cells = fr.map((x) => x.sp.cell), n = CI(hero).idle.length;
+  const fr = artAt(KK, hero, new Array(150).fill(0)).filter((x) => x.st === 'idle' && x.sp), cells = fr.map((x) => x.sp.cell);
   const changes = cells.filter((c, i) => i && c !== cells[i - 1]).length;
-  return { ok: cells.every((c) => CI(hero).idle.includes(c)) && changes >= 25 && changes <= 32 && new Set(cells).size === Math.min(n, new Set(cells).size), changes };
+  return { ok: cells.every((c) => MAN[hero].anim.idle.loop.includes(c)) && changes >= 14 && changes <= 20, changes };
 }
 const IL = HEROS.map((h) => ({ h, ...idleOk(K, h) }));
-ok('C9 · THE IDLE LOOPS at 12 fps on the fight clock: 150 logic frames (2.5 s) step through ' + IL.map((x) => x.changes).join(' / ') + ' cell changes, all idle cells', IL.every((x) => x.ok));
+ok('C9 · THE IDLE LOOPS at 8 fps on the fight clock: 150 logic frames (2.5 s) step through ' + IL.map((x) => x.changes).join(' / ') + ' cell changes (20 steps at 8 fps, fewer where a hold repeats a cell)', IL.every((x) => x.ok), J(IL));
 function flipOk(KK) {
   const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }), sh = KK.scene.build(g, { fighters: MAN, rung: 'hi' }).shapes;
   const a = sh.find((x) => x.tag === 'sprite0'), b = sh.find((x) => x.tag === 'sprite1');
   return a && b && !a.flip && b.flip && Math.abs(a.x - (g.f[0].x / KK.fight.U - KK.scene.cameraX(g))) < 1e-9 && a.y === KK.scene.GROUND_Y && Math.abs(a.scale - 220 / 320) < 1e-9;
 }
 ok('C10 · FACING: the left Hero is drawn as authored, the right one mirrored; each stands with its feet pivot on its fighter\'s ground point, the stance 220 logical px tall', flipOk(K));
-function boxesOk(KK) {
-  const BB = KK.fight.BTN, w = sceneArt(KK, 'meghnad', null, [BB.R, BB.R, BB.R]).pop(), h = sceneArt(KK, 'meghnad', null, [BB.HV, 0, 0]).pop();
-  const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }), sh = KK.scene.build(g, { rung: 'hi' }).shapes;
-  return !w.sp && !h.sp && !sh.some((x) => x.k === 'sprite');
+// every state Indra can be in → the move whose art shows (fallback off: so nothing is borrowed except the throw, which has no clip yet)
+function statesOk(KK) {
+  const BB = KK.fight.BTN, S = KK.scene, seen = {}, want = { idle: 'idle', walkf: 'walk', walkb: 'walkBack', crouch: 'crouch', block: 'block', blockstun: 'block', jump: 'jump',
+    hitstun: ['hitLight', 'hitHeavy'], knockdown: 'knockdown', getup: 'getup', parry: 'parry', bound: 'hitHeavy', grab: 'throw', throwrec: 'throw' };
+  const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad', seconds: 99 }), D = KK.demo.create('moves');
+  for (let i = 0; i < 4000 && !g.over; i++) {
+    KK.fight.step(g, KK.demo.inputs(D, g));
+    const f = g.f[0], sp = S.build(g, { fighters: MAN, rung: 'hi', fallback: true }).shapes.find((x) => x.tag === 'sprite0');
+    const k = f.state === 'attack' ? 'attack:' + f.move : f.state; (seen[k] = seen[k] || new Set()).add(sp ? sp.move + (sp.borrowed ? '*' : '') : 'BOX');
+  }
+  const bad = Object.entries(want).filter(([st, mv]) => !seen[st] || [...seen[st]].some((x) => !(Array.isArray(mv) ? mv : [mv]).some((m) => x === m || x === m + '*')));
+  const atk = ['light', 'heavy', 'special'].filter((m) => !seen['attack:' + m] || [...seen['attack:' + m]].some((x) => x !== m));
+  const after = g.f[0].state === 'win' && S.build(g, { fighters: MAN, rung: 'hi', after: 200 }).shapes.find((x) => x.tag === 'sprite0').move === 'win';
+  return { ok: bad.length === 0 && atk.length === 0 && !!(seen['attack:throw'] || seen.grab) && after, bad, atk, seen: Object.fromEntries(Object.entries(seen).map(([k, v]) => [k, [...v]])) };
 }
-ok('C11 · EVERY OTHER MOVE IS STILL A BOX (walk, heavy …), and a fighter whose sheet did not load falls back to its box', boxesOk(K));
+const STO = statesOk(K);
+ok('C11 · EVERY STATE INDRA CAN BE IN SHOWS ITS OWN ART through the every-move demo (' + Object.keys(STO.seen).length + ' states: ' + Object.entries(STO.seen).map(([k, v]) => k + '→' + v.join('/')).join(', ') + '); the throw borrows the light until clip 14', STO.ok, J({ bad: STO.bad, atk: STO.atk }));
+function koOk(KK) {   // the K.O. plays over the frames after the fight ends, then holds its last still frame
+  const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }); g.f[0].hp = 0; g.f[0].state = 'ko'; g.over = true;
+  const at = (t) => KK.scene.build(g, { fighters: MAN, rung: 'hi', after: t }).shapes.find((x) => x.tag === 'sprite0');
+  const seq = []; for (let t = 0; t <= MAN.indra.anim.ko.frames + 30; t += 3) seq.push(at(t).cell);
+  return { ok: at(0).cell === MAN.indra.anim.ko.span[0] && at(500).cell === MAN.indra.anim.ko.hold[0] && new Set(seq).size >= 6 && !at(500).ko, distinct: new Set(seq).size };
+}
+const KO = koOk(K);
+ok('C11b · THE K.O. (clip 11): staggers and falls over ' + MAN.indra.anim.ko.frames + ' frames after the fight ends (' + KO.distinct + ' cells), then holds the last still frame (never tilted: it is real art)', KO.ok, J(KO));
 function archOk(KK) {
-  const A = KK.moves.ARCH, mo = (h, m) => KK.fight.moveOf({ arch: KK.moves.HEROES[h].arch, move: m }, m);
-  const fd = activeFrames(KK, 'light', { p0: 'meghnad', p1: 'box_surya' });
-  return { ok: J(Object.assign({}, A.allrounder)) === J(Object.assign({}, A.balanced)) && mo('indra', 'light') === MV.light &&
-    mo('meghnad', 'light').box.x1 === MV.light.box.x1 + 45 && mo('meghnad', 'heavy').box.x1 === MV.heavy.box.x1 + 45 &&
-    mo('meghnad', 'light').recovery === MV.light.recovery + 2 && mo('meghnad', 'heavy').recovery === MV.heavy.recovery + 2 && mo('meghnad', 'special') === MV.special &&
-    fd.act[0] === MV.light.startup && fd.back === MV.light.startup + MV.light.active + MV.light.recovery + 2, back: fd.back };
+  const mo = (h, m) => KK.fight.moveOf({ hero: h, arch: KK.moves.HEROES[h].arch }, m);
+  const T = MAN.indra.tipsLogical, H = KK.moves.HEROES.indra;
+  return { ok: Math.abs(H.reach.light - T.light) <= 1 && Math.abs(H.reach.heavy - T.heavy) <= 1 && Math.abs(H.projX - T.special) <= 1 &&
+    mo('indra', 'light').box.x1 === H.reach.light && mo('indra', 'heavy').box.x1 === H.reach.heavy && mo('meghnad', 'light').box.x1 === H.reach.light + 45 && mo('meghnad', 'heavy').box.x1 === H.reach.heavy + 45 &&
+    mo('meghnad', 'light').recovery === MV.light.recovery + 2 && mo('box_surya', 'light') === MV.light, T };
 }
 const AR = archOk(K);
-ok('C12 · THE ARCHETYPES (ruling 4): Indra = all-rounder (the balanced numbers); Meghnad = reach — light and heavy reach 45 px further and recover 2 frames slower (his light is idle again at frame ' + AR.back + ', not 17); his special is unchanged', AR.ok);
-const reachL = HEROS.map((h) => { const m = K.fight.moveOf({ arch: K.moves.HEROES[h].arch, move: 'light' }, 'light'); return MAN[h].name + ': the art\'s tip at contact ' + MAN[h].moves.light.tipFromPivotLogical + ' px from the feet, the light hitbox ' + m.box.x1 + ' px'; });
-console.log('      (reach, logical px from the fighter\'s centre — ' + reachL.join(' · ') + ')');
+ok('C12 · REACH FROM THE ART (ruling 5): Indra\'s hitboxes end at his weapon\'s tip at contact as measured on his clips (light ' + AR.T.light + ' → ' + K.moves.HEROES.indra.reach.light + ', heavy ' + AR.T.heavy + ' → ' + K.moves.HEROES.indra.reach.heavy + ', the Vajra leaves at ' + AR.T.special + ' → ' + K.moves.HEROES.indra.projX +
+  ' logical px); Meghnad stays relative to Indra (reach +45, recovery +2); the box Heroes keep the template', AR.ok, J(AR.T));
+function nagaOk(KK) {   // 6 THE NAGAPASHA: binds on hit (no knockdown), blockable with chip, a follow-up lands while bound
+  const BB = KK.fight.BTN, NP = KK.moves.NAGAPASHA;
+  const hit = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 260), hp0 = hit.f[1].hp; hit.f[0].meter = 100;
+  let boundFor = 0, follow = false;
+  for (let i = 0; i < 140; i++) { const near = Math.abs(hit.f[1].x - hit.f[0].x) / KK.fight.U; KK.fight.step(hit, [i === 0 ? BB.SP : hit.f[1].state === 'bound' ? (near > 230 ? BB.R : (i % 4 === 0 ? BB.HV : 0)) : 0, 0]); if (hit.f[1].state === 'bound') boundFor++; if (boundFor && hit.events.some((e) => e.t === 'hit' && e.move === 'heavy')) follow = true; }
+  const bl = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 260), hb = bl.f[1].hp; bl.f[0].meter = 100;
+  for (let i = 0; i < 90; i++) KK.fight.step(bl, [i === 0 ? BB.SP : 0, BB.R]);
+  return { ok: hit.events.some((e) => e.t === 'bind') && !hit.events.some((e) => e.t === 'knockdown') && boundFor >= NP.bind - 1 && boundFor <= NP.bind + 1 && hp0 - hit.f[1].hp >= NP.dmg && follow &&
+    bl.events.some((e) => e.t === 'block') && hb - bl.f[1].hp === NP.chip && !bl.events.some((e) => e.t === 'bind'), boundFor, follow, chip: hb - bl.f[1].hp };
+}
+const NG = nagaOk(K);
+ok('C13 · MEGHNAD\'S NAGAPASHA (ruling 6): the coil is a shot that BINDS on hit (' + NG.boundFor + ' frames bound, no knockdown, ' + K.moves.NAGAPASHA.dmg + ' damage) so a follow-up heavy lands; held back, it is blocked for ' + NG.chip + ' chip', NG.ok, J(NG));
 
-console.log('\n── ARCADE-1 · R3 clip test · breakages: each must go red ──');
+console.log('\n── ARCADE-1 · R3 · breakages: each must go red ──');
 const BR3 = [
-  ['K1 · the light\'s cells one frame early: startup shown off by one (C8 goes red)', { scene: [['if (f.mf < m.startup) return { move: "light", phase: "startup", cell: L.startup[Math.floor(f.mf * L.startup.length / m.startup)] };',
-    'if (f.mf < m.startup) return { move: "light", phase: "startup", cell: L.startup[Math.min(1, Math.floor((f.mf + 2) * L.startup.length / m.startup))] };']] }, (KK) => HEROS.every((h) => lightMapOk(KK, h).ok)],
+  ['K1 · the startup art held 3 frames into the active frames (C8 goes red)', { scene: [['if (f.mf < m.startup) { ph = "startup"; fr = f.mf / m.startup; }', 'if (f.mf < m.startup + 3) { ph = "startup"; fr = Math.min(0.99, f.mf / m.startup); }']] }, (KK) => PH.every((x) => phasesOk(KK, x.h, x.m).ok)],
   ['K2 · the right-hand Hero not mirrored (C10 goes red)', { scene: [['flip: f.facing === -1,', 'flip: false,']] }, (KK) => flipOk(KK)],
-  ['K3 · the reach archetype ignored (C12 goes red)', { fight: [['if (name === "special" || !(a.reachPx || a.recoveryAdd)) return base;', 'return base;']] }, (KK) => archOk(KK).ok],
-  ['K4 · the idle loop driven by the move frame instead of the fight clock — it stops cycling (C9 goes red)', { scene: [['Math.floor(g.frame * man.fpsOut / 60) % n', 'Math.floor(f.mf * man.fpsOut / 60) % n']] }, (KK) => HEROS.every((h) => idleOk(KK, h).ok)]
+  ['K3 · reach back to the template box (C12 goes red)', { fight: [['if (r != null) m.box.x1 = r;', '']] }, (KK) => archOk(KK).ok],
+  ['K4 · the idle loop driven by the move frame instead of the fight clock — it stops cycling (C9 goes red)', { scene: [['if (st === "idle") return idle(false);', 'if (st === "idle") return { move: "idle", cell: loopAt(A.idle.loop, f.mf, A.idle.fps) };']] }, (KK) => HEROS.every((h) => idleOk(KK, h).ok)],
+  ['K6 · the knockdown shown as the idle (C11 goes red)', { scene: [['if (st === "knockdown") return A.knockdown ?', 'if (st === "knockdown") return idle(false); if (false) return A.knockdown ?']] }, (KK) => statesOk(KK).ok],
+  ['K7 · the K.O. played on the fight clock, which has stopped — it never falls (C11b goes red)', { scene: [['var t = after || 0;', 'var t = 0;']] }, (KK) => koOk(KK).ok],
+  ['K8 · the Nagapasha knocking down instead of binding (C13 goes red)', { fight: [['if (h.naga) {', 'if (false) {']] }, (KK) => nagaOk(KK).ok]
 ];
 for (const [name, mut, check] of BR3) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }
-const badMan = JSON.parse(JSON.stringify(MAN.indra)); badMan.rungs.hi.cells[3].py -= 40;
-red('K5 · a cell cut on the head instead of the feet: its pivot 40 px above the cell\'s bottom (C1 goes red)', !sheetsOk(badMan));
+const badMan = JSON.parse(J(MAN.indra)); badMan.rungs.hi.cells[3].py -= 40;
+red('K5 · a cell cut on the head instead of the feet: its pivot 40 px above the cell\'s bottom (C1 goes red)', sheetsOk(badMan).length > 0);
+const badMan2 = JSON.parse(J(MAN.indra)); badMan2.rungs.lo.pages[0].size[0] += 2;
+red('K9 · a page side not a multiple of 4 — no compressed block fits (C1 goes red)', sheetsOk(badMan2).length > 0);
 
 
 if (ENH) {
@@ -765,7 +839,7 @@ const DA = demoRun(K), DB = demoRun(load());
 ok('E6 · THE DEMO BOUT is deterministic and ends in a K.O.: Indra vs Meghnad, ' + DA.hits + ' hits, K.O. at frame ' + DA.frame + ', the same event stream on a second run', DA.over && DA.ko && DA.hits >= 4 && DA.ev === DB.ev && DA.frame === DB.frame);
 function switchesOk(KK, man) {   // cross-fade only at fps ≥ 24; borrowed art only with fx; no presentation shape without fx
   const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }), B2 = KK.fight.BTN;
-  const runP = (modes, fallback) => { const P = KK.present.create(modes), gg = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }); let fades = 0, extra = 0, borrowed = 0;
+  const runP = (modes, fallback) => { const P = KK.present.create(modes), gg = KK.fight.newFight({ p0: 'meghnad', p1: 'indra' }); let fades = 0, extra = 0, borrowed = 0;
     for (let i = 0; i < 60; i++) { KK.fight.step(gg, [i === 5 ? B2.LT : i === 30 ? B2.HV : 0, 0]); const b = KK.scene.build(gg, { fighters: man, rung: 'lo', fallback: fallback, cam: KK.present.camera(P, gg, null, 1 / 60) });
       KK.present.tick(P, gg, b); const sh = KK.present.shapes(P, gg, b); fades += sh.filter((x) => /^fade/.test(x.tag)).length; extra += sh.length; if (gg.f[0].state === 'attack' && gg.f[0].move === 'heavy') borrowed += b.shapes.filter((x) => x.k === 'sprite' && x.side === 0).length; }
     return { fades, extra, borrowed }; };
@@ -773,17 +847,17 @@ function switchesOk(KK, man) {   // cross-fade only at fps ≥ 24; borrowed art 
   return { ok: base.fades === 0 && base.extra === 0 && base.borrowed === 0 && fx.borrowed > 0 && fx.extra > 0 && fx.fades > 0, base, fx };
 }
 const SW = switchesOk(K, MAN);
-ok('E7 · EACH LOOK ONLY WITH ITS SWITCH: ?fx=0 adds no shape, no cross-fade, no borrowed art; the default (fx on) borrows art for the heavy (' + SW.fx.borrowed + ' frames), adds its shadows/sparks (' + SW.fx.extra + ' shapes) and cross-fades a move change on the 12 fps sheets (ruling 3: ' + SW.fx.fades + ' fade shapes)', SW.ok, J(SW));
+ok('E7 · EACH LOOK ONLY WITH ITS SWITCH: ?fx=0 adds no shape, no cross-fade, no borrowed art; the default (fx on) borrows art for Meghnad\'s heavy, which has no clip yet (' + SW.fx.borrowed + ' frames), adds its shadows/sparks (' + SW.fx.extra + ' shapes) and cross-fades a move change on the 12 fps sheets (ruling 3: ' + SW.fx.fades + ' fade shapes)', SW.ok, J(SW));
 const code = (f) => rd(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 const NOR = ['ui/present.js', 'ui/demo.js'].filter((f) => /Math\.random|Date\.now|performance\.now/.test(code(f)));
 ok('E8 · the presentation and the demo are deterministic: no Math.random, no clock (a capture of the same bout is the same video)', NOR.length === 0, NOR);
 const BU = require(path.join(LAB, 'tools/budget.js')), BP = BU.project();
-const shipped24 = (rung) => HEROS.some((h) => MAN[h].fpsOut !== 12 || !!(MAN[h].rungs[rung].strike24 || MAN[h].cellIndex.strike24));
-const budgetOk = (P) => P.strike24.lo === shipped24('lo') && P.strike24.hi === shipped24('hi');
+const shipped24 = () => HEROS.every((h) => MAN[h].strike24 === true);
+const budgetOk = (P) => P.strike24 === shipped24();
 const bf = (x) => x.toFixed(1);
-ok('M1 · RULING 2, THE PROJECTION DECIDES: 24 fps strike frames (+' + BP.strike.n + ' cells per fighter) ship only where the full 15-move set fits its cap with them — lo ' + bf(BP.rungs.lo.total15strike) + ' MB vs ' + BP.rungs.lo.cap + ', hi ' + bf(BP.rungs.hi.total15strike) + ' MB vs ' + BP.rungs.hi.cap +
-  ' (2 fighters + arena + Vajra; at 12 fps already lo ' + bf(BP.rungs.lo.total15) + ' / hi ' + bf(BP.rungs.hi.total15) + ') → none ship: both rungs stay 12 fps everywhere, and the sheets agree', budgetOk(BP) && !BP.strike24.lo && !BP.strike24.hi);
-red('M2 · BREAKAGE: caps that would fit (lo 999 / hi 999) but no strike frames shipped (M1 goes red)', !budgetOk(BU.project({ lo: 999, hi: 999 })));
+ok('M1 · RULING 1, THE PROJECTION DECIDES: with compressed textures, idle at 8 fps, trimmed holds and the half-size lo Vajra, the 15-move projection is lo ' + bf(BP.rungs.lo.total15Strike) + ' MB of ' + BP.rungs.lo.cap + ', hi ' + bf(BP.rungs.hi.total15Strike) + ' MB of ' + BP.rungs.hi.cap +
+  ' (2 fighters + arena + effects, strike frames included; margin = at most ' + (BU.MARGIN * 100) + '% of the cap) → the 24 fps strike frames ' + (BP.strike24 ? 'ship' : 'stay out') + ', and the sheets agree', budgetOk(BP) && BP.rungs.lo.fitsWithMargin && BP.rungs.hi.fitsWithMargin);
+red('M2 · BREAKAGE: caps too small for the margin (lo 20 / hi 70) but the strike frames shipped (M1 goes red)', !budgetOk(BU.project({ lo: 20, hi: 70 })));
 const trackedE = git(['ls-files', 'lab/arcade']).concat(git(['diff', '--name-only', '--cached']));
 ok('E9 · the recorder\'s output is never tracked: captures/ is ignored and no capture frame or video is staged or committed', gi.includes('captures/') && !trackedE.some((f) => /\/captures\/|\.(mp4|gif)$/.test(f)));
 

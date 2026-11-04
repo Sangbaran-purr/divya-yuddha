@@ -25,7 +25,7 @@
   };
 
   // what a player could see on screen — and nothing else
-  var PUBLIC = ["x", "y", "facing", "hp", "hpMax", "meter", "state", "move", "mf", "arch"];
+  var PUBLIC = ["x", "y", "facing", "hp", "hpMax", "meter", "state", "move", "mf", "arch", "hero"];   // the Hero is on screen too
   function observe(g, side) {
     function pub(f) { var o = {}; PUBLIC.forEach(function (k) { o[k] = f[k]; }); return o; }
     return { frame: g.frame, timer: g.timer, me: pub(g.f[side]), opp: pub(g.f[1 - side]),
@@ -76,11 +76,11 @@
       return finish(ai, bits);
     }
     if (me.state === "hitstun" || me.state === "jump" || me.state === "knockdown" || me.state === "getup" || me.state === "parried" ||
-      me.state === "grab" || me.state === "throwrec" || me.state === "tech") return finish(ai, 0);
+      me.state === "grab" || me.state === "throwrec" || me.state === "tech" || me.state === "bound") return finish(ai, 0);
 
     // a seen threat: the opponent's attack in startup/active and in reach → guard (decided once per attack)
     var threat = op.state === "attack" && op.move && op.move !== "throw" && op.mf < M.MOVES[op.move].startup + M.MOVES[op.move].active;
-    var reach = threat ? (op.move === "special" && M.ARCH[op.arch].special === "rush" ? 260 : M.MOVES[op.move].box.x1 + M.BODY.halfW + 20) : 0;
+    var reach = threat ? (op.move === "special" && M.ARCH[op.arch].special === "rush" ? 260 : F.moveOf({ hero: op.hero, arch: op.arch }, op.move).box.x1 + M.BODY.halfW + 20) : 0;
     if (threat && dist <= reach) {
       var id = op.move + "@" + (v.oppFrame - op.mf);
       if (ai.guardFor !== id) {
@@ -111,19 +111,22 @@
     // neutral game
     var arch = M.ARCH[me.arch];
     var canSpecial = me.meter >= M.MOVES.special.cost && v.frame >= ai.nextAttack && ai.round >= (L.specialFrom || 0);
-    if (canSpecial && arch.special === "projectile" && dist > 220 && ai.rng() < L.special * 0.05) { ai.nextAttack = v.frame + range(ai, L.attackGap[0], L.attackGap[1]); press(B.SP); return finish(ai, bits); }
-    var want = arch.special === "projectile" && ai.rng() < L.spacing ? 90 : 75;
+    var shot = F.isShot(arch);
+    if (canSpecial && shot && dist > 220 && ai.rng() < L.special * 0.05) { ai.nextAttack = v.frame + range(ai, L.attackGap[0], L.attackGap[1]); press(B.SP); return finish(ai, bits); }
+    // spacing: the template's 75 / 90 px, plus however much further this Hero's light reaches (reach from the art, ruling 5)
+    var myLight = F.moveOf({ hero: me.hero, arch: me.arch }, "light").box.x1, extra = myLight - M.MOVES.light.box.x1;
+    var want = (shot && ai.rng() < L.spacing ? 90 : 75) + extra;
     if (dist > want + 25) return finish(ai, fwd);
     if (v.frame >= ai.nextAttack) {
       ai.nextAttack = v.frame + range(ai, L.attackGap[0], L.attackGap[1]);
       var blocking = op.state === "block" || op.state === "cblock";
       if ((L.throw || 0) > 0 && dist <= M.MOVES.throw.range - 5 && ai.rng() < L.throw * (blocking ? 1 : 0.35)) press(B.LT | B.HV);
       else if (canSpecial && arch.special === "rush" && ai.rng() < L.special * 0.4) press(B.SP);
-      else if (dist <= 100 && ai.rng() < 0.4) press(B.HV);
+      else if (dist <= 100 + extra && ai.rng() < 0.4) press(B.HV);
       else press(B.LT);
       return finish(ai, bits);
     }
-    if (dist < 55 && ai.rng() < L.spacing * 0.3) return finish(ai, back);
+    if (dist < 55 + extra * 0.6 && ai.rng() < L.spacing * 0.3) return finish(ai, back);
     return finish(ai, ai.rng() < 0.5 ? 0 : (ai.rng() < L.spacing ? back : fwd));
   }
   function finish(ai, bits) { ai.lastPress = bits; return bits; }

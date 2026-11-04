@@ -2,7 +2,10 @@
    The core decides everything (core/*.js). This file reads input, steps the match at a fixed 60 Hz and draws.
    Pixi (the lab's own copy in runtime/) draws; if it can't start, a Canvas 2D floor draws the same shapes.
    The enhancement test's switches (?fx=0/1, ?cam=wide/tight) live in ui/present.js; every default is the
-   R0–R2 baseline. ?perf=1 shows frame timing; ?cpu=N stretches each frame's own work N× (a slower phone, roughly). */
+   R0–R2 baseline. ?perf=1 shows frame timing; ?cpu=N stretches each frame's own work N× (a slower phone, roughly).
+   TEXTURES (owner ruling 1, 2026-11-04): fighter pages load as KTX2 / Basis, transcoded in the page to the GPU's own compressed format
+   (ASTC, BC7, ETC2 or BC3 — 1 byte a pixel on the GPU instead of 4), wherever WebGL offers one; otherwise — or under the Canvas 2D
+   floor, or with ?tex=webp — the WebP pages. ?tex=ktx2 insists (it still falls back if the GPU can't). */
 const M = window.ARC_MOVES, F = window.ARC_FIGHT, AI = window.ARC_AI, R = window.ARC_RNG, MA = window.ARC_MATCH, C = window.ARC_CONTROLS, S = window.ARC_SCENE;
 const PR = window.ARC_PRESENT, DEMO = window.ARC_DEMO;
 const STAMP = document.querySelector('meta[name="lab-stamp"]').content;
@@ -20,38 +23,82 @@ fetch("STAMP?t=" + Date.now(), { cache: "no-store" }).then((r) => r.ok ? r.text(
 // ── the real fighters: the 12 fps sheets (fighters/<hero>/) ──
 const RUNG = MODES.raw.rung === "lo" ? "lo" : MODES.raw.rung === "hi" ? "hi" :
   ((window.devicePixelRatio || 1) >= 1.5 || Math.max(innerWidth, innerHeight) >= 1000 ? "hi" : "lo");
-const FIGHTERS = {};   // fighter id → { man, imgs, cells, bytes, decoded }
+const FIGHTERS = {};   // fighter id → { man, imgs (an Image, or { __source } for a compressed page), cells, bytes, decoded, tex }
 const EFFECTS = {};    // "vajra" → { man, img, cells }
-const LOAD = { bytes: 0, decoded: 0, ms: 0, files: 0 };
+const LOAD = { bytes: 0, decoded: 0, ms: 0, files: 0, tex: "webp", gpuFormat: null, transcodeMs: 0 };
+let PIXI_MOD = null;
 function loadImg(src) { const img = new Image(); img.src = src; return img.decode().then(() => img); }
+// the GPU's compressed formats, best first (basis transcoder target ↔ Pixi format)
+function detectCompressed() {
+  try {
+    const c = document.createElement("canvas"), gl = c.getContext("webgl2") || c.getContext("webgl");
+    if (!gl) return null;
+    const has = (e) => !!gl.getExtension(e);
+    const r = has("WEBGL_compressed_texture_astc") ? { basis: 10, pixi: "astc-4x4-unorm", name: "ASTC 4x4" }
+      : has("EXT_texture_compression_bptc") ? { basis: 6, pixi: "bc7-rgba-unorm", name: "BC7" }
+      : has("WEBGL_compressed_texture_etc") ? { basis: 1, pixi: "etc2-rgba8unorm", name: "ETC2 RGBA" }
+      : has("WEBGL_compressed_texture_s3tc") ? { basis: 3, pixi: "bc3-rgba-unorm", name: "BC3" } : null;
+    const lose = gl.getExtension("WEBGL_lose_context"); if (lose) lose.loseContext();
+    return r;
+  } catch (e) { return null; }
+}
+let BASIS_MOD = null;
+async function basisModule() {
+  if (BASIS_MOD) return BASIS_MOD;
+  await new Promise((ok, bad) => { const sc = document.createElement("script"); sc.src = "runtime/basis/basis_transcoder.js?v=" + STAMP; sc.onload = ok; sc.onerror = bad; document.head.appendChild(sc); });
+  BASIS_MOD = await window.BASIS({ locateFile: (f) => "runtime/basis/" + f + "?v=" + STAMP });
+  BASIS_MOD.initializeBasis();
+  return BASIS_MOD;
+}
+async function loadKtx2Page(url, target) {   // fetch → transcode to the GPU's format → a Pixi compressed source (premultiplied)
+  const buf = new Uint8Array(await (await fetch(url)).arrayBuffer()), B = await basisModule(), t0 = performance.now();
+  const k = new B.KTX2File(buf);
+  try {
+    if (!k.isValid() || !k.startTranscoding()) throw new Error("bad ktx2");
+    const w = k.getWidth(), h = k.getHeight(), dst = new Uint8Array(k.getImageTranscodedSizeInBytes(0, 0, 0, target.basis));
+    if (!k.transcodeImage(dst, 0, 0, 0, target.basis, 0, -1, -1)) throw new Error("transcode failed");
+    LOAD.transcodeMs += performance.now() - t0;
+    return { img: { __source: new PIXI_MOD.CompressedSource({ resource: [dst], format: target.pixi, width: w, height: h, alphaMode: "premultiplied-alpha" }) }, gpu: dst.length, bytes: buf.length };
+  } finally { k.close(); k.delete(); }
+}
 async function loadFighters() {
   const t0 = performance.now();
+  const target = backend.startsWith("pixi") && MODES.raw.tex !== "webp" ? detectCompressed() : null;
+  LOAD.tex = target ? "ktx2" : "webp"; LOAD.gpuFormat = target ? target.name : "RGBA8";
   const ids = [...new Set(Object.values(M.HEROES).map((h) => h.fighter).filter(Boolean))];
   await Promise.all(ids.map(async (id) => {
     try {
       const base = "fighters/" + id + "/";
       const man = await (await fetch(base + "manifest.json?v=" + STAMP)).json();
-      const Rg = man.rungs[RUNG], pages = Rg.pages || [{ sheet: Rg.sheet, size: Rg.size, bytes: Rg.bytes }];
-      const imgs = await Promise.all(pages.map((p) => loadImg(base + p.sheet + "?v=" + STAMP)));
-      const decoded = pages.reduce((a, p) => a + p.size[0] * p.size[1] * 4, 0), bytes = pages.reduce((a, p) => a + p.bytes, 0);
-      FIGHTERS[id] = { man, imgs, cells: Rg.cells, bytes, decoded };
+      const Rg = man.rungs[RUNG], pages = Rg.pages;
+      let imgs, bytes = 0, decoded = 0, tex = "webp";
+      try {
+        if (!target) throw new Error("no compressed format");
+        const got = await Promise.all(pages.map((p) => loadKtx2Page(base + p.ktx2 + "?v=" + STAMP, target)));
+        imgs = got.map((x) => x.img); bytes = got.reduce((a, x) => a + x.bytes, 0); decoded = got.reduce((a, x) => a + x.gpu, 0); tex = "ktx2";
+      } catch (e) {   // the WebP fallback
+        imgs = await Promise.all(pages.map((p) => loadImg(base + p.webp + "?v=" + STAMP)));
+        bytes = pages.reduce((a, p) => a + p.bytes.webp, 0); decoded = pages.reduce((a, p) => a + p.size[0] * p.size[1] * 4, 0);
+      }
+      FIGHTERS[id] = { man, imgs, cells: Rg.cells, bytes, decoded, tex };
       LOAD.bytes += bytes; LOAD.decoded += decoded; LOAD.files += pages.length;
     } catch (e) { /* a fighter that fails to load stays a box */ }
   }));
   if (MODES.fx) {
-    try {
-      const man = await (await fetch("effects/vajra/manifest.json?v=" + STAMP)).json();
-      const img = await loadImg("effects/vajra/" + man.atlas + "?v=" + STAMP);
-      EFFECTS.vajra = { man, img, cells: man.cells };
+    try {   // the half-size Vajra on lo (ruling 1)
+      const dir = "effects/vajra/" + (RUNG === "lo" ? "lo/" : ""), man = await (await fetch(dir + "manifest.json?v=" + STAMP)).json();
+      const img = await loadImg(dir + man.atlas + "?v=" + STAMP);
+      EFFECTS.vajra = { man, img, cells: man.cells, k: man.rungScale || 1 };
       LOAD.decoded += man.atlasSize.w * man.atlasSize.h * 4; LOAD.files++;
-      LOAD.bytes += Number((await fetch("effects/vajra/" + man.atlas + "?v=" + STAMP, { method: "HEAD" })).headers.get("content-length") || 0);
+      LOAD.bytes += Number((await fetch(dir + man.atlas + "?v=" + STAMP, { method: "HEAD" })).headers.get("content-length") || 0);
     } catch (e) { /* no pillar; the shot stays a box */ }
   }
+  LOAD.transcodeMs = Math.round(LOAD.transcodeMs);
   LOAD.ms = Math.round(performance.now() - t0);
 }
 const fighterMans = () => { const o = {}; for (const k in FIGHTERS) o[k] = FIGHTERS[k].man; return o; };
 function cellOf(s) {   // the cell record and its image for a sprite shape
-  if (s.atlas) { const E = EFFECTS[s.atlas]; if (!E) return null; const c = E.cells[s.cell]; return c && { c, img: E.img, ax: E.man.anchor.x / E.man.cellSize.w, ay: E.man.anchor.y / E.man.cellSize.h }; }
+  if (s.atlas) { const E = EFFECTS[s.atlas]; if (!E) return null; const c = E.cells[s.cell]; return c && { c, img: E.img, ax: E.man.anchor.x / E.man.cellSize.w, ay: E.man.anchor.y / E.man.cellSize.h, k: E.k }; }
   const Fi = FIGHTERS[s.fighter], c = Fi && Fi.cells[s.cell];
   return c && { c, img: Fi.imgs[c.page || 0], ax: c.px / c.w, ay: c.py / c.h };
 }
@@ -61,7 +108,7 @@ let draw = null, backend = "", canvasEl = null;
 async function initRenderer() {
   const host = $("stage");
   try {
-    const PIXI = await import("../runtime/pixi.min.mjs?v=" + STAMP);
+    const PIXI = await import("../runtime/pixi.min.mjs?v=" + STAMP); PIXI_MOD = PIXI;
     const app = new PIXI.Application();
     await app.init({ width: S.VIEW_W, height: S.VIEW_H, background: "#120c06", antialias: true, preference: "webgl",
       resolution: MODES.capture ? 1 : Math.min(2, window.devicePixelRatio || 1), autoDensity: true, preserveDrawingBuffer: !!MODES.capture });
@@ -73,7 +120,7 @@ async function initRenderer() {
     const white = new PIXI.ColorMatrixFilter(); white.matrix = [0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0];   // a white silhouette
     const tex = new Map();   // img → base texture; "id:cell" → cell texture
     function texOf(key, img, c) {
-      if (!tex.has(key)) { if (!tex.has(img)) tex.set(img, PIXI.Texture.from(img)); tex.set(key, new PIXI.Texture({ source: tex.get(img).source, frame: new PIXI.Rectangle(c.x, c.y, c.w, c.h) })); }
+      if (!tex.has(key)) { if (!tex.has(img)) tex.set(img, img.__source ? new PIXI.Texture({ source: img.__source }) : PIXI.Texture.from(img)); tex.set(key, new PIXI.Texture({ source: tex.get(img).source, frame: new PIXI.Rectangle(c.x, c.y, c.w, c.h) })); }
       return tex.get(key);
     }
     const pools = { under: [], body: [], over: [], glow: [] }, used = {};
@@ -88,7 +135,7 @@ async function initRenderer() {
           let sp = pools[L][used[L]]; if (!sp) { sp = new PIXI.Sprite(); pools[L].push(sp); CT[L].addChild(sp); }
           used[L]++;
           sp.texture = texOf((s.atlas || s.fighter) + ":" + s.cell, co.img, co.c); sp.anchor.set(co.ax, co.ay);
-          sp.position.set(s.x, s.y); sp.scale.set(s.flip ? -s.scale : s.scale, s.scale); sp.rotation = s.rotation || 0;
+          const sc = s.scale * (co.k || 1); sp.position.set(s.x, s.y); sp.scale.set(s.flip ? -sc : sc, sc); sp.rotation = s.rotation || 0;
           sp.alpha = s.alpha == null ? 1 : s.alpha; sp.blendMode = s.blend === "add" ? "add" : "normal"; sp.filters = s.white ? [white] : null; sp.visible = true;
           continue;
         }
@@ -115,7 +162,7 @@ async function initRenderer() {
         if (s.k === "sprite") {
           const co = cellOf(s); if (!co) continue;
           if (s.white) cx.globalCompositeOperation = "lighter";
-          cx.save(); cx.translate(s.x, s.y); cx.rotate(s.rotation || 0); cx.scale(s.flip ? -s.scale : s.scale, s.scale);
+          const sc = s.scale * (co.k || 1); cx.save(); cx.translate(s.x, s.y); cx.rotate(s.rotation || 0); cx.scale(s.flip ? -sc : sc, sc);
           cx.drawImage(co.img, co.c.x, co.c.y, co.c.w, co.c.h, -co.ax * co.c.w, -co.ay * co.c.h, co.c.w, co.c.h); cx.restore();
           continue;
         }
@@ -152,11 +199,11 @@ function renderSetup() {
   $("go").disabled = lineup.length !== MA.ROUNDS;
   $("modes").textContent = modeLabel();
 }
-function modeLabel() { return "fx " + (MODES.fx ? "on" : "off") + " · " + MODES.fps + " fps · camera " + MODES.cam + " · " + RUNG + " sheets"; }
+function modeLabel() { return "fx " + (MODES.fx ? "on" : "off") + " · " + MODES.fps + " fps · camera " + MODES.cam + " · " + RUNG + " sheets · " + LOAD.tex + (LOAD.tex === "ktx2" ? " → " + LOAD.gpuFormat : ""); }
 
 // ── the match (or the demo bout) ──
 let match = null, ais = null, rng = null, seed = 0, banner = 0, bannerText = "", paused = false, debug = false, finished = false;
-let PS = null, demo = null, ring = [], slowmo = null, cam = null, lastFight = null;
+let PS = null, demo = null, ring = [], slowmo = null, cam = null, lastFight = null, overT = 0;   // overT: frames since the fight ended (the K.O. / win art)
 function shuffle(a, r) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function newAIs() { ais = [null, AI.createAI(level, rng, { round: match ? match.round : 0 })]; }   // the round is on screen: the Beginner holds its special in round 1
 function startMatch() {
@@ -164,9 +211,9 @@ function startMatch() {
   rng = R.rng(seed);
   // ?opp=meghnad,indra,box_rakta fixes the opponent's lineup (a lab convenience); otherwise 3 of the Heroes at random
   const opp = (MODES.raw.opp || "").split(",").filter((id) => M.HEROES[id]);
-  match = MA.createMatch(MODES.demo ? { lineup0: DEMO.LINEUPS[0], lineup1: DEMO.LINEUPS[1] }
+  match = MA.createMatch(MODES.demo ? { lineup0: DEMO.LINEUPS[0], lineup1: DEMO.LINEUPS[1], seconds: 99 }
     : { lineup0: lineup, lineup1: opp.length === MA.ROUNDS && new Set(opp).size === MA.ROUNDS ? opp : shuffle(HERO_IDS, rng).slice(0, MA.ROUNDS) });
-  demo = MODES.demo ? DEMO.create() : null;
+  demo = MODES.demo ? DEMO.create(MODES.demoName) : null; overT = 0;
   newAIs(); finished = false; paused = false; slowmo = null; ring = []; PS = PR.create(MODES); cam = null; lastFight = match.fight;
   showBanner("ROUND 1", MODES.demo ? 45 : BANNER_START);
   $("setup").hidden = true; $("result").hidden = true; $("pause").hidden = true; $("game").hidden = false;
@@ -222,9 +269,10 @@ portrait.addEventListener("change", () => { if (portrait.matches && match && !fi
 
 // ── the loop: logic at a fixed 60 Hz, drawing once per display frame ──
 let last = 0, acc = 0;
-const buildOpts = (c) => ({ debug, reducedMotion: reduced.matches, fighters: fighterMans(), rung: RUNG, cam: c, fallback: MODES.fx });
+const buildOpts = (c) => ({ debug, reducedMotion: reduced.matches, fighters: fighterMans(), rung: RUNG, cam: c, fallback: MODES.fx, after: overT });
 function tick() {
   if (!match || finished) return;
+  if (match.fight && match.fight.over && !slowmo) { overT++; PR.tick(PS, match.fight, S.build(match.fight, buildOpts(cam || undefined))); }   // the flash, trail and dust keep fading under the K.O. banner
   if (slowmo) {   // the K.O. replayed at quarter speed from the last logic frames, the camera closing on the loser
     slowmo.t += 0.25;
     if (Math.floor(slowmo.t) !== Math.floor(slowmo.t - 0.25)) PR.tick(PS, slowmo.frames[Math.min(slowmo.frames.length - 1, Math.floor(slowmo.t))], null);
@@ -242,7 +290,7 @@ function tick() {
     if (banner > 0) return;   // a banner holds the fighters still
   }
   const g = match.fight;
-  if (g !== lastFight) { lastFight = g; PS = PR.create(MODES); ring = []; }
+  if (g !== lastFight) { lastFight = g; PS = PR.create(MODES); ring = []; overT = 0; }
   const inp = demo ? DEMO.inputs(demo, g) : [C.keyBits(held) | stickBitsNow | touchBits, AI.decide(ais[1], AI.observe(g, 1))];
   MA.step(match, inp);
   if (MODES.fx) { ring.push(F.snapshot(g)); if (ring.length > 40) ring.shift(); }
@@ -258,7 +306,7 @@ window.__arcPerf = () => {
   const mean = (a) => a.reduce((x, y) => x + y, 0) / Math.max(1, a.length);
   return { modes: modeLabel(), backend, cpu: MODES.cpu, frames: iv.length, fps: iv.length ? Math.round(1000 / mean(iv) * 10) / 10 : 0,
     p95FrameMs: Math.round(q(iv, 0.95) * 10) / 10, worstFrameMs: Math.round(Math.max(0, ...PERF.intervals) * 10) / 10, worstWorkMs: Math.round(Math.max(0, ...PERF.work) * 10) / 10, workMsMean: Math.round(mean(wk) * 100) / 100, workMsP95: Math.round(q(wk, 0.95) * 100) / 100,
-    load: Object.assign({}, LOAD), fighters: Object.fromEntries(Object.entries(FIGHTERS).map(([k, v]) => [k, { bytes: v.bytes, decoded: v.decoded, pages: v.imgs.length, cells: v.cells.length }])) };
+    load: Object.assign({}, LOAD), fighters: Object.fromEntries(Object.entries(FIGHTERS).map(([k, v]) => [k, { tex: v.tex, bytes: v.bytes, decoded: v.decoded, pages: v.imgs.length, cells: v.cells.length }])) };
 };
 function frame(now) {
   requestAnimationFrame(frame);
@@ -284,7 +332,7 @@ function render(dtSec) {
   } else cam = PR.camera(PS, g, cam, dtSec || 1 / 60);
   const built = S.build(g, buildOpts(PR.shaken(PS, cam)));
   let shapes = built.shapes;
-  if (MODES.fx && EFFECTS.vajra) shapes = shapes.filter((s) => !(/^proj/.test(s.tag) && g.f[+s.tag.slice(4)].hero === "indra"));
+  if (MODES.fx) shapes = shapes.filter((s) => !(/^proj/.test(s.tag) && ((EFFECTS.vajra && g.f[+s.tag.slice(4)].hero === "indra") || M.ARCH[g.f[+s.tag.slice(4)].arch].special === "nagapasha")));   // drawn by the presentation
   draw(shapes.concat(PR.shapes(PS, g, built)));
   const mf = match.fight;
   mf.f.forEach((f, i) => {
@@ -331,8 +379,8 @@ $("again").onclick = () => startMatch();
 $("change").onclick = () => { $("result").hidden = true; $("game").hidden = true; $("setup").hidden = false; match = null; };
 
 renderSetup(); setupTouch();
+await initRenderer();   // first: the loader needs to know whether the GPU path (Pixi) can take compressed pages
 await loadFighters();
-await initRenderer();
 document.documentElement.dataset.fighters = Object.keys(FIGHTERS).join(",") + "@" + RUNG;
 $("perf").hidden = !MODES.perf;
 if (MODES.capture) capture(MODES.capture);

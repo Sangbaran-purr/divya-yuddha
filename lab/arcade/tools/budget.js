@@ -1,31 +1,30 @@
 #!/usr/bin/env node
 'use strict';
-// tools/budget.js — THE GRAPHICS-MEMORY PROJECTION (owner ruling 2, 2026-11-04).   node lab/arcade/tools/budget.js
-// Ruling 2: 24 fps strike frames (real frames only) for light / heavy / special — their active frames and the frames around
-// them — ONLY IF the full-moveset projection stays within the caps (2 fighters + arena + effects: lo ≤ 48 MB, hi ≤ 96 MB).
-// If it does not fit on lo, lo stays 12 fps everywhere.
+// tools/budget.js — THE GRAPHICS-MEMORY PROJECTION (owner rulings 2026-11-04).   node lab/arcade/tools/budget.js
+// Ruling 1 (second set): GPU-compressed textures (KTX2 / Basis) for the fighter pages and the arena, idle at 8 fps, hold cells trimmed,
+// a half-size Vajra on lo. Re-run the projection and report each lever's saving; ONLY IF the 15-move projection then fits BOTH caps
+// with margin (MARGIN: at most 75% of the cap) may the 24 fps strike frames come back; otherwise 12 fps stays.
 //
-// The model, every input named:
-//   · decoded memory per cell, per rung = (sheet page area × 4 bytes) / cells, MEASURED from fighters/<hero>/manifest.json
-//     (the packing waste is included because a page is uploaded whole);
-//   · cells per move: idle and light MEASURED (the real idle loop is 28–29 cells, not the template's 8); every other move from
-//     the template (core/moves.js CELLS); walk back = 0 (walk forward reversed, the clip card's first choice);
-//   · the 15-move set adds 10b knockdown + get-up, 13 parry and 14 throw (CELLS, ruling 5);
-//   · strike frames: the window from STRIKE.before frames before the first active frame to STRIKE.after frames after the last,
-//     at 24 instead of 12 fps → the extra cells per move;
-//   · the arena: the docs' four layers (hi: sky 2048×1024, palace 2560×1024, ground and foreground 2560×512; lo: half each side);
-//   · the effects: the Vajra atlas as shipped (effects/vajra/manifest.json), loaded at either rung today.
+// The model — every input named, measured where it can be:
+//   · INDRA: his full cut, MEASURED (fighters/indra/manifest.json v2): every page's size → GPU bytes. A compressed page costs 1 byte a
+//     pixel on the GPU (ASTC 4×4, BC7, ETC2 RGBA and BC3 are all 8 bits a pixel); the WebP fallback 4. The throw borrows (no cells yet).
+//   · MEGHNAD: placeholder sheets (idle + light) until the reshoot. His full set is projected as Indra's cell count × Meghnad's own
+//     measured bytes per cell (worst case: today's spear held out front), and as Indra's (his reshoot keeps the spear upright).
+//   · THE ARENA: the docs' four layers (hi: sky 2048×1024, palace 2560×1024, ground and foreground 2560×512; lo: half each side), not
+//     built yet — compressed (1 byte a pixel) as ruled.
+//   · THE EFFECTS: the Vajra atlas as shipped (WebP, 4 bytes a pixel): hi full size, lo the half-size copy (effects/vajra/lo/).
+//   · STRIKE FRAMES: 24 fps from 5 frames before the first active frame to 5 after the last, on light / heavy / special: +8 cells.
 const fs = require('fs'), path = require('path');
 const LAB = path.resolve(__dirname, '..');
 const M = require(path.join(LAB, 'core/moves.js'));
 const MB = 1048576;
-const CAP = { lo: 48, hi: 96 };
+const CAP = { lo: 48, hi: 96 }, MARGIN = 0.75, DL_CAP = { lo: 0.7, hi: 1.6 }, MATCH_DL = { lo: 6, hi: 11 };
 const STRIKE = { before: 5, after: 5 };
 const ARENA = { hi: [[2048, 1024], [2560, 1024], [2560, 512], [2560, 512]] };
 ARENA.lo = ARENA.hi.map(([w, h]) => [w / 2, h / 2]);
-const NEW_MOVES = ['knockdown', 'parry', 'throw'];
+const man = (h) => JSON.parse(fs.readFileSync(path.join(LAB, 'fighters', h, 'manifest.json'), 'utf8'));
 
-function strikeExtra() {   // extra cells per fighter for 24 fps on the strike windows of light, heavy, special
+function strikeExtra() {
   let n = 0; const per = {};
   for (const k of ['light', 'heavy', 'special']) {
     const m = M.MOVES[k], w = Math.min(m.startup, STRIKE.before) + m.active + Math.min(m.recovery, STRIKE.after);
@@ -33,48 +32,73 @@ function strikeExtra() {   // extra cells per fighter for 24 fps on the strike w
   }
   return { n, per };
 }
-function fighter(hero, rung) {
-  const man = JSON.parse(fs.readFileSync(path.join(LAB, 'fighters', hero, 'manifest.json'), 'utf8')), R = man.rungs[rung];
-  const pages = R.pages || [{ size: R.size }], area = pages.reduce((a, p) => a + p.size[0] * p.size[1], 0);
-  const perCell = area * 4 / R.cells.length;
-  const idle = man.cellIndex.idle.length, L = man.cellIndex.light, light = L.startup.length + L.active.length + L.recovery.length;
-  const rest = Object.keys(M.CELLS).filter((k) => k !== 'idle' && k !== 'light' && k !== 'walkBack' && !NEW_MOVES.includes(k)).reduce((a, k) => a + M.CELLS[k], 0);
-  const n12 = idle + light + rest, n15 = n12 + NEW_MOVES.reduce((a, k) => a + M.CELLS[k], 0);
-  return { hero, rung, perCellMB: perCell / MB, idle, n12, n15, mem12: n12 * perCell / MB, mem15: n15 * perCell / MB };
+function sheetStats(F, rung) {
+  const R = F.rungs[rung], area = R.pages.reduce((a, p) => a + p.size[0] * p.size[1], 0), cells = R.cells.length;
+  return { cells, pages: R.pages.length, area, gpu: area / MB, rgba: 4 * area / MB, perCellGpu: area / cells / MB,
+    ktx2: R.pages.reduce((a, p) => a + p.bytes.ktx2, 0) / MB, webp: R.pages.reduce((a, p) => a + p.bytes.webp, 0) / MB, enc: R.encoding && R.encoding.chosen };
 }
-function project(caps) {   // caps: { lo, hi } MB, default CAP (the suite's breakage passes others)
+// the cells the two cell-count levers saved (from Indra's own anim lists: a repeated entry is a trimmed hold; the idle at 12 fps would be loopFrames / 2)
+function cellLevers(F) {
+  const A = F.anim, uniq = (L) => new Set(L).size;
+  const idle12 = Math.ceil(F.moves.idle.loopFrames / 2), idleNow = uniq(A.idle.loop), idleSampled = A.idle.loop.length;
+  let sampled = 0, kept = 0;
+  for (const k of ['jump', 'hitLight', 'hitHeavy', 'knockdown', 'getup', 'parry']) if (A[k]) { sampled += A[k].span.length; kept += uniq(A[k].span); }
+  for (const k of ['crouch', 'block', 'win']) if (A[k]) { const fwd = (A[k].hold.length + 2) / 2; sampled += A[k].enter.length + fwd; kept += uniq(A[k].enter.concat(A[k].hold)); }
+  if (F.moves.ko) { sampled += A.ko.span.length + F.moves.ko.lie.length; kept += uniq(A.ko.span.concat(A.ko.hold)); }
+  return { idle8: { cells12: idle12, cells8: idleSampled, saved: idle12 - idleSampled }, idleTrim: idleSampled - idleNow, holdTrim: { sampled, kept, saved: sampled - kept } };
+}
+function project(caps) {
   caps = caps || CAP;
-  const sx = strikeExtra(), out = { strike: sx, rungs: {} };
-  const vj = JSON.parse(fs.readFileSync(path.join(LAB, 'effects/vajra/manifest.json'), 'utf8')), effects = vj.atlasSize.w * vj.atlasSize.h * 4 / MB;
+  const I = man('indra'), G = man('meghnad'), sx = strikeExtra(), lv = cellLevers(I), out = { strike: sx, levers: {}, rungs: {} };
+  const vj = JSON.parse(fs.readFileSync(path.join(LAB, 'effects/vajra/manifest.json'), 'utf8')), vjLo = JSON.parse(fs.readFileSync(path.join(LAB, 'effects/vajra/lo/manifest.json'), 'utf8'));
   for (const rung of ['lo', 'hi']) {
-    const f = ['indra', 'meghnad'].map((h) => fighter(h, rung));
-    const arena = ARENA[rung].reduce((a, [w, h]) => a + w * h * 4, 0) / MB;
-    const fighters12 = f[0].mem12 + f[1].mem12, fighters15 = f[0].mem15 + f[1].mem15, strike = sx.n * (f[0].perCellMB + f[1].perCellMB);
-    const base15 = fighters15 + arena + effects, with24 = base15 + strike;
-    // two levers, for the report: Meghnad's reshoot (spear upright) packing like Indra, and a half-size Vajra atlas on lo
-    const lever = 2 * f[0].mem15 + arena + (rung === 'lo' ? effects / 4 : effects);
-    const cap = caps[rung];
-    out.rungs[rung] = { cap: cap, fighters: f, arena, effects, fighters12, fighters15, strike,
-      total12: fighters12 + arena + effects, total15: base15, total15strike: with24,
-      fits12: fighters12 + arena + effects <= cap, fits15: base15 <= cap, strikeFits: with24 <= cap,
-      withLevers: lever, withLeversStrike: lever + sx.n * 2 * f[0].perCellMB };
+    const i = sheetStats(I, rung), g = sheetStats(G, rung), cap = caps[rung];
+    const megWorst = i.cells * g.perCellGpu, megLikeIndra = i.gpu;
+    const arenaGpu = ARENA[rung].reduce((a, [w, h]) => a + w * h, 0) / MB;
+    const fx = (rung === 'lo' ? vjLo.atlasSize.w * vjLo.atlasSize.h : vj.atlasSize.w * vj.atlasSize.h) * 4 / MB;
+    const fxFull = vj.atlasSize.w * vj.atlasSize.h * 4 / MB;
+    const total = i.gpu + megWorst + arenaGpu + fx, totalLike = i.gpu + megLikeIndra + arenaGpu + fx;
+    // once the sheets carry the strike frames (manifest strike24), they are already in the measured cells: count only Meghnad's missing ones
+    const strike = I.strike24 ? sx.n * g.perCellGpu * (G.strike24 ? 0 : 1) : sx.n * (i.perCellGpu + g.perCellGpu);
+    // THE LEVERS, each one's saving on this rung (2 fighters at the worst-case Meghnad, so each is counted on both)
+    const both = i.perCellGpu + g.perCellGpu;
+    const lev = {
+      compressed: 3 * (i.gpu + megWorst + arenaGpu),                  // RGBA (4 B/px) → compressed (1 B/px), fighters + arena
+      idle8: lv.idle8.saved * both,
+      holdTrim: (lv.holdTrim.saved + lv.idleTrim) * both,
+      vajraHalf: rung === 'lo' ? fxFull - fx : 0
+    };
+    const before = total + lev.compressed + lev.idle8 + lev.holdTrim + lev.vajraHalf;
+    out.rungs[rung] = { cap, indra: i, meghnadNow: g, meghnadWorst: megWorst, meghnadLikeIndra: megLikeIndra, arena: arenaGpu, effects: fx,
+      total15: total, total15LikeIndra: totalLike, totalWithoutLevers: before, levers: lev, strike, total15Strike: total + strike,
+      fits: total <= cap, fitsWithMargin: total <= cap * MARGIN, strikeFitsWithMargin: total + strike <= cap * MARGIN,
+      // the WebP fallback (a GPU with no compressed format, or the Canvas 2D floor): fighters at 4 bytes a pixel
+      fallbackTotal: 4 * (i.gpu + megWorst) + 4 * arenaGpu + fx,
+      download: { indraKtx2: i.ktx2, indraWebp: i.webp, capPerFighter: DL_CAP[rung], perMatch6Ktx2: 6 * i.ktx2, matchCap: MATCH_DL[rung], encoding: i.enc } };
   }
-  out.strike24 = { lo: out.rungs.lo.strikeFits, hi: out.rungs.hi.strikeFits };   // THE DECISION (ruling 2)
+  out.cellLevers = lv; out.strikeShipped = !!I.strike24;
+  // THE DECISION (ruling 1): strike frames only if the 15-move projection fits BOTH caps with margin (with the strike frames added)
+  out.strike24 = out.rungs.lo.strikeFitsWithMargin && out.rungs.hi.strikeFitsWithMargin;
   return out;
 }
-module.exports = { project, strikeExtra, CAP, STRIKE };
+module.exports = { project, strikeExtra, CAP, MARGIN, STRIKE };
 
 if (require.main === module) {
   const P = project(), f = (x) => x.toFixed(1);
+  const L = P.cellLevers;
+  process.stdout.write('cell levers (Indra, measured): idle at 8 fps ' + L.idle8.cells8 + ' cells instead of ' + L.idle8.cells12 + ' (−' + L.idle8.saved + '); hold trim ' + L.holdTrim.sampled + ' sampled → ' + L.holdTrim.kept + ' kept (−' + L.holdTrim.saved + ', idle −' + L.idleTrim + ')\n');
   process.stdout.write('strike frames at 24 fps: +' + P.strike.n + ' cells per fighter (' + Object.entries(P.strike.per).map(([k, v]) => k + ' +' + v).join(', ') + ')\n');
   for (const r of ['lo', 'hi']) {
     const R = P.rungs[r];
-    process.stdout.write('\n' + r + ' (cap ' + R.cap + ' MB):\n' + R.fighters.map((x) => '  ' + x.hero + ': ' + x.perCellMB.toFixed(3) + ' MB/cell, idle ' + x.idle + ' cells, 12 moves ' + x.n12 + ' cells = ' + f(x.mem12) + ' MB, 15 moves ' + x.n15 + ' = ' + f(x.mem15) + ' MB').join('\n') +
-      '\n  arena ' + f(R.arena) + ' MB · effects (Vajra) ' + f(R.effects) + ' MB' +
-      '\n  total, 12 moves at 12 fps: ' + f(R.total12) + (R.fits12 ? ' fits' : ' OVER') +
-      '\n  total, 15 moves at 12 fps: ' + f(R.total15) + (R.fits15 ? ' fits' : ' OVER') +
-      '\n  total, 15 moves + 24 fps strike frames: ' + f(R.total15strike) + (R.strikeFits ? ' fits' : ' OVER') +
-      '\n  with both levers (Meghnad packs like Indra' + (r === 'lo' ? ', half-size Vajra atlas' : '') + '): ' + f(R.withLevers) + ' · + strike frames ' + f(R.withLeversStrike) + '\n');
+    process.stdout.write('\n' + r + ' (cap ' + R.cap + ' MB, margin ≤ ' + f(R.cap * MARGIN) + '):' +
+      '\n  Indra, full cut: ' + R.indra.cells + ' cells, ' + R.indra.pages + ' page(s), GPU ' + f(R.indra.gpu) + ' MB compressed (' + f(R.indra.rgba) + ' as RGBA)' +
+      '\n  Meghnad, full set projected: ' + f(R.meghnadWorst) + ' MB (today\'s spear-out density) · ' + f(R.meghnadLikeIndra) + ' MB (reshoot packs like Indra)' +
+      '\n  arena ' + f(R.arena) + ' MB compressed · Vajra ' + f(R.effects) + ' MB' +
+      '\n  TOTAL, 15 moves at 12 fps: ' + f(R.total15) + ' MB (' + f(R.total15LikeIndra) + ' if Meghnad packs like Indra) — ' + (R.fitsWithMargin ? 'fits with margin' : R.fits ? 'fits, no margin' : 'OVER') +
+      '\n  without the levers it would be ' + f(R.totalWithoutLevers) + ' MB; savings: compressed textures −' + f(R.levers.compressed) + ', idle 8 fps −' + f(R.levers.idle8) + ', hold trim −' + f(R.levers.holdTrim) + ', half-size Vajra −' + f(R.levers.vajraHalf) +
+      '\n  + 24 fps strike frames: ' + f(R.total15Strike) + ' MB — ' + (R.strikeFitsWithMargin ? 'fits with margin' : 'no') +
+      '\n  the WebP fallback (no compressed format): ' + f(R.fallbackTotal) + ' MB' +
+      '\n  download: Indra ' + R.download.encoding + ' ' + f(R.download.indraKtx2 * 1024) + ' KB (WebP ' + f(R.download.indraWebp * 1024) + ' KB) vs ' + f(R.download.capPerFighter * 1024) + ' KB a fighter; 6 fighters ≈ ' + f(R.download.perMatch6Ktx2) + ' MB vs a match\'s ' + R.download.matchCap + ' MB\n');
   }
-  process.stdout.write('\nTHE DECISION (ruling 2): 24 fps strike frames on lo ' + (P.strike24.lo ? 'YES' : 'NO — lo stays 12 fps everywhere') + ' · on hi ' + (P.strike24.hi ? 'YES' : 'NO — hi stays 12 fps everywhere') + '\n');
+  process.stdout.write('\nTHE DECISION (ruling 1): 24 fps strike frames ' + (P.strike24 ? 'YES — the 15-move projection fits both caps with margin' : 'NO — 12 fps stays') + (P.strikeShipped ? ' (the sheets carry them: measured above)' : '') + '\n');
 }

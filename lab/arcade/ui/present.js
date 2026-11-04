@@ -14,14 +14,15 @@
   else root.ARC_PRESENT = factory(root.ARC_FIGHT, root.ARC_SCENE);
 })(this, function (F, S) {
   "use strict";
-  var SPARK = { indra: 0xffd66b, meghnad: 0x8a1020, other: 0xffffff };   // gold for the Vajra, dark red for the spear
+  var SPARK = { indra: 0xffd66b, meghnad: 0x8a1020, other: 0xffffff };
+  var M_PROJ = { y0: 30, y1: 80 };   // core/moves.js PROJECTILE (the shot's height band)   // gold for the Vajra, dark red for the spear
   var FADE = 3;                // logic frames a move change cross-fades over (ruling 3: on the 12 fps sheets, with fx)
   var TRAIL = 2;               // ghosts behind a strike
   var VAJRA = { loop: [10, 20], burst: [21, 35], anchor: { x: 223, y: 242.1 }, height: 1.25 };   // cells of the copied clip; pillar = 1.25 stances tall
 
   function parseModes(search) {
     var q = {}; String(search || "").replace(/^\?/, "").split("&").forEach(function (kv) { if (!kv) return; var p = kv.split("="); q[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || ""); });
-    return { fx: q.fx !== "0", fps: 12, cam: q.cam === "wide" ? "wide" : "tight", demo: q.demo === "1" || !!q.capture, capture: q.capture || null,
+    return { fx: q.fx !== "0", fps: 12, cam: q.cam === "wide" ? "wide" : "tight", demo: !!q.demo && q.demo !== "0" || !!q.capture, demoName: q.demo === "moves" || q.demo === "ko" ? q.demo : "bout", capture: q.capture || null,
       perf: q.perf === "1", cpu: Math.max(1, Math.min(10, parseFloat(q.cpu) || 1)), raw: q };
   }
 
@@ -58,6 +59,7 @@
         return;
       }
       if (e.t === "tech") { var ta = g.f[e.by], td = g.f[e.side]; spawn(P, 10, { x: (ta.x + td.x) / 2 / F.U, h: 120 }, { color: 0xc8c8c8, speed: 4, life: 12, r: 2.2, glow: true, g: 0.2 }); return; }
+      if (e.t === "bind") { var bf = g.f[e.side]; spawn(P, 14, { x: bf.x / F.U, h: 120 }, { color: 0x3fd0a8, speed: 4, life: 18, r: 2.6, glow: true, g: 0.1 }); return; }
       if (e.t === "knockdown") { var kf = g.f[e.side]; spawn(P, 12, { x: kf.x / F.U, h: 2 }, { color: 0xb59a6a, speed: 3.5, life: 20, r: 6, a0: 0, spread: Math.PI, g: -0.04 }); return; }
       if (e.t === "hit" || e.t === "block") {
         var def = g.f[e.side], att = g.f[e.by], heroA = att.hero, pt = hitPoint(g, def, att);
@@ -79,7 +81,7 @@
     });
     // projectiles → the Vajra pillar while alive, a burst where it ends
     var alive = {};
-    g.proj.forEach(function (p) { alive[p.owner] = p; });
+    g.proj.forEach(function (p) { if (p.kind !== "naga") alive[p.owner] = p; });
     [0, 1].forEach(function (o) {
       var was = P.proj[o];
       if (was && !alive[o] && fx && g.f[o].hero === "indra") P.bursts.push({ x: was.x, cell: VAJRA.burst[0] });
@@ -141,6 +143,22 @@
         if (!p || g.f[o].hero !== "indra") return;
         var span = VAJRA.loop[1] - VAJRA.loop[0] + 1, cell = VAJRA.loop[0] + Math.floor(P.tick * 0.4) % span;
         out.push({ k: "sprite", layer: "glow", atlas: "vajra", cell: cell, x: sx(p.x), y: sy(0), scale: 220 * VAJRA.height / VAJRA.anchor.y * z, flip: false, alpha: 1, blend: "add", tag: "vajra" + o });
+      });
+      // 6 THE NAGAPASHA (placeholder look until its art): a teal serpent wriggling along the shot; coils round a bound Hero
+      g.proj.forEach(function (p, k) {
+        if (p.kind !== "naga") return;
+        var hx = p.x / F.U, hh = (M_PROJ.y0 + M_PROJ.y1) / 2;
+        for (var j = 0; j < 9; j++) {
+          var wx = hx - p.dir * j * 13, wh = hh + Math.sin(P.tick * 0.5 + j * 0.9) * 9, r = (j === 0 ? 9 : 7 - j * 0.5);
+          out.push({ k: "ellipse", layer: "fx", x: sx(wx), y: sy(wh), rx: r * z, ry: r * 0.8 * z, fill: j === 0 ? 0x7cf5d0 : 0x1f9e7e, alpha: 0.95, tag: "naga" + k });
+        }
+      });
+      g.f.forEach(function (f) {
+        if (f.state !== "bound") return;
+        for (var j = 0; j < 3; j++) {
+          var hb = 50 + j * 50 + Math.sin(P.tick * 0.3 + j) * 4;
+          out.push({ k: "ellipse", layer: "glow", x: sx(f.x / F.U), y: sy(f.y / F.U + hb), rx: 42 * z, ry: 9 * z, fill: 0x2bbf94, alpha: 0.55, tag: "coil" + f.side });
+        }
       });
       P.bursts.forEach(function (b, k) {
         out.push({ k: "sprite", layer: "glow", atlas: "vajra", cell: Math.floor(b.cell), x: sx(b.x), y: sy(0), scale: 220 * VAJRA.height / VAJRA.anchor.y * z, flip: false, alpha: 1, blend: "add", tag: "vajraburst" + k });

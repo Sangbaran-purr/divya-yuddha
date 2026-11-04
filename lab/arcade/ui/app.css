@@ -47,7 +47,11 @@ button.big { border-color: var(--gold); color: var(--gold); font-weight: 600; le
 #stickzone { position: absolute; left: 0; top: 18%; bottom: 0; width: 50%; pointer-events: auto; touch-action: none; }
 #stick { position: absolute; width: 112px; height: 112px; margin: -56px 0 0 -56px; border-radius: 50%; border: 2px solid var(--gold-dim); background: rgba(0, 0, 0, .25); }
 #knob { position: absolute; left: 50%; top: 50%; width: 48px; height: 48px; margin: -24px 0 0 -24px; border-radius: 50%; background: rgba(232, 200, 116, .45); }
-#buttons { position: absolute; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); display: grid; grid-template-columns: 64px 64px; gap: 12px; pointer-events: auto; }
+/* five buttons (ruling 3): Grab · Special · Block on top, Light · Heavy under the resting thumb — 3 × 64 + 2 × 10 = 212 px wide, fits a 360 px tall landscape phone */
+#buttons { position: absolute; right: max(14px, env(safe-area-inset-right)); bottom: max(14px, env(safe-area-inset-bottom)); display: grid;
+  grid-template-columns: repeat(3, 64px); grid-template-areas: "grab special block" ". light heavy"; gap: 10px; pointer-events: auto; }
+#buttons button[data-id="light"] { grid-area: light; } #buttons button[data-id="heavy"] { grid-area: heavy; } #buttons button[data-id="special"] { grid-area: special; }
+#buttons button[data-id="block"] { grid-area: block; } #buttons button[data-id="grab"] { grid-area: grab; color: #ffb877; border-color: rgba(255, 184, 119, .5); }
 #buttons button { width: 64px; height: 64px; border-radius: 50%; padding: 0; font-size: .72rem; font-weight: 700; background: rgba(0, 0, 0, .35); touch-action: none; }
 #buttons button.down { background: rgba(232, 200, 116, .35); }
 #buttons button[data-id="special"] { color: var(--cyan); border-color: rgba(127, 224, 255, .5); }

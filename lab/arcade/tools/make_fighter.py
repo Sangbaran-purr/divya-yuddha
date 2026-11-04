@@ -1,31 +1,32 @@
 #!/usr/bin/env python3
-"""ARCADE-1 · THE FIGHTER TOOL (clip test: idle + light).   Run with the matting venv (the VFX lab's; rembg + OpenCV live there):
+"""ARCADE-1 · THE FIGHTER TOOL (full moveset, owner rulings of 2026-11-04).   Run with the matting venv:
       lab/vfx-manifestation/tools/.venv/bin/python -I lab/arcade/tools/make_fighter.py [indra meghnad]
+   env: ARC_STRIKE24=1 adds the 24 fps strike frames (only if tools/budget.js says they fit — ruling 1);
+        ARC_DESPILL=old reproduces the clip test's gentler edge despill (for the before/after only).
 
 Kling clips on chroma green (lab/arcade/sources/<hero>/<hero>_NN_<move>.mp4, gitignored) → one fighter per Hero:
-  lab/arcade/fighters/<hero>/hi.webp, lo.webp, manifest.json   (committed: packed sheets only — the clip law)
+  lab/arcade/fighters/<hero>/{hi,lo}_<n>.webp + .ktx2 pages and manifest.json   (committed: packed pages only — the clip law)
 and, for the owner, contact sheets in ~/Desktop/DY_arcade_screens/ (never committed).
 
 THE STEPS
-  1 MATTE      green first: alpha from G − max(R, B) with a soft ramp, edge colours un-mixed from the ground, then despilled so no
-               pixel is greener than its strongest other channel (the VFX lab's key, single-channel). The figure is the largest
-               opaque part plus anything touching it (the spear and the Vajra are held); flecks off the figure are cut.
-               rembg is called only where an edge band still holds ground-coloured pixels kept mostly opaque (over FRINGE_LIMIT).
-  2 PIVOT      the feet: the ground row (the lowest opaque row) and the feet's centre (the mean x of the opaque pixels in the
-               bottom FEET_ROWS rows), measured on the stance frame (idle f0). One pivot per Hero for every move; the wobble of
-               each kept frame's own feet against it is reported.
-  3 ONE SCALE  both Heroes to one stance height: the head's top (the top opaque row in a band around the feet's x, so the
-               spear tip held out front is not the head) to the ground row → STANCE_HI px on the hi sheet, STANCE_LO on the lo.
-  4 FRAMES     idle: the tightest loop (the smallest L whose frame L matches frame 0 under LOOP_MAE), sampled at 12 fps.
-               light: the game's own timing, 5 / 3 / 9 logic frames → LIGHT_CELLS = 2 startup + 1 active + 3 recovery cells,
-               chosen on the clip's motion: the reach (the figure's front edge) climbs to its maximum (contact = the first frame
-               at ≥ 98% of it) and later falls back to the stance.
-  5 PACK       trimmed cells, one shelf-packed WebP sheet per rung (hi ≤ 4096 px wide, lo ≤ 2048), straight alpha; the manifest
-               carries each cell's rect and pivot.
-  6 MIRROR     the cells are authored facing right; the mirror test flips every cell about its pivot and checks the pivot lands
-               where the game will put it (cell width − pivot x).
+  1 MATTE      green first: alpha from G − max(R, B) with a soft ramp, edge colours un-mixed from the ground; the figure is the
+               largest opaque part plus anything touching it; flecks, specks and detached puffs off the figure are cut.
+               THE EDGE DESPILL (ruling 7, now the default): on the edge zone (semi-transparent, or the outer EDGE_RIM px) green may
+               never be the strongest channel, and on a warm pixel (red ≥ blue + WARM) it may not exceed WARM_CAP × red — so the
+               olive (yellow-green) rim goes to 0 while true gold (green ≈ 0.75–0.85 × red) is untouched; solid interiors untouched.
+               Per-move clean-ups: CUT BEYOND THE TIP (the special's baked lightning), ground-shadow cut (crouch), skipped ranges.
+  2 PIVOT      the stance frame (idle f0): ground row + the feet's centre; each clip registered to it by its own frame 0. A cell
+               whose lowest opaque row sits below the ground (a body lying down) is lifted onto it; the jump's cells stand on
+               their own lowest point (the engine supplies the height); the walk's cells follow the torso (root motion removed).
+  3 ONE SCALE  stance height → STANCE_HI px (hi), STANCE_LO (lo).
+  4 FRAMES     every move is TIMED TO THE GAME: its cells are chosen for the game's own durations (the logic frame data), on sharp
+               source frames (the sharpest within ±1, avoiding skipped ranges). Idle loops at 8 fps. HOLDS ARE TRIMMED: neighbouring
+               cells closer than HOLD_MAE become ONE cell (the sharpest), shown for longer — the cell list repeats it.
+  5 PACK       pages (hi ≤ 4096², lo ≤ 2048²), sides a multiple of 4, each page as WebP (straight alpha, the fallback) and as
+               KTX2 / Basis Universal (premultiplied: UASTC or ETC1S, chosen by measured quality and size — ruling 1).
+  6 MIRROR     the cells are authored facing right and flipped about the pivot at run time; checked on every cell.
 """
-import os, sys, json, hashlib, math
+import os, sys, json, hashlib, math, subprocess, tempfile
 import numpy as np, cv2
 from PIL import Image, ImageDraw, ImageFont
 
@@ -34,26 +35,74 @@ REPO = os.path.dirname(os.path.dirname(ARC))
 os.environ.setdefault("U2NET_HOME", os.path.join(REPO, "lab", "vfx-manifestation", "tools", ".venv", "u2net"))
 SCREENS = os.path.expanduser("~/Desktop/DY_arcade_screens")
 
-EDGE_TINT = float(os.environ.get("ARC_EDGE_TINT", "6"))                     # the edge despill's allowance (0–255) for green over the mean of red and blue
-EDGE_RIM = 2                         # px (source): the opaque rim the edge despill also covers
-CONTACT_LOOK = 6                     # frames into the hold searched for the sharpest contact cell
-KEY_T0, KEY_T1 = 28.0, 85.0          # green dominance: ≤ T0 fully figure, ≥ T1 fully ground (the VFX lab's values)
-FLECK = 400                          # px (source): an opaque island smaller than this, not touching the figure, is cut
-FRINGE_LIMIT = 0.002                 # share of edge-band pixels near-pure ground yet mostly opaque → rembg trims that band
-FEET_ROWS = 14                       # px (source): the feet are the opaque pixels in this many rows above the ground row
-HEAD_BAND = 140                      # px (source): the head's top is looked for within ±this of the feet's x
-STANCE_HI, STANCE_LO = 320, 192      # px: the stance height on each sheet (budget: cells 320 tall high, 192 low)
-SHEET_W = {"hi": 4096, "lo": 2048}
-LOOP_MIN = 16                        # frames: no idle loop shorter than this
-FPS_OUT = 12
+DESPILL = os.environ.get("ARC_DESPILL", "strong")
+EDGE_TINT_OLD, EDGE_RIM_OLD = 6.0, 2   # the clip test's rule (kept for the before/after)
+EDGE_RIM = 3                         # px (source): the opaque rim the despill covers
+WARM, WARM_CAP = 40, 0.92            # a warm pixel: red ≥ blue + WARM; its green capped at WARM_CAP × red
+CONTACT_LOOK = 6
+KEY_T0, KEY_T1 = 28.0, 85.0
+FLECK = 400
+FRINGE_LIMIT = 0.002
+FEET_ROWS = 14
+HEAD_BAND = 140
+STANCE_HI, STANCE_LO = 320, 192
+PAGE = {"hi": 4096, "lo": 2048}
+LOOP_MIN = 16
+FPS_OUT, IDLE_FPS, HOLD_FPS = 12, 8, 8
+HOLD_MAE = 4.0                       # mean |Δ| (0–255, premultiplied RGBA at ¼ size, on the figure's box) under which neighbouring cells are one hold
+IDLE_MAE = 2.0                       # the idle keeps its breathing: only true near-duplicates merge
+HOLD_WINDOW = 24                     # source frames (1 s) of a held pose, played forward then back (a seamless loop) — Kling's holds drift
 LIGHT_CELLS = {"startup": 2, "active": 1, "recovery": 3}
-QUALITY = {"hi": 82, "lo": 80}
+WEBP_Q = {"hi": 82, "lo": 80}
+STRIKE24 = os.environ.get("ARC_STRIKE24") == "1"
+STRIKE = {"before": 5, "after": 5}   # logic frames around the active frames shown at 24 fps (when STRIKE24)
+FRAMES = {"light": (5, 3, 9), "heavy": (12, 4, 18), "special": (16, 8, 26)}   # core/moves.js (Meghnad's +2 recovery is stretched at run time)
+KO_SPAN = 60                         # logic frames the K.O. fall plays over before the last still frame holds
+# the KTX2 candidates per rung (ruling 1: UASTC for hi, ETC1S for lo, or the measured best): tried on page 0, PSNR on the premultiplied RGBA
+ETC1S_MAX = ["-etc1s", "-q", "255", "-max_endpoints", "16128", "-max_selectors", "16128"]
+ENC = {"hi": [("uastc", ["-uastc"]), ("uastc-rdo4", ["-uastc", "-lambda", "4"]), ("etc1s", ETC1S_MAX)],
+       "lo": [("etc1s", ETC1S_MAX), ("uastc-rdo4", ["-uastc", "-lambda", "4"]), ("uastc", ["-uastc"])]}
+# THE CHOICE (ruling 1: "UASTC for hi, ETC1S for lo, or your measured best"): the best PSNR whose projected per-fighter download fits the
+# budget's cap (docs/ARCADE_v1.md: hi 1.6 MB, lo 0.7 MB); if none fits, the smallest
+DL_CAP = {"hi": 1.6 * 1048576, "lo": 0.7 * 1048576}
+NODE = "node"
 
+# THE CUT LIST per Hero (owner brief 2026-11-04 + the clip strips). Frame numbers are source frames (24 fps).
 HEROES = {
-    "indra":   {"name": "Indra", "clips": {"idle": "indra_01_idle.mp4", "light": "indra_06_light.mp4"},
-                "still": "indra-fighter-right-green-1920x1080-v2.png", "weapon": "Vajra"},
-    "meghnad": {"name": "Meghnad", "clips": {"idle": "meghnad_01_idle.mp4", "light": "meghnad_06_light.mp4"},
-                "still": "meghnad-fighter-right-green-1920x1080-v2.png", "weapon": "spear"},
+    "indra": {"name": "Indra", "weapon": "Vajra", "still": "indra-fighter-right-green-1920x1080-v2.png",
+        "clips": {"idle": "indra_01_idle.mp4", "walk": "indra_02_walk_forward.mp4", "jump": "indra_04_jump.mp4", "crouch": "indra_05_crouch.mp4",
+                  "light": "indra_06_light.mp4", "heavy": "indra_07_heavy.mp4", "special": "indra_08_special.mp4", "block": "indra_09_block.mp4",
+                  "hit": "indra_10_hit_reaction.mp4", "knockdown": "indra_10b_knockdown.mp4", "ko": "indra_11_ko.mp4", "win": "indra_12_win.mp4",
+                  "parry": "indra_13_counter_parry.mp4"},
+        "cut": {
+            "walk":      {"clip": "walk", "search": [12, 110], "minLen": 24},
+            # the new hop: load 22–33, take-off 40–48, tucked peak 55–65, landing 72–84 → the 40-frame airtime from take-off to touch-down
+            "jump":      {"clip": "jump", "span": [42, 82], "n": 8, "pivot": "feet", "look": 2},
+            "crouch":    {"clip": "crouch", "enter": [28, 40], "nEnter": 2, "hold": [72, 96], "shadow": True},
+            "light":     {"clip": "light", "auto": True},
+            # heavy: wind-up 36–46 into the strike 62–70; 50–58 skipped (the Vajra lost in a green smear, the chest turns)
+            "heavy":     {"clip": "heavy", "phases": {"startup": [36, 46], "active": [62, 66], "recovery": [70, 96]}, "n": {"startup": 3, "active": 1, "recovery": 4}, "skip": [[50, 58]]},
+            # special: overhead raise → the two-handed drive → held → stance; the baked lightning (50–84) cut beyond the Vajra's tip
+            "special":   {"clip": "special", "phases": {"startup": [22, 46], "active": [50, 56], "recovery": [60, 94]}, "n": {"startup": 3, "active": 2, "recovery": 5},
+                          "cutBeyondTip": {"frames": [48, 86], "ref": 86, "margin": 6}},
+            "block":     {"clip": "block", "enter": [12, 26], "nEnter": 2, "hold": [29, 53]},
+            # hit: the light flinch is the first flinch, the heavy the full stagger; the mist puff (22–36) is cut by isolation
+            "hitLight":  {"clip": "hit", "span": [30, 40], "n": 3},
+            "hitHeavy":  {"clip": "hit", "span": [30, 54], "n": 5},
+            # 10b: struck, falls to hands and knees (wired to knockdown), rises to stance (wired to get-up)
+            "knockdown": {"clip": "knockdown", "span": [12, 56], "n": 7},
+            "getup":     {"clip": "knockdown", "span": [82, 100], "n": 4},
+            # 11 KO: staggers 20–60 (tightened), falls onto the back 60–90, lies still — the last still frame holds
+            "ko":        {"clip": "ko", "span": [22, 90], "n": 10, "lie": [100, 120]},
+            "win":       {"clip": "win", "enter": [24, 62], "nEnter": 6, "hold": [96, 120]},
+            # 13: the deflect (30–42) is the parry; 46–56 skipped (a stray floating object, a shaft to the right edge); the lunge 58–66 is
+            # not used (our parry has no built-in counter — the punish is the player's own move)
+            "parry":     {"clip": "parry", "span": [30, 42], "n": 3, "skip": [[46, 56]]},
+        }},
+    # Meghnad: placeholders until the reshoot (ruling 5/7 — his current idle + light only; every other move borrows at run time)
+    "meghnad": {"name": "Meghnad", "weapon": "spear", "still": "meghnad-fighter-right-green-1920x1080-v2.png",
+        "clips": {"idle": "meghnad_01_idle.mp4", "light": "meghnad_06_light.mp4"},
+        "cut": {"light": {"clip": "light", "auto": True}}},
 }
 
 def sha(path):
@@ -74,7 +123,8 @@ def ground_colour(rgb):
     c = np.concatenate([rgb[:40, :40].reshape(-1, 3), rgb[:40, -40:].reshape(-1, 3), rgb[-40:, -40:].reshape(-1, 3)])
     return np.median(c, axis=0).astype(np.float32)
 
-def key(rgb, K):
+def key(rgb, K, mode=None):
+    mode = mode or DESPILL
     kc = int(np.argmax(K)); o1, o2 = [c for c in (0, 1, 2) if c != kc]
     a = rgb.astype(np.float32)
     dom = a[..., kc] - np.maximum(a[..., o1], a[..., o2])
@@ -82,23 +132,39 @@ def key(rgb, K):
     am = np.maximum(alpha, 0.05)[..., None]
     fg = np.clip((a - (1.0 - alpha)[..., None] * K) / am, 0, 255)
     fg[..., kc] = np.minimum(fg[..., kc], np.maximum(fg[..., o1], fg[..., o2]))
-    # EDGE DESPILL (clip test): on skin and gold the rule above stops green exceeding red but leaves the spill as a yellow-green
-    # (olive) tint on motion-smeared and soft edges and on the outermost opaque rim. On those pixels only — semi-transparent,
-    # or within EDGE_RIM px of the boundary — the key channel may not exceed the mean of the other two by more than EDGE_TINT.
-    # The body's own opaque gold, inside the rim, is untouched.
-    soft = edge_zone(alpha)
-    cap = (fg[..., o1] + fg[..., o2]) / 2 + EDGE_TINT
-    fg[..., kc] = np.where(soft, np.minimum(fg[..., kc], cap), fg[..., kc])
+    if mode == "old":   # the clip test's rule: on the edge zone, green ≤ mean(red, blue) + 6
+        soft = edge_zone(alpha, EDGE_RIM_OLD)
+        cap = (fg[..., o1] + fg[..., o2]) / 2 + EDGE_TINT_OLD
+        fg[..., kc] = np.where(soft, np.minimum(fg[..., kc], cap), fg[..., kc])
+        return alpha, fg
+    # THE STRONG EDGE DESPILL (ruling 7, the default): on the edge zone green is never the strongest channel (whites stay
+    # neutral), and on a warm pixel (red ≥ blue + WARM) green ≤ WARM_CAP × red — the olive rim goes, true gold (G ≈ 0.75–0.85 R) stays
+    soft = edge_zone(alpha, EDGE_RIM)
+    R, B = fg[..., 0], fg[..., 2]
+    cap = np.maximum(R, B)
+    cap = np.where(R >= B + WARM, np.minimum(cap, WARM_CAP * R), cap)
+    fg[..., 1] = np.where(soft, np.minimum(fg[..., 1], cap), fg[..., 1])
     return alpha, fg
 
-def edge_zone(alpha):
-    inner = cv2.erode((alpha > 0.98).astype(np.uint8), np.ones((2 * EDGE_RIM + 1, 2 * EDGE_RIM + 1), np.uint8)).astype(bool)
+def edge_zone(alpha, rim=EDGE_RIM):
+    inner = cv2.erode((alpha > 0.98).astype(np.uint8), np.ones((2 * rim + 1, 2 * rim + 1), np.uint8)).astype(bool)
     return (alpha > 0.0) & ~inner
 
-def tinted(alpha, fg):
-    # the audit: edge pixels (soft, or on the rim) still tinted toward the key (green over the mean of red and blue by more than 20)
-    soft = (alpha > 0.05) & edge_zone(alpha)
-    return int((soft & (fg[..., 1] > (fg[..., 0] + fg[..., 2]) / 2 + 20)).sum())
+def final_despill(alpha, fg):
+    soft = edge_zone(alpha, EDGE_RIM); fg = fg.copy(); R, B = fg[..., 0], fg[..., 2]
+    cap = np.maximum(R, B); cap = np.where(R >= B + WARM, np.minimum(cap, WARM_CAP * R), cap)
+    fg[..., 1] = np.where(soft, np.minimum(fg[..., 1], cap), fg[..., 1]); return fg
+
+ENC_LOCK = {}   # ruling 1 — one encoding per rung for every Hero: the first FULL cut (≥ 100 cells) measures and chooses; placeholders follow
+
+def olive(alpha, fg):
+    # the audit (ruling 7): edge pixels (alpha > 0.05, in the edge zone) carrying an olive / green tint — green the strongest channel,
+    # or a warm pixel whose green is above 0.95 × red
+    z = (alpha > 0.05) & edge_zone(alpha, EDGE_RIM)
+    R, G, B = fg[..., 0], fg[..., 1], fg[..., 2]
+    bad = (G > np.maximum(R, B) + 2) | ((R >= B + WARM) & (G > 0.95 * R + 2))
+    return int((z & bad).sum())
+
 
 def sharpness(rgb, alpha):
     g = cv2.cvtColor(rgb, cv2.COLOR_RGB2GRAY).astype(np.float32)
@@ -142,8 +208,8 @@ def rembg_mask(rgb):
     s, rm = _rembg
     return np.asarray(rm(Image.fromarray(rgb), session=s, only_mask=True)).astype(np.float32) / 255.0
 
-def matte(rgb, K):
-    alpha, fg = key(rgb, K)
+def matte(rgb, K, mode=None):
+    alpha, fg = key(rgb, K, mode)
     alpha, dropped = isolate(alpha)
     share = fringe_share(rgb, alpha, K); used = False
     if share > FRINGE_LIMIT:
@@ -236,7 +302,10 @@ def checker(w, h, s=16):
     return np.dstack([c, c, c]).astype(np.uint8)
 
 def contact_sheet(path, cells, labels, title, pivots, flip=False, bg="checker"):
-    th = max(c.shape[0] for c in cells) + 8; tw = max(c.shape[1] for c in cells) + 8; cols = min(8, len(cells)); rows = math.ceil(len(cells) / cols)
+    # tiles sized by the widest reach on EACH side of the feet (centring wide cells on the feet would clip a weapon held out front)
+    L = max(px for px, py in pivots); Rr = max(c.shape[1] - px for c, (px, py) in zip(cells, pivots))
+    if flip: L, Rr = Rr, L
+    th = max(c.shape[0] for c in cells) + 8; tw = int(math.ceil(L + Rr)) + 16; cols = min(8, len(cells)); rows = math.ceil(len(cells) / cols)
     W, H = cols * tw, rows * (th + 22) + 34
     out = Image.new("RGB", (W, H), (18, 14, 10)); d = ImageDraw.Draw(out); f = font(14)
     d.text((8, 8), title, fill=(232, 200, 116), font=font(16))
@@ -244,12 +313,12 @@ def contact_sheet(path, cells, labels, title, pivots, flip=False, bg="checker"):
         x, y = (k % cols) * tw + 4, (k // cols) * (th + 22) + 34
         if flip: c = c[:, ::-1]; px = c.shape[1] - px
         base = Image.fromarray(checker(tw - 8, th - 8) if bg == "checker" else np.full((th - 8, tw - 8, 3), bg, np.uint8))
-        ox, oy = int((tw - 8) / 2 - px), int(th - 8 - py - 2)      # every cell placed by its pivot: the feet on one line
+        ox, oy = int(L + 4 - px), int(th - 8 - py - 2)      # every cell placed by its pivot: the feet on one line
         base.paste(Image.fromarray(c), (ox, oy), Image.fromarray(c[..., 3]))
         out.paste(base, (x, y + 18))
         dd = ImageDraw.Draw(out)
         dd.line([(x, y + 18 + th - 10), (x + tw - 8, y + 18 + th - 10)], fill=(232, 200, 116), width=1)          # the ground line
-        dd.line([(x + (tw - 8) / 2, y + 18 + th - 18), (x + (tw - 8) / 2, y + 18 + th - 2)], fill=(255, 80, 60), width=1)   # the pivot
+        dd.line([(x + L + 4, y + 18 + th - 18), (x + L + 4, y + 18 + th - 2)], fill=(255, 80, 60), width=1)   # the pivot
         dd.text((x + 2, y + 2), lab, fill=(220, 210, 180), font=f)
     out.save(path, quality=85)
 
@@ -266,128 +335,402 @@ def crops_sheet(path, title, crops):
     for lab, t in tiles: out.paste(t, (x, 40)); d.text((x, 26), lab, fill=(220, 210, 180), font=font(12)); x += t.width + 10
     out.save(path, quality=90)
 
+
+# ═══ the full-moveset build ═══
+class Clip:
+    """one source clip: decoded frames, its ground colour, and a cache of CROPPED mattes (a float32 alpha + uint8 colour + offset)"""
+    LRU = []                     # at most two clips' full-resolution frames in memory (a clip is ~750 MB decoded)
+    def __init__(self, hero, name, fn):
+        self.path = os.path.join(ARC, "sources", hero, fn)
+        self.name, self.fn, self.sha = name, fn, sha(self.path)
+        self._frames = None; fr = self.frames; self.n = len(fr); self.fps = self._fps
+        self.K = ground_colour(fr[0]); self.cache = {}; self.post = None; self.notes = {}
+    @property
+    def frames(self):
+        if self._frames is None:
+            self._frames, self._fps = decode(self.path)
+            Clip.LRU.append(self)
+            while len(Clip.LRU) > 2: old = Clip.LRU.pop(0); old._frames = None
+        return self._frames
+    def m(self, i, mode=None):
+        k = (i, mode or DESPILL)
+        if k not in self.cache:
+            a, fg, st = matte(self.frames[i], self.K, mode)
+            if self.post: a = self.post(i, a, fg, st)
+            fg = np.clip(np.rint(fg), 0, 255)           # despill the values as STORED (8-bit), so the audit sees exactly what ships
+            if (mode or DESPILL) != "old": fg = np.floor(final_despill(a, fg))   # isolation and the clean-ups make new edges: despill them too
+            ys, xs = np.where(a > 0.004)
+            y0, y1, x0, x1 = max(0, ys.min() - 4), min(a.shape[0], ys.max() + 5), max(0, xs.min() - 4), min(a.shape[1], xs.max() + 5)
+            self.cache[k] = {"a": a[y0:y1, x0:x1].copy(), "fg": np.clip(fg[y0:y1, x0:x1], 0, 255).astype(np.uint8), "ox": int(x0), "oy": int(y0), "st": st, "i": i, "clip": self.name}
+        return self.cache[k]
+
+def M_rows(M): return np.where((M["a"] > 0.5).any(axis=1))[0]
+def M_lowest(M): return int(M_rows(M).max()) + M["oy"]
+def M_top(M): return int(M_rows(M).min()) + M["oy"]
+def M_front(M): return int(np.where((M["a"] > 0.5).any(axis=0))[0].max()) + M["ox"]
+def M_feet(M):
+    a = M["a"]; gy = int(M_rows(M).max()); ys, xs = np.where(a[max(0, gy - FEET_ROWS + 1): gy + 1] > 0.5)
+    return gy + M["oy"], float(xs.mean()) + M["ox"]
+def M_sharp(M): return sharpness(M["fg"], M["a"])
+def M_torso(M, stance):   # the torso's x: the alpha centroid between 15% and 50% of the stance height below the frame's own top
+    a = M["a"] > 0.5; top = int(M_rows(M).min()); r0, r1 = top + int(0.15 * stance), top + int(0.5 * stance)
+    ys, xs = np.where(a[r0:r1]); return float(xs.mean()) + M["ox"] if len(xs) else float(M["ox"])
+
+def small_pm(M, box, shift=0):
+    # the premultiplied RGBA of a matte at ¼ size, placed in a frame-coordinate box (x0, y0, x1, y1); shift moves it in x (root motion)
+    x0, y0, x1, y1 = box; W, H = (x1 - x0) // 4 + 1, (y1 - y0) // 4 + 1
+    out = np.zeros((H, W, 4), np.float32)
+    pm = np.dstack([M["fg"].astype(np.float32) * M["a"][..., None], M["a"] * 255.0])
+    sm = cv2.resize(pm, (max(1, pm.shape[1] // 4), max(1, pm.shape[0] // 4)), interpolation=cv2.INTER_AREA)
+    ox, oy = (M["ox"] + shift - x0) // 4, (M["oy"] - y0) // 4
+    xa, ya = max(0, ox), max(0, oy); xb, yb = min(W, ox + sm.shape[1]), min(H, oy + sm.shape[0])
+    if xb > xa and yb > ya: out[ya:yb, xa:xb] = sm[ya - oy: yb - oy, xa - ox: xb - ox]
+    return out
+
+def figdiff(A, B, shiftB=0):
+    box = (min(A["ox"], B["ox"] + shiftB), min(A["oy"], B["oy"]), max(A["ox"] + A["a"].shape[1], B["ox"] + shiftB + B["a"].shape[1]), max(A["oy"] + A["a"].shape[0], B["oy"] + B["a"].shape[0]))
+    box = tuple(int(v) for v in box)
+    return float(np.abs(small_pm(A, box) - small_pm(B, box, int(shiftB))).mean())
+
+def pick(clip, t, look=1, skip=()):
+    # the sharpest frame within ±look of t, never inside a skipped range
+    bad = lambda i: any(a <= i <= b for a, b in skip) or i < 0 or i >= clip.n
+    cand = [i for i in range(int(round(t)) - look, int(round(t)) + look + 1) if not bad(i)]
+    if not cand:
+        j = int(round(t)); d = 1
+        while bad(j): j = int(round(t)) + (d if d > 0 else d); d = -d if d > 0 else -d + 1
+        cand = [j]
+    return max(cand, key=lambda i: M_sharp(clip.m(i)))
+
+def even(a, b, n): return [a + (b - a) * k / max(1, n - 1) for k in range(n)] if n > 1 else [(a + b) / 2]
+
+def dedupe(clip, frames, mae=None):
+    mae = HOLD_MAE if mae is None else mae
+    # HOLD TRIM: a run of neighbouring frames closer than HOLD_MAE is one cell — the sharpest of the run, repeated
+    out, run = [], [frames[0]]
+    def flush():
+        best = max(run, key=lambda i: M_sharp(clip.m(i))); out.extend([best] * len(run))
+    for i in frames[1:]:
+        if figdiff(clip.m(run[-1]), clip.m(i)) < mae: run.append(i)
+        else: flush(); run[:] = [i]
+    flush()
+    return out
+
+def loop_len(errs):   # v1's rule: the minimum inside the first full cycle (after rising past half the peak, before rising again)
+    half = max(errs) / 2
+    up = next((i for i, e in enumerate(errs) if e > half), 1)
+    down = next((i for i in range(up, len(errs)) if errs[i] <= half), len(errs) - 1)
+    again = next((i for i in range(down, len(errs)) if errs[i] > half), len(errs))
+    return down + int(np.argmin(errs[down:again]))
+
+def run_basisu(png, out, args):
+    r = subprocess.run(["basisu"] + args + ["-ktx2", png, "-output_file", out], capture_output=True, text=True)
+    if r.returncode != 0 or not os.path.exists(out): raise RuntimeError("basisu failed: " + r.stdout[-400:] + r.stderr[-400:])
+
+def ktx2_rgba(path, w, h):
+    raw = path + ".rgba"
+    r = subprocess.run([NODE, os.path.join(ARC, "tools", "ktx2_decode.js"), path, raw], capture_output=True, text=True)
+    if r.returncode != 0: raise RuntimeError("decode failed: " + r.stderr)
+    W, H = [int(v) for v in r.stdout.split()[:2]]
+    d = np.fromfile(raw, np.uint8).reshape(H, W, 4); os.remove(raw); return d
+
+def psnr(a, b, mask):
+    e = ((a.astype(np.float32) - b.astype(np.float32)) ** 2)[mask].mean()
+    return 99.0 if e <= 1e-9 else round(float(10 * np.log10(255 ** 2 / e)), 2)
+
+def pack_pages(cells, side):
+    # shelf packing, tallest first, 2 px gutters; a new page when one is full; every side padded to a multiple of 4
+    order = sorted(range(len(cells)), key=lambda k: -cells[k].shape[0])
+    pages, rects = [], [None] * len(cells)
+    x = y = shelf = 0; cur = []
+    for k in order:
+        h, w = cells[k].shape[:2]
+        if x + w > side: x = 0; y += shelf + 2; shelf = 0
+        if y + h > side: pages.append(cur); cur = []; x = y = shelf = 0
+        rects[k] = (len(pages), x, y, w, h); cur.append(k); x += w + 2; shelf = max(shelf, h)
+    pages.append(cur)
+    sheets = []
+    for p, ks in enumerate(pages):
+        W = max(rects[k][1] + rects[k][3] for k in ks); H = max(rects[k][2] + rects[k][4] for k in ks)
+        W, H = (W + 3) // 4 * 4, (H + 3) // 4 * 4
+        sh = np.zeros((H, W, 4), np.uint8)
+        for k in ks: _, x, y, w, h = rects[k]; sh[y:y + h, x:x + w] = cells[k]
+        sheets.append(sh)
+    return sheets, rects
+
+def premult(rgba):
+    a = rgba[..., 3:4].astype(np.float32) / 255.0
+    return np.dstack([np.round(rgba[..., :3].astype(np.float32) * a), rgba[..., 3:4]]).astype(np.uint8)
+
 def build(hero):
-    H = HEROES[hero]; src = os.path.join(ARC, "sources", hero)
-    print("── %s ──" % H["name"])
+    H = HEROES[hero]; print("── %s ──" % H["name"])
     clips = {}
-    for move, fn in H["clips"].items():
-        fr, fps = decode(os.path.join(src, fn)); K = ground_colour(fr[0])
-        clips[move] = {"frames": fr, "fps": fps, "K": K, "file": fn, "sha256": sha(os.path.join(src, fn))}
-        print("  %s: %d frames @ %g fps, %dx%d, ground %s" % (fn, len(fr), fps, fr[0].shape[1], fr[0].shape[0], K.astype(int).tolist()))
+    for name, fn in H["clips"].items():
+        clips[name] = Clip(hero, name, fn)
+        c = clips[name]; print("  %s: %d frames @ %g fps, ground %s" % (fn, c.n, c.fps, c.K.astype(int).tolist()))
+    cut = H["cut"]
 
-    # the frames this Hero needs
-    idle = clips["idle"]
-    allidle = [matte(f, idle["K"]) for f in idle["frames"]]
-    L, errs = tightest_loop(allidle)
-    idle_src = list(range(0, L, int(round(idle["fps"] / FPS_OUT))))
-    print("  idle: tightest loop %d frames (%.2f s): frame %d matches frame 0 at mean |Δ| %.2f on the figure (peak %.1f) → %d cells at 12 fps" % (L, L / idle["fps"], L, errs[L], max(errs), len(idle_src)))
-    light = clips["light"]
-    lm = {}
-    fronts = []
-    for i, rgb in enumerate(light["frames"]):
-        a, fg, st = matte(rgb, light["K"]); lm[i] = (a, fg, st); fronts.append(front_x(a))
-    phases, curve = pick_light(fronts, fronts[0])
-    # the contact cell: the SHARPEST frame early in the hold — Kling's fast jab smears its first frames (the weapon can vanish)
-    look = list(range(curve["contact"], min(curve["contact"] + CONTACT_LOOK, curve["holdEnd"]) + 1))
-    sharp = {i: sharpness(light["frames"][i], lm[i][0]) for i in look}
-    best = max(look, key=lambda i: sharp[i])
-    curve["firstAtReach"], curve["sharpness"] = curve["contact"], {int(i): round(v, 1) for i, v in sharp.items()}
-    curve["contact"] = int(best); phases["active"] = [int(best)]
-    print("  light: wind-up f%d, 40%% f%d, contact f%d (sharpest of the hold's first frames %s)"
-          % (curve["windup"], curve["mid"], curve["contact"], curve["sharpness"]))
-    print("         reach +%d px source; one-frame spikes skipped: %s; holds to f%d, back by f%d → startup %s · active %s · recovery %s"
-          % (curve["reachPx"], curve["spikeFrames"], curve["holdEnd"], curve["back"], phases["startup"], phases["active"], phases["recovery"]))
+    # ── per-clip clean-ups, before anything is measured ──
+    notes = {}
+    if "special" in cut and "cutBeyondTip" in cut["special"]:
+        cb = cut["special"]["cutBeyondTip"]; sp = clips["special"]
+        ref = sp.m(cb["ref"]); tip = M_front(ref); sp.cache.clear()
+        def cut_tip(i, a, fg, st, tip=tip, cb=cb):
+            if cb["frames"][0] <= i <= cb["frames"][1]:
+                before = int((a > 0.05).sum()); a = a.copy(); a[:, tip + cb["margin"]:] = 0; a, _ = isolate(a)
+                st["tipCut"] = before - int((a > 0.05).sum())
+            return a
+        sp.post = cut_tip; notes["special"] = {"tipX": int(tip), "refFrame": cb["ref"]}
+    if "crouch" in cut and cut["crouch"].get("shadow"):
+        cr = clips["crouch"]; g0, _ = M_feet(cr.m(0)); cr.cache.clear()
+        def no_shadow(i, a, fg, st, g0=g0):
+            # the faint ground shadow: dark, mostly-transparent pixels on the ground band (never the body's solid pixels)
+            band = np.zeros_like(a, bool); band[max(0, g0 - 24): g0 + 8] = True
+            dark = fg.mean(axis=2) < 110
+            kill = band & dark & (a > 0) & (a < 0.8); st["shadowCut"] = int(kill.sum()); a = a.copy(); a[kill] = 0; return a
+        cr.post = no_shadow
 
-    # matte the idle frames; pivot + scale from the stance frame (idle f0)
-    im = {}
-    for i in idle_src: im[i] = allidle[i]
-    a0 = im[0][0]; gy, fx = feet(a0); top = head_top(a0, fx); stance_src = gy - top
+    # ── the stance, the scale, each clip's registration ──
+    idle = clips["idle"]; s0 = idle.m(0); gy, fx = M_feet(s0)
+    top = head_top(np.pad(s0["a"], ((s0["oy"], 0), (s0["ox"], 0))), fx); stance_src = gy - top
     scale = {"hi": STANCE_HI / stance_src, "lo": STANCE_LO / stance_src}
-    l0 = lm[0][0]; lgy, lfx = feet(l0)
-    print("  stance (idle f0): ground row %d, feet x %.1f, head top %d → stance height %d px source; light f0 feet (%d, %.1f) — registration %+.1f, %+d px"
-          % (gy, fx, top, stance_src, lgy, lfx, lfx - fx, lgy - gy))
+    reg = {}
+    for name, c in clips.items():
+        g, x = M_feet(c.m(0)); reg[name] = (round(x - fx, 1), int(g - gy))
+    print("  stance (idle f0): ground row %d, feet x %.1f, head top %d → %d px source · registration of each clip's frame 0: %s" % (gy, fx, top, stance_src, reg))
+    def piv(name): dx, dy = reg[name]; return (fx + (dx if abs(dx) > 1.5 else 0), gy + (dy if abs(dy) > 1 else 0))
 
-    # wobble: each kept frame's own feet against the Hero's pivot (source px)
-    def wob(a): g, x = feet(a); return round(float(x - fx), 1), int(g - gy)
-    wobble = {"idle": [wob(im[i][0]) for i in idle_src], "light": [wob(lm[i][0]) for p in ("startup", "active", "recovery") for i in phases[p]]}
-    for m, w in wobble.items():
-        print("  pivot wobble, %s: x %+.1f…%+.1f, y %+d…%+d px source  (×%.3f on the hi sheet)" % (m, min(v[0] for v in w), max(v[0] for v in w), min(v[1] for v in w), max(v[1] for v in w), scale["hi"]))
+    cells, cid = [], {}          # cells: {clip, i, pivot, move}
+    def cell(name, i, pivot, move):
+        k = (name, int(i), round(pivot[0], 1), round(pivot[1], 1))
+        if k not in cid: cid[k] = len(cells); cells.append({"clip": name, "i": int(i), "pivot": [float(pivot[0]), float(pivot[1])], "move": move})
+        return cid[k]
+    def grounded(name, i, p):
+        low = M_lowest(clips[name].m(i)); return (p[0], float(low)) if low > p[1] + 2 else p
+    anim, moves_meta = {}, {}
 
-    # fringe audit on the weapon tip and the head (the plume / crown), over every kept frame
-    def region(a, kind):
-        reg = np.zeros_like(a, bool); ys, xs = np.where(a > 0.5)
-        if kind == "weapon": reg[:, max(0, xs.max() - 60):] = True
-        else: reg[: ys.min() + 90, :] = True
-        return reg
-    audit = {}
-    kept = [("idle", i, im[i]) for i in idle_src] + [("light", i, lm[i]) for p in ("startup", "active", "recovery") for i in phases[p]]
-    for kind in ("weapon", "head"):
-        shares = [fringe_share((clips[m]["frames"][i]), mt[0], clips[m]["K"], region(mt[0], kind)) for m, i, mt in kept]
-        audit[kind] = {"maxShare": round(max(shares), 5)}
-    rembg_frames = [("%s f%d" % (m, i)) for m, i, mt in kept if mt[2]["rembg"]]
-    green_left = sum(tinted(mt[0], mt[1]) for m, i, mt in kept)
-    print("  fringe: weapon-tip band max %.3f%%, head band max %.3f%% (limit %.3f%%); rembg on %s; green-tinted soft edge pixels left: %d"
-          % (audit["weapon"]["maxShare"] * 100, audit["head"]["maxShare"] * 100, FRINGE_LIMIT * 100, rembg_frames or "no frame", green_left))
+    # IDLE — the tightest loop, at 8 fps, holds trimmed
+    recs = [idle.m(i) for i in range(idle.n)]
+    errs = [figdiff(recs[0], r) for r in recs]; L = max(LOOP_MIN, loop_len(errs))
+    src = list(range(0, L, int(round(idle.fps / IDLE_FPS))))
+    src = dedupe(idle, src, IDLE_MAE)
+    anim["idle"] = {"loop": [cell("idle", i, piv("idle"), "idle") for i in src], "fps": IDLE_FPS}
+    moves_meta["idle"] = {"loopFrames": int(L), "loopError": round(errs[L], 2), "src": src}
+    print("  idle: loop %d frames (%.2f s, |Δ| %.2f) → %d cells at 8 fps (%d after the hold trim)" % (L, L / idle.fps, errs[L], len(src), len(set(src))))
 
-    # cells, both rungs
-    order = [("idle", i, im[i]) for i in idle_src] + [("light", i, lm[i]) for p in ("startup", "active", "recovery") for i in phases[p]]
+    # WALK — root motion removed by the torso; the tightest full cycle inside the search range; 12 fps
+    if "walk" in cut:
+        c = clips["walk"]; w = cut["walk"]; a0, b0 = w["search"]
+        tor = {i: M_torso(c.m(i), stance_src) for i in range(a0, b0 + 1)}
+        best = None
+        for s in range(a0, a0 + 14):
+            for Lw in range(w["minLen"], 64):
+                if s + Lw > b0: break
+                e = figdiff(c.m(s), c.m(s + Lw), shiftB=tor[s] - tor[s + Lw])
+                if best is None or e < best[0]: best = (e, s, Lw)
+        e, s, Lw = best
+        off = tor[0] if 0 in tor else M_torso(c.m(0), stance_src)
+        base = piv("walk"); wsrc = list(range(s, s + Lw, 2))
+        anim["walk"] = {"loop": [cell("walk", i, (base[0] + tor[i] - off, base[1]), "walk") for i in wsrc], "fps": FPS_OUT}
+        moves_meta["walk"] = {"loop": [s, s + Lw], "loopError": round(e, 2), "rootTravelSource": round(max(tor.values()) - min(tor.values()), 1)}
+        print("  walk: cycle f%d–f%d (%d frames, |Δ| %.2f after the torso shift) → %d cells at 12 fps; the clip's own travel %.0f px removed" % (s, s + Lw, Lw, e, len(wsrc), moves_meta["walk"]["rootTravelSource"]))
+
+    def span(move):
+        sp = cut[move]; c = clips[sp["clip"]]; skip = sp.get("skip", [])
+        fr = [pick(c, t, sp.get("look", 1), skip) for t in even(sp["span"][0], sp["span"][1], sp["n"])]
+        fr = dedupe(c, fr)
+        ids = []
+        for i in fr:
+            p = piv(sp["clip"])
+            if sp.get("pivot") == "feet": p = (p[0], float(M_lowest(c.m(i))))
+            else: p = grounded(sp["clip"], i, p)
+            ids.append(cell(sp["clip"], i, p, move))
+        moves_meta[move] = {"src": fr}
+        return ids
+    def enter_hold(move):
+        sp = cut[move]; c = clips[sp["clip"]]
+        e = dedupe(c, [pick(c, t) for t in even(sp["enter"][0], sp["enter"][1], sp["nEnter"])])
+        h = dedupe(c, list(range(sp["hold"][0], min(sp["hold"][1], sp["hold"][0] + HOLD_WINDOW) + 1, int(round(c.fps / HOLD_FPS)))))
+        h = h + h[-2:0:-1]          # forward then back: a seamless loop without a jump
+        moves_meta[move] = {"enter": e, "hold": h}
+        return {"enter": [cell(sp["clip"], i, grounded(sp["clip"], i, piv(sp["clip"])), move) for i in e],
+                "hold": [cell(sp["clip"], i, grounded(sp["clip"], i, piv(sp["clip"])), move) for i in h], "fps": FPS_OUT, "holdFps": HOLD_FPS}
+
+    for mv in ("jump", "hitLight", "hitHeavy", "knockdown", "getup", "parry"):
+        if mv in cut: anim[mv] = {"span": span(mv)}
+    for mv in ("crouch", "block", "win"):
+        if mv in cut: anim[mv] = enter_hold(mv)
+    if "ko" in cut:
+        ko = span("ko"); c = clips["ko"]; lie = dedupe(c, list(range(cut["ko"]["lie"][0], cut["ko"]["lie"][1] + 1, 3)))
+        last = lie[-1]
+        anim["ko"] = {"span": ko, "frames": KO_SPAN, "hold": [cell("ko", last, grounded("ko", last, piv("ko")), "ko")]}
+        moves_meta["ko"]["lie"] = lie
+
+    # THE ATTACKS — light (the clip test's reach-curve pick), heavy and special (the cut list), on the game's phases
+    tips = {}
+    def attack(move):
+        sp = cut[move]; c = clips[sp["clip"]]
+        if sp.get("auto"):
+            fronts = [M_front(c.m(i)) for i in range(c.n)]
+            ph, curve = pick_light(fronts, fronts[0])
+            look = list(range(curve["contact"], min(curve["contact"] + CONTACT_LOOK, curve["holdEnd"]) + 1))
+            best = max(look, key=lambda i: M_sharp(c.m(i))); curve["firstAtReach"] = curve["contact"]; curve["contact"] = int(best); ph["active"] = [int(best)]
+            phases = {p: ph[p] for p in ("startup", "active", "recovery")}; meta = {"curve": curve}
+        else:
+            phases = {p: [pick(c, t, 1, sp.get("skip", [])) for t in even(r[0], r[1], sp["n"][p])] for p, r in sp["phases"].items()}; meta = {}
+        out = {}
+        if STRIKE24:   # ruling 1: the strike frames at 24 fps — real source frames, more of them around contact
+            if sp.get("auto"):
+                cu = meta["curve"]; ranges = {"startup": [cu["windup"], cu["contact"] - 1], "active": [cu["contact"], cu["contact"] + 3], "recovery": [cu["holdEnd"], cu["back"]]}
+            else: ranges = sp["phases"]
+            su, ac, rc = FRAMES[move]; plen = {"startup": su, "active": ac, "recovery": rc}
+            win = {"startup": (max(0, su - STRIKE["before"]), su), "active": (0, ac), "recovery": (0, min(rc, STRIKE["after"]))}
+            for p in ("startup", "active", "recovery"):
+                Lp, (w0, w1) = plen[p], win[p]; pts = []; t = 0.0
+                while t < Lp:
+                    pts.append(t); t = t + 2.5 if w0 <= t < w1 else (t + 5 if t + 5 <= w0 or t >= w1 else w0)
+                if len(pts) < len(phases[p]): pts = [Lp * k / len(phases[p]) for k in range(len(phases[p]))]
+                a, b = ranges[p]
+                fr = [pick(c, a + (b - a) * (t / Lp), 1, sp.get("skip", [])) for t in pts]
+                keep = [k for k in range(len(fr)) if k == 0 or fr[k] != fr[k - 1]]   # the same real frame twice in a row is one cell
+                # a cell starts on a WHOLE logic frame (the game steps in whole frames: a cell at 2.5 of a 3-frame phase would never show)
+                keep = [k for k in keep if k == 0 or math.floor(pts[k]) != math.floor(pts[keep[keep.index(k) - 1]])]
+                phases[p] = [fr[k] for k in keep]; out[p] = [[cell(sp["clip"], fr[k], grounded(sp["clip"], fr[k], piv(sp["clip"])), move), round(math.floor(pts[k]) / Lp, 4)] for k in keep]
+        else:
+            for p in ("startup", "active", "recovery"):
+                fr = phases[p]; n = len(fr)
+                out[p] = [[cell(sp["clip"], i, grounded(sp["clip"], i, piv(sp["clip"])), move), round(k / n, 4)] for k, i in enumerate(fr)]
+        act = [c.m(i) for i in phases["active"]]; p0 = piv(sp["clip"])
+        tips[move] = round((max(M_front(m) for m in act) - p0[0]) * 220.0 / stance_src, 1)
+        moves_meta[move] = dict(meta, phases=phases, tipFromPivotLogical=tips[move])
+        print("  %s: startup %s · active %s · recovery %s · the weapon tip at contact %.1f logical px from the feet" % (move, phases["startup"], phases["active"], phases["recovery"], tips[move]))
+        return {"phases": out}
+    for mv in ("light", "heavy", "special"):
+        if mv in cut: anim[mv] = attack(mv)
+    if "parry" in cut:
+        c = clips["parry"]; tips["parry"] = round((max(M_front(c.m(i)) for i in moves_meta["parry"]["src"]) - piv("parry")[0]) * 220.0 / stance_src, 1)
+    for mv in ("jump", "hitLight", "hitHeavy", "knockdown", "getup", "parry", "ko"):
+        if mv in moves_meta: print("  %s: frames %s%s" % (mv, moves_meta[mv]["src"], (" · lie (held) " + str(moves_meta[mv].get("lie"))) if mv == "ko" else ""))
+    for mv in ("crouch", "block", "win"):
+        if mv in moves_meta: print("  %s: enter %s · hold %s (%d distinct)" % (mv, moves_meta[mv]["enter"], moves_meta[mv]["hold"], len(set(moves_meta[mv]["hold"]))))
+
+    # ── audits ──
+    aligned = [{"move": cl["move"], "src": "%s f%d" % (cl["clip"], cl["i"]), "liftPx": round(M_lowest(clips[cl["clip"]].m(cl["i"])) - piv(cl["clip"])[1], 1)}
+               for cl in cells if cl["pivot"][1] != piv(cl["clip"])[1] and cut.get(cl["move"], {}).get("pivot") != "feet"]
+    olive_new = sum(olive(clips[cl["clip"]].m(cl["i"])["a"], clips[cl["clip"]].m(cl["i"])["fg"].astype(np.float32)) for cl in cells)
+    sample = cells[:: max(1, len(cells) // 12)]
+    olive_old = sum(olive(clips[cl["clip"]].m(cl["i"], "old")["a"], clips[cl["clip"]].m(cl["i"], "old")["fg"].astype(np.float32)) for cl in sample)
+    olive_new_s = sum(olive(clips[cl["clip"]].m(cl["i"])["a"], clips[cl["clip"]].m(cl["i"])["fg"].astype(np.float32)) for cl in sample)
+    audit = {"oliveEdgePixels": olive_new, "despillSample": {"cells": len(sample), "old": olive_old, "new": olive_new_s}, "groundAligned": aligned}
+    if "win" in clips: audit["winTopRowMin"] = min(M_top(clips["win"].m(i)) for i in set(moves_meta["win"]["enter"] + moves_meta["win"]["hold"]))
+    if "jump" in clips: audit["jumpTopRowMin"] = min(M_top(clips["jump"].m(i)) for i in moves_meta["jump"]["src"])
+    if "special" in notes:
+        semi = lambda M: int(((M["a"] > 0.05) & (M["a"] < 0.9)).sum())
+        cutf = [i for i in set(sum(moves_meta["special"]["phases"].values(), [])) if 48 <= i <= 86]
+        audit["specialHalo"] = {"refSemi": semi(clips["special"].m(notes["special"]["refFrame"])), "cutFramesSemi": {int(i): semi(clips["special"].m(i)) for i in sorted(cutf)},
+                                "tipX": notes["special"]["tipX"], "pixelsCut": {int(i): int(clips["special"].m(i)["st"].get("tipCut", 0)) for i in sorted(cutf)}}
+    if "crouch" in clips: audit["crouchShadowCut"] = {int(i): int(clips["crouch"].m(i)["st"].get("shadowCut", 0)) for i in sorted(set(moves_meta["crouch"]["hold"]))}
+    print("  audit: olive edge pixels left %d · despill sample (%d cells) old %d → new %d · ground-aligned %d cells %s" % (olive_new, len(sample), olive_old, olive_new_s, len(aligned), [a["src"] + " +" + str(a["liftPx"]) for a in aligned]))
+    for k in ("winTopRowMin", "jumpTopRowMin", "specialHalo", "crouchShadowCut"):
+        if k in audit: print("    %s: %s" % (k, audit[k]))
+
+    # ── the cells, both rungs: pages, WebP + KTX2 ──
     out = os.path.join(ARC, "fighters", hero); os.makedirs(out, exist_ok=True)
-    man = {"hero": hero, "name": H["name"], "class": "fighter", "version": 1, "facing": "right", "alpha": "straight", "fpsOut": FPS_OUT,
-           "stance": {"heightPx": {"hi": STANCE_HI, "lo": STANCE_LO}, "sourceHeight": int(stance_src), "pivotSource": [round(float(fx), 1), int(gy)], "headTopSource": int(top)},
-           "sources": {m: {"file": c["file"], "sha256": c["sha256"], "frames": len(c["frames"]), "fps": c["fps"]} for m, c in clips.items()},
-           "still": H["still"], "weapon": H["weapon"],
-           "moves": {"idle": {"loop": True, "loopFrames": int(L), "loopError": round(errs[L], 2), "src": idle_src},
-                     "light": {"phases": {p: phases[p] for p in ("startup", "active", "recovery")}, "curve": curve,
-                               "reachLogical": round(curve["reachPx"] * 220.0 / stance_src, 1),
-                               "tipFromPivotLogical": round((curve["plateauX"] - fx) * 220.0 / stance_src, 1)}},
-           "wobbleSource": wobble, "fringe": audit, "tintedEdgePixels": green_left, "rembgFrames": rembg_frames, "rungs": {}}
-    sizes = {}
+    for f in os.listdir(out):
+        if f.endswith((".webp", ".ktx2")): os.remove(os.path.join(out, f))
+    rungs, hi_cells = {}, None
+    tmp = tempfile.mkdtemp(prefix="arcfighter")
     for rung in ("hi", "lo"):
-        cells, piv = [], []
-        for m, i, (a, fg, st) in order:
-            c, px, py = cut_cell(a, fg, scale[rung], (fx, gy)); cells.append(c); piv.append((px, py))
-        sheet, rects = pack(cells, SHEET_W[rung])
-        p = os.path.join(out, rung + ".webp")
-        Image.fromarray(sheet, "RGBA").save(p, "WEBP", quality=QUALITY[rung], method=6)
-        sizes[rung] = os.path.getsize(p)
-        man["rungs"][rung] = {"sheet": rung + ".webp", "size": [int(sheet.shape[1]), int(sheet.shape[0])], "bytes": sizes[rung],
-                              "cells": [{"move": m, "src": int(i), "x": int(r[0]), "y": int(r[1]), "w": int(r[2]), "h": int(r[3]), "px": pv[0], "py": pv[1]} for (m, i, _), r, pv in zip(order, rects, piv)]}
-        if rung == "hi": hi_cells, hi_piv = cells, piv
-    # the move → cell index lists the game reads
-    idx = {"idle": [k for k, (m, _, _) in enumerate(order) if m == "idle"]}
-    n_idle = len(idx["idle"]); k = n_idle
-    for p in ("startup", "active", "recovery"):
-        idx[p] = list(range(k, k + len(phases[p]))); k += len(phases[p])
-    man["cellIndex"] = {"idle": idx["idle"], "light": {"startup": idx["startup"], "active": idx["active"], "recovery": idx["recovery"]}}
-    # the mirror test: flipping a cell about its pivot puts the pivot at (w − px); the feet stay on the ground row
-    mir = all(abs((c.shape[1] - px) - (c[:, ::-1].shape[1] - px)) < 1e-6 for c, (px, py) in zip(hi_cells, hi_piv))
-    feet_ok = []
-    for c, (px, py) in zip(hi_cells, hi_piv):
-        f = c[:, ::-1]; a = f[..., 3] > 127; rows = np.where(a.any(axis=1))[0]
-        feet_ok.append(abs(rows.max() - py) <= 3)
-    man["mirrorTest"] = {"pivotFlip": bool(mir), "feetOnGround": int(sum(feet_ok)), "of": len(feet_ok)}
-    with open(os.path.join(out, "manifest.json"), "w") as f: json.dump(man, f, indent=1)
-    print("  sheets: hi %s %d KB, lo %s %d KB · %d cells (idle %d, light %d)" % (man["rungs"]["hi"]["size"], sizes["hi"] // 1024, man["rungs"]["lo"]["size"], sizes["lo"] // 1024, len(order), n_idle, len(order) - n_idle))
-    print("  mirror: pivot flips to w − px on every cell; feet within 3 px of the ground row on %d of %d flipped cells" % (sum(feet_ok), len(feet_ok)))
+        imgs, pvs = [], []
+        for cl in cells:
+            M = clips[cl["clip"]].m(cl["i"]); im, px, py = cut_cell(M["a"], M["fg"].astype(np.float32), scale[rung], (cl["pivot"][0] - M["ox"], cl["pivot"][1] - M["oy"]))
+            imgs.append(im); pvs.append((px, py))
+        sheets, rects = pack_pages(imgs, PAGE[rung])
+        # the encoding: candidates measured on page 0 (premultiplied, as uploaded); the smallest at or above PSNR_MIN wins
+        p0 = os.path.join(tmp, "p0.png"); pm0 = premult(sheets[0]); Image.fromarray(pm0, "RGBA").save(p0); mask = sheets[0][..., 3] > 0
+        cand = []
+        for name, args in ENC[rung]:
+            k = os.path.join(tmp, name + ".ktx2"); run_basisu(p0, k, args)
+            dec = ktx2_rgba(k, pm0.shape[1], pm0.shape[0])
+            cand.append({"name": name, "args": args, "bytes": os.path.getsize(k), "psnr": psnr(dec, pm0, mask)})
+        area0 = sheets[0].shape[0] * sheets[0].shape[1]; area = sum(sh.shape[0] * sh.shape[1] for sh in sheets)
+        for c in cand: c["projectedBytes"] = int(c["bytes"] * area / area0)
+        fit = [c for c in cand if c["projectedBytes"] <= DL_CAP[rung]]
+        choice = max(fit, key=lambda c: c["psnr"]) if fit else min(cand, key=lambda c: c["projectedBytes"])
+        if rung in ENC_LOCK: choice = next(c for c in cand if c["name"] == ENC_LOCK[rung]); choice = dict(choice, lockedBy=ENC_LOCK["by"])
+        elif len(imgs) >= 100: ENC_LOCK[rung] = choice["name"]; ENC_LOCK["by"] = hero
+        print("  %s encodings (page 0): %s → %s" % (rung, ", ".join("%s %d KB (all pages ≈%d KB) %.1f dB" % (c["name"], c["bytes"] // 1024, c["projectedBytes"] // 1024, c["psnr"]) for c in cand), choice["name"]))
+        pages = []
+        for n, sh in enumerate(sheets):
+            wp = "%s_%d.webp" % (rung, n); kt = "%s_%d.ktx2" % (rung, n)
+            Image.fromarray(sh, "RGBA").save(os.path.join(out, wp), "WEBP", quality=WEBP_Q[rung], method=6)
+            png = os.path.join(tmp, "p.png"); Image.fromarray(premult(sh), "RGBA").save(png); run_basisu(png, os.path.join(out, kt), choice["args"])
+            pages.append({"webp": wp, "ktx2": kt, "size": [int(sh.shape[1]), int(sh.shape[0])], "bytes": {"webp": os.path.getsize(os.path.join(out, wp)), "ktx2": os.path.getsize(os.path.join(out, kt))}})
+        rungs[rung] = {"pages": pages, "encoding": {"chosen": choice["name"], "args": choice["args"], "candidates": cand, "downloadCap": DL_CAP[rung]},
+                       "cells": [{"page": r[0], "x": int(r[1]), "y": int(r[2]), "w": int(r[3]), "h": int(r[4]), "px": pv[0], "py": pv[1]} for r, pv in zip(rects, pvs)]}
+        if rung == "hi": hi_cells, hi_piv = imgs, pvs
+        print("  %s: %d cells on %d page(s) %s · WebP %d KB · KTX2 %d KB · decoded RGBA %.1f MB → compressed 8 bpp %.1f MB" % (rung, len(imgs), len(pages), [p["size"] for p in pages],
+              sum(p["bytes"]["webp"] for p in pages) // 1024, sum(p["bytes"]["ktx2"] for p in pages) // 1024, sum(p["size"][0] * p["size"][1] * 4 for p in pages) / 1048576, sum(p["size"][0] * p["size"][1] for p in pages) / 1048576))
 
-    # the owner's screens
+    # mirror test
+    feet_ok = []
+    for c_, (px, py) in zip(hi_cells, hi_piv):
+        f = c_[:, ::-1]; rows = np.where((f[..., 3] > 127).any(axis=1))[0]; feet_ok.append(abs(rows.max() - py) <= 3)
+    wob = [round(M_feet(idle.m(i))[1] - fx, 1) for i in sorted(set(moves_meta["idle"]["src"]))]
+    man = {"hero": hero, "name": H["name"], "class": "fighter", "version": 2, "facing": "right", "alpha": {"webp": "straight", "ktx2": "premultiplied"},
+           "fpsOut": FPS_OUT, "idleFps": IDLE_FPS, "strike24": bool(STRIKE24), "despill": DESPILL,
+           "stance": {"heightPx": {"hi": STANCE_HI, "lo": STANCE_LO}, "sourceHeight": int(stance_src), "pivotSource": [round(float(fx), 1), int(gy)], "headTopSource": int(top)},
+           "sources": {n: {"file": c.fn, "sha256": c.sha, "frames": c.n, "fps": c.fps, "registration": reg[n]} for n, c in clips.items()},
+           "still": H["still"], "weapon": H["weapon"], "moves": moves_meta, "tipsLogical": tips, "audit": audit,
+           "idleWobbleSource": wob, "rungs": rungs, "anim": anim,
+           "cellsSrc": ["%s f%d" % (cl["clip"], cl["i"]) for cl in cells], "cellsMove": [cl["move"] for cl in cells],
+           "mirrorTest": {"feetOnGround": int(sum(feet_ok)), "of": len(feet_ok)}}
+    with open(os.path.join(out, "manifest.json"), "w") as f: json.dump(man, f, indent=1)
+    print("  cells per move: %s · total %d" % ({m: len(set(k for k, cl in enumerate(cells) if cl["move"] == m)) for m in dict.fromkeys(cl["move"] for cl in cells)}, len(cells)))
+    print("  mirror: feet within 3 px of the ground row on %d of %d flipped cells" % (sum(feet_ok), len(feet_ok)))
+
+    # ── the owner's screens: one contact sheet per move, and the despill before/after ──
     os.makedirs(SCREENS, exist_ok=True)
-    labs = ["idle f%03d" % i for i in idle_src]
-    contact_sheet(os.path.join(SCREENS, "%s_idle_contact.jpg" % hero), hi_cells[:n_idle], labs, "%s · IDLE · tightest loop %d frames, %d cells at 12 fps · feet on one line (gold), pivot (red)" % (H["name"], L, n_idle), hi_piv[:n_idle])
-    llabs = ["%s f%03d" % (p, i) for p in ("startup", "active", "recovery") for i in phases[p]]
-    contact_sheet(os.path.join(SCREENS, "%s_light_contact.jpg" % hero), hi_cells[n_idle:], llabs, "%s · LIGHT · 2 startup + 1 active (contact) + 3 recovery cells, for 5/3/9 logic frames" % H["name"], hi_piv[n_idle:])
-    contact_sheet(os.path.join(SCREENS, "%s_mirror_test.jpg" % hero), [hi_cells[0], hi_cells[n_idle + 2]], ["idle f000 mirrored", "light contact mirrored"], "%s · MIRROR TEST — facing left, flipped about the pivot" % H["name"], [hi_piv[0], hi_piv[n_idle + 2]], flip=True)
-    # fringe crops at source resolution: the weapon tip at contact, and the head
-    a, fg, _ = lm[phases["active"][0]]; ys, xs = np.where(a > 0.5)
-    rgba = np.dstack([fg, a * 255]).astype(np.uint8)
-    tip = rgba[max(0, ys[xs.argmax()] - 60): ys[xs.argmax()] + 60, xs.max() - 140: xs.max() + 20]
-    a0f, fg0, _ = im[0]; ys0, xs0 = np.where(a0f > 0.5); top_y = ys0.min()
-    rgba0 = np.dstack([fg0, a0f * 255]).astype(np.uint8)
-    hx = int(xs0[ys0.argmin()]); head = rgba0[top_y: top_y + 140, max(0, hx - 90): hx + 90]
-    crops_sheet(os.path.join(SCREENS, "%s_fringe_crops.jpg" % hero), "%s · matte edges ×3 at source size: the %s tip at contact, and the head (left dark, right light ground)" % (H["name"], H["weapon"]), [(H["weapon"] + " tip", tip), ("head", head)])
+    for mv in dict.fromkeys(cl["move"] for cl in cells):
+        ks = [k for k, cl in enumerate(cells) if cl["move"] == mv]
+        labs = ["%s f%03d" % (cells[k]["clip"], cells[k]["i"]) for k in ks]
+        contact_sheet(os.path.join(SCREENS, "%s_%s_contact.jpg" % (hero, mv)), [hi_cells[k] for k in ks], labs,
+                      "%s · %s · %d cells · feet on one line (gold), pivot (red)" % (H["name"], mv.upper(), len(ks)), [hi_piv[k] for k in ks])
+    despill_sheet(hero, H, clips, cells, tips)
     return man
 
+def despill_sheet(hero, H, clips, cells, tips):
+    # BEFORE / AFTER (ruling 7): the same edges with the clip test's despill and with the new default, ×3 at source size, dark and light grounds
+    picks = []
+    for mv in ("light", "special", "idle", "heavy"):
+        ks = [cl for cl in cells if cl["move"] == mv]
+        if ks: picks.append(ks[len(ks) // 2 if mv != "light" else min(len(ks) - 1, 2)])
+    crops = []
+    for cl in picks:
+        c = clips[cl["clip"]]
+        for mode in ("old", "strong"):
+            M = c.m(cl["i"], mode); a = M["a"]; ys, xs = np.where(a > 0.5)
+            fr = int(xs.max()); y = int(ys[xs.argmax()])
+            rgba = np.dstack([M["fg"], a * 255]).astype(np.uint8)
+            cr = rgba[max(0, y - 50): y + 50, max(0, fr - 120): fr + 10]
+            crops.append(("%s f%d %s · olive %d" % (cl["clip"], cl["i"], "BEFORE" if mode == "old" else "AFTER", olive(a, M["fg"].astype(np.float32))), cr))
+    crops_sheet(os.path.join(SCREENS, "%s_despill_before_after.jpg" % hero), "%s · edge despill BEFORE (clip test) / AFTER (the new default): the weapon's front edge ×3 · olive = tinted edge pixels in the whole cell" % H["name"], crops)
+
+def sheets_only(hero):
+    # the contact sheets again from the BUILT hi pages (no matting): python make_fighter.py --sheets indra
+    out = os.path.join(ARC, "fighters", hero); man = json.load(open(os.path.join(out, "manifest.json"))); R = man["rungs"]["hi"]
+    pages = [np.asarray(Image.open(os.path.join(out, p["webp"])).convert("RGBA")) for p in R["pages"]]
+    cells = [pages[c["page"]][c["y"]:c["y"] + c["h"], c["x"]:c["x"] + c["w"]] for c in R["cells"]]; piv = [(c["px"], c["py"]) for c in R["cells"]]
+    for mv in dict.fromkeys(man["cellsMove"]):
+        ks = [k for k, m in enumerate(man["cellsMove"]) if m == mv]
+        contact_sheet(os.path.join(SCREENS, "%s_%s_contact.jpg" % (hero, mv)), [cells[k] for k in ks], [man["cellsSrc"][k] for k in ks],
+                      "%s · %s · %d cells · feet on one line (gold), pivot (red)" % (man["name"], mv.upper(), len(ks)), [piv[k] for k in ks])
+    print("sheets: %s (%d moves)" % (hero, len(dict.fromkeys(man["cellsMove"]))))
+
 if __name__ == "__main__":
+    if sys.argv[1:2] == ["--sheets"]:
+        for h in sys.argv[2:] or list(HEROES): sheets_only(h)
+        sys.exit(0)
     want = sys.argv[1:] or list(HEROES)
     for h in want: build(h)
     print("screens → %s" % SCREENS)

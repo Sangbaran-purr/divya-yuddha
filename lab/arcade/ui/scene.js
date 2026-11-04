@@ -9,28 +9,73 @@
   "use strict";
   var VIEW_W = 960, VIEW_H = 540, GROUND_Y = 470, STANCE_LOGICAL = 220;   // a fighter's stance is as tall as its standing hurtbox
 
-  // THE CLIP TEST: which cell of a real fighter's sheet shows now — or null, and the box is drawn instead.
-  //   idle  loops at the sheet's own 12 fps on the fight clock;
-  //   light is stretched onto the game's own phases: the startup cells across the startup frames, the contact cell across the
-  //         active frames, the recovery cells across the recovery (the archetype's own length — Meghnad's is 2 frames longer).
-  // Every other state has no art yet (ruling: other moves stay boxes).
-  // fallback (the enhancement test's ?fx=1 only): a state with no clip yet borrows art — any attack plays the light's cells on
-  // its own phases, a KO holds the stance cell (the presentation tilts and fades it), everything else loops the idle.
-  function artCell(g, f, man, fallback) {
+  // WHICH CELL SHOWS NOW (the full moveset, manifest v2 `anim`). Every state is mapped onto the game's own clock:
+  //   loops (idle 8 fps, walk 12 fps — walk back plays the walk reversed, the owner's default) run on the fight clock;
+  //   enter + hold (crouch, block, win) play the entry at 12 fps from the state's start (f.age), then loop the hold;
+  //   attacks put each phase's cells across that phase's own frames (the archetype's — Meghnad's recovery is longer);
+  //   spans (jump, hit, knockdown, get-up, parry, K.O.) stretch their cells across the state's length.
+  // A Hero without art for a state BORROWS (opts.fallback, i.e. fx on): an attack plays its light, a throw the light, a K.O. or
+  // knockdown with no clip the stance tilted (the presentation does the tilt), everything else the idle. Without fallback: null → box.
+  // after = frames since the fight ended (the K.O. and win animations run on after the core has stopped).
+  var KD_FALL = M.KNOCKDOWN.fall, KD_UP = M.KNOCKDOWN.getup, AIR = Math.round(2 * M.JUMP.v0 / M.JUMP.g);
+  function loopAt(L, t, fps) { return L[Math.floor(t * fps / 60) % L.length]; }
+  function spanAt(L, fr) { return L[Math.max(0, Math.min(L.length - 1, Math.floor(fr * L.length)))]; }
+  function enterHold(A, age) {
+    var n = A.enter.length, t = age * A.fps / 60;
+    if (t < n) return A.enter[Math.floor(t)];
+    return A.hold[Math.floor((age - n * 60 / A.fps) * A.holdFps / 60) % A.hold.length];
+  }
+  function phaseAt(A, f, m) {
+    var ph, fr;
+    if (f.mf < m.startup) { ph = "startup"; fr = f.mf / m.startup; }
+    else if (f.mf < m.startup + m.active) { ph = "active"; fr = (f.mf - m.startup) / m.active; }
+    else { ph = "recovery"; fr = Math.min(0.9999, (f.mf - m.startup - m.active) / m.recovery); }
+    var L = A.phases[ph], c = L[0][0];
+    for (var i = 0; i < L.length; i++) if (L[i][1] <= fr + 1e-3) c = L[i][0];   // fractions are stored to 4 places
+    return { phase: ph, cell: c };
+  }
+  function artCell(g, f, man, fallback, after) {
     if (!man) return null;
-    var ci = man.cellIndex;
-    if (f.state === "idle") { var n = ci.idle.length; return { move: "idle", cell: ci.idle[Math.floor(g.frame * man.fpsOut / 60) % n] }; }
-    if (f.state === "attack" && (f.move === "light" || fallback)) {
-      var m = F.moveOf(f), L = ci.light;
-      if (f.mf < m.startup) return { move: "light", phase: "startup", cell: L.startup[Math.floor(f.mf * L.startup.length / m.startup)] };
-      if (f.mf < m.startup + m.active) return { move: "light", phase: "active", cell: L.active[Math.floor((f.mf - m.startup) * L.active.length / m.active)] };
-      var r = f.mf - m.startup - m.active;
-      return { move: "light", phase: "recovery", cell: L.recovery[Math.min(L.recovery.length - 1, Math.floor(r * L.recovery.length / m.recovery))] };
+    var A = man.anim || {}, B = !!fallback, st = f.state, age = f.age || 0;
+    function idle(borrowed) { return { move: "idle", cell: loopAt(A.idle.loop, g.frame, A.idle.fps), borrowed: borrowed || undefined }; }
+    if (st === "idle") return idle(false);
+    if (st === "walkf" || st === "walkb") {
+      if (A.walk) { var W = st === "walkf" ? A.walk.loop : A.walk.loop.slice().reverse(); return { move: st === "walkf" ? "walk" : "walkBack", cell: loopAt(W, g.frame, A.walk.fps) }; }
+      return B ? idle(true) : null;
     }
-    if (!fallback) return null;
-    if (f.state === "ko") return { move: "ko", cell: ci.idle[0], borrowed: true };
-    if (f.state === "knockdown") return { move: "knockdown", cell: ci.idle[0], borrowed: true };   // 10b: the stance laid down (the presentation tilts it)
-    var k = ci.idle.length; return { move: "idle", cell: ci.idle[Math.floor(g.frame * man.fpsOut / 60) % k], borrowed: true };
+    if (st === "attack") {
+      var mv = f.move, m = F.moveOf(f), own = A[mv] && mv !== "throw";
+      if (!own && !B) return null;
+      var r = phaseAt(own ? A[mv] : A.light, f, m);
+      return { move: own ? mv : mv, phase: r.phase, cell: r.cell, borrowed: own ? undefined : true };
+    }
+    if (st === "jump") {
+      if (!A.jump) return B ? idle(true) : null;
+      var air = (F.JUMP_V - f.vy) / F.G;   // frames since take-off, from the body's own vertical speed
+      return { move: "jump", cell: spanAt(A.jump.span, air / AIR) };
+    }
+    if (st === "crouch" || st === "cblock") return A.crouch ? { move: "crouch", cell: enterHold(A.crouch, age) } : B ? idle(true) : null;
+    if (st === "block") return A.block ? { move: "block", cell: enterHold(A.block, age) } : B ? idle(true) : null;
+    if (st === "blockstun" || st === "tech") return A.block ? { move: "block", cell: A.block.hold[0] } : B ? idle(true) : null;
+    if (st === "hitstun" || st === "parried" || st === "grabbed" || st === "bound") {
+      var total = age + (f.stun || 0), heavy = st !== "hitstun" || total > 16, H = heavy ? A.hitHeavy : A.hitLight;
+      if (!H) return B ? idle(true) : null;
+      var fr = st === "bound" ? 0.4 : st === "grabbed" ? 0 : age / Math.max(1, total);   // bound: the stagger held, struggling
+      return { move: heavy ? "hitHeavy" : "hitLight", cell: spanAt(H.span, fr) };
+    }
+    if (st === "knockdown") return A.knockdown ? { move: "knockdown", cell: spanAt(A.knockdown.span, age / KD_FALL) } : B ? { move: "knockdown", cell: A.idle.loop[0], borrowed: true } : null;
+    if (st === "getup") return A.getup ? { move: "getup", cell: spanAt(A.getup.span, age / KD_UP) } : B ? idle(true) : null;
+    if (st === "parry") return A.parry ? { move: "parry", cell: spanAt(A.parry.span, age / M.PARRY.recovery) } : B ? idle(true) : null;
+    if (st === "grab") return A.light ? { move: "throw", cell: A.light.phases.active[0][0], borrowed: true } : null;
+    if (st === "throwrec") { var T = A.light.phases.recovery; return { move: "throw", cell: spanAt(T.map(function (x) { return x[0]; }), age / M.MOVES.throw.after), borrowed: true }; }
+    if (st === "ko") {
+      var t = after || 0;
+      if (A.ko) return { move: "ko", cell: t < A.ko.frames ? spanAt(A.ko.span, t / A.ko.frames) : A.ko.hold[0] };
+      if (A.knockdown) return { move: "ko", cell: spanAt(A.knockdown.span, Math.min(1, t / KD_FALL)) };   // 10b's fall held on its last down frame
+      return B ? { move: "ko", cell: A.idle.loop[0], borrowed: true } : null;
+    }
+    if (st === "win") return A.win ? { move: "win", cell: enterHold(A.win, after || 0) } : B ? idle(true) : null;
+    return B ? idle(true) : null;
   }
 
   // THE DYNAMIC CAMERA (?cam=tight): it follows the midpoint and zooms with the fighters' distance — tight when close (a stance
@@ -81,12 +126,12 @@
     g.f.forEach(function (f) {
       var hero = M.HEROES[f.hero], hb = toView(F.hurtbox(f), cam);
       var flash = !opts.reducedMotion && g.hitstop > 0 && f.state === "hitstun";
-      var man = hero.fighter && opts.fighters ? opts.fighters[hero.fighter] : null, art = artCell(g, f, man, opts.fallback);
+      var man = hero.fighter && opts.fighters ? opts.fighters[hero.fighter] : null, art = artCell(g, f, man, opts.fallback, opts.after);
       layer = "body";
       if (art) {
         // a real fighter: the cell, its feet pivot on the fighter's ground point, its stance scaled to the hurtbox's height
         var rung = opts.rung || "hi";
-        out.push({ k: "sprite", layer: "body", tag: "sprite" + f.side, side: f.side, fighter: hero.fighter, rung: rung, cell: art.cell, move: art.move, phase: art.phase || null, ko: art.move === "ko" || art.move === "knockdown",
+        out.push({ k: "sprite", layer: "body", tag: "sprite" + f.side, side: f.side, fighter: hero.fighter, rung: rung, cell: art.cell, move: art.move, phase: art.phase || null, ko: !!art.borrowed && (art.move === "ko" || art.move === "knockdown"), borrowed: !!art.borrowed,
           x: f.x / F.U - cam, y: GROUND_Y - f.y / F.U, scale: STANCE_LOGICAL / man.stance.heightPx[rung], flip: f.facing === -1, alpha: 1 });
       } else {
         var color = flash ? 0xffffff : f.state === "ko" ? 0x555555 : hero.color;

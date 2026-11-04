@@ -18,6 +18,16 @@
         "manifest.json": "efed1a73ee0004f67feb9e498984b3bbe56ef2f02580d5d60bd7151f8370b912"
       },
       "why": "ARCADE-1 enhancement test: the VFX lab's Vajra strike, reused as Indra's special placeholder (owner ruling 2026-11-04)"
+    },
+    {
+      "to": "runtime/basis/",
+      "from": "/Users/<owner>/purr-brawl/node_modules/three/examples/js/libs/basis/ (three.js r146, the owner's own project; owner approval 2026-11-04)",
+      "version": "Basis Universal transcoder as shipped with three.js 0.146.0",
+      "sha256": {
+        "basis_transcoder.js": "48a0ef319a28bf0224ee88ded34f74eaf97c175bba9eb18b47fb9720510ad6c4",
+        "basis_transcoder.wasm": "79ae97d781e10a566659c689b7bb1de91726453f55f9f5e3bcc07a4e3904070f"
+      },
+      "why": "ARCADE-1 ruling 1 (2026-11-04): transcode the fighter pages' KTX2 / Basis to the GPU's compressed format in the page; also used by tools/ktx2_decode.js to measure quality. Verified to read basisu 2.50's ETC1S and UASTC output and to emit ASTC 4x4, BC7, ETC2 RGBA and RGBA."
     }
   ]
 }

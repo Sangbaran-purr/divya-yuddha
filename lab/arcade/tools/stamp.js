@@ -9,7 +9,7 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto');
 const LAB = path.resolve(__dirname, '..');
 const DIRS = ['core', 'ui', 'runtime', 'fighters', 'effects'];
-const LOADED = /\.(js|mjs|json|css|png|webp|jpe?g|mp3)$/i;
+const LOADED = /\.(js|mjs|json|css|png|webp|jpe?g|mp3|ktx2|wasm)$/i;
 
 function walk(rel, out) {
   for (const n of fs.readdirSync(path.join(LAB, rel)).sort()) {

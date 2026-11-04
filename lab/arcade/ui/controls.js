@@ -1,6 +1,7 @@
 /* ARCADE-1 · CONTROLS (R2): keyboard and touch → the core's input bitmask. Pure functions, no DOM, so the suite tests them.
    Touch: a FLOATING STICK on the left half (it is born where the thumb lands; 8-way; a dead zone in the middle) and four
-   buttons on the right (Light, Heavy, Special, Block). Holding back also blocks — the core reads both.
+   buttons on the right (Light, Heavy, Special, Block) + a fifth, GRAB (owner ruling 3, 2026-11-04: = Light + Heavy, the throw).
+   Holding back also blocks — the core reads both. The Light + Heavy chord still throws on keyboard and touch.
    UMD: window.ARC_CONTROLS (needs ARC_FIGHT), Node require. */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("../core/fight.js"));
@@ -22,7 +23,8 @@
 
   var KEYS = {
     KeyA: B.L, ArrowLeft: B.L, KeyD: B.R, ArrowRight: B.R, KeyW: B.U, ArrowUp: B.U, KeyS: B.D, ArrowDown: B.D,
-    KeyJ: B.LT, KeyK: B.HV, KeyL: B.SP, ShiftLeft: B.BL, ShiftRight: B.BL
+    KeyJ: B.LT, KeyK: B.HV, KeyL: B.SP, ShiftLeft: B.BL, ShiftRight: B.BL,
+    KeyU: B.LT | B.HV                                          // the dedicated throw key (ruling 3): the same as J + K together
   };
   function keyBits(down) {   // down: a set/object of held key codes
     var bits = 0;
@@ -36,7 +38,8 @@
     { id: "light", label: "Light", bit: B.LT },
     { id: "heavy", label: "Heavy", bit: B.HV },
     { id: "special", label: "Special", bit: B.SP },
-    { id: "block", label: "Block", bit: B.BL }
+    { id: "block", label: "Block", bit: B.BL },
+    { id: "grab", label: "Grab", bit: B.LT | B.HV }           // ruling 3: a fifth button, the throw; never over Light or Heavy (app.css)
   ];
 
   return { DEADZONE: DEADZONE, STICK_MAX: STICK_MAX, stickBits: stickBits, KEYS: KEYS, keyBits: keyBits, BUTTONS: BUTTONS };
