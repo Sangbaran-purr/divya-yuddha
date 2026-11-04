@@ -4,7 +4,7 @@
 // Serves the repo read-only (like the static server) and takes the page's frames:
 //   POST /__capture/<name>/<i>      a JPEG frame → lab/arcade/captures/<name>/f00000.jpg   (captures/ is gitignored)
 //   POST /__capture/<name>/done     → tools/assemble_capture.py writes <name>.mp4 and <name>.gif to ~/Desktop/DY_arcade_screens/
-// Open http://localhost:<port>/lab/arcade/?capture=<name>&fx=…&fps=…&cam=…  — the page plays the demo bout and posts each frame.
+// Open http://localhost:<port>/lab/arcade/?capture=<name>&fx=…&cam=…  — the page plays the demo bout and posts each frame.
 const http = require('http'), fs = require('fs'), path = require('path'), cp = require('child_process');
 const REPO = path.resolve(__dirname, '../../..'), OUT = path.join(__dirname, '..', 'captures');
 const PORT = +process.argv[2] || 4611;

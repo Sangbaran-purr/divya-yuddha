@@ -1,7 +1,7 @@
 /* ARCADE-1 · THE LAB PAGE: setup → a best-of-three → result; or the scripted demo bout (?demo=1) and its recorder (?capture=).
    The core decides everything (core/*.js). This file reads input, steps the match at a fixed 60 Hz and draws.
    Pixi (the lab's own copy in runtime/) draws; if it can't start, a Canvas 2D floor draws the same shapes.
-   The enhancement test's switches (?fx=0/1, ?fps=12/24/48, ?cam=wide/tight) live in ui/present.js; every default is the
+   The enhancement test's switches (?fx=0/1, ?cam=wide/tight) live in ui/present.js; every default is the
    R0–R2 baseline. ?perf=1 shows frame timing; ?cpu=N stretches each frame's own work N× (a slower phone, roughly). */
 const M = window.ARC_MOVES, F = window.ARC_FIGHT, AI = window.ARC_AI, R = window.ARC_RNG, MA = window.ARC_MATCH, C = window.ARC_CONTROLS, S = window.ARC_SCENE;
 const PR = window.ARC_PRESENT, DEMO = window.ARC_DEMO;
@@ -17,7 +17,7 @@ fetch("STAMP?t=" + Date.now(), { cache: "no-store" }).then((r) => r.ok ? r.text(
   if (s && s !== STAMP && !sessionStorage.getItem("arc_reloaded_" + s)) { sessionStorage.setItem("arc_reloaded_" + s, "1"); location.reload(); }
 }).catch(() => {});
 
-// ── the real fighters: the 12 fps baseline sheets (fighters/<hero>/) or the HD sets (fighters/<hero>/f24|f48/, multi-page) ──
+// ── the real fighters: the 12 fps sheets (fighters/<hero>/) ──
 const RUNG = MODES.raw.rung === "lo" ? "lo" : MODES.raw.rung === "hi" ? "hi" :
   ((window.devicePixelRatio || 1) >= 1.5 || Math.max(innerWidth, innerHeight) >= 1000 ? "hi" : "lo");
 const FIGHTERS = {};   // fighter id → { man, imgs, cells, bytes, decoded }
@@ -29,7 +29,7 @@ async function loadFighters() {
   const ids = [...new Set(Object.values(M.HEROES).map((h) => h.fighter).filter(Boolean))];
   await Promise.all(ids.map(async (id) => {
     try {
-      const base = "fighters/" + id + "/" + (MODES.fps > 12 ? "f" + MODES.fps + "/" : "");
+      const base = "fighters/" + id + "/";
       const man = await (await fetch(base + "manifest.json?v=" + STAMP)).json();
       const Rg = man.rungs[RUNG], pages = Rg.pages || [{ sheet: Rg.sheet, size: Rg.size, bytes: Rg.bytes }];
       const imgs = await Promise.all(pages.map((p) => loadImg(base + p.sheet + "?v=" + STAMP)));

@@ -2,11 +2,10 @@
    logic tick and adds shapes; the fight core, its 60 Hz step and its frame data are untouched. Deterministic (no Math.random —
    a capture of the same bout is the same video). UMD: window.ARC_PRESENT (needs ARC_FIGHT, ARC_SCENE), Node require.
 
-   The owner's switches (?fx / ?fps / ?cam), all defaulting to the R0–R2 baseline:
+   The owner's switches (?fx / ?cam), all defaulting to the R0–R2 baseline:
      fx=1    the feel layer: hit-flash, sparks, shake + punch-zoom on heavy/special, knockback dust, landing dust, ground shadows,
              a motion trail on strike frames, slow-mo + zoom on a K.O. (in the page), the Vajra pillar on Indra's special, and
              borrowed art for moves that have no clip yet (scene.artCell fallback)
-     fps=24|48  the HD sheets (fighters/<hero>/f24 | f48), with a 3-frame cross-fade when the art changes move
      cam=tight  the dynamic camera (scene.cameraTarget) */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("../core/fight.js"), require("./scene.js"));
@@ -20,8 +19,7 @@
 
   function parseModes(search) {
     var q = {}; String(search || "").replace(/^\?/, "").split("&").forEach(function (kv) { if (!kv) return; var p = kv.split("="); q[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || ""); });
-    var fps = q.fps === "24" ? 24 : q.fps === "48" ? 48 : 12;
-    return { fx: q.fx === "1", fps: fps, cam: q.cam === "tight" ? "tight" : "wide", demo: q.demo === "1" || !!q.capture, capture: q.capture || null,
+    return { fx: q.fx === "1", fps: 12, cam: q.cam === "tight" ? "tight" : "wide", demo: q.demo === "1" || !!q.capture, capture: q.capture || null,
       perf: q.perf === "1", cpu: Math.max(1, Math.min(10, parseFloat(q.cpu) || 1)), raw: q };
   }
 
