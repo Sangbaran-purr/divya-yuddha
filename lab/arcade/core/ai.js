@@ -13,11 +13,15 @@
   "use strict";
   var B = F.BTN;
 
-  // reaction in frames (300 / 183 / 133 ms at 60 Hz); block = chance to guard a seen attack; the rest shape the play
+  // reaction in frames (450 / 183 / 150 ms at 60 Hz); block = chance to guard a seen attack; the rest shape the play.
+  // parry = chance a guard is a timed parry instead; throw = chance to throw when close at attack time (×0.35 unless the
+  // opponent is visibly blocking); tech = chance to break a throw it has SEEN start; specialFrom = the first round (0-based)
+  // it may use its special. THE GENTLER BEGINNER (owner ruling 6, 2026-11-04): reacts in 450 ms, blocks 10%, never chains or
+  // cancels, pauses 0.4–0.8 s between attacks, no special in round 1, and never parries, throws or techs (ruling 5).
   var LEVELS = {
-    beginner:   { reaction: 18, block: 0.40, duck: 0.10, jumpProj: 0.25, cancel: 0.15, special: 0.5, attackGap: [16, 40], noise: 0.20, spacing: 0.5 },
-    advanced:   { reaction: 11, block: 0.60, duck: 0.25, jumpProj: 0.5, cancel: 0.6, special: 0.8, attackGap: [12, 30], noise: 0.06, spacing: 0.8 },
-    deathmatch: { reaction: 9,  block: 0.68, duck: 0.35, jumpProj: 0.65, cancel: 0.8, special: 0.9, attackGap: [10, 26], noise: 0.0, spacing: 0.9 }
+    beginner:   { reaction: 27, block: 0.10, duck: 0.05, jumpProj: 0.15, cancel: 0, special: 0.5, attackGap: [24, 48], noise: 0.20, spacing: 0.5, parry: 0, throw: 0, tech: 0, specialFrom: 1 },
+    advanced:   { reaction: 11, block: 0.60, duck: 0.25, jumpProj: 0.5, cancel: 0.6, special: 0.8, attackGap: [12, 30], noise: 0.06, spacing: 0.8, parry: 0.15, throw: 0.30, tech: 0.4, specialFrom: 0 },
+    deathmatch: { reaction: 9,  block: 0.68, duck: 0.35, jumpProj: 0.65, cancel: 0.8, special: 0.9, attackGap: [10, 26], noise: 0.0, spacing: 0.9, parry: 0.30, throw: 0.45, tech: 0.7, specialFrom: 0 }
   };
 
   // what a player could see on screen — and nothing else
@@ -29,9 +33,11 @@
       proj: g.proj.map(function (p) { return { x: p.x, dir: p.dir, mine: p.owner === side }; }) };
   }
 
-  function createAI(level, rng) {
+  // opts.round: the round being fought (0-based) — on screen, so the AI may know it
+  function createAI(level, rng, opts) {
     var L = typeof level === "object" ? level : LEVELS[level]; if (!L) throw new Error("unknown AI level " + level);   // an object = explicit params (tests)
-    return { level: typeof level === "object" ? "custom" : level, L: L, rng: rng, hist: [], guardFor: null, guardChoice: "none", jumpedFor: null, projChoice: "none", nextAttack: 0, lastPress: 0 };
+    return { level: typeof level === "object" ? "custom" : level, L: L, rng: rng, round: (opts && opts.round) | 0, hist: [], guardFor: null, guardChoice: "none",
+      parryAt: null, jumpedFor: null, projChoice: "none", techFor: null, techChoice: false, nextAttack: 0, lastPress: 0 };
   }
 
   function seen(ai, obs) {
@@ -51,6 +57,14 @@
     function press(b) { if (!(ai.lastPress & b)) bits |= b; }   // a press is an edge: release first if it was held
 
     if (me.state === "ko" || me.state === "win") return finish(ai, 0);
+    // grabbed: break the throw only if it has SEEN the throw begin (the reaction delay makes this tight), decided once per throw
+    if (me.state === "grabbed") {
+      var seenThrow = (op.state === "attack" && op.move === "throw") || op.state === "grab";
+      if (seenThrow) { var tid = "t@" + (v.oppFrame - (op.state === "grab" ? 0 : op.mf)); if (ai.techFor === null) { ai.techFor = tid; ai.techChoice = ai.rng() < (L.tech || 0); } if (ai.techChoice) press(B.LT | B.HV); }
+      return finish(ai, bits);
+    }
+    ai.techFor = null;
+    if (me.state === "parry") { ai.nextAttack = 0; return finish(ai, 0); }   // a parry: punish as soon as it is free
 
     // in our own attack: cancel on contact if the level knows how
     if (me.state === "attack") {
@@ -61,10 +75,11 @@
       }
       return finish(ai, bits);
     }
-    if (me.state === "hitstun" || me.state === "jump") return finish(ai, 0);
+    if (me.state === "hitstun" || me.state === "jump" || me.state === "knockdown" || me.state === "getup" || me.state === "parried" ||
+      me.state === "grab" || me.state === "throwrec" || me.state === "tech") return finish(ai, 0);
 
     // a seen threat: the opponent's attack in startup/active and in reach → guard (decided once per attack)
-    var threat = op.state === "attack" && op.move && op.mf < M.MOVES[op.move].startup + M.MOVES[op.move].active;
+    var threat = op.state === "attack" && op.move && op.move !== "throw" && op.mf < M.MOVES[op.move].startup + M.MOVES[op.move].active;
     var reach = threat ? (op.move === "special" && M.ARCH[op.arch].special === "rush" ? 260 : M.MOVES[op.move].box.x1 + M.BODY.halfW + 20) : 0;
     if (threat && dist <= reach) {
       var id = op.move + "@" + (v.oppFrame - op.mf);
@@ -72,8 +87,11 @@
         ai.guardFor = id;
         var r = ai.rng();
         ai.guardChoice = r < L.block ? (op.move === "heavy" && ai.rng() < L.duck ? "duck" : "guard") : "none";
+        // a parry: the guard plus a Block tap timed from the move's known startup — only possible if there is still time
+        var impact = v.oppFrame - op.mf + M.MOVES[op.move].startup;
+        ai.parryAt = ai.guardChoice === "guard" && (L.parry || 0) > 0 && ai.rng() < L.parry && v.frame <= impact - 3 ? impact - 3 : null;
       }
-      if (ai.guardChoice === "guard") return finish(ai, back);
+      if (ai.guardChoice === "guard") { if (ai.parryAt !== null && v.frame >= ai.parryAt) { press(B.BL); ai.parryAt = null; } return finish(ai, back | bits); }
       if (ai.guardChoice === "duck") return finish(ai, B.D);
     }
     if (me.state === "blockstun") return finish(ai, back);
@@ -92,13 +110,15 @@
 
     // neutral game
     var arch = M.ARCH[me.arch];
-    var canSpecial = me.meter >= M.MOVES.special.cost && v.frame >= ai.nextAttack;
+    var canSpecial = me.meter >= M.MOVES.special.cost && v.frame >= ai.nextAttack && ai.round >= (L.specialFrom || 0);
     if (canSpecial && arch.special === "projectile" && dist > 220 && ai.rng() < L.special * 0.05) { ai.nextAttack = v.frame + range(ai, L.attackGap[0], L.attackGap[1]); press(B.SP); return finish(ai, bits); }
     var want = arch.special === "projectile" && ai.rng() < L.spacing ? 90 : 75;
     if (dist > want + 25) return finish(ai, fwd);
     if (v.frame >= ai.nextAttack) {
       ai.nextAttack = v.frame + range(ai, L.attackGap[0], L.attackGap[1]);
-      if (canSpecial && arch.special === "rush" && ai.rng() < L.special * 0.4) press(B.SP);
+      var blocking = op.state === "block" || op.state === "cblock";
+      if ((L.throw || 0) > 0 && dist <= M.MOVES.throw.range - 5 && ai.rng() < L.throw * (blocking ? 1 : 0.35)) press(B.LT | B.HV);
+      else if (canSpecial && arch.special === "rush" && ai.rng() < L.special * 0.4) press(B.SP);
       else if (dist <= 100 && ai.rng() < 0.4) press(B.HV);
       else press(B.LT);
       return finish(ai, bits);

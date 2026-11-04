@@ -24,7 +24,7 @@
     var a = M.ARCH[hero.arch];
     return { side: side, hero: heroId, arch: hero.arch, x: px(side === 0 ? 520 : 920), y: 0, vx: 0, vy: 0, facing: side === 0 ? 1 : -1,
       hp: a.hp, hpMax: a.hp, meter: 0, state: "idle", move: null, mf: 0, connected: false, hitDone: false, chain: 0,
-      stun: 0, prev: 0, buf: { light: -1, heavy: -1, special: -1, up: -1 } };
+      stun: 0, prev: 0, buf: { light: -1, heavy: -1, special: -1, up: -1 }, parryWin: -1, parryLock: 0 };
   }
 
   function newFight(opts) {
@@ -39,7 +39,7 @@
   function moveOf(f, name) {
     name = name || f.move;
     var a = arch(f), base = M.MOVES[name];
-    if (name === "special" || !(a.reachPx || a.recoveryAdd)) return base;
+    if ((name !== "light" && name !== "heavy") || !(a.reachPx || a.recoveryAdd)) return base;   // reach and recovery touch light and heavy only
     var k = f.arch + ":" + name;
     if (!MOVE_OF[k]) {
       var m = JSON.parse(JSON.stringify(base));
@@ -56,6 +56,14 @@
   function fwdBit(f) { return f.facing === 1 ? BTN.R : BTN.L; }
   function backBit(f) { return f.facing === 1 ? BTN.L : BTN.R; }
   function guarding(f, inp) { return !!(inp & BTN.BL) || !!(inp & backBit(f)); }
+  // the states nothing can touch: down, rising, or locked in a throw (ruling 5: the wake-up is invulnerable; no OTG in v1)
+  var INVUL = { knockdown: 1, getup: 1, grab: 1, grabbed: 1 };
+  // the states that count down on f.stun and then free the fighter (knockdown → getup; grab/grabbed end in resolveGrabs)
+  var TIMED = { knockdown: 1, getup: 1, parry: 1, parried: 1, grab: 1, grabbed: 1, throwrec: 1, tech: 1 };
+  // who a throw can take: on the ground and not stunned, down, rising, in the air, parrying or already in a throw
+  var UNTHROWABLE = { hitstun: 1, blockstun: 1, knockdown: 1, getup: 1, grab: 1, grabbed: 1, jump: 1, ko: 1, win: 1, tech: 1, parry: 1, throwrec: 1 };
+  function throwable(f) { return grounded(f) && !UNTHROWABLE[f.state]; }
+  function inThrowRange(g, f) { var o = g.f[1 - f.side]; return Math.abs(o.x - f.x) <= px(M.MOVES.throw.range); }
 
   // the 4-frame input buffer: rising edges only, so holding a button never repeats it
   // (during hit-stop a press is recorded but does not age: a cancel pressed in the freeze is still there when it ends)
@@ -64,6 +72,9 @@
       if ((inp & CMD[k]) && !(f.prev & CMD[k])) f.buf[k] = 0;
       else if (f.buf[k] >= 0 && !frozen) { f.buf[k]++; if (f.buf[k] >= BUFFER) f.buf[k] = -1; }
     }
+    // the parry window (ruling 5): a fresh press of Block opens it unless the lockout from the last press is still running
+    if (!frozen) { if (f.parryWin >= 0) { f.parryWin++; if (f.parryWin >= M.PARRY.window) f.parryWin = -1; } if (f.parryLock > 0) f.parryLock--; }
+    if ((inp & BTN.BL) && !(f.prev & BTN.BL) && f.parryLock <= 0) { f.parryWin = 0; f.parryLock = M.PARRY.lockout; }
     f.prev = inp;
   }
   function take(f, k) { if (f.buf[k] >= 0) { f.buf[k] = -1; return true; } return false; }
@@ -97,12 +108,21 @@
   function updateFighter(g, f, inp) {
     var a = arch(f);
     if (f.state === "ko" || f.state === "win") { f.vx = 0; return; }
+    if (TIMED[f.state]) {
+      if (f.stun > 0) f.stun--;
+      if (f.stun > 0 || !grounded(f) || f.state === "grab" || f.state === "grabbed") return;   // a throw ends in resolveGrabs
+      if (f.state === "knockdown") { f.state = "getup"; f.stun = M.KNOCKDOWN.getup; f.vx = 0; g.events.push({ t: "getup", side: f.side, frame: g.frame }); return; }
+      f.state = "idle"; f.stun = 0; f.vx = 0;
+      return;
+    }
     if (f.state === "hitstun" || f.state === "blockstun") {
       f.stun--; if (f.stun <= 0 && grounded(f)) { f.state = "idle"; f.stun = 0; }
       return;
     }
     if (f.state === "attack") {
       var m = moveOf(f);
+      // a light that started at most 2 frames ago becomes a throw when Heavy joins it in range (the press-both leniency)
+      if (f.move === "light" && f.mf <= 1 && has(f, "heavy") && inThrowRange(g, f)) { take(f, "heavy"); f.buf.light = -1; startMove(g, f, "throw"); return; }
       if (cancelOpen(f)) {
         var allowed = m.cancel.filter(function (k) { return !(k === "light" && f.chain >= M.CHAIN_MAX); });
         var next = pickBuffered(f, allowed);
@@ -115,7 +135,8 @@
       return;
     }
     if (f.state === "jump") return;            // no air attacks in v1; landing returns to idle in physics
-    // actionable on the ground
+    // actionable on the ground. Light + Heavy together = the throw (ruling 5)
+    if (has(f, "light") && has(f, "heavy")) { f.buf.light = -1; f.buf.heavy = -1; startMove(g, f, "throw"); return; }
     var atk = pickBuffered(f, ["special", "heavy", "light"]);
     if (atk && startMove(g, f, atk)) return;
     if (inp & BTN.U) {
@@ -145,7 +166,7 @@
         f.y += f.vy; f.vy -= G;
         if (f.y <= 0) { f.y = 0; f.vy = 0; if (f.state === "jump") { f.state = "idle"; f.vx = 0; } }
       }
-      if (f.state === "hitstun" || f.state === "blockstun") f.vx = f.vx > 0 ? Math.max(0, f.vx - FRICTION) : Math.min(0, f.vx + FRICTION);
+      if (f.state === "hitstun" || f.state === "blockstun" || f.state === "knockdown" || f.state === "parried" || f.state === "tech") f.vx = f.vx > 0 ? Math.max(0, f.vx - FRICTION) : Math.min(0, f.vx + FRICTION);
     });
     // walls
     g.f.forEach(function (f) { f.x = Math.max(px(WALL), Math.min(px(STAGE_W - WALL), f.x)); });
@@ -181,6 +202,7 @@
   function hitbox(f) {
     if (!isActive(f) || f.hitDone) return null;
     if (f.move === "special" && arch(f).special === "projectile") return null;   // the projectile carries the hit
+    if (f.move === "throw") return null;                                          // a throw grabs (collide), it never hits
     var b = moveOf(f).box;
     var xa = f.x + f.facing * px(b.x0), xb = f.x + f.facing * px(b.x1);
     return { x0: Math.min(xa, xb), x1: Math.max(xa, xb), y0: f.y + px(b.y0), y1: f.y + px(b.y1) };
@@ -193,18 +215,40 @@
     var hits = [];
     g.f.forEach(function (att, i) {
       var def = g.f[1 - i], hb = hitbox(att);
-      if (hb && overlap(hb, hurtbox(def))) hits.push({ att: att, def: def, move: moveOf(att), mul: arch(att).dmg, dir: att.facing });
+      if (hb && !INVUL[def.state] && overlap(hb, hurtbox(def))) hits.push({ att: att, def: def, move: moveOf(att), name: att.move, mul: arch(att).dmg, dir: att.facing, wasStun: def.state === "hitstun" });
     });
     g.proj = g.proj.filter(function (p) {
       var def = g.f[1 - p.owner];
-      if (def.state === "ko") return true;
-      if (overlap(projBox(p), hurtbox(def))) { hits.push({ att: g.f[p.owner], def: def, move: M.MOVES.special, mul: p.dmgMul, dir: p.dir, proj: true }); return false; }
+      if (def.state === "ko" || INVUL[def.state]) return true;
+      if (overlap(projBox(p), hurtbox(def))) { hits.push({ att: g.f[p.owner], def: def, move: M.MOVES.special, name: "special", mul: p.dmgMul, dir: p.dir, proj: true }); return false; }
       return true;
     });
+    // throws grab on their active frames, unless the thrower is being hit this frame; two grabs on one frame break each other
+    var grabs = [];
+    g.f.forEach(function (att, i) {
+      var def = g.f[1 - i];
+      if (att.state === "attack" && att.move === "throw" && isActive(att) && !att.hitDone && grounded(att) && throwable(def) &&
+        inThrowRange(g, att) && !hits.some(function (h) { return h.def === att; })) grabs.push({ att: att, def: def });
+    });
+    if (grabs.length === 2) techBoth(g, grabs[0].att, grabs[0].def);
+    else if (grabs.length === 1) {
+      var ga = grabs[0].att, gd = grabs[0].def;
+      ga.hitDone = true; ga.state = "grab"; ga.stun = M.MOVES.throw.hold; ga.vx = 0;
+      gd.state = "grabbed"; gd.stun = M.MOVES.throw.hold; gd.vx = 0; gd.move = null; gd.mf = 0;
+      g.events.push({ t: "grab", side: gd.side, by: ga.side, frame: g.frame });
+    }
     var stop = 0;
     hits.forEach(function (h) {
       var att = h.att, def = h.def, m = h.move;
       if (!h.proj) { att.hitDone = true; att.connected = true; }
+      // THE PARRY (ruling 5): a hit landing inside the defender's parry window does nothing to it; the attacker is pushed back and stunned
+      if (grounded(def) && (actionable(def) || def.state === "blockstun") && def.parryWin >= 0) {
+        def.parryWin = -1; def.state = "parry"; def.stun = M.PARRY.recovery; def.vx = 0; def.move = null; def.mf = 0;
+        if (!h.proj) { att.state = "parried"; att.stun = M.PARRY.stunAttacker; att.move = null; att.mf = 0; att.connected = false; att.vx = -h.dir * px(M.PARRY.push); }
+        g.events.push({ t: "parry", side: def.side, by: att.side, move: h.name, proj: !!h.proj, frame: g.frame });
+        stop = Math.max(stop, M.PARRY.hitstop);
+        return;
+      }
       var canGuard = grounded(def) && (actionable(def) || def.state === "blockstun") && guarding(def, inputs[def.side]);
       if (canGuard) {
         var chip = Math.floor(m.chip * h.mul / 100);
@@ -216,15 +260,42 @@
       } else {
         var dmg = Math.floor(m.dmg * h.mul / 100);
         def.hp = Math.max(0, def.hp - dmg);
-        def.state = "hitstun"; def.stun = m.hitstun; def.move = null; def.mf = 0; def.chain = 0;
-        def.vx = h.dir * px(m.push);
+        // 10b: a special, or a heavy that finishes a combo (it lands on a defender already in hitstun), knocks down
+        var down = h.name === "special" || (h.name === "heavy" && h.wasStun);
+        def.state = down ? "knockdown" : "hitstun"; def.stun = down ? M.KNOCKDOWN.fall : m.hitstun; def.move = null; def.mf = 0; def.chain = 0;
+        def.vx = h.dir * px(down ? M.KNOCKDOWN.push : m.push);
         att.meter = Math.min(M.METER.max, att.meter + M.METER.onHit);
         def.meter = Math.min(M.METER.max, def.meter + M.METER.onTaken);
-        g.events.push({ t: "hit", side: def.side, by: att.side, move: h.proj ? "special" : att.move, dmg: dmg, frame: g.frame });
+        g.events.push({ t: "hit", side: def.side, by: att.side, move: h.name, dmg: dmg, frame: g.frame });
+        if (down) g.events.push({ t: "knockdown", side: def.side, by: att.side, move: h.name, frame: g.frame });
       }
       stop = Math.max(stop, m.hitstop);
     });
     g.hitstop = stop;
+  }
+
+  function techBoth(g, a, d) {   // a throw broken: both pushed apart, no damage
+    var dir = d.x > a.x ? 1 : d.x < a.x ? -1 : a.facing;
+    [a, d].forEach(function (f) { f.state = "tech"; f.stun = M.MOVES.throw.techStun; f.move = null; f.mf = 0; f.hitDone = true; });
+    a.vx = -dir * px(M.MOVES.throw.techPush); d.vx = dir * px(M.MOVES.throw.techPush);
+    g.events.push({ t: "tech", side: d.side, by: a.side, frame: g.frame });
+  }
+  // the grab's hold: the grabbed side pressing Light + Heavy breaks free; when the hold runs out the throw lands
+  function resolveGrabs(g) {
+    g.f.forEach(function (att, i) {
+      var def = g.f[1 - i];
+      if (att.state !== "grab" || def.state !== "grabbed") return;
+      if (has(def, "light") && has(def, "heavy")) { def.buf.light = -1; def.buf.heavy = -1; techBoth(g, att, def); return; }
+      if (att.stun > 0) return;
+      var T = M.MOVES.throw, dmg = Math.floor(T.dmg * arch(att).dmg / 100);
+      def.hp = Math.max(0, def.hp - dmg);
+      def.state = "knockdown"; def.stun = M.KNOCKDOWN.fall; def.vx = att.facing * px(M.KNOCKDOWN.push);
+      att.state = "throwrec"; att.stun = T.after; att.move = null; att.mf = 0;
+      att.meter = Math.min(M.METER.max, att.meter + M.METER.onHit);
+      def.meter = Math.min(M.METER.max, def.meter + M.METER.onTaken);
+      g.events.push({ t: "hit", side: def.side, by: att.side, move: "throw", dmg: dmg, frame: g.frame });
+      g.events.push({ t: "knockdown", side: def.side, by: att.side, move: "throw", frame: g.frame });
+    });
   }
 
   function finish(g, winner, reason) {
@@ -243,6 +314,7 @@
     g.frame++;
     if (g.hitstop > 0) { g.hitstop--; return g; }   // hit-stop: both fighters freeze; the buffer still listens
     g.f.forEach(function (f, i) { updateFighter(g, f, inputs[i] | 0); });
+    resolveGrabs(g);
     physics(g);
     collide(g, inputs);
     var dead = g.f.map(function (f) { return f.hp <= 0; });
@@ -265,5 +337,5 @@
 
   return { U: U, STAGE_W: STAGE_W, WALL: WALL, PUSH: PUSH, BUFFER: BUFFER, BTN: BTN, newFight: newFight, step: step,
     snapshot: snapshot, restore: restore, hash: hash, hurtbox: hurtbox, hitbox: hitbox, projBox: projBox, isActive: isActive,
-    crouching: crouching, actionable: actionable, cancelOpen: cancelOpen, moveOf: moveOf };
+    crouching: crouching, actionable: actionable, cancelOpen: cancelOpen, moveOf: moveOf, throwable: throwable, INVUL: INVUL };
 });

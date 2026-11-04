@@ -73,6 +73,8 @@ Checked against each actor pack in `lab/vfx-manifestation/actors/`. A v1 fighter
 
 Gameplay runs on fixed 60 Hz logic frames and the art is stretched onto those phases, so fight timing never depends on what a clip produced. Animation plays at 12 fps. The source of truth is `lab/arcade/core/moves.js`.
 
+**15 moves per Hero** (owner ruling 5, 2026-11-04): the original 12, plus **10b** knockdown + get-up, **13** parry and **14** throw. A Hero being thrown plays its own 10b. The frame data for the three new moves is my proposal, for your ruling.
+
 | Move | Cells | Startup / active / recovery (frames) | Damage, effect |
 |---|---|---|---|
 | Idle | 8, loop | — | |
@@ -85,8 +87,11 @@ Gameplay runs on fixed 60 Hz logic frames and the art is stretched onto those ph
 | Special (divine weapon) | 14 | 16 / 8 / 26 | 200, chip 40 through a block, costs a full meter. A low projectile (balanced, zoner) or a charge (rushdown, tank) |
 | Block | 3 | Instant | Hold away from the opponent, or the Block button; no chip on light or heavy |
 | Hit reaction | 4 | — | Light plays 2 cells, heavy all 4 |
+| **10b** Knockdown + get-up | 8 + 6 | Down 36, rising 20 (after the hit's hit-stop) | Caused by any special that hits, any throw, and a heavy that **finishes a combo** (it lands on a Hero already in hitstun: light → heavy). A raw heavy only staggers. **Invulnerable** while down and rising: no hit, shot or throw lands (no off-the-ground combos) |
 | KO | 10 | — | Then the dissolve |
 | Win | 10 | — | |
+| **13** Parry | 5 | Window 6, lockout 40; parrier recovers 6, attacker stunned 30 | A **fresh tap of Block** opens a 6-frame window; a hit landing in it does nothing (no damage, no chip), hit-stop 10, the attacker is pushed back ~10 px and stunned. The parrier is free well before the attacker, so even a heavy (12-frame startup) is a guaranteed punish. Every tap starts a 40-frame lockout, so mashing parries at most one tap in 40 frames. A parried shot simply vanishes. Throws can't be parried |
+| **14** Throw | 10 | 5 / 2 / 20 on a whiff; on a grab: hold 7, then thrower recovers 16 | **Light + Heavy together** (a light at most 2 frames old converts, in range). Range 90 px from the centre. **Unblockable:** it takes a Hero standing, walking, crouching, blocking, parried or mid-attack; never one in hit/blockstun, down, rising, in the air, parrying or already in a throw. 120 damage × the archetype, then a knockdown. **Throw-tech:** Light + Heavy during the 7-frame hold breaks it, both pushed apart, no damage. Pressing too early starts your own throw, which is grabbed in its startup. Two throws grabbing on one frame break each other |
 
 **Combat rules:**
 - **Cancels**, only on contact (hit or block), from the first active frame through 4 frames of recovery:
@@ -117,9 +122,15 @@ Indra and Meghnad are ruled. The other 11 are ruled as their clips arrive. Meghn
 
 - **What it sees:** only `observe()`, the screen: positions, facing, health, meter, each fighter's state and current move frame, the shots and the clock.
 - **What it never sees:** the player's input, buffered presses or contact flag.
-- **Reaction delay:** it sees the opponent as they were a reaction time ago (Beginner 18 frames ≈ 300 ms, Advanced 11 ≈ 183 ms, Death Match 9 ≈ 150 ms).
+- **Reaction delay:** it sees the opponent as they were a reaction time ago (Beginner 27 frames = 450 ms, Advanced 11 ≈ 183 ms, Death Match 9 = 150 ms).
 - **Output:** the same input bitmask a player makes, through the same buffer.
 - **No stat advantage at any level.** Death Match is a sharper player: it blocks, ducks and cancels more and attacks sooner.
+- **The new moves, honestly:**
+  - **Parry:** it may choose a timed parry instead of a guard. It times the tap from the move's known startup, counted from the frame it saw the move start, so it can only parry what it saw in time: heavies and specials, never a light.
+  - **Throw:** at attack time, when close; much more likely when it sees the opponent blocking.
+  - **Tech:** it can break a throw only if it has *seen* the throw begin, through its reaction delay. That is tight: Advanced barely makes it, Death Match does.
+  - Levels: Advanced parries 15%, throws 30%, techs 40%; Death Match 30%, 45%, 70%.
+- **The gentler Beginner (ruling 6):** reacts in 450 ms, blocks 10%, never cancels or chains, waits 0.4–0.8 s between attacks, uses no special in round 1, and **never parries, throws or techs** (ruling 5). The round is on screen, so it may know it.
 
 ## The Kling clip card (one Hero; Indra shown, Meghnad the same)
 
@@ -149,8 +160,13 @@ Every prompt starts: *"Static locked camera, side view, no camera movement, no z
 | 8 | Special | raises the weapon, divine energy gathers, hurls or unleashes it forward, returns to stance | Yes |
 | 9 | Block | raises both arms to guard and holds | No |
 | 10 | Hit reaction | flinches back from a blow to the chest, recovers to stance | Yes |
+| 10b | Knockdown + get-up | is struck hard and thrown back off the feet, lands flat on the back, lies a beat, then pushes up off the ground and rises back into the fighting stance | Yes |
 | 11 | KO | staggers and falls to the ground, lies still | No |
 | 12 | Win | raises the weapon in triumph, holds | No |
+| 13 | Parry | snaps the weapon across the body to deflect a blow coming from the front, a sharp short recoil, returns to stance | Yes |
+| 14 | Throw | steps in, seizes an unseen opponent at chest height with the free hand and hurls them over the shoulder to the ground behind, mimed with no second figure, returns to stance | Yes |
+
+**Shoot order:** the original 12 first (1–12, in the order above), then **10b, 13, 14**. The fight core already plays all three as boxes (and, with fx, borrowed art), so they can arrive in any order without blocking anything.
 
 **Step 2: curate.** Reject a clip for any of these:
 - the camera drifts or zooms;
@@ -160,7 +176,7 @@ Every prompt starts: *"Static locked camera, side view, no camera movement, no z
 
 Expect about 1.5 takes per clip.
 
-**Step 3: drop.** Put the clips in `lab/arcade/sources/<hero>/` (gitignored), named `<hero>_01_idle.mp4` … `<hero>_12_win.mp4`.
+**Step 3: drop.** Put the clips in `lab/arcade/sources/<hero>/` (gitignored), named `<hero>_01_idle.mp4` … `<hero>_12_win.mp4`, and `<hero>_10b_knockdown.mp4`, `<hero>_13_parry.mp4`, `<hero>_14_throw.mp4`.
 
 From there the fighter tool (R3) does the rest, and the owner reviews a contact sheet:
 - matte the clips;
@@ -256,6 +272,52 @@ Worth a ruling:
 2. If smoothness is wanted, use 24 fps on the strike frames only (a handful of cells per move), not across the whole set.
 3. **Still open:** up close the art overlaps the opponent (Meghnad's spear passes through), because the hitboxes and push boxes are template-sized. The camera makes this more visible. This is the reach/spacing ruling from the clip test.
 
+## Rulings after the enhancement test (owner, 2026-11-04)
+
+| # | Ruling | Outcome |
+|---|---|---|
+| 1 | fx on and the tight camera become the defaults; the switches stay; 12 fps | Done. `?fx=0` and `?cam=wide` turn them off; `?fx=0&cam=wide` is the exact R0–R2 picture |
+| 2 | 24 fps strike frames for light/heavy/special, only if the full-moveset projection fits the caps | **Not shipped: neither rung fits, even at 12 fps.** See the projection below |
+| 3 | The 3-frame cross-fade at 12 fps too | Done, as part of fx (so `?fx=0` stays the baseline) |
+| 4 | Drop the 48 fps and full-set 24 fps sheets; remove the switches | Done in its own commit (74a6940); `?fps=` is ignored. The tracked lab total fell from 20.11 MB to about 3 MB |
+| 5 | 15 moves: knockdown + get-up, parry, throw, with frame data and AI | Done, as placeholders until the clips arrive. Frame data proposed in the template table above |
+| 6 | A gentler Beginner; re-run the ladder | Done (the AI section). Ladder: Advanced beats Beginner 99.5%, Death Match beats Advanced 77.4%, Death Match beats Beginner 99.8%; mirror 53.7% (side 0 47.4%). A new-player stand-in (400 ms reaction, blocks 25%, rarely cancels) wins **98.5%** of rounds against the Beginner and 13.6% against Advanced |
+| 7 | Meghnad's new stance, idle and light are being reshot (spear upright over the shoulder) | His current sheets stay as placeholders |
+| 8 | The clip card gets 10b, 13, 14 and the shoot order | Done (the clip card above) |
+
+### The memory projection (ruling 2), `lab/arcade/tools/budget.js`
+
+The model, every input named:
+- **Memory per cell:** decoded memory per cell, measured from the shipped sheets: whole page area × 4 bytes ÷ cells, so packing waste counts.
+- **Idle and light:** measured. The real idle loops are 28–29 cells, not the template's 8.
+- **Every other move:** from the template. Walk back is 0 (walk forward reversed).
+- **Strike frames:** 24 fps from 5 frames before the first active frame to 5 frames after the last. That adds +8 cells per fighter: light +2, heavy +3, special +3.
+- **Arena:** the four layers below. Lo is half the size on each side.
+- **Effects:** the Vajra atlas as shipped, loaded at either rung today.
+
+Two fighters (Indra + Meghnad), arena and effects:
+
+| | lo (cap 48 MB) | hi (cap 96 MB) |
+|---|---|---|
+| Memory per cell, Indra / Meghnad | 0.135 / 0.205 MB | 0.437 / 0.571 MB |
+| Fighters, 12 moves | 35.9 MB | 106.4 MB |
+| Fighters, 15 moves | 45.8 MB | 135.7 MB |
+| Arena + Vajra | 7.0 + 17.7 MB | 28.0 + 17.7 MB |
+| **Total, 15 moves at 12 fps** | **70.4 MB: over** | **181.3 MB: over** |
+| Total, + 24 fps strike frames | 73.1 MB: over | 189.4 MB: over |
+| With two levers: Meghnad packs like Indra, a half-size Vajra atlas on lo | 47.5 MB (49.7 with strike frames: over) | 162.8 MB |
+
+**Decision:** no strike frames. Both rungs stay at 12 fps everywhere, and the suite pins it (M1).
+
+**Finding that needs a ruling:** the moveset itself is over both caps at 12 fps. It was over at 12 moves too: lo 60.6 MB, hi 152.1 MB. The enhancement test's "12 fps hi fits, at the edge" counted fighters only, assumed about 90 cells, and left out the arena and effects. Levers, roughly in order of effect:
+1. **Compressed GPU textures** (KTX2 / Basis → ASTC or ETC2 on the phone): about 4× less memory per sheet, so hi becomes about 45 MB. It needs a transcoder in the page.
+2. **Meghnad's reshoot** (spear upright) should pack like Indra: about −10 MB lo, −19 MB hi.
+3. **A lo Vajra atlas** at half size: about −13 MB lo.
+4. **A shorter idle loop:** 28 cells → 12 saves about 12% of every fighter.
+5. **A smaller hi stance:** 320 → 256 px saves about 36% at hi.
+
+Lo fits with levers 2 + 3, and only just (47.5 of 48). Hi fits only with lever 1, or with several of 2–5 together.
+
 ## The size budget (ruling 7)
 
 | | Target | Cap |
@@ -264,7 +326,7 @@ Worth a ruling:
 | One fighter, low (192 px, one 2048×2048 sheet) | 0.5 MB | 0.7 MB |
 | Arena (4 layers) | 0.6 MB high / 0.3 MB low | 0.9 MB |
 | One match (6 fighters + arena; audio reused from the game) | 4 MB low / 8.5 MB high | 6 MB / 11 MB |
-| Graphics memory at once (2 fighters + arena + effects) | ≤48 MB low / ≤96 MB high | — |
+| Graphics memory at once (2 fighters + arena + effects) | ≤48 MB low / ≤96 MB high | — (projected over at both rungs today: see the memory projection above) |
 | Repo, all 13 v1 fighters | about 22 MB | Pages watch item |
 
 Only the two fighters in the current round stay in graphics memory; the next pair loads during the round-end banner.
@@ -289,7 +351,7 @@ The view is 960×540 logical, on a 1440-px-wide stage.
 | R0 | Page, own Pixi copy, stamp, test runner, lab-law check | Built |
 | R1 | The deterministic fight core + box fighters, keyboard play, the frame data above, cancels, hit-stop, block, crouch vs high, meter, health; the rounds stub | Built |
 | R2 | Touch controls, the 4-frame buffer, the three AI levels under the honest-AI rule, the headless ladder and mirror | Built |
-| R3 | Indra as a real fighter: the fighter tool, the hitbox editor | Clip test and the enhancement test done (idle + light for Indra and Meghnad; fx, camera, 24/48 fps measured); the full 12-clip set and the hitbox editor follow |
+| R3 | Indra as a real fighter: the fighter tool, the hitbox editor | Clip test, enhancement test and its rulings done (idle + light for Indra and Meghnad; fx + tight camera default; 15-move template as placeholders; gentler Beginner); the full 15-clip set and the hitbox editor follow |
 | R4 | Meghnad on foot + the arena + the specials (the Vajra effect reused) + sound | |
 | R5 | The 3-Hero lineup, best of three, HUD, timer, pause, reduced motion (a third real Hero or a box stand-in) | |
 | R6 | Recovery + coins on a fake clock (ruling 5) | |

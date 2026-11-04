@@ -2,24 +2,26 @@
    logic tick and adds shapes; the fight core, its 60 Hz step and its frame data are untouched. Deterministic (no Math.random —
    a capture of the same bout is the same video). UMD: window.ARC_PRESENT (needs ARC_FIGHT, ARC_SCENE), Node require.
 
-   The owner's switches (?fx / ?cam), all defaulting to the R0–R2 baseline:
-     fx=1    the feel layer: hit-flash, sparks, shake + punch-zoom on heavy/special, knockback dust, landing dust, ground shadows,
-             a motion trail on strike frames, slow-mo + zoom on a K.O. (in the page), the Vajra pillar on Indra's special, and
-             borrowed art for moves that have no clip yet (scene.artCell fallback)
-     cam=tight  the dynamic camera (scene.cameraTarget) */
+   The owner's switches (ruling 1 of 2026-11-04: fx and the tight camera are the DEFAULT; the switches stay for comparison —
+   ?fx=0&cam=wide is the exact R0–R2 picture):
+     fx (default on; fx=0 off)  the feel layer: hit-flash, sparks, shake + punch-zoom on heavy/special, knockback dust, landing
+             dust, ground shadows, a motion trail on strike frames, slow-mo + zoom on a K.O. (in the page), the Vajra pillar on
+             Indra's special, borrowed art for moves that have no clip yet (scene.artCell fallback), the parry / tech / knockdown
+             touches, and a 3-frame cross-fade when the art changes move (ruling 3: at 12 fps too)
+     cam (default tight; cam=wide the fixed camera)  the dynamic camera (scene.cameraTarget) */
 (function (root, factory) {
   if (typeof module === "object" && module.exports) module.exports = factory(require("../core/fight.js"), require("./scene.js"));
   else root.ARC_PRESENT = factory(root.ARC_FIGHT, root.ARC_SCENE);
 })(this, function (F, S) {
   "use strict";
   var SPARK = { indra: 0xffd66b, meghnad: 0x8a1020, other: 0xffffff };   // gold for the Vajra, dark red for the spear
-  var FADE = 3;                // logic frames a move change cross-fades over (fps ≥ 24)
+  var FADE = 3;                // logic frames a move change cross-fades over (ruling 3: on the 12 fps sheets, with fx)
   var TRAIL = 2;               // ghosts behind a strike
   var VAJRA = { loop: [10, 20], burst: [21, 35], anchor: { x: 223, y: 242.1 }, height: 1.25 };   // cells of the copied clip; pillar = 1.25 stances tall
 
   function parseModes(search) {
     var q = {}; String(search || "").replace(/^\?/, "").split("&").forEach(function (kv) { if (!kv) return; var p = kv.split("="); q[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || ""); });
-    return { fx: q.fx === "1", fps: 12, cam: q.cam === "tight" ? "tight" : "wide", demo: q.demo === "1" || !!q.capture, capture: q.capture || null,
+    return { fx: q.fx !== "0", fps: 12, cam: q.cam === "wide" ? "wide" : "tight", demo: q.demo === "1" || !!q.capture, capture: q.capture || null,
       perf: q.perf === "1", cpu: Math.max(1, Math.min(10, parseFloat(q.cpu) || 1)), raw: q };
   }
 
@@ -49,13 +51,21 @@
     var fx = P.modes.fx;
     evs.forEach(function (e) {
       if (!fx) return;
+      if (e.t === "parry") {   // a bright ring at the parrier's front edge and a short shake (ruling 5: 13 the parry)
+        var pd = g.f[e.side], pa = g.f[e.by], pp = hitPoint(g, pd, pa);
+        spawn(P, 18, pp, { color: 0xe6fbff, speed: 5, life: 14, r: 2.4, glow: true, g: 0 });
+        P.shake = Math.max(P.shake, 8); P.shakeAmp = Math.max(P.shakeAmp, 4);
+        return;
+      }
+      if (e.t === "tech") { var ta = g.f[e.by], td = g.f[e.side]; spawn(P, 10, { x: (ta.x + td.x) / 2 / F.U, h: 120 }, { color: 0xc8c8c8, speed: 4, life: 12, r: 2.2, glow: true, g: 0.2 }); return; }
+      if (e.t === "knockdown") { var kf = g.f[e.side]; spawn(P, 12, { x: kf.x / F.U, h: 2 }, { color: 0xb59a6a, speed: 3.5, life: 20, r: 6, a0: 0, spread: Math.PI, g: -0.04 }); return; }
       if (e.t === "hit" || e.t === "block") {
         var def = g.f[e.side], att = g.f[e.by], heroA = att.hero, pt = hitPoint(g, def, att);
         var col = e.t === "block" ? 0x9fe8ff : (SPARK[heroA] || SPARK.other);
         spawn(P, e.t === "block" ? 8 : 14, pt, { color: col, speed: e.t === "block" ? 4 : 7, life: 16, r: 2.6, glow: true, g: 0.25 });
         if (e.t === "hit") {
           P.flash[e.side] = 7;
-          if (e.move === "heavy" || e.move === "special") { P.shake = 12; P.shakeAmp = 7; P.punch = 0.07; }
+          if (e.move === "heavy" || e.move === "special" || e.move === "throw") { P.shake = 12; P.shakeAmp = 7; P.punch = 0.07; }
           else { P.shake = Math.max(P.shake, 5); P.shakeAmp = Math.max(P.shakeAmp, 3); }
         }
       }
@@ -83,7 +93,7 @@
     // cross-fade + trail bookkeeping from what was drawn
     if (built) built.shapes.filter(function (s) { return s.k === "sprite"; }).forEach(function (s) {
       var i = s.side, L = P.last[i];
-      if (P.modes.fps >= 24 && L && L.move !== s.move && L.fighter === s.fighter) P.fade[i] = { cell: L.cell, fighter: L.fighter, t: FADE };
+      if (P.modes.fx && L && L.move !== s.move && L.fighter === s.fighter) P.fade[i] = { cell: L.cell, fighter: L.fighter, t: FADE };
       else if (P.fade[i]) { P.fade[i].t--; if (P.fade[i].t <= 0) P.fade[i] = null; }
       var striking = fx && s.phase && s.phase !== "recovery";
       if (striking) { if (!L || L.cell !== s.cell) { P.trail[i].unshift(L ? L.cell : s.cell); P.trail[i].length = Math.min(P.trail[i].length, TRAIL); } }
@@ -123,7 +133,7 @@
         out.push(Object.assign({}, s, { cell: c, x: s.x + behind, alpha: k === 0 ? 0.33 : 0.16, layer: "under", tag: "trail" + i + "_" + k }));
       });
       if (fx && P.flash[i] > 0) out.push(Object.assign({}, s, { white: true, alpha: Math.min(0.85, P.flash[i] / 7), layer: "over", tag: "flash" + i }));
-      if (fx && s.ko) { s.rotation = (s.flip ? 1 : -1) * 0.5; s.alpha = 0.75; }
+      if (fx && s.ko) { s.rotation = (s.flip ? 1 : -1) * (s.move === "knockdown" ? 1.2 : 0.5); s.alpha = s.move === "knockdown" ? 0.9 : 0.75; }
     });
     if (fx) {
       [0, 1].forEach(function (o) {

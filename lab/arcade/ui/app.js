@@ -158,7 +158,7 @@ function modeLabel() { return "fx " + (MODES.fx ? "on" : "off") + " · " + MODES
 let match = null, ais = null, rng = null, seed = 0, banner = 0, bannerText = "", paused = false, debug = false, finished = false;
 let PS = null, demo = null, ring = [], slowmo = null, cam = null, lastFight = null;
 function shuffle(a, r) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function newAIs() { ais = [null, AI.createAI(level, rng)]; }
+function newAIs() { ais = [null, AI.createAI(level, rng, { round: match ? match.round : 0 })]; }   // the round is on screen: the Beginner holds its special in round 1
 function startMatch() {
   seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;     // a UI choice; the match itself replays from this seed
   rng = R.rng(seed);

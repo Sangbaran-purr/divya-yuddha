@@ -2,7 +2,7 @@
 
 The experiment ground for **ARCADE-1**: a real-time 1v1 fighting mode, player vs AI, in the browser. The rulings, the moveset template, the Kling clip card and the size budget are in `docs/ARCADE_v1.md`.
 
-**Status:** R0–R2 plus the R3 clip test and the enhancement test (fx, camera; results in `docs/ARCADE_v1.md` — the 24/48 fps sheets it measured were dropped by the owner's ruling of 2026-11-04 and live only in git history). Three placeholder box Heroes plus **Indra and Meghnad**, whose idle and light are real art from the owner's Kling clips; every other move still draws as a box.
+**Status:** R0–R2, the R3 clip test, the enhancement test, and the owner's rulings after it (2026-11-04): fx and the tight camera are the defaults, a 3-frame cross-fade at 12 fps, the 24/48 fps sheets dropped (they live only in git history), the moveset grown to **15** (knockdown + get-up, parry, throw) and a gentler Beginner. Three placeholder box Heroes plus **Indra and Meghnad**, whose idle and light are real art from the owner's Kling clips; every other move is a box, or, with fx, borrows their art.
 
 ## The lab law
 
@@ -15,8 +15,8 @@ The experiment ground for **ARCADE-1**: a real-time 1v1 fighting mode, player vs
 
 - **On your machine:** start the repo's `static` server (`.claude/launch.json`, port 4599) and open `http://localhost:4599/lab/arcade/`.
 - **Pages, public but unlinked:** `https://sangbaran-purr.github.io/divya-yuddha/lab/arcade/`.
-- **The enhancement switches**, all off by default (the R0–R2 look): **`?fx=1`** (the feel layer), **`?cam=tight`** (the dynamic camera). **`?demo=1`** plays the scripted Indra-vs-Meghnad bout on a loop. **`?perf=1`** shows the probe (`window.__arcPerf()` in the console), and **`?cpu=4`** stretches each frame's work 4× to stand in for a slow phone. Example: `…/lab/arcade/?demo=1&fx=1&cam=tight`.
-- **Record a mode:** start `arcade-capture` (`.claude/launch.json`, port 4611) and open `http://localhost:4611/lab/arcade/?capture=<name>&fx=1&cam=tight`. It writes `<name>.mp4` and `<name>.gif` to `~/Desktop/DY_arcade_screens/`; the frames go to `captures/`, which is ignored.
+- **The look is fx on + the tight camera by default** (owner ruling 1, 2026-11-04). The switches stay for comparison: **`?fx=0`** turns the feel layer off, **`?cam=wide`** the fixed camera; **`?fx=0&cam=wide`** is the exact R0–R2 picture. **`?demo=1`** plays the scripted Indra-vs-Meghnad bout on a loop. **`?perf=1`** shows the probe (`window.__arcPerf()` in the console), and **`?cpu=4`** stretches each frame's work 4× to stand in for a slow phone. Example: `…/lab/arcade/?demo=1`, or `…/lab/arcade/?demo=1&fx=0&cam=wide` for the old look.
+- **Record a mode:** start `arcade-capture` (`.claude/launch.json`, port 4611) and open `http://localhost:4611/lab/arcade/?capture=<name>` (add `&fx=0&cam=wide` for the baseline). It writes `<name>.mp4` and `<name>.gif` to `~/Desktop/DY_arcade_screens/`; the frames go to `captures/`, which is ignored.
 - **`?opp=meghnad,indra,box_rakta`** fixes the opponent's lineup (three different Heroes). **`?rung=lo`** or **`?rung=hi`** forces a sheet rung; by default it is hi on a high-density or large screen, else lo.
 
 ## Play
@@ -30,10 +30,13 @@ The experiment ground for **ARCADE-1**: a real-time 1v1 fighting mode, player vs
 | Heavy | K | Heavy |
 | Special (needs a full meter) | L | Special |
 | Block | Shift, or hold away from the opponent | Block, or push the stick away |
+| Parry | Tap Shift just before a hit lands (a fresh tap, at most once per 40 frames) | Tap Block just before a hit lands |
+| Throw (close, beats a block) | J + K together | Light + Heavy together |
+| Break a throw | J + K while being grabbed | Light + Heavy while being grabbed |
 | Pause | P or Esc | II at the top |
 | Show hurtboxes | H | — |
 
-Heavy is a high attack: crouch under it. Light is a mid: block it. The zoner and balanced Heroes' special is a low shot: jump it. The rushdown's special is a charge.
+Heavy is a high attack: crouch under it. Light is a mid: block it. The zoner and balanced Heroes' special is a low shot: jump it. The rushdown's special is a charge. A special, a throw, or a heavy that finishes a combo knocks the opponent down; nothing touches a Hero who is down or getting up.
 
 ## What's here
 
@@ -53,11 +56,12 @@ Heavy is a high attack: crouch under it. Light is a mid: block it. The zoner and
 | `tools/make_fighter.py` | The fighter tool: Kling clips on green → a fighter (matte, feet pivot, one stance height, 12 fps frames, hi/lo sheets, mirror test) and contact sheets to `~/Desktop/DY_arcade_screens/`. Run it with the VFX lab's matting venv: `lab/vfx-manifestation/tools/.venv/bin/python -I lab/arcade/tools/make_fighter.py`. |
 | `ui/present.js` | The presentation layer for the switches: sparks, flash, shake, dust, shadows, trail, cross-fade, the Vajra pillar. It only reads the fight, never changes it, and uses no randomness. |
 | `ui/demo.js` | The demo bout: Indra vs Meghnad, scripted through inputs only, plus three stated nudges (full meter before each special, Indra's health lowered so it ends on a K.O.). |
+| `tools/budget.js` | The graphics-memory projection (owner ruling 2): measured cells × the 15-move set + arena + effects against the caps; it decides whether 24 fps strike frames may ship. `node lab/arcade/tools/budget.js`. |
 | `tools/capture_server.js`, `tools/assemble_capture.py` | The recorder: serves the repo, takes the page's frames, writes MP4 + GIF. |
 | `effects/vajra/` | The Vajra clip, copied from the VFX lab (`runtime/COPY.json` records the source and its sha256). |
 | `fighters/<hero>/` | A fighter: `hi.webp`, `lo.webp` and `manifest.json` (each cell's rect and feet pivot, the move → cell lists, the measurements). |
 | `sources/<hero>/` | **Ignored.** The owner's Kling clips (`<hero>_NN_<move>.mp4`). Never committed. |
-| `test/run.js` | The lab suite, R0–R2, the clip test and the enhancement test, with breakages. `--game` also runs the game's suites at their exact counts. |
+| `test/run.js` | The lab suite, R0–R2, the 15-move template and the gentler Beginner, the clip test, the enhancement test and the memory projection, with breakages. `--game` also runs the game's suites at their exact counts. |
 
 ## Change, stamp, test
 

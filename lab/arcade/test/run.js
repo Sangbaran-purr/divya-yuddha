@@ -60,11 +60,11 @@ const BY_RUNG = [
   ['core/moves.js', 'core/fight.js', 'core/rng.js', 'core/match.js', 'ui/scene.js'],
   ['core/ai.js', 'ui/controls.js', 'ui/app.js', 'ui/app.css'],
   ['tools/make_fighter.py'].concat(...['indra', 'meghnad'].map((h) => ['fighters/' + h + '/manifest.json', 'fighters/' + h + '/hi.webp', 'fighters/' + h + '/lo.webp']))];
-const ENH_FILES = ['ui/present.js', 'ui/demo.js', 'tools/capture_server.js', 'tools/assemble_capture.py', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json'];
+const ENH_FILES = ['ui/present.js', 'ui/demo.js', 'tools/capture_server.js', 'tools/assemble_capture.py', 'tools/budget.js', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json'];
 const NEEDED = [].concat(...BY_RUNG.slice(0, RUNG + 1)).concat(ENH ? ENH_FILES : []);
 console.log('  (rung ' + RUNG + ': the suite checks R0' + (RUNG ? '–R' + (RUNG === 3 ? '2 + the R3 clip test' : RUNG) : '') + ')');
 const missing = NEEDED.filter((f) => !fs.existsSync(path.join(LAB, f)));
-ok('R0.1 · the lab has every file of its rungs so far: the page, its own Pixi copy, the stamp tool and this suite' + (RUNG >= 1 ? ', the core and the scene' : '') + (RUNG >= 2 ? ', the AI, the controls and the app' : '') + (RUNG >= 3 ? ', the fighter tool and both clip-test fighters' : '') + (ENH ? ', the enhancement test (presentation, demo, recorder, Vajra copy)' : '') + ' (' + NEEDED.length + ' files)', missing.length === 0, missing);
+ok('R0.1 · the lab has every file of its rungs so far: the page, its own Pixi copy, the stamp tool and this suite' + (RUNG >= 1 ? ', the core and the scene' : '') + (RUNG >= 2 ? ', the AI, the controls and the app' : '') + (RUNG >= 3 ? ', the fighter tool and both clip-test fighters' : '') + (ENH ? ', the enhancement test (presentation, demo, recorder, Vajra copy, the memory projection)' : '') + ' (' + NEEDED.length + ' files)', missing.length === 0, missing);
 const ST = require(path.join(LAB, 'tools/stamp.js')), stamp = ST.compute(), html = rd('index.html');
 ok('R0.2 · THE STAMP is current: STAMP = the hash of every loaded file (' + ST.inputs().length + '), and every script, stylesheet and the meta carry it (' + stamp + ')',
   rd('STAMP').trim() === stamp && ST.stampPage(html, stamp) === html && (html.match(/\?v=([0-9a-f]{12})/g) || []).every((m) => m.endsWith(stamp)));
@@ -270,9 +270,9 @@ ok('R1.15 · THE DIVINE WEAPON as a rush (rushdown, tank): from 160 px out — b
 console.log('\n── ARCADE-1 · R1 · the rounds stub (ruling 4) ──');
 function playMatch(KK, l0, l1, a0, a1, seed) {
   const r = KK.rng.rng(seed), m = KK.match.createMatch({ lineup0: l0, lineup1: l1 });
-  let ai = [KK.ai.createAI(a0, r), KK.ai.createAI(a1, r)], guard = 0;
+  let ai = [KK.ai.createAI(a0, r, { round: 0 }), KK.ai.createAI(a1, r, { round: 0 })], guard = 0;
   while (!m.over && guard++ < 30000) {
-    if (m.pending) { KK.match.nextRound(m); ai = [KK.ai.createAI(a0, r), KK.ai.createAI(a1, r)]; }
+    if (m.pending) { KK.match.nextRound(m); ai = [KK.ai.createAI(a0, r, { round: m.round }), KK.ai.createAI(a1, r, { round: m.round })]; }
     MAstep(KK, m, ai);
   }
   return m;
@@ -424,7 +424,8 @@ function roundsWon(KK, x, y, n) {   // round-level win share of level x over y; 
   let wx = 0, wy = 0, draws = 0, seat0 = 0, decidedN = 0;
   for (let s = 0; s < n; s++) {
     const h = HEROES[s % 3], seat = s % 2, r = KK.rng.rng(1000 + s);
-    const ai = seat ? [KK.ai.createAI(y, r), KK.ai.createAI(x, r)] : [KK.ai.createAI(x, r), KK.ai.createAI(y, r)];
+    const o = { round: s % 3 };   // rounds 1–3 in turn (the Beginner holds its special in round 1)
+    const ai = seat ? [KK.ai.createAI(y, r, o), KK.ai.createAI(x, r, o)] : [KK.ai.createAI(x, r, o), KK.ai.createAI(y, r, o)];
     const g = KK.fight.newFight({ p0: h, p1: h });
     while (!g.over) KK.fight.step(g, [KK.ai.decide(ai[0], KK.ai.observe(g, 0)), KK.ai.decide(ai[1], KK.ai.observe(g, 1))]);
     if (g.winner === null) { draws++; continue; }
@@ -461,6 +462,170 @@ const BR2 = [
   ['H7 · a stat advantage for Death Match (R2.11 goes red)', { ai: [['deathmatch: { reaction: 9,', 'deathmatch: { hpBonus: 200, reaction: 9,']] }, (KK) => Object.values(KK.ai.LEVELS).every((L) => !Object.keys(L).some((k) => /hp|dmg|damage|meter|health|power/i.test(k)))]
 ];
 for (const [name, mut, check] of BR2) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }
+
+// ═══ RULINGS 5 + 6 (owner, 2026-11-04): the 15-move template (10b knockdown + get-up, 13 parry, 14 throw) and the gentler Beginner ═══
+console.log('\n── ARCADE-1 · ruling 5 · the 15-move template: knockdown + get-up, parry, throw ──');
+const ev = (g, t) => g.events.filter((e) => e.t === t);
+function tmplOk(KK) {
+  const C = KK.moves.CELLS, T = KK.moves.MOVES.throw, KD = KK.moves.KNOCKDOWN, PA = KK.moves.PARRY;
+  return Object.keys(C).length === 15 && KK.moves.CLIPS.length === 15 && ['10b_knockdown', '13_parry', '14_throw'].every((c) => KK.moves.CLIPS.includes(c)) &&
+    ['knockdown', 'parry', 'throw'].every((k) => C[k] > 0) && !!(T && T.hold && T.range && KD && KD.fall && KD.getup && PA && PA.window && PA.lockout);
+}
+const T5 = K.moves.MOVES.throw, KD5 = K.moves.KNOCKDOWN, PA5 = K.moves.PARRY;
+ok('N1 · THE TEMPLATE HAS 15 MOVES (' + K.moves.CLIPS.join(' ') + '), with proposed frame data: throw ' + T5.startup + '/' + T5.active + '/' + T5.recovery + ' (whiff), range ' + T5.range + ' px, hold ' + T5.hold + ' (the tech window), ' + T5.dmg + ' dmg; knockdown ' + KD5.fall + ' + get-up ' + KD5.getup + ' frames, invulnerable; parry window ' + PA5.window + ', lockout ' + PA5.lockout + ', attacker stunned ' + PA5.stunAttacker + ', parrier recovers ' + PA5.recovery, tmplOk(K));
+
+function knockdownOk(KK) {
+  const BB = KK.fight.BTN, KD = KK.moves.KNOCKDOWN, out = {};
+  const combo = closeIn(KK, KK.fight.newFight({ p0: 'box_surya', p1: 'box_surya' }), 60);
+  let idleAt = -1;
+  for (let i = 0; i < 120; i++) { KK.fight.step(combo, [i === 0 ? BB.LT : i === 8 ? BB.HV : 0, 0]); if (idleAt < 0 && ev(combo, 'getup').length && combo.f[1].state === 'idle') idleAt = combo.frame; }
+  const kd = ev(combo, 'knockdown')[0], up = ev(combo, 'getup')[0];
+  out.combo = !!kd && kd.move === 'heavy';
+  out.fall = kd && up ? up.frame - kd.frame : null;          // the heavy's hit-stop, then the fall
+  out.getup = up ? idleAt - up.frame : null;
+  const raw = closeIn(KK, KK.fight.newFight({ p0: 'box_surya', p1: 'box_surya' }), 60);
+  for (let i = 0; i < 60; i++) KK.fight.step(raw, [i === 0 ? BB.HV : 0, 0]);
+  out.rawHeavy = ev(raw, 'hit').length === 1 && ev(raw, 'knockdown').length === 0;
+  out.special = ['box_surya', 'box_rakta'].every((h) => { const g = closeIn(KK, KK.fight.newFight({ p0: h, p1: 'box_surya' }), 150); g.f[0].meter = 100; for (let i = 0; i < 90; i++) KK.fight.step(g, [i === 0 ? BB.SP : 0, 0]); return ev(g, 'knockdown').some((e) => e.move === 'special'); });
+  out.ok = out.combo && out.fall === KK.moves.MOVES.heavy.hitstop + KD.fall && out.getup === KD.getup && out.rawHeavy && out.special;
+  return out;
+}
+const KDO = knockdownOk(K);
+ok('N2 · 10b KNOCKDOWN: a heavy that finishes a light→heavy combo knocks down, a raw heavy does not; a special (shot or charge) knocks down; down ' + KDO.fall + ' frames (hit-stop + ' + KD5.fall + '), rising ' + KDO.getup + ', then free', KDO.ok, J(KDO));
+function invulOk(KK) {
+  const BB = KK.fight.BTN, g = closeIn(KK, KK.fight.newFight({ p0: 'box_surya', p1: 'box_surya' }), 60);
+  for (let i = 0; i < 20; i++) KK.fight.step(g, [i === 0 ? BB.LT : i === 8 ? BB.HV : 0, 0]);
+  let duringHits = 0, duringGrabs = 0, afterHits = 0, wasDown = false;
+  for (let i = 0; i < 160; i++) {
+    const down = !!KK.fight.INVUL[g.f[1].state] && g.f[1].state !== 'grabbed'; if (down) wasDown = true;
+    const n = g.events.length, d = Math.abs(g.f[1].x - g.f[0].x) / KK.fight.U;
+    KK.fight.step(g, [d > 70 ? BB.R : (i % 4 === 0 ? BB.LT : i % 4 === 2 ? BB.LT | BB.HV : 0), 0]);   // walk in, then light and throw attempts
+    const fresh = g.events.slice(n);
+    if (down) { duringHits += fresh.filter((e) => e.t === 'hit').length; duringGrabs += fresh.filter((e) => e.t === 'grab').length; }
+    else if (wasDown) afterHits += fresh.filter((e) => e.t === 'hit' || e.t === 'grab').length;
+  }
+  return { ok: wasDown && duringHits === 0 && duringGrabs === 0 && afterHits > 0, duringHits, duringGrabs, afterHits };
+}
+const INV = invulOk(K);
+ok('N3 · THE WAKE-UP IS INVULNERABLE: while down and rising nothing lands — 0 hits, 0 grabs from an opponent pressing light and throw over it — and the first attack after the get-up lands (' + INV.afterHits + ')', INV.ok, J(INV));
+function parryWindow(KK) {   // a heavy from side 0 at i = 0; side 1 taps Block at i = at → which taps parry?
+  const BB = KK.fight.BTN, hit = [];
+  for (let at = 0; at < 16; at++) {
+    const g = closeIn(KK, KK.fight.newFight({ p0: 'box_surya', p1: 'box_surya' }), 60);
+    for (let i = 0; i < 40; i++) KK.fight.step(g, [i === 0 ? BB.HV : 0, i === at ? BB.BL : 0]);
+    if (ev(g, 'parry').length) hit.push(at);
+  }
+  return hit;
+}
+function parryOk(KK) {
+  const BB = KK.fight.BTN, win = parryWindow(KK), impact = KK.moves.MOVES.heavy.startup;
+  const g = closeIn(KK, KK.fight.newFight({ p0: 'box_surya', p1: 'box_surya' }), 60), hp0 = g.f[1].hp;
+  let parried = -1, free1 = -1, free0 = -1, punish = null;
+  for (let i = 0; i < 90; i++) {
+    const st1 = g.f[1].state, st0 = g.f[0].state;
+    KK.fight.step(g, [i === 0 ? BB.HV : (st0 !== 'parried' && parried >= 0 ? BB.L : 0), i === impact - 2 ? BB.BL : (parried >= 0 && st1 !== 'parry' && !punish ? BB.HV : 0)]);   // side 0 tries to back off the moment it can; side 1 punishes with a heavy
+    if (parried < 0 && ev(g, 'parry').length) parried = g.frame;
+    if (parried >= 0 && free1 < 0 && KK.fight.actionable(g.f[1])) free1 = g.frame;
+    if (parried >= 0 && free0 < 0 && KK.fight.actionable(g.f[0])) free0 = g.frame;
+    if (!punish) punish = g.events.find((e) => e.t === 'hit' && e.side === 0) || null;
+  }
+  return { win, contiguous: win.length === KK.moves.PARRY.window && win[win.length - 1] - win[0] === win.length - 1 && win[win.length - 1] === impact,
+    noDamage: g.f[1].hp - hp0 >= 0 && ev(g, 'parry')[0].proj === false, advantage: free0 - free1, punish: punish && punish.move,
+    ok: false };
+}
+const PAR = parryOk(K); PAR.ok = PAR.contiguous && PAR.noDamage && PAR.advantage >= KK_heavyStartup() && PAR.punish === 'heavy';
+function KK_heavyStartup() { return K.moves.MOVES.heavy.startup; }
+ok('N4 · 13 THE PARRY: a fresh Block tap parries only inside its window — taps ' + PAR.win.length + ' frames before impact through the impact frame (' + J(PAR.win) + ', the heavy lands at ' + MV.heavy.startup + '); no damage; the parrier is free ' + PAR.advantage + ' frames before the attacker (≥ a heavy\'s ' + MV.heavy.startup + '-frame startup), so its heavy lands even though the attacker backs off at once — a guaranteed punish', PAR.ok, J(PAR));
+function spamOk(KK) {
+  const BB = KK.fight.BTN, g = KK.fight.newFight({ p0: 'box_surya', p1: 'box_surya' });
+  let windows = 0, presses = 0;
+  for (let i = 0; i < 240; i++) { const b = i % 2 === 0 ? BB.BL : 0; if (b) presses++; const w0 = g.f[1].parryWin; KK.fight.step(g, [0, b]); if (g.f[1].parryWin === 0 && w0 !== 0) windows++; }
+  // and in a fight: side 1 mashes Block against a stream of heavies — at most a few are parried
+  const f = closeIn(KK, KK.fight.newFight({ p0: 'box_surya', p1: 'box_surya' }), 60); let heavies = 0;
+  for (let i = 0; i < 600; i++) { if (f.f[0].state === 'idle' && i % 7 === 0) heavies++; KK.fight.step(f, [f.f[0].state === 'idle' && i % 7 === 0 ? BB.HV : 0, i % 2 === 0 ? BB.BL : 0]); }
+  return { windows, presses, cap: Math.ceil(240 / KK.moves.PARRY.lockout), parried: ev(f, 'parry').length, heavies: ev(f, 'move').filter((e) => e.side === 0).length, ok: windows <= Math.ceil(240 / KK.moves.PARRY.lockout) };
+}
+const SPM = spamOk(K);
+ok('N5 · THE PARRY CAN\'T BE SPAMMED: mashing Block (' + SPM.presses + ' presses in 4 s) opens only ' + SPM.windows + ' windows (≤ ' + SPM.cap + ': one per ' + PA5.lockout + '-frame lockout); against a stream of ' + SPM.heavies + ' heavies a masher parries ' + SPM.parried, SPM.ok && SPM.parried < SPM.heavies / 2, J(SPM));
+function throwCase(KK, p0, guard, dist, jump) {
+  const BB = KK.fight.BTN, g = closeIn(KK, KK.fight.newFight({ p0: p0 || 'box_surya', p1: 'box_surya' }), dist || 70), hp0 = g.f[1].hp;
+  let backAt = -1;
+  for (let i = 0; i < 70; i++) { KK.fight.step(g, [i === 0 ? BB.LT | BB.HV : 0, jump && i === 0 ? BB.U : guard]); if (backAt < 0 && i > 0 && g.f[0].state === 'idle') backAt = i; }
+  return { dmg: hp0 - g.f[1].hp, grab: ev(g, 'grab').length, down: ev(g, 'knockdown').some((e) => e.move === 'throw'), backAt };
+}
+function throwOk(KK) {
+  const BB = KK.fight.BTN, T = KK.moves.MOVES.throw;
+  const r = { block: throwCase(KK, null, BB.BL), back: throwCase(KK, null, BB.R), crouch: throwCase(KK, null, BB.D | BB.R), stand: throwCase(KK, null, 0),
+    far: throwCase(KK, null, 0, 160), jump: throwCase(KK, null, 0, 70, true), rush: throwCase(KK, 'box_rakta', BB.BL) };
+  r.ok = ['block', 'back', 'crouch', 'stand'].every((k) => r[k].dmg === T.dmg && r[k].down) && r.far.grab === 0 && r.far.backAt === T.startup + T.active + T.recovery &&
+    r.jump.grab === 0 && r.rush.dmg === Math.floor(T.dmg * 1.08);
+  return r;
+}
+const THR = throwOk(K);
+ok('N6 · 14 THE THROW: unblockable — it takes an opponent holding Block, holding back, or crouch-blocking (' + T5.dmg + ' each, then a knockdown); out of range it whiffs and the thrower is stuck ' + THR.far.backAt + ' frames; a jump escapes it; the archetype\'s damage applies (rushdown ' + THR.rush.dmg + ')', THR.ok, J(THR));
+function techWindow(KK) {
+  const BB = KK.fight.BTN, out = [];
+  let grabAt = -1;
+  for (let at = 0; at < 20; at++) {
+    const g = closeIn(KK, KK.fight.newFight({ p0: 'box_surya', p1: 'box_surya' }), 70);
+    for (let i = 0; i < 50; i++) { KK.fight.step(g, [i === 0 ? BB.LT | BB.HV : 0, i === at ? BB.LT | BB.HV : 0]); if (at === 19 && grabAt < 0 && ev(g, 'grab').length) grabAt = i; }
+    if (ev(g, 'tech').length && !ev(g, 'hit').length && ev(g, 'grab').length) out.push(at);
+  }
+  return { win: out, grabAt };
+}
+const TW = techWindow(K);
+ok('N7 · THE THROW-TECH: Light + Heavy during the ' + T5.hold + '-frame hold breaks the throw (no damage, both pushed apart): presses at ' + J(TW.win) + ' after the throw input (the grab lands at ' + TW.grabAt + ', so: the ' + TW.win.length + ' frames after it) — a tight window; earlier, the press starts a throw of its own and is taken in its startup; later, the throw has landed',
+  TW.win.length === T5.hold && TW.win[0] === TW.grabAt + 1 && TW.win[TW.win.length - 1] - TW.win[0] === T5.hold - 1, J(TW));
+
+console.log('\n── ARCADE-1 · rulings 5 + 6 · the AI with the new moves, the gentler Beginner ──');
+function aiMoves(KK, x, y, n) {   // what each level does with the new moves over n fights (Heroes rotate, seats alternate, rounds 1–3 in turn)
+  const st = { x: { parry: 0, throw: 0, tech: 0, special0: 0, gaps: [] }, y: { parry: 0, throw: 0, tech: 0, special0: 0, gaps: [] } };
+  for (let s = 0; s < n; s++) {
+    const h = HEROES[s % 3], seat = s % 2, r = KK.rng.rng(5000 + s), o = { round: s % 3 };
+    const ai = seat ? [KK.ai.createAI(y, r, o), KK.ai.createAI(x, r, o)] : [KK.ai.createAI(x, r, o), KK.ai.createAI(y, r, o)];
+    const g = KK.fight.newFight({ p0: h, p1: h });
+    while (!g.over) KK.fight.step(g, [KK.ai.decide(ai[0], KK.ai.observe(g, 0)), KK.ai.decide(ai[1], KK.ai.observe(g, 1))]);
+    const sx = seat ? 1 : 0, who = (side) => (side === sx ? st.x : st.y), last = {};
+    for (const e of g.events) {
+      if (e.t === 'parry') who(e.side).parry++;
+      if (e.t === 'tech') who(e.side).tech++;
+      if (e.t === 'move' && e.move === 'throw') who(e.side).throw++;
+      if (e.t === 'move' && e.move === 'special' && o.round === 0) who(e.side).special0++;
+      if (e.t === 'move') { if (last[e.side] != null) who(e.side).gaps.push(e.frame - last[e.side]); last[e.side] = e.frame; }
+    }
+  }
+  return st;
+}
+const AB = aiMoves(K, 'beginner', 'advanced', 120), AD = aiMoves(K, 'beginner', 'deathmatch', 120), AA = aiMoves(K, 'advanced', 'deathmatch', 200);
+const sumB = (k) => AB.x[k] + AD.x[k];
+ok('N8 · THE BEGINNER NEVER PARRIES, THROWS OR TECHS (240 fights against Advanced and Death Match: ' + sumB('parry') + ' / ' + sumB('throw') + ' / ' + sumB('tech') + '), while the others use the new moves against each other (200 fights: Advanced ' + AA.x.parry + ' parries, ' + AA.x.throw + ' throws, ' + AA.x.tech + ' techs; Death Match ' + AA.y.parry + ' / ' + AA.y.throw + ' / ' + AA.y.tech + ')',
+  sumB('parry') === 0 && sumB('throw') === 0 && sumB('tech') === 0 && AA.x.parry > 0 && AA.x.throw > 0 && AA.y.parry > 0 && AA.y.throw > 0 && AA.x.tech + AA.y.tech > 0);
+function gentleOk(KK) {
+  const L = KK.ai.LEVELS.beginner, st = aiMoves(KK, 'beginner', 'advanced', 120).x;
+  const minGap = Math.min(...st.gaps);
+  return { ok: L.reaction === 27 && L.block === 0.10 && L.cancel === 0 && J(L.attackGap) === '[24,48]' && L.specialFrom === 1 && L.parry === 0 && L.throw === 0 && L.tech === 0 &&
+    st.special0 === 0 && minGap >= 24, special0: st.special0, minGap };
+}
+const GEN = gentleOk(K);
+ok('N9 · THE GENTLER BEGINNER (ruling 6): reacts in 27 frames (450 ms), blocks 10%, never cancels or chains, waits 24–48 frames (0.4–0.8 s) between attacks — the shortest gap between its moves in 120 fights is ' + GEN.minGap + ' frames — and uses no special in round 1 (' + GEN.special0 + ' in the round-1 fights)', GEN.ok, J(GEN));
+// a stand-in for a new player: slow (400 ms), blocks a quarter of the time, rarely cancels, never parries or throws on purpose
+const NOVICE = { reaction: 24, block: 0.25, duck: 0.05, jumpProj: 0.2, cancel: 0.1, special: 0.4, attackGap: [18, 40], noise: 0.25, spacing: 0.4, parry: 0, throw: 0, tech: 0, specialFrom: 0 };
+const NV = roundsWon(K, NOVICE, 'beginner', N), NVA = roundsWon(K, NOVICE, 'advanced', 200);
+ok('N10 · NEW PLAYERS WIN MOST ROUNDS against the Beginner: a new-player stand-in (reaction 400 ms, blocks 25%, rarely cancels, no parry or throw) wins ' + f1(NV.pct) + ' of ' + N + ' rounds (target > 50) — and only ' + f1(NVA.pct) + ' against Advanced, so the stand-in is not simply strong', NV.pct > 50 && NVA.pct < 50, J({ NV, NVA }));
+
+console.log('\n── ARCADE-1 · rulings 5 + 6 · breakages: each must go red ──');
+const BR5 = [
+  ['Y1 · the wake-up NOT invulnerable (N3 goes red)', { fight: [['var INVUL = { knockdown: 1, getup: 1, grab: 1, grabbed: 1 };', 'var INVUL = { grab: 1, grabbed: 1 };']] }, (KK) => invulOk(KK).ok],
+  ['Y2 · the parry window doubled to 12 frames (N4 goes red)', { moves: [['var PARRY = { window: 6,', 'var PARRY = { window: 12,']] }, (KK) => { const w = parryWindow(KK); return w.length === 6; }],
+  ['Y3 · the parry lockout removed: mashing parries everything (N5 goes red)', { fight: [['if ((inp & BTN.BL) && !(f.prev & BTN.BL) && f.parryLock <= 0)', 'if ((inp & BTN.BL) && !(f.prev & BTN.BL))']] }, (KK) => { const s = spamOk(KK); return s.ok && s.parried < s.heavies / 2; }],
+  ['Y4 · the throw blockable: a blocking opponent cannot be thrown (N6 goes red)', { fight: [['var UNTHROWABLE = { hitstun: 1,', 'var UNTHROWABLE = { block: 1, cblock: 1, hitstun: 1,']] }, (KK) => throwOk(KK).ok],
+  ['Y5 · the throw-tech removed (N7 goes red)', { fight: [['if (has(def, "light") && has(def, "heavy")) { def.buf.light = -1; def.buf.heavy = -1; techBoth(g, att, def); return; }', '']] }, (KK) => techWindow(KK).win.length === K.moves.MOVES.throw.hold],
+  ['Y6 · a Beginner that throws and parries (N8 goes red)', { ai: [['parry: 0, throw: 0, tech: 0, specialFrom: 1', 'parry: 0.3, throw: 0.4, tech: 0, specialFrom: 1']] }, (KK) => { const s = aiMoves(KK, 'beginner', 'advanced', 60).x; return s.parry === 0 && s.throw === 0; }],
+  ['Y7 · the Beginner\'s special allowed in round 1 (N9 goes red)', { ai: [['tech: 0, specialFrom: 1 }', 'tech: 0, specialFrom: 0 }']] }, (KK) => gentleOk(KK).ok],
+  ['Y8 · the old Beginner back (reaction 18, blocks 40%, cancels, short gaps) (N9 goes red)', { ai: [['beginner:   { reaction: 27, block: 0.10, duck: 0.05, jumpProj: 0.15, cancel: 0, special: 0.5, attackGap: [24, 48]', 'beginner:   { reaction: 18, block: 0.40, duck: 0.10, jumpProj: 0.25, cancel: 0.15, special: 0.5, attackGap: [16, 40]']] }, (KK) => gentleOk(KK).ok],
+  ['Y9 · a heavy that never knocks down, even as a combo finisher (N2 goes red)', { fight: [['(h.name === "heavy" && h.wasStun)', 'false']] }, (KK) => knockdownOk(KK).ok]
+];
+for (const [name, mut, check] of BR5) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }
 
 
 if (RUNG < 3) return finish();
@@ -562,12 +727,12 @@ if (ENH) {
 console.log('\n── ARCADE-1 · enhancement test · the switches, the camera, the HD sheets, the demo ──');
 const PR = K.present, DM = K.demo, SC = K.scene;
 function modesOk(KK) {
-  const d = KK.present.parseModes(''), j = KK.present.parseModes('?fx=1&fps=24&cam=tight'), bad = KK.present.parseModes('?fx=2&fps=30&cam=zoom&cpu=99');
-  return d.fx === false && d.fps === 12 && d.cam === 'wide' && !d.demo && !d.capture && d.cpu === 1 &&
-    j.fx && j.fps === 12 && j.cam === 'tight' && KK.present.parseModes('?fps=48').fps === 12 && KK.present.parseModes('?capture=x').demo &&
-    bad.fx === false && bad.fps === 12 && bad.cam === 'wide' && bad.cpu === 10;
+  const d = KK.present.parseModes(''), j = KK.present.parseModes('?fx=0&fps=24&cam=wide'), bad = KK.present.parseModes('?fx=2&fps=30&cam=zoom&cpu=99');
+  return d.fx === true && d.fps === 12 && d.cam === 'tight' && !d.demo && !d.capture && d.cpu === 1 &&
+    j.fx === false && j.fps === 12 && j.cam === 'wide' && KK.present.parseModes('?fps=48').fps === 12 && KK.present.parseModes('?capture=x').demo &&
+    bad.fx === true && bad.fps === 12 && bad.cam === 'tight' && bad.cpu === 10;
 }
-ok('E1 · THE SWITCHES DEFAULT TO THE BASELINE: no query = fx off, the fixed wide camera, no demo; ?fx=1&cam=tight turn each on; the 12 fps sheets always (the fps switch is gone, ruling 4 of 2026-11-04: ?fps=24|48 is ignored); anything else falls back to the baseline', modesOk(K));
+ok('E1 · THE DEFAULTS (ruling 1 of 2026-11-04): no query = fx on and the tight camera, no demo; ?fx=0&cam=wide is the R0–R2 baseline for comparison; the 12 fps sheets always (the fps switch is gone, ruling 4: ?fps=24|48 is ignored); anything else falls back to the defaults', modesOk(K));
 function camAt(KK, gap, mode) {
   const g = KK.fight.newFight({ p0: 'box_surya', p1: 'box_rakta' }), U = KK.fight.U, mid = KK.fight.STAGE_W / 2;
   g.f[0].x = Math.round((mid - gap / 2) * U); g.f[1].x = Math.round((mid + gap / 2) * U);
@@ -604,14 +769,21 @@ function switchesOk(KK, man) {   // cross-fade only at fps ≥ 24; borrowed art 
     for (let i = 0; i < 60; i++) { KK.fight.step(gg, [i === 5 ? B2.LT : i === 30 ? B2.HV : 0, 0]); const b = KK.scene.build(gg, { fighters: man, rung: 'lo', fallback: fallback, cam: KK.present.camera(P, gg, null, 1 / 60) });
       KK.present.tick(P, gg, b); const sh = KK.present.shapes(P, gg, b); fades += sh.filter((x) => /^fade/.test(x.tag)).length; extra += sh.length; if (gg.f[0].state === 'attack' && gg.f[0].move === 'heavy') borrowed += b.shapes.filter((x) => x.k === 'sprite' && x.side === 0).length; }
     return { fades, extra, borrowed }; };
-  const base = runP(KK.present.parseModes(''), false), fx = runP(KK.present.parseModes('?fx=1'), true);
-  return { ok: base.fades === 0 && base.extra === 0 && base.borrowed === 0 && fx.borrowed > 0 && fx.extra > 0 && fx.fades === 0, base, fx };
+  const base = runP(KK.present.parseModes('?fx=0&cam=wide'), false), fx = runP(KK.present.parseModes(''), true);
+  return { ok: base.fades === 0 && base.extra === 0 && base.borrowed === 0 && fx.borrowed > 0 && fx.extra > 0 && fx.fades > 0, base, fx };
 }
 const SW = switchesOk(K, MAN);
-ok('E7 · EACH LOOK ONLY WITH ITS SWITCH: the baseline adds no shape, no cross-fade, no borrowed art; fx=1 borrows art for the heavy (' + SW.fx.borrowed + ' frames) and adds its shadows/sparks (' + SW.fx.extra + ' shapes)', SW.ok, J(SW));
+ok('E7 · EACH LOOK ONLY WITH ITS SWITCH: ?fx=0 adds no shape, no cross-fade, no borrowed art; the default (fx on) borrows art for the heavy (' + SW.fx.borrowed + ' frames), adds its shadows/sparks (' + SW.fx.extra + ' shapes) and cross-fades a move change on the 12 fps sheets (ruling 3: ' + SW.fx.fades + ' fade shapes)', SW.ok, J(SW));
 const code = (f) => rd(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 const NOR = ['ui/present.js', 'ui/demo.js'].filter((f) => /Math\.random|Date\.now|performance\.now/.test(code(f)));
 ok('E8 · the presentation and the demo are deterministic: no Math.random, no clock (a capture of the same bout is the same video)', NOR.length === 0, NOR);
+const BU = require(path.join(LAB, 'tools/budget.js')), BP = BU.project();
+const shipped24 = (rung) => HEROS.some((h) => MAN[h].fpsOut !== 12 || !!(MAN[h].rungs[rung].strike24 || MAN[h].cellIndex.strike24));
+const budgetOk = (P) => P.strike24.lo === shipped24('lo') && P.strike24.hi === shipped24('hi');
+const bf = (x) => x.toFixed(1);
+ok('M1 · RULING 2, THE PROJECTION DECIDES: 24 fps strike frames (+' + BP.strike.n + ' cells per fighter) ship only where the full 15-move set fits its cap with them — lo ' + bf(BP.rungs.lo.total15strike) + ' MB vs ' + BP.rungs.lo.cap + ', hi ' + bf(BP.rungs.hi.total15strike) + ' MB vs ' + BP.rungs.hi.cap +
+  ' (2 fighters + arena + Vajra; at 12 fps already lo ' + bf(BP.rungs.lo.total15) + ' / hi ' + bf(BP.rungs.hi.total15) + ') → none ship: both rungs stay 12 fps everywhere, and the sheets agree', budgetOk(BP) && !BP.strike24.lo && !BP.strike24.hi);
+red('M2 · BREAKAGE: caps that would fit (lo 999 / hi 999) but no strike frames shipped (M1 goes red)', !budgetOk(BU.project({ lo: 999, hi: 999 })));
 const trackedE = git(['ls-files', 'lab/arcade']).concat(git(['diff', '--name-only', '--cached']));
 ok('E9 · the recorder\'s output is never tracked: captures/ is ignored and no capture frame or video is staged or committed', gi.includes('captures/') && !trackedE.some((f) => /\/captures\/|\.(mp4|gif)$/.test(f)));
 
@@ -619,8 +791,10 @@ console.log('\n── ARCADE-1 · enhancement test · breakages: each must go re
 const BRE = [
   ['X1 · the camera zoom unclamped (E2 goes red)', { scene: [['var zoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, VIEW_W / (dist + ZOOM_MARGIN)));', 'var zoom = VIEW_W / (dist + ZOOM_MARGIN);']] }, (KK) => camOk(KK).ok],
   ['X2 · the camera snapping instead of easing (E2 goes red)', { scene: [['var k = 1 - Math.exp(-dt * 6);', 'var k = 1;']] }, (KK) => camOk(KK).ok],
-  ['X3 · fx on by default (E1 goes red)', { present: [['fx: q.fx === "1"', 'fx: q.fx !== "0"']] }, (KK) => modesOk(KK)],
-  ['X4 · the cross-fade at 12 fps too (E7 goes red)', { present: [['if (P.modes.fps >= 24 && L', 'if (L']] }, (KK) => switchesOk(KK, MAN).ok],
+  ['X3 · fx OFF by default again (E1 goes red)', { present: [['fx: q.fx !== "0"', 'fx: q.fx === "1"']] }, (KK) => modesOk(KK)],
+  ['X3b · the wide camera by default again (E1 goes red)', { present: [['cam: q.cam === "wide" ? "wide" : "tight"', 'cam: q.cam === "tight" ? "tight" : "wide"']] }, (KK) => modesOk(KK)],
+  ['X4 · the cross-fade without fx: ?fx=0 no longer the R0–R2 picture (E7 goes red)', { present: [['if (P.modes.fx && L', 'if (L']] }, (KK) => switchesOk(KK, MAN).ok],
+  ['X4b · the cross-fade gone at 12 fps (E7 goes red)', { present: [['if (P.modes.fx && L', 'if (false && L']] }, (KK) => switchesOk(KK, MAN).ok],
   ['X5 · the demo\'s stated nudges dropped — a different bout, no K.O. on schedule (E6 goes red)', { demo: [['if (!D.nudged && s.nudge && both)', 'if (false)']] }, (KK) => { const r = demoRun(KK); return r.over && r.ko && r.ev === DA.ev; }]
 ];
 for (const [name, mut, check] of BRE) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }

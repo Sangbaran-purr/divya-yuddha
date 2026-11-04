@@ -29,6 +29,7 @@
     }
     if (!fallback) return null;
     if (f.state === "ko") return { move: "ko", cell: ci.idle[0], borrowed: true };
+    if (f.state === "knockdown") return { move: "knockdown", cell: ci.idle[0], borrowed: true };   // 10b: the stance laid down (the presentation tilts it)
     var k = ci.idle.length; return { move: "idle", cell: ci.idle[Math.floor(g.frame * man.fpsOut / 60) % k], borrowed: true };
   }
 
@@ -85,11 +86,15 @@
       if (art) {
         // a real fighter: the cell, its feet pivot on the fighter's ground point, its stance scaled to the hurtbox's height
         var rung = opts.rung || "hi";
-        out.push({ k: "sprite", layer: "body", tag: "sprite" + f.side, side: f.side, fighter: hero.fighter, rung: rung, cell: art.cell, move: art.move, phase: art.phase || null, ko: art.move === "ko",
+        out.push({ k: "sprite", layer: "body", tag: "sprite" + f.side, side: f.side, fighter: hero.fighter, rung: rung, cell: art.cell, move: art.move, phase: art.phase || null, ko: art.move === "ko" || art.move === "knockdown",
           x: f.x / F.U - cam, y: GROUND_Y - f.y / F.U, scale: STANCE_LOGICAL / man.stance.heightPx[rung], flip: f.facing === -1, alpha: 1 });
       } else {
         var color = flash ? 0xffffff : f.state === "ko" ? 0x555555 : hero.color;
-        rect(hb, color, f.state === "ko" ? 0.5 : 0.9, "body" + f.side, f.state === "blockstun" || f.state === "block" || f.state === "cblock" ? { width: 3, color: 0x7fe0ff } : null);
+        // 10b: a knocked-down box lies flat, a rising one is half height (both untouchable: drawn faint)
+        if (f.state === "knockdown" || f.state === "getup") { var lh = f.state === "knockdown" ? 44 : 120, lw = f.state === "knockdown" ? 150 : 70; hb = { x: hb.x + hb.w / 2 - lw / 2, y: hb.y + hb.h - lh, w: lw, h: lh }; }
+        var outline = f.state === "blockstun" || f.state === "block" || f.state === "cblock" ? { width: 3, color: 0x7fe0ff } : f.state === "parry" ? { width: 4, color: 0xffffff } :
+          f.state === "grab" || f.state === "grabbed" ? { width: 3, color: 0xffa040 } : null;
+        rect(hb, color, f.state === "ko" ? 0.5 : f.state === "knockdown" || f.state === "getup" ? 0.55 : 0.9, "body" + f.side, outline);
         // a "face" on the front edge, so facing reads
         var faceX = f.facing === 1 ? hb.x + hb.w - 10 : hb.x;
         rect({ x: faceX, y: hb.y + 14, w: 10, h: 18 }, 0x120c05, 0.9, "face" + f.side);
