@@ -300,6 +300,7 @@ function tick() {
     if (banner > 0) return;   // a banner holds the fighters still
   }
   const g = match.fight;
+  if (demo && MODES.capture && demo.step >= demo.steps.length) { finished = true; return; }   // a script with no K.O. (?demo=walk) ends the recording when it runs out
   if (g !== lastFight) { lastFight = g; PS = PR.create(MODES); ring = []; overT = 0; }
   const inp = demo ? DEMO.inputs(demo, g) : [C.keyBits(held) | stickBitsNow | touchBits, AI.decide(ais[1], AI.observe(g, 1))];
   MA.step(match, inp);

@@ -43,7 +43,8 @@
   // combo (it hits a defender already in hitstun: the light→heavy cancel) knock down instead of the usual hitstun.
   // fall frames on the ground (sliding back at push, with friction), then getup frames rising; INVULNERABLE throughout —
   // no hit, shot or throw touches a fighter who is down or rising (no off-the-ground combos in v1). Actionable after.
-  var KNOCKDOWN = { fall: 36, getup: 20, push: 6, cells: { fall: 8, getup: 6 } };
+  // get-up 40 frames (owner ruling 2026-11-04, after the 10b reshoot: was 20 — the backward roll reads), untouchable throughout
+  var KNOCKDOWN = { fall: 36, getup: 40, push: 6, cells: { fall: 8, getup: 6 } };
   // 13 THE PARRY (owner ruling 5, approved; the automatic counter above, ruling 5 of the third set). A press of Block (a fresh press, not a hold) opens a WINDOW of 6
   // frames; a hit that lands inside it is parried: no damage and no chip, PARRY.hitstop on both, the attacker is pushed back
   // and stunned stunAttacker frames, the parrier recovers in `recovery` — a +18 window, long enough to walk in and land even a
@@ -78,6 +79,11 @@
   // is the point) — and is blockable with chip. Speed is the archetype's projSpeed.
   var NAGAPASHA = { dmg: 80, chip: 40, bind: 50 };
 
+  // THE REAL HEROES' WALK (owner ruling 2026-11-04, the walk skate): forward 170 px/s (from 240) — 2.8 px a frame, the engine's
+  // nearest (168 px/s) — and back scaled the same (3 × 170/240 → 2.1 px a frame, 126 px/s), for every Hero with real art; the
+  // box Heroes keep their archetype's speeds. With the stride played at 20 fps the feet now cover ~77 px/s: game ÷ stride ≈ 2.2.
+  var REAL_WALK = { walkF: 2.8, walkB: 2.1 };
+
   // The roster: three placeholder box Heroes, and the slice's two real Heroes as their clips arrive.
   var HEROES = {
     box_surya: { id: "box_surya", name: "Box · Surya", arch: "balanced", color: 0xe8c874 },
@@ -92,6 +98,6 @@
     meghnad: { id: "meghnad", name: "Meghnad", arch: "reach", color: 0x9b4fd1, fighter: "meghnad", reachFrom: "indra" }
   };
 
-  return { BODY: BODY, MOVES: MOVES, KNOCKDOWN: KNOCKDOWN, PARRY: PARRY, NAGAPASHA: NAGAPASHA, CLIPS: CLIPS, CHAIN_MAX: CHAIN_MAX, METER: METER, JUMP: JUMP, PROJECTILE: PROJECTILE, FRICTION: FRICTION,
+  return { BODY: BODY, MOVES: MOVES, KNOCKDOWN: KNOCKDOWN, REAL_WALK: REAL_WALK, PARRY: PARRY, NAGAPASHA: NAGAPASHA, CLIPS: CLIPS, CHAIN_MAX: CHAIN_MAX, METER: METER, JUMP: JUMP, PROJECTILE: PROJECTILE, FRICTION: FRICTION,
     ROUND_SECONDS: ROUND_SECONDS, CELLS: CELLS, ARCH: ARCH, HEROES: HEROES };
 });

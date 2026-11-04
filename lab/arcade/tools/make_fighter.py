@@ -79,7 +79,7 @@ HEROES = {
             # (~280 px) removed by PIVOT-TRACKING THE FEET (a straight line between the planted feet at f25 and f92, so the stride's
             # own sway stays); sampled every 3rd source frame and played at 12 fps — 1.5× the shot speed (see the report: the game walks
             # ~7× faster than the clip strides, so the feet skate; this narrows it and halves the cells)
-            "walk":      {"clip": "walk", "range": [25, 92], "root": "feet-linear", "step": 3},
+            "walk":      {"clip": "walk", "range": [25, 92], "root": "feet-linear", "step": 3, "playFps": 20},   # 20 fps: owner ruling (the skate)
             # the new hop: load 22–33, take-off 40–48, tucked peak 55–65, landing 72–84 → the 40-frame airtime from take-off to touch-down
             "jump":      {"clip": "jump", "span": [42, 82], "n": 8, "pivot": "feet", "look": 2},
             "crouch":    {"clip": "crouch", "enter": [28, 40], "nEnter": 2, "hold": [72, 96], "shadow": True},
@@ -557,7 +557,7 @@ def build(hero):
         off = M_torso(c.m(0), stance_src) if w.get("root") != "feet-linear" else 0.0
         base = piv("walk") if w.get("root") != "feet-linear" else (0.0, piv("walk")[1])
         wsrc = list(range(s, s + Lw, w.get("step", 2)))
-        anim["walk"] = {"loop": [cell("walk", i, (base[0] + tor[i] - off, base[1]), "walk") for i in wsrc], "fps": FPS_OUT}
+        anim["walk"] = {"loop": [cell("walk", i, (base[0] + tor[i] - off, base[1]), "walk") for i in wsrc], "fps": w.get("playFps", FPS_OUT)}
         moves_meta["walk"] = {"loop": [s, s + Lw], "loopError": round(e, 2), "rootTravelSource": round(max(tor.values()) - min(tor.values()), 1), "root": w.get("root", "torso"), "step": w.get("step", 2)}
         print("  walk: cycle f%d–f%d (%d frames, |Δ| %.2f after the torso shift) → %d cells at 12 fps; the clip's own travel %.0f px removed" % (s, s + Lw, Lw, e, len(wsrc), moves_meta["walk"]["rootTravelSource"]))
 

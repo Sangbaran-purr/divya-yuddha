@@ -87,7 +87,7 @@ Gameplay runs on fixed 60 Hz logic frames and the art is stretched onto those ph
 | Special (divine weapon) | 14 | 16 / 8 / 26 | 200, chip 40 through a block, costs a full meter. A low projectile (balanced, zoner) or a charge (rushdown, tank) |
 | Block | 3 | Instant | Hold away from the opponent, or the Block button; no chip on light or heavy |
 | Hit reaction | 4 | — | Light plays 2 cells, heavy all 4 |
-| **10b** Knockdown + get-up | 8 + 6 | Down 36, rising 20 (after the hit's hit-stop) | Caused by any special that hits, any throw, and a heavy that **finishes a combo** (it lands on a Hero already in hitstun: light → heavy). A raw heavy only staggers. **Invulnerable** while down and rising: no hit, shot or throw lands (no off-the-ground combos) |
+| **10b** Knockdown + get-up | 7 + 5 | Down 36, rising **40** (ruling 2026-11-04, was 20; after the hit's hit-stop) | Caused by any special that hits, any throw, and a heavy that **finishes a combo** (it lands on a Hero already in hitstun: light → heavy). A raw heavy only staggers. **Invulnerable** while down and rising: no hit, shot or throw lands (no off-the-ground combos) |
 | KO | 10 | — | Then the dissolve |
 | Win | 10 | — | |
 | **13** Parry → counter | 5 + 6 | Window 6, lockout 40; deflect 6, then the counter 6 / 2 / 14 (90 damage, guaranteed); attacker stunned 30 | A **fresh tap of Block** opens a 6-frame window; a hit landing in it does nothing (no damage, no chip), hit-stop 10, the attacker is pushed back ~10 px and stunned. The parrier is free well before the attacker, so even a heavy (12-frame startup) is a guaranteed punish. Every tap starts a 40-frame lockout, so mashing parries at most one tap in 40 frames. A parried shot simply vanishes. Throws can't be parried |
@@ -109,7 +109,7 @@ Gameplay runs on fixed 60 Hz logic frames and the art is stretched onto those ph
 
 | Archetype | Health | Walk forward / back (px/frame) | Damage | Special |
 |---|---|---|---|---|
-| All-rounder (Indra) | 1000 | 4 / 3 | 100% | Projectile, 9 px/frame (the balanced numbers) |
+| All-rounder (Indra) | 1000 | 4 / 3 (**real Heroes: 2.8 / 2.1**, below) | 100% | Projectile, 9 px/frame (the balanced numbers) |
 | Reach (Meghnad) | 1000 | 4 / 3 | 100% | **Nagapasha** (ruling 6): a serpent-coil shot, 10 px/frame, that **binds** on hit (50 frames, 80 damage, no knockdown) and is blockable for 40 chip. Light and heavy reach **Indra's + 45 px**, recovery **+2 frames** |
 | Balanced | 1000 | 4 / 3 | 100% | Projectile, 9 px/frame |
 | Rushdown | 900 | 5 / 4 | 108% | Charge, 10 px/frame |
@@ -494,6 +494,22 @@ Lo fits with levers 2 + 3, and only just (47.5 of 48). Hi fits only with lever 1
 | GPU memory | 13.9 MB | 5.0 MB |
 | Projection, 2 fighters + arena + effects (cap) | 63.6 MB (96) | 21.0 MB (48) |
 | WebP fallback, lo ×0.75 | | 44.8 MB (48) |
+
+## Rulings on the walk + knockdown reshoot (owner, 2026-11-04)
+
+| # | Ruling | Outcome |
+|---|---|---|
+| 1 | Get-up 40 frames (was 20) | Done. The five get-up cells (the roll f49, 55, 61 and the rise f71, 83) are now spread across 40 frames, 8 each. Untouchable throughout (`INVUL`, checked by N3) |
+| 2a | The walk cycle at 20 fps (was 12) | Done: the same 23 cells. Walk back is the cycle reversed at the same rate |
+| 2b | Real Heroes walk 170 px/s (was 240) | Done. Every Hero with real art (Indra, Meghnad, the later roster) walks **2.8 px a frame = 168 px/s**, the engine's nearest to 170; back is scaled the same, 2.1 = 126 px/s. The box Heroes keep their archetypes' speeds, so the AI ladder is unaffected. No AI spacing constant assumed a speed (they are all distances). Indra vs Meghnad AI, first contact: Beginner 40 → 50 frames, Advanced 30 → 37, Death Match 28 → 35; no time-outs in 360 fights; rounds about 10% longer (the longer get-up included) |
+| 3 | The budget recoveries | Approved |
+| 4 | Strike frames at 24 fps | Unchanged |
+
+**The walk ratio:**
+- **Stride:** the cycle covers 271 source px = 88.8 game px. Played at 20 fps, its 23 cells take 1.15 s (2.43× the shot), so the feet cover **77.2 px/s**.
+- **Game ÷ stride: 2.18 forward (168 ÷ 77.2), 1.63 back.** The target was 2.5 or lower. It was 7.6 before both changes.
+
+The every-move and walk-only recordings are on the Desktop (`arcade_indra_every_move`, `arcade_indra_walk`).
 
 ## The size budget (ruling 7)
 

@@ -60,7 +60,13 @@
     { name: "close in", until: function (g, d) { return d <= 230; }, input: [B.R, B.L] },
     { name: "the K.O.", nudge: function (g) { g.f[0].hp = Math.min(g.f[0].hp, 40); }, press: [0, B.HV], settle: 240 }
   ];
-  var SCRIPTS = { bout: STEPS, moves: MOVES, ko: KO };
+  var WALK = [   // ?demo=walk: the walk alone — 2 s forward, 2 s back (the owner's skate check)
+    { name: "standoff", frames: 20 },
+    { name: "walk forward 2 s", frames: 120, input: [B.R, 0] },
+    { name: "walk back 2 s", frames: 120, input: [B.L, 0] },
+    { name: "hold", frames: 30 }
+  ];
+  var SCRIPTS = { bout: STEPS, moves: MOVES, ko: KO, walk: WALK };
   function create(name) { return { step: 0, t: 0, pressed: false, nudged: false, steps: SCRIPTS[name] || STEPS }; }
   function free(f) { return f.state === "idle" || f.state === "walkf" || f.state === "walkb"; }
   // the inputs for this logic frame (call once per tick, before stepping)

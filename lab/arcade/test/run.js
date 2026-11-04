@@ -699,7 +699,7 @@ ok('C3 · INDRA, THE FULL CUT: every animated move has art (' + Object.entries(p
   ANIM_KEYS.every((k) => A[k] && animCells(A[k]).length && animCells(A[k]).every((c) => c >= 0 && c < NCELL)));
 const cellSrc = (k) => MAN.indra.cellsSrc[k], srcIn = (L, clip, a, b) => L.every((k) => { const m = /^(\w+) f(\d+)$/.exec(cellSrc(k)); return m && m[1] === clip && +m[2] >= a && +m[2] <= b; });
 const WK = MAN.indra.moves.walk;
-ok('C3d · THE RESHOOTS (2026-11-04): the walk is one clean stride cycle f25–f92 (' + new Set(A.walk.loop).size + ' cells, every 3rd frame at 12 fps), its ' + WK.rootTravelSource + ' px of forward travel removed by the planted feet at both ends (the loop closes in place, |Δ| ' + WK.loopError + '); the knockdown is the new 10b — hit, thrown back, onto his back (f8–f47) — and the get-up its backward roll and rise (f49–f83), the clip\'s leftward travel removed, on the ground line from the landing; the throw is clip 14 — reach f40–48, the pull-in, the knee\'s impact (f' + MAN.indra.moves.throwHit.impact + '), back to stance',
+ok('C3d · THE RESHOOTS (2026-11-04): the walk is one clean stride cycle f25–f92 (' + new Set(A.walk.loop).size + ' cells, every 3rd frame, played at ' + A.walk.fps + ' fps), its ' + WK.rootTravelSource + ' px of forward travel removed by the planted feet at both ends (the loop closes in place, |Δ| ' + WK.loopError + '); the knockdown is the new 10b — hit, thrown back, onto his back (f8–f47) — and the get-up its backward roll and rise (f49–f83), the clip\'s leftward travel removed, on the ground line from the landing; the throw is clip 14 — reach f40–48, the pull-in, the knee\'s impact (f' + MAN.indra.moves.throwHit.impact + '), back to stance',
   srcIn(A.walk.loop, 'walk', 25, 92) && WK.root === 'feet-linear' && WK.rootTravelSource > 200 && WK.loopError < 25 && srcIn(A.knockdown.span, 'knockdown', 7, 48) && srcIn(A.getup.span, 'knockdown', 48, 84) &&
   srcIn(A.throwHit.span.slice(0, 1), 'throw', 78, 86) && srcIn(A.throw.phases.startup.map((x) => x[0]), 'throw', 38, 47) && srcIn(A.counter.phases.active.map((x) => x[0]), 'parry', 58, 66));
 ok('C3b · IDLE AT 8 FPS (ruling 1): ' + MAN.indra.moves.idle.loopFrames + '-frame loop → ' + A.idle.loop.length + ' steps, ' + new Set(A.idle.loop).size + ' cells (at 12 fps it was ' + Math.ceil(MAN.indra.moves.idle.loopFrames / 2) + '); Meghnad\'s too (' + new Set(MAN.meghnad.anim.idle.loop).size + ')',
@@ -789,18 +789,36 @@ function archOk(KK) {
 const AR = archOk(K);
 ok('C12 · REACH FROM THE ART (ruling 5): Indra\'s hitboxes end at his weapon\'s tip at contact as measured on his clips (light ' + AR.T.light + ' → ' + K.moves.HEROES.indra.reach.light + ', heavy ' + AR.T.heavy + ' → ' + K.moves.HEROES.indra.reach.heavy + ', the Vajra leaves at ' + AR.T.special + ' → ' + K.moves.HEROES.indra.projX +
   ' logical px); Meghnad stays relative to Indra (reach +45, recovery +2); the box Heroes keep the template', AR.ok, J(AR.T));
-function nagaOk(KK) {   // 6 THE NAGAPASHA: binds on hit (no knockdown), blockable with chip, a follow-up lands while bound
+function nagaOk(KK) {   // 6 THE NAGAPASHA: binds on hit for exactly its bind frames (no knockdown), blockable with chip, and a follow-up lands while bound
   const BB = KK.fight.BTN, NP = KK.moves.NAGAPASHA;
-  const hit = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 260), hp0 = hit.f[1].hp; hit.f[0].meter = 100;
-  let boundFor = 0, follow = false;
-  for (let i = 0; i < 140; i++) { const near = Math.abs(hit.f[1].x - hit.f[0].x) / KK.fight.U; KK.fight.step(hit, [i === 0 ? BB.SP : hit.f[1].state === 'bound' ? (near > 230 ? BB.R : (i % 4 === 0 ? BB.HV : 0)) : 0, 0]); if (hit.f[1].state === 'bound') boundFor++; if (boundFor && hit.events.some((e) => e.t === 'hit' && e.move === 'heavy')) follow = true; }
+  const pure = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 260), hp0 = pure.f[1].hp; pure.f[0].meter = 100;
+  let boundFor = 0;
+  for (let i = 0; i < 140; i++) { KK.fight.step(pure, [i === 0 ? BB.SP : 0, 0]); if (pure.f[1].state === 'bound' && pure.hitstop === 0) boundFor++; }   // the bind's own frames (hit-stop excluded)
+  const fu = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 260); fu.f[0].meter = 100;
+  const reach = KK.fight.moveOf(fu.f[0], 'heavy').box.x1 + KK.moves.BODY.halfW - 10;   // his heavy's own reach: attack from where it lands
+  let follow = false;
+  for (let i = 0; i < 140; i++) { const near = Math.abs(fu.f[1].x - fu.f[0].x) / KK.fight.U; KK.fight.step(fu, [i === 0 ? BB.SP : fu.f[1].state === 'bound' ? (near > reach ? BB.R : (i % 4 === 0 ? BB.HV : 0)) : 0, 0]);
+    if (fu.events.some((e) => e.t === 'hit' && e.move === 'heavy') && !follow) follow = fu.events.filter((e) => e.t === 'hit' && e.move === 'heavy').length > 0 && fu.f[1].state !== 'bound' && fu.events.some((e) => e.t === 'bind'); }
+  const heavyAt = (fu.events.find((e) => e.t === 'hit' && e.move === 'heavy') || {}).frame, bindAt = (fu.events.find((e) => e.t === 'bind') || {}).frame;
+  const inTime = heavyAt != null && bindAt != null && heavyAt - bindAt < NP.bind + KK.moves.MOVES.special.hitstop;
   const bl = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 260), hb = bl.f[1].hp; bl.f[0].meter = 100;
   for (let i = 0; i < 90; i++) KK.fight.step(bl, [i === 0 ? BB.SP : 0, BB.R]);
-  return { ok: hit.events.some((e) => e.t === 'bind') && !hit.events.some((e) => e.t === 'knockdown') && boundFor >= NP.bind - 1 && boundFor <= NP.bind + 1 && hp0 - hit.f[1].hp >= NP.dmg && follow &&
-    bl.events.some((e) => e.t === 'block') && hb - bl.f[1].hp === NP.chip && !bl.events.some((e) => e.t === 'bind'), boundFor, follow, chip: hb - bl.f[1].hp };
+  return { ok: pure.events.some((e) => e.t === 'bind') && !pure.events.some((e) => e.t === 'knockdown') && boundFor === NP.bind && hp0 - pure.f[1].hp === NP.dmg && inTime &&
+    bl.events.some((e) => e.t === 'block') && hb - bl.f[1].hp === NP.chip && !bl.events.some((e) => e.t === 'bind'), boundFor, follow: inTime, followAfter: heavyAt - bindAt, chip: hb - bl.f[1].hp };
 }
 const NG = nagaOk(K);
-ok('C13 · MEGHNAD\'S NAGAPASHA (ruling 6): the coil is a shot that BINDS on hit (' + NG.boundFor + ' frames bound, no knockdown, ' + K.moves.NAGAPASHA.dmg + ' damage) so a follow-up heavy lands; held back, it is blocked for ' + NG.chip + ' chip', NG.ok, J(NG));
+ok('C13 · MEGHNAD\'S NAGAPASHA (ruling 6): the coil is a shot that BINDS on hit (exactly ' + NG.boundFor + ' frames, no knockdown, ' + K.moves.NAGAPASHA.dmg + ' damage) so a follow-up heavy from his reach lands while bound (' + NG.followAfter + ' frames after the bind, hit-stop included); held back, it is blocked for ' + NG.chip + ' chip', NG.ok, J(NG));
+
+function walkOk(KK) {   // the walk skate (owner ruling 2026-11-04): real Heroes walk 170 → 168 px/s forward; the stride played at 20 fps; game ÷ stride ≤ 2.5
+  const sp = (h, bit) => { const g = KK.fight.newFight({ p0: h, p1: 'box_surya' }), x0 = g.f[0].x; for (let i = 0; i < 60; i++) KK.fight.step(g, [bit, 0]); return Math.abs(g.f[0].x - x0) / KK.fight.U; };
+  const W = MAN.indra.moves.walk, travel = W.rootTravelSource * 220 / MAN.indra.stance.sourceHeight, play = MAN.indra.anim.walk.loop.length / MAN.indra.anim.walk.fps, stride = travel / play;
+  const r = { indraF: sp('indra', KK.fight.BTN.R), indraB: sp('indra', KK.fight.BTN.L), meghnadF: sp('meghnad', KK.fight.BTN.R), boxF: sp('box_surya', KK.fight.BTN.R), fps: MAN.indra.anim.walk.fps, stride: +stride.toFixed(1) };
+  r.ratio = +(r.indraF / stride).toFixed(2); r.ratioBack = +(r.indraB / stride).toFixed(2);
+  r.ok = r.indraF === 168 && r.meghnadF === 168 && r.indraB === 126 && r.boxF === 240 && r.fps === 20 && r.ratio <= 2.5 && KK.moves.KNOCKDOWN.getup === 40;
+  return r;
+}
+const WO = walkOk(K);
+ok('C14 · THE WALK SKATE (owner ruling, after the reshoot): the real Heroes walk ' + WO.indraF + ' px/s forward (170 asked; the engine\'s nearest) and ' + WO.indraB + ' back, the box Heroes still ' + WO.boxF + '; the stride plays at ' + WO.fps + ' fps, so the feet cover ' + WO.stride + ' px/s — game ÷ stride ' + WO.ratio + ' forward, ' + WO.ratioBack + ' back (target ≤ 2.5); and the get-up is ' + K.moves.KNOCKDOWN.getup + ' frames (was 20), untouchable throughout', WO.ok, J(WO));
 
 console.log('\n── ARCADE-1 · R3 · breakages: each must go red ──');
 const BR3 = [
@@ -810,6 +828,8 @@ const BR3 = [
   ['K4 · the idle loop driven by the move frame instead of the fight clock — it stops cycling (C9 goes red)', { scene: [['if (st === "idle") return idle(false);', 'if (st === "idle") return { move: "idle", cell: loopAt(A.idle.loop, f.mf, A.idle.fps) };']] }, (KK) => HEROS.every((h) => idleOk(KK, h).ok)],
   ['K6 · the knockdown shown as the idle (C11 goes red)', { scene: [['if (st === "knockdown") return A.knockdown ?', 'if (st === "knockdown") return idle(false); if (false) return A.knockdown ?']] }, (KK) => statesOk(KK).ok],
   ['K7 · the K.O. played on the fight clock, which has stopped — it never falls (C11b goes red)', { scene: [['var t = after || 0;', 'var t = 0;']] }, (KK) => koOk(KK).ok],
+  ['K10 · the real Heroes back at 240 px/s: the feet skate 3.1× (C14 goes red)', { moves: [['var REAL_WALK = { walkF: 2.8, walkB: 2.1 };', 'var REAL_WALK = { walkF: 4, walkB: 3 };']] }, (KK) => walkOk(KK).ok],
+  ['K11 · the get-up back at 20 frames (C14 goes red)', { moves: [['var KNOCKDOWN = { fall: 36, getup: 40,', 'var KNOCKDOWN = { fall: 36, getup: 20,']] }, (KK) => walkOk(KK).ok],
   ['K8 · the Nagapasha knocking down instead of binding (C13 goes red)', { fight: [['if (h.naga) {', 'if (false) {']] }, (KK) => nagaOk(KK).ok]
 ];
 for (const [name, mut, check] of BR3) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }

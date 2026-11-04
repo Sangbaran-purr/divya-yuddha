@@ -158,8 +158,9 @@
     }
     if (inp & BTN.D) { f.state = (inp & BTN.BL) || (inp & backBit(f)) ? "cblock" : "crouch"; f.vx = 0; return; }
     if (inp & BTN.BL) { f.state = "block"; f.vx = 0; return; }
-    if (inp & fwdBit(f)) { f.state = "walkf"; f.vx = f.facing * px(a.walkF); return; }
-    if (inp & backBit(f)) { f.state = "walkb"; f.vx = -f.facing * px(a.walkB); return; }
+    var hw = M.HEROES[f.hero] && M.HEROES[f.hero].fighter ? M.REAL_WALK : a;   // a Hero with real art walks at the real-Hero speed
+    if (inp & fwdBit(f)) { f.state = "walkf"; f.vx = f.facing * px(hw.walkF); return; }
+    if (inp & backBit(f)) { f.state = "walkb"; f.vx = -f.facing * px(hw.walkB); return; }
     f.state = "idle"; f.vx = 0;
   }
 
