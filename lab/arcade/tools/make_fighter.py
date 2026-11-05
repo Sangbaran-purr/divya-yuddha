@@ -56,7 +56,7 @@ LIGHT_CELLS = {"startup": 2, "active": 1, "recovery": 3}
 WEBP_Q = {"hi": 82, "lo": 80}
 STRIKE24 = os.environ.get("ARC_STRIKE24") == "1"
 STRIKE = {"before": 5, "after": 5}   # logic frames around the active frames shown at 24 fps (when STRIKE24)
-FRAMES = {"light": (5, 3, 9), "heavy": (12, 4, 18), "special": (16, 8, 26)}   # core/moves.js (Meghnad's +2 recovery is stretched at run time)
+FRAMES = {"light": (5, 3, 9), "heavy": (12, 4, 18), "special": (16, 8, 26), "counter": (6, 2, 14)}   # core/moves.js (Meghnad's +2 recovery is stretched at run time)
 KO_SPAN = 60                         # logic frames the K.O. fall plays over before the last still frame holds
 # the KTX2 candidates per rung (ruling 1: UASTC for hi, ETC1S for lo, or the measured best): tried on page 0, PSNR on the premultiplied RGBA
 ETC1S_MAX = ["-etc1s", "-q", "255", "-max_endpoints", "16128", "-max_selectors", "16128"]
@@ -115,10 +115,62 @@ HEROES = {
             "throwGrab": {"clip": "throw", "span": [54, 74], "n": 3},
             "throwHit":  {"clip": "throw", "impact": [78, 86], "span": [90, 100], "n": 3},
         }},
-    # Meghnad: placeholders until the reshoot (ruling 5/7 — his current idle + light only; every other move borrows at run time)
+    # Meghnad: the full cut (owner brief 2026-11-05, all 14 clips). Moves 01–08 have no owner frame notes: chosen from the clip strips (see
+    # the report); 05–14 from the owner's notes. Kling's strays: pieces off the body are cut by isolation; the knockdown's spear, apart
+    # from his hand for a few frames (f78–84), is kept by a wider reach so it does not blink out.
     "meghnad": {"name": "Meghnad", "weapon": "spear", "still": "meghnad-fighter-right-green-1920x1080-v2.png",
-        "clips": {"idle": "meghnad_01_idle.mp4", "light": "meghnad_06_light.mp4"},
-        "cut": {"light": {"clip": "light", "auto": True}}},
+        "clips": {"idle": "meghnad_01_idle.mp4", "walk": "meghnad_02_walk_forward.mp4", "jump": "meghnad_04_jump.mp4", "crouch": "meghnad_05_crouch.mp4",
+                  "light": "meghnad_06_light.mp4", "heavy": "meghnad_07_heavy.mp4", "special": "meghnad_08_special.mp4", "block": "meghnad_09_block.mp4",
+                  "hit": "meghnad_10_hit_reaction.mp4", "knockdown": "meghnad_10b_knockdown.mp4", "ko": "meghnad_11_ko.mp4", "win": "meghnad_12_win.mp4",
+                  "parry": "meghnad_13_counter_parry.mp4", "throw": "meghnad_14_throw.mp4"},
+        "iso": {"knockdown": [{"frames": [10, 15], "mainOnly": True}, {"frames": [76, 86], "nearPx": 61}],
+                "ko": [{"frames": [12, 18], "mainOnly": True}],
+                "hit": [{"frames": [26, 34], "mainOnly": True}]},
+        "cut": {
+            # walk: the clip steps out of the wide stance (f25–40), shuffles in a narrow guard (40–76), steps back into the wide stance (76–92) —
+            # no repeating stride inside it (the tightest loop, f46–64, barely moves the legs: it glided). So, like Indra's reshoot: the one pass
+            # f25–f92 between the two planted wide stances, travel removed by the feet's straight line; every 3rd frame at 20 fps
+            "walk":      {"clip": "walk", "range": [25, 92], "root": "feet-linear", "ground": "lowest", "step": 3, "playFps": 20},
+            # jump: crouch 25–30, take-off 31–34, tucked 38–44, falling 45–49, landing 50–55 → the 40-frame airtime
+            # (the clip smears the take-off 30–36 and the drop 44–49: the cells sit on its sharpest frames — measured, see the report)
+            "jump":      {"clip": "jump", "frames": [29, 36, 38, 40, 42, 44, 50, 54], "exact": True, "pivot": "feet"},
+            # 05 crouch (owner): down f20–33 (up = reversed by the engine), hold f35–120 (breathing)
+            "crouch":    {"clip": "crouch", "enter": [20, 33], "nEnter": 2, "hold": [35, 120], "shadow": True},
+            "light":     {"clip": "light", "auto": True},
+            # 07 heavy: overhead raise 16–36, the downward spear-drive lands 44–48, held, back to stance by ~100; the clip
+            # travels ~450 px forward and back (removed: the engine moves him); 72–90 skipped (a second, smeared thrust)
+            "heavy":     {"clip": "heavy", "phases": {"startup": [16, 38], "active": [44, 48], "recovery": [52, 100]}, "n": {"startup": 3, "active": 1, "recovery": 4},
+                          "skip": [[72, 90]], "root": "centroid"},
+            # 08 special (the Nagapasha cast): the spear drawn back 18–36, the thrust 40–46 into the held cast 46–76, back by ~100
+            "special":   {"clip": "special", "phases": {"startup": [16, 38], "active": [44, 52], "recovery": [60, 100]}, "n": {"startup": 3, "active": 2, "recovery": 5}},
+            # 09 block (owner): raise f30–45 (lowering reversed), hold f45–60 ping-pong; f60+ ignored (the spear drifts)
+            "block":     {"clip": "block", "enter": [30, 45], "nEnter": 2, "hold": [45, 60]},
+            # 10 hit (owner): f0–34 unusable (a stray spear through his chest f29–32); recoil 35–44, recoiled 45–76, recovery 77–90;
+            # the ~250 px backward travel removed (the engine supplies knockback). The light flinch = the heavy stagger's first three cells.
+            "hitLight":  {"clip": "hit", "frames": [36, 40, 44], "root": "centroid"},
+            "hitHeavy":  {"clip": "hit", "frames": [36, 40, 44, 58, 76, 84, 90], "root": "centroid"},
+            # 10b knockdown (owner): strays f12–13 dropped, start ~f16; flight 16–29, flat on his back 30–47; get-up 48–88 (sits up,
+            # kneels, grabs the spear, rises) on the approved 40 frames; the leftward travel removed (the centroid)
+            # (f25–29 smear the spear into a translucent streak that isolation would cut — the cells skip them: the spear never blinks out)
+            "knockdown": {"clip": "knockdown", "frames": [16, 20, 23, 30, 36, 41, 46], "exact": True, "root": "centroid", "groundFrom": 30},
+            "getup":     {"clip": "knockdown", "frames": [52, 62, 72, 80, 88], "root": "centroid", "groundFrom": 30},
+            # 11 KO (owner): strays f14–16 dropped; recoil 20–35; 36–58 SKIPPED (he stumbles toward the opponent); the fall 60–100,
+            # backward, flat, head to the left; joined 35→60 by the presentation's cross-fade; the last frame held; all travel removed
+            "ko":        {"clip": "ko", "frames": [22, 29, 35, 66, 78, 90, 100], "root": "centroid", "groundFrom": 80, "lie": [100, 118]},
+            # 12 win (owner): rise, plant the spear, raise the fist 15–90; hold from 90; the ~250 px forward step removed
+            "win":       {"clip": "win", "enter": [15, 90], "nEnter": 4, "hold": [90, 114], "root": "centroid"},
+            # 13 (owner): the deflect 15–24 is the parry; the counter: lunge 25–30, hit ~28–34, the held thrust 30–65, recovery 66–85;
+            # the ~400 px lunge travel removed; strike frames at 24 fps
+            "parry":     {"clip": "parry", "span": [15, 24], "n": 3},
+            "counter":   {"clip": "parry", "phases": {"startup": [23, 29], "active": [30, 34], "recovery": [40, 88]}, "n": {"startup": 2, "active": 1, "recovery": 3},
+                          "root": "centroid", "strike24": True},
+            # 14 the spear-hook throw (owner): wind-up 20–28, hook/catch 38–45 (startup/active; a whiff plays the wind-up back),
+            # the yank 45–56 over the grab's hold (the engine pulls the caught Hero to knee distance), the knee 58–75 (impact the
+            # sharpest of 62–68), recovery 76–90. The engine's throw range stays short: the hook's length is visual only.
+            "throw":     {"clip": "throw", "frames": {"startup": [22, 28], "active": [41], "recovery": [28, 22, 88]}, "exact": True, "root": "centroid"},
+            "throwGrab": {"clip": "throw", "span": [46, 56], "n": 3, "root": "centroid"},
+            "throwHit":  {"clip": "throw", "impact": [62, 68], "span": [76, 90], "n": 3, "root": "centroid"},
+        }},
 }
 
 def sha(path):
@@ -188,17 +240,21 @@ def sharpness(rgb, alpha):
     m = cv2.erode((alpha > 0.5).astype(np.uint8), np.ones((5, 5), np.uint8)).astype(bool)
     return float(lap[m].var()) if m.any() else 0.0
 
-def isolate(alpha):
+ISO_LAST = {"maxDropped": 0}
+def isolate(alpha, nearPx=9, mainOnly=False):
+    # nearPx: a piece within this many px of the body is kept (a spear tip a hand's width off the grip, for a few frames);
+    # mainOnly: only the body's own component survives (frames with stray objects Kling added touching nothing)
     mask = (alpha > 0.35).astype(np.uint8)
     n, lab, st, _ = cv2.connectedComponentsWithStats(mask, 8)
+    ISO_LAST["maxDropped"] = 0
     if n <= 1: return alpha, 0
     main = 1 + int(np.argmax(st[1:, cv2.CC_STAT_AREA]))
-    near = cv2.dilate((lab == main).astype(np.uint8), np.ones((9, 9), np.uint8)).astype(bool)
+    near = cv2.dilate((lab == main).astype(np.uint8), np.ones((nearPx, nearPx), np.uint8)).astype(bool)
     keep = np.zeros_like(mask, bool); dropped = 0
     for i in range(1, n):
         comp = lab == i
-        if i == main or (st[i, cv2.CC_STAT_AREA] >= FLECK and near[comp].any()) or (near[comp].any() and st[i, cv2.CC_STAT_AREA] >= 20): keep |= comp
-        else: dropped += 1
+        if i == main or (not mainOnly and ((st[i, cv2.CC_STAT_AREA] >= FLECK and near[comp].any()) or (near[comp].any() and st[i, cv2.CC_STAT_AREA] >= 20))): keep |= comp
+        else: dropped += 1; ISO_LAST["maxDropped"] = max(ISO_LAST["maxDropped"], int(st[i, cv2.CC_STAT_AREA]))
     # soft edge pixels below the threshold survive only next to what was kept
     zone = cv2.dilate(keep.astype(np.uint8), np.ones((7, 7), np.uint8)).astype(bool)
     out = np.where(zone, alpha, 0.0)
@@ -224,14 +280,14 @@ def rembg_mask(rgb):
     s, rm = _rembg
     return np.asarray(rm(Image.fromarray(rgb), session=s, only_mask=True)).astype(np.float32) / 255.0
 
-def matte(rgb, K, mode=None):
+def matte(rgb, K, mode=None, iso=None):
     alpha, fg = key(rgb, K, mode)
-    alpha, dropped = isolate(alpha)
+    alpha, dropped = isolate(alpha, **(iso or {})); biggest = ISO_LAST["maxDropped"]
     share = fringe_share(rgb, alpha, K); used = False
     if share > FRINGE_LIMIT:
         band = edge_band(alpha); m = rembg_mask(rgb)
         alpha = np.where(band, np.minimum(alpha, m), alpha); used = True
-    return alpha, fg, {"fringe": round(share, 5), "fringeAfter": round(fringe_share(rgb, alpha, K), 5), "rembg": used, "flecksCut": dropped}
+    return alpha, fg, {"fringe": round(share, 5), "fringeAfter": round(fringe_share(rgb, alpha, K), 5), "rembg": used, "flecksCut": dropped, "strayPx": biggest}
 
 def feet(alpha):
     rows = np.where((alpha > 0.5).any(axis=1))[0]
@@ -360,7 +416,7 @@ class Clip:
         self.path = os.path.join(ARC, "sources", hero, fn)
         self.name, self.fn, self.sha = name, fn, sha(self.path)
         self._frames = None; fr = self.frames; self.n = len(fr); self.fps = self._fps
-        self.K = ground_colour(fr[0]); self.cache = {}; self.post = None; self.notes = {}
+        self.K = ground_colour(fr[0]); self.cache = {}; self.post = None; self.notes = {}; self.iso = []
     @property
     def frames(self):
         if self._frames is None:
@@ -371,7 +427,8 @@ class Clip:
     def m(self, i, mode=None):
         k = (i, mode or DESPILL)
         if k not in self.cache:
-            a, fg, st = matte(self.frames[i], self.K, mode)
+            iso = next(({k: v for k, v in r.items() if k != "frames"} for r in self.iso if r["frames"][0] <= i <= r["frames"][1]), None)
+            a, fg, st = matte(self.frames[i], self.K, mode, iso)
             if self.post: a = self.post(i, a, fg, st)
             fg = np.clip(np.rint(fg), 0, 255)           # despill the values as STORED (8-bit), so the audit sees exactly what ships
             if (mode or DESPILL) != "old": fg = np.floor(final_despill(a, fg))   # isolation and the clean-ups make new edges: despill them too
@@ -485,6 +542,7 @@ def build(hero):
         clips[name] = Clip(hero, name, fn)
         c = clips[name]; print("  %s: %d frames @ %g fps, ground %s" % (fn, c.n, c.fps, c.K.astype(int).tolist()))
     cut = H["cut"]
+    for cn, rules in H.get("iso", {}).items(): clips[cn].iso = rules
 
     # ── per-clip clean-ups, before anything is measured ──
     notes = {}
@@ -557,25 +615,30 @@ def build(hero):
         off = M_torso(c.m(0), stance_src) if w.get("root") != "feet-linear" else 0.0
         base = piv("walk") if w.get("root") != "feet-linear" else (0.0, piv("walk")[1])
         wsrc = list(range(s, s + Lw, w.get("step", 2)))
-        anim["walk"] = {"loop": [cell("walk", i, (base[0] + tor[i] - off, base[1]), "walk") for i in wsrc], "fps": w.get("playFps", FPS_OUT)}
+        if "search" in w:   # the torso's travel from the cycle's own start, on its feet there; each cell on its own lowest point (the planted foot:
+            # Meghnad's clip drifts toward the camera, so frame 0's ground row is not the cycle's)
+            base, off = (M_feet(c.m(s))[1], None), tor[s]
+            anim["walk"] = {"loop": [cell("walk", i, (base[0] + tor[i] - off, float(M_lowest(c.m(i)))), "walk") for i in wsrc], "fps": w.get("playFps", FPS_OUT)}
+        else:   # ground "lowest": each cell on its own planted foot (Meghnad's clip drifts toward the camera — its ground row is not frame 0's)
+            gyw = (lambda i: float(M_lowest(c.m(i)))) if w.get("ground") == "lowest" else (lambda i: base[1])
+            anim["walk"] = {"loop": [cell("walk", i, (base[0] + tor[i] - off, gyw(i)), "walk") for i in wsrc], "fps": w.get("playFps", FPS_OUT)}
         moves_meta["walk"] = {"loop": [s, s + Lw], "loopError": round(e, 2), "rootTravelSource": round(max(tor.values()) - min(tor.values()), 1), "root": w.get("root", "torso"), "step": w.get("step", 2)}
         print("  walk: cycle f%d–f%d (%d frames, |Δ| %.2f after the torso shift) → %d cells at 12 fps; the clip's own travel %.0f px removed" % (s, s + Lw, Lw, e, len(wsrc), moves_meta["walk"]["rootTravelSource"]))
 
     def centroid_x(M): ys, xs = np.where(M["a"] > 0.5); return float(xs.mean()) + M["ox"]
+    def spiv(move, i):
+        sp = cut[move]; c = clips[sp["clip"]]; p = piv(sp["clip"])
+        if sp.get("root") == "centroid":   # the clip's travel removed: the body's centroid keeps the stance's offset from the feet
+            M0 = c.m(0); p = (p[0] + centroid_x(c.m(i)) - centroid_x(M0), p[1])
+        if sp.get("pivot") == "feet": return (p[0], float(M_lowest(c.m(i))))
+        if "groundFrom" in sp and i >= sp["groundFrom"]: return (p[0], float(M_lowest(c.m(i))))   # on the ground line: lying, rolling, rising
+        return grounded(sp["clip"], i, p)
     def span(move):
         sp = cut[move]; c = clips[sp["clip"]]; skip = sp.get("skip", [])
         if "frames" in sp: fr = [pick(c, t, 0 if sp.get("exact") else 1, skip) for t in sp["frames"]]
         else: fr = [pick(c, t, sp.get("look", 1), skip) for t in even(sp["span"][0], sp["span"][1], sp["n"])]
         fr = dedupe(c, fr)
-        ids = []
-        for i in fr:
-            p = piv(sp["clip"])
-            if sp.get("root") == "centroid":   # the clip's travel removed: the body's centroid keeps the stance's offset from the feet
-                M0 = c.m(0); p = (p[0] + centroid_x(c.m(i)) - centroid_x(M0), p[1])
-            if sp.get("pivot") == "feet": p = (p[0], float(M_lowest(c.m(i))))
-            elif "groundFrom" in sp and i >= sp["groundFrom"]: p = (p[0], float(M_lowest(c.m(i))))   # on the ground line: lying, rolling, rising
-            else: p = grounded(sp["clip"], i, p)
-            ids.append(cell(sp["clip"], i, p, move))
+        ids = [cell(sp["clip"], i, spiv(move, i), move) for i in fr]
         moves_meta[move] = {"src": fr}
         return ids
     def enter_hold(move):
@@ -584,8 +647,13 @@ def build(hero):
         h = dedupe(c, list(range(sp["hold"][0], min(sp["hold"][1], sp["hold"][0] + HOLD_WINDOW) + 1, int(round(c.fps / HOLD_FPS)))))
         h = h + h[-2:0:-1]          # forward then back: a seamless loop without a jump
         moves_meta[move] = {"enter": e, "hold": h}
-        return {"enter": [cell(sp["clip"], i, grounded(sp["clip"], i, piv(sp["clip"])), move) for i in e],
-                "hold": [cell(sp["clip"], i, grounded(sp["clip"], i, piv(sp["clip"])), move) for i in h], "fps": FPS_OUT, "holdFps": HOLD_FPS}
+        M0 = c.m(0)
+        def ep(i):
+            p = piv(sp["clip"])
+            if sp.get("root") == "centroid": p = (p[0] + centroid_x(c.m(i)) - centroid_x(M0), p[1])
+            return grounded(sp["clip"], i, p)
+        return {"enter": [cell(sp["clip"], i, ep(i), move) for i in e],
+                "hold": [cell(sp["clip"], i, ep(i), move) for i in h], "fps": FPS_OUT, "holdFps": HOLD_FPS}
 
     for mv in ("jump", "hitLight", "hitHeavy", "knockdown", "getup", "parry"):
         if mv in cut: anim[mv] = {"span": span(mv)}
@@ -594,7 +662,7 @@ def build(hero):
     if "ko" in cut:
         ko = span("ko"); c = clips["ko"]; lie = dedupe(c, list(range(cut["ko"]["lie"][0], cut["ko"]["lie"][1] + 1, 3)))
         last = lie[-1]
-        anim["ko"] = {"span": ko, "frames": KO_SPAN, "hold": [cell("ko", last, grounded("ko", last, piv("ko")), "ko")]}
+        anim["ko"] = {"span": ko, "frames": KO_SPAN, "hold": [cell("ko", last, spiv("ko", last), "ko")]}
         moves_meta["ko"]["lie"] = lie
 
     # THE ATTACKS — light (the clip test's reach-curve pick), heavy and special (the cut list), on the game's phases
@@ -612,7 +680,12 @@ def build(hero):
         else:
             phases = {p: [pick(c, t, 1, sp.get("skip", [])) for t in even(r[0], r[1], sp["n"][p])] for p, r in sp["phases"].items()}; meta = {}
         out = {}
-        if STRIKE24 and move in FRAMES:   # ruling 1: the strike frames at 24 fps (light, heavy, special) — real source frames, more of them around contact
+        M0 = c.m(0)
+        def ap(i):   # the attack's pivot: the clip's feet, or (root: centroid) the body's travel removed
+            p = piv(sp["clip"])
+            if sp.get("root") == "centroid": p = (p[0] + centroid_x(c.m(i)) - centroid_x(M0), p[1])
+            return grounded(sp["clip"], i, p)
+        if STRIKE24 and move in FRAMES and (move != "counter" or sp.get("strike24")):   # ruling 1: the strike frames at 24 fps (light, heavy, special) — real source frames, more of them around contact
             if sp.get("auto"):
                 cu = meta["curve"]; ranges = {"startup": [cu["windup"], cu["contact"] - 1], "active": [cu["contact"], cu["contact"] + 3], "recovery": [cu["holdEnd"], cu["back"]]}
             else: ranges = sp["phases"]
@@ -628,13 +701,12 @@ def build(hero):
                 keep = [k for k in range(len(fr)) if k == 0 or fr[k] != fr[k - 1]]   # the same real frame twice in a row is one cell
                 # a cell starts on a WHOLE logic frame (the game steps in whole frames: a cell at 2.5 of a 3-frame phase would never show)
                 keep = [k for k in keep if k == 0 or math.floor(pts[k]) != math.floor(pts[keep[keep.index(k) - 1]])]
-                phases[p] = [fr[k] for k in keep]; out[p] = [[cell(sp["clip"], fr[k], grounded(sp["clip"], fr[k], piv(sp["clip"])), move), round(math.floor(pts[k]) / Lp, 4)] for k in keep]
+                phases[p] = [fr[k] for k in keep]; out[p] = [[cell(sp["clip"], fr[k], ap(fr[k]), move), round(math.floor(pts[k]) / Lp, 4)] for k in keep]
         else:
             for p in ("startup", "active", "recovery"):
                 fr = phases[p]; n = len(fr)
-                out[p] = [[cell(sp["clip"], i, grounded(sp["clip"], i, piv(sp["clip"])), move), round(k / n, 4)] for k, i in enumerate(fr)]
-        act = [c.m(i) for i in phases["active"]]; p0 = piv(sp["clip"])
-        tips[move] = round((max(M_front(m) for m in act) - p0[0]) * 220.0 / stance_src, 1)
+                out[p] = [[cell(sp["clip"], i, ap(i), move), round(k / n, 4)] for k, i in enumerate(fr)]
+        tips[move] = round(max(M_front(c.m(i)) - ap(i)[0] for i in phases["active"]) * 220.0 / stance_src, 1)
         moves_meta[move] = dict(meta, phases=phases, tipFromPivotLogical=tips[move])
         print("  %s: startup %s · active %s · recovery %s · the weapon tip at contact %.1f logical px from the feet" % (move, phases["startup"], phases["active"], phases["recovery"], tips[move]))
         return {"phases": out}
@@ -646,7 +718,7 @@ def build(hero):
         imp = max(range(sp["impact"][0], sp["impact"][1] + 1), key=lambda i: M_sharp(c.m(i)))
         rest = dedupe(c, [pick(c, t) for t in even(sp["span"][0], sp["span"][1], sp["n"])])
         fr = [imp] + rest; moves_meta["throwHit"] = {"src": fr, "impact": int(imp)}
-        anim["throwHit"] = {"span": [cell("throw", i, grounded("throw", i, piv("throw")), "throwHit") for i in fr]}
+        anim["throwHit"] = {"span": [cell("throw", i, spiv("throwHit", i), "throwHit") for i in fr]}
     if "parry" in cut:
         c = clips["parry"]; tips["parry"] = round((max(M_front(c.m(i)) for i in moves_meta["parry"]["src"]) - piv("parry")[0]) * 220.0 / stance_src, 1)
     for mv in ("jump", "hitLight", "hitHeavy", "knockdown", "getup", "parry", "ko", "throwGrab", "throwHit"):
@@ -661,7 +733,10 @@ def build(hero):
     sample = cells[:: max(1, len(cells) // 12)]
     olive_old = sum(olive(clips[cl["clip"]].m(cl["i"], "old")["a"], clips[cl["clip"]].m(cl["i"], "old")["fg"].astype(np.float32)) for cl in sample)
     olive_new_s = sum(olive(clips[cl["clip"]].m(cl["i"])["a"], clips[cl["clip"]].m(cl["i"])["fg"].astype(np.float32)) for cl in sample)
-    audit = {"oliveEdgePixels": olive_new, "despillSample": {"cells": len(sample), "old": olive_old, "new": olive_new_s}, "groundAligned": aligned}
+    strays = [{"src": "%s f%d" % (cl["clip"], cl["i"]), "move": cl["move"], "droppedPx": clips[cl["clip"]].m(cl["i"])["st"].get("strayPx", 0)} for cl in cells]
+    strays = [x for x in strays if x["droppedPx"] >= FLECK]
+    print("  strays dropped (a detached piece ≥ %d source px): %s" % (FLECK, [(x["src"], x["droppedPx"]) for x in strays]))
+    audit = {"strayPiecesDropped": strays, "oliveEdgePixels": olive_new, "despillSample": {"cells": len(sample), "old": olive_old, "new": olive_new_s}, "groundAligned": aligned}
     if "win" in clips: audit["winTopRowMin"] = min(M_top(clips["win"].m(i)) for i in set(moves_meta["win"]["enter"] + moves_meta["win"]["hold"]))
     if "jump" in clips: audit["jumpTopRowMin"] = min(M_top(clips["jump"].m(i)) for i in moves_meta["jump"]["src"])
     if "special" in notes:

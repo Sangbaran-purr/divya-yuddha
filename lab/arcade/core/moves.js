@@ -95,7 +95,9 @@
     // light 198 (the clip test's 198.7), heavy 210; the Vajra leaves the tip at 177 on the special.
     indra:   { id: "indra", name: "Indra", arch: "allrounder", color: 0xe8c874, fighter: "indra", reach: { light: 198, heavy: 210 }, projX: 177 },
     // Meghnad: placeholder sheets until the reshoot; his archetype stays RELATIVE TO INDRA — Indra's reach + 45, 2 frames slower
-    meghnad: { id: "meghnad", name: "Meghnad", arch: "reach", color: 0x9b4fd1, fighter: "meghnad", reachFrom: "indra" }
+    // throwPull (owner brief 2026-11-05): his throw is a spear-hook — the grab's hold yanks the caught Hero in to knee distance (64 logical px
+    // between the two: bodies touching at 60), the range stays the template's 90 (the hook's length is visual only)
+    meghnad: { id: "meghnad", name: "Meghnad", arch: "reach", color: 0x9b4fd1, fighter: "meghnad", reachFrom: "indra", throwPull: 64 }
   };
 
   return { BODY: BODY, MOVES: MOVES, KNOCKDOWN: KNOCKDOWN, REAL_WALK: REAL_WALK, PARRY: PARRY, NAGAPASHA: NAGAPASHA, CLIPS: CLIPS, CHAIN_MAX: CHAIN_MAX, METER: METER, JUMP: JUMP, PROJECTILE: PROJECTILE, FRICTION: FRICTION,

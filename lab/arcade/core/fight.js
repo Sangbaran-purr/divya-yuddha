@@ -313,6 +313,13 @@
       var def = g.f[1 - i];
       if (att.state !== "grab" || def.state !== "grabbed") return;
       if (has(def, "light") && has(def, "heavy")) { def.buf.light = -1; def.buf.heavy = -1; techBoth(g, att, def); return; }
+      // 14 MEGHNAD'S SPEAR-HOOK (owner brief 2026-11-05): the hold yanks the caught Hero in to knee distance (hero.throwPull, logical
+      // px between the two), spread evenly over the hold's frames; the throw's RANGE is unchanged — the hook's length is visual only
+      var pull = M.HEROES[att.hero] && M.HEROES[att.hero].throwPull;
+      if (pull && att.stun > 0) {
+        var gap = Math.abs(def.x - att.x) - px(pull);
+        if (gap > 0) { var step = Math.ceil(gap / att.stun); def.x -= (def.x > att.x ? 1 : -1) * Math.min(gap, step); }
+      }
       if (att.stun > 0) return;
       var T = M.MOVES.throw, dmg = Math.floor(T.dmg * arch(att).dmg / 100);
       def.hp = Math.max(0, def.hp - dmg);

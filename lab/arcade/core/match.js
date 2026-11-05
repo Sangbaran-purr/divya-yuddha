@@ -12,12 +12,14 @@
 
   function checkLineup(l) {
     if (!Array.isArray(l) || l.length !== ROUNDS) throw new Error("a lineup is exactly " + ROUNDS + " Heroes");
-    if (new Set(l).size !== ROUNDS) throw new Error("a lineup has no repeats");
+    if (new Set(l).size !== ROUNDS && !repeatOk) throw new Error("a lineup has no repeats");
     l.forEach(function (id) { if (!M.HEROES[id]) throw new Error("unknown hero " + id); });
   }
 
+  var repeatOk = false;
   function createMatch(opts) {
-    checkLineup(opts.lineup0); checkLineup(opts.lineup1);
+    repeatOk = !!opts.repeat;   // the lab's ?aivs=1 recording: the same two real Heroes every round (a lab convenience; play keeps the rule)
+    checkLineup(opts.lineup0); checkLineup(opts.lineup1); repeatOk = false;
     var m = { lineups: [opts.lineup0.slice(), opts.lineup1.slice()], seconds: opts.seconds || M.ROUND_SECONDS,
       round: 0, wins: [0, 0], replays: 0, rounds: [], fought: [[], []], over: false, winner: null, fight: null };
     startRound(m);

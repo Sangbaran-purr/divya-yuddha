@@ -511,6 +511,45 @@ Lo fits with levers 2 + 3, and only just (47.5 of 48). Hi fits only with lever 1
 
 The every-move and walk-only recordings are on the Desktop (`arcade_indra_every_move`, `arcade_indra_walk`).
 
+## Meghnad's full cut (owner brief, 2026-11-05)
+
+All 14 of Meghnad's clips cut with Indra's pipeline (strong edge despill, ETC1S KTX2 + WebP fallback, idle 8 fps, trimmed holds, 24 fps strike frames). The six earlier clips (idle, walk, jump, light, heavy, special) came with no frame notes: their cuts were chosen from the clip strips. The other eight follow the owner's notes.
+
+| Move | Source frames used | Notes |
+|---|---|---|
+| Idle | auto loop 0–19, 8 fps | 5 cells |
+| Walk | f25–92, every 3rd frame, 20 fps, feet-linear, each cell on its planted foot | The clip steps out, shuffles, steps back in: no repeating stride. The tightest loop (f46–64) barely moved the legs, so the full pass is used. **Skate 3.95×** (168 game px/s vs 42.6 px/s of stride): over the 2.5 target |
+| Jump | 29, 36, 38, 40, 42, 44, 50, 54 | Kling smears the take-off and the drop: the cells sit on the sharpest frames |
+| Crouch | down 19–34, hold 35–59 (one cell after the hold trim) | Owner notes |
+| Light | auto (the reach curve) | |
+| Heavy | raise 15–32, the downward spear drive 45–47, back by 93; 72–90 skipped | ~450 px forward-and-back travel removed (body centroid) |
+| Special (Nagapasha cast) | draw 15–34, thrust 45–52, held 60–74, back 83–97 | |
+| Block | raise 31–46, hold 45–60 ping-pong | Owner notes |
+| Hit | 37, 41, 45 (the light flinch, shared), 58, 75, 83, 91 | Starts at f35 (the stray spear f29–32 never shown); ~250 px backward travel removed |
+| Knockdown | 16, 20, 23, 30, 36, 41, 46 | f25–29 smear the spear into a streak isolation would cut: skipped, so the spear never blinks out; leftward travel removed |
+| Get-up | 51, 63, 71, 79, 89 on the 40 frames | Untouchable throughout |
+| K.O. | 23, 30, 35 → 67, 77, 91, 101; holds f112 | f36–58 skipped (joined by the cross-fade); all travel removed |
+| Win | rise 15–91, hold 90–108 | ~250 px forward step removed |
+| Parry / counter | deflect 14–23; counter startup 23–27, hit 31, recovery 40–75 at 24 fps | ~400 px lunge removed |
+| Throw (spear-hook) | wind-up 22–28, hook 41; yank 47–55 over the hold; knee 68 (sharpest of 62–68), back 75–91 | The hold pulls the caught Hero in to **64 px** (knee distance, `throwPull`); the range stays 90 |
+
+**Strays:** Kling's flying pieces are cut by isolation; the knockdown's spear (f76–86) is kept by a wider reach (61 px), and the hit (f26–34), knockdown (f10–15) and K.O. (f12–18) stray frames keep only the body. One piece is cut from a played cell: heavy f15, a 975 px smear by his hand. Smeared Kling frames that remain: the heavy's raised legs (f26–32), the counter's lunge (f23–27).
+
+**Sheets:** 136 cells. hi one page 4088×3024, KTX2 1.13 MB (WebP 1.81) of the 1.6 MB cap; lo two pages, KTX2 0.53 MB (WebP 0.85) of 0.7. GPU 11.8 MB hi / 4.1 MB lo. No trims were needed.
+
+**Reach against the art** (logical px from the feet; the engine keeps Indra's reach + 45 for his light and heavy):
+
+| Move | The spear in the art | The engine | |
+|---|---|---|---|
+| Light | 218 | 243 | the box reaches 25 past the spear |
+| Heavy | 80 (a downward drive, spear upright in front of him) | 255 | **does not match** |
+| Special | thrust tip 241 | the coil starts at 60 | the coil appears inside the spear |
+| Counter | 186 | lands at any distance (by rule) | |
+| Throw | the hook reaches 229 | range 90 | visual only, as ruled |
+
+The memory projection now measures Meghnad and takes the heavier fighter twice (a mirror): lo 16.1 MB of 48, hi 52.5 of 96, the uncompressed fallback 33.8 of 48.
+
+
 ## The size budget (ruling 7)
 
 | | Target | Cap |
@@ -544,7 +583,7 @@ The view is 960×540 logical, on a 1440-px-wide stage.
 | R0 | Page, own Pixi copy, stamp, test runner, lab-law check | Built |
 | R1 | The deterministic fight core + box fighters, keyboard play, the frame data above, cancels, hit-stop, block, crouch vs high, meter, health; the rounds stub | Built |
 | R2 | Touch controls, the 4-frame buffer, the three AI levels under the honest-AI rule, the headless ladder and mirror | Built |
-| R3 | Indra as a real fighter: the fighter tool, the hitbox editor | **Indra fully animated** (13 clips; the throw borrows until clip 14), GPU-compressed pages, reach from the art, Nagapasha; Meghnad's reshoot and the hitbox editor follow |
+| R3 | Indra as a real fighter: the fighter tool, the hitbox editor | **Indra fully animated** (13 clips; the throw borrows until clip 14), GPU-compressed pages, reach from the art, Nagapasha; **Meghnad fully animated** (14 clips, 2026-11-05); the hitbox editor follows |
 | R4 | Meghnad on foot + the arena + the specials (the Vajra effect reused) + sound | |
 | R5 | The 3-Hero lineup, best of three, HUD, timer, pause, reduced motion (a third real Hero or a box stand-in) | |
 | R6 | Recovery + coins on a fake clock (ruling 5) | |

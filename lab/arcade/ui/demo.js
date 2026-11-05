@@ -66,7 +66,34 @@
     { name: "walk back 2 s", frames: 120, input: [B.L, 0] },
     { name: "hold", frames: 30 }
   ];
-  var SCRIPTS = { bout: STEPS, moves: MOVES, ko: KO, walk: WALK };
+  // ?demo=meghnad (the full cut, 2026-11-05): MEGHNAD (side 1, facing left) through every move — Indra is his partner
+  var MEGHNAD = [
+    { name: "standoff", frames: 30 },
+    { name: "walk forward", frames: 50, input: [0, B.L] },
+    { name: "walk back", frames: 40, input: [0, B.R] },
+    { name: "crouch", frames: 45, input: [0, B.D] },
+    { name: "rise", frames: 10 },
+    { name: "jump", press: [0, B.U], settle: 50 },
+    { name: "close in", until: function (g, d) { return d <= 230; }, input: [0, B.L] },
+    { name: "light", press: [0, B.LT], settle: 34 },
+    { name: "heavy", press: [0, B.HV], settle: 54 },
+    { name: "Indra's light, blocked", press: [B.LT, B.R], hold: [0, B.R], settle: 34 },
+    { name: "Indra closes", until: function (g, d) { return d <= 180; }, input: [B.R, 0], max: 120 },
+    { name: "a light taken", press: [B.LT, 0], settle: 34 },
+    { name: "Indra closes", until: function (g, d) { return d <= 180; }, input: [B.R, 0], max: 120 },
+    { name: "a heavy taken", press: [B.HV, 0], settle: 50 },
+    { name: "Indra closes", until: function (g, d) { return d <= 180; }, input: [B.R, 0], max: 120 },
+    { name: "the parry, then the automatic counter", press: [B.HV, 0], then: { at: 9, input: [0, B.BL] }, settle: 60 },
+    { name: "close for the throw", until: function (g, d) { return d <= 80; }, input: [0, B.L], max: 120 },
+    { name: "the spear-hook throw", press: [0, B.LT | B.HV], settle: 90 },
+    { name: "Indra closes", until: function (g, d) { return d <= 180; }, input: [B.R, 0], max: 120 },
+    { name: "knocked down (Indra's light → heavy), the get-up", press: [B.LT, 0], then: { at: 7, input: [B.HV, 0] }, settle: 100 },
+    { name: "back off", nudge: function (g) { g.f[1].meter = 100; }, until: function (g, d) { return d >= 300; }, input: [0, B.R], max: 120 },
+    { name: "the Nagapasha binds Indra", press: [0, B.SP], settle: 80 },
+    { name: "the last exchange", nudge: function (g) { g.f[0].hp = Math.min(g.f[0].hp, 40); }, until: function (g, d) { return d <= 230; }, input: [0, B.L], max: 120 },
+    { name: "Meghnad's win", press: [0, B.HV], settle: 240 }
+  ];
+  var SCRIPTS = { bout: STEPS, moves: MOVES, ko: KO, walk: WALK, meghnad: MEGHNAD };
   function create(name) { return { step: 0, t: 0, pressed: false, nudged: false, steps: SCRIPTS[name] || STEPS }; }
   function free(f) { return f.state === "idle" || f.state === "walkf" || f.state === "walkb"; }
   // the inputs for this logic frame (call once per tick, before stepping)

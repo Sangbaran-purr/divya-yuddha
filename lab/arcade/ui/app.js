@@ -215,13 +215,16 @@ function modeLabel() { return "fx " + (MODES.fx ? "on" : "off") + " · " + MODES
 let match = null, ais = null, rng = null, seed = 0, banner = 0, bannerText = "", paused = false, debug = false, finished = false;
 let PS = null, demo = null, ring = [], slowmo = null, cam = null, lastFight = null, overT = 0;   // overT: frames since the fight ended (the K.O. / win art)
 function shuffle(a, r) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
-function newAIs() { ais = [null, AI.createAI(level, rng, { round: match ? match.round : 0 })]; }   // the round is on screen: the Beginner holds its special in round 1
+function newAIs() { ais = [MODES.aivs ? AI.createAI("advanced", rng, { round: match ? match.round : 0 }) : null, AI.createAI(level, rng, { round: match ? match.round : 0 })]; }   // the round is on screen: the Beginner holds its special in round 1
 function startMatch() {
-  seed = (Date.now() ^ (Math.random() * 1e9)) >>> 0;     // a UI choice; the match itself replays from this seed
+  seed = MODES.raw.seed ? (+MODES.raw.seed >>> 0) : (Date.now() ^ (Math.random() * 1e9)) >>> 0;     // a UI choice (?seed= fixes it); the match itself replays from this seed
   rng = R.rng(seed);
   // ?opp=meghnad,indra,box_rakta fixes the opponent's lineup (a lab convenience); otherwise 3 of the Heroes at random
   const opp = (MODES.raw.opp || "").split(",").filter((id) => M.HEROES[id]);
-  match = MA.createMatch(MODES.demo ? { lineup0: DEMO.LINEUPS[0], lineup1: DEMO.LINEUPS[1], seconds: 99 }
+  // ?aivs=1: Indra vs Meghnad, both played by the Advanced AI, every round (the lab's AI-fight recording; ?seed= replays it)
+  if (MODES.aivs) level = "advanced";
+  match = MA.createMatch(MODES.aivs ? { lineup0: ["indra", "indra", "indra"], lineup1: ["meghnad", "meghnad", "meghnad"], repeat: true }
+    : MODES.demo ? { lineup0: DEMO.LINEUPS[0], lineup1: DEMO.LINEUPS[1], seconds: 99 }
     : { lineup0: lineup, lineup1: opp.length === MA.ROUNDS && new Set(opp).size === MA.ROUNDS ? opp : shuffle(HERO_IDS, rng).slice(0, MA.ROUNDS) });
   demo = MODES.demo ? DEMO.create(MODES.demoName) : null; overT = 0;
   newAIs(); finished = false; paused = false; slowmo = null; ring = []; PS = PR.create(MODES); cam = null; lastFight = match.fight;
@@ -302,7 +305,7 @@ function tick() {
   const g = match.fight;
   if (demo && MODES.capture && demo.step >= demo.steps.length) { finished = true; return; }   // a script with no K.O. (?demo=walk) ends the recording when it runs out
   if (g !== lastFight) { lastFight = g; PS = PR.create(MODES); ring = []; overT = 0; }
-  const inp = demo ? DEMO.inputs(demo, g) : [C.keyBits(held) | stickBitsNow | touchBits, AI.decide(ais[1], AI.observe(g, 1))];
+  const inp = demo ? DEMO.inputs(demo, g) : [ais[0] ? AI.decide(ais[0], AI.observe(g, 0)) : C.keyBits(held) | stickBitsNow | touchBits, AI.decide(ais[1], AI.observe(g, 1))];
   MA.step(match, inp);
   if (MODES.fx) { ring.push(F.snapshot(g)); if (ring.length > 40) ring.shift(); }
   PR.tick(PS, g, S.build(g, buildOpts(cam || undefined)));
@@ -373,7 +376,7 @@ function showResult() {
 async function capture(name) {
   const post = (path, body) => fetch("/__capture/" + encodeURIComponent(name) + path, { method: "POST", body });
   startMatch(); let i = 0;
-  while (!finished && i < 1200) {
+  while (!finished && i < (MODES.aivs ? 6000 : 1200)) {
     tick(); tick(); render(1 / 30);
     const blob = await new Promise((res) => canvasEl.toBlob(res, "image/jpeg", 0.92));
     await post("/" + i++, blob);
@@ -395,4 +398,4 @@ await loadFighters();
 document.documentElement.dataset.fighters = Object.keys(FIGHTERS).join(",") + "@" + RUNG;
 $("perf").hidden = !MODES.perf;
 if (MODES.capture) capture(MODES.capture);
-else { if (MODES.demo) startMatch(); requestAnimationFrame(frame); }
+else { if (MODES.demo || MODES.aivs) startMatch(); requestAnimationFrame(frame); }

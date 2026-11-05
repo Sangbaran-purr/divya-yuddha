@@ -663,7 +663,7 @@ function sheetsOk(man) {   // every page inside its rung, sides a multiple of 4 
       if (p.size[0] > SIDE[r] || p.size[1] > SIDE[r] || p.size[0] % 4 || p.size[1] % 4) errs.push(r + ' page ' + n + ' size');
       for (const k of ['webp', 'ktx2']) { const f = path.join(LAB, 'fighters', man.hero, p[k]); if (!fs.existsSync(f) || fs.statSync(f).size !== p.bytes[k]) errs.push(r + ' ' + p[k]); }
     });
-    R.cells.forEach((c, i) => { const p = R.pages[c.page]; if (!p || c.x < 0 || c.y < 0 || c.x + c.w > p.size[0] || c.y + c.h > p.size[1] || c.px < -0.25 * c.w || c.px > 1.25 * c.w || c.py < c.h - 4 || c.py > c.h + 4) errs.push(r + ' cell ' + i); });
+    R.cells.forEach((c, i) => { const p = R.pages[c.page]; if (!p || c.x < 0 || c.y < 0 || c.x + c.w > p.size[0] || c.y + c.h > p.size[1] || c.px < -0.25 * c.w || c.px > 1.25 * c.w || c.py < c.h - 4 || (c.py > c.h + 4 && man.cellsMove[i] !== 'knockdown')) errs.push(r + ' cell ' + i); });   // the knockdown's flight is airborne: its pivot (the ground) sits below the cell
   }
   return errs;
 }
@@ -814,11 +814,49 @@ function walkOk(KK) {   // the walk skate (owner ruling 2026-11-04): real Heroes
   const W = MAN.indra.moves.walk, travel = W.rootTravelSource * 220 / MAN.indra.stance.sourceHeight, play = MAN.indra.anim.walk.loop.length / MAN.indra.anim.walk.fps, stride = travel / play;
   const r = { indraF: sp('indra', KK.fight.BTN.R), indraB: sp('indra', KK.fight.BTN.L), meghnadF: sp('meghnad', KK.fight.BTN.R), boxF: sp('box_surya', KK.fight.BTN.R), fps: MAN.indra.anim.walk.fps, stride: +stride.toFixed(1) };
   r.ratio = +(r.indraF / stride).toFixed(2); r.ratioBack = +(r.indraB / stride).toFixed(2);
-  r.ok = r.indraF === 168 && r.meghnadF === 168 && r.indraB === 126 && r.boxF === 240 && r.fps === 20 && r.ratio <= 2.5 && KK.moves.KNOCKDOWN.getup === 40;
+  const WM = MAN.meghnad.moves.walk, sM = (WM.rootTravelSource * 220 / MAN.meghnad.stance.sourceHeight) / (MAN.meghnad.anim.walk.loop.length / MAN.meghnad.anim.walk.fps);
+  r.meghnadStride = +sM.toFixed(1); r.meghnadRatio = +(r.meghnadF / sM).toFixed(2); r.meghnadFps = MAN.meghnad.anim.walk.fps;
+  r.ok = r.indraF === 168 && r.meghnadF === 168 && r.indraB === 126 && r.boxF === 240 && r.fps === 20 && r.ratio <= 2.5 && r.meghnadFps === 20 && r.meghnadRatio <= 4.0 && KK.moves.KNOCKDOWN.getup === 40;
   return r;
 }
 const WO = walkOk(K);
-ok('C14 · THE WALK SKATE (owner ruling, after the reshoot): the real Heroes walk ' + WO.indraF + ' px/s forward (170 asked; the engine\'s nearest) and ' + WO.indraB + ' back, the box Heroes still ' + WO.boxF + '; the stride plays at ' + WO.fps + ' fps, so the feet cover ' + WO.stride + ' px/s — game ÷ stride ' + WO.ratio + ' forward, ' + WO.ratioBack + ' back (target ≤ 2.5); and the get-up is ' + K.moves.KNOCKDOWN.getup + ' frames (was 20), untouchable throughout', WO.ok, J(WO));
+ok('C14 · THE WALK SKATE (owner ruling, after the reshoot): the real Heroes walk ' + WO.indraF + ' px/s forward (170 asked; the engine\'s nearest) and ' + WO.indraB + ' back, the box Heroes still ' + WO.boxF + '; the stride plays at ' + WO.fps + ' fps, so the feet cover ' + WO.stride + ' px/s — game ÷ stride ' + WO.ratio + ' forward, ' + WO.ratioBack + ' back (target ≤ 2.5); Meghnad\'s stride ' + WO.meghnadStride + ' px/s at ' + WO.meghnadFps + ' fps, ' + WO.meghnadRatio + ' (OVER the 2.5 target — his clip takes short steps; reported to the owner, pinned ≤ 4); and the get-up is ' + K.moves.KNOCKDOWN.getup + ' frames (was 20), untouchable throughout', WO.ok, J(WO));
+
+// THE MEGHNAD CUT (owner brief 2026-11-05): every move his own, the cells inside the owner's frame notes, no visible cell missing a piece
+function meghnadCutOk(man) {
+  const cellsOf = (A) => A.phases ? Object.values(A.phases).flatMap((L) => L.map((x) => x[0])) : ['span', 'loop', 'enter', 'hold'].flatMap((k) => A[k] || []);   // phases hold [cell, fraction]
+  const used = (mv) => [...new Set(cellsOf(man.anim[mv]).map((k) => man.cellsSrc[k]))];
+  const fr = (mv) => used(mv).map((x) => +x.split(' f')[1]);
+  const MOVES = Object.keys(MAN.indra.anim).filter((k) => k !== 'counter' || MAN.indra.anim.counter);
+  const errs = [];
+  MOVES.forEach((m) => { if (!man.anim[m]) errs.push('missing ' + m); });
+  const inR = (mv, a, b, skip) => fr(mv).forEach((f) => { if (f < a || f > b || (skip && f >= skip[0] && f <= skip[1])) errs.push(mv + ' f' + f); });
+  inR('crouch', 19, 120); inR('block', 29, 61); inR('hitLight', 35, 91); inR('hitHeavy', 35, 91);   // ±1: the sharpest frame next to a note
+  inR('knockdown', 16, 47); inR('getup', 48, 89); inR('ko', 20, 120, [36, 58]); inR('win', 14, 120); inR('parry', 14, 25); inR('counter', 22, 89);
+  inR('throw', 20, 90); inR('throwGrab', 45, 57); inR('throwHit', 58, 91);
+  const strays = (man.audit.strayPiecesDropped || []).filter((x) => x.move !== 'heavy' || x.src !== 'heavy f15');
+  strays.forEach((x) => errs.push('stray cut from ' + x.src + ' (' + x.droppedPx + ' px)'));
+  return { ok: errs.length === 0, errs, cells: man.cellsSrc.length };
+}
+const MC = meghnadCutOk(MAN.meghnad);
+ok('C15 · MEGHNAD\'S FULL CUT (owner brief 2026-11-05): every one of Indra\'s ' + Object.keys(MAN.indra.anim).length + ' animations his own (' + MC.cells + ' cells); each cell inside the owner\'s frame notes (hit from f35, the K.O. skips f36–58, the knockdown from f16, the block before f60…); no piece dropped from a cell he plays (only heavy f15\'s smear, a hand\'s width of blur, see the report)', MC.ok, J(MC.errs));
+const MCbad = JSON.parse(JSON.stringify(MAN.meghnad)); MCbad.cellsSrc[MCbad.anim.hitHeavy.span[0]] = 'hit f30';
+red('C15b · BREAKAGE: a hit cell from the stray-spear frames (f30) (C15 goes red)', !meghnadCutOk(MCbad).ok);
+function pullOk(KK) {   // Meghnad's spear-hook: caught at the throw range (90), the hold pulls the Hero in to 64 by the time the throw lands
+  const g = KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), B = KK.fight.BTN; g.f[1].x = g.f[0].x + Math.round(88 * KK.fight.U);
+  let caught = -1, landed = -1, gapAtLand = null;
+  for (let i = 0; i < 40; i++) {
+    KK.fight.step(g, [i === 0 ? B.LT | B.HV : 0, 0]);
+    if (caught < 0 && g.events.some((e) => e.t === 'grab')) caught = i;
+    if (g.f[1].state === 'grabbed') gapAtLand = Math.abs(g.f[1].x - g.f[0].x) / KK.fight.U;   // the last frame of the hold: the knee lands here
+    if (landed < 0 && g.events.some((e) => e.t === 'knockdown' && e.move === 'throw')) landed = i;
+  }
+  const ind = KK.fight.newFight({ p0: 'indra', p1: 'box_surya' }); ind.f[1].x = ind.f[0].x + Math.round(88 * KK.fight.U); let gi = null;
+  for (let i = 0; i < 40; i++) { KK.fight.step(ind, [i === 0 ? B.LT | B.HV : 0, 0]); if (gi == null && ind.events.some((e) => e.t === 'knockdown')) gi = Math.abs(ind.f[1].x - ind.f[0].x) / KK.fight.U; }
+  return { ok: caught >= 0 && landed > caught && Math.abs(gapAtLand - KK.moves.HEROES.meghnad.throwPull) <= 3 && gi >= 85 && KK.moves.MOVES.throw.range === 90, caught, landed, gapAtLand, indraGap: gi };
+}
+const PL = pullOk(K);
+ok('C16 · MEGHNAD\'S SPEAR-HOOK THROW (owner brief): caught at 88 px (the range stays ' + K.moves.MOVES.throw.range + '), the hold yanks the Hero in to ' + PL.gapAtLand + ' px — knee distance — by its last frame, when the knee lands; Indra\'s hand grab does not pull (' + PL.indraGap + ' px)', PL.ok, J(PL));
 
 console.log('\n── ARCADE-1 · R3 · breakages: each must go red ──');
 const BR3 = [
@@ -830,6 +868,7 @@ const BR3 = [
   ['K7 · the K.O. played on the fight clock, which has stopped — it never falls (C11b goes red)', { scene: [['var t = after || 0;', 'var t = 0;']] }, (KK) => koOk(KK).ok],
   ['K10 · the real Heroes back at 240 px/s: the feet skate 3.1× (C14 goes red)', { moves: [['var REAL_WALK = { walkF: 2.8, walkB: 2.1 };', 'var REAL_WALK = { walkF: 4, walkB: 3 };']] }, (KK) => walkOk(KK).ok],
   ['K11 · the get-up back at 20 frames (C14 goes red)', { moves: [['var KNOCKDOWN = { fall: 36, getup: 40,', 'var KNOCKDOWN = { fall: 36, getup: 20,']] }, (KK) => walkOk(KK).ok],
+  ['K12 · Meghnad\'s hook pulls nothing (C16 goes red)', { moves: [['fighter: "meghnad", reachFrom: "indra", throwPull: 64 }', 'fighter: "meghnad", reachFrom: "indra" }']] }, (KK) => pullOk(KK).ok],
   ['K8 · the Nagapasha knocking down instead of binding (C13 goes red)', { fight: [['if (h.naga) {', 'if (false) {']] }, (KK) => nagaOk(KK).ok]
 ];
 for (const [name, mut, check] of BR3) { let still; try { still = check(load(mut)); } catch (e) { still = false; } red(name, !still); }
@@ -883,13 +922,14 @@ function switchesOk(KK, man) {   // cross-fade only at fps ≥ 24; borrowed art 
   const g = KK.fight.newFight({ p0: 'indra', p1: 'meghnad' }), B2 = KK.fight.BTN;
   const runP = (modes, fallback) => { const P = KK.present.create(modes), gg = KK.fight.newFight({ p0: 'meghnad', p1: 'indra' }); let fades = 0, extra = 0, borrowed = 0;
     for (let i = 0; i < 60; i++) { KK.fight.step(gg, [i === 5 ? B2.LT : i === 30 ? B2.HV : 0, 0]); const b = KK.scene.build(gg, { fighters: man, rung: 'lo', fallback: fallback, cam: KK.present.camera(P, gg, null, 1 / 60) });
-      KK.present.tick(P, gg, b); const sh = KK.present.shapes(P, gg, b); fades += sh.filter((x) => /^fade/.test(x.tag)).length; extra += sh.length; if (gg.f[0].state === 'attack' && gg.f[0].move === 'heavy') borrowed += b.shapes.filter((x) => x.k === 'sprite' && x.side === 0).length; }
+      KK.present.tick(P, gg, b); const sh = KK.present.shapes(P, gg, b); fades += sh.filter((x) => /^fade/.test(x.tag)).length; extra += sh.length; if (gg.f[0].state === 'attack' && gg.f[0].move === 'heavy') borrowed += b.shapes.filter((x) => x.k === 'sprite' && x.side === 0 && x.borrowed).length; }
     return { fades, extra, borrowed }; };
   const base = runP(KK.present.parseModes('?fx=0&cam=wide'), false), fx = runP(KK.present.parseModes(''), true);
   return { ok: base.fades === 0 && base.extra === 0 && base.borrowed === 0 && fx.borrowed > 0 && fx.extra > 0 && fx.fades > 0, base, fx };
 }
-const SW = switchesOk(K, MAN);
-ok('E7 · EACH LOOK ONLY WITH ITS SWITCH: ?fx=0 adds no shape, no cross-fade, no borrowed art; the default (fx on) borrows art for Meghnad\'s heavy, which has no clip yet (' + SW.fx.borrowed + ' frames), adds its shadows/sparks (' + SW.fx.extra + ' shapes) and cross-fades a move change on the 12 fps sheets (ruling 3: ' + SW.fx.fades + ' fade shapes)', SW.ok, J(SW));
+const MAN_NOHEAVY = JSON.parse(JSON.stringify(MAN)); delete MAN_NOHEAVY.meghnad.anim.heavy;   // both real Heroes now have every move: borrowing is tested on a copy missing one
+const SW = switchesOk(K, MAN_NOHEAVY), SWfull = switchesOk(K, MAN); SW.ok = SW.ok && SWfull.fx.borrowed === 0; SW.fullBorrowed = SWfull.fx.borrowed;
+ok('E7 · EACH LOOK ONLY WITH ITS SWITCH: ?fx=0 adds no shape, no cross-fade, no borrowed art; the default (fx on) borrows art for a move with no cells (Meghnad\'s heavy removed from a copy: ' + SW.fx.borrowed + ' frames; with his full cut nothing borrows: ' + SW.fullBorrowed + '), adds its shadows/sparks (' + SW.fx.extra + ' shapes) and cross-fades a move change on the 12 fps sheets (ruling 3: ' + SW.fx.fades + ' fade shapes)', SW.ok, J(SW));
 const code = (f) => rd(f).replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
 const NOR = ['ui/present.js', 'ui/demo.js'].filter((f) => /Math\.random|Date\.now|performance\.now/.test(code(f)));
 ok('E8 · the presentation and the demo are deterministic: no Math.random, no clock (a capture of the same bout is the same video)', NOR.length === 0, NOR);
@@ -899,14 +939,14 @@ const budgetOk = (P) => P.strike24 === shipped24();
 const bf = (x) => x.toFixed(1);
 ok('M1 · RULING 1, THE PROJECTION DECIDES: with compressed textures, idle at 8 fps, trimmed holds and the half-size lo Vajra, the 15-move projection is lo ' + bf(BP.rungs.lo.total15Strike) + ' MB of ' + BP.rungs.lo.cap + ', hi ' + bf(BP.rungs.hi.total15Strike) + ' MB of ' + BP.rungs.hi.cap +
   ' (2 fighters + arena + effects, strike frames included; margin = at most ' + (BU.MARGIN * 100) + '% of the cap) → the 24 fps strike frames ' + (BP.strike24 ? 'ship' : 'stay out') + ', and the sheets agree', budgetOk(BP) && BP.rungs.lo.fitsWithMargin && BP.rungs.hi.fitsWithMargin);
-red('M2 · BREAKAGE: caps too small for the margin (lo 20 / hi 70) but the strike frames shipped (M1 goes red)', !budgetOk(BU.project({ lo: 20, hi: 70 })));
+red('M2 · BREAKAGE: caps too small for the margin (lo 16 / hi 60) but the strike frames shipped (M1 goes red)', !budgetOk(BU.project({ lo: 16, hi: 60 })));
 const FB = BP.fallback;
 ok('M3 · THE UNCOMPRESSED FALLBACK (ruling 6, third set): with no compressed format (or ?tex=webp) the page loads the ' + FB.spec.rung + ' pages resized ×' + FB.spec.scale + ' → ' + bf(FB.total) + ' MB of the lo cap ' + FB.cap + ' (fighters ' + bf(FB.fighters) + ', arena ' + bf(FB.arena) + ', Vajra ' + bf(FB.effects) + '; unscaled it would be ' + bf(FB.unscaled) + ')',
   FB.spec.rung === 'lo' && FB.fits && FB.unscaled > FB.cap);
 const appF = rd('ui/app.js');
 ok('M3b · …and the page does it: no compressed format → RUNG lo and each WebP page resized as it loads (createImageBitmap), every cell rect and pivot scaled, drawn 1 / scale larger',
   /if \(!target\) \{ RUNG = FALLBACK\.rung;/.test(appF) && /createImageBitmap\(img, \{ resizeWidth: Math\.round\(p\.size\[0\] \* s\)/.test(appF) && /k = 1 \/ s; cells = Rg\.cells\.map/.test(appF));
-red('M4 · BREAKAGE: the fallback at full size (scale 1) is over the lo cap (M3 goes red)', (() => { const t = 4 * (BP.rungs.lo.indra.gpu + BP.rungs.lo.meghnadWorst) + 4 * BP.rungs.lo.arena + BP.rungs.lo.effects; return !(t <= FB.cap); })());
+red('M4 · BREAKAGE: the fallback at full size (scale 1) is over the lo cap (M3 goes red)', (() => { const t = 4 * BP.rungs.lo.pair + 4 * BP.rungs.lo.arena + BP.rungs.lo.effects; return !(t <= FB.cap); })());
 const trackedE = git(['ls-files', 'lab/arcade']).concat(git(['diff', '--name-only', '--cached']));
 ok('E9 · the recorder\'s output is never tracked: captures/ is ignored and no capture frame or video is staged or committed', gi.includes('captures/') && !trackedE.some((f) => /\/captures\/|\.(mp4|gif)$/.test(f)));
 
