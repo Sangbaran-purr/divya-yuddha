@@ -12,6 +12,12 @@ const TYPES = { '.html': 'text/html', '.js': 'text/javascript', '.mjs': 'text/ja
 const PY = path.join(REPO, 'lab/vfx-manifestation/tools/.venv/bin/python');
 http.createServer((req, res) => {
   const u = new URL(req.url, 'http://x');
+  const st = /^\/__still\/([A-Za-z0-9_-]+)$/.exec(u.pathname);   // a clarity still (PNG) → ~/Desktop/DY_arcade_screens/clarity/<name>.png
+  if (req.method === 'POST' && st) {
+    const chunks = []; req.on('data', (c) => chunks.push(c));
+    req.on('end', () => { const d = path.join(require('os').homedir(), 'Desktop', 'DY_arcade_screens', 'clarity'); fs.mkdirSync(d, { recursive: true }); fs.writeFileSync(path.join(d, st[1] + '.png'), Buffer.concat(chunks)); res.end('ok'); });
+    return;
+  }
   const m = /^\/__capture\/([A-Za-z0-9_-]+)\/(done|\d+)$/.exec(u.pathname);
   if (req.method === 'POST' && m) {
     const chunks = []; req.on('data', (c) => chunks.push(c));

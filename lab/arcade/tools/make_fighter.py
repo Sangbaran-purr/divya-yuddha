@@ -45,7 +45,7 @@ FLECK = 400
 FRINGE_LIMIT = 0.002
 FEET_ROWS = 14
 HEAD_BAND = 140
-STANCE_HI, STANCE_LO = 320, 192
+STANCE_HI, STANCE_LO = int(os.environ.get("ARC_STANCE_HI", 320)), 192   # ARC_STANCE_HI: an option build (the clarity pass) — never the shipped sheets
 PAGE = {"hi": 4096, "lo": 2048}
 LOOP_MIN = 16
 FPS_OUT, IDLE_FPS, HOLD_FPS = 12, 8, 8
@@ -62,6 +62,10 @@ KO_SPAN = 60                         # logic frames the K.O. fall plays over bef
 ETC1S_MAX = ["-etc1s", "-q", "255", "-max_endpoints", "16128", "-max_selectors", "16128"]
 # OWNER RULING (2026-11-04, third set): ETC1S on both rungs, UASTC off (it measured 35.8 dB but 4.9 MB a fighter on hi, 3× the cap)
 ENC = {"hi": [("etc1s", ETC1S_MAX)], "lo": [("etc1s", ETC1S_MAX)]}
+UASTC_HI = ["-uastc", "-uastc_level", "2", "-uastc_rdo_l", "1.0", "-ktx2_zstandard_level", "18"]
+if os.environ.get("ARC_ENC_HI") == "uastc": ENC["hi"] = [("uastc", UASTC_HI)]   # an option build (the clarity pass)
+OPT_OUT = os.environ.get("ARC_OUT")      # an option build writes here (not fighters/), with no contact sheets
+
 # THE CHOICE (ruling 1: "UASTC for hi, ETC1S for lo, or your measured best"): the best PSNR whose projected per-fighter download fits the
 # budget's cap (docs/ARCADE_v1.md: hi 1.6 MB, lo 0.7 MB); if none fits, the smallest
 DL_CAP = {"hi": 1.6 * 1048576, "lo": 0.7 * 1048576}
@@ -750,7 +754,7 @@ def build(hero):
         if k in audit: print("    %s: %s" % (k, audit[k]))
 
     # ── the cells, both rungs: pages, WebP + KTX2 ──
-    out = os.path.join(ARC, "fighters", hero); os.makedirs(out, exist_ok=True)
+    out = os.path.join(OPT_OUT, hero) if OPT_OUT else os.path.join(ARC, "fighters", hero); os.makedirs(out, exist_ok=True)
     for f in os.listdir(out):
         if f.endswith((".webp", ".ktx2")): os.remove(os.path.join(out, f))
     rungs, hi_cells = {}, None
@@ -805,6 +809,7 @@ def build(hero):
     print("  mirror: feet within 3 px of the ground row on %d of %d flipped cells" % (sum(feet_ok), len(feet_ok)))
 
     # ── the owner's screens: one contact sheet per move, and the despill before/after ──
+    if OPT_OUT: return man
     os.makedirs(SCREENS, exist_ok=True)
     for mv in dict.fromkeys(cl["move"] for cl in cells):
         ks = [k for k, cl in enumerate(cells) if cl["move"] == mv]

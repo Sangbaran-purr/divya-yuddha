@@ -580,6 +580,34 @@ Indra, checked the same way: light 198 / heavy 210 / Vajra 177 match his art (19
 **3 · The balance check** (Indra vs Meghnad, both AIs, 200 rounds each, sides alternating, test C17): Meghnad wins **58.7% at Advanced** (115–81, 4 draws; 59 expected) and **63.8% at Death Match** (127–72, 1 draw); no time-outs. Inside the 40–65 target.
 
 
+## The sprite clarity pass (owner, 2026-11-05): diagnosis
+
+Measured on a 1512×900 window at DPR 2 (a MacBook), stills in `~/Desktop/DY_arcade_screens/clarity/`.
+
+| Cause | Measured | Verdict |
+|---|---|---|
+| a · renderer resolution | `resolution` = DPR (capped at 2), `autoDensity` on: a 960×540 CSS canvas with a 1920×1080 backing = 1:1 device pixels, no browser upscale. The HUD is HTML text, sharp. | not a cause |
+| b · cell size vs on-screen size | hi cells are 320 px (stance), lo 192. Displayed stance = 220 × zoom × 2 device px: wide camera (zoom 1) 440 px → hi ×1.38, lo ×2.29; default tight camera at the standoff (zoom 1.17) 515 px → hi ×1.61, lo ×2.68; closest (zoom 1.25) 550 px → **hi ×1.72**, lo ×2.86. A MacBook loads hi. | **main cause**: every fighter is magnified 1.4–1.7× |
+| c · filtering, mipmaps, sub-pixel | linear filtering, no mipmaps (cells are never shrunk on a DPR-2 screen, so mipmaps would do nothing); a modelled 0 / 0.25 / 0.5 px offset at ×1.72 changes sharpness by under 1% | not a cause; no snap needed |
+| d · compression | idle cell vs the source: Indra ETC1S **26.7 dB** (WebP 33.3), Meghnad ETC1S **28.4 dB** (WebP 32.9) | **second cause**: ETC1S's block noise, magnified 1.7× |
+| e · cross-fade | 50 AI fights: 0 of 10,973 active (strike) frames carry a fade; it sits only on the first 3 frames of a move change (38% of startup frames, ghost alpha 0.5) | not a cause |
+
+No no-cost fix applies: the page already renders at full device resolution, and snapping or mipmaps would not change the picture.
+
+**Options (Indra, the heavier fighter; memory = the heavier fighter twice + arena 7.0 + Vajra 17.7, hi):**
+
+| Option | Upscale at the closest zoom | Quality (idle, vs source) | Download per fighter (cap 1.6 MB) | GPU per fighter | Match memory (cap 96, margin 72) |
+|---|---|---|---|---|---|
+| Today (hi 320, ETC1S) | ×1.72 | 26.7 dB | 1.51 MB | 13.9 MB | 52.5 MB |
+| A · hi cells 440 px, ETC1S | ×1.25 | 28.1 dB | **2.60 MB** (over) | 25.8 MB | 76.4 MB (fits the cap, over the margin) |
+| B · hi 320 px, UASTC | ×1.72 | **34.3 dB** | **4.55 MB** (2.9× over) | 13.9 MB | 52.5 MB |
+| A + B (estimated) | ×1.25 | ~34 dB | ~8.6 MB | 25.8 MB | 76.4 MB |
+| C · cross-fade off on strike frames | — | — | 0 | 0 | no visible change (it never falls on them) |
+| D · closest zoom capped at 0.87 | ×1.20 | 26.7 dB | 0 | 0 | 0 — fighters 30% smaller at their closest (550 → 384 px) |
+
+Option builds go to scratch with `ARC_STANCE_HI` / `ARC_ENC_HI=uastc` / `ARC_OUT` (tools/make_fighter.py); the page loads one with `?fbase=captures/opt/<name>/` and `?still=1` takes a device-resolution still (`window.__arcStill`).
+
+
 ## The size budget (ruling 7)
 
 | | Target | Cap |

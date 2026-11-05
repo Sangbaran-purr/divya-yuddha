@@ -73,7 +73,8 @@ async function loadFighters() {
   const ids = [...new Set(Object.values(M.HEROES).map((h) => h.fighter).filter(Boolean))];
   await Promise.all(ids.map(async (id) => {
     try {
-      const base = "fighters/" + id + "/";
+      // ?fbase=captures/opt/<name>/ loads a fighter from an OPTION build (the clarity pass; captures/ is never committed), else fighters/
+      const base = (MODES.raw.fbase && /^captures\/opt\/[A-Za-z0-9_]+\/$/.test(MODES.raw.fbase) && (await fetch(MODES.raw.fbase + id + "/manifest.json", { method: "HEAD" })).ok ? MODES.raw.fbase : "fighters/") + id + "/";
       const man = await (await fetch(base + "manifest.json?v=" + STAMP)).json();
       const Rg = man.rungs[RUNG], pages = Rg.pages;
       let imgs, bytes = 0, decoded = 0, tex = "webp", k = 1, cells = Rg.cells;
@@ -121,7 +122,7 @@ async function initRenderer() {
     const PIXI = await import("../runtime/pixi.min.mjs?v=" + STAMP); PIXI_MOD = PIXI;
     const app = new PIXI.Application();
     await app.init({ width: S.VIEW_W, height: S.VIEW_H, background: "#120c06", antialias: true, preference: "webgl",
-      resolution: MODES.capture ? 1 : Math.min(2, window.devicePixelRatio || 1), autoDensity: true, preserveDrawingBuffer: !!MODES.capture });
+      resolution: MODES.capture ? 1 : Math.min(2, window.devicePixelRatio || 1), autoDensity: true, preserveDrawingBuffer: !!MODES.capture || !!MODES.raw.still });
     host.appendChild(app.canvas); canvasEl = app.canvas;
     const G = { bg: new PIXI.Graphics(), shadow: new PIXI.Graphics(), body: new PIXI.Graphics(), fx: new PIXI.Graphics(), glow: new PIXI.Graphics() };
     const CT = { under: new PIXI.Container(), body: new PIXI.Container(), over: new PIXI.Container(), glow: new PIXI.Container() };
@@ -397,5 +398,22 @@ await initRenderer();   // first: the loader needs to know whether the GPU path 
 await loadFighters();
 document.documentElement.dataset.fighters = Object.keys(FIGHTERS).join(",") + "@" + RUNG;
 $("perf").hidden = !MODES.perf;
+// ── THE CLARITY STILLS (?still=1, a lab tool): window.__arcStill(o) sets up a fight, steps it (o.steps: [[inputs, frames], …]) through
+//    the real tick (fight + presentation), draws ONE frame with a fixed camera {x, zoom} at the page's own device resolution, and posts
+//    it as a PNG to the capture server (~/Desktop/DY_arcade_screens/clarity/<o.name>.png). o.noFade drops the cross-fade shapes. ──
+if (MODES.raw.still) window.__arcStill = async (o) => {
+  match = MA.createMatch({ lineup0: [o.p0, "box_surya", "box_varna"], lineup1: [o.p1, "box_rakta", "box_varna"], seconds: 99 });
+  const g = match.fight; finished = false; banner = 0; $("banner").hidden = true; PS = PR.create(MODES); lastFight = g; overT = 0;
+  g.f[0].x = Math.round(o.x0 * F.U); g.f[1].x = Math.round(o.x1 * F.U); g.frame = o.frame || 0;
+  for (const [inp, n] of o.steps || []) for (let i = 0; i < n; i++) { MA.step(match, inp); PR.tick(PS, g, S.build(g, buildOpts(cam || undefined))); }
+  $("game").hidden = true;   // freeze the loop: the frame below is the only one drawn
+  cam = { x: o.camX != null ? o.camX : (g.f[0].x + g.f[1].x) / 2 / F.U, zoom: o.zoom };
+  const built = S.build(g, buildOpts(cam)); let sh = built.shapes.concat(PR.shapes(PS, g, built));
+  if (o.noFade) sh = sh.filter((s) => !/^fade/.test(s.tag));
+  draw(sh);
+  const blob = await new Promise((res) => canvasEl.toBlob(res, "image/png"));
+  await fetch("/__still/" + encodeURIComponent(o.name), { method: "POST", body: blob });
+  return { w: canvasEl.width, h: canvasEl.height, cam, fades: sh.filter((s) => /^fade/.test(s.tag)).length, state: g.f.map((f) => f.state + ":" + (f.move || "") + ":" + f.mf) };
+};
 if (MODES.capture) capture(MODES.capture);
 else { if (MODES.demo || MODES.aivs) startMatch(); requestAnimationFrame(frame); }
