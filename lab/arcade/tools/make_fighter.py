@@ -61,14 +61,19 @@ KO_SPAN = 60                         # logic frames the K.O. fall plays over bef
 # the KTX2 candidates per rung (ruling 1: UASTC for hi, ETC1S for lo, or the measured best): tried on page 0, PSNR on the premultiplied RGBA
 ETC1S_MAX = ["-etc1s", "-q", "255", "-max_endpoints", "16128", "-max_selectors", "16128"]
 # OWNER RULING (2026-11-04, third set): ETC1S on both rungs, UASTC off (it measured 35.8 dB but 4.9 MB a fighter on hi, 3× the cap)
-ENC = {"hi": [("etc1s", ETC1S_MAX)], "lo": [("etc1s", ETC1S_MAX)]}
-UASTC_HI = ["-uastc", "-uastc_level", "2", "-uastc_rdo_l", "1.0", "-ktx2_zstandard_level", "18"]
-if os.environ.get("ARC_ENC_HI") == "uastc": ENC["hi"] = [("uastc", UASTC_HI)]   # an option build (the clarity pass)
+# OWNER RULING (2026-11-05, the clarity pass, option B, then the encoding ruling): ONE hi encoding for every fighter and effect — UASTC,
+# RDO λ 2.5 with the large RDO dictionary (32768), zstd 22 (Indra ~4.05 MB / 33.0 dB against the uncompressed cells, the sweep in
+# docs/ARCADE_v1.md); the hi cap raised to 4.25 MB. lo stays ETC1S.
+UASTC_HI = ["-uastc", "-uastc_level", "2", "-uastc_rdo_l", "2.5", "-uastc_rdo_d", "32768", "-ktx2_zstandard_level", "22"]
+ENC = {"hi": [("uastc_rdo2.5_d32k", UASTC_HI)], "lo": [("etc1s", ETC1S_MAX)]}
+HI_PSNR_MIN = 33.0
+if os.environ.get("ARC_UASTC_TRY"): ENC["hi"] = [tuple(x) for x in json.loads(os.environ["ARC_UASTC_TRY"])]   # an exploratory sweep (scratch builds only)
+if os.environ.get("ARC_ENC_HI") == "etc1s": ENC["hi"] = [("etc1s", ETC1S_MAX)]   # the previous hi (an option build, for the before stills)
 OPT_OUT = os.environ.get("ARC_OUT")      # an option build writes here (not fighters/), with no contact sheets
 
 # THE CHOICE (ruling 1: "UASTC for hi, ETC1S for lo, or your measured best"): the best PSNR whose projected per-fighter download fits the
 # budget's cap (docs/ARCADE_v1.md: hi 1.6 MB, lo 0.7 MB); if none fits, the smallest
-DL_CAP = {"hi": 1.6 * 1048576, "lo": 0.7 * 1048576}
+DL_CAP = {"hi": 4.25 * 1048576, "lo": 0.7 * 1048576}   # hi raised 1.6 → 4.25 MB (owner rulings, the clarity pass)
 NODE = "node"
 
 # THE CUT LIST per Hero (owner brief 2026-11-04 + the clip strips). Frame numbers are source frames (24 fps).
@@ -775,7 +780,8 @@ def build(hero):
         area0 = sheets[0].shape[0] * sheets[0].shape[1]; area = sum(sh.shape[0] * sh.shape[1] for sh in sheets)
         for c in cand: c["projectedBytes"] = int(c["bytes"] * area / area0)
         fit = [c for c in cand if c["projectedBytes"] <= DL_CAP[rung]]
-        choice = max(fit, key=lambda c: c["psnr"]) if fit else min(cand, key=lambda c: c["projectedBytes"])
+        good = [c for c in fit if c["psnr"] >= HI_PSNR_MIN] if rung == "hi" and len(cand) > 1 else []
+        choice = min(good, key=lambda c: c["projectedBytes"]) if good else max(fit, key=lambda c: c["psnr"]) if fit else min(cand, key=lambda c: c["projectedBytes"])
         if rung in ENC_LOCK: choice = next(c for c in cand if c["name"] == ENC_LOCK[rung]); choice = dict(choice, lockedBy=ENC_LOCK["by"])
         elif len(imgs) >= 100: ENC_LOCK[rung] = choice["name"]; ENC_LOCK["by"] = hero
         print("  %s encodings (page 0): %s → %s" % (rung, ", ".join("%s %d KB (all pages ≈%d KB) %.1f dB" % (c["name"], c["bytes"] // 1024, c["projectedBytes"] // 1024, c["psnr"]) for c in cand), choice["name"]))

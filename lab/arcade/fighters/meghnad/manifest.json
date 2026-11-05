@@ -715,39 +715,43 @@
      ],
      "bytes": {
       "webp": 1899768,
-      "ktx2": 1183268
+      "ktx2": 3233157
      }
     }
    ],
    "encoding": {
-    "chosen": "etc1s",
+    "chosen": "uastc_rdo2.5_d32k",
     "args": [
-     "-etc1s",
-     "-q",
-     "255",
-     "-max_endpoints",
-     "16128",
-     "-max_selectors",
-     "16128"
+     "-uastc",
+     "-uastc_level",
+     "2",
+     "-uastc_rdo_l",
+     "2.5",
+     "-uastc_rdo_d",
+     "32768",
+     "-ktx2_zstandard_level",
+     "22"
     ],
     "candidates": [
      {
-      "name": "etc1s",
+      "name": "uastc_rdo2.5_d32k",
       "args": [
-       "-etc1s",
-       "-q",
-       "255",
-       "-max_endpoints",
-       "16128",
-       "-max_selectors",
-       "16128"
+       "-uastc",
+       "-uastc_level",
+       "2",
+       "-uastc_rdo_l",
+       "2.5",
+       "-uastc_rdo_d",
+       "32768",
+       "-ktx2_zstandard_level",
+       "22"
       ],
-      "bytes": 1183268,
-      "psnr": 28.83,
-      "projectedBytes": 1183268
+      "bytes": 3233157,
+      "psnr": 33.65,
+      "projectedBytes": 3233157
      }
     ],
-    "downloadCap": 1677721.6
+    "downloadCap": 4456448.0
    },
    "cells": [
     {

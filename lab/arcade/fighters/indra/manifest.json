@@ -492,6 +492,38 @@
   "parry": 130.9
  },
  "audit": {
+  "strayPiecesDropped": [
+   {
+    "src": "parry f41",
+    "move": "parry",
+    "droppedPx": 1088
+   },
+   {
+    "src": "light f20",
+    "move": "light",
+    "droppedPx": 5204
+   },
+   {
+    "src": "special f55",
+    "move": "special",
+    "droppedPx": 1413
+   },
+   {
+    "src": "special f57",
+    "move": "special",
+    "droppedPx": 469
+   },
+   {
+    "src": "parry f43",
+    "move": "counter",
+    "droppedPx": 16143
+   },
+   {
+    "src": "parry f58",
+    "move": "counter",
+    "droppedPx": 1949
+   }
+  ],
   "oliveEdgePixels": 0,
   "despillSample": {
    "cells": 13,
@@ -626,39 +658,43 @@
      ],
      "bytes": {
       "webp": 2453732,
-      "ktx2": 1586682
+      "ktx2": 4249259
      }
     }
    ],
    "encoding": {
-    "chosen": "etc1s",
+    "chosen": "uastc_rdo2.5_d32k",
     "args": [
-     "-etc1s",
-     "-q",
-     "255",
-     "-max_endpoints",
-     "16128",
-     "-max_selectors",
-     "16128"
+     "-uastc",
+     "-uastc_level",
+     "2",
+     "-uastc_rdo_l",
+     "2.5",
+     "-uastc_rdo_d",
+     "32768",
+     "-ktx2_zstandard_level",
+     "22"
     ],
     "candidates": [
      {
-      "name": "etc1s",
+      "name": "uastc_rdo2.5_d32k",
       "args": [
-       "-etc1s",
-       "-q",
-       "255",
-       "-max_endpoints",
-       "16128",
-       "-max_selectors",
-       "16128"
+       "-uastc",
+       "-uastc_level",
+       "2",
+       "-uastc_rdo_l",
+       "2.5",
+       "-uastc_rdo_d",
+       "32768",
+       "-ktx2_zstandard_level",
+       "22"
       ],
-      "bytes": 1586682,
-      "psnr": 27.26,
-      "projectedBytes": 1586682
+      "bytes": 4249259,
+      "psnr": 33.02,
+      "projectedBytes": 4249259
      }
     ],
-    "downloadCap": 1677721.6
+    "downloadCap": 4456448.0
    },
    "cells": [
     {

@@ -95,7 +95,33 @@ async function loadFighters() {
       LOAD.bytes += bytes; LOAD.decoded += decoded; LOAD.files += pages.length;
     } catch (e) { /* a fighter that fails to load stays a box */ }
   }));
-  if (MODES.fx) {
+  // THE KLING EFFECT LAYER (owner brief 2026-11-05): the four effect clips, packed like a fighter (KTX2 when the GPU takes it, else WebP);
+  // their manifests go to the presentation as MODES.fxMan. ?fx=old keeps the in-engine drawn effects for comparison.
+  if (MODES.fx && !MODES.fxOld) {
+    const man = {};
+    await Promise.all(["vajra_bolt", "vajra_impact", "nagapasha_flight", "nagapasha_bind"].map(async (nm) => {
+      try {
+        const base = "effects/fx_" + nm + "/", m = await (await fetch(base + "manifest.json?v=" + STAMP)).json(), Rg = m.rungs[RUNG];
+        let imgs, bytes = 0, decoded = 0, s = 1, cells = Rg.cells;
+        try {
+          if (!target) throw new Error("no compressed format");
+          const got = await Promise.all(Rg.pages.map((p) => loadKtx2Page(base + p.ktx2 + "?v=" + STAMP, target)));
+          imgs = got.map((x) => x.img); bytes = got.reduce((a, x) => a + x.bytes, 0); decoded = got.reduce((a, x) => a + x.gpu, 0);
+        } catch (e) {   // the WebP fallback: resized like the fighters' (FALLBACK.scale) so the RGBA memory stays under the lo cap
+          s = target ? 1 : fbScale;
+          imgs = await Promise.all(Rg.pages.map(async (p) => { const img = await loadImg(base + p.webp + "?v=" + STAMP);
+            return s === 1 ? img : createImageBitmap(img, { resizeWidth: Math.round(p.size[0] * s), resizeHeight: Math.round(p.size[1] * s), resizeQuality: "high" }); }));
+          bytes = Rg.pages.reduce((a, p) => a + p.bytes.webp, 0); decoded = Rg.pages.reduce((a, p) => a + Math.round(p.size[0] * s) * Math.round(p.size[1] * s) * 4, 0);
+          if (s !== 1) cells = Rg.cells.map((c) => ({ page: c.page, x: c.x * s, y: c.y * s, w: c.w * s, h: c.h * s, px: c.px * s, py: c.py * s }));
+        }
+        EFFECTS["fx_" + nm] = { man: m, imgs, cells, k: 1 / s, fx: true };
+        man[nm] = { cells: Rg.cells.length, w: Rg.cellSize[0], h: Rg.cellSize[1], fps: m.loop.fps, blend: m.blend };
+        LOAD.bytes += bytes; LOAD.decoded += decoded; LOAD.files += Rg.pages.length;
+      } catch (e) { /* that effect falls back to the drawn one */ }
+    }));
+    if (man.vajra_bolt && man.vajra_impact && man.nagapasha_flight && man.nagapasha_bind) MODES.fxMan = man;
+  }
+  if (MODES.fx && !MODES.fxMan) {   // the old drawn look (?fx=old, or the Kling layer failed to load)
     try {   // the half-size Vajra on lo (ruling 1)
       const dir = "effects/vajra/" + (RUNG === "lo" ? "lo/" : ""), man = await (await fetch(dir + "manifest.json?v=" + STAMP)).json();
       const img = await loadImg(dir + man.atlas + "?v=" + STAMP);
@@ -109,6 +135,7 @@ async function loadFighters() {
 }
 const fighterMans = () => { const o = {}; for (const k in FIGHTERS) o[k] = FIGHTERS[k].man; return o; };
 function cellOf(s) {   // the cell record and its image for a sprite shape
+  if (s.atlas && EFFECTS[s.atlas] && EFFECTS[s.atlas].fx) { const E = EFFECTS[s.atlas], c = E.cells[s.cell]; return c && { c, img: E.imgs[c.page || 0], ax: c.px / c.w, ay: c.py / c.h, k: E.k }; }
   if (s.atlas) { const E = EFFECTS[s.atlas]; if (!E) return null; const c = E.cells[s.cell]; return c && { c, img: E.img, ax: E.man.anchor.x / E.man.cellSize.w, ay: E.man.anchor.y / E.man.cellSize.h, k: E.k }; }
   const Fi = FIGHTERS[s.fighter], c = Fi && Fi.cells[s.cell];
   return c && { c, img: Fi.imgs[c.page || 0], ax: c.px / c.w, ay: c.py / c.h, k: Fi.k };
@@ -146,7 +173,7 @@ async function initRenderer() {
           let sp = pools[L][used[L]]; if (!sp) { sp = new PIXI.Sprite(); pools[L].push(sp); CT[L].addChild(sp); }
           used[L]++;
           sp.texture = texOf((s.atlas || s.fighter) + ":" + s.cell, co.img, co.c); sp.anchor.set(co.ax, co.ay);
-          const sc = s.scale * (co.k || 1); sp.position.set(s.x, s.y); sp.scale.set(s.flip ? -sc : sc, sc); sp.rotation = s.rotation || 0;
+          const sc = s.scale * (co.k || 1), scx = s.scaleX != null ? s.scaleX * (co.k || 1) : sc; sp.position.set(s.x, s.y); sp.scale.set(s.flip ? -scx : scx, sc); sp.rotation = s.rotation || 0;
           sp.alpha = s.alpha == null ? 1 : s.alpha; sp.blendMode = s.blend === "add" ? "add" : "normal"; sp.filters = s.white ? [white] : null; sp.visible = true;
           continue;
         }
@@ -173,7 +200,7 @@ async function initRenderer() {
         if (s.k === "sprite") {
           const co = cellOf(s); if (!co) continue;
           if (s.white) cx.globalCompositeOperation = "lighter";
-          const sc = s.scale * (co.k || 1); cx.save(); cx.translate(s.x, s.y); cx.rotate(s.rotation || 0); cx.scale(s.flip ? -sc : sc, sc);
+          const sc = s.scale * (co.k || 1), scx = s.scaleX != null ? s.scaleX * (co.k || 1) : sc; cx.save(); cx.translate(s.x, s.y); cx.rotate(s.rotation || 0); cx.scale(s.flip ? -scx : scx, sc);
           cx.drawImage(co.img, co.c.x, co.c.y, co.c.w, co.c.h, -co.ax * co.c.w, -co.ay * co.c.h, co.c.w, co.c.h); cx.restore();
           continue;
         }
@@ -337,6 +364,11 @@ function frame(now) {
   if (MODES.cpu > 1) { const until = performance.now() + work * (MODES.cpu - 1); while (performance.now() < until) { /* a slower phone, roughly */ } }
   if (MODES.perf && PERF.work.length % 30 === 0) { const p = window.__arcPerf(); $("perf").textContent = p.fps + " fps · work " + p.workMsMean + " ms (p95 " + p.workMsP95 + ") · cpu ×" + MODES.cpu; }
 }
+// the shot's placeholder box is hidden where the presentation draws the shot itself (the Vajra, the Nagapasha)
+function noShotBoxes(g, shapes) {
+  if (!MODES.fx) return shapes;
+  return shapes.filter((s) => !(/^proj/.test(s.tag) && (((EFFECTS.vajra || MODES.fxMan) && g.f[+s.tag.slice(4)].hero === "indra") || M.ARCH[g.f[+s.tag.slice(4)].arch].special === "nagapasha")));
+}
 function viewFight() { return slowmo ? slowmo.frames[Math.min(slowmo.frames.length - 1, Math.floor(slowmo.t))] : match.fight; }
 function render(dtSec) {
   if (!match || !draw) return;
@@ -347,7 +379,7 @@ function render(dtSec) {
   } else cam = PR.camera(PS, g, cam, dtSec || 1 / 60);
   const built = S.build(g, buildOpts(PR.shaken(PS, cam)));
   let shapes = built.shapes;
-  if (MODES.fx) shapes = shapes.filter((s) => !(/^proj/.test(s.tag) && ((EFFECTS.vajra && g.f[+s.tag.slice(4)].hero === "indra") || M.ARCH[g.f[+s.tag.slice(4)].arch].special === "nagapasha")));   // drawn by the presentation
+  shapes = noShotBoxes(g, shapes);
   draw(shapes.concat(PR.shapes(PS, g, built)));
   const mf = match.fight;
   mf.f.forEach((f, i) => {
@@ -404,11 +436,11 @@ $("perf").hidden = !MODES.perf;
 if (MODES.raw.still) window.__arcStill = async (o) => {
   match = MA.createMatch({ lineup0: [o.p0, "box_surya", "box_varna"], lineup1: [o.p1, "box_rakta", "box_varna"], seconds: 99 });
   const g = match.fight; finished = false; banner = 0; $("banner").hidden = true; PS = PR.create(MODES); lastFight = g; overT = 0;
-  g.f[0].x = Math.round(o.x0 * F.U); g.f[1].x = Math.round(o.x1 * F.U); g.frame = o.frame || 0;
+  g.f[0].x = Math.round(o.x0 * F.U); g.f[1].x = Math.round(o.x1 * F.U); g.frame = o.frame || 0; if (o.meter) g.f.forEach((f) => { f.meter = 100; });
   for (const [inp, n] of o.steps || []) for (let i = 0; i < n; i++) { MA.step(match, inp); PR.tick(PS, g, S.build(g, buildOpts(cam || undefined))); }
   $("game").hidden = true;   // freeze the loop: the frame below is the only one drawn
   cam = { x: o.camX != null ? o.camX : (g.f[0].x + g.f[1].x) / 2 / F.U, zoom: o.zoom };
-  const built = S.build(g, buildOpts(cam)); let sh = built.shapes.concat(PR.shapes(PS, g, built));
+  const built = S.build(g, buildOpts(cam)); let sh = noShotBoxes(g, built.shapes).concat(PR.shapes(PS, g, built));
   if (o.noFade) sh = sh.filter((s) => !/^fade/.test(s.tag));
   draw(sh);
   const blob = await new Promise((res) => canvasEl.toBlob(res, "image/png"));

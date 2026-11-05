@@ -12,13 +12,23 @@
 //     Meghnad's own bytes per cell; the projection still falls back to that while his manifest is a placeholder — under 100 cells.)
 //   · THE ARENA: the docs' four layers (hi: sky 2048×1024, palace 2560×1024, ground and foreground 2560×512; lo: half each side), not
 //     built yet — compressed (1 byte a pixel) as ruled.
-//   · THE EFFECTS: the Vajra atlas as shipped (WebP, 4 bytes a pixel): hi full size, lo the half-size copy (effects/vajra/lo/).
+//   · THE EFFECTS: the Kling effect layer (2026-11-05: effects/fx_<name>/, the four clips packed like a fighter — KTX2, 1 byte a pixel;
+//     4 on the WebP fallback). Without it, the old Vajra atlas (WebP, 4 bytes a pixel; lo the half-size copy).
 //   · STRIKE FRAMES: 24 fps from 5 frames before the first active frame to 5 after the last, on light / heavy / special: +8 cells.
 const fs = require('fs'), path = require('path');
 const LAB = path.resolve(__dirname, '..');
 const M = require(path.join(LAB, 'core/moves.js'));
 const MB = 1048576;
-const CAP = { lo: 48, hi: 96 }, MARGIN = 0.75, DL_CAP = { lo: 0.7, hi: 1.6 }, MATCH_DL = { lo: 6, hi: 11 };
+const CAP = { lo: 48, hi: 96 }, MARGIN = 0.75, DL_CAP = { lo: 0.7, hi: 4.25 }, MATCH_DL = { lo: 6, hi: 11 };   // hi 1.6 → 4.25 MB (owner rulings, the clarity pass)
+const FXN = ['vajra_bolt', 'vajra_impact', 'nagapasha_flight', 'nagapasha_bind'];
+function klingStats(rung) {   // the four effect sheets on this rung, or null when they are not built
+  try {
+    let px = 0, kt = 0, wp = 0;
+    for (const n of FXN) { const R = JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'fx_' + n, 'manifest.json'), 'utf8')).rungs[rung];
+      R.pages.forEach((p) => { px += p.size[0] * p.size[1]; kt += p.bytes.ktx2; wp += p.bytes.webp; }); }
+    return { gpu: px / MB, rgba: 4 * px / MB, ktx2: kt / MB, webp: wp / MB };
+  } catch (e) { return null; }
+}
 const STRIKE = { before: 5, after: 5 };
 const ARENA = { hi: [[2048, 1024], [2560, 1024], [2560, 512], [2560, 512]] };
 ARENA.lo = ARENA.hi.map(([w, h]) => [w / 2, h / 2]);
@@ -61,7 +71,8 @@ function project(caps) {
     const megFull = G.cellsSrc.length >= 100;
     const megWorst = megFull ? g.gpu : i.cells * g.perCellGpu, megLikeIndra = megFull ? g.gpu : i.gpu;
     const arenaGpu = ARENA[rung].reduce((a, [w, h]) => a + w * h, 0) / MB;
-    const fx = (rung === 'lo' ? vjLo.atlasSize.w * vjLo.atlasSize.h : vj.atlasSize.w * vj.atlasSize.h) * 4 / MB;
+    const kl = klingStats(rung);
+    const fx = kl ? kl.gpu : (rung === 'lo' ? vjLo.atlasSize.w * vjLo.atlasSize.h : vj.atlasSize.w * vj.atlasSize.h) * 4 / MB;
     const fxFull = vj.atlasSize.w * vj.atlasSize.h * 4 / MB;
     // THE PAIR: the two fighters on screen. With both measured, the worst case is the HEAVIER one twice (a mirror match) — Indra today
     const pair = megFull ? 2 * Math.max(i.gpu, megWorst) : i.gpu + megWorst;
@@ -74,21 +85,23 @@ function project(caps) {
       compressed: 3 * (pair + arenaGpu),                  // RGBA (4 B/px) → compressed (1 B/px), fighters + arena
       idle8: lv.idle8.saved * both,
       holdTrim: (lv.holdTrim.saved + lv.idleTrim) * both,
-      vajraHalf: rung === 'lo' ? fxFull - fx : 0
+      vajraHalf: rung === 'lo' && !kl ? fxFull - fx : 0
     };
     const before = total + lev.compressed + lev.idle8 + lev.holdTrim + lev.vajraHalf;
-    out.rungs[rung] = { cap, pair, indra: i, meghnadNow: g, meghnadWorst: megWorst, meghnadLikeIndra: megLikeIndra, arena: arenaGpu, effects: fx,
+    out.rungs[rung] = { cap, pair, indra: i, meghnadNow: g, meghnadWorst: megWorst, meghnadLikeIndra: megLikeIndra, arena: arenaGpu, effects: fx, kling: kl, effectsFallback: kl ? kl.rgba : fx,
       total15: total, total15LikeIndra: totalLike, totalWithoutLevers: before, levers: lev, strike, total15Strike: total + strike,
       fits: total <= cap, fitsWithMargin: total <= cap * MARGIN, strikeFitsWithMargin: total + strike <= cap * MARGIN,
       // the WebP fallback (a GPU with no compressed format, or the Canvas 2D floor): fighters at 4 bytes a pixel
-      fallbackTotal: 4 * pair + 4 * arenaGpu + fx,
+      fallbackTotal: 4 * pair + 4 * arenaGpu + (kl ? kl.rgba : fx),
       download: { indraKtx2: i.ktx2, indraWebp: i.webp, meghnadKtx2: g.ktx2, meghnadWebp: g.webp, meghnadMeasured: megFull, capPerFighter: DL_CAP[rung], perMatch6Ktx2: 6 * i.ktx2, matchCap: MATCH_DL[rung], encoding: i.enc } };
   }
   out.cellLevers = lv; out.strikeShipped = !!I.strike24;
   // THE FALLBACK (no compressed format): the lo pages at `scale`, 4 bytes a pixel, + the arena at lo as RGBA + the half-size Vajra
   const fb = fallbackSpec(), lo = out.rungs.lo, s2 = fb ? fb.scale * fb.scale : 1;
-  out.fallback = fb && { spec: fb, fighters: 4 * lo.pair * s2, fightersLikeIndra: 4 * 2 * lo.indra.gpu * s2, arena: 4 * lo.arena, effects: lo.effects,
-    total: 4 * lo.pair * s2 + 4 * lo.arena + lo.effects, cap: caps.lo, unscaled: 4 * lo.pair + 4 * lo.arena + lo.effects };
+  // the Kling effects are resized by the same scale on the fallback (ui/app.js); the old Vajra atlas was not
+  const fbFx = lo.kling ? lo.effectsFallback * s2 : lo.effectsFallback;
+  out.fallback = fb && { spec: fb, fighters: 4 * lo.pair * s2, fightersLikeIndra: 4 * 2 * lo.indra.gpu * s2, arena: 4 * lo.arena, effects: fbFx,
+    total: 4 * lo.pair * s2 + 4 * lo.arena + fbFx, cap: caps.lo, unscaled: 4 * lo.pair + 4 * lo.arena + lo.effectsFallback };
   if (out.fallback) out.fallback.fits = out.fallback.total <= caps.lo;
   // THE DECISION (ruling 1): strike frames only if the 15-move projection fits BOTH caps with margin (with the strike frames added)
   out.strike24 = out.rungs.lo.strikeFitsWithMargin && out.rungs.hi.strikeFitsWithMargin;
@@ -107,13 +120,13 @@ if (require.main === module) {
       '\n  Indra, full cut: ' + R.indra.cells + ' cells, ' + R.indra.pages + ' page(s), GPU ' + f(R.indra.gpu) + ' MB compressed (' + f(R.indra.rgba) + ' as RGBA)' +
       (R.download.meghnadMeasured ? '\n  Meghnad, full cut: ' + R.meghnadNow.cells + ' cells, ' + R.meghnadNow.pages + ' page(s), GPU ' + f(R.meghnadNow.gpu) + ' MB compressed (' + f(R.meghnadNow.rgba) + ' as RGBA)'
         : '\n  Meghnad, full set projected: ' + f(R.meghnadWorst) + ' MB (today\'s spear-out density) · ' + f(R.meghnadLikeIndra) + ' MB (reshoot packs like Indra)') +
-      '\n  arena ' + f(R.arena) + ' MB compressed · Vajra ' + f(R.effects) + ' MB' +
+      '\n  arena ' + f(R.arena) + ' MB compressed · ' + (R.kling ? 'effects (the four Kling clips) ' + f(R.effects) + ' MB compressed, download ' + f(R.kling.ktx2 * 1024) + ' KB KTX2 (WebP ' + f(R.kling.webp * 1024) + ' KB)' : 'Vajra ' + f(R.effects) + ' MB') +
       '\n  TOTAL, 15 moves at 12 fps (2 fighters: ' + (R.download.meghnadMeasured ? 'the heavier twice, a mirror' : 'Indra + Meghnad') + ', + arena + effects): ' + f(R.total15) + ' MB' + (R.download.meghnadMeasured ? '' : ' (' + f(R.total15LikeIndra) + ' if Meghnad packs like Indra)') + ' — ' + (R.fitsWithMargin ? 'fits with margin' : R.fits ? 'fits, no margin' : 'OVER') +
       '\n  without the levers it would be ' + f(R.totalWithoutLevers) + ' MB; savings: compressed textures −' + f(R.levers.compressed) + ', idle 8 fps −' + f(R.levers.idle8) + ', hold trim −' + f(R.levers.holdTrim) + ', half-size Vajra −' + f(R.levers.vajraHalf) +
       '\n  + 24 fps strike frames: ' + f(R.total15Strike) + ' MB — ' + (R.strikeFitsWithMargin ? 'fits with margin' : 'no') +
       '\n  the WebP fallback (no compressed format): ' + f(R.fallbackTotal) + ' MB' +
       '\n  download: Indra ' + R.download.encoding + ' ' + f(R.download.indraKtx2 * 1024) + ' KB (WebP ' + f(R.download.indraWebp * 1024) + ' KB), Meghnad ' + f(R.download.meghnadKtx2 * 1024) + ' KB (WebP ' + f(R.download.meghnadWebp * 1024) + ' KB) vs ' + f(R.download.capPerFighter * 1024) + ' KB a fighter; 6 fighters ≈ ' + f(R.download.perMatch6Ktx2) + ' MB vs a match\'s ' + R.download.matchCap + ' MB\n');
   }
-  if (P.fallback) process.stdout.write('\nTHE FALLBACK (no compressed format, ruling 6): the ' + P.fallback.spec.rung + ' pages at ×' + P.fallback.spec.scale + ' (stance ' + Math.round(192 * P.fallback.spec.scale) + ' px) → fighters ' + f(P.fallback.fighters) + ' MB (the heavier fighter twice) + arena ' + f(P.fallback.arena) + ' + Vajra ' + f(P.fallback.effects) + ' = ' + f(P.fallback.total) + ' MB of the lo cap ' + P.fallback.cap + ' — ' + (P.fallback.fits ? 'fits' : 'OVER') + ' (unscaled it would be ' + f(P.fallback.unscaled) + ')\n');
+  if (P.fallback) process.stdout.write('\nTHE FALLBACK (no compressed format, ruling 6): the ' + P.fallback.spec.rung + ' pages at ×' + P.fallback.spec.scale + ' (stance ' + Math.round(192 * P.fallback.spec.scale) + ' px) → fighters ' + f(P.fallback.fighters) + ' MB (the heavier fighter twice) + arena ' + f(P.fallback.arena) + ' + effects ' + f(P.fallback.effects) + ' = ' + f(P.fallback.total) + ' MB of the lo cap ' + P.fallback.cap + ' — ' + (P.fallback.fits ? 'fits' : 'OVER') + ' (unscaled it would be ' + f(P.fallback.unscaled) + ')\n');
   process.stdout.write('\nTHE DECISION (ruling 1): 24 fps strike frames ' + (P.strike24 ? 'YES — the 15-move projection fits both caps with margin' : 'NO — 12 fps stays') + (P.strikeShipped ? ' (the sheets carry them: measured above)' : '') + '\n');
 }

@@ -608,6 +608,41 @@ No no-cost fix applies: the page already renders at full device resolution, and 
 Option builds go to scratch with `ARC_STANCE_HI` / `ARC_ENC_HI=uastc` / `ARC_OUT` (tools/make_fighter.py); the page loads one with `?fbase=captures/opt/<name>/` and `?still=1` takes a device-resolution still (`window.__arcStill`).
 
 
+## The encoding ruling + the Kling effect layer (owner, 2026-11-05)
+
+**The hi encoding (ruling):** one hi setting for every fighter and effect: **UASTC, RDO λ 2.5, the 32768 RDO dictionary (`-uastc_rdo_d 32768`), zstd 22.** lo stays ETC1S; the WebP fallback is unchanged. **The hi per-fighter download cap is 4.25 MB** (was 1.6).
+
+The sweep (hi page 0 against the uncompressed cells; zstd 22 throughout):
+
+| Setting | Indra | Meghnad |
+|---|---|---|
+| RDO λ 1 | 4.52 MB · 35.1 dB | 3.43 MB · 36.2 dB |
+| RDO λ 2 | 4.32 MB · 34.0 dB | 3.29 MB · 35.0 dB |
+| RDO λ 3 | 4.16 MB · 32.8 dB | 3.17 MB · 33.7 dB |
+| RDO λ 4 | 4.04 MB · 31.9 dB | 3.07 MB · 32.5 dB |
+| RDO λ 6 | 3.87 MB · 30.4 dB | 2.92 MB · 30.7 dB |
+| λ 2, 32768 dictionary | 4.13 MB · 33.6 dB | |
+| **λ 2.5, 32768 dictionary (chosen)** | **4.05 MB · 33.0 dB** | **3.08 MB · 33.6 dB** |
+| λ 3, 32768 dictionary | 3.98 MB · 32.5 dB | |
+| λ 2.5, 32768 dictionary, UASTC level 3 | 4.07 MB · 33.2 dB | |
+
+Before (ETC1S) it was 26.7 / 28.4 dB. Before / after stills at DPR 2: `~/Desktop/DY_arcade_screens/clarity/before_after_<hero>_<camera>.png`. GPU memory per fighter is unchanged (13.9 / 11.8 MB).
+
+**The Kling effect layer** (`tools/make_effect.py` → `effects/fx_<name>/`, packed and encoded like a fighter; the presentation draws them; visual only — the event stream is identical with and without, test C18):
+
+| Effect | Look | Loop (source frames) | Cells | hi KTX2 · GPU | lo KTX2 · GPU |
+|---|---|---|---|---|---|
+| Vajra bolt | additive; stretched from where it left the weapon's tip to the shot, flipped for facing | f16–f42, 12 fps | 13 (591×128) | 236 KB · 1.3 MB | 69 KB · 0.4 MB |
+| Vajra impact | additive; 200 px on a hit for 24 frames, 110 px for 14 on a block, a short hold then a fast fade (point blank too) | f18–f30, 12 fps | 6 (503×420) | 271 KB · 1.2 MB | 83 KB · 0.4 MB |
+| Nagapasha flight | alpha from brightness, normal blend; the serpent is the shot, head leading, flipped for facing, from the spear's tip | f1–f119, 8 fps | 40 (460×144) | 836 KB · 2.6 MB | 187 KB · 1.0 MB |
+| Nagapasha bind | alpha from brightness, normal blend; on the bound Hero's torso, its height the body's, the whole bind, a 10-frame fade on release | f4–f116, 8 fps | 38 (660×520) | 4.02 MB · 13.8 MB | 781 KB · 4.8 MB |
+
+The loop is the SHORTEST whose seam is no bigger than the clip's own frame-to-frame change; the serpents only return to themselves at the end of their 5 s cycle (each is one continuous movement), so they keep it whole at 8 fps. Effects together: hi 5.24 MB download, 18.9 MB GPU; lo 1.10 MB, 6.6 MB. On the WebP fallback they are resized ×0.75 like the fighters. `?fx=old` keeps the old drawn effects (and only then loads the old Vajra atlas).
+
+**Match memory (Indra twice + arena + the four effects):** hi 53.8 MB of 96 (margin 72) · lo 18.3 MB of 48 (margin 36) · the uncompressed fallback 44.2 MB of 48 (within the cap, over the 75% margin).
+**Note:** the per-match download line in `tools/budget.js` (six fighters against 11 MB on hi) no longer holds at 4.25 MB a fighter (six ≈ 24 MB); it predates the raise and is reported, not changed.
+
+
 ## The size budget (ruling 7)
 
 | | Target | Cap |

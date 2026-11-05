@@ -654,7 +654,7 @@ if (RUNG < 3) return finish();
 console.log('\n── ARCADE-1 · R3 · the fighters: pages, KTX2, the cut ──');
 const HEROS = ['indra', 'meghnad'];
 const MAN = {}; HEROS.forEach((h) => { MAN[h] = JSON.parse(rd('fighters/' + h + '/manifest.json')); });
-const DLCAP = { hi: 1.6 * 1048576, lo: 0.7 * 1048576 }, SIDE = { hi: 4096, lo: 2048 };
+const DLCAP = { hi: 4.25 * 1048576, lo: 0.7 * 1048576 }, SIDE = { hi: 4096, lo: 2048 };
 function sheetsOk(man) {   // every page inside its rung, sides a multiple of 4 (a compressed block), WebP and KTX2 on disk at their recorded size; every cell inside its page, its feet pivot on its bottom edge and within a quarter-width of the cell (the win steps forward of the stance)
   const errs = [];
   for (const r of ['hi', 'lo']) {
@@ -674,8 +674,8 @@ ok('C1 · THE PAGES (ruling 1): each fighter\'s cells on pages inside the rung (
   HEROS.map((h) => MAN[h].name + ' hi ' + MAN[h].rungs.hi.pages.length + ' page(s) ' + MAN[h].rungs.hi.encoding.chosen + ' ' + mb(ktx(h, 'hi')) + ' (WebP ' + mb(MAN[h].rungs.hi.pages.reduce((a, p) => a + p.bytes.webp, 0)) + '), lo ' + MAN[h].rungs.lo.pages.length + ' ' + MAN[h].rungs.lo.encoding.chosen + ' ' + mb(ktx(h, 'lo'))).join(' · '),
   SE.every((x) => !x.e.length), J(SE.filter((x) => x.e.length)));
 const ENCH = MAN.indra.rungs;
-ok('C1b · THE ENCODING (owner ruling 1, third set): ETC1S on both rungs, UASTC off — every fighter\'s pages ETC1S, and Indra\'s full cut inside each fighter\'s download cap (hi ' + mb(ktx('indra', 'hi')) + ' of 1.6 MB at ' + ENCH.hi.encoding.candidates[0].psnr + ' dB, lo ' + mb(ktx('indra', 'lo')) + ' of 0.7 MB at ' + ENCH.lo.encoding.candidates[0].psnr + ' dB)',
-  HEROS.every((h) => ['hi', 'lo'].every((r) => MAN[h].rungs[r].encoding.chosen === 'etc1s')) && ['hi', 'lo'].every((r) => ktx('indra', r) <= DLCAP[r]));
+ok('C1b · THE ENCODING (owner rulings, the clarity pass): hi UASTC (RDO λ 2.5, the 32768 RDO dictionary, zstd 22) for every fighter, lo ETC1S; each fighter inside its download cap (Indra hi ' + mb(ktx('indra', 'hi')) + ' of 4.25 MB at ' + ENCH.hi.encoding.candidates[0].psnr + ' dB, lo ' + mb(ktx('indra', 'lo')) + ' of 0.7 MB at ' + ENCH.lo.encoding.candidates[0].psnr + ' dB; Meghnad hi ' + mb(ktx('meghnad', 'hi')) + ' at ' + MAN.meghnad.rungs.hi.encoding.candidates[0].psnr + ' dB, lo ' + mb(ktx('meghnad', 'lo')) + ')',
+  HEROS.every((h) => MAN[h].rungs.hi.encoding.chosen === 'uastc_rdo2.5_d32k' && MAN[h].rungs.lo.encoding.chosen === 'etc1s' && ['hi', 'lo'].every((r) => ktx(h, r) <= DLCAP[r])) && ENCH.hi.encoding.candidates[0].psnr >= 32.5);
 function decodeOk(h) {   // every KTX2 page decodes with the LAB'S transcoder copy to its recorded size, and transcodes to ASTC, BC7 and ETC2
   const out = [];
   for (const r of ['hi', 'lo']) for (const p of MAN[h].rungs[r].pages) for (const fmt of ['rgba', 'astc', 'bc7', 'etc2']) {
@@ -895,6 +895,57 @@ ok('C17 · THE BALANCE CHECK (owner rulings 1–4, 2026-11-05): Indra vs Meghnad
   c17(BAL, noCI) && !K.ai.LEVELS.beginner.closeIn && !!K.ai.LEVELS.deathmatch.closeIn, J({ BAL, noCI }));
 red('C17b · BREAKAGE: the ruling-2 AI taken off Advanced — Meghnad back to ' + noCI.meghnadPct + '% (C17 goes red)', !c17([noCI, BAL[1]], noCI));
 
+// THE KLING EFFECT LAYER (owner brief 2026-11-05): the four clips as effect sheets, drawn by the presentation — visual only
+const FXN = ['vajra_bolt', 'vajra_impact', 'nagapasha_flight', 'nagapasha_bind'], FXBLEND = { vajra_bolt: 'add', vajra_impact: 'add', nagapasha_flight: 'normal', nagapasha_bind: 'normal' };
+const FXM = {}; FXN.forEach((n) => { try { FXM[n] = JSON.parse(rd('effects/fx_' + n + '/manifest.json')); } catch (e) {} });
+const fxMan = (rung) => Object.fromEntries(FXN.map((n) => { const R = FXM[n].rungs[rung]; return [n, { cells: R.cells.length, w: R.cellSize[0], h: R.cellSize[1], fps: FXM[n].loop.fps, blend: FXM[n].blend }]; }));
+function fxSheetsOk() {
+  const errs = [];
+  FXN.forEach((n) => {
+    const m = FXM[n]; if (!m) { errs.push('missing ' + n); return; }
+    if (m.blend !== FXBLEND[n]) errs.push(n + ' blend ' + m.blend);
+    if (m.rungs.hi.encoding !== MAN.indra.rungs.hi.encoding.chosen || m.rungs.lo.encoding !== 'etc1s') errs.push(n + ' encoding');
+    ['hi', 'lo'].forEach((r) => m.rungs[r].pages.forEach((p) => ['webp', 'ktx2'].forEach((k) => { const f = path.join(LAB, 'effects', 'fx_' + n, p[k]); if (!fs.existsSync(f) || fs.statSync(f).size !== p.bytes[k]) errs.push(n + ' ' + p[k]); })));
+  });
+  return errs;
+}
+function fxRun(KK, p0, p1, hold1, fxm, modes, dist) {   // a special from `dist` px (500); side 1 holds `hold1`; the presentation ticks every frame
+  const g = KK.fight.newFight({ p0, p1 }), B = KK.fight.BTN; g.f[1].x = g.f[0].x + Math.round((dist || 500) * KK.fight.U); g.f[0].meter = 100;
+  const md = KK.present.parseModes(modes || ''); md.fxMan = fxm; const P = KK.present.create(md);
+  const seen = { bolt: 0, boltGrow: false, impact: [], flight: 0, flightFlip: null, bind: 0, bindAfter: 0, old: 0, lastLen: 0 };
+  for (let i = 0; i < 180; i++) {
+    KK.fight.step(g, [i === 0 ? B.SP : 0, hold1]);
+    const b = KK.scene.build(g, { fighters: MAN, rung: 'hi', fallback: true }); KK.present.tick(P, g, b); const sh = KK.present.shapes(P, g, b);
+    sh.forEach((x) => {
+      if (/^fxbolt/.test(x.tag)) { seen.bolt++; if (x.scaleX > seen.lastLen) { if (seen.lastLen) seen.boltGrow = true; seen.lastLen = x.scaleX; } }
+      if (/^fximpact/.test(x.tag)) seen.impact.push(+(x.scale / (fxm ? 1 : 1)).toFixed(4));
+      if (/^fxflight/.test(x.tag)) { seen.flight++; seen.flightFlip = x.flip; }
+      if (/^fxbind/.test(x.tag)) { if (g.f[1].state === 'bound') seen.bind++; else seen.bindAfter++; }
+      if (/^(vajra|naga|coil)/.test(x.tag)) seen.old++;
+    });
+  }
+  seen.events = JSON.stringify(g.events);
+  return seen;
+}
+function fxOk(KK) {
+  const hi = fxMan('hi'), U = (n) => hi[n].h;
+  const vh = fxRun(KK, 'indra', 'box_surya', 0, hi), vb = fxRun(KK, 'indra', 'box_surya', KK.fight.BTN.R, hi);   // side 1 faces left: R = back = block
+  const nb = fxRun(KK, 'meghnad', 'box_surya', 0, hi), old = fxRun(KK, 'meghnad', 'box_surya', 0, hi, '?fx=old'), none = fxRun(KK, 'meghnad', 'box_surya', 0, null);
+  const nb2 = fxRun(KK, 'indra', 'box_surya', 0, null), pb = fxRun(KK, 'indra', 'box_surya', 0, hi, '', 120);   // point blank: the shot lands on the tick it is fired
+  const hitSize = vh.impact.length ? Math.max(...vh.impact) : 0, blockSize = vb.impact.length ? Math.max(...vb.impact) : 0;
+  const r = { boltFrames: vh.bolt, boltGrows: vh.boltGrow, hitImpactFrames: vh.impact.length, blockImpactFrames: vb.impact.length, hitOverBlock: +(hitSize / (blockSize || 1)).toFixed(2),
+    flightFrames: nb.flight, flightFlipped: nb.flightFlip, bindFrames: nb.bind, bindFadeFrames: nb.bindAfter, oldShapesWithFxOld: old.old, newShapesWithFxOld: old.flight + old.bind,
+    pointBlankImpactFrames: pb.impact.length, sameEventsWithAndWithout: nb.events === none.events && vh.events === nb2.events };
+  r.ok = r.boltFrames > 5 && r.boltGrows && r.hitImpactFrames === KK.present.IMPACT.hit.frames - 1 && r.blockImpactFrames === KK.present.IMPACT.block.frames - 1 && r.hitOverBlock > 1.5 &&
+    r.flightFrames > 0 && r.flightFlipped === false && r.bindFrames >= KK.moves.NAGAPASHA.bind && r.bindFadeFrames === KK.present.BIND_FADE && r.oldShapesWithFxOld > 0 && r.newShapesWithFxOld === 0 && r.pointBlankImpactFrames === KK.present.IMPACT.hit.frames - 1 && r.sameEventsWithAndWithout;
+  return r;
+}
+const FXE = fxSheetsOk(), FXR = fxOk(K);
+ok('C18 · THE KLING EFFECT LAYER (owner brief 2026-11-05): the four clips packed as effect sheets (lightning additive, serpents normal-blended with alpha from brightness; hi ' + MAN.indra.rungs.hi.encoding.chosen + ', lo ETC1S) — the Vajra\'s bolt stretches from the tip as it flies (' + FXR.boltFrames + ' frames), its impact plays ' + FXR.hitImpactFrames + ' frames on a hit and ' + FXR.blockImpactFrames + ' on a block (' + FXR.hitOverBlock + '× smaller), and point blank too (' + FXR.pointBlankImpactFrames + '); the Nagapasha\'s serpent is the shot (head leading), its coils hold for the whole bind (' + FXR.bindFrames + ' frames, hit-stop included) and fade over ' + FXR.bindFadeFrames + '; ?fx=old draws the old shapes; the event stream is the same with and without the layer',
+  FXE.length === 0 && FXR.ok, J({ errs: FXE, r: FXR }));
+red('C18b · BREAKAGE: the impact the same size on a block as on a hit (C18 goes red)', (() => { try { return fxOk(load({ present: [['block: { size: 110, frames: 14, hold: 3 }', 'block: { size: 200, frames: 14, hold: 3 }']] })).ok; } catch (e) { return false; } })() === false);
+red('C18c · BREAKAGE: the coils cut on release instead of fading (C18 goes red)', (() => { try { return fxOk(load({ present: [['if (P.bind[i].out > BIND_FADE) P.bind[i] = null;', 'P.bind[i] = null;']] })).ok; } catch (e) { return false; } })() === false);
+
 console.log('\n── ARCADE-1 · R3 · breakages: each must go red ──');
 const BR3 = [
   ['K1 · the startup art held 3 frames into the active frames (C8 goes red)', { scene: [['if (f.mf < m.startup) { ph = "startup"; fr = f.mf / m.startup; }', 'if (f.mf < m.startup + 3) { ph = "startup"; fr = Math.min(0.99, f.mf / m.startup); }']] }, (KK) => PH.every((x) => phasesOk(KK, x.h, x.m).ok)],
@@ -981,7 +1032,7 @@ ok('M1 · RULING 1, THE PROJECTION DECIDES: with compressed textures, idle at 8 
   ' (2 fighters + arena + effects, strike frames included; margin = at most ' + (BU.MARGIN * 100) + '% of the cap) → the 24 fps strike frames ' + (BP.strike24 ? 'ship' : 'stay out') + ', and the sheets agree', budgetOk(BP) && BP.rungs.lo.fitsWithMargin && BP.rungs.hi.fitsWithMargin);
 red('M2 · BREAKAGE: caps too small for the margin (lo 16 / hi 60) but the strike frames shipped (M1 goes red)', !budgetOk(BU.project({ lo: 16, hi: 60 })));
 const FB = BP.fallback;
-ok('M3 · THE UNCOMPRESSED FALLBACK (ruling 6, third set): with no compressed format (or ?tex=webp) the page loads the ' + FB.spec.rung + ' pages resized ×' + FB.spec.scale + ' → ' + bf(FB.total) + ' MB of the lo cap ' + FB.cap + ' (fighters ' + bf(FB.fighters) + ', arena ' + bf(FB.arena) + ', Vajra ' + bf(FB.effects) + '; unscaled it would be ' + bf(FB.unscaled) + ')',
+ok('M3 · THE UNCOMPRESSED FALLBACK (ruling 6, third set): with no compressed format (or ?tex=webp) the page loads the ' + FB.spec.rung + ' pages resized ×' + FB.spec.scale + ' → ' + bf(FB.total) + ' MB of the lo cap ' + FB.cap + ' (fighters ' + bf(FB.fighters) + ', arena ' + bf(FB.arena) + ', effects ' + bf(FB.effects) + '; unscaled it would be ' + bf(FB.unscaled) + ')',
   FB.spec.rung === 'lo' && FB.fits && FB.unscaled > FB.cap);
 const appF = rd('ui/app.js');
 ok('M3b · …and the page does it: no compressed format → RUNG lo and each WebP page resized as it loads (createImageBitmap), every cell rect and pivot scaled, drawn 1 / scale larger',

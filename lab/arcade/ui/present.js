@@ -22,14 +22,41 @@
 
   function parseModes(search) {
     var q = {}; String(search || "").replace(/^\?/, "").split("&").forEach(function (kv) { if (!kv) return; var p = kv.split("="); q[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || ""); });
-    return { fx: q.fx !== "0", fps: 12, cam: q.cam === "wide" ? "wide" : "tight", demo: !!q.demo && q.demo !== "0" || !!q.capture && q.aivs !== "1", demoName: q.demo === "moves" || q.demo === "ko" || q.demo === "walk" || q.demo === "meghnad" || q.demo === "mwalk" ? q.demo : "bout", capture: q.capture || null,
+    return { fx: q.fx !== "0", fxOld: q.fx === "old", fps: 12, cam: q.cam === "wide" ? "wide" : "tight", demo: !!q.demo && q.demo !== "0" || !!q.capture && q.aivs !== "1", demoName: q.demo === "moves" || q.demo === "ko" || q.demo === "walk" || q.demo === "meghnad" || q.demo === "mwalk" || q.demo === "fxvajra" || q.demo === "fxnaga" ? q.demo : "bout", capture: q.capture || null,
       aivs: q.aivs === "1",
       perf: q.perf === "1", cpu: Math.max(1, Math.min(10, parseFloat(q.cpu) || 1)), raw: q };
   }
 
+  // THE KLING EFFECT LAYER (owner brief 2026-11-05): four clips, packed by tools/make_effect.py; the page hands their manifests over as
+  // modes.fxMan (absent → the in-engine drawn effects, which ?fx=old keeps for comparison). Sizes in logical px.
+  var BOLT_H = 60, SHOT_H = 55;                                  // the bolt's thickness; the shot's height (its box is 30–80)
+  var IMPACT = { hit: { size: 200, frames: 24, hold: 6 }, block: { size: 110, frames: 14, hold: 3 } };   // ~0.4 s with a fast fade; a block smaller, shorter
+  var FLIGHT_LEN = 220, BIND_H = 230, BIND_Y = 115, BIND_FADE = 10;
+  function kling(P) { return !P.modes.fxOld && P.modes.fxMan && P.modes.fxMan.vajra_bolt && P.modes.fxMan.nagapasha_bind; }
+  function fxCell(P, name, t) { var m = P.modes.fxMan[name]; return Math.floor(t * m.fps / 60) % m.cells; }
+  function klingShapes(P, g, out, sx, sy, z) {
+    var X = P.modes.fxMan;
+    [0, 1].forEach(function (o) {
+      var s = P.shot[o]; if (!s) return;
+      if (s.kind === "naga") {   // the serpent IS the shot: its head (the cell's right edge) leads
+        out.push({ k: "sprite", layer: "over", atlas: "fx_nagapasha_flight", cell: fxCell(P, "nagapasha_flight", P.tick), x: sx(s.x), y: sy(SHOT_H), scale: FLIGHT_LEN / X.nagapasha_flight.w * z, flip: s.dir === -1, alpha: 1, blend: "normal", tag: "fxflight" + o });
+      } else {                   // the Vajra's bolt: stretched from where it left the weapon's tip to where it is now
+        var len = Math.max(20, Math.abs(s.x - s.x0));
+        out.push({ k: "sprite", layer: "glow", atlas: "fx_vajra_bolt", cell: fxCell(P, "vajra_bolt", P.tick), x: sx(s.x0), y: sy(SHOT_H), scale: BOLT_H / X.vajra_bolt.h * z, scaleX: len / X.vajra_bolt.w * z, flip: s.dir === -1, alpha: 1, blend: "add", tag: "fxbolt" + o });
+      }
+    });
+    P.impacts.forEach(function (b, k) {
+      var I = b.block ? IMPACT.block : IMPACT.hit, a = b.t < I.hold ? 1 : Math.max(0, 1 - (b.t - I.hold) / (I.frames - I.hold));
+      out.push({ k: "sprite", layer: "glow", atlas: "fx_vajra_impact", cell: fxCell(P, "vajra_impact", b.t), x: sx(b.x), y: sy(SHOT_H + 10), scale: I.size / X.vajra_impact.h * z, flip: false, alpha: a, blend: "add", tag: "fximpact" + k });
+    });
+    g.f.forEach(function (f, i) {
+      var B = P.bind[i]; if (!B) return;
+      out.push({ k: "sprite", layer: "over", atlas: "fx_nagapasha_bind", cell: fxCell(P, "nagapasha_bind", B.t), x: sx(f.x / F.U), y: sy(f.y / F.U + BIND_Y), scale: BIND_H / X.nagapasha_bind.h * z, flip: false, alpha: B.out ? 1 - B.out / BIND_FADE : 1, blend: "normal", tag: "fxbind" + i });
+    });
+  }
   function create(modes) {
     return { modes: modes, ev: 0, parts: [], shake: 0, shakeAmp: 0, punch: 0, flash: [0, 0], fade: [null, null], last: [null, null],
-      trail: [[], []], prevState: [null, null], proj: {}, bursts: [], tick: 0 };
+      trail: [[], []], prevState: [null, null], proj: {}, bursts: [], tick: 0, shot: {}, impacts: [], bind: [null, null] };
   }
 
   // hit point: the defender's front edge, at the attacker's hitbox mid-height (the event carries no position)
@@ -50,8 +77,10 @@
   function tick(P, g, built, mans) {
     P.tick++;
     var evs = g.events.slice(P.ev); P.ev = g.events.length;
-    var fx = P.modes.fx;
+    var fx = P.modes.fx, struck = {}, fired = {};
     evs.forEach(function (e) {
+      if (e.t === "hit" || e.t === "block") struck[e.by] = e.t;   // with the shot gone on this same tick: it ended on the opponent (the Kling layer's impact)
+      if (e.t === "projectile") fired[e.side] = e.kind;
       if (!fx) return;
       if (e.t === "parry") {   // a bright ring at the parrier's front edge and a short shake (ruling 5: 13 the parry)
         var pd = g.f[e.side], pa = g.f[e.by], pp = hitPoint(g, pd, pa);
@@ -89,6 +118,27 @@
       P.proj[o] = alive[o] ? { x: alive[o].x / F.U, dir: alive[o].dir } : null;
     });
     P.bursts = P.bursts.filter(function (b) { b.cell += 0.4; return b.cell <= VAJRA.burst[1]; });   // 24 fps clip on a 60 Hz tick
+    // THE KLING EFFECT LAYER (owner brief 2026-11-05) — visual only: it reads the shots and the bound state, never changes them
+    if (fx && kling(P)) {
+      var now = {};
+      g.proj.forEach(function (p) { now[p.owner] = p; });
+      [0, 1].forEach(function (o) {
+        var was = P.shot[o], p = now[o];
+        if (p && (!was || was.kind !== p.kind)) P.shot[o] = { x0: p.x / F.U - p.dir * p.speed / F.U, x: p.x / F.U, dir: p.dir, kind: p.kind };
+        else if (p) { was.x = p.x / F.U; }
+        else if (was) {   // the shot is gone: on the opponent (a hit or a block) → the Vajra's impact where it ended
+          if (was.kind !== "naga" && struck[o]) P.impacts.push({ x: was.x + was.dir * 20, t: 0, block: struck[o] === "block" });
+          P.shot[o] = null;
+        } else if (fired[o] && fired[o] !== "naga" && struck[o]) {   // point blank: fired and landed on the same tick, it never flew
+          P.impacts.push({ x: hitPoint(g, g.f[1 - o], g.f[o]).x, t: 0, block: struck[o] === "block" });
+        }
+      });
+      P.impacts = P.impacts.filter(function (b) { b.t++; return b.t < (b.block ? IMPACT.block : IMPACT.hit).frames; });
+      g.f.forEach(function (f, i) {   // the bind's coils: loop while bound, fade out on release
+        if (f.state === "bound") P.bind[i] = { t: (P.bind[i] && !P.bind[i].out ? P.bind[i].t : 0) + 1, out: 0 };
+        else if (P.bind[i]) { P.bind[i].out++; P.bind[i].t++; if (P.bind[i].out > BIND_FADE) P.bind[i] = null; }
+      });
+    }
     P.parts = P.parts.filter(function (p) { p.x += p.vx; p.h += p.vh; p.vh -= p.g; p.life--; return p.life > 0; });
     if (P.shake > 0) P.shake--; else P.shakeAmp = 0;
     P.punch *= 0.86; if (P.punch < 0.002) P.punch = 0;
@@ -138,7 +188,8 @@
       if (fx && P.flash[i] > 0) out.push(Object.assign({}, s, { white: true, alpha: Math.min(0.85, P.flash[i] / 7), layer: "over", tag: "flash" + i }));
       if (fx && s.ko) { s.rotation = (s.flip ? 1 : -1) * (s.move === "knockdown" ? 1.2 : 0.5); s.alpha = s.move === "knockdown" ? 0.9 : 0.75; }
     });
-    if (fx) {
+    if (fx && kling(P)) klingShapes(P, g, out, sx, sy, z);
+    else if (fx) {
       [0, 1].forEach(function (o) {
         var p = P.proj[o];
         if (!p || g.f[o].hero !== "indra") return;
@@ -161,7 +212,9 @@
           out.push({ k: "ellipse", layer: "glow", x: sx(f.x / F.U), y: sy(f.y / F.U + hb), rx: 42 * z, ry: 9 * z, fill: 0x2bbf94, alpha: 0.55, tag: "coil" + f.side });
         }
       });
-      P.bursts.forEach(function (b, k) {
+    }
+    if (fx) {
+      if (!kling(P)) P.bursts.forEach(function (b, k) {
         out.push({ k: "sprite", layer: "glow", atlas: "vajra", cell: Math.floor(b.cell), x: sx(b.x), y: sy(0), scale: 220 * VAJRA.height / VAJRA.anchor.y * z, flip: false, alpha: 1, blend: "add", tag: "vajraburst" + k });
       });
       P.parts.forEach(function (p, k) {
@@ -172,5 +225,5 @@
     return out;
   }
 
-  return { parseModes: parseModes, create: create, tick: tick, camera: camera, shaken: shaken, shapes: shapes, SPARK: SPARK, FADE: FADE, VAJRA: VAJRA };
+  return { parseModes: parseModes, create: create, tick: tick, camera: camera, shaken: shaken, shapes: shapes, SPARK: SPARK, FADE: FADE, VAJRA: VAJRA, IMPACT: IMPACT, BIND_FADE: BIND_FADE };
 });

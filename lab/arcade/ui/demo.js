@@ -100,7 +100,21 @@
     { name: "walk back 2 s", frames: 120, input: [0, B.R] },
     { name: "hold", frames: 30 }
   ];
-  var SCRIPTS = { bout: STEPS, moves: MOVES, ko: KO, walk: WALK, meghnad: MEGHNAD, mwalk: MWALK };
+  // the Kling effect layer (2026-11-05): ?demo=fxvajra — Indra's Vajra on a hit, then on a block; ?demo=fxnaga — the Nagapasha on a hit
+  // (the full bind and its fade), then on a block. Nudges: a full meter before each special.
+  var FXVAJRA = [
+    { name: "standoff", frames: 20 },
+    { name: "the Vajra, a hit", nudge: function (g) { g.f[0].meter = 100; }, press: [B.SP, 0], settle: 90 },
+    { name: "the Vajra, blocked", nudge: function (g) { g.f[0].meter = 100; }, press: [B.SP, B.R], hold: [0, B.R], settle: 90 },
+    { name: "hold", frames: 30 }
+  ];
+  var FXNAGA = [
+    { name: "standoff", frames: 20 },
+    { name: "the Nagapasha, a hit and the full bind", nudge: function (g) { g.f[1].meter = 100; }, press: [0, B.SP], settle: 110 },
+    { name: "the Nagapasha, blocked", nudge: function (g) { g.f[1].meter = 100; }, press: [B.L, B.SP], hold: [B.L, 0], settle: 80 },
+    { name: "hold", frames: 30 }
+  ];
+  var SCRIPTS = { bout: STEPS, moves: MOVES, ko: KO, walk: WALK, meghnad: MEGHNAD, mwalk: MWALK, fxvajra: FXVAJRA, fxnaga: FXNAGA };
   function create(name) { return { step: 0, t: 0, pressed: false, nudged: false, steps: SCRIPTS[name] || STEPS }; }
   function free(f) { return f.state === "idle" || f.state === "walkf" || f.state === "walkb"; }
   // the inputs for this logic frame (call once per tick, before stepping)

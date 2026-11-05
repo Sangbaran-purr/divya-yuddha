@@ -175,7 +175,7 @@
     var o = g.f[1 - f.side], gap = (o.x - f.x) * f.facing / U;
     if (hero && hero.projX != null && gap > 0 && gap < sx) sx = gap;
     g.proj.push({ owner: f.side, x: f.x + f.facing * px(sx), dir: f.facing, speed: px(arch(f).projSpeed), dmgMul: arch(f).dmg, kind: arch(f).special === "nagapasha" ? "naga" : "shot" });
-    g.events.push({ t: "projectile", side: f.side, frame: g.frame });
+    g.events.push({ t: "projectile", side: f.side, kind: g.proj[g.proj.length - 1].kind, frame: g.frame });   // the kind: for the presentation (a point-blank shot never flies)
   }
 
   function physics(g) {
