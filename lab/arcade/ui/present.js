@@ -32,12 +32,14 @@
   var BOLT_H = 60, SHOT_H = 55;                                  // the bolt's thickness; the shot's height (its box is 30–80)
   var IMPACT = { hit: { size: 200, frames: 24, hold: 6 }, block: { size: 110, frames: 14, hold: 3 } };   // ~0.4 s with a fast fade; a block smaller, shorter
   var FLIGHT_LEN = 220, BIND_H = 230, BIND_Y = 115, BIND_FADE = 10;
-  function kling(P) { return !P.modes.fxOld && P.modes.fxMan && P.modes.fxMan.vajra_bolt && P.modes.fxMan.nagapasha_bind; }
+  // on when the page handed over ANY effect manifest (a match loads only its Heroes' effects: ruling 2 on cb69cdb); each is drawn if loaded
+  function kling(P) { return !P.modes.fxOld && !!P.modes.fxMan && Object.keys(P.modes.fxMan).length > 0; }
   function fxCell(P, name, t) { var m = P.modes.fxMan[name]; return Math.floor(t * m.fps / 60) % m.cells; }
   function klingShapes(P, g, out, sx, sy, z) {
     var X = P.modes.fxMan;
     [0, 1].forEach(function (o) {
       var s = P.shot[o]; if (!s) return;
+      if (s.kind === "naga" ? !X.nagapasha_flight : !X.vajra_bolt) return;
       if (s.kind === "naga") {   // the serpent IS the shot: its head (the cell's right edge) leads
         out.push({ k: "sprite", layer: "over", atlas: "fx_nagapasha_flight", cell: fxCell(P, "nagapasha_flight", P.tick), x: sx(s.x), y: sy(SHOT_H), scale: FLIGHT_LEN / X.nagapasha_flight.w * z, flip: s.dir === -1, alpha: 1, blend: "normal", tag: "fxflight" + o });
       } else {                   // the Vajra's bolt: stretched from where it left the weapon's tip to where it is now
@@ -45,12 +47,12 @@
         out.push({ k: "sprite", layer: "glow", atlas: "fx_vajra_bolt", cell: fxCell(P, "vajra_bolt", P.tick), x: sx(s.x0), y: sy(SHOT_H), scale: BOLT_H / X.vajra_bolt.h * z, scaleX: len / X.vajra_bolt.w * z, flip: s.dir === -1, alpha: 1, blend: "add", tag: "fxbolt" + o });
       }
     });
-    P.impacts.forEach(function (b, k) {
+    if (X.vajra_impact) P.impacts.forEach(function (b, k) {
       var I = b.block ? IMPACT.block : IMPACT.hit, a = b.t < I.hold ? 1 : Math.max(0, 1 - (b.t - I.hold) / (I.frames - I.hold));
       out.push({ k: "sprite", layer: "glow", atlas: "fx_vajra_impact", cell: fxCell(P, "vajra_impact", b.t), x: sx(b.x), y: sy(SHOT_H + 10), scale: I.size / X.vajra_impact.h * z, flip: false, alpha: a, blend: "add", tag: "fximpact" + k });
     });
     g.f.forEach(function (f, i) {
-      var B = P.bind[i]; if (!B) return;
+      var B = P.bind[i]; if (!B || !X.nagapasha_bind) return;
       out.push({ k: "sprite", layer: "over", atlas: "fx_nagapasha_bind", cell: fxCell(P, "nagapasha_bind", B.t), x: sx(f.x / F.U), y: sy(f.y / F.U + BIND_Y), scale: BIND_H / X.nagapasha_bind.h * z, flip: false, alpha: B.out ? 1 - B.out / BIND_FADE : 1, blend: "normal", tag: "fxbind" + i });
     });
   }

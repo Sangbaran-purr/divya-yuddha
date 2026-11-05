@@ -30,6 +30,11 @@ FX = {
     "nagapasha_bind":   {"blend": "normal", "ref": ("h", 520), "step": 3, "minLoop": 24, "anchor": "center",    "display": "its height = the bound Hero's body height (220 logical)"},
 }
 LO = 0.6
+# THE EFFECT-SIZE RULING (owner, on cb69cdb): glows don't need full resolution — the sheets are stored at the smallest scale of the REF
+# whose in-game look is unchanged at the default and close camera (the sweep: 0.6 / 0.45 / 0.35, docs/ARCADE_v1.md), both tiers
+STORE = {"vajra_bolt": 0.6, "vajra_impact": 0.45, "nagapasha_flight": 0.6, "nagapasha_bind": 0.55}
+SCALE = json.loads(os.environ.get("ARC_FX_SCALE", "null")) or STORE   # {name: ×} on the hi reference; ARC_FX_SCALE overrides (a sweep)
+OUT_ROOT = os.environ.get("ARC_FX_OUT")                    # a sweep writes here, with no contact sheet
 A_LO, A_HI = 6.0, 150.0          # the serpents' alpha ramp on the brightest channel (0–255)
 THRESH = 10                      # content: the brightest channel above this
 
@@ -76,8 +81,8 @@ def build(name):
     ys, xs = np.where(mask); m = 6
     x0, x1, y0, y1 = max(0, xs.min() - m), min(mask.shape[1], xs.max() + m + 1), max(0, ys.min() - m), min(mask.shape[0], ys.max() + m + 1)
     cw, ch = x1 - x0, y1 - y0
-    dim, ref = sp["ref"]; scale_hi = ref / (ch if dim == "h" else cw)
-    out = os.path.join(ARC, "effects", "fx_" + name); os.makedirs(out, exist_ok=True)
+    dim, ref = sp["ref"]; scale_hi = ref * SCALE.get(name, SCALE.get("*", 1.0)) / (ch if dim == "h" else cw)
+    out = os.path.join(OUT_ROOT or os.path.join(ARC, "effects"), "fx_" + name); os.makedirs(out, exist_ok=True)
     for f in os.listdir(out):
         if f.endswith((".webp", ".ktx2")): os.remove(os.path.join(out, f))
     tmp = tempfile.mkdtemp(prefix="arcfx"); rungs = {}
@@ -110,6 +115,7 @@ def build(name):
     with open(os.path.join(out, "manifest.json"), "w") as f: json.dump(man, f, indent=1)
     print("  %s: loop f%d–f%d (%d frames, seam |Δ| %.2f vs %.2f between neighbours) → %d cells at %g fps; crop %dx%d" % (name, s, s + L, L, err, consec, len(src), fps / sp["step"], cw, ch))
     # a contact sheet for the owner (never committed)
+    if OUT_ROOT: return man
     sh0 = rungs["hi"]; pg = [np.asarray(Image.open(os.path.join(out, p["webp"])).convert("RGBA")) for p in sh0["pages"]]
     tiles = [pg[c["page"]][c["y"]:c["y"] + c["h"], c["x"]:c["x"] + c["w"]] for c in sh0["cells"]]
     mf.contact_sheet(os.path.join(mf.SCREENS, "fx_%s_contact.jpg" % name), tiles, ["f%03d" % i for i in src], "fx · %s · %d cells at %g fps (%s)" % (name, len(src), fps / sp["step"], sp["blend"]),

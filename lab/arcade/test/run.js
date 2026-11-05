@@ -1038,6 +1038,26 @@ const appF = rd('ui/app.js');
 ok('M3b · …and the page does it: no compressed format → RUNG lo and each WebP page resized as it loads (createImageBitmap), every cell rect and pivot scaled, drawn 1 / scale larger',
   /if \(!target\) \{ RUNG = FALLBACK\.rung;/.test(appF) && /createImageBitmap\(img, \{ resizeWidth: Math\.round\(p\.size\[0\] \* s\)/.test(appF) && /k = 1 \/ s; cells = Rg\.cells\.map/.test(appF));
 red('M4 · BREAKAGE: the fallback at full size (scale 1) is over the lo cap (M3 goes red)', (() => { const t = 4 * BP.rungs.lo.pair + 4 * BP.rungs.lo.arena + BP.rungs.lo.effects; return !(t <= FB.cap); })());
+// WHAT A MATCH LOADS + THE FIRST-MATCH DOWNLOAD (owner ruling 2 on cb69cdb) and THE EFFECT SIZES (ruling 1)
+const AS = require(path.join(LAB, 'ui/assets.js'));
+function assetsOk(A) {
+  const p = (h) => A.plan(h, K.moves.HEROES);
+  const io = p(['indra', 'box_surya', 'box_varna', 'box_rakta']), mo = p(['meghnad', 'box_rakta']), bx = p(['box_surya', 'box_rakta', 'box_varna']), both = p(['indra', 'meghnad', 'indra']);
+  return { ok: J(io) === J({ fighters: ['indra'], effects: ['vajra_bolt', 'vajra_impact'] }) && J(mo) === J({ fighters: ['meghnad'], effects: ['nagapasha_flight', 'nagapasha_bind'] }) &&
+    bx.fighters.length === 0 && bx.effects.length === 0 && both.fighters.length === 2 && both.effects.length === 4, io, mo, bx, both };
+}
+const ASO = assetsOk(AS), appA = rd('ui/app.js');
+const pageUsesPlan = /const t0 = performance\.now\(\), P = A\.plan\(heroes, M\.HEROES\)/.test(appA) && /await ensureAssets\(spec\.lineup0\.concat\(spec\.lineup1\)\);/.test(appA) && !/Object\.values\(M\.HEROES\)\.map\(\(h\) => h\.fighter\)/.test(appA);
+ok('D1 · A MATCH LOADS ONLY ITS OWN HEROES (ruling 2 on cb69cdb): Indra + box Heroes → ' + J(ASO.io) + '; Meghnad → ' + J(ASO.mo) + '; box Heroes only → nothing; the page loads each match\'s plan before it starts (with a loading bar after ' + 250 + ' ms) and never the whole roster',
+  ASO.ok && pageUsesPlan && /const LOADED = new Set\(\), LOAD_BAR_MS = 250;/.test(appA), J(ASO));
+red('D1b · BREAKAGE: every Hero\'s effects for any match (D1 goes red)', !assetsOk({ plan: (h, H) => { const r = AS.plan(h, H); r.effects = ['vajra_bolt', 'vajra_impact', 'nagapasha_flight', 'nagapasha_bind']; return r; } }).ok);
+const fxDl = (r) => BP.rungs[r].kling ? BP.rungs[r].kling.ktx2 : 99;
+const dlOk = (P, fxCap) => ['hi', 'lo'].every((r) => P.rungs[r].firstMatch.fits) && fxDl('hi') <= fxCap.hi && fxDl('lo') <= fxCap.lo && P.fallback.total <= P.fallback.cap * BU.MARGIN;
+const FM = BP.rungs;
+ok('D2 · THE FIRST-MATCH DOWNLOAD (worst: ' + FM.hi.firstMatch.pair.join(' + ') + ', their effects, the arena at its target): hi ' + bf(FM.hi.firstMatch.total) + ' MB of ' + FM.hi.firstMatch.cap + ', lo ' + bf(FM.lo.firstMatch.total) + ' of ' + FM.lo.firstMatch.cap +
+  '; THE EFFECTS SMALLER (ruling 1): all four ' + (fxDl('hi')).toFixed(2) + ' MB hi (≤ 2.0), ' + (fxDl('lo')).toFixed(2) + ' lo (≤ 0.6); the fallback ' + bf(BP.fallback.total) + ' MB, under the 75% margin (' + bf(BP.fallback.cap * BU.MARGIN) + ')',
+  dlOk(BP, { hi: 2.0, lo: 0.6 }));
+red('D2b · BREAKAGE: the effects capped at 1.5 MB hi (D2 goes red)', !dlOk(BP, { hi: 1.5, lo: 0.6 }));
 const trackedE = git(['ls-files', 'lab/arcade']).concat(git(['diff', '--name-only', '--cached']));
 ok('E9 · the recorder\'s output is never tracked: captures/ is ignored and no capture frame or video is staged or committed', gi.includes('captures/') && !trackedE.some((f) => /\/captures\/|\.(mp4|gif)$/.test(f)));
 

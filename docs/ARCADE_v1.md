@@ -643,14 +643,38 @@ The loop is the SHORTEST whose seam is no bigger than the clip's own frame-to-fr
 **Note:** the per-match download line in `tools/budget.js` (six fighters against 11 MB on hi) no longer holds at 4.25 MB a fighter (six ≈ 24 MB); it predates the raise and is reported, not changed.
 
 
+## Rulings on cb69cdb (owner, 2026-11-05): smaller effects, the first-match download
+
+**1 · The effect sheets are stored smaller** (both tiers; `STORE` in `tools/make_effect.py`), at the smallest scale whose in-game look is unchanged at the default and close camera. The sweep (0.6 / 0.45 / 0.35 of the earlier size, compared in game, `~/Desktop/DY_arcade_screens/fx_scale/`): the impact, a glow, is unchanged at 0.45; the bolt's filaments and the serpents' scales soften at 0.45, so they stay at 0.6; the bind takes 0.55 (0.6 would put the four at 2.05 MB on hi, over the 2.0 target; 0.55 still looks the same).
+
+| Effect | Stored | hi KTX2 · GPU, before → after | lo KTX2 · GPU, before → after |
+|---|---|---|---|
+| Vajra bolt | 0.6× | 236 KB · 1.32 MB → 99 KB · 0.58 MB | 69 KB · 0.40 → 29 KB · 0.18 |
+| Vajra impact | 0.45× | 271 KB · 1.21 → 68 KB · 0.25 | 83 KB · 0.44 → 21 KB · 0.09 |
+| Nagapasha flight | 0.6× | 836 KB · 2.57 → 336 KB · 0.99 | 187 KB · 0.99 → 86 KB · 0.42 |
+| Nagapasha bind | 0.55× | 4019 KB · 13.83 → 1359 KB · 4.41 | 781 KB · 4.76 → 286 KB · 1.64 |
+| **All four** | | **5.24 MB · 18.9 → 1.82 MB · 6.2** (target ≤ 2.0) | **1.10 MB · 6.6 → 0.41 MB · 2.3** (target ≤ 0.6) |
+
+**2 · What a match downloads** (replaces the six-fighter line): a match loads only its own Heroes, the arena and the effects those Heroes use — the Vajra's only if Indra fights, the Nagapasha's only if Meghnad does (`ui/assets.js`, read by the page and the budget). Nothing for an unselected Hero is fetched; a later match reuses what is loaded and the browser's cache. A loading bar appears if a match's assets take longer than 250 ms. **First-match download caps: hi ≤ 12 MB, lo ≤ 2.5 MB** (worst case: the two heaviest fighters + their effects + the arena). The arena is not built yet; its budget target is used (0.6 MB hi / 0.3 MB lo).
+
+| | Fighters | Effects | Arena | First match | Cap |
+|---|---|---|---|---|---|
+| hi | 7.1 MB (Indra 4.05 + Meghnad 3.08) | 1.82 MB | 0.6 | **9.6 MB** | 12 |
+| lo | 1.2 MB (0.69 + 0.53) | 0.41 MB | 0.3 | **1.9 MB** | 2.5 |
+
+With the arena at its 0.9 MB cap: 9.9 / 2.5 MB.
+
+**Match memory (Indra twice + arena + all four effects):** hi 41.1 MB of 96 (margin 72) · lo 14.0 MB of 48 (margin 36) · the uncompressed fallback **34.6 MB** of 48, back under the 75% margin (36).
+
+
 ## The size budget (ruling 7)
 
 | | Target | Cap |
 |---|---|---|
-| One fighter, high (cells 320 px tall, about 90 cells, one 4096×2048 sheet) | 1.2 MB | 1.6 MB |
+| One fighter, high (cells 320 px tall, UASTC since the clarity pass) | — | 4.25 MB (was 1.6) |
 | One fighter, low (192 px, one 2048×2048 sheet) | 0.5 MB | 0.7 MB |
 | Arena (4 layers) | 0.6 MB high / 0.3 MB low | 0.9 MB |
-| One match (6 fighters + arena; audio reused from the game) | 4 MB low / 8.5 MB high | 6 MB / 11 MB |
+| First match (its two Heroes + their effects + arena; ruling 2 on cb69cdb) | — | 2.5 MB low / 12 MB high |
 | Graphics memory at once (2 fighters + arena + effects) | ≤48 MB low / ≤96 MB high | — (projected over at both rungs today: see the memory projection above) |
 | Repo, all 13 v1 fighters | about 22 MB | Pages watch item |
 

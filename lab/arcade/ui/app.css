@@ -61,3 +61,9 @@ button.big { border-color: var(--gold); color: var(--gold); font-weight: 600; le
 .panel h2 { color: var(--gold); margin: 0 0 .3rem; }
 #res-rounds { font-size: .85rem; color: #cdbb8f; text-align: left; }
 #perf { position: absolute; left: 10px; bottom: 8px; font: 12px/1.3 ui-monospace, Menlo, monospace; color: #9fd39f; background: rgba(0,0,0,.5); padding: 2px 6px; border-radius: 4px; pointer-events: none; }
+
+/* the match's loading bar (owner ruling 2 on cb69cdb): shown only when the Heroes' sheets take longer than a moment */
+#loading { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); width: min(60vw, 360px); text-align: center; z-index: 30; }
+#loading .lt { color: var(--gold); font-weight: 700; letter-spacing: .12em; margin-bottom: .5rem; font-size: .9rem; }
+#loading .lb { height: 8px; border-radius: 4px; background: rgba(232, 200, 116, .18); overflow: hidden; }
+#loading .lb i { display: block; height: 100%; width: 0; background: var(--gold); transition: width .15s linear; }

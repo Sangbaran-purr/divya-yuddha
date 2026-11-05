@@ -19,7 +19,25 @@ const fs = require('fs'), path = require('path');
 const LAB = path.resolve(__dirname, '..');
 const M = require(path.join(LAB, 'core/moves.js'));
 const MB = 1048576;
-const CAP = { lo: 48, hi: 96 }, MARGIN = 0.75, DL_CAP = { lo: 0.7, hi: 4.25 }, MATCH_DL = { lo: 6, hi: 11 };   // hi 1.6 → 4.25 MB (owner rulings, the clarity pass)
+const CAP = { lo: 48, hi: 96 }, MARGIN = 0.75, DL_CAP = { lo: 0.7, hi: 4.25 };   // hi 1.6 → 4.25 MB (owner rulings, the clarity pass)
+// THE FIRST-MATCH DOWNLOAD (owner ruling 2 on cb69cdb; it replaces the six-fighter line): a match loads only its two Heroes, the arena and
+// the effects those two use (ui/assets.js). Worst case: the two heaviest fighters + their effects + the arena. The arena is not built yet:
+// its budget target is used (docs/ARCADE_v1.md: 0.6 MB hi / 0.3 MB lo, cap 0.9). Later matches reuse what is loaded / the browser cache.
+const FIRST_MATCH_CAP = { hi: 12, lo: 2.5 }, ARENA_DL = { hi: 0.6, lo: 0.3 }, ARENA_DL_CAP = 0.9;
+const AS = require(path.join(LAB, 'ui/assets.js'));
+function effectDl(n, rung) {   // MB: KTX2 (the GPU path) and WebP (the fallback) for one effect, or null if not built
+  try { const R = JSON.parse(fs.readFileSync(path.join(LAB, 'effects', 'fx_' + n, 'manifest.json'), 'utf8')).rungs[rung];
+    return { ktx2: R.pages.reduce((a, p) => a + p.bytes.ktx2, 0) / MB, webp: R.pages.reduce((a, p) => a + p.bytes.webp, 0) / MB }; } catch (e) { return null; }
+}
+function firstMatch(rung, stats) {   // stats: fighter id → sheetStats; the worst pair = the two heaviest distinct fighters
+  const ids = Object.keys(stats).sort((a, b) => stats[b].ktx2 - stats[a].ktx2).slice(0, 2);
+  const heroes = Object.keys(M.HEROES).filter((h) => ids.includes(M.HEROES[h].fighter));
+  const P = AS.plan(heroes, M.HEROES), fx = P.effects.map((n) => [n, effectDl(n, rung)]);
+  const fighters = ids.reduce((a, id) => a + stats[id].ktx2, 0), effects = fx.reduce((a, [, d]) => a + (d ? d.ktx2 : 0), 0);
+  const total = fighters + effects + ARENA_DL[rung];
+  return { pair: ids, effectsList: P.effects, fighters, effects, arena: ARENA_DL[rung], total, cap: FIRST_MATCH_CAP[rung], fits: total <= FIRST_MATCH_CAP[rung],
+    totalArenaAtCap: fighters + effects + ARENA_DL_CAP, perEffect: Object.fromEntries(fx.map(([n, d]) => [n, d])) };
+}
 const FXN = ['vajra_bolt', 'vajra_impact', 'nagapasha_flight', 'nagapasha_bind'];
 function klingStats(rung) {   // the four effect sheets on this rung, or null when they are not built
   try {
@@ -93,7 +111,8 @@ function project(caps) {
       fits: total <= cap, fitsWithMargin: total <= cap * MARGIN, strikeFitsWithMargin: total + strike <= cap * MARGIN,
       // the WebP fallback (a GPU with no compressed format, or the Canvas 2D floor): fighters at 4 bytes a pixel
       fallbackTotal: 4 * pair + 4 * arenaGpu + (kl ? kl.rgba : fx),
-      download: { indraKtx2: i.ktx2, indraWebp: i.webp, meghnadKtx2: g.ktx2, meghnadWebp: g.webp, meghnadMeasured: megFull, capPerFighter: DL_CAP[rung], perMatch6Ktx2: 6 * i.ktx2, matchCap: MATCH_DL[rung], encoding: i.enc } };
+      download: { indraKtx2: i.ktx2, indraWebp: i.webp, meghnadKtx2: g.ktx2, meghnadWebp: g.webp, meghnadMeasured: megFull, capPerFighter: DL_CAP[rung], encoding: i.enc },
+      firstMatch: firstMatch(rung, { indra: i, meghnad: g }) };
   }
   out.cellLevers = lv; out.strikeShipped = !!I.strike24;
   // THE FALLBACK (no compressed format): the lo pages at `scale`, 4 bytes a pixel, + the arena at lo as RGBA + the half-size Vajra
@@ -125,7 +144,8 @@ if (require.main === module) {
       '\n  without the levers it would be ' + f(R.totalWithoutLevers) + ' MB; savings: compressed textures −' + f(R.levers.compressed) + ', idle 8 fps −' + f(R.levers.idle8) + ', hold trim −' + f(R.levers.holdTrim) + ', half-size Vajra −' + f(R.levers.vajraHalf) +
       '\n  + 24 fps strike frames: ' + f(R.total15Strike) + ' MB — ' + (R.strikeFitsWithMargin ? 'fits with margin' : 'no') +
       '\n  the WebP fallback (no compressed format): ' + f(R.fallbackTotal) + ' MB' +
-      '\n  download: Indra ' + R.download.encoding + ' ' + f(R.download.indraKtx2 * 1024) + ' KB (WebP ' + f(R.download.indraWebp * 1024) + ' KB), Meghnad ' + f(R.download.meghnadKtx2 * 1024) + ' KB (WebP ' + f(R.download.meghnadWebp * 1024) + ' KB) vs ' + f(R.download.capPerFighter * 1024) + ' KB a fighter; 6 fighters ≈ ' + f(R.download.perMatch6Ktx2) + ' MB vs a match\'s ' + R.download.matchCap + ' MB\n');
+      '\n  download: Indra ' + R.download.encoding + ' ' + f(R.download.indraKtx2 * 1024) + ' KB (WebP ' + f(R.download.indraWebp * 1024) + ' KB), Meghnad ' + f(R.download.meghnadKtx2 * 1024) + ' KB (WebP ' + f(R.download.meghnadWebp * 1024) + ' KB) vs ' + f(R.download.capPerFighter * 1024) + ' KB a fighter' +
+      '\n  FIRST MATCH (worst: ' + R.firstMatch.pair.join(' + ') + ', their effects, the arena): fighters ' + f(R.firstMatch.fighters) + ' + effects ' + f(R.firstMatch.effects) + ' + arena ' + f(R.firstMatch.arena) + ' (its target) = ' + f(R.firstMatch.total) + ' MB of ' + R.firstMatch.cap + ' — ' + (R.firstMatch.fits ? 'fits' : 'OVER') + ' (with the arena at its 0.9 cap: ' + f(R.firstMatch.totalArenaAtCap) + ')\n');
   }
   if (P.fallback) process.stdout.write('\nTHE FALLBACK (no compressed format, ruling 6): the ' + P.fallback.spec.rung + ' pages at ×' + P.fallback.spec.scale + ' (stance ' + Math.round(192 * P.fallback.spec.scale) + ' px) → fighters ' + f(P.fallback.fighters) + ' MB (the heavier fighter twice) + arena ' + f(P.fallback.arena) + ' + effects ' + f(P.fallback.effects) + ' = ' + f(P.fallback.total) + ' MB of the lo cap ' + P.fallback.cap + ' — ' + (P.fallback.fits ? 'fits' : 'OVER') + ' (unscaled it would be ' + f(P.fallback.unscaled) + ')\n');
   process.stdout.write('\nTHE DECISION (ruling 1): 24 fps strike frames ' + (P.strike24 ? 'YES — the 15-move projection fits both caps with margin' : 'NO — 12 fps stays') + (P.strikeShipped ? ' (the sheets carry them: measured above)' : '') + '\n');

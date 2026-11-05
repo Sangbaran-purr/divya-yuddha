@@ -64,74 +64,95 @@ async function loadKtx2Page(url, target) {   // fetch → transcode to the GPU's
     return { img: { __source: new PIXI_MOD.CompressedSource({ resource: [dst], format: target.pixi, width: w, height: h, alphaMode: "premultiplied-alpha" }) }, gpu: dst.length, bytes: buf.length };
   } finally { k.close(); k.delete(); }
 }
-async function loadFighters() {
-  const t0 = performance.now();
+// ── LOADING (owner ruling 2 on cb69cdb): the encoding and the rung are decided once; a match then loads only its own Heroes and the
+//    effects they use (ui/assets.js), each kept for later matches. A loading bar shows if it takes longer than LOAD_BAR_MS. ──
+let TARGET = null, FB_SCALE = 1;
+const LOADED = new Set(), LOAD_BAR_MS = 250;
+const A = window.ARC_ASSETS;
+async function initLoad() {
   const target = backend.startsWith("pixi") && MODES.raw.tex !== "webp" ? detectCompressed() : null;
-  LOAD.tex = target ? "ktx2" : "webp"; LOAD.gpuFormat = target ? target.name : "RGBA8";
-  const fbScale = target ? 1 : FALLBACK.scale;
+  TARGET = target; LOAD.tex = target ? "ktx2" : "webp"; LOAD.gpuFormat = target ? target.name : "RGBA8";
+  FB_SCALE = target ? 1 : FALLBACK.scale;
   if (!target) { RUNG = FALLBACK.rung; LOAD.fallbackScale = FALLBACK.scale; }
-  const ids = [...new Set(Object.values(M.HEROES).map((h) => h.fighter).filter(Boolean))];
-  await Promise.all(ids.map(async (id) => {
+}
+async function loadFighter(id, tick) {
+  const target = TARGET, fbScale = FB_SCALE;
+  try {
+    // ?fbase=captures/opt/<name>/ loads a fighter from an OPTION build (the clarity pass; captures/ is never committed), else fighters/
+    const base = (MODES.raw.fbase && /^captures\/opt\/[A-Za-z0-9_]+\/$/.test(MODES.raw.fbase) && (await fetch(MODES.raw.fbase + id + "/manifest.json", { method: "HEAD" })).ok ? MODES.raw.fbase : "fighters/") + id + "/";
+    const man = await (await fetch(base + "manifest.json?v=" + STAMP)).json();
+    const Rg = man.rungs[RUNG], pages = Rg.pages;
+    let imgs, bytes = 0, decoded = 0, tex = "webp", k = 1, cells = Rg.cells;
     try {
-      // ?fbase=captures/opt/<name>/ loads a fighter from an OPTION build (the clarity pass; captures/ is never committed), else fighters/
-      const base = (MODES.raw.fbase && /^captures\/opt\/[A-Za-z0-9_]+\/$/.test(MODES.raw.fbase) && (await fetch(MODES.raw.fbase + id + "/manifest.json", { method: "HEAD" })).ok ? MODES.raw.fbase : "fighters/") + id + "/";
-      const man = await (await fetch(base + "manifest.json?v=" + STAMP)).json();
-      const Rg = man.rungs[RUNG], pages = Rg.pages;
-      let imgs, bytes = 0, decoded = 0, tex = "webp", k = 1, cells = Rg.cells;
-      try {
-        if (!target) throw new Error("no compressed format");
-        const got = await Promise.all(pages.map((p) => loadKtx2Page(base + p.ktx2 + "?v=" + STAMP, target)));
-        imgs = got.map((x) => x.img); bytes = got.reduce((a, x) => a + x.bytes, 0); decoded = got.reduce((a, x) => a + x.gpu, 0); tex = "ktx2";
-      } catch (e) {   // the WebP fallback: the lo pages, resized as they load (each cell rect and pivot scaled; drawn 1/scale larger)
-        const s = target ? 1 : fbScale;
-        imgs = await Promise.all(pages.map(async (p) => {
-          const img = await loadImg(base + p.webp + "?v=" + STAMP);
-          return s === 1 ? img : createImageBitmap(img, { resizeWidth: Math.round(p.size[0] * s), resizeHeight: Math.round(p.size[1] * s), resizeQuality: "high" });
-        }));
-        bytes = pages.reduce((a, p) => a + p.bytes.webp, 0); decoded = pages.reduce((a, p) => a + Math.round(p.size[0] * s) * Math.round(p.size[1] * s) * 4, 0);
-        if (s !== 1) { k = 1 / s; cells = Rg.cells.map((c) => ({ page: c.page, x: c.x * s, y: c.y * s, w: c.w * s, h: c.h * s, px: c.px * s, py: c.py * s })); }
-      }
-      FIGHTERS[id] = { man, imgs, cells, bytes, decoded, tex, k };
-      LOAD.bytes += bytes; LOAD.decoded += decoded; LOAD.files += pages.length;
-    } catch (e) { /* a fighter that fails to load stays a box */ }
-  }));
-  // THE KLING EFFECT LAYER (owner brief 2026-11-05): the four effect clips, packed like a fighter (KTX2 when the GPU takes it, else WebP);
-  // their manifests go to the presentation as MODES.fxMan. ?fx=old keeps the in-engine drawn effects for comparison.
-  if (MODES.fx && !MODES.fxOld) {
-    const man = {};
-    await Promise.all(["vajra_bolt", "vajra_impact", "nagapasha_flight", "nagapasha_bind"].map(async (nm) => {
-      try {
-        const base = "effects/fx_" + nm + "/", m = await (await fetch(base + "manifest.json?v=" + STAMP)).json(), Rg = m.rungs[RUNG];
-        let imgs, bytes = 0, decoded = 0, s = 1, cells = Rg.cells;
-        try {
-          if (!target) throw new Error("no compressed format");
-          const got = await Promise.all(Rg.pages.map((p) => loadKtx2Page(base + p.ktx2 + "?v=" + STAMP, target)));
-          imgs = got.map((x) => x.img); bytes = got.reduce((a, x) => a + x.bytes, 0); decoded = got.reduce((a, x) => a + x.gpu, 0);
-        } catch (e) {   // the WebP fallback: resized like the fighters' (FALLBACK.scale) so the RGBA memory stays under the lo cap
-          s = target ? 1 : fbScale;
-          imgs = await Promise.all(Rg.pages.map(async (p) => { const img = await loadImg(base + p.webp + "?v=" + STAMP);
-            return s === 1 ? img : createImageBitmap(img, { resizeWidth: Math.round(p.size[0] * s), resizeHeight: Math.round(p.size[1] * s), resizeQuality: "high" }); }));
-          bytes = Rg.pages.reduce((a, p) => a + p.bytes.webp, 0); decoded = Rg.pages.reduce((a, p) => a + Math.round(p.size[0] * s) * Math.round(p.size[1] * s) * 4, 0);
-          if (s !== 1) cells = Rg.cells.map((c) => ({ page: c.page, x: c.x * s, y: c.y * s, w: c.w * s, h: c.h * s, px: c.px * s, py: c.py * s }));
-        }
-        EFFECTS["fx_" + nm] = { man: m, imgs, cells, k: 1 / s, fx: true };
-        man[nm] = { cells: Rg.cells.length, w: Rg.cellSize[0], h: Rg.cellSize[1], fps: m.loop.fps, blend: m.blend };
-        LOAD.bytes += bytes; LOAD.decoded += decoded; LOAD.files += Rg.pages.length;
-      } catch (e) { /* that effect falls back to the drawn one */ }
-    }));
-    if (man.vajra_bolt && man.vajra_impact && man.nagapasha_flight && man.nagapasha_bind) MODES.fxMan = man;
-  }
-  if (MODES.fx && !MODES.fxMan) {   // the old drawn look (?fx=old, or the Kling layer failed to load)
-    try {   // the half-size Vajra on lo (ruling 1)
-      const dir = "effects/vajra/" + (RUNG === "lo" ? "lo/" : ""), man = await (await fetch(dir + "manifest.json?v=" + STAMP)).json();
-      const img = await loadImg(dir + man.atlas + "?v=" + STAMP);
-      EFFECTS.vajra = { man, img, cells: man.cells, k: man.rungScale || 1 };
-      LOAD.decoded += man.atlasSize.w * man.atlasSize.h * 4; LOAD.files++;
-      LOAD.bytes += Number((await fetch(dir + man.atlas + "?v=" + STAMP, { method: "HEAD" })).headers.get("content-length") || 0);
-    } catch (e) { /* no pillar; the shot stays a box */ }
-  }
-  LOAD.transcodeMs = Math.round(LOAD.transcodeMs);
-  LOAD.ms = Math.round(performance.now() - t0);
+      if (!target) throw new Error("no compressed format");
+      const got = await Promise.all(pages.map((p) => loadKtx2Page(base + p.ktx2 + "?v=" + STAMP, target).then((x) => { tick(); return x; })));
+      imgs = got.map((x) => x.img); bytes = got.reduce((a, x) => a + x.bytes, 0); decoded = got.reduce((a, x) => a + x.gpu, 0); tex = "ktx2";
+    } catch (e) {   // the WebP fallback: the lo pages, resized as they load (each cell rect and pivot scaled; drawn 1/scale larger)
+      const s = target ? 1 : fbScale;
+      imgs = await Promise.all(pages.map(async (p) => {
+        const img = await loadImg(base + p.webp + "?v=" + STAMP); tick();
+        return s === 1 ? img : createImageBitmap(img, { resizeWidth: Math.round(p.size[0] * s), resizeHeight: Math.round(p.size[1] * s), resizeQuality: "high" });
+      }));
+      bytes = pages.reduce((a, p) => a + p.bytes.webp, 0); decoded = pages.reduce((a, p) => a + Math.round(p.size[0] * s) * Math.round(p.size[1] * s) * 4, 0);
+      if (s !== 1) { k = 1 / s; cells = Rg.cells.map((c) => ({ page: c.page, x: c.x * s, y: c.y * s, w: c.w * s, h: c.h * s, px: c.px * s, py: c.py * s })); }
+    }
+    FIGHTERS[id] = { man, imgs, cells, bytes, decoded, tex, k };
+    LOAD.bytes += bytes; LOAD.decoded += decoded; LOAD.files += pages.length;
+  } catch (e) { /* a fighter that fails to load stays a box */ }
+}
+// THE KLING EFFECT LAYER (owner brief 2026-11-05): an effect clip, packed like a fighter (KTX2 when the GPU takes it, else WebP); its
+// manifest goes to the presentation in MODES.fxMan. ?fx=old keeps the in-engine drawn effects for comparison.
+async function loadEffect(nm, tick) {
+  const target = TARGET, fbScale = FB_SCALE;
+  try {
+    // ?efbase=captures/opt/<name>/ loads the effects from a scale sweep (the effect-size ruling; captures/ is never committed)
+    const root = MODES.raw.efbase && /^captures\/opt\/[A-Za-z0-9_.]+\/$/.test(MODES.raw.efbase) ? MODES.raw.efbase : "effects/";
+    const base = root + "fx_" + nm + "/", m = await (await fetch(base + "manifest.json?v=" + STAMP)).json(), Rg = m.rungs[RUNG];
+    let imgs, bytes = 0, decoded = 0, s = 1, cells = Rg.cells;
+    try {
+      if (!target) throw new Error("no compressed format");
+      const got = await Promise.all(Rg.pages.map((p) => loadKtx2Page(base + p.ktx2 + "?v=" + STAMP, target).then((x) => { tick(); return x; })));
+      imgs = got.map((x) => x.img); bytes = got.reduce((a, x) => a + x.bytes, 0); decoded = got.reduce((a, x) => a + x.gpu, 0);
+    } catch (e) {   // the WebP fallback: resized like the fighters' (FALLBACK.scale) so the RGBA memory stays under the lo cap
+      s = target ? 1 : fbScale;
+      imgs = await Promise.all(Rg.pages.map(async (p) => { const img = await loadImg(base + p.webp + "?v=" + STAMP); tick();
+        return s === 1 ? img : createImageBitmap(img, { resizeWidth: Math.round(p.size[0] * s), resizeHeight: Math.round(p.size[1] * s), resizeQuality: "high" }); }));
+      bytes = Rg.pages.reduce((a, p) => a + p.bytes.webp, 0); decoded = Rg.pages.reduce((a, p) => a + Math.round(p.size[0] * s) * Math.round(p.size[1] * s) * 4, 0);
+      if (s !== 1) cells = Rg.cells.map((c) => ({ page: c.page, x: c.x * s, y: c.y * s, w: c.w * s, h: c.h * s, px: c.px * s, py: c.py * s }));
+    }
+    EFFECTS["fx_" + nm] = { man: m, imgs, cells, k: 1 / s, fx: true };
+    (MODES.fxMan = MODES.fxMan || {})[nm] = { cells: Rg.cells.length, w: Rg.cellSize[0], h: Rg.cellSize[1], fps: m.loop.fps, blend: m.blend };
+    LOAD.bytes += bytes; LOAD.decoded += decoded; LOAD.files += Rg.pages.length;
+  } catch (e) { /* that effect falls back to the drawn one */ }
+}
+async function loadOldVajra() {   // the old drawn look's Vajra pillar (?fx=old, or the Kling bolt failed to load); the half-size atlas on lo
+  try {
+    const dir = "effects/vajra/" + (RUNG === "lo" ? "lo/" : ""), man = await (await fetch(dir + "manifest.json?v=" + STAMP)).json();
+    const img = await loadImg(dir + man.atlas + "?v=" + STAMP);
+    EFFECTS.vajra = { man, img, cells: man.cells, k: man.rungScale || 1 };
+    LOAD.decoded += man.atlasSize.w * man.atlasSize.h * 4; LOAD.files++;
+    LOAD.bytes += Number((await fetch(dir + man.atlas + "?v=" + STAMP, { method: "HEAD" })).headers.get("content-length") || 0);
+  } catch (e) { /* no pillar; the shot stays a box */ }
+}
+// load what a match with these Heroes needs and is not loaded yet; the bar appears only if it is still loading after LOAD_BAR_MS
+async function ensureAssets(heroes) {
+  const t0 = performance.now(), P = A.plan(heroes, M.HEROES), jobs = [];
+  const fx = MODES.fx && !MODES.fxOld ? P.effects : [];
+  const todo = P.fighters.filter((f) => !LOADED.has("f:" + f)).map((f) => ["f", f]).concat(fx.filter((n) => !LOADED.has("e:" + n)).map((n) => ["e", n]));
+  const wantOld = MODES.fx && P.fighters.includes("indra") && !LOADED.has("old:vajra");
+  if (!todo.length && !wantOld) return;
+  let done = 0, total = 0, bar = null;
+  const show = () => { if (!bar) { bar = $("loading"); bar.hidden = false; } $("loadbar").style.width = Math.round(100 * done / Math.max(1, total)) + "%"; };
+  const timer = setTimeout(show, LOAD_BAR_MS);
+  const tick = () => { done++; if (bar) show(); };
+  total = todo.length;   // one step a Hero's sheets or an effect
+  for (const [k, id] of todo) jobs.push((k === "f" ? loadFighter(id, () => {}) : loadEffect(id, () => {})).then(() => { LOADED.add(k + ":" + id); tick(); }));
+  await Promise.all(jobs);
+  if (wantOld && (MODES.fxOld || !(MODES.fxMan && MODES.fxMan.vajra_bolt))) { await loadOldVajra(); LOADED.add("old:vajra"); }
+  clearTimeout(timer); if (bar) { $("loadbar").style.width = "100%"; bar.hidden = true; }
+  LOAD.transcodeMs = Math.round(LOAD.transcodeMs); LOAD.ms += Math.round(performance.now() - t0);
+  document.documentElement.dataset.fighters = Object.keys(FIGHTERS).join(",") + "@" + RUNG;
+  document.documentElement.dataset.effects = Object.keys(EFFECTS).join(",");
 }
 const fighterMans = () => { const o = {}; for (const k in FIGHTERS) o[k] = FIGHTERS[k].man; return o; };
 function cellOf(s) {   // the cell record and its image for a sprite shape
@@ -244,16 +265,20 @@ let match = null, ais = null, rng = null, seed = 0, banner = 0, bannerText = "",
 let PS = null, demo = null, ring = [], slowmo = null, cam = null, lastFight = null, overT = 0;   // overT: frames since the fight ended (the K.O. / win art)
 function shuffle(a, r) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 function newAIs() { ais = [MODES.aivs ? AI.createAI("advanced", rng, { round: match ? match.round : 0 }) : null, AI.createAI(level, rng, { round: match ? match.round : 0 })]; }   // the round is on screen: the Beginner holds its special in round 1
-function startMatch() {
+async function startMatch() {
   seed = MODES.raw.seed ? (+MODES.raw.seed >>> 0) : (Date.now() ^ (Math.random() * 1e9)) >>> 0;     // a UI choice (?seed= fixes it); the match itself replays from this seed
   rng = R.rng(seed);
   // ?opp=meghnad,indra,box_rakta fixes the opponent's lineup (a lab convenience); otherwise 3 of the Heroes at random
   const opp = (MODES.raw.opp || "").split(",").filter((id) => M.HEROES[id]);
   // ?aivs=1: Indra vs Meghnad, both played by the Advanced AI, every round (the lab's AI-fight recording; ?seed= replays it)
   if (MODES.aivs) level = "advanced";
-  match = MA.createMatch(MODES.aivs ? { lineup0: ["indra", "indra", "indra"], lineup1: ["meghnad", "meghnad", "meghnad"], repeat: true }
+  const spec = MODES.aivs ? { lineup0: ["indra", "indra", "indra"], lineup1: ["meghnad", "meghnad", "meghnad"], repeat: true }
     : MODES.demo ? { lineup0: DEMO.LINEUPS[0], lineup1: DEMO.LINEUPS[1], seconds: 99 }
-    : { lineup0: lineup, lineup1: opp.length === MA.ROUNDS && new Set(opp).size === MA.ROUNDS ? opp : shuffle(HERO_IDS, rng).slice(0, MA.ROUNDS) });
+    : { lineup0: lineup, lineup1: opp.length === MA.ROUNDS && new Set(opp).size === MA.ROUNDS ? opp : shuffle(HERO_IDS, rng).slice(0, MA.ROUNDS) };
+  // load only this match's Heroes and their effects (ruling 2 on cb69cdb); the stage shows the loading bar meanwhile
+  match = null; $("setup").hidden = true; $("result").hidden = true; $("pause").hidden = true; $("game").hidden = false;
+  await ensureAssets(spec.lineup0.concat(spec.lineup1));
+  match = MA.createMatch(spec);
   demo = MODES.demo ? DEMO.create(MODES.demoName) : null; overT = 0;
   newAIs(); finished = false; paused = false; slowmo = null; ring = []; PS = PR.create(MODES); cam = null; lastFight = match.fight;
   showBanner("ROUND 1", MODES.demo ? 45 : BANNER_START);
@@ -367,7 +392,7 @@ function frame(now) {
 // the shot's placeholder box is hidden where the presentation draws the shot itself (the Vajra, the Nagapasha)
 function noShotBoxes(g, shapes) {
   if (!MODES.fx) return shapes;
-  return shapes.filter((s) => !(/^proj/.test(s.tag) && (((EFFECTS.vajra || MODES.fxMan) && g.f[+s.tag.slice(4)].hero === "indra") || M.ARCH[g.f[+s.tag.slice(4)].arch].special === "nagapasha")));
+  return shapes.filter((s) => !(/^proj/.test(s.tag) && (((EFFECTS.vajra || (MODES.fxMan && MODES.fxMan.vajra_bolt)) && g.f[+s.tag.slice(4)].hero === "indra") || M.ARCH[g.f[+s.tag.slice(4)].arch].special === "nagapasha")));
 }
 function viewFight() { return slowmo ? slowmo.frames[Math.min(slowmo.frames.length - 1, Math.floor(slowmo.t))] : match.fight; }
 function render(dtSec) {
@@ -408,7 +433,7 @@ function showResult() {
 //    frame (30 fps), each frame posted as a JPEG; the server assembles the video. Deterministic: the same bout every time. ──
 async function capture(name) {
   const post = (path, body) => fetch("/__capture/" + encodeURIComponent(name) + path, { method: "POST", body });
-  startMatch(); let i = 0;
+  await startMatch(); let i = 0;
   while (!finished && i < (MODES.aivs ? 6000 : 1200)) {
     tick(); tick(); render(1 / 30);
     const blob = await new Promise((res) => canvasEl.toBlob(res, "image/jpeg", 0.92));
@@ -427,13 +452,14 @@ $("change").onclick = () => { $("result").hidden = true; $("game").hidden = true
 
 renderSetup(); setupTouch();
 await initRenderer();   // first: the loader needs to know whether the GPU path (Pixi) can take compressed pages
-await loadFighters();
+await initLoad();
 document.documentElement.dataset.fighters = Object.keys(FIGHTERS).join(",") + "@" + RUNG;
 $("perf").hidden = !MODES.perf;
 // ── THE CLARITY STILLS (?still=1, a lab tool): window.__arcStill(o) sets up a fight, steps it (o.steps: [[inputs, frames], …]) through
 //    the real tick (fight + presentation), draws ONE frame with a fixed camera {x, zoom} at the page's own device resolution, and posts
 //    it as a PNG to the capture server (~/Desktop/DY_arcade_screens/clarity/<o.name>.png). o.noFade drops the cross-fade shapes. ──
 if (MODES.raw.still) window.__arcStill = async (o) => {
+  await ensureAssets([o.p0, o.p1]);
   match = MA.createMatch({ lineup0: [o.p0, "box_surya", "box_varna"], lineup1: [o.p1, "box_rakta", "box_varna"], seconds: 99 });
   const g = match.fight; finished = false; banner = 0; $("banner").hidden = true; PS = PR.create(MODES); lastFight = g; overT = 0;
   g.f[0].x = Math.round(o.x0 * F.U); g.f[1].x = Math.round(o.x1 * F.U); g.frame = o.frame || 0; if (o.meter) g.f.forEach((f) => { f.meter = 100; });
@@ -442,6 +468,7 @@ if (MODES.raw.still) window.__arcStill = async (o) => {
   cam = { x: o.camX != null ? o.camX : (g.f[0].x + g.f[1].x) / 2 / F.U, zoom: o.zoom };
   const built = S.build(g, buildOpts(cam)); let sh = noShotBoxes(g, built.shapes).concat(PR.shapes(PS, g, built));
   if (o.noFade) sh = sh.filter((s) => !/^fade/.test(s.tag));
+  if (o.noFx) sh = sh.filter((s) => !/^fx/.test(s.tag));   // the same frame without the Kling layer (to find the effect's own pixels)
   draw(sh);
   const blob = await new Promise((res) => canvasEl.toBlob(res, "image/png"));
   await fetch("/__still/" + encodeURIComponent(o.name), { method: "POST", body: blob });

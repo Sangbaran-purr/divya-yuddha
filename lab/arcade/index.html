@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <meta name="robots" content="noindex, nofollow">
-<meta name="lab-stamp" content="0f7327b4aeec">
+<meta name="lab-stamp" content="0762e9ae934e">
 <title>Arcade lab</title>
-<link rel="stylesheet" href="ui/app.css?v=0f7327b4aeec">
+<link rel="stylesheet" href="ui/app.css?v=0762e9ae934e">
 </head>
 <body>
 <!-- ARCADE-1 lab (docs/ARCADE_v1.md). Unlinked; nothing in the live game loads it. R0–R2: placeholder box fighters. -->
@@ -36,6 +36,7 @@
     <div class="side s1"><div class="name" id="n1"></div><div class="bar hp"><i id="hp1"></i></div><div class="bar meter"><i id="m1"></i></div><div class="pips" id="w1"></div></div>
   </div>
   <div id="banner" hidden></div>
+  <div id="loading" hidden><div class="lt">Loading</div><div class="lb"><i id="loadbar"></i></div></div>
   <div id="perf" hidden></div>
   <div id="touch" hidden>
     <div id="stickzone"><div id="stick" hidden><div id="knob"></div></div></div>
@@ -46,15 +47,16 @@
 <div id="pause" class="overlay" hidden><div class="panel"><h2>Paused</h2><button id="resume" class="big" type="button">Resume</button><button id="quit" type="button">Quit to lineup</button></div></div>
 <div id="result" class="overlay" hidden><div class="panel"><h2 id="res-title"></h2><div id="res-rounds"></div><button id="again" class="big" type="button">Fight again</button><button id="change" type="button">Change lineup</button></div></div>
 
-<script src="core/moves.js?v=0f7327b4aeec"></script>
-<script src="core/rng.js?v=0f7327b4aeec"></script>
-<script src="core/fight.js?v=0f7327b4aeec"></script>
-<script src="core/ai.js?v=0f7327b4aeec"></script>
-<script src="core/match.js?v=0f7327b4aeec"></script>
-<script src="ui/controls.js?v=0f7327b4aeec"></script>
-<script src="ui/scene.js?v=0f7327b4aeec"></script>
-<script src="ui/present.js?v=0f7327b4aeec"></script>
-<script src="ui/demo.js?v=0f7327b4aeec"></script>
-<script type="module" src="ui/app.js?v=0f7327b4aeec"></script>
+<script src="core/moves.js?v=0762e9ae934e"></script>
+<script src="core/rng.js?v=0762e9ae934e"></script>
+<script src="core/fight.js?v=0762e9ae934e"></script>
+<script src="core/ai.js?v=0762e9ae934e"></script>
+<script src="core/match.js?v=0762e9ae934e"></script>
+<script src="ui/controls.js?v=0762e9ae934e"></script>
+<script src="ui/scene.js?v=0762e9ae934e"></script>
+<script src="ui/present.js?v=0762e9ae934e"></script>
+<script src="ui/demo.js?v=0762e9ae934e"></script>
+<script src="ui/assets.js?v=0762e9ae934e"></script>
+<script type="module" src="ui/app.js?v=0762e9ae934e"></script>
 </body>
 </html>

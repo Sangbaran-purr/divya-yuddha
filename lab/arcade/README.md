@@ -57,6 +57,8 @@ Heavy is a high attack: crouch under it. Light is a mid: block it. The zoner and
 | `ui/present.js` | The presentation layer for the switches: sparks, flash, shake, dust, shadows, trail, cross-fade, the Vajra pillar. It only reads the fight, never changes it, and uses no randomness. |
 | `ui/demo.js` | The demo bout: Indra vs Meghnad, scripted through inputs only, plus three stated nudges (full meter before each special, Indra's health lowered so it ends on a K.O.). |
 | `tools/ktx2_decode.js` | Decodes a KTX2 page with the lab's own transcoder copy (`runtime/basis/`): the fighter tool measures quality with it, the suite checks every page transcodes to ASTC, BC7 and ETC2. |
+| `ui/assets.js` | What a match loads: only its Heroes and the effects they use (read by the page and the budget). |
+| `tools/make_effect.py` | The effect tool: the Kling effect clips → effect sheets (`effects/fx_<name>/`), stored at the ruled scale. |
 | `tools/make_effect_lo.py` | The half-size effect atlas for the lo rung (`effects/vajra/lo/`). |
 | `runtime/basis/` | The Basis Universal transcoder (from three.js r146, `runtime/COPY.json` records the source and its sha256): turns KTX2 pages into the GPU's compressed format in the page. |
 | `tools/budget.js` | The graphics-memory projection (owner ruling 2): measured cells × the 15-move set + arena + effects against the caps; it decides whether 24 fps strike frames may ship. `node lab/arcade/tools/budget.js`. |
