@@ -889,7 +889,7 @@ function balance(KK, level, n) {
 const BAL = ['advanced', 'deathmatch'].map((l) => balance(K, l, 200));
 // in band at Advanced (40–65), no time-out, and the ruling-2 AI does help the out-ranged side (Meghnad wins less than without it)
 const c17 = (B, ref) => B[0].meghnadPct >= 40 && B[0].meghnadPct <= 65 && B.every((b) => b.timeouts === 0) && B[0].meghnadPct < ref.meghnadPct;
-const noCI = (() => { const KK = load({ ai: [['closeIn: { guard: 0.85, jumpIn: 0.02, punish: 0.8 } },', '},']] }); return balance(KK, 'advanced', 200); })();
+const noCI = (() => { const KK = load({ ai: [['closeIn: { guard: 0.85, punish: 0.8 } },', '},']] }); return balance(KK, 'advanced', 200); })();
 ok('C17 · THE BALANCE CHECK (owner rulings 1–4, 2026-11-05): Indra vs Meghnad, both AIs, 200 rounds each, sides alternating — Meghnad wins ' + BAL.map((b) => b.meghnadPct + '% at ' + b.level).join(', ') + ' (target 40–65 at Advanced; no time-outs: ' + BAL.map((b) => b.timeouts).join('/') +
   '; without the ruling-2 AI ' + noCI.meghnadPct + '% at Advanced); out-ranged, the Advanced Indra closes in — inside the spear\'s reach but outside his own he holds or backs off ' + BAL[0].indraOutside + '% of his free frames (' + noCI.indraOutside + '% without it); the Beginner keeps none of it',
   c17(BAL, noCI) && !K.ai.LEVELS.beginner.closeIn && !!K.ai.LEVELS.deathmatch.closeIn, J({ BAL, noCI }));

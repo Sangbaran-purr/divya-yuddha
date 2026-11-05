@@ -566,11 +566,18 @@ Indra, checked the same way: light 198 / heavy 210 / Vajra 177 match his art (19
 
 **Found and fixed:** a shot that leaves the weapon's tip (Indra 177, Meghnad 241) started behind an opponent standing closer than the tip and never hit. It now starts on the opponent. For Meghnad, the coil now binds almost at once, inside his own 34-frame recovery, so a follow-up heavy lands inside the 50-frame bind only when the coil is cast from about 230 px or closer (it did from 260 before).
 
-**2 · The AI closes in when out-ranged** (Advanced and Death Match; the Beginner unchanged; no damage number changed): `closeIn` in `core/ai.js`. Inside the opponent's reach and outside its own, it keeps walking in (guarding a seen attack at 85% / 90% instead of 60% / 68%), jumps in at 2% / 3% a frame, and steps in to punish a whiff only when the opponent's remaining recovery (minus its reaction delay) leaves time to walk into reach and land a light. Measured on Indra vs Meghnad, Advanced: without it Meghnad wins 69.3%; with it 63.3%. The punish is worth about 3.5 points, the higher guard about 2; the jump-in costs Indra about 4 (Meghnad's heavy is a high and catches him in the air; without jump-ins Meghnad would win 59.1%).
+**2 · The AI closes in when out-ranged** (Advanced and Death Match; the Beginner unchanged; no damage number changed): `closeIn` in `core/ai.js`. Inside the opponent's reach and outside its own, it keeps walking in (guarding a seen attack at 85% / 90% instead of 60% / 68%), jumped in at 2% / 3% a frame (removed on 66631fd's rulings, below), and steps in to punish a whiff only when the opponent's remaining recovery (minus its reaction delay) leaves time to walk into reach and land a light. Measured on Indra vs Meghnad, Advanced: without it Meghnad wins 69.3%; with it 63.3%. The punish is worth about 3.5 points, the higher guard about 2; the jump-in costs Indra about 4 (Meghnad's heavy is a high and catches him in the air; without jump-ins Meghnad would win 59.1%).
 
 **3 · Meghnad's walk:** 120 px/s forward, 90 back (was 168 / 126), the stride still at 20 fps. Skate **2.82×** forward, **2.11×** back (was 3.95×). Indra unchanged (2.18 / 1.63).
 
 **4 · The balance check** (Indra vs Meghnad, both AIs, 200 rounds each, sides alternating, test C17): Meghnad wins **63.3% at Advanced**, **61.9% at Death Match**, no time-outs. Inside the 40–65 target.
+
+
+## Rulings on 66631fd (owner, 2026-11-05)
+
+**1 · The out-ranged AI no longer jumps in** (Advanced and Death Match); the walk-in, the higher guard and the timed whiff punish stay; the Beginner unchanged.
+**2 · Meghnad's walk skate 2.82×:** accepted for now.
+**3 · The balance check** (Indra vs Meghnad, both AIs, 200 rounds each, sides alternating, test C17): Meghnad wins **58.7% at Advanced** (115–81, 4 draws; 59 expected) and **63.8% at Death Match** (127–72, 1 draw); no time-outs. Inside the 40–65 target.
 
 
 ## The size budget (ruling 7)

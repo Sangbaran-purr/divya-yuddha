@@ -20,14 +20,14 @@
   // cancels, pauses 0.4–0.8 s between attacks, no special in round 1, and never parries, throws or techs (ruling 5).
   // CLOSING IN WHEN OUT-RANGED (owner ruling 2, 2026-11-05; Advanced and Death Match only — the Beginner stays simple): when the
   // opponent's effective reach (its light, from the art) is longer than ours, the AI does not wait outside it. It walks in, guarding
-  // what it sees coming at `guard` (instead of `block`), sometimes jumps in over the poke (`jumpIn`, per frame inside the opponent's
-  // reach), and steps in to punish a whiff during the opponent's recovery (`punish`, decided once per whiff). No damage number changes.
+  // what it sees coming at `guard` (instead of `block`), and steps in to punish a whiff during the opponent's recovery (`punish`, decided
+  // once per whiff). No damage number changes. (The jump-in was removed by owner ruling 1 on 66631fd: the spear's high heavy caught it.)
   var LEVELS = {
     beginner:   { reaction: 27, block: 0.10, duck: 0.05, jumpProj: 0.15, cancel: 0, special: 0.5, attackGap: [24, 48], noise: 0.20, spacing: 0.5, parry: 0, throw: 0, tech: 0, specialFrom: 1 },
     advanced:   { reaction: 11, block: 0.60, duck: 0.25, jumpProj: 0.5, cancel: 0.6, special: 0.8, attackGap: [12, 30], noise: 0.06, spacing: 0.8, parry: 0.15, throw: 0.30, tech: 0.4, specialFrom: 0,
-                  closeIn: { guard: 0.85, jumpIn: 0.02, punish: 0.8 } },
+                  closeIn: { guard: 0.85, punish: 0.8 } },
     deathmatch: { reaction: 9,  block: 0.68, duck: 0.35, jumpProj: 0.65, cancel: 0.8, special: 0.9, attackGap: [10, 26], noise: 0.0, spacing: 0.9, parry: 0.30, throw: 0.45, tech: 0.7, specialFrom: 0,
-                  closeIn: { guard: 0.9, jumpIn: 0.03, punish: 0.95 } }
+                  closeIn: { guard: 0.9, punish: 0.95 } }
   };
 
   // what a player could see on screen — and nothing else
@@ -138,10 +138,7 @@
         }
       }
       var oppR = F.moveOf({ hero: op.hero, arch: op.arch }, "light").box.x1 + M.BODY.halfW;
-      if (dist > myLightR + M.BODY.halfW && dist <= oppR + 60) {   // inside its reach, outside ours: keep coming
-        if (ai.rng() < CI.jumpIn && dist >= 150) return finish(ai, B.U | fwd);
-        return finish(ai, fwd);
-      }
+      if (dist > myLightR + M.BODY.halfW && dist <= oppR + 60) return finish(ai, fwd);   // inside its reach, outside ours: keep coming
     }
     // spacing: the template's 75 / 90 px, plus however much further this Hero's light reaches (reach from the art, ruling 5)
     var myLight = F.moveOf({ hero: me.hero, arch: me.arch }, "light").box.x1, extra = myLight - M.MOVES.light.box.x1;
