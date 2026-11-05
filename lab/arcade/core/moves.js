@@ -97,7 +97,13 @@
     // Meghnad: placeholder sheets until the reshoot; his archetype stays RELATIVE TO INDRA — Indra's reach + 45, 2 frames slower
     // throwPull (owner brief 2026-11-05): his throw is a spear-hook — the grab's hold yanks the caught Hero in to knee distance (64 logical px
     // between the two: bodies touching at 60), the range stays the template's 90 (the hook's length is visual only)
-    meghnad: { id: "meghnad", name: "Meghnad", arch: "reach", color: 0x9b4fd1, fighter: "meghnad", reachFrom: "indra", throwPull: 64 }
+    // HITBOXES FOLLOW THE VISIBLE SPEAR (owner ruling 1, 2026-11-05): the archetype stays "reach" (its recovery +2, the Nagapasha) but the
+    // art defines the numbers (fighters/meghnad/manifest.json tipsLogical): light 218 (was Indra's 198 + 45 = 243); heavy 80 — the
+    // downward drive, from where he stands at impact — with heavyLunge 137: the clip's own ~448 source px forward step (removed from the
+    // art) given back by the engine during the wind-up, so the move covers ground as it does in the clip; the coil leaves the spear's
+    // tip, 241 (was the template's 60). WALK (owner ruling 3): 120 px/s forward, 90 back (was 168 / 126).
+    meghnad: { id: "meghnad", name: "Meghnad", arch: "reach", color: 0x9b4fd1, fighter: "meghnad", reach: { light: 218, heavy: 80 }, heavyLunge: 137, projX: 241,
+      walk: { walkF: 2, walkB: 1.5 }, throwPull: 64 }
   };
 
   return { BODY: BODY, MOVES: MOVES, KNOCKDOWN: KNOCKDOWN, REAL_WALK: REAL_WALK, PARRY: PARRY, NAGAPASHA: NAGAPASHA, CLIPS: CLIPS, CHAIN_MAX: CHAIN_MAX, METER: METER, JUMP: JUMP, PROJECTILE: PROJECTILE, FRICTION: FRICTION,

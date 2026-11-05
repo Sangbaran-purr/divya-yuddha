@@ -550,6 +550,29 @@ All 14 of Meghnad's clips cut with Indra's pipeline (strong edge despill, ETC1S 
 The memory projection now measures Meghnad and takes the heavier fighter twice (a mirror): lo 16.1 MB of 48, hi 52.5 of 96, the uncompressed fallback 33.8 of 48.
 
 
+## Rulings on the Meghnad cut (owner, 2026-11-05)
+
+**1 · Hitboxes follow the visible spear.** Meghnad keeps the "reach" archetype (recovery +2, the Nagapasha) but the art sets the numbers; the archetype's +45 no longer applies to a Hero with measured reach.
+
+| Meghnad | Old | New | The art |
+|---|---|---|---|
+| Light (hitbox far edge) | 243 | **218** | 217.7 |
+| Heavy (hitbox far edge) | 255 | **80**, after a **137 px** forward lunge over the 12 startup frames | 79.8 from where he stands at impact; the clip's body travels 448 source px by impact = 137 game px |
+| Special (the coil's start) | 60 | **241**, or on the opponent if they are closer | 240.8 |
+| Counter | lands at any distance (by rule) | unchanged | spear at 186 |
+| Throw range | 90 | unchanged (ruled) | the hook reaches 229 |
+
+Indra, checked the same way: light 198 / heavy 210 / Vajra 177 match his art (198.4 / 209.5 / 177.1). His counter lands at any distance (art 202). His throw range is 90 while his hand reaches 149 in the clip: visual only, like Meghnad's hook.
+
+**Found and fixed:** a shot that leaves the weapon's tip (Indra 177, Meghnad 241) started behind an opponent standing closer than the tip and never hit. It now starts on the opponent. For Meghnad, the coil now binds almost at once, inside his own 34-frame recovery, so a follow-up heavy lands inside the 50-frame bind only when the coil is cast from about 230 px or closer (it did from 260 before).
+
+**2 · The AI closes in when out-ranged** (Advanced and Death Match; the Beginner unchanged; no damage number changed): `closeIn` in `core/ai.js`. Inside the opponent's reach and outside its own, it keeps walking in (guarding a seen attack at 85% / 90% instead of 60% / 68%), jumps in at 2% / 3% a frame, and steps in to punish a whiff only when the opponent's remaining recovery (minus its reaction delay) leaves time to walk into reach and land a light. Measured on Indra vs Meghnad, Advanced: without it Meghnad wins 69.3%; with it 63.3%. The punish is worth about 3.5 points, the higher guard about 2; the jump-in costs Indra about 4 (Meghnad's heavy is a high and catches him in the air; without jump-ins Meghnad would win 59.1%).
+
+**3 · Meghnad's walk:** 120 px/s forward, 90 back (was 168 / 126), the stride still at 20 fps. Skate **2.82×** forward, **2.11×** back (was 3.95×). Indra unchanged (2.18 / 1.63).
+
+**4 · The balance check** (Indra vs Meghnad, both AIs, 200 rounds each, sides alternating, test C17): Meghnad wins **63.3% at Advanced**, **61.9% at Death Match**, no time-outs. Inside the 40–65 target.
+
+
 ## The size budget (ruling 7)
 
 | | Target | Cap |

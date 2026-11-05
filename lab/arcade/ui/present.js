@@ -22,7 +22,7 @@
 
   function parseModes(search) {
     var q = {}; String(search || "").replace(/^\?/, "").split("&").forEach(function (kv) { if (!kv) return; var p = kv.split("="); q[decodeURIComponent(p[0])] = decodeURIComponent(p[1] || ""); });
-    return { fx: q.fx !== "0", fps: 12, cam: q.cam === "wide" ? "wide" : "tight", demo: !!q.demo && q.demo !== "0" || !!q.capture && q.aivs !== "1", demoName: q.demo === "moves" || q.demo === "ko" || q.demo === "walk" || q.demo === "meghnad" ? q.demo : "bout", capture: q.capture || null,
+    return { fx: q.fx !== "0", fps: 12, cam: q.cam === "wide" ? "wide" : "tight", demo: !!q.demo && q.demo !== "0" || !!q.capture && q.aivs !== "1", demoName: q.demo === "moves" || q.demo === "ko" || q.demo === "walk" || q.demo === "meghnad" || q.demo === "mwalk" ? q.demo : "bout", capture: q.capture || null,
       aivs: q.aivs === "1",
       perf: q.perf === "1", cpu: Math.max(1, Math.min(10, parseFloat(q.cpu) || 1)), raw: q };
   }

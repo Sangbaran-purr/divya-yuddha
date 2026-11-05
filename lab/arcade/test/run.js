@@ -781,21 +781,28 @@ const KO = koOk(K);
 ok('C11b · THE K.O. (clip 11): staggers and falls over ' + MAN.indra.anim.ko.frames + ' frames after the fight ends (' + KO.distinct + ' cells), then holds the last still frame (never tilted: it is real art)', KO.ok, J(KO));
 function archOk(KK) {
   const mo = (h, m) => KK.fight.moveOf({ hero: h, arch: KK.moves.HEROES[h].arch }, m);
-  const T = MAN.indra.tipsLogical, H = KK.moves.HEROES.indra;
+  const T = MAN.indra.tipsLogical, H = KK.moves.HEROES.indra, TM = MAN.meghnad.tipsLogical, G = KK.moves.HEROES.meghnad;
+  // Meghnad's heavy lunge, measured in the engine: how far he travels from the first frame to the first active frame (no opponent near)
+  const lg = KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }); lg.f[1].x = lg.f[0].x + Math.round(600 * KK.fight.U); const lx0 = lg.f[0].x;
+  for (let i = 0; i < 1 + KK.moves.MOVES.heavy.startup; i++) KK.fight.step(lg, [i === 0 ? KK.fight.BTN.HV : 0, 0]);
+  const lunge = Math.abs(lg.f[0].x - lx0) / KK.fight.U;
   return { ok: Math.abs(H.reach.light - T.light) <= 1 && Math.abs(H.reach.heavy - T.heavy) <= 1 && Math.abs(H.projX - T.special) <= 1 &&
-    mo('indra', 'light').box.x1 === H.reach.light && mo('indra', 'heavy').box.x1 === H.reach.heavy && mo('meghnad', 'light').box.x1 === H.reach.light + 45 && mo('meghnad', 'heavy').box.x1 === H.reach.heavy + 45 &&
-    mo('meghnad', 'light').recovery === MV.light.recovery + 2 && mo('box_surya', 'light') === MV.light, T };
+    mo('indra', 'light').box.x1 === H.reach.light && mo('indra', 'heavy').box.x1 === H.reach.heavy && mo('meghnad', 'light').box.x1 === G.reach.light && mo('meghnad', 'heavy').box.x1 === G.reach.heavy &&
+    Math.abs(G.reach.light - TM.light) <= 1 && Math.abs(G.reach.heavy - TM.heavy) <= 1 && Math.abs(G.projX - TM.special) <= 1 && Math.abs(lunge - G.heavyLunge) <= 1 &&
+    mo('meghnad', 'light').recovery === MV.light.recovery + 2 && mo('box_surya', 'light') === MV.light, T, TM, lunge };
 }
 const AR = archOk(K);
 ok('C12 · REACH FROM THE ART (ruling 5): Indra\'s hitboxes end at his weapon\'s tip at contact as measured on his clips (light ' + AR.T.light + ' → ' + K.moves.HEROES.indra.reach.light + ', heavy ' + AR.T.heavy + ' → ' + K.moves.HEROES.indra.reach.heavy + ', the Vajra leaves at ' + AR.T.special + ' → ' + K.moves.HEROES.indra.projX +
-  ' logical px); Meghnad stays relative to Indra (reach +45, recovery +2); the box Heroes keep the template', AR.ok, J(AR.T));
+  ' logical px); MEGHNAD\'S TOO (owner ruling 1, 2026-11-05): light ' + AR.TM.light + ' → ' + K.moves.HEROES.meghnad.reach.light + ', heavy ' + AR.TM.heavy + ' → ' + K.moves.HEROES.meghnad.reach.heavy + ' after a ' + AR.lunge + ' px wind-up lunge (the clip\'s step), the coil leaves the spear at ' + AR.TM.special + ' → ' + K.moves.HEROES.meghnad.projX + ' (his archetype keeps recovery +2); the box Heroes keep the template', AR.ok, J({ T: AR.T, TM: AR.TM, lunge: AR.lunge }));
 function nagaOk(KK) {   // 6 THE NAGAPASHA: binds on hit for exactly its bind frames (no knockdown), blockable with chip, and a follow-up lands while bound
   const BB = KK.fight.BTN, NP = KK.moves.NAGAPASHA;
   const pure = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 260), hp0 = pure.f[1].hp; pure.f[0].meter = 100;
   let boundFor = 0;
   for (let i = 0; i < 140; i++) { KK.fight.step(pure, [i === 0 ? BB.SP : 0, 0]); if (pure.f[1].state === 'bound' && pure.hitstop === 0) boundFor++; }   // the bind's own frames (hit-stop excluded)
-  const fu = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 260); fu.f[0].meter = 100;
-  const reach = KK.fight.moveOf(fu.f[0], 'heavy').box.x1 + KK.moves.BODY.halfW - 10;   // his heavy's own reach: attack from where it lands
+  // the follow-up from 220 (owner ruling 1, 2026-11-05: the coil now leaves the spear's tip and binds at once, inside his own recovery —
+  // cast from beyond ~230 the heavy no longer lands inside the bind)
+  const fu = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 220); fu.f[0].meter = 100;
+  const reach = KK.fight.moveOf(fu.f[0], 'heavy').box.x1 + (KK.moves.HEROES.meghnad.heavyLunge || 0) + KK.moves.BODY.halfW - 10;   // his heavy's own reach, its lunge included: attack from where it lands
   let follow = false;
   for (let i = 0; i < 140; i++) { const near = Math.abs(fu.f[1].x - fu.f[0].x) / KK.fight.U; KK.fight.step(fu, [i === 0 ? BB.SP : fu.f[1].state === 'bound' ? (near > reach ? BB.R : (i % 4 === 0 ? BB.HV : 0)) : 0, 0]);
     if (fu.events.some((e) => e.t === 'hit' && e.move === 'heavy') && !follow) follow = fu.events.filter((e) => e.t === 'hit' && e.move === 'heavy').length > 0 && fu.f[1].state !== 'bound' && fu.events.some((e) => e.t === 'bind'); }
@@ -803,24 +810,28 @@ function nagaOk(KK) {   // 6 THE NAGAPASHA: binds on hit for exactly its bind fr
   const inTime = heavyAt != null && bindAt != null && heavyAt - bindAt < NP.bind + KK.moves.MOVES.special.hitstop;
   const bl = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 260), hb = bl.f[1].hp; bl.f[0].meter = 100;
   for (let i = 0; i < 90; i++) KK.fight.step(bl, [i === 0 ? BB.SP : 0, BB.R]);
-  return { ok: pure.events.some((e) => e.t === 'bind') && !pure.events.some((e) => e.t === 'knockdown') && boundFor === NP.bind && hp0 - pure.f[1].hp === NP.dmg && inTime &&
-    bl.events.some((e) => e.t === 'block') && hb - bl.f[1].hp === NP.chip && !bl.events.some((e) => e.t === 'bind'), boundFor, follow: inTime, followAfter: heavyAt - bindAt, chip: hb - bl.f[1].hp };
+  // point blank (closer than the tip): the coil starts on the opponent and still binds
+  const pb = closeIn(KK, KK.fight.newFight({ p0: 'meghnad', p1: 'box_surya' }), 120); pb.f[0].meter = 100;
+  for (let i = 0; i < 60; i++) KK.fight.step(pb, [i === 0 ? BB.SP : 0, 0]);
+  const pointBlank = pb.events.some((e) => e.t === 'bind');
+  return { ok: pointBlank && pure.events.some((e) => e.t === 'bind') && !pure.events.some((e) => e.t === 'knockdown') && boundFor === NP.bind && hp0 - pure.f[1].hp === NP.dmg && inTime &&
+    bl.events.some((e) => e.t === 'block') && hb - bl.f[1].hp === NP.chip && !bl.events.some((e) => e.t === 'bind'), boundFor, follow: inTime, followAfter: heavyAt - bindAt, chip: hb - bl.f[1].hp, pointBlank };
 }
 const NG = nagaOk(K);
-ok('C13 · MEGHNAD\'S NAGAPASHA (ruling 6): the coil is a shot that BINDS on hit (exactly ' + NG.boundFor + ' frames, no knockdown, ' + K.moves.NAGAPASHA.dmg + ' damage) so a follow-up heavy from his reach lands while bound (' + NG.followAfter + ' frames after the bind, hit-stop included); held back, it is blocked for ' + NG.chip + ' chip', NG.ok, J(NG));
+ok('C13 · MEGHNAD\'S NAGAPASHA (ruling 6): the coil is a shot that BINDS on hit (exactly ' + NG.boundFor + ' frames, no knockdown, ' + K.moves.NAGAPASHA.dmg + ' damage) so a follow-up heavy (cast from 220, his lunge included) lands while bound (' + NG.followAfter + ' frames after the bind, hit-stop included); point blank (120, closer than the spear tip) it still binds; held back, it is blocked for ' + NG.chip + ' chip', NG.ok, J(NG));
 
 function walkOk(KK) {   // the walk skate (owner ruling 2026-11-04): real Heroes walk 170 → 168 px/s forward; the stride played at 20 fps; game ÷ stride ≤ 2.5
   const sp = (h, bit) => { const g = KK.fight.newFight({ p0: h, p1: 'box_surya' }), x0 = g.f[0].x; for (let i = 0; i < 60; i++) KK.fight.step(g, [bit, 0]); return Math.abs(g.f[0].x - x0) / KK.fight.U; };
   const W = MAN.indra.moves.walk, travel = W.rootTravelSource * 220 / MAN.indra.stance.sourceHeight, play = MAN.indra.anim.walk.loop.length / MAN.indra.anim.walk.fps, stride = travel / play;
-  const r = { indraF: sp('indra', KK.fight.BTN.R), indraB: sp('indra', KK.fight.BTN.L), meghnadF: sp('meghnad', KK.fight.BTN.R), boxF: sp('box_surya', KK.fight.BTN.R), fps: MAN.indra.anim.walk.fps, stride: +stride.toFixed(1) };
+  const r = { indraF: sp('indra', KK.fight.BTN.R), indraB: sp('indra', KK.fight.BTN.L), meghnadF: sp('meghnad', KK.fight.BTN.R), meghnadB: sp('meghnad', KK.fight.BTN.L), boxF: sp('box_surya', KK.fight.BTN.R), fps: MAN.indra.anim.walk.fps, stride: +stride.toFixed(1) };
   r.ratio = +(r.indraF / stride).toFixed(2); r.ratioBack = +(r.indraB / stride).toFixed(2);
   const WM = MAN.meghnad.moves.walk, sM = (WM.rootTravelSource * 220 / MAN.meghnad.stance.sourceHeight) / (MAN.meghnad.anim.walk.loop.length / MAN.meghnad.anim.walk.fps);
-  r.meghnadStride = +sM.toFixed(1); r.meghnadRatio = +(r.meghnadF / sM).toFixed(2); r.meghnadFps = MAN.meghnad.anim.walk.fps;
-  r.ok = r.indraF === 168 && r.meghnadF === 168 && r.indraB === 126 && r.boxF === 240 && r.fps === 20 && r.ratio <= 2.5 && r.meghnadFps === 20 && r.meghnadRatio <= 4.0 && KK.moves.KNOCKDOWN.getup === 40;
+  r.meghnadStride = +sM.toFixed(1); r.meghnadRatio = +(r.meghnadF / sM).toFixed(2); r.meghnadRatioBack = +(r.meghnadB / sM).toFixed(2); r.meghnadFps = MAN.meghnad.anim.walk.fps;
+  r.ok = r.indraF === 168 && r.indraB === 126 && r.meghnadF === 120 && r.meghnadB === 90 && r.boxF === 240 && r.fps === 20 && r.ratio <= 2.5 && r.meghnadFps === 20 && r.meghnadRatio <= 3.0 && KK.moves.KNOCKDOWN.getup === 40;
   return r;
 }
 const WO = walkOk(K);
-ok('C14 · THE WALK SKATE (owner ruling, after the reshoot): the real Heroes walk ' + WO.indraF + ' px/s forward (170 asked; the engine\'s nearest) and ' + WO.indraB + ' back, the box Heroes still ' + WO.boxF + '; the stride plays at ' + WO.fps + ' fps, so the feet cover ' + WO.stride + ' px/s — game ÷ stride ' + WO.ratio + ' forward, ' + WO.ratioBack + ' back (target ≤ 2.5); Meghnad\'s stride ' + WO.meghnadStride + ' px/s at ' + WO.meghnadFps + ' fps, ' + WO.meghnadRatio + ' (OVER the 2.5 target — his clip takes short steps; reported to the owner, pinned ≤ 4); and the get-up is ' + K.moves.KNOCKDOWN.getup + ' frames (was 20), untouchable throughout', WO.ok, J(WO));
+ok('C14 · THE WALK SKATE (owner ruling, after the reshoot): the real Heroes walk ' + WO.indraF + ' px/s forward (170 asked; the engine\'s nearest) and ' + WO.indraB + ' back, the box Heroes still ' + WO.boxF + '; the stride plays at ' + WO.fps + ' fps, so the feet cover ' + WO.stride + ' px/s — game ÷ stride ' + WO.ratio + ' forward, ' + WO.ratioBack + ' back (target ≤ 2.5); Meghnad\'s stride ' + WO.meghnadStride + ' px/s at ' + WO.meghnadFps + ' fps against his own walk ' + WO.meghnadF + ' / ' + WO.meghnadB + ' px/s (owner ruling 3, 2026-11-05) → ' + WO.meghnadRatio + ' forward, ' + WO.meghnadRatioBack + ' back (over 2.5: his clip takes short steps; reported, pinned ≤ 3); and the get-up is ' + K.moves.KNOCKDOWN.getup + ' frames (was 20), untouchable throughout', WO.ok, J(WO));
 
 // THE MEGHNAD CUT (owner brief 2026-11-05): every move his own, the cells inside the owner's frame notes, no visible cell missing a piece
 function meghnadCutOk(man) {
@@ -858,6 +869,32 @@ function pullOk(KK) {   // Meghnad's spear-hook: caught at the throw range (90),
 const PL = pullOk(K);
 ok('C16 · MEGHNAD\'S SPEAR-HOOK THROW (owner brief): caught at 88 px (the range stays ' + K.moves.MOVES.throw.range + '), the hold yanks the Hero in to ' + PL.gapAtLand + ' px — knee distance — by its last frame, when the knee lands; Indra\'s hand grab does not pull (' + PL.indraGap + ' px)', PL.ok, J(PL));
 
+// CLOSING IN WHEN OUT-RANGED (owner ruling 2, 2026-11-05) and THE BALANCE CHECK (ruling 4): Indra vs Meghnad, both AIs, sides alternating
+function balance(KK, level, n) {
+  let mw = 0, iw = 0, outside = 0, neutral = 0, to = 0;
+  for (let s = 1; s <= n; s++) {
+    const mSide = s % 2, g = KK.fight.newFight({ p0: mSide ? 'indra' : 'meghnad', p1: mSide ? 'meghnad' : 'indra' }), rng = KK.rng.rng(s * 7919);
+    const ais = [KK.ai.createAI(level, rng, { round: 0 }), KK.ai.createAI(level, rng, { round: 0 })];
+    const mReach = KK.fight.moveOf({ hero: 'meghnad', arch: 'reach' }, 'light').box.x1 + KK.moves.BODY.halfW, iReach = KK.fight.moveOf({ hero: 'indra', arch: 'allrounder' }, 'light').box.x1 + KK.moves.BODY.halfW;
+    for (let f = 0; f < 20000 && !g.over; f++) {
+      KK.fight.step(g, [KK.ai.decide(ais[0], KK.ai.observe(g, 0)), KK.ai.decide(ais[1], KK.ai.observe(g, 1))]);
+      const I = g.f[1 - mSide], d = Math.abs(g.f[1].x - g.f[0].x) / KK.fight.U;
+      if ((I.state === 'idle' || I.state === 'walkf' || I.state === 'walkb') && d > iReach && d <= mReach + 60) { neutral++; if (I.state !== 'walkf') outside++; }   // inside the spear, outside his own reach: Indra NOT advancing
+    }
+    if (g.reason === 'time') to++;
+    if (g.winner === mSide) mw++; else if (g.winner === 1 - mSide) iw++;
+  }
+  return { level, meghnadPct: +(100 * mw / (mw + iw)).toFixed(1), meghnad: mw, indra: iw, timeouts: to, indraOutside: +(100 * outside / Math.max(1, neutral)).toFixed(1) };
+}
+const BAL = ['advanced', 'deathmatch'].map((l) => balance(K, l, 200));
+// in band at Advanced (40–65), no time-out, and the ruling-2 AI does help the out-ranged side (Meghnad wins less than without it)
+const c17 = (B, ref) => B[0].meghnadPct >= 40 && B[0].meghnadPct <= 65 && B.every((b) => b.timeouts === 0) && B[0].meghnadPct < ref.meghnadPct;
+const noCI = (() => { const KK = load({ ai: [['closeIn: { guard: 0.85, jumpIn: 0.02, punish: 0.8 } },', '},']] }); return balance(KK, 'advanced', 200); })();
+ok('C17 · THE BALANCE CHECK (owner rulings 1–4, 2026-11-05): Indra vs Meghnad, both AIs, 200 rounds each, sides alternating — Meghnad wins ' + BAL.map((b) => b.meghnadPct + '% at ' + b.level).join(', ') + ' (target 40–65 at Advanced; no time-outs: ' + BAL.map((b) => b.timeouts).join('/') +
+  '; without the ruling-2 AI ' + noCI.meghnadPct + '% at Advanced); out-ranged, the Advanced Indra closes in — inside the spear\'s reach but outside his own he holds or backs off ' + BAL[0].indraOutside + '% of his free frames (' + noCI.indraOutside + '% without it); the Beginner keeps none of it',
+  c17(BAL, noCI) && !K.ai.LEVELS.beginner.closeIn && !!K.ai.LEVELS.deathmatch.closeIn, J({ BAL, noCI }));
+red('C17b · BREAKAGE: the ruling-2 AI taken off Advanced — Meghnad back to ' + noCI.meghnadPct + '% (C17 goes red)', !c17([noCI, BAL[1]], noCI));
+
 console.log('\n── ARCADE-1 · R3 · breakages: each must go red ──');
 const BR3 = [
   ['K1 · the startup art held 3 frames into the active frames (C8 goes red)', { scene: [['if (f.mf < m.startup) { ph = "startup"; fr = f.mf / m.startup; }', 'if (f.mf < m.startup + 3) { ph = "startup"; fr = Math.min(0.99, f.mf / m.startup); }']] }, (KK) => PH.every((x) => phasesOk(KK, x.h, x.m).ok)],
@@ -868,6 +905,9 @@ const BR3 = [
   ['K7 · the K.O. played on the fight clock, which has stopped — it never falls (C11b goes red)', { scene: [['var t = after || 0;', 'var t = 0;']] }, (KK) => koOk(KK).ok],
   ['K10 · the real Heroes back at 240 px/s: the feet skate 3.1× (C14 goes red)', { moves: [['var REAL_WALK = { walkF: 2.8, walkB: 2.1 };', 'var REAL_WALK = { walkF: 4, walkB: 3 };']] }, (KK) => walkOk(KK).ok],
   ['K11 · the get-up back at 20 frames (C14 goes red)', { moves: [['var KNOCKDOWN = { fall: 36, getup: 40,', 'var KNOCKDOWN = { fall: 36, getup: 20,']] }, (KK) => walkOk(KK).ok],
+  ['K15 · the shot left at the tip even with the opponent closer: point blank it starts behind them and misses (C13 goes red)', { fight: [['if (hero && hero.projX != null && gap > 0 && gap < sx) sx = gap;', '']] }, (KK) => nagaOk(KK).ok],
+  ['K13 · Meghnad\'s heavy without its lunge (C12 goes red)', { fight: [['if (lunge) f.vx = f.mf <= m.startup ? f.facing * px(lunge / m.startup) : 0;', '']] }, (KK) => archOk(KK).ok],
+  ['K14 · Meghnad back at the real-Hero walk (C14 goes red)', { moves: [['walk: { walkF: 2, walkB: 1.5 }, ', '']] }, (KK) => walkOk(KK).ok],
   ['K12 · Meghnad\'s hook pulls nothing (C16 goes red)', { moves: [['fighter: "meghnad", reachFrom: "indra", throwPull: 64 }', 'fighter: "meghnad", reachFrom: "indra" }']] }, (KK) => pullOk(KK).ok],
   ['K8 · the Nagapasha knocking down instead of binding (C13 goes red)', { fight: [['if (h.naga) {', 'if (false) {']] }, (KK) => nagaOk(KK).ok]
 ];

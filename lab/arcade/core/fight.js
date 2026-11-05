@@ -52,7 +52,7 @@
     if (!MOVE_OF[k]) {
       var m = JSON.parse(JSON.stringify(base));
       if (r != null) m.box.x1 = r;
-      m.recovery += a.recoveryAdd || 0; m.box.x1 += a.reachPx || 0;
+      m.recovery += a.recoveryAdd || 0; if (r == null) m.box.x1 += a.reachPx || 0;   // a Hero whose reach comes from the art takes it as is (ruling 1, 2026-11-05)
       MOVE_OF[k] = m;
     }
     return MOVE_OF[k];
@@ -139,6 +139,9 @@
         if (next && startMove(g, f, next)) return;
       }
       f.mf++;
+      // the heavy's wind-up LUNGE (Meghnad, owner ruling 1 of 2026-11-05): the clip's forward step, spread over the startup frames
+      var lunge = f.move === "heavy" && M.HEROES[f.hero] && M.HEROES[f.hero].heavyLunge;
+      if (lunge) f.vx = f.mf <= m.startup ? f.facing * px(lunge / m.startup) : 0;
       if (f.move === "special" && a.special === "rush") f.vx = isActive(f) ? f.facing * px(a.rushSpeed) : 0;
       if (f.move === "special" && isShot(a) && f.mf === m.startup) spawnProjectile(g, f);
       if (f.mf >= moveTotal(m)) { f.state = "idle"; f.move = null; f.mf = 0; f.vx = 0; f.chain = 0; }
@@ -158,7 +161,7 @@
     }
     if (inp & BTN.D) { f.state = (inp & BTN.BL) || (inp & backBit(f)) ? "cblock" : "crouch"; f.vx = 0; return; }
     if (inp & BTN.BL) { f.state = "block"; f.vx = 0; return; }
-    var hw = M.HEROES[f.hero] && M.HEROES[f.hero].fighter ? M.REAL_WALK : a;   // a Hero with real art walks at the real-Hero speed
+    var H = M.HEROES[f.hero], hw = H && H.walk ? H.walk : H && H.fighter ? M.REAL_WALK : a;   // a Hero's own walk (Meghnad), else the real-Hero speed, else the archetype
     if (inp & fwdBit(f)) { f.state = "walkf"; f.vx = f.facing * px(hw.walkF); return; }
     if (inp & backBit(f)) { f.state = "walkb"; f.vx = -f.facing * px(hw.walkB); return; }
     f.state = "idle"; f.vx = 0;
@@ -167,6 +170,10 @@
   function spawnProjectile(g, f) {
     if (g.proj.some(function (p) { return p.owner === f.side; })) return;   // one at a time
     var hero = M.HEROES[f.hero], sx = hero && hero.projX != null ? hero.projX : M.PROJECTILE.startX;   // Indra's Vajra leaves its tip (ruling 5)
+    // a shot that leaves the weapon's TIP (Indra 177, Meghnad 241): with the opponent closer than the tip, it starts ON the opponent —
+    // the weapon is already through them (left at the tip it would start behind them and never hit: found 2026-11-05, ruling 1)
+    var o = g.f[1 - f.side], gap = (o.x - f.x) * f.facing / U;
+    if (hero && hero.projX != null && gap > 0 && gap < sx) sx = gap;
     g.proj.push({ owner: f.side, x: f.x + f.facing * px(sx), dir: f.facing, speed: px(arch(f).projSpeed), dmgMul: arch(f).dmg, kind: arch(f).special === "nagapasha" ? "naga" : "shot" });
     g.events.push({ t: "projectile", side: f.side, frame: g.frame });
   }

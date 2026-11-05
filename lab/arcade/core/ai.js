@@ -18,10 +18,16 @@
   // opponent is visibly blocking); tech = chance to break a throw it has SEEN start; specialFrom = the first round (0-based)
   // it may use its special. THE GENTLER BEGINNER (owner ruling 6, 2026-11-04): reacts in 450 ms, blocks 10%, never chains or
   // cancels, pauses 0.4–0.8 s between attacks, no special in round 1, and never parries, throws or techs (ruling 5).
+  // CLOSING IN WHEN OUT-RANGED (owner ruling 2, 2026-11-05; Advanced and Death Match only — the Beginner stays simple): when the
+  // opponent's effective reach (its light, from the art) is longer than ours, the AI does not wait outside it. It walks in, guarding
+  // what it sees coming at `guard` (instead of `block`), sometimes jumps in over the poke (`jumpIn`, per frame inside the opponent's
+  // reach), and steps in to punish a whiff during the opponent's recovery (`punish`, decided once per whiff). No damage number changes.
   var LEVELS = {
     beginner:   { reaction: 27, block: 0.10, duck: 0.05, jumpProj: 0.15, cancel: 0, special: 0.5, attackGap: [24, 48], noise: 0.20, spacing: 0.5, parry: 0, throw: 0, tech: 0, specialFrom: 1 },
-    advanced:   { reaction: 11, block: 0.60, duck: 0.25, jumpProj: 0.5, cancel: 0.6, special: 0.8, attackGap: [12, 30], noise: 0.06, spacing: 0.8, parry: 0.15, throw: 0.30, tech: 0.4, specialFrom: 0 },
-    deathmatch: { reaction: 9,  block: 0.68, duck: 0.35, jumpProj: 0.65, cancel: 0.8, special: 0.9, attackGap: [10, 26], noise: 0.0, spacing: 0.9, parry: 0.30, throw: 0.45, tech: 0.7, specialFrom: 0 }
+    advanced:   { reaction: 11, block: 0.60, duck: 0.25, jumpProj: 0.5, cancel: 0.6, special: 0.8, attackGap: [12, 30], noise: 0.06, spacing: 0.8, parry: 0.15, throw: 0.30, tech: 0.4, specialFrom: 0,
+                  closeIn: { guard: 0.85, jumpIn: 0.02, punish: 0.8 } },
+    deathmatch: { reaction: 9,  block: 0.68, duck: 0.35, jumpProj: 0.65, cancel: 0.8, special: 0.9, attackGap: [10, 26], noise: 0.0, spacing: 0.9, parry: 0.30, throw: 0.45, tech: 0.7, specialFrom: 0,
+                  closeIn: { guard: 0.9, jumpIn: 0.03, punish: 0.95 } }
   };
 
   // what a player could see on screen — and nothing else
@@ -85,8 +91,8 @@
       var id = op.move + "@" + (v.oppFrame - op.mf);
       if (ai.guardFor !== id) {
         ai.guardFor = id;
-        var r = ai.rng();
-        ai.guardChoice = r < L.block ? (op.move === "heavy" && ai.rng() < L.duck ? "duck" : "guard") : "none";
+        var r = ai.rng(), blockP = L.closeIn && outRanged(me, op) ? L.closeIn.guard : L.block;   // walking in under a longer reach: guard more
+        ai.guardChoice = r < blockP ? (op.move === "heavy" && ai.rng() < L.duck ? "duck" : "guard") : "none";
         // a parry: the guard plus a Block tap timed from the move's known startup — only possible if there is still time
         var impact = v.oppFrame - op.mf + M.MOVES[op.move].startup;
         ai.parryAt = ai.guardChoice === "guard" && (L.parry || 0) > 0 && ai.rng() < L.parry && v.frame <= impact - 3 ? impact - 3 : null;
@@ -113,6 +119,30 @@
     var canSpecial = me.meter >= M.MOVES.special.cost && v.frame >= ai.nextAttack && ai.round >= (L.specialFrom || 0);
     var shot = F.isShot(arch);
     if (canSpecial && shot && dist > 220 && ai.rng() < L.special * 0.05) { ai.nextAttack = v.frame + range(ai, L.attackGap[0], L.attackGap[1]); press(B.SP); return finish(ai, bits); }
+    // OUT-RANGED (ruling 2): punish a whiff by stepping in during its recovery; inside the opponent's reach keep coming (or jump in)
+    var CI = L.closeIn, myLightR = F.moveOf({ hero: me.hero, arch: me.arch }, "light").box.x1;
+    if (CI && outRanged(me, op)) {
+      var opM = op.state === "attack" && op.move && M.MOVES[op.move] ? F.moveOf({ hero: op.hero, arch: op.arch }, op.move) : null;
+      if (opM && op.move !== "counter" && op.mf >= opM.startup + opM.active) {   // it whiffed (or is recovering): the window is open
+        var wid = "w:" + op.move + "@" + (v.oppFrame - op.mf);
+        if (ai.punishFor !== wid) {
+          // only a window it can still use: the opponent's recovery left NOW (what it saw is `reaction` frames old) against the frames
+          // needed to walk into reach and land a light
+          var H = M.HEROES[me.hero], wk = H && H.walk ? H.walk.walkF : H && H.fighter ? M.REAL_WALK.walkF : M.ARCH[me.arch].walkF;
+          var left = opM.startup + opM.active + opM.recovery - op.mf - L.reaction, need = Math.max(0, dist - myLightR - M.BODY.halfW) / wk + M.MOVES.light.startup;
+          ai.punishFor = wid; ai.punishGo = need <= left && ai.rng() < CI.punish;
+        }
+        if (ai.punishGo) {
+          if (dist <= myLightR + M.BODY.halfW) { ai.nextAttack = v.frame + range(ai, L.attackGap[0], L.attackGap[1]); press(dist <= heavyReach(me) ? B.HV : B.LT); return finish(ai, bits); }
+          return finish(ai, fwd);
+        }
+      }
+      var oppR = F.moveOf({ hero: op.hero, arch: op.arch }, "light").box.x1 + M.BODY.halfW;
+      if (dist > myLightR + M.BODY.halfW && dist <= oppR + 60) {   // inside its reach, outside ours: keep coming
+        if (ai.rng() < CI.jumpIn && dist >= 150) return finish(ai, B.U | fwd);
+        return finish(ai, fwd);
+      }
+    }
     // spacing: the template's 75 / 90 px, plus however much further this Hero's light reaches (reach from the art, ruling 5)
     var myLight = F.moveOf({ hero: me.hero, arch: me.arch }, "light").box.x1, extra = myLight - M.MOVES.light.box.x1;
     var want = (shot && ai.rng() < L.spacing ? 90 : 75) + extra;
@@ -122,7 +152,7 @@
       var blocking = op.state === "block" || op.state === "cblock";
       if ((L.throw || 0) > 0 && dist <= M.MOVES.throw.range - 5 && ai.rng() < L.throw * (blocking ? 1 : 0.35)) press(B.LT | B.HV);
       else if (canSpecial && arch.special === "rush" && ai.rng() < L.special * 0.4) press(B.SP);
-      else if (dist <= 100 + extra && ai.rng() < 0.4) press(B.HV);
+      else if (dist <= heavyReach(me, extra) && ai.rng() < 0.4) press(B.HV);
       else press(B.LT);
       return finish(ai, bits);
     }
@@ -130,6 +160,18 @@
     return finish(ai, ai.rng() < 0.5 ? 0 : (ai.rng() < L.spacing ? back : fwd));
   }
   function finish(ai, bits) { ai.lastPress = bits; return bits; }
+  // the opponent's light reaches further than ours (both from the art, ruling 5)
+  function outRanged(me, op) {
+    return F.moveOf({ hero: op.hero, arch: op.arch }, "light").box.x1 > F.moveOf({ hero: me.hero, arch: me.arch }, "light").box.x1 + 10;
+  }
+  // how far away the heavy is worth starting: 100 + the light's extra reach (as before); a Hero whose heavy LUNGES (Meghnad) from its
+  // own short box plus the lunge
+  function heavyReach(me, extra) {
+    var H = M.HEROES[me.hero];
+    if (H && H.heavyLunge) return F.moveOf({ hero: me.hero, arch: me.arch }, "heavy").box.x1 + H.heavyLunge - 10;
+    if (extra == null) extra = F.moveOf({ hero: me.hero, arch: me.arch }, "light").box.x1 - M.MOVES.light.box.x1;
+    return 100 + extra;
+  }
 
   return { LEVELS: LEVELS, PUBLIC: PUBLIC, observe: observe, createAI: createAI, decide: decide };
 });

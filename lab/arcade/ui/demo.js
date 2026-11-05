@@ -37,7 +37,8 @@
     { name: "close in", until: function (g, d) { return d <= 190; }, input: [B.R, 0] },
     { name: "light", press: [B.LT, 0], settle: 30 },
     { name: "heavy", press: [B.HV, 0], settle: 50 },
-    { name: "Meghnad's light, blocked", press: [B.L, B.LT], hold: [B.L, 0], settle: 34 },
+    { name: "Meghnad closes", until: function (g, d) { return d <= 200; }, input: [0, B.L], max: 120 },   // his light now ends at the spear (218)
+    { name: "Meghnad's light, blocked", press: [B.BL, 0], hold: [B.BL, 0], then: { at: 12, input: [B.BL, B.LT] }, settle: 46 },   // the guard is up before the poke: a block, not a parry
     { name: "Meghnad closes", until: function (g, d) { return d <= 200; }, input: [0, B.L], max: 120 },
     { name: "a light taken", press: [0, B.LT], settle: 34 },
     { name: "Meghnad closes", until: function (g, d) { return d <= 200; }, input: [0, B.L], max: 120 },
@@ -93,7 +94,13 @@
     { name: "the last exchange", nudge: function (g) { g.f[0].hp = Math.min(g.f[0].hp, 40); }, until: function (g, d) { return d <= 230; }, input: [0, B.L], max: 120 },
     { name: "Meghnad's win", press: [0, B.HV], settle: 240 }
   ];
-  var SCRIPTS = { bout: STEPS, moves: MOVES, ko: KO, walk: WALK, meghnad: MEGHNAD };
+  var MWALK = [   // ?demo=mwalk: Meghnad's walk alone (side 1, facing left) — 2 s forward, 2 s back at his own 120 / 90 px/s
+    { name: "standoff", frames: 20 },
+    { name: "walk forward 2 s", frames: 120, input: [0, B.L] },
+    { name: "walk back 2 s", frames: 120, input: [0, B.R] },
+    { name: "hold", frames: 30 }
+  ];
+  var SCRIPTS = { bout: STEPS, moves: MOVES, ko: KO, walk: WALK, meghnad: MEGHNAD, mwalk: MWALK };
   function create(name) { return { step: 0, t: 0, pressed: false, nudged: false, steps: SCRIPTS[name] || STEPS }; }
   function free(f) { return f.state === "idle" || f.state === "walkf" || f.state === "walkb"; }
   // the inputs for this logic frame (call once per tick, before stepping)
