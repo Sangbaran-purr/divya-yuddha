@@ -6727,8 +6727,8 @@ function startGame(p0Faction, p1Faction){
   showRealmIntro();
   render();
   VFX.init(); VFX.resize();      // size the impact-VFX canvas to the now-visible board
-  VFX.preloadSprites();          // T67: load + tint the painted VFX kit at MATCH START (async, non-blocking; mulligan proceeds; procedural fallback covers the load gap)
   applyVfxQuality();   // T90: resolve the player's VFX-quality rung before the fetch
+  armVfxPreload();     // GROWTH-1 #16 (owner ruling 2026-11-06): the painted kit loads AFTER the first playable turn (pump), never ahead of it — the first match must be playable fast on 4G; the procedural fallback covers the gap (T67's own law)
   VFX.loadMatchSheets(currentFactions.p0, currentFactions.p1);   // T81: lazy — only THIS match's factions' landing sheets (+ the Deva row plates if a Deva is in the match). Loads during the mulligan window.
   beginMulligan();          // play begins when the player confirms their opening hand
 }
@@ -9328,7 +9328,7 @@ function startStoryChapter(id){
   $('logbody').innerHTML=''; $('loglast').textContent=''; $('logdrawer').classList.remove('open');
   applyFactionTheme(); applyRealmBoard(G.realm); makeEmbers(); battleStageStart();   // T42
   Audio2.musicDuck(false); Audio2.playTrack('battle'); conchPending=true;   // release the intro duck INTO the menu→battle crossfade (the crossfade + conch stay the hinge)
-  showRealmIntro(); render(); VFX.init(); VFX.resize(); VFX.preloadSprites(); applyVfxQuality(); VFX.loadMatchSheets(currentFactions.p0, currentFactions.p1);   // T67 sprite kit + T81 lazy match sheets at story-match start too
+  showRealmIntro(); render(); VFX.init(); VFX.resize(); applyVfxQuality(); armVfxPreload(); VFX.loadMatchSheets(currentFactions.p0, currentFactions.p1);   // T81 lazy match sheets at story-match start; the T67 sprite kit — GROWTH-1 #16: deferred to the first playable turn, as quick play
   if (G.mulliganCount>0) storyBeginMulligan();   // ch4/ch5: run the mulligan phase (teaches it) with the pre-match Brihaspati line
   else pump();                                   // ch1–3 (mulligan:0): straight into round 1 (player-first via storyRng)
 }
@@ -12933,6 +12933,12 @@ function pzPerformStep(){
   runAction(()=>pass(G,ME));
 }
 
+/* GROWTH-1 #16 — ONE deferred VFX preload per match: the painted kit (~1.75 MB) is armed at match start (quick play + story) and
+   fired by pump the first time the human may act (their first playable turn). The match's own lazy sheets (T81) still load at
+   match start. preloadSprites is idempotent (sprLoadN), so a re-arm costs nothing. */
+let vfxPreloadArmed=false;
+function armVfxPreload(){ vfxPreloadArmed=true; }
+function fireVfxPreload(){ if(!vfxPreloadArmed) return; vfxPreloadArmed=false; VFX.preloadSprites(); }
 function pump(){
   if (PUZZLE_MODE){ pzPump(); return; }   // MINI-GAMES-1 puzzle mode: no AI, no conch, no relay — close the action, drive the reveal or report
   if (G.over) return;
@@ -12940,6 +12946,7 @@ function pump(){
   fireConch();                                    // round-1 start = first pump of the match (mulligan resolved); guard makes it once-per-match, so rounds 2/3 are silent
   if (choreoActive) return;                       // don't schedule while a choreography is draining
   if (Wire){ wireDrain(); return; }               // BW1 — the relay drives every move; the AI is NEVER entered for a wire seat
+  if (G.turn===ME && !G.players[ME].passed) fireVfxPreload();   // GROWTH-1 #16: the first playable turn → now the painted kit loads
   if (Story && storyMidPending()){ storyShowMid(); return; }   // mid-round story panel (e.g. ch2 after R1) — pause, then re-pump
   Audio2.setRound3(G.round>=3);                   // Round 3 brings in the tabla-like pulse
   if (G.turn===OPP && !G.players[OPP].passed){
@@ -13001,10 +13008,20 @@ const VIDEO_BASE = (window.Capacitor || location.protocol==='capacitor:')   // m
   : 'assets/video/';
 const INTRO_MP4 = VIDEO_BASE+'intro_trailer.mp4?v=1', INTRO_POSTER = VIDEO_BASE+'intro_poster.jpg?v=1';
 const INTRO_STALL_MS = 4000;
+/* GROWTH-1 #5/#6 (owner rulings 2026-11-06) — THE PLAY-FREE ROUTE. The site's landing button opens /game/ with ?play=free:
+   no trailer (R-A/R-B re-ruled for THIS route only — every other launch still meets it), straight to the faction pick,
+   the easiest level preselected (Beginner) for this visit only — the player's saved choice is not overwritten. The
+   faction pick's back arrow still leads to the game's home, so nothing else is hidden from them. */
+const PLAY_FREE = /[?&]play=free(&|$)/.test(location.search);
+function playFreeEntry(){
+  showFactionSelect();
+  selectedDifficulty='beginner'; renderDiffSelector();
+}
 function introLaunchCount(){ let n=0; try{ n=parseInt(localStorage.getItem('dy_intro_launches')||'0',10)||0; }catch(e){ n=0; }
   n++; try{ localStorage.setItem('dy_intro_launches', String(n)); }catch(e){} return n; }
 function playIntro(done){
   const ov=$('introv'); if(!ov){ done(); return; }                       // no overlay in the DOM → straight to home
+  if(PLAY_FREE){ ov.classList.add('hidden'); playFreeEntry(); return; }   // GROWTH-1 #5/#6: the play-free route skips the trailer → the faction pick
   let finished=false, vid=null, stall=null;
   const finish=()=>{ if(finished) return; finished=true;                 // ONE home entry, whatever the path
     if(stall){ clearTimeout(stall); stall=null; }
@@ -13030,7 +13047,9 @@ function playIntro(done){
   };
 }
 VFX.init();
-VFX.preloadSprites();   // T67b: preload the painted kit at PAGE LOAD (not match start) — sprites get the whole intro→landing→faction-select→mulligan window to load, so they're ready before the first play even on slow device connections (fixes the match-start race that made effects fire "occasionally/never" cold). Async, non-blocking; idempotent so the startGame call no-ops.
+/* GROWTH-1 #16 (owner ruling 2026-11-06) retired T67b's page-load preload: ~1.75 MB of painted kit no longer competes with the
+   first match on 4G. It loads after the first playable turn (armVfxPreload / pump); the wire and puzzle roads keep their own calls.
+   T67b's note, kept for the record: preload the painted kit at PAGE LOAD (not match start) — sprites get the whole intro→landing→faction-select→mulligan window to load, so they're ready before the first play even on slow device connections (fixes the match-start race that made effects fire "occasionally/never" cold). Async, non-blocking; idempotent so the startGame call no-ops. */
 if (WIRE_MODE) wireBoot(); else if (PUZZLE_MODE) puzzleBoot(); else playIntro(showLanding);   // R-A: the intro gates every launch; showLanding is the single home entry. BW1 (R5): ?wire=1 skips intro + landing and waits for the Hall
 </script>
 </body>
