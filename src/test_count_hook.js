@@ -8,6 +8,8 @@
 //   2 · story      showStoryResult reports 'story' once, after its one-shot guard
 //   3 · Hall       showWireResult (the Hall's free and staked result face) reports 'hall' once — no wire logic touched
 //   4 · nowhere else (the Daily Puzzle's frame is counted by the page around it; no hook in the render loop)
+//   6 · share (GROWTH-1 #11, owner ruling 2026-11-06 — the approved FOURTH line): challengeFriend reports 'challenge' once,
+//       guarded, and only for a share the player made (never a cancelled one)
 //   5 · every hook is GUARDED: no DY_COUNT → nothing; a DY_COUNT that throws → the game carries on
 // Each rule has a breakage applied to the source text in memory; every one must turn its check red.
 const fs = require('fs'), path = require('path');
@@ -25,6 +27,7 @@ function body(src, name) {
   for (let k = j; k < src.length; k++) { const c = src[k]; if (c === '{') d++; else if (c === '}' && --d === 0) return src.slice(j + 1, k); }
   return null;
 }
+const SHARE = /^  try\{ window\.DY_COUNT && window\.DY_COUNT\.shared\('challenge'\); \}catch\(e\)\{\}/;
 const hooksIn = (text) => (text || '').split('\n').filter((l) => /DY_COUNT/.test(l));
 // → the list of broken rules for a source text (empty = all hold)
 function rules(src) {
@@ -40,8 +43,15 @@ function rules(src) {
   one(go, 'match', ['if(Wire){', 'if(PUZZLE_MODE) return;', 'if(Story){', 'recordMatchResult();'], 'showGameOver');
   one(st, 'story', ['Story.resultShown=true;'], 'showStoryResult');
   one(wr, 'hall', ['blogClose(G, r);'], 'showWireResult');
+  const ch = body(src, 'challengeFriend');
+  if (!ch) bad.push('challengeFriend is missing');
+  else {
+    const h = hooksIn(ch);
+    if (h.length !== 1 || !SHARE.test(h[0])) bad.push('challengeFriend: expected exactly one guarded shared(\'challenge\') line');
+    else { const g = ch.indexOf("if(r!=='shared' && r!=='copied') return;"); if (g < 0 || g > ch.indexOf(h[0])) bad.push('challengeFriend: the share must be counted only after a made share (never a cancelled one)'); }
+  }
   const all = src.split('\n').filter((l) => /DY_COUNT/.test(l));
-  if (all.length !== 3) bad.push('DY_COUNT appears on ' + all.length + ' lines (exactly the three hooks allowed)');
+  if (all.length !== 4) bad.push('DY_COUNT appears on ' + all.length + ' lines (exactly the three finish hooks and the one share line allowed)');
   return bad;
 }
 // run one hook line against a stand-in window: → { threw, calls }
@@ -55,13 +65,18 @@ function runHook(line, win) {
 
 console.log('── GROW-COUNT-1 · the player-counter hooks ──');
 const live = rules(HTML);
-ok('1–4 · showGameOver → match (after recordMatchResult, past the wire/puzzle/story returns), showStoryResult → story, showWireResult → hall; DY_COUNT on no other line',
+ok('1–4, 6 · showGameOver → match (after recordMatchResult, past the wire/puzzle/story returns), showStoryResult → story, showWireResult → hall; DY_COUNT on no other line',
   live.length === 0, live.join(' | '));
 const lines = HTML.split('\n').filter((l) => HOOK.test(l));
 ok('5a · STANDALONE: with no DY_COUNT each hook does nothing and throws nothing', lines.length === 3 && lines.every((l) => { const r = runHook(l, {}); return !r.threw; }));
 ok('5b · a DY_COUNT that throws never breaks the result face (the hook swallows it)', lines.every((l) => !runHook(l, { DY_COUNT: { finished() { throw new Error('down'); } } }).threw));
 ok('5c · with the site counter present, each hook reports its own kind exactly once (match, story, hall)',
   lines.map((l) => runHook(l, { DY_COUNT: 'recorder' }).calls.join(',')).sort().join('|') === 'hall|match|story');
+const SL = HTML.split('\n').filter((l) => SHARE.test(l));
+const runShare = (win) => { const calls = []; if (win.DY_COUNT === 'recorder') win.DY_COUNT = { shared: (k) => calls.push(k) }; let threw = false;
+  try { new Function('window', SL[0].replace(/\/\/.*$/, ''))(win); } catch (e) { threw = true; } return { threw, calls }; };
+ok('6a · the share line: standalone it does nothing and throws nothing; a throwing counter never breaks the share', SL.length === 1 && !runShare({}).threw && !runShare({ DY_COUNT: { shared() { throw new Error('down'); } } }).threw);
+ok("6b · with the site counter present it reports 'challenge' exactly once", SL.length === 1 && runShare({ DY_COUNT: 'recorder' }).calls.join(',') === 'challenge');
 
 console.log('\n── breakages: each must go red ──');
 const lineOf = (k) => lines.find((l) => l.indexOf("finished('" + k + "')") >= 0);
@@ -72,6 +87,9 @@ const breaks = [
   ['B3 · the story hook removed', (s) => s.replace(S + '\n', '')],
   ['B4 · the Hall hook removed', (s) => s.replace(W + '\n', '')],
   ['B5 · a hook left unguarded (no try/catch)', (s) => s.replace(M, "  window.DY_COUNT && window.DY_COUNT.finished('match');")],
+  ['B7 · the share line removed', (s) => s.replace(SL[0] + '\n', '')],
+  ['B8 · the share counted before the made-share check (a cancelled share would count)', (s) => s.replace(SL[0] + '\n', '').replace("    if(r!=='shared' && r!=='copied') return;", SL[0] + "\n    if(r!=='shared' && r!=='copied') return;")],
+  ['B9 · the share line left unguarded (no try/catch)', (s) => s.replace(SL[0], "  window.DY_COUNT && window.DY_COUNT.shared('challenge');")],
   ['B6 · a fourth hook in the render loop (render runs every frame)', (s) => s.replace('\nfunction render(', "\nfunction render(){ try{ window.DY_COUNT && window.DY_COUNT.finished('match'); }catch(e){} }\nfunction __render_was(")],
 ];
 for (const [name, mut] of breaks) {
