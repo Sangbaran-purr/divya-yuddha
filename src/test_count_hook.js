@@ -10,6 +10,8 @@
 //   4 · nowhere else (the Daily Puzzle's frame is counted by the page around it; no hook in the render loop)
 //   6 · share (GROWTH-1 #11, owner ruling 2026-11-06 — the approved FOURTH line): challengeFriend reports 'challenge' once,
 //       guarded, and only for a share the player made (never a cancelled one)
+//   7 · SHARE-2 (owner rulings 2026-11-09): the share ROW — Facebook (link only) · WhatsApp · X (text + link) count on the tap,
+//       Copy link a made copy, More a made share (never a cancelled one); every link goes to /challenge/
 //   5 · every hook is GUARDED: no DY_COUNT → nothing; a DY_COUNT that throws → the game carries on
 // Each rule has a breakage applied to the source text in memory; every one must turn its check red.
 const fs = require('fs'), path = require('path');
@@ -63,6 +65,33 @@ function runHook(line, win) {
   return { threw, calls };
 }
 
+// 7 · SHARE-2 (owner rulings 2026-11-09): the CHALLENGE A FRIEND row — run the shipped share block against stand-ins
+function shareBlock(src) { const a = src.indexOf('const CHALLENGE_TEXT'), b = src.indexOf('\nfunction syncChallengeButton('); return a < 0 || b < 0 ? null : src.slice(a, b); }
+function runWay(src, via, o) {
+  o = o || {}; const opened = [], counted = [], toasts = [], copied = [];
+  const nav = { clipboard: { writeText: (t) => { copied.push(t); return Promise.resolve(); } } };
+  if (o.sheet) nav.share = () => o.sheet === 'cancel' ? Promise.reject({ name: 'AbortError' }) : Promise.resolve();
+  const win = { open: (u, n, f) => { opened.push([u, n, f]); return null; }, DY_COUNT: { shared: (k) => counted.push(k) }, DY_SHARE: o.helper || null };
+  const run = new Function('window', 'navigator', 'toastMute', shareBlock(src) + '\nreturn challengeFriend(' + JSON.stringify(via) + ');');
+  run(win, nav, (t) => toasts.push(t));
+  return new Promise((r) => setTimeout(() => r({ opened, counted, toasts, copied }), 0));
+}
+const CT = 'I just won a battle in Divya Yuddha. Think you can beat the AI? Play free:';
+const LINK = 'https://divyayuddha.games/challenge/?utm_source=direct&utm_medium=share&utm_campaign=challenge';
+async function shareRules(src) {
+  const bad = []; if (!shareBlock(src)) return ['the share block is missing'];
+  const fb = await runWay(src, 'facebook'), wa = await runWay(src, 'whatsapp'), x = await runWay(src, 'x');
+  const cp = await runWay(src, 'copy'), mo = await runWay(src, 'more', { sheet: 'ok' }), mc = await runWay(src, 'more', { sheet: 'cancel' });
+  if (!(fb.opened.length === 1 && fb.opened[0][0] === 'https://www.facebook.com/sharer/sharer.php?u=' + encodeURIComponent(LINK) && fb.opened[0][1] === '_blank')) bad.push('Facebook: the sharer page with the link only, in a new window');
+  if (!(wa.opened.length === 1 && wa.opened[0][0] === 'https://wa.me/?text=' + encodeURIComponent(CT + ' ' + LINK))) bad.push('WhatsApp: wa.me with the approved text + the link');
+  if (!(x.opened.length === 1 && x.opened[0][0] === 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(CT) + '&url=' + encodeURIComponent(LINK))) bad.push('X: the tweet intent with the approved text and the link');
+  if (![fb, wa, x].every((r) => r.counted.join() === 'challenge' && !r.toasts.length)) bad.push('Facebook/WhatsApp/X: one challenge share each, counted on the tap');
+  if (!(cp.copied.join() === CT + ' ' + LINK && cp.counted.join() === 'challenge' && cp.toasts.join() === 'Link copied' && !cp.opened.length)) bad.push('Copy link: copies the text + link, one share, "Link copied"');
+  if (!(mo.counted.join() === 'challenge' && !mo.opened.length)) bad.push('More: a made share counts once');
+  if (!(mc.counted.length === 0 && mc.copied.length === 0)) bad.push('More: a cancelled sheet is not a share');
+  return bad;
+}
+
 console.log('── GROW-COUNT-1 · the player-counter hooks ──');
 const live = rules(HTML);
 ok('1–4, 6 · showGameOver → match (after recordMatchResult, past the wire/puzzle/story returns), showStoryResult → story, showWireResult → hall; DY_COUNT on no other line',
@@ -97,5 +126,19 @@ for (const [name, mut] of breaks) {
   ok(name + ' → red', m !== HTML && rules(m).length > 0, 'the mutation did not apply or was not caught');
 }
 
+(async () => {
+console.log('\n── SHARE-2 · the CHALLENGE A FRIEND row ──');
+const sr = await shareRules(HTML);
+ok('7 · Facebook (link only) · WhatsApp (text + link) · X (text + link) count on the tap; Copy link counts a made copy ("Link copied"); More counts a made share, never a cancelled one; every link goes to /challenge/', sr.length === 0, sr.join(' | '));
+ok('7b · the row: the heading CHALLENGE A FRIEND, plain-text buttons Facebook · WhatsApp · X · Copy link · More (More only where the phone has a share sheet)',
+  HTML.indexOf("h.textContent='CHALLENGE A FRIEND'") > 0 && HTML.indexOf("const CHALLENGE_WAYS = [['facebook','Facebook'], ['whatsapp','WhatsApp'], ['x','X'], ['copy','Copy link'], ['more','More']];") > 0 &&
+  HTML.indexOf("if(via==='more' && typeof navigator.share!=='function') return;") > 0);
+const sb = [
+  ['B10 · Facebook given pre-filled text', (s) => s.replace("'https://www.facebook.com/sharer/sharer.php?u='+u", "'https://www.facebook.com/sharer/sharer.php?u='+u+'&quote='+t")],
+  ['B11 · the challenge link back to the home page', (s) => s.replace("https://divyayuddha.games/challenge/?utm_source=direct", "https://divyayuddha.games/?utm_source=direct")],
+  ['B12 · a cancelled sheet counted', (s) => s.replace("(e && e.name==='AbortError') ? 'cancelled'", "(e && e.name==='AbortError') ? 'shared'")],
+];
+for (const [name, mut] of sb) { const m = mut(HTML); ok(name + ' → red', m !== HTML && (await shareRules(m)).length > 0, 'the mutation did not apply or was not caught'); }
 console.log('\n' + (fail === 0 ? '✓ ALL ' + pass + ' COUNT-HOOK CHECKS PASS' : '✖ ' + fail + ' FAILURES / ' + pass + ' passed'));
 process.exit(fail === 0 ? 0 : 1);
+})();
