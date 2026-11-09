@@ -72,11 +72,11 @@ function runWay(src, via, o) {
   const nav = { clipboard: { writeText: (t) => { copied.push(t); return Promise.resolve(); } } };
   if (o.sheet) nav.share = () => o.sheet === 'cancel' ? Promise.reject({ name: 'AbortError' }) : Promise.resolve();
   const win = { open: (u, n, f) => { opened.push([u, n, f]); return null; }, DY_COUNT: { shared: (k) => counted.push(k) }, DY_SHARE: o.helper || null };
-  const run = new Function('window', 'navigator', 'toastMute', shareBlock(src) + '\nreturn challengeFriend(' + JSON.stringify(via) + ');');
+  const run = new Function('window', 'navigator', 'toastMute', shareBlock(src) + '\nreturn challengeFriend(' + JSON.stringify(via) + ', ' + JSON.stringify(SCORE) + ');');
   run(win, nav, (t) => toasts.push(t));
   return new Promise((r) => setTimeout(() => r({ opened, counted, toasts, copied }), 0));
 }
-const CT = 'I just won a battle in Divya Yuddha. Think you can beat the AI? Play free:';
+const SCORE = '2–1', CT = 'I beat the AI 2–1 in Divya Yuddha. Can you? Play free:';   // SHARE-3: the approved text, the score from the result
 const LINK = 'https://divyayuddha.games/challenge/?utm_source=direct&utm_medium=share&utm_campaign=challenge';
 async function shareRules(src) {
   const bad = []; if (!shareBlock(src)) return ['the share block is missing'];
@@ -130,15 +130,37 @@ for (const [name, mut] of breaks) {
 console.log('\n── SHARE-2 · the CHALLENGE A FRIEND row ──');
 const sr = await shareRules(HTML);
 ok('7 · Facebook (link only) · WhatsApp (text + link) · X (text + link) count on the tap; Copy link counts a made copy ("Link copied"); More counts a made share, never a cancelled one; every link goes to /challenge/', sr.length === 0, sr.join(' | '));
-ok('7b · the row: the heading CHALLENGE A FRIEND, plain-text buttons Facebook · WhatsApp · X · Copy link · More (More only where the phone has a share sheet)',
-  HTML.indexOf("h.textContent='CHALLENGE A FRIEND'") > 0 && HTML.indexOf("const CHALLENGE_WAYS = [['facebook','Facebook'], ['whatsapp','WhatsApp'], ['x','X'], ['copy','Copy link'], ['more','More']];") > 0 &&
-  HTML.indexOf("if(via==='more' && typeof navigator.share!=='function') return;") > 0);
+// SHARE-3 (owner rulings 2026-11-09): Option B — the official logos, no names beside them, Messenger out, the score in the heading
+const LOGO_FILES = ['assets/img/brand/facebook_logo_primary.png', 'assets/img/brand/whatsapp_glyph_green.svg', 'assets/img/brand/x_logo_white.svg'];
+function rowRules(src) {
+  const bad = [], sync = body(src, 'syncChallengeButton') || '';
+  if (src.indexOf('const CHALLENGE_HEADING = "You won {score}! Dare a friend to beat it.";') < 0) bad.push('the approved heading');
+  if (src.indexOf('const CHALLENGE_CAPTION = "Your friend will see this";') < 0) bad.push('the approved caption');
+  if (src.indexOf("const CHALLENGE_WAYS = [['facebook','Facebook'], ['whatsapp','WhatsApp'], ['x','X'], ['copy','Copy link'], ['more','More']];") < 0) bad.push('the five ways (no Messenger)');
+  if (/messenger/i.test(shareBlock(src) || '')) bad.push('Messenger is out for now');
+  if (src.indexOf("const CHALLENGE_LOGOS = { facebook:'" + LOGO_FILES[0] + "', whatsapp:'" + LOGO_FILES[1] + "', x:'" + LOGO_FILES[2] + "' };") < 0) bad.push('the three official logo files');
+  if (/k\.textContent\s*=|k\.append\(label|createTextNode\(label/.test(sync) || sync.indexOf("k.setAttribute('aria-label', label)") < 0) bad.push('no visible names beside the logos (screen-reader labels only)');
+  if (sync.indexOf("if(via==='more' && typeof navigator.share!=='function') return;") < 0) bad.push('More only where the phone has a share sheet');
+  if (sync.indexOf("G.players[ME].roundWins+'–'+G.players[OPP].roundWins") < 0) bad.push('the score from the match result');
+  if (!/\.go-share-net\.glow\{[^}]*animation:goShareGlow[^}]*1s 1;/.test(src) || !/@media \(prefers-reduced-motion:reduce\)\{ \.go-share-net\.glow\{ animation:none; \} \}/.test(src)) bad.push('one glow on the whole row, none for reduced motion');
+  if (/\[data-via="whatsapp"\][^{]*\{[^}]*animation/.test(src)) bad.push('never a glow on the WhatsApp logo alone');
+  return bad;
+}
+const rr = rowRules(HTML);
+ok('7b · the SHARE-3 panel: the approved heading (with the score) and caption, the three official logos (no names beside them, labels for screen readers), Copy link and More (More only with a share sheet), no Messenger, one row glow (none for reduced motion); the logo files are in the repo',
+  rr.length === 0 && LOGO_FILES.every((f) => fs.existsSync(path.join(__dirname, '..', f))), rr.join(' | '));
 const sb = [
   ['B10 · Facebook given pre-filled text', (s) => s.replace("'https://www.facebook.com/sharer/sharer.php?u='+u", "'https://www.facebook.com/sharer/sharer.php?u='+u+'&quote='+t")],
   ['B11 · the challenge link back to the home page', (s) => s.replace("https://divyayuddha.games/challenge/?utm_source=direct", "https://divyayuddha.games/?utm_source=direct")],
   ['B12 · a cancelled sheet counted', (s) => s.replace("(e && e.name==='AbortError') ? 'cancelled'", "(e && e.name==='AbortError') ? 'shared'")],
 ];
 for (const [name, mut] of sb) { const m = mut(HTML); ok(name + ' → red', m !== HTML && (await shareRules(m)).length > 0, 'the mutation did not apply or was not caught'); }
+const rb = [
+  ['B13 · a name shown beside a logo', (s) => s.replace("k.setAttribute('aria-label', label);", "k.setAttribute('aria-label', label); k.append(label);")],
+  ['B14 · Messenger brought back', (s) => s.replace("['x','X'], ['copy','Copy link']", "['x','X'], ['messenger','Messenger'], ['copy','Copy link']")],
+  ['B15 · the glow moved onto the WhatsApp logo alone', (s) => s.replace('.go-share-net.glow{ animation:', '#gameover .go-share-net button[data-via="whatsapp"]{ animation:goShareGlow 1.6s ease-out 1s 1; }\n.go-share-net.glowx{ animation:')],
+];
+for (const [name, mut] of rb) { const m = mut(HTML); ok(name + ' → red', m !== HTML && rowRules(m).length > 0, 'the mutation did not apply or was not caught'); }
 console.log('\n' + (fail === 0 ? '✓ ALL ' + pass + ' COUNT-HOOK CHECKS PASS' : '✖ ' + fail + ' FAILURES / ' + pass + ' passed'));
 process.exit(fail === 0 ? 0 : 1);
 })();
