@@ -30,6 +30,7 @@ function body(src, name) {
   return null;
 }
 const SHARE = /^  try\{ window\.DY_COUNT && window\.DY_COUNT\.shared\('challenge'\); \}catch\(e\)\{\}/;
+const STEP = /^  try\{ window\.DY_COUNT && window\.DY_COUNT\.step && window\.DY_COUNT\.step\('(fsel_seen|battle_start)'\); \}catch\(e\)\{\}/;
 const hooksIn = (text) => (text || '').split('\n').filter((l) => /DY_COUNT/.test(l));
 // → the list of broken rules for a source text (empty = all hold)
 function rules(src) {
@@ -52,8 +53,18 @@ function rules(src) {
     if (h.length !== 1 || !SHARE.test(h[0])) bad.push('challengeFriend: expected exactly one guarded shared(\'challenge\') line');
     else { const g = ch.indexOf("if(r!=='shared' && r!=='copied') return;"); if (g < 0 || g > ch.indexOf(h[0])) bad.push('challengeFriend: the share must be counted only after a made share (never a cancelled one)'); }
   }
+  // ONBOARD-1 (owner ruling 2026-11-10): the faction screen → battle funnel — fsel_seen when the screen opens, battle_start when
+  // BEGIN BATTLE is tapped WITH a faction chosen (after the gate, before startGame); both guarded, once per browser in the counter
+  const fs = body(src, 'showFactionSelect'), bi = src.indexOf("$('fselstart').onclick=()=>{"), bb = bi < 0 ? '' : src.slice(bi, src.indexOf('\n};', bi));
+  if (!fs || !bb) bad.push('showFactionSelect or the BEGIN BATTLE handler is missing');
+  else {
+    const f = hooksIn(fs), b = hooksIn(bb);
+    if (f.length !== 1 || !STEP.test(f[0]) || STEP.exec(f[0])[1] !== 'fsel_seen') bad.push('showFactionSelect: expected exactly one guarded step(\'fsel_seen\') line');
+    if (b.length !== 1 || !STEP.test(b[0]) || STEP.exec(b[0])[1] !== 'battle_start') bad.push('BEGIN BATTLE: expected exactly one guarded step(\'battle_start\') line');
+    else { const g = bb.indexOf('if(!fselChoice.p0) return;'), at = bb.indexOf(b[0]), sg = bb.indexOf('startGame('); if (g < 0 || g > at || sg < at) bad.push('BEGIN BATTLE: the start must be counted after the faction gate and before the match starts'); }
+  }
   const all = src.split('\n').filter((l) => /DY_COUNT/.test(l));
-  if (all.length !== 4) bad.push('DY_COUNT appears on ' + all.length + ' lines (exactly the three finish hooks and the one share line allowed)');
+  if (all.length !== 6) bad.push('DY_COUNT appears on ' + all.length + ' lines (exactly the three finish hooks, the one share line and the two faction-screen steps allowed)');
   return bad;
 }
 // run one hook line against a stand-in window: → { threw, calls }
@@ -161,6 +172,19 @@ const rb = [
   ['B15 · the glow moved onto the WhatsApp logo alone', (s) => s.replace('.go-share-net.glow{ animation:', '#gameover .go-share-net button[data-via="whatsapp"]{ animation:goShareGlow 1.6s ease-out 1s 1; }\n.go-share-net.glowx{ animation:')],
 ];
 for (const [name, mut] of rb) { const m = mut(HTML); ok(name + ' → red', m !== HTML && rowRules(m).length > 0, 'the mutation did not apply or was not caught'); }
+
+console.log('\n── ONBOARD-1 · the faction screen → battle steps ──');
+const STEPS = HTML.split('\n').filter((l) => STEP.test(l));
+const runStep = (line, win) => { const calls = []; if (win.DY_COUNT === 'recorder') win.DY_COUNT = { step: (k) => calls.push(k) }; let threw = false;
+  try { new Function('window', line.replace(/\/\/.*$/, ''))(win); } catch (e) { threw = true; } return { threw, calls }; };
+ok("8 · the two steps: standalone (no counter), an old counter without step(), or a throwing one — nothing happens and nothing throws; the site's counter gets fsel_seen and battle_start once each",
+  STEPS.length === 2 && STEPS.every((l) => !runStep(l, {}).threw && !runStep(l, { DY_COUNT: { finished() {} } }).threw && !runStep(l, { DY_COUNT: { step() { throw new Error('down'); } } }).threw)
+    && STEPS.map((l) => runStep(l, { DY_COUNT: 'recorder' }).calls.join(',')).sort().join('|') === 'battle_start|fsel_seen');
+const sb2 = [
+  ['B16 · the faction-screen step removed', (s) => s.replace(STEPS.find((l) => l.indexOf('fsel_seen') >= 0) + '\n', '')],
+  ['B17 · the battle counted before the faction gate (a tap with no army chosen would count)', (s) => { const b = STEPS.find((l) => l.indexOf('battle_start') >= 0); return s.replace(b + '\n', '').replace("  if(!fselChoice.p0) return;", b + "\n  if(!fselChoice.p0) return;"); }],
+];
+for (const [name, mut] of sb2) { const m = mut(HTML); ok(name + ' → red', m !== HTML && rules(m).length > 0, 'the mutation did not apply or was not caught'); }
 console.log('\n' + (fail === 0 ? '✓ ALL ' + pass + ' COUNT-HOOK CHECKS PASS' : '✖ ' + fail + ' FAILURES / ' + pass + ' passed'));
 process.exit(fail === 0 ? 0 : 1);
 })();
