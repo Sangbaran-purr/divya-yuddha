@@ -48,14 +48,16 @@ console.log('── 1 · the panel in code ──');
        return go.indexOf('syncBattleLogButton()') > go.indexOf('showStoryResult()') && wr.indexOf('syncBattleLogButton()') > wr.indexOf("btns.innerHTML") && code.split("['gameover','battlelog',").length === 4; })());
 }
 
-let JSDOM = null, VirtualConsole = null;
+let JSDOM = null, VirtualConsole = null, pending = null;
 try { ({ JSDOM, VirtualConsole } = require(require.resolve('jsdom', { paths: [path.join(WEB, 'tests')] }))); } catch (e) { JSDOM = null; }
 let createRoom = null, buildView = null, ES = null;
 try { createRoom = require(path.join(MS, 'src', 'match.js')).createRoom; buildView = require(path.join(MS, 'src', 'redactedview.js')).buildView; ES = require(path.join(MS, 'src', 'engineguard.js')).loadGuardedEngine().engine; } catch (e) { createRoom = null; }
 
 if (!JSDOM) { fail++; console.log('  ✖ SKIPPED LOUDLY — jsdom not found under ' + path.join(WEB, 'tests') + ' (set DY_WEB). The DOM proofs did NOT run.'); }
 else if (!createRoom) { fail++; console.log('  ✖ SKIPPED LOUDLY — the web3 checkout is absent (' + MS + '; set DY_WEB3). The wire-face proofs did NOT run.'); }
-else {
+else { pending = (async () => {
+  // RULES-FIX-1 Stage 1 (owner ruling): a round end now plays as a sequence that holds the screen (reduced motion too) — wait for it to release
+  const until = async (fn, ms) => { const t = Date.now(); while (!fn()) { if (Date.now() - t > (ms || 30000)) return false; await new Promise((r) => setTimeout(r, 25)); } return true; };
   // ── the page, booted ──
   function boot(query) {
     const errs = [], warns = [], posted = [];
@@ -132,6 +134,7 @@ else {
     $(w, 'mullconfirm').click();   // KEEP DESTINY — the solo mulligan hook (the AI mulligans too)
     let guard = 0;
     while (!T.G.over && guard++ < 600) { const a = T.G.turn; w.runAction(() => w.aiTakeTurn(T.G, a), { actor: a }); }
+    await until(() => !w.document.getElementById('choreolayer').classList.contains('locked'));   // the last round's sequence (pass → finals → the result screen)
     ok('the match reached its result and the vs-AI face is up (' + T.BLog.lines.length + ' recorded lines, recorder errors ' + T.BLog.errors + ')', T.G.over && !hidden(w, 'gameover') && T.BLog.lines.length > 20 && T.BLog.errors === 0);
     ok('VIEW BATTLE LOG sits in #gameover .go-btns beside REMATCH and MAIN MENU', J(btnTexts(w)) === J(['REMATCH ⚔', 'MAIN MENU', 'VIEW BATTLE LOG']), J(btnTexts(w)));
     const before = [...w.document.querySelectorAll('#gameover .go-btns button')];
@@ -173,6 +176,7 @@ else {
     ok('a story chapter keeps no battle log (' + chId + ')', T.Story && T.BLog === null);
     let guard = 0;
     try { while (!T.G.over && guard++ < 400) { const a = T.G.turn; w.runAction(() => w.aiTakeTurn(T.G, a), { actor: a }); } } catch (e) {}
+    await until(() => !w.document.getElementById('choreolayer').classList.contains('locked'));   // the round-end sequence
     const visibleLogBtn = [...w.document.querySelectorAll('button')].some((b) => b.textContent === 'VIEW BATTLE LOG' && !b.closest('.hidden'));
     ok('the story result carries no VIEW BATTLE LOG: #gameover never shown, no visible button anywhere, and the sync removes a leftover one', T.G.over && hidden(w, 'gameover') && !visibleLogBtn && (w.syncBattleLogButton(), !$(w, 'go-log')));
   }
@@ -182,7 +186,7 @@ else {
   {
     const M = serverMatch({ mid: 'm-free-gl3', seed: 20260913, f0: 'devas', f1: 'asuras' });
     const F = boot('?wire=1'); const { w, T } = F;
-    freeStart(F, M, 0); freeMoves(F, M); F.say({ type: 'wire:result', matchId: M.mid, winner: M.winner, roundWins: M.roundWins, forfeit: false });
+    freeStart(F, M, 0); freeMoves(F, M); await until(() => !w.document.getElementById('choreolayer').classList.contains('locked') && !T.Wire.queue.length, 60000); F.say({ type: 'wire:result', matchId: M.mid, winner: M.winner, roundWins: M.roundWins, forfeit: false });
     ok('a full relayed match (' + M.moves.length + ' moves) reached the wire result face with no refusal', M.over && T.G.over && !hidden(w, 'gameover') && T.Wire.refused.length === 0, J(T.Wire.refused));
     ok('the wire face rewrote .go-btns and added the button back: RETURN TO THE HALL, VIEW BATTLE LOG', J(btnTexts(w)) === J(['RETURN TO THE HALL', 'VIEW BATTLE LOG']), J(btnTexts(w)));
     openLog(w); const got = shown(w), want = expected(T);
@@ -195,7 +199,7 @@ else {
     const lastLines = [];
     for (const seat of [0, 1]) {
       const X = boot('?wire=1');
-      freeStart(X, MF, seat); freeMoves(X, MF); X.say({ type: 'wire:result', matchId: MF.mid, winner: 0, roundWins: [0, 0], forfeit: true });
+      freeStart(X, MF, seat); freeMoves(X, MF); await until(() => !X.w.document.getElementById('choreolayer').classList.contains('locked') && !X.T.Wire.queue.length, 60000); X.say({ type: 'wire:result', matchId: MF.mid, winner: 0, roundWins: [0, 0], forfeit: true });
       const up = !X.T.G.over && !hidden(X.w, 'gameover') && J(btnTexts(X.w)) === J(['RETURN TO THE HALL', 'VIEW BATTLE LOG']) && openLog(X.w);
       const rows = shown(X.w); lastLines.push(up && J(rows) === J(expected(X.T)) ? rows[rows.length - 1][1] : 'face/rows mismatch');
       wallHits.push(...rows.filter((r) => SEATISH.test(r[1])).map((r) => r[1]));
@@ -239,7 +243,9 @@ else {
   console.log('\n── 6 · the wall, and a clean page ──');
   ok('THE WALL: no wallet short form, address or {p} token in any rendered panel row (' + wallHits.length + ')', wallHits.length === 0, wallHits.slice(0, 2).join(' | '));
   ok('the vs-AI page ran clean in the DOM: no script error, no console.log', P.errs.length === 0, P.errs.slice(0, 3).join(' | '));
-}
+})(); }
 
+Promise.resolve(pending).then(() => {
 console.log('\n' + (fail === 0 ? '✓ ALL ' + pass + ' LOG-PANEL CHECKS PASS' : '✖ ' + fail + ' FAILURES / ' + pass + ' passed'));
 process.exit(fail === 0 ? 0 : 1);   // the page's own intervals would keep node alive
+});
