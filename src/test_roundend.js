@@ -85,22 +85,24 @@ let JSDOM = null, VirtualConsole = null, pending = null;
 try { ({ JSDOM, VirtualConsole } = require(require.resolve('jsdom', { paths: [path.join(WEB, 'tests')] }))); } catch (e) { JSDOM = null; }
 if (!JSDOM) { fail++; console.log('  ✖ SKIPPED LOUDLY — jsdom not found under ' + path.join(WEB, 'tests') + ' (set DY_WEB). Sections 2 and 3 did NOT run.'); }
 else {
-  function boot(query) {
-    const errs = [];
+  function boot(query, o) {
+    o = o || {};
+    const errs = [], posted = [];
     const vc = new VirtualConsole();
     vc.on('jsdomError', (e) => errs.push(String(e && e.message))); vc.on('error', (...a) => errs.push(a.join(' '))); vc.on('log', (...a) => errs.push('console.log: ' + a.join(' ')));
     const scripts = [];
     const markup = HTML.replace(/<script\b([^>]*)>([\s\S]*?)<\/script>/g, (m, attrs, body) => { const src = /\bsrc="([^"?]+)/.exec(attrs); scripts.push(src ? fs.readFileSync(path.join(GAME, src[1]), 'utf8') : body); return ''; });
     const dom = new JSDOM(markup, { url: 'https://game.test/index.html' + query, pretendToBeVisual: true, runScripts: 'outside-only', virtualConsole: vc });
     const w = dom.window;
-    w.matchMedia = (q) => ({ matches: /reduce/.test(q), media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
+    w.matchMedia = (q) => ({ matches: o.reduce !== false && /reduce/.test(q), media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
     const ctx2 = new Proxy({}, { get: (t, k) => k === 'measureText' ? () => ({ width: 10 }) : /^create(Linear|Radial)Gradient$|^createPattern$/.test(String(k)) ? () => ({ addColorStop() {} }) : k === 'getImageData' ? () => ({ data: new Uint8ClampedArray(4) }) : () => {} });
     w.HTMLCanvasElement.prototype.getContext = () => ctx2;
     w.HTMLMediaElement.prototype.play = () => Promise.resolve(); w.HTMLMediaElement.prototype.pause = () => {}; w.HTMLMediaElement.prototype.load = () => {};
     w.fetch = () => Promise.resolve({ ok: false, status: 404, arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)), json: () => Promise.resolve({}), text: () => Promise.resolve('') });
     w.scrollTo = () => {};
-    w.eval(scripts.join('\n;\n') + '\n;window.__T = { get G(){ return G; }, get ME(){ return ME; }, get OPP(){ return OPP; }, get RE(){ return RE; }, get reLive(){ return reLive; }, get choreoActive(){ return choreoActive; }, get bannerQ(){ return bannerQ; }, DECKS, CARD_BY_NAME };');
-    return { w, T: w.__T, errs };
+    if (o.core) { w.postMessage = (m) => posted.push(JSON.parse(JSON.stringify(m))); w.eval(o.core); }   // puzzle mode: the parent page's puzzle code, and the frame's words to its parent recorded
+    w.eval(scripts.join('\n;\n') + '\n;window.__T = { get G(){ return G; }, get Pz(){ return typeof Pz==="undefined" ? null : Pz; }, get ME(){ return ME; }, get OPP(){ return OPP; }, get RE(){ return RE; }, get reLive(){ return reLive; }, get choreoActive(){ return choreoActive; }, get bannerQ(){ return bannerQ; }, DECKS, CARD_BY_NAME };');
+    return { w, T: w.__T, errs, posted };
   }
   const P = boot('');
   const { w, T } = P;
@@ -159,6 +161,7 @@ else {
   console.log('\n── 4 · leaving while a round end shows leaves nothing behind (menu · rematch · a Story chapter) ──');
   pending = (async () => {
     const W = (ms) => new Promise((r) => setTimeout(r, ms));
+    const until = async (fn, ms) => { const t = Date.now(); while (!fn()) { if (Date.now() - t > ms) return false; await W(10); } return true; };
     const banner = () => { const b = $('banner'); return b && !b.classList.contains('hidden') ? b.textContent : ''; };
     // a round-ending pass (you 9 · them 4, you lead round 2): the sequence takes the lock and holds the board
     const midSequence = async () => {
@@ -186,6 +189,70 @@ else {
         m.held && m.locked && m.pass && after.RE && after.lock && after.banner && stray.length === 0 && T.RE === null, J({ before: { held: m.held, locked: m.locked, pass: m.pass }, after, stray }));
     }
     ok('the page ran clean in the DOM: no script error, no console.log', P.errs.length === 0, P.errs.slice(0, 3).join(' | '));
+
+    // ═══ 5 · NO NEGATIVE SCORE (Stage 1 follow-up, item 2) — the wide poisoned board (8 poisoned Units a side), motion on ═══
+    console.log('\n── 5 · a drained card counts 0 until its death is shown; no total reads below 0 ──');
+    {
+      const M = boot('', { reduce: false }), mw = M.w, MT = M.T, m$ = (id) => mw.document.getElementById(id);
+      mw.resetChoreo(); mw.startGame('devas', 'nagas'); const G = MT.G, me = G.players[MT.ME], op = G.players[MT.OPP];
+      mw.pump = function () {}; G.realm = 'mrityulok'; me.mulliganed = op.mulliganed = true; m$('mulligan').classList.add('hidden');
+      const mk = (n, x) => Object.assign(mw.mkCard(MT.CARD_BY_NAME[n]), x);
+      me.units = Array.from({ length: 8 }, (_, i) => mk(i % 2 ? 'Deva Soldier' : 'Marut', { venom: 2 })); op.units = Array.from({ length: 8 }, (_, i) => mk(i % 2 ? 'Naga Warrior' : 'Naga Archer', { venom: 1 }));
+      me.heroes = []; op.heroes = []; me.artifact = op.artifact = null; op.passed = true; me.passed = false; G.turn = MT.ME;
+      mw.eval('speedMult=0.05; cDelay=()=>Promise.resolve();');   // the same sequence, quickly (its order and numbers do not depend on the pace)
+      mw.render(); await W(50);
+      const plaques = [], cards = [], raw = [];
+      const sn = mw.snapTo; mw.snapTo = function (a, b) { if (MT.RE) plaques.push([a, b]); return sn.apply(this, arguments); };
+      const rd = mw.reDrawHeld; mw.reDrawHeld = function () { const r = rd.apply(this, arguments);
+        if (MT.RE) { raw.push([0, 1].map((s) => MT.RE.g.players[s].units.reduce((t, u) => t + (u.ghost || u.bound ? 0 : u.power), 0)));
+          for (const e of mw.document.querySelectorAll('#field .bc .medallion')) cards.push(parseInt(e.textContent, 10)); }
+        return r; };
+      m$('passbtn').click();
+      await until(() => !MT.choreoActive && !MT.RE, 60000);
+      const h = G.roundHistory[G.roundHistory.length - 1];
+      const minPlaque = Math.min(...plaques.flat()), minCard = Math.min(...cards), minRaw = Math.min(...raw.flat());
+      ok(`the wide poisoned board drains below 0 on the held board (lowest raw side total ${minRaw}), yet no plaque reads below 0 (lowest ${minPlaque} over ${plaques.length} reads) and no card number below 0 (lowest ${minCard} over ${cards.length})`,
+        plaques.length > 10 && cards.length > 50 && minRaw < 0 && minPlaque >= 0 && minCard >= 0, J({ minRaw, minPlaque, minCard }));
+      const fin = plaques[plaques.length - 1];
+      ok(`the final numbers are unchanged: the plaques settle on the round's recorded finals (${h['t' + MT.ME]}–${h['t' + MT.OPP]})`, !!fin && fin[0] === h['t' + MT.ME] && fin[1] === h['t' + MT.OPP], J({ fin, h }));
+      mw.snapTo = sn; mw.reDrawHeld = rd;
+      ok('  …and that page ran clean too', M.errs.length === 0, M.errs.slice(0, 3).join(' | '));
+    }
+
+    // ═══ 6 · THE DAILY PUZZLE (Stage 1 follow-up, item 1) — the report once the finals settle; a reset under the banner leaves nothing ═══
+    console.log('\n── 6 · puzzle mode: the report does not wait for the result banner; a reset while it shows leaves nothing behind ──');
+    {
+      const CORE = path.join(WEB, 'play', 'daily', 'puzzle-core.js'), LISTP = path.join(WEB, 'play', 'daily', 'puzzles.json');
+      if (!fs.existsSync(CORE) || !fs.existsSync(LISTP)) { fail++; console.log('  ✖ SKIPPED LOUDLY — the site\'s puzzle code not found under ' + WEB + ' (set DY_WEB). Section 6 did NOT run.'); }
+      else {
+        const RAW = JSON.parse(fs.readFileSync(LISTP, 'utf8')), LIST = Array.isArray(RAW) ? RAW : RAW.puzzles;
+        for (const reduce of [false, true]) {
+          const Z = boot('?puzzle=1', { reduce, core: fs.readFileSync(CORE, 'utf8') }), zw = Z.w, ZT = Z.T, z$ = (id) => zw.document.getElementById(id);
+          const say = (d) => zw.onPuzzleMessage({ origin: zw.location.origin, source: zw.parent, data: JSON.parse(JSON.stringify(d)) });
+          const zb = () => { const b = z$('banner'); return b && !b.classList.contains('hidden') ? b.textContent : ''; };
+          const results = () => Z.posted.filter((m) => m.type === 'puzzle:result');
+          const P0 = LIST[0];
+          say({ type: 'puzzle:load', puzzle: P0 });
+          await until(() => Z.posted.some((m) => m.type === 'puzzle:loaded'), 30000);
+          z$('passbtn').click();   // End turn: the opponent has passed, so this ends the round
+          await until(() => results().length === 1, 30000);
+          const atReport = { held: !!ZT.RE, banner: zb(), q: ZT.bannerQ.length };
+          ok(`${reduce ? 'reduced motion' : 'motion on'}: the report is sent while the round end still shows (held board up, the result banner not yet shown or still queued)`,
+            results().length === 1 && atReport.held && !/ROUND \d —/.test(atReport.banner), J(atReport));
+          await until(() => /ROUND \d —/.test(zb()), 15000);
+          const bannerUp = zb();
+          say({ type: 'puzzle:reset' });   // a new try while the result banner shows
+          await until(() => Z.posted.filter((m) => m.type === 'puzzle:loaded').length >= 2, 30000);
+          const after = { RE: ZT.RE === null && ZT.reLive === null, lock: !z$('choreolayer').classList.contains('locked') && !ZT.choreoActive, banner: zb() === '' && ZT.bannerQ.length === 0, round: ZT.G.round === P0.round || ZT.G.roundHistory.length === (ZT.Pz && ZT.Pz.roundsAtLoad), tries: ZT.Pz && ZT.Pz.tries };
+          const seen = []; const iv = setInterval(() => { const b = zb(); if (b && seen.indexOf(b) < 0) seen.push(b); }, 25);
+          await W(4000); clearInterval(iv);
+          const posts = results().length;
+          ok(`  …a reset while the banner shows ("${bannerUp.slice(0, 22)}…") leaves nothing behind: no held board, no lock, no banner, no second report — and nothing of the old round end surfaces later`,
+            /ROUND \d —/.test(bannerUp) && after.RE && after.lock && after.banner && after.tries === 2 && posts === 1 && seen.length === 0 && !ZT.Pz.reported, J({ after, seen, posts }));
+          ok('  …that page ran clean', Z.errs.length === 0, Z.errs.slice(0, 3).join(' | '));
+        }
+      }
+    }
   })();
 }
 

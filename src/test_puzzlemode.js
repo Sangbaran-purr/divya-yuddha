@@ -329,6 +329,7 @@ async function main() {
     }
     ok('End turn scores the round and reports it: the result, the score, the events and the timings', r2 && typeof r2.win === 'boolean' && Number.isInteger(r2.you) && Number.isInteger(r2.them) &&
        Array.isArray(r2.events) && r2.steps.length === 2 && r2.steps[0].kind === 'play' && r2.steps[1].kind === 'end' && r2.steps.every((x) => x.ms >= 0) && r2.wallMs >= 0, J(r2 && r2.steps));
+    await until(() => !T.choreoActive, 30000);   // the report now goes once the finals settle (Stage 1 follow-up, item 1): the round end's result banner may still be showing — wait for it to finish
     const hAfter = me.hand.length, posts = F.posted.length;
     w.startPlay(0, null); $(w, 'passbtn').click(); $(w, 'leapbtn').click();
     await sleep(100);
@@ -431,6 +432,7 @@ async function main() {
       const H = headless(P, line);
       if (J(norm(r.events, uidBase(T.G))) !== J(H.events) || !r.win || r.you !== win.you || !r.reducedMotion) allSame = false;
     }
+    await until(() => !T.choreoActive, 30000);   // the report no longer waits for the result banner (Stage 1 follow-up, item 1): read the layer once the round end is done
     if (F.spies.played.length !== 0 || $(w, 'choreolayer').classList.contains('locked')) noChoreo = false;
     ok('reduced motion: no choreography step runs and the layer never locks — as in the battle', noChoreo, 'played ' + F.spies.played.length);
     ok('reduced motion: the same events, the same result and score, reported (3 puzzles)', allSame);

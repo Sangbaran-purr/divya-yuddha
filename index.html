@@ -9938,7 +9938,8 @@ function boardCard(c, pi, targetSet){
   d.dataset.uid=c.uid;
   if(c.t==='hero' && !c.ghost){ const tint=HERO_AURA_TINT[c.id]||HERO_AURA_TINT._default; d.style.setProperty('--aura-1',tint[0]); d.style.setProperty('--aura-2',tint[1]);   // T104 PART 1: CSS footlight aura + per-hero tint (lifecycle collapses into render() → reflow/Sudarshana/round-transition all handled by construction)
     if(materializingHeroes[c.uid]) d.classList.add('materializing'); else d.classList.add('aura'); }   // T104-B: a hero mid-entry-arrival renders HIDDEN (survives this render) — the footlight ignites only on reveal
-  const ep=Q.effPower(G,pi,c);
+  let ep=Q.effPower(G,pi,c);
+  if (RE && G===RE.g && (ep<0 || (!c.ghost && c.t==='unit' && c.power<=0))) ep=0;   // a held round end: a drained card shows 0 at the lowest (Stage 1 follow-up, item 2)
   const sh=!c.ghost && c.t==='unit' && Q.isShielded(G,pi,c);
   if(c.bound) d.classList.add('bound');
   if(c.ward && !c.ghost) d.classList.add('warded');   // KISHKINDHA OATH: jade border-glow marks the sealed unit from cast until fire/expiry (driven by the engine c.ward flag; re-emitted every render like the badges → persists across re-renders/unrelated actions, clears when the engine clears the flag)
@@ -12418,7 +12419,7 @@ mfBoot();
    Reduced motion: the same order as still steps. Tap-to-skip shortens steps, never drops or reorders one. A Story panel between
    rounds plays after step 4, before step 5. Puzzle mode rides the same sequence (its round end still plays before the report, still
    without tap-to-skip). The staked road (a server view swap) keeps its current path: no display copy is taken of a view. */
-let RE_PACE={ passBanner:true, shortHolds:false };   // the sequence's pace; puzzle mode sets its own at boot (puzzleBoot — owner ruling, Stage 1 item 2)
+let RE_PACE={ passBanner:true, shortHolds:false, onSettled:null };   // the sequence's pace; puzzle mode sets its own at boot (puzzleBoot — owner ruling, Stage 1 item 2)
 let RE=null, reLive=null;   // RE: the held board while it shows ({ g: the display copy }); reLive: the token of the sequence that owns the lock
 // a new action under a held board (only a test harness can do this — the UI is locked) or a forced release: the old sequence stands down
 function reAbandon(){ if (!reLive && !RE) return; RE=null; reLive=null; choreoActive=false; choreoStartedAt=0; choreoForce=[]; const l=$('choreolayer'); if(l){ l.classList.remove('locked'); l.onclick=null; l.innerHTML=''; } if (G) lastRoundLen=G.roundHistory.length; }
@@ -12464,7 +12465,7 @@ function heldApply(g, ev, gone, live, next){
       const row=g.players[f.pi].units, nm=String(ev.text||'').replace(/^copies /,''), li=row.indexOf(c);
       let t = (next && next.abilityName==='Kishkindha Crown' && next.targetUids && next.targetUids[1]!=null) ? row.find(x=>x.uid===next.targetUids[1]) : null;
       if (!t) t = [row[li-1], row[li+1]].find(x=>x && !x.ghost && x.n===nm) || row.find(x=>x!==c && !x.ghost && x.n===nm);
-      if (t){ const st=mfSnap(g).seats[f.pi].units.find(x=>x && x.uid===t.uid); if(st) c.power=st.eff; } }   // the copy's own read of the target's power (mfSnap's effPower, through Q)
+      if (t) c.power=Q.effPower(g, f.pi, t); }   // the copy's own read of the target's power (effPower, through Q)
     else if (ev.type==='token' && ev.abilityName==='Shankhapala'){
       const venomed=g.players[f.pi].units.filter(x=>!x.ghost && x!==c && (x.venom||0)>0);
       if (venomed.length){ const src=venomed.reduce((a,b)=>(b.venom||0)>(a.venom||0)?b:a); src.venom-=1; }
@@ -12495,7 +12496,11 @@ function reDrawHeld(){
     sizeBoard();
   } finally { G=live; }
 }
-function reSnapHeld(){ snapTo(Q.totalPower(RE.g,ME), Q.totalPower(RE.g,OPP)); }   // the plaques read the HELD board's totals
+// owner ruling (Stage 1 follow-up, item 2): during a round end a Unit drained to 0 or below counts 0 until its death is shown,
+// and no total reads below 0. Display only — set aside for the read, put back at once; the finals come from roundHistory.
+function reDoomed(g){ const d=[]; for(const pi of [ME, OPP]) for(const u of g.players[pi].units) if(u && !u.ghost && !u.bound && u.power<=0) d.push(u); return d; }
+function reSnapHeld(){ const d=reDoomed(RE.g); d.forEach(u=>u.bound=true);   // totalPower skips a bound card: the doomed count 0
+  try{ snapTo(Math.max(0, Q.totalPower(RE.g,ME)), Math.max(0, Q.totalPower(RE.g,OPP))); } finally { d.forEach(u=>u.bound=false); } }   // the plaques read the HELD board's totals
 // a sequence banner, awaited; a skip (now or while it shows) shortens it to a readable minimum, never drops it
 function reBanner(text, sub, hold, sfx){
   return new Promise(res=>{
@@ -12551,6 +12556,7 @@ async function reRun(x, layer){
         const left=650*speedMult+60-(performance.now()-c0); if (left>0) await new Promise(r=>setTimeout(r,left)); }   // a skip ends the wait but not the count's own frames: let them run out so the plaques READ the finals under the banner
       snapTo(h['t'+ME], h['t'+OPP]); }
     $('hud-p').classList.toggle('leading', h['t'+ME]>h['t'+OPP]); $('hud-o').classList.toggle('leading', h['t'+OPP]>h['t'+ME]);
+    if (RE_PACE.onSettled) try{ RE_PACE.onSettled(); }catch(e){}   // the finals have settled: puzzle mode reports here (Stage 1 follow-up, item 1); the hold and the banner still play
     await reWait(RE_PACE.shortHolds ? 450 : reduce ? 900 : endEvs.length ? 700 : 450); if(!mine()) return;   // HOLD on the finals (×speed ×CHOREO_SPEED): 700 ms after effects, 450 ms when the round ended with none
     // 4 · the result, once, with the gong — rounds 1 and 2 only; the last round goes to the result screen after step 3
     if (!over){
@@ -13134,7 +13140,7 @@ function puzzleBoot(){
   document.body.classList.add('puzzle');
   ['landing','introv','factionselect','factionintro','mulligan'].forEach(id=>{ const el=$(id); if(el) el.classList.add('hidden'); });
   $('passbtn').textContent = 'END TURN';
-  RE_PACE = { passBanner:false, shortHolds:true };   // owner ruling (RULES-FIX-1 Stage 1, item 2): the player has just pressed End turn — no pass banner; the short holds at a round end; the result banner and the order stay
+  RE_PACE = { passBanner:false, shortHolds:true, onSettled: pzSettled };   // owner rulings (RULES-FIX-1 Stage 1, item 2 + follow-up item 1): no pass banner, the short holds; the report goes once the finals settle — the result banner still shows, in its place, but no longer holds the report back
   $('passbtn').onclick = ()=>{ if(!pzMay('end')) return; runAction(()=>pass(G,ME)); };
   $('leapbtn').onclick = ()=>{ if(pzMay('leap')) startLeap(); };
   $('shieldbtn').onclick = ()=>{};   // not a puzzle move (hidden by body.puzzle too)
@@ -13238,6 +13244,17 @@ function pzActionStart(evStart){ if (!Pz) return; const t=performance.now(); if 
 // pump's puzzle seam: close the action that just finished, then either drive the reveal or report the round
 function pzPump(){
   if (!Pz || choreoActive) return;
+  pzClose();
+  if (Pz.reported) return;
+  if (G.roundHistory.length>Pz.roundsAtLoad || G.over){ pzReport(); return; }
+  if (Pz.performing) pzPerformStep();
+}
+// the round end's plaques have settled on the finals (reRun, step 3): close the action and report now, the banner still to come
+function pzSettled(){
+  if (!Pz || Pz.reported || !G || !(G.roundHistory.length>Pz.roundsAtLoad || G.over)) return;
+  pzClose(); pzReport();
+}
+function pzClose(){
   if (Pz.open){
     const o=Pz.open, evs=G.events.slice(o.evStart), me=G.players[ME];
     const kind = G.roundHistory.length>Pz.roundsAtLoad || G.over ? 'end' : evs.some(e=>e.type==='play' && Pz.handUids.has(e.sourceUid)) ? 'play' : 'leap';
@@ -13246,9 +13263,6 @@ function pzPump(){
     if (choreoSkip) Pz.cut = true;   // only the watchdog / a hidden tab can cut a puzzle choreography short
     Pz.open = null;
   }
-  if (Pz.reported) return;
-  if (G.roundHistory.length>Pz.roundsAtLoad || G.over){ pzReport(); return; }
-  if (Pz.performing) pzPerformStep();
 }
 function pzReport(){
   Pz.reported = true;

@@ -136,7 +136,9 @@ else { pending = (async () => {
     while (!T.G.over && guard++ < 600) { const a = T.G.turn; w.runAction(() => w.aiTakeTurn(T.G, a), { actor: a }); }
     await until(() => !w.document.getElementById('choreolayer').classList.contains('locked'));   // the last round's sequence (pass → finals → the result screen)
     ok('the match reached its result and the vs-AI face is up (' + T.BLog.lines.length + ' recorded lines, recorder errors ' + T.BLog.errors + ')', T.G.over && !hidden(w, 'gameover') && T.BLog.lines.length > 20 && T.BLog.errors === 0);
-    ok('VIEW BATTLE LOG sits in #gameover .go-btns beside REMATCH and MAIN MENU', J(btnTexts(w)) === J(['REMATCH ⚔', 'MAIN MENU', 'VIEW BATTLE LOG']), J(btnTexts(w)));
+    // since 8544c72 the row also carries the challenge/share buttons: no fixed count — VIEW BATTLE LOG is present and LAST, REMATCH and MAIN MENU still in the row
+    { const t = btnTexts(w);
+      ok('VIEW BATTLE LOG sits in #gameover .go-btns, the last button of the row, beside REMATCH and MAIN MENU', t.indexOf('VIEW BATTLE LOG') === t.length - 1 && t.filter((x) => x === 'VIEW BATTLE LOG').length === 1 && t.indexOf('REMATCH ⚔') >= 0 && t.indexOf('MAIN MENU') >= 0, J(t)); }
     const before = [...w.document.querySelectorAll('#gameover .go-btns button')];
     ok('opening the log shows the panel above the face, the face still in place beneath it', openLog(w) && !hidden(w, 'gameover'));
     const want = expected(T), got = shown(w);
@@ -160,8 +162,8 @@ else { pending = (async () => {
     ok('  …and it is gone again when the count is back to 0', !$(w, 'bl-body').querySelector('.bl-err') && shown(w).length === want.length);
     $(w, 'bl-close').click();
     const after = [...w.document.querySelectorAll('#gameover .go-btns button')];
-    ok('CLOSE returns to the result face with nothing lost: the panel hidden, the face up, the same heading, the same three buttons',
-       hidden(w, 'battlelog') && !hidden(w, 'gameover') && after.length === 3 && after.every((b, i) => b === before[i]) && /VICTORY|DEFEAT|STALEMATE/.test($(w, 'goh').textContent));
+    ok('CLOSE returns to the result face with nothing lost: the panel hidden, the face up, the same heading, the same buttons as before it opened',
+       hidden(w, 'battlelog') && !hidden(w, 'gameover') && before.length > 0 && after.length === before.length && after.every((b, i) => b === before[i]) && /VICTORY|DEFEAT|STALEMATE/.test($(w, 'goh').textContent));
     openLog(w); $(w, 'bl-close').click();
     new w.Function(after[0].getAttribute('onclick')).call(after[0]);   // REMATCH — its own inline handler, as the markup ships it (jsdom's outside-only mode does not wire inline attributes)
     ok('  …and the result buttons still work after closing: REMATCH starts a fresh match (face and panel hidden, a new empty log)', hidden(w, 'gameover') && hidden(w, 'battlelog') && !T.G.over && T.BLog && T.BLog.lines.length === 0);
