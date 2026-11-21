@@ -19,6 +19,7 @@ assets/story/sugriva-kumbhakarna/
 assets/story/smriti-board-background.png
 scripts/compose_*.py
 scripts/create_*.py
+scripts/package_lok_boards_*.sh
 # R2 — the Arcade masters and the font
 assets/arcade/
 assets/fonts/
