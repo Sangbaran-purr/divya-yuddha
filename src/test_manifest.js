@@ -48,6 +48,11 @@ const PIN = {
   lankaPacks: { 'effects/lankadahan/chain.json': '3b5008108ab3dfb82998d330e5cf23b3830ad11c960faae21895cb978abf2a09',
                 'effects/lankadahan_fire/manifest.json': '9b4f186f112e72fa9afd9466c935a525bfade4b7e225c2e1389f9f356219d267', 'effects/lankadahan_fire/atlas.webp': 'dbf204d87c2241b139943474f06ed5307849196a9a3a0e6242c3b3ddf1875f21',
                 'effects/lankadahan_gold/manifest.json': 'dc843358b241d8cdb0c7ef0252cdd81c30a228040024f08d9ba9561bf0684c70', 'effects/lankadahan_gold/atlas.webp': '06a0a8e0cfc618142e096851e3fb1df935f44625cf8461dc26b618789ca1525a' },
+  // PASHU-V2 (owner rulings 2026-11-21) · Pashupatastra's pack REPLACED by the v2 clip, byte-identical to the lab's certified pack (hashes recorded
+  // here, never read from the lab — G2). The 82, 77 and 73 still reproduce their digests with the v1 pair substituted back in
+  certifiedAssets82p2: '5c2d4e3e91dc40b348baf66138b15972e29a9a77384a13347909b0e02b47e2c7',
+  pashupataV2: { 'effects/pashupata/atlas.webp': '2c10cc2ce393b16619f39f8b1b97ba6b2949eed56e3873029d5fbee98e8136f7', 'effects/pashupata/manifest.json': '600ff83e485c4d499dd9f62d5bc0e2d7618832ab816f6bbc2e3f5e005d17dd8e' },
+  pashupataV1: { 'effects/pashupata/atlas.webp': '2d0b7ff6f297efb59337e8e8329a7616a2678c8149a2d6c6605b647c931b50fc', 'effects/pashupata/manifest.json': '067e9c823b3b02291c1ab85276b62a396ab0423d87563b5c2f7bb130a1c7402b' },
 };
 const ROUTED = ['brahmastra', 'pashupata', 'sudarshana', 'vajra'];
 const lineOf = (needle) => HTML.split('\n').find((l) => l.indexOf(needle) >= 0) || null;
@@ -543,11 +548,15 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     // EXPORT-7: the 77 reproduce their digest (the five Lanka files out, the registry without its one new route), and the ORIGINAL 73 theirs
     const esc = (t) => t.replace(/[\u007f-\uffff]/g, (c) => '\\u' + c.charCodeAt(0).toString(16).padStart(4, '0'));
     const regWithout = (drop) => { const r = JSON.parse(fs.readFileSync(path.join(MAN, 'registry.json'), 'utf8')); drop.forEach((k) => delete r.routes[k]); return esc(JSON.stringify(r, null, 2)) + '\n'; };
-    const digestOf = (out, drop) => sha(all.filter((f) => out.indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regWithout(drop)) : sha(fs.readFileSync(f)))).join('\n'));
+    // PASHU-V2: the earlier sets are reproduced with the v1 Pashupatastra pair substituted back (its recorded hashes)
+    const fileSha = (f) => { const rel = path.relative(MAN, f); return rel === 'registry.json' ? null : (PIN.pashupataV1[rel] || sha(fs.readFileSync(f))); };
+    const digestOf = (out, drop) => sha(all.filter((f) => out.indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regWithout(drop)) : fileSha(f))).join('\n'));
+    const digest82 = sha(all.map((f) => path.relative(MAN, f) + ' ' + (fileSha(f) || sha(fs.readFileSync(f)))).join('\n'));
+    const v2ok = Object.keys(PIN.pashupataV2).every((rel) => sha(fs.readFileSync(path.join(MAN, rel))) === PIN.pashupataV2[rel]);
     const NEW7 = Object.keys(PIN.lankaPacks), NEW6 = Object.keys(PIN.vasukiPacks);
     const digest77 = digestOf(NEW7, ['lankadahan']), digest73 = digestOf(NEW7.concat(NEW6), ['lankadahan', 'venomstrike']);
-    ok('X1 · THE DESIGN FREEZE (owner, binding): every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chains, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…); EXPORT-7 extends it 77 → 82 with Lanka Dahan\'s chain and its two packs, the 77 still reproduce their digest (' + digest77.slice(0, 12) + '…, the registry without its one new route) and the ORIGINAL 73 theirs (' + digest73.slice(0, 12) + '…)',
-       digest === PIN.certifiedAssets82 && all.length === 82 && digest77 === PIN.certifiedAssets77 && digest73 === PIN.certifiedAssets, J({ digest, digest77, digest73 }));
+    ok('X1 · THE DESIGN FREEZE (owner, binding): every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chains, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…); PASHU-V2 replaces Pashupatastra\'s pack (atlas + manifest, each byte-identical to the lab\'s certified v2 pack: ' + v2ok + ') and, with the v1 pair substituted back, the 82 reproduce their EXPORT-7 digest (' + digest82.slice(0, 12) + '…); EXPORT-7 extends it 77 → 82 with Lanka Dahan\'s chain and its two packs, the 77 still reproduce their digest (' + digest77.slice(0, 12) + '…, the registry without its one new route) and the ORIGINAL 73 theirs (' + digest73.slice(0, 12) + '…)',
+       digest === PIN.certifiedAssets82p2 && v2ok && digest82 === PIN.certifiedAssets82 && all.length === 82 && digest77 === PIN.certifiedAssets77 && digest73 === PIN.certifiedAssets, J({ digest, digest82, digest77, digest73, v2ok }));
 
     // the player on a fake clock: every drawn cell with its time, and the cues as they fired
     const RATE = 1000 / 60;

@@ -2,519 +2,712 @@
   "cardId": "pashupata",
   "class": "effect-clip",
   "version": 1,
-  "source": "Kling clip pashupatastra_black.mp4 (sha256 aee143c040b3\u2026, 121 frames @ 24 fps, 1916x1080, black ground) \u2014 kept f000\u2013f059; packed by tools/make_effect_from_clip.py",
+  "source": "Kling clip pashupatastra_v2_black.mp4 (sha256 3beeac0561be\u2026, 121 frames @ 24 fps, 1920x1080, black ground) \u2014 kept f002\u2013f073; packed by tools/make_effect_from_clip.py",
   "atlas": "atlas.webp",
   "atlasSize": {
-    "w": 3896,
-    "h": 1202
+    "w": 4082,
+    "h": 1154
   },
   "channels": "rgb",
   "blend": "add",
   "alpha": "luminance",
   "fps": 24,
   "timing": "native",
-  "cellPx": 352,
+  "cellPx": 338,
   "cellSize": {
-    "w": 352,
-    "h": 198
+    "w": 338,
+    "h": 190
   },
   "cells": [
     {
-      "name": "f000",
-      "src": 0,
-      "x": 2,
-      "y": 2,
-      "w": 352,
-      "h": 198
-    },
-    {
-      "name": "f001",
-      "src": 1,
-      "x": 356,
-      "y": 2,
-      "w": 352,
-      "h": 198
-    },
-    {
       "name": "f002",
       "src": 2,
-      "x": 710,
+      "x": 2,
       "y": 2,
-      "w": 352,
-      "h": 198
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f003",
       "src": 3,
-      "x": 1064,
+      "x": 342,
       "y": 2,
-      "w": 352,
-      "h": 198
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f004",
       "src": 4,
-      "x": 1418,
+      "x": 682,
       "y": 2,
-      "w": 352,
-      "h": 198
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f005",
       "src": 5,
-      "x": 1772,
+      "x": 1022,
       "y": 2,
-      "w": 352,
-      "h": 198
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f006",
       "src": 6,
-      "x": 2126,
+      "x": 1362,
       "y": 2,
-      "w": 352,
-      "h": 198
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f007",
       "src": 7,
-      "x": 2480,
+      "x": 1702,
       "y": 2,
-      "w": 352,
-      "h": 198
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f008",
       "src": 8,
-      "x": 2834,
+      "x": 2042,
       "y": 2,
-      "w": 352,
-      "h": 198
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f009",
       "src": 9,
-      "x": 3188,
+      "x": 2382,
       "y": 2,
-      "w": 352,
-      "h": 198
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f010",
       "src": 10,
-      "x": 3542,
+      "x": 2722,
       "y": 2,
-      "w": 352,
-      "h": 198
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f011",
       "src": 11,
-      "x": 2,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 3062,
+      "y": 2,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f012",
       "src": 12,
-      "x": 356,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 3402,
+      "y": 2,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f013",
       "src": 13,
-      "x": 710,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 3742,
+      "y": 2,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f014",
       "src": 14,
-      "x": 1064,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 2,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f015",
       "src": 15,
-      "x": 1418,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 342,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f016",
       "src": 16,
-      "x": 1772,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 682,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f017",
       "src": 17,
-      "x": 2126,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 1022,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f018",
       "src": 18,
-      "x": 2480,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 1362,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f019",
       "src": 19,
-      "x": 2834,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 1702,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f020",
       "src": 20,
-      "x": 3188,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 2042,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f021",
       "src": 21,
-      "x": 3542,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 2382,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f022",
       "src": 22,
-      "x": 2,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 2722,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f023",
       "src": 23,
-      "x": 356,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 3062,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f024",
       "src": 24,
-      "x": 710,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 3402,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f025",
       "src": 25,
-      "x": 1064,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 3742,
+      "y": 194,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f026",
       "src": 26,
-      "x": 1418,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 2,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f027",
       "src": 27,
-      "x": 1772,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 342,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f028",
       "src": 28,
-      "x": 2126,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 682,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f029",
       "src": 29,
-      "x": 2480,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 1022,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f030",
       "src": 30,
-      "x": 2834,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 1362,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f031",
       "src": 31,
-      "x": 3188,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 1702,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f032",
       "src": 32,
-      "x": 3542,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 2042,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f033",
       "src": 33,
-      "x": 2,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 2382,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f034",
       "src": 34,
-      "x": 356,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 2722,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f035",
       "src": 35,
-      "x": 710,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 3062,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f036",
       "src": 36,
-      "x": 1064,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 3402,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f037",
       "src": 37,
-      "x": 1418,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 3742,
+      "y": 386,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f038",
       "src": 38,
-      "x": 1772,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 2,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f039",
       "src": 39,
-      "x": 2126,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 342,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f040",
       "src": 40,
-      "x": 2480,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 682,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f041",
       "src": 41,
-      "x": 2834,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 1022,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f042",
       "src": 42,
-      "x": 3188,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 1362,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f043",
       "src": 43,
-      "x": 3542,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 1702,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f044",
       "src": 44,
-      "x": 2,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 2042,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f045",
       "src": 45,
-      "x": 356,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 2382,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f046",
       "src": 46,
-      "x": 710,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 2722,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f047",
       "src": 47,
-      "x": 1064,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 3062,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f048",
       "src": 48,
-      "x": 1418,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 3402,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f049",
       "src": 49,
-      "x": 1772,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 3742,
+      "y": 578,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f050",
       "src": 50,
-      "x": 2126,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 2,
+      "y": 770,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f051",
       "src": 51,
-      "x": 2480,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 342,
+      "y": 770,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f052",
       "src": 52,
-      "x": 2834,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 682,
+      "y": 770,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f053",
       "src": 53,
-      "x": 3188,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 1022,
+      "y": 770,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f054",
       "src": 54,
-      "x": 3542,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 1362,
+      "y": 770,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f055",
       "src": 55,
-      "x": 2,
-      "y": 1002,
-      "w": 352,
-      "h": 198
+      "x": 1702,
+      "y": 770,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f056",
       "src": 56,
-      "x": 356,
-      "y": 1002,
-      "w": 352,
-      "h": 198
+      "x": 2042,
+      "y": 770,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f057",
       "src": 57,
-      "x": 710,
-      "y": 1002,
-      "w": 352,
-      "h": 198
+      "x": 2382,
+      "y": 770,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f058",
       "src": 58,
-      "x": 1064,
-      "y": 1002,
-      "w": 352,
-      "h": 198
+      "x": 2722,
+      "y": 770,
+      "w": 338,
+      "h": 190
     },
     {
       "name": "f059",
       "src": 59,
-      "x": 1418,
-      "y": 1002,
-      "w": 352,
-      "h": 198
+      "x": 3062,
+      "y": 770,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f060",
+      "src": 60,
+      "x": 3402,
+      "y": 770,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f061",
+      "src": 61,
+      "x": 3742,
+      "y": 770,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f062",
+      "src": 62,
+      "x": 2,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f063",
+      "src": 63,
+      "x": 342,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f064",
+      "src": 64,
+      "x": 682,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f065",
+      "src": 65,
+      "x": 1022,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f066",
+      "src": 66,
+      "x": 1362,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f067",
+      "src": 67,
+      "x": 1702,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f068",
+      "src": 68,
+      "x": 2042,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f069",
+      "src": 69,
+      "x": 2382,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f070",
+      "src": 70,
+      "x": 2722,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f071",
+      "src": 71,
+      "x": 3062,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f072",
+      "src": 72,
+      "x": 3402,
+      "y": 962,
+      "w": 338,
+      "h": 190
+    },
+    {
+      "name": "f073",
+      "src": 73,
+      "x": 3742,
+      "y": 962,
+      "w": 338,
+      "h": 190
     }
   ],
-  "impact": 24,
+  "impact": 7,
   "anchor": {
-    "x": 176.0,
+    "x": 169.0,
     "y": 0.0
   },
   "scaleRule": {
-    "feature": "vortex span",
-    "frame": 30,
-    "spanSrc": 1430,
-    "spanCell": 262.71,
-    "cardWidths": 4.1,
+    "feature": "plate width (the clip's content box)",
+    "frame": 41,
+    "spanSrc": 1920,
+    "spanCell": 338.0,
+    "cardWidths": 5.49,
     "ruledDefaultCardWidths": null,
     "halfFraction": 1.047,
     "heightCap": 1.0,
-    "legibility": null,
+    "legibility": {
+      "method": "PASHU-V2 re-implementation of the LAB-21 method (the script that measured LAB-22 is not in the repo): the game's board (board_bg, cover, no overlay) in a 373x458 field, the enemy half 373x229 at its top or bottom, the real vignetted atlas added (min 255) top-flush at 1.047 x the half's width; blown out = luma >= 235 (Rec.601) over the half",
+      "calibration": {
+        "note": "the same script re-measures the shipped Brahmastra v2 pack at 0.93 of the half",
+        "brahmastraImpactF030": {
+          "blownOut": 0.156,
+          "halfMedianLuma": 89
+        },
+        "recorded": {
+          "blownOut": 0.142,
+          "halfMedianLuma": 83
+        },
+        "brahmastraWorst": {
+          "frame": 68,
+          "blownOut": 0.277,
+          "halfMedianLuma": 117
+        }
+      },
+      "upperHalf": {
+        "plate": "391x220",
+        "bareMedian": 67,
+        "landing": {
+          "frame": 9,
+          "blownOut": 0.011,
+          "halfMedianLuma": 68
+        },
+        "flash": {
+          "frame": 18,
+          "blownOut": 0.043,
+          "halfMedianLuma": 79
+        },
+        "rings": {
+          "frame": 24,
+          "blownOut": 0.051,
+          "halfMedianLuma": 74
+        },
+        "trident": {
+          "frame": 41,
+          "blownOut": 0.133,
+          "halfMedianLuma": 80
+        },
+        "worst": {
+          "frame": 42,
+          "blownOut": 0.137,
+          "halfMedianLuma": 81
+        }
+      },
+      "lowerHalf": {
+        "plate": "391x220",
+        "bareMedian": 75,
+        "landing": {
+          "frame": 9,
+          "blownOut": 0.011,
+          "halfMedianLuma": 77
+        },
+        "trident": {
+          "frame": 41,
+          "blownOut": 0.109,
+          "halfMedianLuma": 99
+        },
+        "worst": {
+          "frame": 43,
+          "blownOut": 0.114,
+          "halfMedianLuma": 100
+        }
+      },
+      "phone390": {
+        "half": "388x245",
+        "plate": "406x228",
+        "landing": {
+          "blownOut": 0.01,
+          "halfMedianLuma": 67
+        },
+        "worst": {
+          "frame": 42,
+          "blownOut": 0.131,
+          "halfMedianLuma": 80
+        }
+      },
+      "v1SameMethod": {
+        "plate": "391x220",
+        "worst": {
+          "frame": 23,
+          "blownOut": 0.076,
+          "halfMedianLuma": 110
+        }
+      },
+      "bars": {
+        "lab21AcceptedAtImpact": {
+          "blownOut": 0.228,
+          "halfMedianLuma": 106
+        },
+        "lab21Rejected": {
+          "blownOut": 0.316,
+          "halfMedianLuma": 170
+        }
+      }
+    },
     "note": "THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only \u2014 LAB-21's ring-based cw and a plate-based cw are not the same unit"
   },
   "contract": {
@@ -532,158 +725,279 @@
   },
   "audit": {
     "range": [
-      0,
-      59
+      2,
+      73
     ],
-    "droppedHead": null,
+    "droppedHead": [
+      0,
+      1
+    ],
     "droppedTail": [
-      60,
+      74,
       120
     ],
-    "impactSrc": 24,
+    "impactSrc": 9,
     "impact": {
-      "rule": "positional",
-      "why": "the clip starts at the beat (S1); the impact cell is the one the first resolution cue lands on"
+      "rule": "boltlanding",
+      "window": [
+        6,
+        14
+      ],
+      "litSpanBefore": 83,
+      "litSpanAtLanding": 608,
+      "spanRatio": 7.33,
+      "litSpans": {
+        "f005": 90,
+        "f006": 87,
+        "f007": 84,
+        "f008": 83,
+        "f009": 608,
+        "f010": 1268,
+        "f011": 1792,
+        "f012": 1920,
+        "f013": 1920,
+        "f014": 1920
+      },
+      "why": "owner ruling B1 (2026-11-21): the impact is the LANDING, pinned to the damage beat (the Brahmastra precedent, LAB-22/1); the bolt's fall is the lead inside the cast hold"
+    },
+    "boltOnset": {
+      "frame": 2,
+      "rule": "the first frame with at least 500 pixels max(R,G,B) > 40",
+      "litPx": 2557,
+      "before": {
+        "f000": {
+          "litPx": 0,
+          "max": 2
+        },
+        "f001": {
+          "litPx": 42,
+          "max": 52
+        }
+      },
+      "box": [
+        938,
+        0,
+        987,
+        99
+      ],
+      "blackBefore": [
+        0,
+        1
+      ]
     },
     "corePoint": [
-      948,
-      1079
+      959,
+      801
     ],
-    "scale": 0.18372,
+    "scale": 0.17604,
     "box": [
       0,
       0,
-      1916,
+      1920,
       1080
     ],
     "cellPx": {
-      "used": 352,
-      "asked": 352,
-      "steppedDown": null
+      "used": 338,
+      "asked": "largest",
+      "steppedDown": null,
+      "largest": {
+        "rule": "largest",
+        "used": 338,
+        "why": "owner ruling B2: the largest cell whose pack decodes under the E1 cap (the next size up, 339, does not fit)"
+      }
     },
-    "decodedBytes": 18731968,
+    "decodedBytes": 18842512,
     "e1CapBytes": 18874368,
     "ground": {
-      "cornersMax": 161,
-      "farMax": 0,
+      "cornersMax": 5,
+      "farMax": 20,
       "method": "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) \u2014 stated beside the bake metric",
-      "zeroShareMin": 0.30113,
-      "pedestal1to4ShareMax": 0.0268
+      "zeroShareMin": 0.00328,
+      "pedestal1to4ShareMax": 0.31412,
+      "outsideFlash": {
+        "rule": "the floor outside the flash: the kept frames from the first frame after the landing from which every later frame's 1-4 pedestal share stays under 6%; before it, the 1-4 levels are the flash's own bloom (at most 4/255 under additive blending)",
+        "settlesAt": 31,
+        "bloomPedestalMax": 0.31412,
+        "flashFrames": [
+          10,
+          30
+        ],
+        "calmFrames": [
+          31,
+          73
+        ],
+        "pedestal1to4ShareMax": 0.0504,
+        "farMax": 6,
+        "blackBefore": {
+          "frames": [
+            0,
+            1
+          ],
+          "maxValue": 52
+        }
+      }
     },
     "edges": {
-      "top": 37,
-      "bottom": 60,
-      "left": 43,
-      "right": 39,
-      "of": 60
+      "top": 67,
+      "bottom": 2,
+      "left": 10,
+      "right": 10,
+      "of": 72
     },
-    "fadeIn": [
-      [
-        0,
-        0.2
-      ],
-      [
-        1,
-        0.4
-      ],
-      [
-        2,
-        0.6
-      ],
-      [
-        3,
-        0.8
-      ]
-    ],
+    "fadeIn": [],
     "fadeTail": [
       [
-        50,
+        64,
         1.0
       ],
       [
-        51,
+        65,
         0.8889
       ],
       [
-        52,
+        66,
         0.7778
       ],
       [
-        53,
+        67,
         0.6667
       ],
       [
-        54,
+        68,
         0.5556
       ],
       [
-        55,
+        69,
         0.4444
       ],
       [
-        56,
+        70,
         0.3333
       ],
       [
-        57,
+        71,
         0.2222
       ],
       [
-        58,
+        72,
         0.1111
       ],
       [
-        59,
+        73,
         0.0
       ]
     ],
     "vignette": {
       "top": {
-        "px": 12,
-        "cellPxAtScale": 2.2,
+        "px": 160,
+        "cellPxAtScale": 28.2,
         "coreMarginMin": 0,
-        "coreMarginMinAt": 56,
+        "coreMarginMinAt": 2,
         "bodyInBand": [
+          "f002",
+          "f003",
+          "f004",
+          "f005",
+          "f006",
+          "f007",
+          "f008",
+          "f009",
+          "f010",
+          "f011",
+          "f012",
+          "f013",
+          "f014",
+          "f015",
+          "f016",
+          "f017",
+          "f018",
+          "f019",
+          "f024",
+          "f025",
+          "f026",
+          "f027",
+          "f028",
+          "f029",
+          "f030",
+          "f031",
+          "f032",
+          "f033",
+          "f034",
+          "f035",
+          "f036",
+          "f037",
+          "f038",
+          "f039",
+          "f040",
+          "f041",
+          "f042",
+          "f043",
+          "f044",
+          "f045",
+          "f046",
+          "f047",
+          "f048",
+          "f049",
+          "f050",
+          "f051",
+          "f052",
+          "f053",
+          "f054",
+          "f055",
           "f056",
           "f057",
           "f058",
-          "f059"
+          "f059",
+          "f060",
+          "f061",
+          "f062",
+          "f063",
+          "f064",
+          "f065",
+          "f066",
+          "f067",
+          "f068",
+          "f069",
+          "f070",
+          "f071",
+          "f072",
+          "f073"
         ],
-        "bodyInBandOutsideTail": []
+        "bodyInBandOutsideTail": [],
+        "ruledIntoBand": "B4 (owner ruling 2026-11-21): the pillar IS the core body and touches the top edge; the top band is ruled over it so it never begins with a flat cut at the middle line",
+        "bodyInBandRuled": 58
       },
       "bottom": {
-        "px": 96,
-        "cellPxAtScale": 17.6,
-        "coreMarginMin": 432,
-        "coreMarginMinAt": 0,
+        "px": 40,
+        "cellPxAtScale": 7.0,
+        "coreMarginMin": 46,
+        "coreMarginMinAt": 49,
         "bodyInBand": [],
         "bodyInBandOutsideTail": []
       },
       "left": {
         "px": 96,
-        "cellPxAtScale": 17.6,
-        "coreMarginMin": 0,
-        "coreMarginMinAt": 51,
-        "bodyInBand": [
-          "f051"
-        ],
+        "cellPxAtScale": 16.9,
+        "coreMarginMin": 176,
+        "coreMarginMinAt": 18,
+        "bodyInBand": [],
         "bodyInBandOutsideTail": []
       },
       "right": {
-        "px": 128,
-        "cellPxAtScale": 23.5,
-        "coreMarginMin": 153,
-        "coreMarginMinAt": 0,
+        "px": 96,
+        "cellPxAtScale": 16.9,
+        "coreMarginMin": 128,
+        "coreMarginMinAt": 18,
         "bodyInBand": [],
         "bodyInBandOutsideTail": []
       }
     },
     "guardKind": "blob",
-    "guardTailStart": 50,
+    "guardTailStart": 64,
     "anchorRule": {
       "kind": "top-flush",
       "place": "enemy-half-top",
-      "dependency": "the top band is a 12 px token because the vortex rim runs within 16 px of the top edge at f026; its hard cut is hidden because the plate's top sits flush with the enemy half's top edge \u2014 the LAB-21 positional dependency, RESOLVED BY ANCHOR in EXPORT-4 (while the plate was centred it held only on phones)"
+      "dependency": "B4 (owner ruling 2026-11-21): the pillar touches the top edge on almost every frame; the plate hangs top-flush on the half being hit \u2014 on the upper half from the field's top edge, on the lower half from the middle line \u2014 so the top carries a 160 px soft band baked into the pack: the pillar fades in from the line instead of starting with a flat cut. RE-RULE if the anchor or the scale changes"
     }
   }
 }

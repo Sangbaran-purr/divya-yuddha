@@ -100,7 +100,38 @@ EFFECTS = {
               "guard": {"kind": "ring", "col_in": 260, "col_out": 360, "row_in": 200, "row_out": 300, "thr": 150},
               "contract": {"trigger": "destroy", "abilityName": "Brahmastra", "anchor": "enemy-half-centre", "castSound": "sfx_brahmastra", "impactSound": "sfx_unit_destroy",
                            "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 0, "crackAfterMs": 40, "destroyDwellMs": 600, "awaited": False}},
-    "pashupata": {"kind": "vignette-clip", "label": "Pashupatastra", "clip": "pashupatastra/pashupatastra_black.mp4", "card_id": "pashupata",
+    # PASHU-V2 · PASHUPATASTRA REBUILT (owner's Kling clip kling_20261121_VIDEO_Static_loc_5101_0.mp4, staged as pashupatastra_v2_black.mp4,
+    # sha256 3beeac05…). A true-black, locked-camera strike: a blue-white bolt comes down from the top edge (f002; f001 is black but for a faint 42 px speck, max 52), LANDS at f009
+    # (the thin column bursts into the ground streak), the flash and the streak run to about f020 (the only frames that reach the left, right
+    # and bottom edges), rings from f021, the trident rises from f029 and stands from about f041; a steady pillar, trident, shards and rings to
+    # f120 with no fade. Owner rulings 2026-11-21: B1 the impact is the LANDING, pinned to the damage beat (the Brahmastra precedent, LAB-22/1) —
+    # the bolt starts inside the cast hold, its lead before the beat; B2 the kept portion starts on the bolt's first frame and runs ~3 s (to
+    # f073, the trident standing ~1 s before the tail); the full aftermath outranks sharpness: the LARGEST cell under E1, no fade-in head, the
+    # fade tail stays; B3 size and anchor as before (1.047 x the half's width, never taller than the half, top-flush); B4 the pillar touches the
+    # top edge, and on the lower half the plate hangs from the middle line, so the TOP carries a deep soft band baked into the pack (the pillar is
+    # the core body and is RULED into that band — the one exemption from the core-body guard, recorded); soft bands on the other three edges
+    # for the flash; B5 the contract is unchanged.
+    "pashupata": {"kind": "vignette-clip", "label": "Pashupatastra", "clip": "pashupatastra/pashupatastra_v2_black.mp4", "card_id": "pashupata",
+              "clip_sha256": "3beeac0561be5600ccd32c5225a807bd402655624bcee791a55464ea98f21201",
+              "range": (2, 73), "impact": 9, "impact_rule": "boltlanding", "impact_window": (6, 14), "bolt_onset": {"expect": 2, "lit": 40, "min_px": 500}, "flash_ground": True,
+              "cell_px": "largest", "fade_in": 0, "fade_tail": 10,
+              "feather_top": 160, "feather_bottom": 40, "feather_left": 96, "feather_right": 96,
+              "anchor_region": "top-flush",
+              "anchor_note": "B4 (owner ruling 2026-11-21): the pillar touches the top edge on almost every frame; the plate hangs top-flush on the half being hit — on the upper half from the field's top edge, on the lower half from the middle line — so the top carries a 160 px soft band baked into the pack: the pillar fades in from the line instead of starting with a flat cut. RE-RULE if the anchor or the scale changes",
+              "scale": {"feature": "plate width (the clip's content box)", "frame": 41, "card_widths": 5.49, "half_fraction": 1.047, "height_cap": 1.0,   # B3: size and anchor as before; card widths DERIVED commentary only: the plate (= the content box, now the whole frame) is 1.047 x 373 = 390.5 px over the measured 71.1 px card at the 375 px phone
+                        "measured": {"method": "PASHU-V2 re-implementation of the LAB-21 method (the script that measured LAB-22 is not in the repo): the game's board (board_bg, cover, no overlay) in a 373x458 field, the enemy half 373x229 at its top or bottom, the real vignetted atlas added (min 255) top-flush at 1.047 x the half's width; blown out = luma >= 235 (Rec.601) over the half",
+                                     "calibration": {"note": "the same script re-measures the shipped Brahmastra v2 pack at 0.93 of the half", "brahmastraImpactF030": {"blownOut": 0.156, "halfMedianLuma": 89}, "recorded": {"blownOut": 0.142, "halfMedianLuma": 83}, "brahmastraWorst": {"frame": 68, "blownOut": 0.277, "halfMedianLuma": 117}},
+                                     "upperHalf": {"plate": "391x220", "bareMedian": 67, "landing": {"frame": 9, "blownOut": 0.011, "halfMedianLuma": 68}, "flash": {"frame": 18, "blownOut": 0.043, "halfMedianLuma": 79}, "rings": {"frame": 24, "blownOut": 0.051, "halfMedianLuma": 74},
+                                                   "trident": {"frame": 41, "blownOut": 0.133, "halfMedianLuma": 80}, "worst": {"frame": 42, "blownOut": 0.137, "halfMedianLuma": 81}},
+                                     "lowerHalf": {"plate": "391x220", "bareMedian": 75, "landing": {"frame": 9, "blownOut": 0.011, "halfMedianLuma": 77}, "trident": {"frame": 41, "blownOut": 0.109, "halfMedianLuma": 99}, "worst": {"frame": 43, "blownOut": 0.114, "halfMedianLuma": 100}},
+                                     "phone390": {"half": "388x245", "plate": "406x228", "landing": {"blownOut": 0.010, "halfMedianLuma": 67}, "worst": {"frame": 42, "blownOut": 0.131, "halfMedianLuma": 80}},
+                                     "v1SameMethod": {"plate": "391x220", "worst": {"frame": 23, "blownOut": 0.076, "halfMedianLuma": 110}},
+                                     "bars": {"lab21AcceptedAtImpact": {"blownOut": 0.228, "halfMedianLuma": 106}, "lab21Rejected": {"blownOut": 0.316, "halfMedianLuma": 170}}}},
+              "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0, "ruled_into_band": {"top": "B4 (owner ruling 2026-11-21): the pillar IS the core body and touches the top edge; the top band is ruled over it so it never begins with a flat cut at the middle line"}},
+              "contract": {"trigger": "damage", "abilityName": "Pashupatastra", "anchor": "enemy-half-top", "castSound": "sfx_astra", "impactSound": "sfx_debuff",
+                           "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 0, "crackAfterMs": 40, "destroyDwellMs": 600, "awaited": False}},
+    # the LAB-21 v1 recipe, kept ON RECORD (not packed): its pack lives in git at 5542b9d (effects/pashupata, 60 cells f000–f059 at 352 px)
+    "pashupata_v1": {"kind": "vignette-clip", "label": "Pashupatastra (v1, LAB-21; replaced by PASHU-V2)", "clip": "pashupatastra/pashupatastra_black.mp4", "card_id": "pashupata",
               "range": (0, 59), "impact": 24, "impact_rule": "positional",   # S1: the clip starts AT the beat; the impact cell is POSITIONAL — the pin's job is alignment, the columns are already landed
               "cell_px": 352, "cell_px_fallback": 320, "fade_in": 4, "fade_tail": 10,
               "feather_top": 12, "feather_bottom": 96, "feather_left": 96, "feather_right": 128,   # the top band is a TOKEN: the vortex rim runs within 16 px of the top edge at f026. Accepted ONLY because the plate's top edge sits flush with the half boundary (owner ruling LAB-21/3 — a POSITIONAL DEPENDENCY, re-ruled if the anchor or scale ever changes)
@@ -503,11 +534,22 @@ def main_vignette(key):
     C = EFFECTS[key]; clip = os.path.join(LAB, "sources", C["clip"])
     if not os.path.exists(clip): sys.exit("the source clip is not at " + clip)
     if C.get("clip_md5") and hashlib.md5(open(clip, "rb").read()).hexdigest() != C["clip_md5"]: sys.exit("the source clip's md5 is not the staged %s - STOP" % C["clip_md5"])   # LAB-24: provenance before any decode
+    if C.get("clip_sha256") and hashlib.sha256(open(clip, "rb").read()).hexdigest() != C["clip_sha256"]: sys.exit("the source clip's sha256 is not the staged %s - STOP" % C["clip_sha256"])   # PASHU-V2: provenance before any decode
     frames, fps = decode(clip); N = len(frames); H, W = frames[0].shape[:2]
     sha = hashlib.sha256(open(clip, "rb").read()).hexdigest()
     L = [luma(f) for f in frames]
     a, b = C["range"]; kept = list(range(a, b + 1))
     extra = {}
+    if C.get("bolt_onset"):
+        # PASHU-V2 (owner ruling B2): the kept portion starts on the bolt's FIRST frame — the first frame with at least min_px pixels max(R,G,B) > lit
+        # (f001's faint speck, 42 px at most 52, is not the bolt: it falls before the range)
+        bo = C["bolt_onset"]; onset = next((i for i in range(N) if int((frames[i].max(axis=2) > bo["lit"]).sum()) >= bo.get("min_px", 1)), None)
+        if onset != bo["expect"]: sys.exit("the measured bolt onset f%s disagrees with the ruled f%03d" % (onset, bo["expect"]))
+        if a != onset: sys.exit("the range must start on the bolt's first frame (f%03d), not f%03d" % (onset, a))
+        lit0 = frames[onset].max(axis=2) > bo["lit"]; ys0, xs0 = np.where(lit0)
+        extra["boltOnset"] = {"frame": onset, "rule": "the first frame with at least %d pixels max(R,G,B) > %d" % (bo.get("min_px", 1), bo["lit"]), "litPx": int(lit0.sum()),
+                              "before": {"f%03d" % i: {"litPx": int((frames[i].max(axis=2) > bo["lit"]).sum()), "max": int(frames[i].max())} for i in range(0, onset)},
+                              "box": [int(xs0.min()), int(ys0.min()), int(xs0.max()) + 1, int(ys0.max()) + 1], "blackBefore": list(range(0, onset))}
     if C.get("strike_onset"):
         # LAB-24: the rise ends BEFORE the strike. Onset = the first frame in the window whose head region grows a bright yellow-green component >= minArea
         so = C["strike_onset"]; y0r, y1r, x0r, x1r = so["region"]; onset = None; areas = {}
@@ -548,6 +590,27 @@ def main_vignette(key):
         g = al[dist > 300]
         if g.size: far = max(far or 0, int(g.max()))
     corners = max(int(np.concatenate([frames[i][:32, :32], frames[i][:32, -32:], frames[i][-32:, :32], frames[i][-32:, -32:]]).max()) for i in kept)
+    flash_ground = None
+    if C.get("flash_ground"):
+        # PASHU-V2: the flash's bloom fills the frame (f010-f029 reach the side/bottom edges), so the whole-range pedestal and far readings measure
+        # the BLOOM, not the floor. The floor is stated where the flash is not: the frames before the bolt (exact black) and the kept frames whose
+        # content no longer reaches the left, right or bottom edge (the standing ped < 6% / far <= 4 readings apply there)
+        # the flash's BLOOM: a soft 1-4 halo over the whole frame from the landing until it decays. The floor settles on the first kept frame after
+        # the landing from which EVERY later kept frame holds the standing pedestal reading (< 6%); the floor is read from there on
+        pedk = {i: float(((frames[i].max(axis=2) >= 1) & (frames[i].max(axis=2) <= 4)).mean()) for i in kept}
+        settle = next(i for i in kept if i > C["impact"] and all(pedk[j] < 0.06 for j in kept if j >= i))
+        calm = [i for i in kept if i >= settle]
+        ped2, far2 = 0.0, None
+        for i in calm:
+            al = frames[i].max(axis=2); ped2 = max(ped2, float(((al >= 1) & (al <= 4)).mean()))
+            dist = cv2.distanceTransform(1 - (al > 40).astype(np.uint8), cv2.DIST_L2, 5); g = al[dist > 300]
+            if g.size: far2 = max(far2 or 0, int(g.max()))
+        flash = [i for i in kept if i not in calm and i > C["impact"]]
+        flash_ground = {"rule": "the floor outside the flash: the kept frames from the first frame after the landing from which every later frame's 1-4 pedestal share stays under 6%; before it, the 1-4 levels are the flash's own bloom (at most 4/255 under additive blending)", "settlesAt": settle,
+                        "bloomPedestalMax": round(max(pedk[i] for i in kept if i < settle), 5),
+                        "flashFrames": [flash[0], flash[-1]] if flash else None, "calmFrames": [calm[0], calm[-1]] if calm else None,
+                        "pedestal1to4ShareMax": round(ped2, 5), "farMax": far2,
+                        "blackBefore": {"frames": list(range(0, a)), "maxValue": int(max(frames[i].max() for i in range(0, a))) if a > 0 else None}}
 
     # THE IMPACT. "escalation": the biggest escalation STEP inside the window — the steepest 3-frame rise in the clip's own ADDED light
     # (rgb * alpha/255, the shipping contribution), which is what a detonation's peak actually is. "positional" (the S1 pattern): the clip
@@ -574,6 +637,18 @@ def main_vignette(key):
         if impact != C["impact"]: sys.exit("the measured landing f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
         imp_note = {"rule": "landing", "window": [w0, w1], "groundBand": [gb0, gb1], "discPlaneRow": D0, "groundBlownRiseOver2Frames": round(rise[impact], 4),
                     "groundBlownAtImpact": round(gbl[impact], 4), "why": "owner ruling LAB-22/1: the units die at the strike (the orb meeting the disc); the bloom is aftermath"}
+    elif C["impact_rule"] == "boltlanding":
+        # PASHU-V2 (owner ruling B1): THE LANDING — the bolt's thin column bursts into the ground streak. The lit span (columns holding any
+        # pixel max(R,G,B) > 40) jumps by the largest RATIO of one frame over the one before inside the window
+        span = []
+        for i in range(N):
+            cols = np.where((frames[i].max(axis=2) > 40).any(axis=0))[0]; span.append(int(cols.max() - cols.min() + 1) if cols.size else 0)
+        w0, w1 = C["impact_window"]; ratio = {i: span[i] / float(max(1, span[i - 1])) for i in range(max(w0, 1), w1 + 1)}
+        impact = max(ratio, key=ratio.get)
+        if impact != C["impact"]: sys.exit("the measured landing f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
+        imp_note = {"rule": "boltlanding", "window": [w0, w1], "litSpanBefore": span[impact - 1], "litSpanAtLanding": span[impact], "spanRatio": round(ratio[impact], 2),
+                    "litSpans": {"f%03d" % i: span[i] for i in range(w0 - 1, w1 + 1)},
+                    "why": "owner ruling B1 (2026-11-21): the impact is the LANDING, pinned to the damage beat (the Brahmastra precedent, LAB-22/1); the bolt's fall is the lead inside the cast hold"}
     elif C["impact_rule"] == "groundband":
         # LAB-24: THE FLOOD ERUPTS - the ground ring's plane is read off a ring frame (the widest bright row in the bottom third); the ground band
         # runs 80 rows above it to 40 below. The eruption is the steepest 2-frame rise of that band's ADDED light inside the window
@@ -718,6 +793,8 @@ def main_vignette(key):
         body_frames = [i for i in kept if i < tail0 and marg[i][e] < px]
         guard[e] = {"px": px, "cellPxAtScale": None, "coreMarginMin": mins, "coreMarginMinAt": at,
                     "bodyInBand": ["f%03d" % i for i in into], "bodyInBandOutsideTail": ["f%03d" % i for i in body_frames]}
+        ruled = (C["guard"].get("ruled_into_band") or {}).get(e)
+        if ruled: guard[e]["ruledIntoBand"] = ruled; guard[e]["bodyInBandOutsideTail"] = []; guard[e]["bodyInBandRuled"] = len(body_frames); continue   # PASHU-V2 (B4): the one recorded exemption
         if body_frames: sys.exit("the %s band (%d px) reaches the core body on f%s — OUTSIDE the fade tail (tail starts f%03d)" % (e, px, ", f".join("%03d" % i for i in body_frames), tail0))
 
     # one scale for every cell; E1 outranks the per-card cellPx (the Makardhwaja order) — step down to the pre-authorized fallback if needed
@@ -725,7 +802,11 @@ def main_vignette(key):
         s2 = cell_px / float(max(bw, bh)); cw2, ch2 = round(bw * s2), round(bh * s2)
         per = max(1, (4096 - PAD) // (cw2 + PAD)); rows2 = (len(kept) + per - 1) // per
         return s2, cw2, ch2, per * cw2 + (per + 1) * PAD, rows2 * ch2 + (rows2 + 1) * PAD
-    cell_px = C["cell_px"]; stepped = None
+    cell_px = C["cell_px"]; stepped = None; largest = None
+    if cell_px == "largest":
+        # PASHU-V2 (owner ruling B2): the full aftermath outranks sharpness — the LARGEST cell (long side, px) whose pack stays under E1
+        fits = [c for c in range(160, 513) if (lambda r: r[3] <= 4096 and r[3] * r[4] * 4 <= E1_CAP)(pack_at(c))]
+        cell_px = max(fits); largest = {"rule": "largest", "used": cell_px, "why": "owner ruling B2: the largest cell whose pack decodes under the E1 cap (the next size up, %d, does not fit)" % (cell_px + 1)}
     s, cw, ch, AWp, AHp = pack_at(cell_px)
     if AWp * AHp * 4 > E1_CAP and C.get("cell_px_fallback"):
         stepped = {"from": cell_px, "to": C["cell_px_fallback"], "why": "the real pack exceeded E1; the invariant outranks the per-card number (pre-authorized, LAB-21/3)"}
@@ -774,12 +855,12 @@ def main_vignette(key):
         **({"role": C["role"]} if C.get("role") else {"contract": C["contract"]}),
         "audit": {"range": [a, b], "droppedHead": [0, a - 1] if a > 0 else None, "droppedTail": [b + 1, N - 1] if b < N - 1 else None,
                   "impactSrc": impact, "impact": imp_note, **extra, **({"provenance": {"parent": os.path.basename(clip), "md5": C["clip_md5"], "sha256": sha, "rule": "an effect clip has no identity master; its provenance parent is the md5-verified source clip itself, and every plate cut from it records the same parent"}} if C.get("clip_md5") else {}), "corePoint": list(CORE), "scale": round(s, 5), "box": [x0, y0, x1, y1],
-                  "cellPx": {"used": cell_px, "asked": C["cell_px"], "steppedDown": stepped},
+                  "cellPx": {"used": cell_px, "asked": C["cell_px"], "steppedDown": stepped, **({"largest": largest} if largest else {})},
                   "decodedBytes": AW * AH * 4, "e1CapBytes": E1_CAP,
                   "ground": {"cornersMax": corners, "farMax": far,
                              "method": ("the frame-filling class leaves no region > 300 px from content, so farMax is structurally unavailable; the ground is stated on the bake metric instead" if far is None else
                                         "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) — stated beside the bake metric"),
-                             "zeroShareMin": round(zero_min, 5), "pedestal1to4ShareMax": round(ped_max, 5)},
+                             "zeroShareMin": round(zero_min, 5), "pedestal1to4ShareMax": round(ped_max, 5), **({"outsideFlash": flash_ground} if flash_ground else {})},
                   "edges": dict(edges, of=len(kept)),
                   "fadeIn": [[i, fades[i]] for i in kept[:n_in]], "fadeTail": [[i, fades[i]] for i in kept[-n_tail:]],
                   "vignette": guard, "guardKind": C["guard"]["kind"], "guardTailStart": tail0,

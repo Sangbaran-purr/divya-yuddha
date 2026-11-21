@@ -1,5 +1,5 @@
 {
-  "what": "the game's own suites and their exact counts, recorded at LAW_BASE (6b946e0) before the arcade lab began — every lab commit must leave them exactly so (node lab/arcade/test/run.js --game) · updated 2026-11-03: test_puzzlemode.js 99 after TEST-PUZZLEMODE-1 · updated 2026-11-21 (TIDY-1): test_count_hook.js 26 (SHARE-2, SHARE-3 and ONBOARD-1 added checks); test_roundend.js added at 37 (RULES-FIX-1 Stage 1)",
+  "what": "the game's own suites and their exact counts, recorded at LAW_BASE (6b946e0) before the arcade lab began — every lab commit must leave them exactly so (node lab/arcade/test/run.js --game) · updated 2026-11-03: test_puzzlemode.js 99 after TEST-PUZZLEMODE-1 · updated 2026-11-21 (TIDY-1): test_count_hook.js 26 (SHARE-2, SHARE-3 and ONBOARD-1 added checks); test_roundend.js added at 37 (RULES-FIX-1 Stage 1) · updated 2026-11-21 (HERO-FIT-1 + PASHU-V2 gate): test_puzzlemode.js 113 — the site's daily robot added 14 puzzles (divya-yuddha-web 6740de3, 70 live) and the suite checks each live puzzle, so the count follows the site, not this task",
   "suites": [
     {
       "file": "test.js",
@@ -65,9 +65,9 @@
       "file": "test_puzzlemode.js",
       "env": "DY_WEB",
       "expect": {
-        "pass": 99
+        "pass": 113
       },
-      "note": "At LAW_BASE: 85 passed + 1 known failure (a fixed 14-row table). Fixed by its own commit TEST-PUZZLEMODE-1 (ARCADE-1 ruling 7): 99, a fixed number of checks — each judges every live puzzle in one row set, so the count does not grow as puzzles are added."
+      "note": "At LAW_BASE: 85 passed + 1 known failure (a fixed 14-row table). Fixed by its own commit TEST-PUZZLEMODE-1 (ARCADE-1 ruling 7): 99, a fixed number of checks — each judges every live puzzle in one row set, so the count does not grow as puzzles are added. CORRECTED 2026-11-21: section 3 plays every live puzzle's winning line as ONE check each, so the count DOES grow with the site's puzzles (99 at 56 live; 113 at 70 live, divya-yuddha-web 6740de3) — a site puzzle drop changes it."
     }
   ]
 }
