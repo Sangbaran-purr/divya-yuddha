@@ -32,7 +32,7 @@ const PIN = {
   wireTypes: ['leap', 'mulligan', 'pass', 'play', 'shield'],
   // EXPORT-2: the nine actor modules and the faction effects, as certified in the manifestation lab when the export was built
   // (recorded here, never read from the lab: nothing outside the lab may name it — its own rule G2)
-  actorModules: {"boarddiff": "879fe41a315d53122fd1d9b03d7f47a5643f2e1c59e7a14bb7f9973d57957ede", "clashcontext": "eb87c50dc6cee9726445fa066aafc0a47ad3ca382cad20ba5c8cca185e6f6d94", "director": "7027e197441e3cc3b8cb9df104585eeb51300f761263b434a3403252961b51c0", "runner": "7a0b80b824ed294493d53360c2c1a93997068897394fd7b400bb5faa151ebc35", "manifest": "077314c6a55483546f06b08e83a453c174d5636366bb5079d981a2c8b3396408", "stagemath": "6deed7f01db143d210133a95b856981094e647b67d3cd9467f70506fa00b4979", "dissolve": "8e4efc39f2714ca917c8b8da5095d50c58b2237280c137b05ca63ffd53a59e59", "actorstage": "dec202561478b1046cfeebcf552d8d885912d6a4f1e74b112c3d14faad1f7241", "playback": "ba7fce765c96f70d9eda895dce27172f340fc9bcf1969ea3fdcf449325d55d5f"},
+  actorModules: {"boarddiff": "879fe41a315d53122fd1d9b03d7f47a5643f2e1c59e7a14bb7f9973d57957ede", "clashcontext": "eb87c50dc6cee9726445fa066aafc0a47ad3ca382cad20ba5c8cca185e6f6d94", "director": "7027e197441e3cc3b8cb9df104585eeb51300f761263b434a3403252961b51c0", "runner": "7a0b80b824ed294493d53360c2c1a93997068897394fd7b400bb5faa151ebc35", "manifest": "077314c6a55483546f06b08e83a453c174d5636366bb5079d981a2c8b3396408", "stagemath": "9d19889fc525c78e0c98309b44f3ed1deb388d59dd34aaddde1e2c755934d0c6", "dissolve": "8e4efc39f2714ca917c8b8da5095d50c58b2237280c137b05ca63ffd53a59e59", "actorstage": "f45c14306901a0fe714b35dcf4aa1785c31675c263c227e1f5c512e17b606456", "playback": "c05f13af1e9fe2d72d00f7a77fa604e201ea83364cd8a78deff685128b8f0201"},
   factionFx: '7254d128bcec6c2d433281f4daa027d81b74b022dbe13fe81ba2be3efbf310dc',
   // EXPORT-5 · THE DESIGN FREEZE: one digest over every certified file in assets/manifest (73 files — every atlas, manifest, chain, the
   // registry and the faction effects), recorded at 03b1e45. Nothing a resilience rung does may move it
@@ -321,9 +321,10 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     const g2d = () => new Proxy({}, { get: (t, k) => (k in t ? t[k] : (k === 'getImageData' || k === 'createImageData') ? (x, y, w, h) => ({ data: new Uint8ClampedArray(Math.max(1, (w | 0) * (h | 0)) * 4), width: w, height: h })
       : k === 'measureText' ? () => ({ width: 0 }) : (k === 'createRadialGradient' || k === 'createLinearGradient') ? () => ({ addColorStop() {} }) : k === 'canvas' ? {} : () => {}), set: (t, k, v) => { t[k] = v; return true; } });
     const canvas = () => { const c = { width: 1, height: 1, style: {}, getContext: () => (c.__g = c.__g || g2d()), getBoundingClientRect: () => ({ left: 0, top: 0, width: 355, height: 420, right: 355, bottom: 420 }) }; return c; };
-    const CH = o.cardH || 80, cellRect = (seat, i) => ({ left: 20 + i * 62, top: seat === 0 ? 270 : 70, width: 56, height: CH, right: 76 + i * 62, bottom: (seat === 0 ? 270 : 70) + CH });
+    const CH = o.cardH || 80, TOP = (seat) => (o.cellTop ? o.cellTop[seat] : seat === 0 ? 270 : 70), cellRect = (seat, i) => ({ left: 20 + i * 62, top: TOP(seat), width: 56, height: CH, right: 76 + i * 62, bottom: TOP(seat) + CH });   // HERO-FIT-1: o.cellTop / o.field set a sideways phone's geometry
     const cellsOf = (seat) => { const pl = ctx.G.players[seat]; return (pl.units || []).concat(pl.heroes || []).map((c, i) => ({ uid: c.uid, getBoundingClientRect: () => cellRect(seat, i) })); };
-    const field = Object.assign(canvas(), { clientWidth: 355, clientHeight: 420, querySelector: (sel) => { const m = /data-uid="([^"]+)"/.exec(sel); if (!m) return null; for (const s of [0, 1]) { const c = cellsOf(s).find((x) => String(x.uid) === m[1]); if (c) return c; } return null; } });
+    const FW = o.field ? o.field.w : 355, FH = o.field ? o.field.h : 420;
+    const field = Object.assign(canvas(), { clientWidth: FW, clientHeight: FH, getBoundingClientRect: () => ({ left: 0, top: 0, width: FW, height: FH, right: FW, bottom: FH }), querySelector: (sel) => { const m = /data-uid="([^"]+)"/.exec(sel); if (!m) return null; for (const s of [0, 1]) { const c = cellsOf(s).find((x) => String(x.uid) === m[1]); if (c) return c; } return null; } });
     const els = { field, actorunder: canvas(), actorcanvas: canvas(), actorgpu: canvas(), actorover: canvas(), effectclip: canvas() };
     const abs = (u) => new URL(u, 'https://game.test/index.html');
     const ctx = {
@@ -537,6 +538,21 @@ const card = (id) => ({ id, n: id, t: 'astra' });
        rows.every((x) => x.b.h <= x.v.half.h + 1e-6 && x.pa.h <= x.v.half.h + 1e-6) &&
        rows.filter((x) => x.floor).every((x) => x.va.h / x.v.half.h >= 0.8 && x.va.h / x.v.half.h <= 0.99),
        J(rows.map((x) => ({ vp: x.v.vw + 'x' + x.v.vh, b: [+x.b.w.toFixed(1), +x.b.h.toFixed(1)], pa: [+x.pa.w.toFixed(1), +x.pa.h.toFixed(1)], va: +x.va.w.toFixed(1), floor: x.floor }))));
+  }
+
+  // ═══ H22 · HERO-FIT-1 A7: TOO SMALL TO SHOW — the classic path, and nothing waits ═══
+  {
+    const sideways = [['844x390', 73, 43.5], ['740x360', 43, 28.5]], runs = [];
+    for (const [k, fh, top0] of sideways) for (const id of ['mahabali', 'indra']) {
+      const S = actorSandbox({ field: { w: 518, h: fh }, cardH: 56, cellTop: { 0: top0, 1: -4 } }), b0 = S.mf.budget, d0 = S.decodes.length;
+      const R = await manifest(S, id), diag = S.mf.MF.diag.filter((x) => x.card === id).map((x) => x.kind);
+      runs.push({ k, id, r: R.r, diag, plan: !!R.plan, decodes: S.decodes.length - d0, budget: S.mf.budget === b0, waited: S.now - R.ranFrom, warns: S.warns.length, floats: R.floats.length });
+    }
+    const S1 = actorSandbox(), up = await manifest(S1, 'mahabali');
+    const GL = fs.readFileSync(path.join(GAME, 'index.html'), 'utf8'), at = GL.indexOf('async function mfManifest('), ask = GL.indexOf('if(mfTooSmall(id, ev, srcEl)){', at), firstAwait = GL.indexOf('await ', at);
+    ok('H22 · HERO-FIT-1 A7 · TOO SMALL TO SHOW (owner ruling 2026-11-21): on a phone held sideways (the field 518×73 and 518×43 px, Hero cards 56 px) the glue asks Playback.placeFor FIRST — before any wait, decode or plan — and the field cannot hold the whole figure even at 1.4 card heights, so mfManifest hands the Hero straight back (false) to today\'s classic presentation: noted "too-small" (quiet, not a warning), no plan built, no atlas decoded, the watchdog budget untouched and no time spent (' + runs.map((x) => x.id + ' ' + x.k + ': ' + x.waited + ' ms').join(', ') + '); the same Hero on an upright field still manifests (' + up.r + ')',
+       runs.every((x) => x.r === false && x.diag.indexOf('too-small') >= 0 && x.diag.indexOf('not-ready-at-play') < 0 && x.diag.indexOf('fell-back') < 0 && !x.plan && x.decodes === 0 && x.budget && x.waited === 0 && x.warns === 0 && x.floats === 0) &&
+       up.r === true && at > 0 && ask > at && (firstAwait < 0 || ask < firstAwait) && /function mfTooSmall\(id, ev, srcEl\)\{/.test(GL), J({ runs, up: up.r, ask, firstAwait }));
   }
 
   // ═══ X · EXPORT-5: RESILIENCE — beats and clips keep each other honest ═══

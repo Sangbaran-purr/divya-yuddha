@@ -398,6 +398,8 @@ The actor is the same size on both seats: card height × 2.1, so each card's sca
 
 - **The top seat.** The feet start at the card's base. If the figure would leave the board's top edge, it moves down by exactly the overflow, into the free middle band; it may overlap its own card and row. The A1 clamp then keeps the feet short of the enemy cards by moving him. If the board edge and A1 cannot both hold, A1 wins.
 - **The player's seat.** If the enemy row is too close, the figure moves down instead of shrinking.
+
+> **Amended by HERO-FIT-1 (owner rulings A1–A9, 21 Nov 2026)** — see the HERO-FIT-1 section at the end. The same size on both seats still holds wherever the whole figure fits; "scale never gives way" and "A1 wins over the board edge" no longer hold.
 - **The reach toward the enemy** takes whatever room is left.
 - **Fast** places the same way.
 
@@ -2154,3 +2156,19 @@ The game's asset retry (2 / 8 / 30 s) belongs to the export and is recorded, not
 **Checks:** CS1–CS12 added; the lab suite goes 778 → **790**. Each is proven falsifiable by a named mutant (snap off by a frame; tail duplicates kept; a top band eating the corona; gate off; the anchor from the wrong uid; the card-width unit swapped; the floor surge playing premium; the spell classification inverted; the collision rule inverted; the match-start prefetch missing; the second surge in an action playing premium; the mechanic route keyed like a card).
 
 **Prefetch:** a mechanic has no card, so no hand can carry it — the page fetches its bytes at MATCH START when an Asura is seated on either seat.
+
+## HERO-FIT-1 · Heroes shown whole on every screen (owner rulings A1–A9, 21 Nov 2026)
+
+These rulings amend the 14 Sep "same size on both seats" ruling in one case only: where the figure does not fit.
+
+- **Always whole.** No part of a Hero's figure leaves the field on any edge, on any frame, in any phase (the rise, the action at full reach, the exit). The fit counts every cell at full scale (a slow device can draw an unreached rise cell at full size in ACT) and a procedural exit's growth and lift on its own cells.
+- **Full size where it fits.** 2.1 card heights, the same on both seats, feet at the card's base when there is room.
+- **Move first, then smaller.** Where it does not fit, the figure moves inside the room between the enemy cards and the field's edges. Only if moving is not enough is it drawn smaller, by just enough, never below 1.4 card heights. Below that, only the never-touch-the-enemy-cards guard gives way; the field's edge never does.
+- **A7 · Too small to show.** Where even the whole field cannot hold the figure at 1.4 card heights (a phone held sideways: fields 73 and 43 px tall), `StageMath.place` declines and no figure is shown. `Playback.placeFor` answers from the manifest and the live rects alone, so the caller asks before it plans, waits or decodes: the game's glue (`mfTooSmall`) plays the classic presentation and nothing waits; the lab plays its no-actor (Reduced) path.
+- **A8 · Clearance gives way before size.** Against the field's edges the 6 px clearance is a preference and may go down to 0 before the figure is drawn smaller; against the enemy cards the 6 px stays. Kartikeya is full size at 390×844.
+- **A9 · The sideways slide.** Where the figure must move sideways and its rise pose fits on its own card, it rises there and drifts to its place during the rise; otherwise it is placed there from the start. No frame jumps.
+
+**Measured (the game page's geometry, 20 Heroes × 2 seats × 3 enemy boards per size, 44 sizes):** 0 figures cut at every upright size; full size on every core screen; smaller only at 360×560 (75.8% at the smallest), 375×553 (81.6%) and 360×800 (Kartikeya, 99.6%); on the two sideways sizes every play is declined.
+
+**Checks:** S2, S3b, S20b, S21, T12 and the per-card gate rewritten; S3c (whole on every frame, on the 16 device-matrix screens and the small sizes, from `test/hero_fit_geometry.json`), S3d (A7) and S3e (A8) added; the lab suite goes 792 → **795**. The game's own suite adds H22 (A7 in the glue) and goes 102 → 103.
+

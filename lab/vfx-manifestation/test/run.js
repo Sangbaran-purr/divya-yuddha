@@ -688,7 +688,7 @@ console.log('\n── T · the Director ──');
     ok('T12 · TEMPO AND FIZZLE (LAB-4c): tempo scales the clip\'s cells (24 × tempo cells/s) and AWAKEN, EMERGE, ACT and SETTLE with them; FIZZLE takes its own length; Fast halves both and may step 2 cells, Full 1; contact still lands on the contact cell and the board settles the moment FIZZLE ends; unset, the plan is today\'s field for field; a grammar plan scales too; the Plan readout\'s Timeline line sums to its total; the lab passes both sliders to every play — ' + shown.join(' | '),
        okTempo && J(tuned(0, 'full', {})) === J(tuned(0, 'full', { tempo: 1, fizzleMs: 600 })) && tuned(0, 'full', {}).total === 400 + Math.round(NT2.emerge * 1000 / 24) + Math.round(NT2.act * 1000 / 24) + 600 + 400 &&
        DIR.plan(CTX[0], { mode: 'full', ladderExempt: true, tempo: 0.5 }).total === 6400 && DIR.plan(CTX[0], { mode: 'full', ladderExempt: true, fizzleMs: 1200 }).total === 3800 && DIR.plan(CTX[0], { mode: 'full', ladderExempt: true }).total === 3200 &&
-       /timing, tempo, fizzleMs, exit: exitFor\(reg, mf, ctx\) \}\);/.test(LABJS3) && /el\('tempo'\)\.oninput/.test(LABJS3) && /el\('fizzle-ms'\)\.oninput/.test(LABJS3));
+       /exit = exitFor\(reg, mf, ctx\);/.test(LABJS3) && /timing, tempo, fizzleMs, exit \}\);/.test(LABJS3) && /el\('tempo'\)\.oninput/.test(LABJS3) && /el\('fizzle-ms'\)\.oninput/.test(LABJS3));
   }
   {
     const REGJ = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'manifestations.json'), 'utf8')), FFXJ = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), DS4 = lib('dissolve');
@@ -2190,29 +2190,143 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
   const geo = (seat) => seat === 0
     ? { card: { x: 163, y: 222, w: 64, h: 90 }, side: 'me', band: { x: 163, y: 10, w: 64, h: 90 } }      // attacker bottom (units row by the divider), Indra at the top
     : { card: { x: 163, y: 108, w: 64, h: 90 }, side: 'opp', band: { x: 163, y: 320, w: 64, h: 90 } };  // attacker top, Indra at the bottom
-  const place = (seat, cardX) => { const g = geo(seat); if (cardX != null) g.card.x = cardX; return SM.place({ card: g.card, side: g.side, fieldW: FIELD.w, fieldH: FIELD.h, band: g.band, refHeight: MANIFEST.refHeight, facing: MANIFEST.facing }); };
-  ok('S2 · ANCHORING, both seats: the feet at the played card\'s base (where the board has room — see S3b for when placement gives way); the reach toward the enemy half (up from the bottom, down from the top); the actor taller than its card; and at ANY point of its reach it never touches the enemy cards (A1 — nothing depicted on the target)',
-     [0, 1].every((s) => { const g = geo(s), p = place(s);
-       return Math.abs(p.anchor.x - (g.card.x + g.card.w / 2)) < 0.01 && Math.abs(p.anchor.y - (g.card.y + g.card.h * 0.94)) < 0.01 && (s === 0 ? p.travel.y < 0 && p.dirY === -1 : p.travel.y > 0 && p.dirY === 1) &&
-              p.height > g.card.h && !SM.touchesBand(p, g.band) && p.scale > 0; }));
+  // HERO-FIT-1: every placement here goes through Playback.placeFor — the figure's own drawn reach (every cell) and its exit, the way the game places it
+  const PBL = lib('playback');
+  const placeM = (man, seat, cardX, over) => { const g = geo(seat); if (cardX != null) g.card.x = cardX; Object.assign(g, over || {}); return PBL.placeFor({ card: g.card, side: g.side, field: FIELD, band: g.band, manifest: man, exit: MAN.exitMode({ entry: REG[man.cardId] || {}, manifest: man }).exit }); };
+  const place = (seat, cardX) => placeM(MANIFEST, seat, cardX);
+  // the WHOLE PLAY's box around the feet, computed here from the manifest's cells (independent of stagemath): every cell at scale 1 and,
+  // for a procedural exit, its own cells (FIZZLE's) grown 1.06 about the feet and lifted 10 px; a native exit plays its own cells and never grows
+  const reachOf = (man, ids) => { const e = { up: 0, down: 0, left: 0, right: 0 }; man.cells.forEach((c, ci) => { if (ids && !ids.includes(ci)) return; e.up = Math.max(e.up, c.pivot.y); e.down = Math.max(e.down, c.h - c.pivot.y); e.left = Math.max(e.left, c.pivot.x); e.right = Math.max(e.right, c.w - c.pivot.x); }); return e; };
+  const playBox = (man, p) => { const e = reachOf(man), f = reachOf(man, man.phases.fizzle && man.phases.fizzle.length ? man.phases.fizzle : man.phases.act), nat = MAN.exitMode({ entry: REG[man.cardId] || {}, manifest: man }).exit === 'native', G = nat ? 1 : 1.06, LIFT = nat ? 0 : 10, s = p.scale;
+    const up = Math.max(e.up * s, f.up * s * G + LIFT), down = Math.max(e.down * s, f.down * s * G - LIFT);
+    const f0 = p.anchor.y, f1 = p.anchor.y + p.travel.y, x0 = p.anchor.x, x1 = p.anchor.x + p.travel.x, L = Math.max((p.flipX ? e.right : e.left) * s, (p.flipX ? f.right : f.left) * s * G), R = Math.max((p.flipX ? e.left : e.right) * s, (p.flipX ? f.left : f.right) * s * G);
+    return { top: Math.min(f0, f1) - up, bottom: Math.max(f0, f1) + down, left: Math.min(x0, x1) - L, right: Math.max(x0, x1) + R, up, down }; };
+  ok('S2 · ANCHORING, both seats (HERO-FIT-1: placed the way the game places — Playback.placeFor, with the figure\'s own drawn reach and its exit): full size (2.1 card heights — the whole play fits here); the feet at the played card\'s base, or moved by EXACTLY enough to keep the whole play (every cell, and a procedural exit\'s growth and lift) 6 px clear of the enemy cards and of the field\'s edges; the reach toward the enemy half (up from the bottom, down from the top); the actor taller than its card; and at ANY point of its reach the whole play never comes within 6 px of the enemy cards (A1 — nothing depicted on the target) — ' + [0, 1].map((s2) => { const p = place(s2); return 'seat ' + s2 + ': feet ' + p.anchor.y.toFixed(2) + ' (base ' + (geo(s2).card.y + geo(s2).card.h * 0.94).toFixed(2) + ')'; }).join(' · '),
+     [0, 1].every((s2) => { const g = geo(s2), p = place(s2), b = playBox(MANIFEST, p), base0 = g.card.y + g.card.h * 0.94;
+       const wantFeet = Math.min(Math.max(base0, (s2 === 0 ? g.band.y + g.band.h + SM.GAP : SM.GAP) + b.up), (s2 === 0 ? FIELD.h - SM.GAP : g.band.y - SM.GAP) - b.down);
+       return !p.declined && p.height === g.card.h * 2.1 && Math.abs(p.anchor.x - (g.card.x + g.card.w / 2)) < 0.01 && Math.abs(p.anchor.y - wantFeet) < 1e-6 && (s2 === 0 ? p.travel.y <= 0 && p.dirY === -1 : p.travel.y > 0 && p.dirY === 1) &&
+              p.height > g.card.h && p.scale > 0 && !SM.touchesBand(p, g.band) && (s2 === 0 ? b.top >= g.band.y + g.band.h + SM.GAP - 1e-6 : b.bottom <= g.band.y - SM.GAP + 1e-6) && b.top >= -1e-6 && b.bottom <= FIELD.h + 1e-6; }),
+     J([0, 1].map((s2) => [place(s2), playBox(MANIFEST, place(s2))])));
   ok('S3 · FACING: a manifest drawn facing left is mirrored when the charge leans right (a card left of or at centre) and not when it leans left, on both seats',
      [0, 1].every((s) => place(s, 60).dirX === 1 && place(s, 60).flipX === true && place(s, 300).dirX === -1 && place(s, 300).flipX === false && place(s, 60).travel.x > 0 && place(s, 300).travel.x < 0));
-  const placeI = (seat, cardX, aim, over) => { const g = geo(seat); if (cardX != null) g.card.x = cardX; Object.assign(g, over || {}); return SM.place({ card: g.card, side: g.side, fieldW: FIELD.w, fieldH: FIELD.h, band: g.band, refHeight: IMAN.refHeight, facing: IMAN.facing, aim: aim === undefined ? IMAN.aim : aim }); };
+  const placeI = (seat, cardX, aim, over) => { const g = geo(seat); if (cardX != null) g.card.x = cardX; Object.assign(g, over || {}); const m = aim === undefined ? IMAN : Object.assign({}, IMAN, { aim }); return PBL.placeFor({ card: g.card, side: g.side, field: FIELD, band: g.band, manifest: m, exit: 'native' }); };
   const STAGE_SRC = ['stagemath', 'actorstage', 'playback'].map((n) => fs.readFileSync(path.join(LAB, 'lib', n + '.js'), 'utf8')).join('\n');
   const H_FIXED = 90 * 2.1, base = (card) => card.y + card.h * 0.94;
   // the page's real cases and three crowded ones: a top-row card at the board's top edge, a top-row card with the enemy band close, the player's seat with the enemy band low
   const topEdge = placeI(1, null, undefined, { card: { x: 163, y: 10, w: 64, h: 90 }, band: { x: 163, y: 320, w: 64, h: 90 } });
   const tight = placeI(1, null, undefined, { card: { x: 163, y: 10, w: 64, h: 90 }, band: { x: 163, y: 170, w: 64, h: 90 } });
   const lowBand = placeI(0, null, undefined, { card: { x: 163, y: 222, w: 64, h: 90 }, band: { x: 163, y: 10, w: 64, h: 150 } });
-  ok('S3b · LAB-6 · UPRIGHT, THE SAME SIZE ON BOTH SEATS (owner rulings 2026-09-14), Indra (aim up): on both seats the actor stands upright at the card\'s full fixed height (' + H_FIXED + ' px for a 90 px card, scale ' + placeI(0).scale.toFixed(4) + ' on both seats) — the "room" shrink is gone; PLACEMENT GIVES WAY: a top-row card at the board\'s top edge moves the feet down by exactly the overflow (' + topEdge.shift.toFixed(1) + ' px, top at the edge), a crowded top seat clamps the feet short of the enemy band (A1 wins over the board edge), a crowded player\'s seat moves the feet down instead of shrinking; never touching the enemy cards; a seat swap mirrors horizontally only; the placement is the same with or without aim; the contact flash and the camera impulse point at the true target (dirY); no vertical mirror and no shrink rule remain in the stage',
-     [0, 1].every((s) => { const g = geo(s), p = placeI(s), ex = SM.extentAt(p, 1);
-       return !('flipY' in p) && p.height === H_FIXED && p.scale === H_FIXED / IMAN.refHeight && p.shift === 0 && Math.abs(p.anchor.y - base(g.card)) < 0.01 && ex.bottom === ex.feet && !SM.touchesBand(p, g.band) &&
-              p.dirY === (s === 0 ? -1 : 1) && (s === 0 ? p.travel.y < 0 : p.travel.y > 0) && placeI(s, 60).flipX === false && placeI(s, 300).flipX === true && J(placeI(s, null, null)) === J(p); }) &&
-     topEdge.height === H_FIXED && Math.abs(topEdge.shift - (H_FIXED - base({ y: 10, h: 90 }))) < 1e-9 && Math.abs(SM.extentAt(topEdge, 0).top) < 1e-9 && topEdge.travel.y > 0 && !SM.touchesBand(topEdge, { x: 163, y: 320, w: 64, h: 90 }) &&
-     tight.height === H_FIXED && tight.anchor.y === 170 - SM.GAP && tight.travel.y === 0 && !SM.touchesBand(tight, { x: 163, y: 170, w: 64, h: 90 }) &&
-     lowBand.height === H_FIXED && Math.abs(SM.extentAt(lowBand, 0).top - (10 + 150 + SM.GAP)) < 1e-9 && lowBand.shift > 0 && lowBand.travel.y === 0 && !SM.touchesBand(lowBand, { x: 163, y: 10, w: 64, h: 150 }) &&
+  const bxI = (p) => playBox(IMAN, p), FLOOR_H = 90 * 1.4;
+  ok('S3b · LAB-6 + HERO-FIT-1 · UPRIGHT, THE SAME SIZE ON BOTH SEATS WHERE IT FITS, WHOLE EVERYWHERE (owner rulings 2026-09-14, amended 2026-11-21 A1–A9), Indra (aim up): on both seats the actor stands upright at the full 2.1 card heights (' + H_FIXED + ' px for a 90 px card, scale ' + placeI(0).scale.toFixed(4) + ' on both seats) wherever the whole play fits; MOVE FIRST: a top-row card at the board\'s top edge moves the feet down by exactly enough to keep the whole play 6 px inside the top edge (' + topEdge.shift.toFixed(1) + ' px) at full size; a crowded player\'s seat moves the feet down, full size, the whole play 6 px clear of the enemy cards; ONLY THEN SMALLER: a crowded top seat (the enemy cards 80 px below its card) cannot hold the full figure even with the top-edge clearance given up (A8: it goes to 0 before any shrink; the 6 px from the enemy cards stays), so it is drawn smaller by just enough — ' + (tight.fit * 100).toFixed(1) + '% (' + tight.height.toFixed(1) + ' px, above the 1.4-card-height floor of ' + FLOOR_H + ' px) — its whole play from the field\'s top edge to 6 px above the enemy cards; never touching the enemy cards; a seat swap mirrors horizontally only; the placement is the same with or without aim; the contact flash and the camera impulse point at the true target (dirY); no vertical mirror remains in the stage',
+     [0, 1].every((s) => { const g = geo(s), p = placeI(s), b = bxI(p);
+       return !('flipY' in p) && p.height === H_FIXED && p.scale === H_FIXED / IMAN.refHeight && p.shift >= 0 && b.top >= SM.GAP - 1e-6 && b.bottom <= FIELD.h - SM.GAP + 1e-6 && !SM.touchesBand(p, g.band) &&
+              p.dirY === (s === 0 ? -1 : 1) && (s === 0 ? p.travel.y <= 0 : p.travel.y >= 0) && placeI(s, 60).flipX === false && placeI(s, 300).flipX === true && J(placeI(s, null, null)) === J(p); }) &&
+     topEdge.height === H_FIXED && Math.abs(bxI(topEdge).top - SM.GAP) < 1e-6 && topEdge.shift > 0 && !SM.touchesBand(topEdge, { x: 163, y: 320, w: 64, h: 90 }) &&
+     tight.height < H_FIXED && tight.height >= FLOOR_H && tight.guarded === true && Math.abs(bxI(tight).top) < 1e-3 && Math.abs(bxI(tight).bottom - (170 - SM.GAP)) < 1e-3 && tight.travel.y === 0 && !SM.touchesBand(tight, { x: 163, y: 170, w: 64, h: 90 }) &&
+     lowBand.height === H_FIXED && Math.abs(bxI(lowBand).top - (10 + 150 + SM.GAP)) < 1e-6 && lowBand.shift > 0 && !SM.touchesBand(lowBand, { x: 163, y: 10, w: 64, h: 150 }) &&
      !/flipY/.test(STAGE_SRC) && !/Math\.min\(want|room \* 0\.84|\* 0\.95\)/.test(STAGE_SRC) && /env\.stage\.flash\(q\.x, q\.feetY - h \* 0\.55, h \* 0\.9 \* st\.flash, who\.pl\.dirY, flashMs\)/.test(STAGE_SRC) && /env\.stage\.impulse\(who\.pl\.dirY, px, c\.impulseMs\)/.test(STAGE_SRC),
      J({ seats: [0, 1].map((s) => placeI(s)), topEdge, tight, lowBand }));
+
+  // ── HERO-FIT-1 · THE GUARD: every actor whole on every frame, on the game's real drawn geometry ──
+  // The real modules (director, runner, manifest, stagemath, dissolve, actorstage, playback) run in a plain sandbox with no canvas — the
+  // pose of every frame is what the stage would draw, so its drawn rect is computed exactly as drawCanvas draws it — driven the way the
+  // game's glue drives them, on test/hero_fit_geometry.json (the game page measured in a browser at every size: the field, the played
+  // Hero card and the enemy cards' band, per seat and per enemy board), at 120 Hz (twice a 60 Hz device's frames).
+  {
+    const vm = require('vm'), HFG = JSON.parse(fs.readFileSync(path.join(LAB, 'test', 'hero_fit_geometry.json'), 'utf8'));
+    const DM = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports;
+    const sbx = { console, Math, JSON, Date, devicePixelRatio: 1, performance: { now: () => 0 } };
+    vm.createContext(sbx); vm.runInContext('var window = this;', sbx);
+    ['boarddiff', 'clashcontext', 'director', 'runner', 'manifest', 'stagemath', 'dissolve', 'actorstage', 'playback'].forEach((n) => vm.runInContext(fs.readFileSync(path.join(LAB, 'lib', n + '.js'), 'utf8'), sbx, { filename: n + '.js' }));
+    const FFXH = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'factionfx.json'), 'utf8')), REGD = JSON.parse(fs.readFileSync(path.join(LAB, 'data', 'manifestations.json'), 'utf8')).defaults || {};
+    const HCARDS = Object.keys(REG).filter((id) => REG[id].manifest).map((id) => { const M = JSON.parse(fs.readFileSync(path.join(LAB, 'runtime', REG[id].manifest), 'utf8'));
+      const F0 = JSON.parse(fs.readFileSync(path.join(LAB, 'fixtures', (REG[id].fixture || id) + '_seat0.json'), 'utf8'));
+      return { id, M, faction: F0.before.seats[F0.attackerSeat].faction, exit: MAN.exitMode({ entry: REG[id], manifest: M }).exit }; });
+    const HZ = 120, CUT = 0.5;
+    const GAMEREG = JSON.parse(fs.readFileSync(path.join(GAME, 'assets', 'manifest', 'registry.json'), 'utf8')).actors, isHero = (id) => !!GAMEREG[id];
+    // the whole play's envelope, computed HERE from the manifest's cells (independent of stagemath): every cell at full scale (a late device
+    // draws an unreached rise cell at full size in ACT), a procedural exit's own cells (FIZZLE's, or ACT's when it has none) grown 1.06
+    // about the feet and lifted 10 px, the feet carried through the full reach
+    const envOf = (card, pl, Mr) => { const m = Mr, sc = pl.scale, nat = card.exit === 'native', G = nat ? 1 : 1.06, LIFT = nat ? 0 : 10;
+      const ext = (ids) => { const e = { up: 0, down: 0, left: 0, right: 0 }; m.cells.forEach((c, ci) => { if (ids && !ids.includes(ci)) return; e.up = Math.max(e.up, c.pivot.y); e.down = Math.max(e.down, c.h - c.pivot.y); e.left = Math.max(e.left, c.pivot.x); e.right = Math.max(e.right, c.w - c.pivot.x); }); return e; };
+      const A = ext(null), F = ext(m.phases.fizzle && m.phases.fizzle.length ? m.phases.fizzle : m.phases.act);
+      const up = Math.max(A.up * sc, F.up * sc * G + LIFT), down = Math.max(A.down * sc, F.down * sc * G - LIFT);
+      const l = Math.max((pl.flipX ? A.right : A.left) * sc, (pl.flipX ? F.right : F.left) * sc * G), r = Math.max((pl.flipX ? A.left : A.right) * sc, (pl.flipX ? F.left : F.right) * sc * G);
+      const f0 = pl.anchor.y, f1 = pl.anchor.y + pl.travel.y, x0 = pl.anchor.x, x1 = pl.anchor.x + pl.travel.x;
+      return { top: Math.min(f0, f1) - up, bottom: Math.max(f0, f1) + down, left: Math.min(x0, x1) - l, right: Math.max(x0, x1) + r }; };
+    const runCase = (card, L, seat) => {
+      const field = { w: L.field.w, h: L.field.h }, M = sbx.ActorManifest.forRung(card.M, L.rung || 512), side = seat === 0 ? 'me' : 'opp';
+      const ctx = { seat, faction: card.faction, cardId: card.id, cardName: card.id, rarity: 'L', sourceUid: 'HERO', scope: 'manifest', rest: [], boardDiff: [] };
+      const ask = sbx.Playback.placeFor({ card: L.card, side, field, band: L.band, manifest: M, exit: card.exit });
+      const timing = { fps: card.M.fps, emerge: card.M.phases.emerge.length, act: card.M.phases.act.length, contact: card.M.contact, emergeMs: card.M.phaseMs && card.M.phaseMs.emerge, actMs: card.M.phaseMs && card.M.phaseMs.act };
+      const tune = sbx.ActorManifest.defaultsFor({ manifest: card.M, registry: { defaults: REGD }, preset: sbx.Dissolve.pick(FFXH, card.faction, ''), override: {} });
+      const plan = sbx.Director.plan(ctx, { mode: 'full', prior: 0, ladderExempt: false, timing, tempo: tune.tempo, fizzleMs: tune.fizzleMs, exit: card.exit });
+      let t = 0; const fieldEl = { getBoundingClientRect: () => ({ width: field.w, height: field.h }), clientWidth: field.w, clientHeight: field.h, style: { transform: '' } };
+      const stage = new sbx.ActorStage({ field: fieldEl, under: null, actorCanvas: null, gpuCanvas: null, over: null, now: () => t });
+      const art = { manifest: M, image: { width: 1, height: 1 }, rung: L.rung };
+      stage.loadActor(card.id, art);
+      const pb = sbx.Playback.create({ stage, ctx, boards: { entry: {}, settle: {}, final: {} }, viewer: 0, field, rectOf: () => L.card, clientOf: () => ({ cx: 0, cy: 0, w: L.card.w }),
+        bandOf: (s2) => (s2 === 1 - seat ? L.band : null), render: () => {}, fieldClient: () => ({ x: 0, y: 0 }), pulse: () => {}, actorFor: (cid) => (cid === card.id ? art : null), exitOf: () => card.exit,
+        release: () => {}, sound: () => {}, factionFx: (fac) => sbx.Dissolve.pick(FFXH, fac, ''), embers: () => {}, queueFx: () => {}, onDone: () => {}, onError: () => {} });
+      const runner = sbx.Runner.create(plan, { cue: (c, info) => (c.cue === 'done' ? undefined : pb.handlers.cue(c, info)), cleanup: () => {}, error: () => {} }, () => t);
+      const pl = pb.placement(), R = { Mr: M, declined: !!ask.declined, pl, frames: 0, cut: 0, cutAt: null, minMargin: Infinity, bandGap: Infinity, spawned: 0, emergeStep: 0 };
+      if (pl && L.band) R.guardOn = pl.guarded;
+      runner.start(); let prevE = null;
+      for (let g = 0; g < 100000 && !runner.done; g++) {
+        runner.tick(); stage.frame(t, t);
+        for (const a of stage.actors) {
+          const q = a.pose; if (!q || !(q.alpha > 0.01)) continue;
+          const c = q.cell, sc = q.scale, px = c.pivot.x, py = c.pivot.y;
+          const x0 = q.flipX ? q.x - (c.w - px) * sc : q.x - px * sc, x1 = q.flipX ? q.x + px * sc : q.x + (c.w - px) * sc, y0 = q.y - py * sc, y1 = q.y + (c.h - py) * sc;
+          const over = Math.max(-y0, y1 - field.h, -x0, x1 - field.w); R.frames++;
+          if (over > R.cut) { R.cut = over; R.cutAt = { phase: q.phase, cell: q.cellIndex, t: Math.round(t) }; }
+          R.minMargin = Math.min(R.minMargin, -over);
+          const B = L.band; if (B && Math.min(x1, B.x + B.w) - Math.max(x0, B.x) > 0) R.bandGap = Math.min(R.bandGap, seat === 0 ? y0 - (B.y + B.h) : B.y - y1);
+          if (q.phase === 'emerge') { if (prevE) R.emergeStep = Math.max(R.emergeStep, Math.abs(q.x - prevE)); prevE = q.x; } else prevE = null;
+        }
+        R.spawned = Math.max(R.spawned, stage.actors.length);
+        t += 1000 / HZ;
+      }
+      return R;
+    };
+    const SIDEWAYS = ['844x390', '740x360'], UPRIGHT = Object.keys(HFG.sizes).filter((k) => !SIDEWAYS.includes(k));
+    const RES = {};
+    for (const k of Object.keys(HFG.sizes)) { const G = HFG.sizes[k]; RES[k] = [];
+      for (const sn of ['me', 'opp']) for (const board of ['empty', 'typical', 'full']) { const L = G.layouts[sn + ':' + board]; if (!L) continue;
+        for (const card of HCARDS) { const r = runCase(card, L, sn === 'me' ? 0 : 1); r.cardRef = card; r.L = L; r.card = card.id; r.seat = sn; r.board = board; r.full = L.card.h * 2.1; r.floor = L.card.h * 1.4; RES[k].push(r); } } }
+    const dmKeys = DM.map((v) => v.vw + 'x' + v.vh), shown = (k) => RES[k].filter((r) => !r.declined);
+    const worstCut = Math.max(...UPRIGHT.map((k) => Math.max(0, ...RES[k].map((r) => r.cut))));
+    const CORE = UPRIGHT.filter((k) => HFG.sizes[k].labels.includes('core'));
+    const smallList = UPRIGHT.map((k) => { const sm = shown(k).filter((r) => r.pl.height < r.full - 1e-6); return sm.length ? k + ' ' + (Math.min(...sm.map((r) => r.pl.height / r.full)) * 100).toFixed(1) + '% (' + sm.length + ')' : null; }).filter(Boolean);
+    const guardGave = [...new Set(UPRIGHT.reduce((all, k) => all.concat(RES[k].filter((r) => r.pl && !r.pl.guarded).map((r) => r.card + ' ' + k + ' ' + r.seat + ':' + r.board)), []))];
+    const emergeMax = Math.max(...UPRIGHT.map((k) => Math.max(0, ...RES[k].map((r) => r.emergeStep))));
+    ok('S3c · HERO-FIT-1 · THE WHOLE FIGURE, EVERY FRAME, BOTH SEATS (owner rulings 2026-11-21 A1–A6, A8, A9): every actor card (' + HCARDS.length + ') on both seats against an empty, a typical and a full enemy board, played Full at ' + HZ + ' Hz on the game\'s measured geometry at every upright size — all 16 viewports of src/device_matrix.json (' + dmKeys.join(', ') + '), the short phones and laptops, and the Hall and Daily Puzzle frames (' + UPRIGHT.length + ' sizes, ' + UPRIGHT.reduce((n, k) => n + RES[k].length, 0) + ' plays): no drawn cell ever passes the field box by more than ' + CUT + ' px on any edge in any phase (worst ' + worstCut.toFixed(2) + ' px); for every one of the game\'s ' + Object.keys(GAMEREG).length + ' Heroes the whole play never comes nearer than 6 px to the enemy cards (the guard never had to give way for a Hero at an upright size)' + (guardGave.length ? ' — the guard gave way only for the lab\'s pilot card (not a game Hero, the one card that charges): ' + guardGave.join(', ') + ', where the enemy cards fill the seat and it could not be held at 1.4 card heights otherwise; whole all the same' : '') + '; every figure is at least 1.4 card heights; full size (2.1 card heights) on every core screen (' + CORE.join(', ') + '); drawn smaller only at ' + (smallList.join(' · ') || 'no size') + '; nothing is declined at an upright size; and the sideways slide drifts during the rise with no frame-to-frame jump (largest EMERGE step ' + emergeMax.toFixed(2) + ' px at ' + HZ + ' Hz)',
+      dmKeys.every((k) => HFG.sizes[k] && UPRIGHT.includes(k)) &&
+      UPRIGHT.every((k) => RES[k].length === 6 * HCARDS.length && RES[k].every((r) => !r.declined && r.pl && r.frames > 0 && r.cut <= CUT && r.pl.height >= r.floor - 1e-6 && (r.pl.guarded ? r.bandGap >= SM.GAP - CUT : !isHero(r.card)))) &&
+      CORE.length === 7 && CORE.every((k) => RES[k].every((r) => r.pl.height === r.full)) && emergeMax <= 3,
+      J(UPRIGHT.map((k) => [k, RES[k].filter((r) => r.declined || !r.pl || r.cut > CUT || (r.pl.guarded ? r.bandGap < SM.GAP - CUT : isHero(r.card)) || (r.pl && r.pl.height < r.floor - 1e-6)).map((r) => [r.card, r.seat, r.board, r.cut, r.cutAt, r.bandGap, r.pl && r.pl.guarded])]).filter((x) => x[1].length)));
+    // A7 — too small to show
+    const LABJSH = fs.readFileSync(path.join(LAB, 'lab.js'), 'utf8');
+    const pm = /const tooSmall = !!\(src0 && window\.Playback\.placeFor\(/.exec(LABJSH), planAt = LABJSH.indexOf("lastPlan = window.Director.plan(ctx, { mode: tooSmall ? 'reduced' : mode,");
+    const ctxR = { seat: 0, faction: 'devas', cardId: 'indra', cardName: 'Indra', rarity: 'L', sourceUid: 'HERO', scope: 'manifest', rest: [], boardDiff: [] };
+    const IT = { fps: IMAN.fps, emerge: IMAN.phases.emerge.length, act: IMAN.phases.act.length, contact: IMAN.contact };
+    const redPlan = DIR.plan(ctxR, { mode: 'reduced', prior: 0, timing: IT, exit: 'native' }), fullPlan = DIR.plan(ctxR, { mode: 'full', prior: 0, timing: IT, exit: 'native' });
+    ok('S3d · HERO-FIT-1 A7 · TOO SMALL TO SHOW: on a phone held sideways (the game\'s field ' + SIDEWAYS.map((k) => Math.round(HFG.sizes[k].layouts['me:typical'].field.w) + '×' + Math.round(HFG.sizes[k].layouts['me:typical'].field.h)).join(' and ') + ' px) no actor card can be held whole even at 1.4 card heights with the enemy-cards guard given up, so on both seats and every enemy board every card is DECLINED — Playback.placeFor answers { declined:true } from the manifest and the rects alone (no atlas), the stage spawns nothing (0 actors, 0 frames drawn) even when a Full plan runs; the decision is made BEFORE the plan, so nothing waits: the lab asks placeFor before it plans and plays a declined figure as its no-actor path (the Reduced plan — the card pulse, then SETTLE, ' + redPlan.total + ' ms with no AWAKEN, EMERGE or ACT, against ' + fullPlan.total + ' ms for Indra\'s Full play), standing in for the game\'s classic presentation; and at every upright size nothing is declined',
+      SIDEWAYS.every((k) => RES[k].length === 6 * HCARDS.length && RES[k].every((r) => r.declined && r.pl === null && r.spawned === 0 && r.frames === 0)) &&
+      UPRIGHT.every((k) => RES[k].every((r) => !r.declined)) && !!pm && planAt > pm.index && /lastPlan\.tooSmall = tooSmall;/.test(LABJSH) &&
+      !redPlan.actor && redPlan.mode === 'reduced' && !redPlan.phases.some((ph) => /AWAKEN|EMERGE|ACT|FIZZLE/.test(ph.name)) && redPlan.total < fullPlan.total,
+      J({ sideways: SIDEWAYS.map((k) => [k, RES[k].filter((r) => !r.declined || r.spawned).map((r) => [r.card, r.seat, r.board])]), pm: !!pm, planAt, red: redPlan.phases.map((ph) => ph.name), redTotal: redPlan.total }));
+    // A8 — clearance gives way before size
+    const roomH = (r) => { const L = r.L, B = L.band, g = r.pl.guarded, me = r.seat === 'me';
+      return { top: me && g && B ? B.y + B.h + SM.GAP : 0, bottom: !me && g && B ? B.y - SM.GAP : L.field.h, left: 0, right: L.field.w, edgesV: (me && g && B ? 0 : 1) + (!me && g && B ? 0 : 1) }; };
+    const K = RES['390x844'].filter((r) => r.card === 'kartikeya').map((r) => { const e = envOf(r.cardRef, r.pl, r.Mr), h = roomH(r); return Object.assign(r, { env: e, roomH: h, needs: (e.bottom - e.top) > (h.bottom - h.top) - h.edgesV * SM.GAP + 1e-6 || (e.right - e.left) > (h.right - h.left) - 2 * SM.GAP + 1e-6 }); });
+    const smaller = UPRIGHT.reduce((all, k) => all.concat(shown(k).filter((r) => r.pl.height < r.full - 1e-6).map((r) => { const e = envOf(r.cardRef, r.pl, r.Mr), h = roomH(r);
+      return Object.assign({ size: k, env: e, roomH: h, fillsV: Math.abs(e.top - h.top) < 1e-3 && Math.abs(e.bottom - h.bottom) < 1e-3, fillsH: Math.abs(e.left - h.left) < 1e-3 && Math.abs(e.right - h.right) < 1e-3 }, r); })), []);
+    ok('S3e · HERO-FIT-1 A8 · CLEARANCE GIVES WAY BEFORE SIZE: against the field\'s edges the 6 px clearance is a preference that goes down to 0 before a figure is drawn smaller; against the enemy cards the 6 px stays. Kartikeya at 390×844 is FULL SIZE on both seats and every enemy board (' + K.length + ' plays) and could not be with 6 px kept at the field\'s edges (his whole play — every cell, the reach — is ' + (K[0].env.right - K[0].env.left).toFixed(1) + ' px wide in a ' + K[0].L.field.w.toFixed(0) + ' px field, more than the ' + (K[0].L.field.w - 2 * SM.GAP).toFixed(0) + ' px left with 6 px kept at each side; it comes within ' + Math.min(...K.map((r) => r.minMargin)).toFixed(2) + ' px of the field\'s edge on the frames drawn, never past it); and every figure that IS drawn smaller (' + smaller.length + ' plays at ' + [...new Set(smaller.map((r) => r.size))].join(', ') + ') is smaller only by what the room truly needs: its whole play — computed here from its cells, independent of stagemath — exactly fills the room from one limit to the other (the field\'s edges at 0 px, the enemy cards at 6 px) on the axis that limits it (' + smaller.filter((r) => r.fillsV).length + ' top to bottom, ' + smaller.filter((r) => !r.fillsV && r.fillsH).length + ' side to side; on the frames actually drawn at ' + HZ + ' Hz the nearest any of them comes to the field\'s edge is ' + Math.min(...smaller.map((r) => r.minMargin)).toFixed(2) + '–' + Math.max(...smaller.map((r) => r.minMargin)).toFixed(2) + ' px — the gap is a cell the play may draw, e.g. a late rise cell on a slow device, that this clock did not), and keeps 6 px from the enemy cards',
+      K.length === 6 && K.every((r) => !r.declined && r.pl.height === r.full && r.cut <= CUT && r.needs) &&
+      smaller.length > 0 && smaller.every((r) => (r.fillsV || r.fillsH) && r.minMargin >= -CUT && (!r.pl.guarded || r.bandGap >= SM.GAP - CUT)),
+      J({ K: K.map((r) => [r.seat, r.board, r.pl.height, r.full, r.minMargin, r.needs, r.env, r.roomH]), smaller: smaller.filter((r) => !((r.fillsV || r.fillsH) && r.minMargin >= -CUT && (!r.pl.guarded || r.bandGap >= SM.GAP - CUT))).map((r) => [r.size, r.card, r.seat, r.board, r.env, r.roomH, r.minMargin, r.bandGap]) }));
+  }
   const src = fs.readFileSync(path.join(LAB, 'lib', 'actorstage.js'), 'utf8');
   ok('S4 · NORMAL BLENDING (A4): the actor is drawn source-over from its atlas cells (Canvas 2D) or as a blendMode "normal" sprite (Pixi); no additive, screen or brightness-to-alpha anywhere in the stage',
      /globalCompositeOperation = 'source-over'/.test(src) && /blendMode = 'normal'/.test(src) && /drawImage\(a\.art\.image, c\.x, c\.y, c\.w, c\.h/.test(src) && !/lighter|'add'|'screen'|getImageData/.test(src));
@@ -2488,10 +2602,10 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
         return { seat, rung, maxAct: +maxAct.toFixed(2), atBoundary: +atBoundary.toFixed(2) };
       };
       const POSE = [0, 1].reduce((all, s2) => all.concat([512, 256].map((rg) => poseRun(s2, rg))), []);
-      const STAGE9A = fs.readFileSync(path.join(LAB, 'lib', 'actorstage.js'), 'utf8'), PLAY9A = fs.readFileSync(path.join(LAB, 'lib', 'playback.js'), 'utf8');
+      const STAGE9A = fs.readFileSync(path.join(LAB, 'lib', 'actorstage.js'), 'utf8'), PLAY9A = fs.readFileSync(path.join(LAB, 'lib', 'playback.js'), 'utf8'), SM9A = fs.readFileSync(path.join(LAB, 'lib', 'stagemath.js'), 'utf8');   // HERO-FIT-1: the charge's scale now rides into StageMath.place (travelScale), which fits the whole charge
       ok(CARD.tag + 'S21 · LAB-9a · NO TELEPORT INSIDE ACT, both seats and both rungs: the actor never moves more than 3 px between frames inside ACT and never jumps at the EMERGE→ACT boundary — the charge eases over at least 35% of ACT whatever cell the contact lands on, and a card that performs in place (travelScale 0) never charges at all (under half a pixel — what is left is EMERGE\'s rise easing handing over) (3 px, not 2: the top seat\'s charge travel is 1.85x the player\'s seat\'s — 57.3 px against 31.1 — so the same smooth ease peaks near 2.5 px a frame there; a surge is the 7 px class and a teleport the 31 px class, and both trip this instantly)' + (CARD.M.contactRule === 'nova' ? ', and a "nova" performs where it stands (no travel at all)' : '') + ' — ' + POSE.map((p) => 'seat ' + p.seat + ' @ ' + p.rung + ' px: max ' + p.maxAct + ', boundary ' + p.atBoundary).join(' | '),
          POSE.every((p) => p.maxAct <= 3 && p.atBoundary <= 3) && /var c = Math\.max\(0\.35, a\.contact\);/.test(STAGE9A) &&
-         /contactRule === 'nova' \? 0 :/.test(PLAY9A) && /pl\.travel = \{ x: pl\.travel\.x \* ts, y: pl\.travel\.y \* ts \};/.test(PLAY9A) &&
+         /contactRule === 'nova' \? 0 :/.test(PLAY9A) && /travelScale: ts,/.test(PLAY9A) && /var reach = c\.h \* REACH \* ts,/.test(SM9A) && /open - c\.w \* 0\.8\)\) \* ts;/.test(SM9A) &&
          (MAN.travelScale(CARD.M) > 0 || POSE.every((p) => p.maxAct <= 0.5)), J(POSE));
 
       // ── LAB-8 · THE NOVA CONTACT RULE ──
@@ -2522,7 +2636,7 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
         const DIRX = [0, 1].reduce((all, seat) => all.concat(BACKENDS.map((b) => {
           const W = world(seat, b), got = [], f0 = W.stage.flash.bind(W.stage), i0 = W.stage.impulse.bind(W.stage), fr0 = W.stage.frame.bind(W.stage);
           let spawn = null;
-          W.stage.frame = (t, n) => { const out = fr0(t, n); const a = W.stage.actors[0]; if (a && a.pose && !spawn) spawn = { x: a.pose.x, y: a.pose.feetY }; return out; };
+          W.stage.frame = (t, n) => { const out = fr0(t, n); const a = W.stage.actors[0]; if (a && a.pose && !spawn) spawn = { x: a.pl.anchor.x, y: a.pl.anchor.y };   /* HERO-FIT-1 (A9): where it was PLACED — a figure slid sideways rises on its card and drifts there during EMERGE */ return out; };
           W.stage.flash = (x, y, r, dirY, dur, shape) => { const a = W.stage.actors[0], q = a && a.pose; f0(x, y, r, dirY, dur, shape);
             got.push({ kind: 'flash', x, y, r, dur, dirY, shape: shape || null, radial: !!(W.stage.fx[W.stage.fx.length - 1] || {}).radial, h: a && a.pl.height,
                        ax: q && q.x, afy: q && q.feetY, cell: q && q.cellIndex }); };
@@ -2534,7 +2648,7 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
         const CI = CARD.M.phases.act[CARD.M.contact], STD = MAN.contactStrength(CARD.M);
         const summary = DIRX.map((x) => { const fl = x.got.find((g) => g.kind === 'flash'), im = x.got.find((g) => g.kind === 'impulse');
           return 'seat ' + x.seat + ' ' + x.b + ': flash dirY ' + (fl && fl.dirY) + ', impulse dirY ' + (im && im.dirY) + ', actor moved ' + (fl && x.spawn ? Math.hypot(fl.ax - x.spawn.x, fl.afy - x.spawn.y).toFixed(2) : '?') + ' px'; });
-        ok(CARD.tag + 'S20b · LAB-17 · THE DIRECTIONAL CONTACT, ' + (CARD.M.audit.recipe.contact || 'non-nova').toUpperCase() + ': on both seats and every backend the contact flash is DIRECTIONAL — not radial — fires on the contact cell, and both it and the camera impulse point at the TRUE target seat (up from the player, down from the top); and the actor\'s distance from where it spawned is REPORTED at the contact. That distance is not what this check guards: its own gate admits only travelScale-0 cards, so a card that charged would be skipped here rather than failed. The charge is guarded by M25 (only Meghnad travels) and by the per-card travelScale pins such as M42, both proven to fail when a card is forced to charge. What THIS check guards is the direction, proven to fail on every one of these cards when the flash is turned around. S20 only ever covered novas; this closes that gap for every in-place card that strikes toward its target — ' + summary.join(' | '),
+        ok(CARD.tag + 'S20b · LAB-17 · THE DIRECTIONAL CONTACT, ' + (CARD.M.audit.recipe.contact || 'non-nova').toUpperCase() + ': on both seats and every backend the contact flash is DIRECTIONAL — not radial — fires on the contact cell, and both it and the camera impulse point at the TRUE target seat (up from the player, down from the top); and the actor\'s distance from where it was placed is REPORTED at the contact (HERO-FIT-1 A9: a figure slid sideways rises on its own card and drifts to its place during EMERGE, so the measure is from the placed anchor, not the first frame). That distance is not what this check guards: its own gate admits only travelScale-0 cards, so a card that charged would be skipped here rather than failed. The charge is guarded by M25 (only Meghnad travels) and by the per-card travelScale pins such as M42, both proven to fail when a card is forced to charge. What THIS check guards is the direction, proven to fail on every one of these cards when the flash is turned around. S20 only ever covered novas; this closes that gap for every in-place card that strikes toward its target — ' + summary.join(' | '),
            DIRX.every((x) => { const fl = x.got.filter((g) => g.kind === 'flash'), im = x.got.filter((g) => g.kind === 'impulse'), want = x.seat === 0 ? -1 : 1;
              return fl.length === 1 && fl[0].shape === null && fl[0].radial === false && fl[0].dirY === want && fl[0].cell === CI &&
                fl[0].x === fl[0].ax && Math.abs(fl[0].y - (fl[0].afy - fl[0].h * 0.55)) < 1e-9 &&
@@ -2594,7 +2708,7 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
       const gateRun = (seat, backend, mode, how, at) => {
         const W = world(seat, backend, (fac) => DS.pick(FFXD, fac, ''), { noLoad: mode === 'reduced' });
         let spawn = null; const sp0 = W.stage.spawn.bind(W.stage);
-        W.stage.spawn = (id, pl, fac) => { if (!spawn) spawn = { id, anchor: { x: pl.anchor.x, y: pl.anchor.y }, dirY: pl.dirY, upright: !('flipY' in pl), height: pl.height, scale: pl.scale, shift: pl.shift, top: pl.anchor.y - pl.height }; return sp0(id, pl, fac); };
+        W.stage.spawn = (id, pl, fac) => { if (!spawn) spawn = { id, anchor: { x: pl.anchor.x, y: pl.anchor.y }, dirY: pl.dirY, upright: !('flipY' in pl), height: pl.height, scale: pl.scale, shift: pl.shift, top: pl.anchor.y - pl.height, slideX: pl.slideX, room: pl.room }; return sp0(id, pl, fac); };
         const plan = W.w.Director.plan(W.ctx, { mode, ladderExempt: CARD.exempt, timing: NT, tempo: 0.6, fizzleMs: 1500 }), r = W.w.Runner.create(plan, W.pb.handlers, () => W.clock.t);
         const ph = at ? plan.phases.find((p) => p.name === at) : null, cutT = ph ? Math.round((ph.t0 + ph.t1) / 2) : null, S = plan.phases.find((p) => p.name === 'SETTLE');
         const styles = new Set(); let cut = null; r.start({});
@@ -2618,8 +2732,8 @@ const PAGE = fs.readFileSync(path.join(LAB, 'index.html'), 'utf8');
       BACKENDS.forEach((b) => ['EMERGE', 'ACT', 'FIZZLE'].filter((p) => CARD.exit !== 'native' || p !== 'FIZZLE').forEach((at) => SWITCHES.push(gateRun(1, b, 'full', 'switch', at))));
       BACKENDS.forEach((b) => ['EMERGE', 'ACT', 'FIZZLE'].filter((p) => CARD.exit !== 'native' || p !== 'FIZZLE').forEach((at) => HIDES.push(gateRun(0, b, 'full', 'hide', at))));
       const actorRuns = PLAIN.filter((x) => x.mode !== 'reduced');
-      gate('the right card on the right seat, both sides: every Full and Fast play spawns ' + CARD.name + ' at its own card, reaching toward the other seat, upright and THE SAME SIZE on both seats (height ' + (90 * 2.1) + ' px, scale ' + (90 * 2.1 / CARD.M.refHeight).toFixed(4) + ' — placement gives way, never scale; never above the board\'s top edge here)' + (CARD.M.aim ? ' (aim ' + CARD.M.aim + ': on the top seat the action fires up and off the board)' : '') + ' (' + actorRuns.length + ' plays); a Reduced play spawns nothing',
-        actorRuns.every((x) => { const g = geo(x.seat); return x.spawn && x.spawn.id === CARD.id && x.spawn.upright && x.spawn.height === g.card.h * 2.1 && x.spawn.scale === g.card.h * 2.1 / CARD.M.refHeight && x.spawn.shift >= 0 && x.spawn.top >= -1e-9 && Math.abs(x.spawn.anchor.x - (g.card.x + g.card.w / 2)) < 0.01 && Math.abs(x.spawn.anchor.y - (g.card.y + g.card.h * 0.94 + x.spawn.shift)) < 0.01 && x.spawn.dirY === (x.seat === 0 ? -1 : 1) && !SM.touchesBand({ anchor: x.spawn.anchor, height: x.spawn.height, travel: { x: 0, y: 0 } }, g.band); }) &&
+      gate('the right card on the right seat, both sides: every Full and Fast play spawns ' + CARD.name + ' at its own card, reaching toward the other seat, upright and THE SAME SIZE on both seats (height ' + (90 * 2.1) + ' px, scale ' + (90 * 2.1 / CARD.M.refHeight).toFixed(4) + ' — the whole play fits here, so full size; HERO-FIT-1: placed at its card, moved by exactly the sideways slide it reports where the whole figure needs it, and its whole play inside the field)' + (CARD.M.aim ? ' (aim ' + CARD.M.aim + ': on the top seat the action fires up and off the board)' : '') + ' (' + actorRuns.length + ' plays); a Reduced play spawns nothing',
+        actorRuns.every((x) => { const g = geo(x.seat); return x.spawn && x.spawn.id === CARD.id && x.spawn.upright && x.spawn.height === g.card.h * 2.1 && x.spawn.scale === g.card.h * 2.1 / CARD.M.refHeight && x.spawn.shift >= 0 && x.spawn.top >= -1e-9 && Math.abs(x.spawn.anchor.x - (g.card.x + g.card.w / 2 + x.spawn.slideX)) < 0.01 && Math.abs(x.spawn.slideX) < g.card.w * 1.5 && Math.abs(x.spawn.anchor.y - (g.card.y + g.card.h * 0.94 + x.spawn.shift)) < 0.01 && x.spawn.room.top >= -1e-9 && x.spawn.room.left >= -1e-9 && x.spawn.room.bottom <= FIELD.h + 1e-9 && x.spawn.room.right <= FIELD.w + 1e-9 && x.spawn.dirY === (x.seat === 0 ? -1 : 1) && !SM.touchesBand({ anchor: x.spawn.anchor, height: x.spawn.height, travel: { x: 0, y: 0 } }, g.band); }) &&
         PLAIN.filter((x) => x.mode === 'reduced').every((x) => !x.spawn), J(PLAIN.map((x) => [x.seat, x.backend, x.mode, x.spawn])));
       gate('the outcome equals the engine\'s AFTER on every play: both seats × 3 backends × Full / Fast / Reduced (' + PLAIN.length + ' plays)', PLAIN.every((x) => !!x.done && x.done.equalsFinal), J(PLAIN.map((x) => [x.seat, x.backend, x.mode, x.done])));
       gate('nothing stale after Skip in any phase: AWAKEN / EMERGE / ACT / FIZZLE / SETTLE × 3 backends (' + SKIPS.length + ') — no actor, sprite, particle, effect or camera offset, the board on AFTER with no numbers',

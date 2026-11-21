@@ -1087,10 +1087,12 @@ if (process.argv.includes('--game')) {
     try { out = cp.execFileSync('node', ['src/' + s.file], { cwd: REPO, encoding: 'utf8', env: Object.assign({}, process.env, s.env ? { DY_WEB: path.resolve(REPO, '../divya-yuddha-web') } : {}), stdio: ['ignore', 'pipe', 'pipe'], maxBuffer: 64 << 20 }); }
     catch (e) { out = String(e.stdout || '') + String(e.stderr || ''); }
     const m = s.expect.match ? out.includes(s.expect.match) : null;
+    // a suite that judges each live puzzle once: the fixed part is recorded, the puzzle count is read from the same site checkout it runs on
+    let livePz = null; if (s.expect.fixed != null) { try { const raw = JSON.parse(fs.readFileSync(path.resolve(REPO, '../divya-yuddha-web', s.expect.perLivePuzzle), 'utf8')); livePz = (Array.isArray(raw) ? raw : raw.puzzles).length; } catch (e) { livePz = null; } s.expect.pass = livePz == null ? 'unknown (no ' + s.expect.perLivePuzzle + ')' : s.expect.fixed + livePz; }
     const allPass = new RegExp('ALL ' + s.expect.pass + ' ').test(out);
     const known = s.expect.knownFail ? out.includes('✖ ' + s.expect.knownFail.fail + ' FAILURES / ' + s.expect.knownFail.pass + ' passed') : false;
     const good = s.expect.match ? m : s.expect.knownFail ? known : allPass;
-    ok('G · ' + s.file + ' — ' + (s.expect.match ? '"' + s.expect.match + '"' : s.expect.knownFail ? s.expect.knownFail.pass + ' passed + the ' + s.expect.knownFail.fail + ' known pre-existing failure (' + s.expect.knownFail.why + ')' : s.expect.pass + ' checks'), good,
+    ok('G · ' + s.file + ' — ' + (s.expect.match ? '"' + s.expect.match + '"' : s.expect.knownFail ? s.expect.knownFail.pass + ' passed + the ' + s.expect.knownFail.fail + ' known pre-existing failure (' + s.expect.knownFail.why + ')' : s.expect.pass + ' checks' + (s.expect.fixed != null ? ' (' + s.expect.fixed + ' fixed + ' + livePz + ' live puzzles)' : '')), good,
       out.split('\n').filter((l) => /✖|ALL|PASS|FAIL/.test(l)).slice(-3).join(' | '));
   }
 }

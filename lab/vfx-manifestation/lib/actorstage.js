@@ -196,10 +196,15 @@
     if (ci == null) ci = cells[ix];
     var p = Math.min(1, a.pt / a.dur), cell = m.cells[ci];
     var pl = a.pl, alpha = 1, sc = 1, rise = 0, k = 0;
-    if (a.phase === 'emerge') { var e = easeOut(Math.max(p, 0.5 / cells.length));   /* LAB-4d: never fully transparent — the first cell is really drawn */ alpha = e; sc = 0.72 + 0.28 * e; rise = (1 - e) * pl.height * 0.35; }
+    var x0 = pl.anchor.x;
+    if (a.phase === 'emerge') { var e = easeOut(Math.max(p, 0.5 / cells.length));   /* LAB-4d: never fully transparent — the first cell is really drawn */ alpha = e; sc = 0.72 + 0.28 * e; rise = (1 - e) * pl.height * 0.35;
+      // HERO-FIT-1 (A5): the rise keeps its fade and grow-in; only its downward offset is limited, so the figure's lowest point stays inside the field
+      if (pl.floorY != null) rise = Math.min(rise, Math.max(0, pl.floorY - pl.anchor.y - (pl.below || 0) * pl.scale * sc));
+      // HERO-FIT-1 (owner note, condition a): a figure slid sideways rises on its own card and drifts to its place as it grows — no jump
+      if (pl.riseFromX != null) x0 = pl.riseFromX + (pl.anchor.x - pl.riseFromX) * e; }
     else if (a.phase === 'act') { var c = Math.max(0.35, a.contact);   /* LAB-9a: the charge always eases over at least a third of ACT — a contact on cell 0 used to land the whole travel on one frame */ k = p < c ? easeIn(p / c) : 1 - 0.18 * easeOut((p - c) / (1 - c)); }
     else if (a.phase === 'fizzle') { k = 0.82; if (!a.dz) { alpha = 1 - easeIn(p); sc = 1 + 0.06 * p; rise = -10 * p; } }   // a dissolving actor holds still: the erosion is the exit
-    return { cell: cell, cellIndex: ci, phaseIx: ix, phase: a.phase, x: pl.anchor.x + pl.travel.x * k, feetY: pl.anchor.y + pl.travel.y * k, y: pl.anchor.y + pl.travel.y * k + rise, scale: pl.scale * sc, alpha: alpha, flipX: pl.flipX };
+    return { cell: cell, cellIndex: ci, phaseIx: ix, phase: a.phase, x: x0 + pl.travel.x * k, feetY: pl.anchor.y + pl.travel.y * k, y: pl.anchor.y + pl.travel.y * k + rise, scale: pl.scale * sc, alpha: alpha, flipX: pl.flipX };
   };
 
   P.frame = function (t, realNow) {

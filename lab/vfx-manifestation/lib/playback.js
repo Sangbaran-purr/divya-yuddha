@@ -4,7 +4,8 @@
            rectOf(uid) → field-local {x,y,w,h} | null, clientOf(uid) → client {cx,cy,w} | null, field {w,h}, bandOf(seat) → rect | null,
            render(board, floats), pulse(uid, ms), actorFor(cardId) → {manifest,image} | null, factionFx(faction) → {name, portal, exit, dissolve},
            embers(clientX, clientY) (the existing ember recipe), queueFx(event, board, skipped), onDone(result),
-           sound?(name) — 'contact' on the contact cell, 'exit' as FIZZLE starts (LAB-5), release?(cardId) — after SETTLE (LAB-5) }
+           sound?(name) — 'contact' on the contact cell, 'exit' as FIZZLE starts (LAB-5), release?(cardId) — after SETTLE (LAB-5),
+           exitOf?(cardId) → 'native'|'procedural' (HERO-FIT-1: the exit the play will use; absent = the manifest's own exit) }
    A1 on every cue: the actor acts toward the enemy side and never reaches the enemy cards (StageMath); nothing is drawn on the
    target; the numbers land at SETTLE from the board difference, and the queued events land theirs after.
    Browser: window.Playback. Node: require (with a stub env). */
@@ -14,6 +15,18 @@
   var SM = (typeof module !== 'undefined' && module.exports) ? require('./stagemath.js') : root.StageMath;
   var clone = function (x) { return JSON.parse(JSON.stringify(x)); };
 
+  // HERO-FIT-1: where a play's figure stands — or { declined:true } where the field cannot hold it whole even at 1.4 card heights (A7).
+  // Pure: it needs only the card's rect, the field, the enemy band and the MANIFEST (no decoded atlas), so a caller asks it BEFORE it
+  // plans, waits or decodes anything — o = { card, side:'me'|'opp', field:{w,h}, band, manifest, exit?:'native'|'procedural' }
+  function placeFor(o) {
+    var m = o.manifest;
+    // LAB-10: the card says how far it charges (travelScale, default 1); LAB-9a: a nova bursts where it stands whatever it says
+    var ts = m.contactRule === 'nova' ? 0 : (root.ActorManifest || require('./manifest.js')).travelScale(m);
+    // the fit needs the figure's drawn reach (every cell, and the rise's own cells) and the charge it will really make
+    return SM.place({ card: o.card, side: o.side, fieldW: o.field.w, fieldH: o.field.h, band: o.band, refHeight: m.refHeight, facing: m.facing,
+                      extent: SM.extentOf(m), emergeExtent: SM.extentOf(m, ['emerge']), exitExtent: SM.extentOf(m, m.phases && m.phases.fizzle && m.phases.fizzle.length ? ['fizzle'] : ['act']), travelScale: ts,
+                      exitGrows: (o.exit || (m.exit === 'native' ? 'native' : 'procedural')) !== 'native' });
+  }
   function create(env) {
     var ctx = env.ctx, actor = null, working = null, log = [];
     var side = ctx.seat === env.viewer ? 'me' : 'opp';
@@ -21,11 +34,8 @@
     function placement() {
       var art = env.actorFor(ctx.cardId), card = env.rectOf(ctx.sourceUid);
       if (!art || !card) return null;
-      var pl = SM.place({ card: card, side: side, fieldW: env.field.w, fieldH: env.field.h, band: env.bandOf(1 - ctx.seat), refHeight: art.manifest.refHeight, facing: art.manifest.facing });
-      // LAB-10: the card says how far it charges (travelScale, default 1); LAB-9a: a nova bursts where it stands whatever it says
-      var ts = art.manifest.contactRule === 'nova' ? 0 : (root.ActorManifest || require('./manifest.js')).travelScale(art.manifest);
-      if (ts !== 1) pl.travel = { x: pl.travel.x * ts, y: pl.travel.y * ts };
-      return pl;
+      var pl = placeFor({ card: card, side: side, field: env.field, band: env.bandOf(1 - ctx.seat), manifest: art.manifest, exit: env.exitOf ? env.exitOf(ctx.cardId) : null });
+      return pl.declined ? null : pl;   // HERO-FIT-1 A7: too small to show — no figure (the caller asked placeFor first and took the classic path)
     }
     function ensureActor() {
       if (actor) return actor;
@@ -100,7 +110,7 @@
     };
     return { handlers: handlers, log: log, get actor() { return actor; }, get board() { return working; }, placement: placement };
   }
-  var OUT = { create: create };
+  var OUT = { create: create, placeFor: placeFor };
   root.Playback = OUT;
   if (typeof module !== 'undefined' && module.exports) module.exports = OUT;
 })(typeof window !== 'undefined' ? window : this);

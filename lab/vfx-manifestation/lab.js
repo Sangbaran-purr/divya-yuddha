@@ -353,10 +353,16 @@
     const reg = REG[ctx.cardId] || {};
     const prior = opts.phase ? 0 : memory.count(ctx.cardId);
     const mf = (ctx.scope === 'manifest' && reg.manifest) ? await manifestFor(ctx.cardId) : null;
-    const timing = timingOf(mf), { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf));
-    lastPlan = window.Director.plan(ctx, { mode, prior, ladderExempt: !!reg.ladderExempt, timing, tempo, fizzleMs, exit: exitFor(reg, mf, ctx) });
+    const timing = timingOf(mf), { tempo, fizzleMs } = syncSliders(tuningFor(ctx, mf)), exit = exitFor(reg, mf, ctx);
+    // HERO-FIT-1 A7 · TOO SMALL TO SHOW: asked BEFORE the plan, from the manifest and the live rects alone (no atlas). Where the field
+    // cannot hold the whole figure even at 1.4 card heights, the play shows no figure and nothing waits — the lab's no-actor path
+    // (the Reduced plan: the card pulse, then SETTLE), standing in for the game's classic presentation.
+    const f0 = fieldRect(), src0 = mf && mode !== 'reduced' ? rectOf(ctx.sourceUid) : null;
+    const tooSmall = !!(src0 && window.Playback.placeFor({ card: src0, side: ctx.seat === VIEWER ? 'me' : 'opp', field: { w: f0.width, h: f0.height }, band: bandOf(1 - ctx.seat), manifest: mf, exit }).declined);
+    lastPlan = window.Director.plan(ctx, { mode: tooSmall ? 'reduced' : mode, prior, ladderExempt: !!reg.ladderExempt, timing, tempo, fizzleMs, exit });
+    lastPlan.tooSmall = tooSmall;
     const art = lastPlan.actor && mf ? await actorFor(ctx.cardId) : null;   // A5: an atlas is decoded only for a play that shows its actor
-    if (!opts.phase) memory.record(ctx.cardId);
+    if (!opts.phase && !tooSmall) memory.record(ctx.cardId);
     el('memory-note').textContent = 'Match memory: ' + ctx.cardName + ' has manifested ' + memory.count(ctx.cardId) + ' time' + (memory.count(ctx.cardId) === 1 ? '' : 's') + '. The second play in a match runs Fast.';
     lastDone = null;
     const f = fieldRect();
@@ -364,7 +370,7 @@
       stage, ctx, boards, viewer: VIEWER, field: { w: f.width, h: f.height },
       rectOf, clientOf, bandOf, render, fieldClient: () => { const r = fieldRect(); return { x: r.left, y: r.top }; },
       pulse: (uid, ms) => { const n = el('field').querySelector('.bc[data-uid="' + uid + '"]'); if (n) { n.classList.add('pulse'); setTimeout(() => n.classList.remove('pulse'), ms); } },
-      actorFor: (id) => actors[id] || null, release, sound: (name) => audio.play(name),
+      actorFor: (id) => actors[id] || null, exitOf: () => exit, release, sound: (name) => audio.play(name),
       factionFx: (fac) => window.Dissolve.pick(FFX, fac, exitPreset),
       embers: (x, y) => VFX.cardLand(x, y),
       queueFx: (ev, board, skipped) => {
@@ -375,7 +381,7 @@
       onDone: (res) => { lastDone = res; if (!res.equalsFinal) report('the board after the batch does not equal the engine\'s AFTER snapshot'); },
       onError: report,
     });
-    el('plan').textContent = window.Director.formatPlan(lastPlan);
+    el('plan').textContent = (tooSmall ? '(too small to show here: the field cannot hold the whole figure at 1.4 card heights — no figure, the classic presentation; A7)\n\n' : '') + window.Director.formatPlan(lastPlan);
     runner = window.Runner.create(lastPlan, playback.handlers, () => clock.t);
     const ph = opts.phase ? lastPlan.phases.find((p) => p.name === opts.phase) : null;
     if (opts.phase && !ph) { el('plan').textContent = window.Director.formatPlan(lastPlan) + '\n\n(' + opts.phase + ' is not in a ' + lastPlan.mode + ' plan)'; return; }
