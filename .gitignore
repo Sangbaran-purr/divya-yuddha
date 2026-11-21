@@ -24,3 +24,5 @@ assets/arcade/
 assets/fonts/
 # owner ruling 2026-11-21 (TIDY-1 commit word): VFX concept pictures stay on this Mac
 assets/vfx/concepts/
+# owner ruling 2026-11-21: the board masters stay on this Mac (plural folder only; assets/board/ stays tracked)
+assets/boards/
