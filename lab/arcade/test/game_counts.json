@@ -1,5 +1,5 @@
 {
-  "what": "the game's own suites and their exact counts, recorded at LAW_BASE (6b946e0) before the arcade lab began — every lab commit must leave them exactly so (node lab/arcade/test/run.js --game) · updated 2026-11-03: test_puzzlemode.js 99 after TEST-PUZZLEMODE-1",
+  "what": "the game's own suites and their exact counts, recorded at LAW_BASE (6b946e0) before the arcade lab began — every lab commit must leave them exactly so (node lab/arcade/test/run.js --game) · updated 2026-11-03: test_puzzlemode.js 99 after TEST-PUZZLEMODE-1 · updated 2026-11-21 (TIDY-1): test_count_hook.js 26 (SHARE-2, SHARE-3 and ONBOARD-1 added checks); test_roundend.js added at 37 (RULES-FIX-1 Stage 1)",
   "suites": [
     {
       "file": "test.js",
@@ -28,7 +28,7 @@
     {
       "file": "test_count_hook.js",
       "expect": {
-        "pass": 10
+        "pass": 26
       }
     },
     {
@@ -53,6 +53,12 @@
       "file": "test_narrator.js",
       "expect": {
         "pass": 35
+      }
+    },
+    {
+      "file": "test_roundend.js",
+      "expect": {
+        "pass": 37
       }
     },
     {

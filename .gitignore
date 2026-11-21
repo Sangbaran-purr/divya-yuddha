@@ -2,3 +2,25 @@
 
 # animate_vfx.py per-frame intermediates — regenerable (deterministic A3 seed) from the tracked layers
 assets/vfx/seq/
+
+# TIDY-1 (owner rulings 2026-11-21): kept on this Mac, never committed
+# R1 — marketing, design and scratch work
+assets/marketing/
+assets/promotions/
+designs/
+output/
+tmp/
+assets/story/angad-meghnad/
+assets/story/garuda-vasuki/
+assets/story/indra-vritra/
+assets/story/rahu-chandra/
+assets/story/ravana-yama/
+assets/story/sugriva-kumbhakarna/
+assets/story/smriti-board-background.png
+scripts/compose_*.py
+scripts/create_*.py
+# R2 — the Arcade masters and the font
+assets/arcade/
+assets/fonts/
+# owner ruling 2026-11-21 (TIDY-1 commit word): VFX concept pictures stay on this Mac
+assets/vfx/concepts/

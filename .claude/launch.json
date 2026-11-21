@@ -6,6 +6,18 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-m", "http.server", "4599"],
       "port": 4599
+    },
+    {
+      "name": "site",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "4600", "--directory", "../divya-yuddha-web"],
+      "port": 4600
+    },
+    {
+      "name": "arcade-capture",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["lab/arcade/tools/capture_server.js", "4611"],
+      "port": 4611
     }
   ]
 }

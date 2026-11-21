@@ -14,7 +14,8 @@
 //                       LAB-4b: the dissolve exit on every backend, a pixel never reappears, the faction presets, no grain
 //   R · THE RUNTIME     the lab's VFX module is the game's byte-for-byte; its injected names; it runs on them alone; the subset
 //   P · THE PAGE        the structure and every control; nothing loaded from the live game; every URL stamped (LAB-4a)
-//   G · THE RULE        no tracked change outside lab/ since the lab began (the ruling doc, A8, excepted); nothing outside
+//   G · THE RULE        no UNCOMMITTED change outside lab/ (TIDY-1 R5; the ruling doc and a root continuation doc, A8, excepted);
+//                       `--game-task` reports G1 as not judged (a normal game task); nothing outside
 //                       lab/ references it; the site's sync never archives it; Kling sources and frames are ignored
 //   D · THE RULING      the doc carries A1–A8
 //   GATE (LAB-5)        the acceptance gate, automated: one GATE: PASS/FAIL line listing every check
@@ -22,10 +23,11 @@
 const fs = require('fs'), path = require('path'), crypto = require('crypto'), cp = require('child_process');
 const LAB = path.resolve(__dirname, '..'), GAME = path.resolve(LAB, '..', '..');
 const WEB = process.env.DY_WEB || path.resolve(GAME, '..', 'divya-yuddha-web');
-const LAB_BASE = 'e2f4c19';   // GL-3 — the game commit the lab began from
-// EXPORT-1 (owner ruling 6): the experiment rule re-anchors to EACH RULED EXPORT COMMIT — the most recent commit whose subject
-// begins "EXPORT-<n>:" — with no allowlist. Before the first export exists it is still the commit the lab began from.
-const RULE_BASE = (() => { try { const h = cp.execFileSync('git', ['log', '-1', '--format=%h', '--extended-regexp', '--grep=^EXPORT-[0-9]+: '], { cwd: GAME }).toString().trim(); return h || LAB_BASE; } catch (e) { return LAB_BASE; } })();
+// TIDY-1 (owner ruling R5, 2026-11-21): G1 judges only work that is NOT YET COMMITTED — staged, unstaged and new files
+// outside lab/ — measured against the current commit. The old anchor (the last "EXPORT-<n>:" commit, before that the lab's
+// first commit e2f4c19) made every later game commit count against the lab. A normal game task runs this suite with
+// --game-task: G1 is then reported as "not judged — game task" and does not fail; its self-proofs G1a/G1b still run.
+const GAME_TASK = process.argv.includes('--game-task');
 const DOC = 'docs/VFX_MANIFESTATION_v1.md';
 // A8, NARROWED (owner ruling 2026-09-30, option 2). G1 forbids every tracked change outside lab/ while the lab runs.
 // Two things are exempt and only two: the ruling doc, and a ROOT-LEVEL continuation doc named for its own date —
@@ -2655,8 +2657,12 @@ const COPY = JSON.parse(fs.readFileSync(path.join(LAB, 'runtime', 'COPY.json'), 
   const a = live.body.split('\n'), b = (mine || '').split('\n');
   const drift = []; for (let i = 0; i < Math.max(a.length, b.length); i++) if (a[i] !== b[i]) drift.push(i);
   console.log('    DRIFT REPORT · live index.html:' + live.start + '-' + live.end + ' (' + a.length + ' lines) vs lab runtime/vfx.js (' + b.length + ' lines, copied from ' + COPY.source.startLine + '-' + COPY.source.endLine + ' @ ' + String(COPY.source.gameCommit).slice(0, 7) + ') · lines differing: ' + drift.length);
-  ok('R1 · the lab\'s module is the game\'s VFX module BYTE-FOR-BYTE (0 lines of drift against index.html:' + live.start + '-' + live.end + '), and COPY.json names that exact range and sha256',
-     mine !== null && drift.length === 0 && COPY.source.sha256 === sha256(live.body) && COPY.source.startLine === live.start && COPY.source.endLine === live.end, drift.length + ' lines differ');
+  // TIDY-1 (owner ruling R6): R1 judges CONTENT and FINGERPRINT only. The line range is recorded in COPY.json and reported here,
+  // never judged — unrelated edits above the module move it without changing a byte of the module.
+  const rangeNote = COPY.source.startLine === live.start && COPY.source.endLine === live.end ? 'the recorded range ' + live.start + '-' + live.end + ' still matches'
+    : 'the recorded range ' + COPY.source.startLine + '-' + COPY.source.endLine + ' has moved to ' + live.start + '-' + live.end + ' (reported, not judged)';
+  ok('R1 · the lab\'s module is the game\'s VFX module BYTE-FOR-BYTE (0 lines of drift) and COPY.json carries its sha256 — ' + rangeNote,
+     mine !== null && drift.length === 0 && COPY.source.sha256 === sha256(live.body), drift.length + ' lines differ' + (COPY.source.sha256 === sha256(live.body) ? '' : ' · the COPY.json sha256 is not the live module\'s'));
   const consts = T.pageConstants(html);
   const outside = VFXJS.split(T.verbatimOf(VFXJS)).join('');
   const declared = [...outside.matchAll(/var\s+([^;]+);/g)].flatMap((m) => [...m[1].matchAll(/(?:^|,)\s*([A-Za-z_$][\w$]*)\s*=/g)].map((x) => x[1]));
@@ -2729,14 +2735,16 @@ console.log('\n── G · the experiment rule ──');
   //   index.html, scripts/, tools/ or test/ was invisible to it — which is exactly how a continuation doc could sit
   //   at the root for days with the suite reading green. Ruling 2026-09-30 (b): the probe now feeds the verdict.
   const g1sets = () => ({
-    changed: git(['diff', '--name-only', RULE_BASE, '--']).split('\n').filter(Boolean),
+    changed: git(['diff', '--name-only', 'HEAD', '--']).split('\n').filter(Boolean),   // R5: unstaged + staged, against the current commit
     staged: git(['diff', '--cached', '--name-only']).split('\n').filter(Boolean),
     untracked: git(['ls-files', '--others', '--exclude-standard', '--', 'docs', 'src', 'index.html', 'scripts', 'tools', 'test']).split('\n').filter(Boolean),
   });
   const g1outside = (sets) => [...new Set(sets.changed.concat(sets.staged).concat(sets.untracked))]
     .filter((p) => p.indexOf('lab/') !== 0 && !exemptFromG1(p));
   const outside = g1outside(g1sets());
-  ok('G1 · no change outside lab/ since ' + (RULE_BASE === LAB_BASE ? 'the lab began (' + LAB_BASE + ')' : 'the last ruled export commit (' + RULE_BASE + ', re-anchored per EXPORT-1 ruling 6)') + ' — committed, staged OR UNTRACKED in the working tree — except the ruling doc and a root-level CONTINUATION_YYYY-MM-DD.md (A8)', outside.length === 0, outside.join(', '));
+  const G1_NAME = 'G1 · no UNCOMMITTED change outside lab/ (staged, unstaged or new, against the current commit, TIDY-1 R5) — except the ruling doc and a root-level CONTINUATION_YYYY-MM-DD.md (A8)';
+  if (GAME_TASK) console.log('  – ' + G1_NAME + ' — not judged — game task' + (outside.length ? ' (outside lab/: ' + outside.join(', ') + ')' : ''));
+  else ok(G1_NAME, outside.length === 0, outside.join(', '));
 
   // ── G1a/G1b: the guard's own proofs. The rule above is only worth its green if the exemption is exactly as narrow
   //    as it was ruled, and if the untracked probe really reaches the verdict rather than sitting beside it.
