@@ -15,7 +15,15 @@
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const GAME = path.resolve(__dirname, '..');
 const WEB = process.env.DY_WEB || path.resolve(GAME, '..', 'divya-yuddha-web');
-const HTML = fs.readFileSync(process.env.DY_RE_HTML || path.join(GAME, 'index.html'), 'utf8');
+let HTML = fs.readFileSync(process.env.DY_RE_HTML || path.join(GAME, 'index.html'), 'utf8');
+// DY_RE_BREAK=<name> breaks one guard of PASHU-ORDER-1 in memory (the file is never written), to prove the check that guards it bites
+const BREAKS = {
+  e1: ['if(f) f.c.power=1; } }   // engine damageUnit', '} }   // engine damageUnit'],
+  e5: ['RE=null; reLive=null; return true;\n}', 'return true;\n}'],
+  e7: ['return (p && HELD_PLAYS[p.abilityName]) ? p : null;', 'return p || null;'],
+  e8: ['function heldCopyAny(g){ if (!g) return null;', 'function heldCopyAny(g){ if (!g) return null; if (g._view) return g;'],
+};
+if (process.env.DY_RE_BREAK) { const br = BREAKS[process.env.DY_RE_BREAK]; if (!br || HTML.indexOf(br[0]) < 0) { console.log('✖ unknown or stale DY_RE_BREAK ' + process.env.DY_RE_BREAK); process.exit(2); } HTML = HTML.split(br[0]).join(br[1]); console.log('⚠ DY_RE_BREAK=' + process.env.DY_RE_BREAK + ' — one guard broken in memory'); }
 let pass = 0, fail = 0;
 const ok = (name, cond, detail) => { if (cond) { pass++; console.log('  ✓ ' + name); } else { fail++; console.log('  ✖ ' + name + (detail ? '\n      ' + detail : '')); } };
 const J = (x) => JSON.stringify(x);
@@ -77,6 +85,143 @@ console.log('── 1 · the held board, against the board the engine scored ─
     one('Shankhapala moves a Venom (the event names only where it lands)', 'nagas', 'devas', true, (g, put) => { put(0, 'Shankhapala'); put(1, 'Deva Soldier', { venom: 2 }); put(1, 'Yama'); });
     one("Mahishi copies the strongest Unit (the event carries no amount)", 'asuras', 'devas', true, (g, put) => { put(0, 'Mahishi'); put(0, 'Ravana'); put(1, 'Deva Soldier'); });
     one('Kalpavriksha lifts the lowest to the highest', 'devas', 'asuras', true, (g, put) => { g.players[0].artifact = ctx.mk(ctx.CB['Kalpavriksha']); put(0, 'Deva Soldier'); put(0, 'Yama'); put(1, 'Tataka'); });
+  }
+}
+
+// ═══ 7 · PASHU-ORDER-1 — THE HELD PLAY (E1, and E8's views): Brahmastra and Pashupatastra show the board from before the play, moved
+//     one event at a time; after the last event the copy must equal the engine's board (place, power, base, Venom, bind, ward, tokens,
+//     ghosts, the artifact). The page's own helpers, the engine as shipped (no hook needed: the truth is the board after the play).
+console.log('\n── 7 · the held play: the copy equals the engine\'s board after every Brahmastra and Pashupatastra (E1, E8) ──');
+const W3 = process.env.DY_WEB3 || path.resolve(GAME, '..', 'divya-yuddha-web3'), MS = path.join(W3, 'services', 'match-server');
+function extractFn(src, name) { const i = src.indexOf('function ' + name + '('); if (i < 0) throw new Error('cannot find function ' + name);
+  let depth = 0; for (let k = src.indexOf('{', i); k < src.length; k++) { if (src[k] === '{') depth++; else if (src[k] === '}') { depth--; if (depth === 0) return src.slice(i, k + 1); } } throw new Error('unbalanced ' + name); }
+{
+  const a = HTML.indexOf('function reCopy('), b = HTML.indexOf('function reDrawHeld(');
+  const helpers = ['heldPlayOf', 'heldCopyAny', 'heldStep', 'heldAlignTokens', 'heldMidFinish', 'heldKey'];
+  const hasHelpers = helpers.every((n) => { const i = HTML.indexOf('function ' + n + '('); return i > a && i < b; });
+  ok('E1 · the page carries the held-play helpers (' + helpers.join(', ') + ') beside the round-end ones', hasHelpers);
+  if (!hasHelpers) { fail++; console.log('  ✖ E1/E8 NOT RUN — this page has no held play (today\'s page, or a broken copy)'); } else {
+  const mkCtx = (view) => { const c = { module: { exports: {} }, Math, JSON, Set, Map, Array, Object, String, Number, RegExp }; vm.createContext(c);
+    vm.runInContext(fs.readFileSync(path.join(__dirname, 'engine.js'), 'utf8') + '\n;var ME=0, OPP=1, G=null; ' +
+      (view ? 'function isViewState(x){ return !!(x && x._view); } var Q={ effPower:(g,pi,u)=>isViewState(g) ? (u ? u.power : 0) : effPower(g,pi,u) };'
+            : 'function isViewState(x){ return !!(x && x._view); } var Q={ effPower:(g,pi,u)=>effPower(g,pi,u) };') + '\n' +
+      HTML.slice(a, b) + '\n;this.H={ heldCopyOf, heldCopyAny, heldApply, heldStep, heldMidFinish, heldKey, heldPlayOf }; this.mk=mkCard; this.CB=CARD_BY_NAME;', c); return c; };
+  const ctx = mkCtx(false), E = ctx.module.exports, H = ctx.H;
+  // one held play: the copy before, the engine's play, every event through the copy, then the turn's start
+  const runHeld = (g, act) => { const held = H.heldCopyOf(g), e0 = g.events.length; act(); const evs = g.events.slice(e0);
+    if (!H.heldPlayOf(evs)) return { skipped: true };
+    const gone = {}; evs.forEach((e, i) => H.heldStep(held, e, gone, g, evs[i + 1])); H.heldMidFinish(held, g);
+    return { ok: H.heldKey(held) === H.heldKey(g), held: H.heldKey(held), live: H.heldKey(g), evs }; };
+  // the sweep: full AI matches, every faction pair, every realm, launch and wave decks; at random turns the card goes into the hand and is cast
+  const F = ['devas', 'asuras', 'vanaras', 'nagas'], R = E.REALMS.map((r) => r.id || r), NAMES = ['Pashupatastra', 'Brahmastra'];
+  const casts = { Pashupatastra: 0, Brahmastra: 0 }, bad = { Pashupatastra: 0, Brahmastra: 0 }, seats = [0, 0], shapes = new Set();
+  let sample = '', leapsFirst = 0;
+  for (let k = 0; (casts.Pashupatastra < 450 || casts.Brahmastra < 450) && k < 2000; k++) {
+    const wave = k % 2 === 1, rng = mul(91000 + k);
+    const g = E.newGame({ p0Faction: F[k % 4], p1Faction: F[(k >> 2) % 4], rng, realm: R[k % R.length], wave1: wave });
+    for (const s of [0, 1]) E.mulligan(g, s, E.aiMulliganPlan(g, s));
+    let guard = 0;
+    while (!g.over && guard++ < 400) {
+      const s = g.turn, pl = g.players[s];
+      if (!pl.passed && rng() < 0.3) {
+        const name = NAMES[(casts.Pashupatastra + casts.Brahmastra + k) % 2], c = ctx.mk(ctx.CB[name]);
+        pl.hand.unshift(c); pl.mustPlayUnit = false;
+        if (E.playableIndices(g, s).indexOf(0) >= 0) {
+          const r = runHeld(g, () => { if (pl.faction === 'vanaras' && E.canLeap(g, s) && rng() < 0.5) { const bl = E.bestLeap(g, s); if (bl) { E.doLeap(g, s, bl.leaper, bl.target, false); leapsFirst++; } } E.playCard(g, s, 0); });
+          if (!r.skipped) { casts[name]++; seats[s]++; r.evs.forEach((e) => shapes.add(e.type + (e.type === 'block' || e.type === 'passive' || e.type === 'buff' ? ':' + e.abilityName : '')));
+            if (!r.ok) { bad[name]++; if (!sample) sample = name + ' seat ' + s + '\n      held ' + r.held + '\n      live ' + r.live; } }
+          continue;
+        } else pl.hand.shift();
+      }
+      E.aiTakeTurn(g, s);
+    }
+  }
+  ok(`E1 · THE SWEEP: after ${casts.Pashupatastra} Pashupatastra and ${casts.Brahmastra} Brahmastra casts in full AI matches (every faction pair and realm, launch and wave decks, both seats: ${seats.join(' / ')}; ${leapsFirst} after a free Leap in the same action), the held copy equals the engine's board every time (${shapes.size} event shapes seen)`,
+    casts.Pashupatastra >= 400 && casts.Brahmastra >= 400 && seats[0] > 100 && seats[1] > 100 && bad.Pashupatastra === 0 && bad.Brahmastra === 0, J(bad) + '\n      ' + sample);
+  // the built boards: each shape a strike can produce, one at a time
+  const built = (name, card, f0, f1, wave, setup, realm) => {
+    const g = E.newGame({ p0Faction: f0, p1Faction: f1, rng: mul(11), realm: realm || 'mrityulok', wave1: wave });
+    for (const s of [0, 1]) { const p = g.players[s]; p.hand = []; p.units = []; p.heroes = []; p.artifact = null; p.mulliganed = true; }
+    const put = (s, n, o) => { const c = Object.assign(ctx.mk(ctx.CB[n]), o || {}); if (c.t === 'hero') g.players[s].heroes.push(c); else if (c.t === 'artifact') g.players[s].artifact = c; else g.players[s].units.push(c); return c; };
+    setup(g, put); g.turn = 0; g.players[0].hand.unshift(ctx.mk(ctx.CB[card]));
+    const legal = E.playableIndices(g, 0).indexOf(0) >= 0;
+    const r = legal ? runHeld(g, () => E.playCard(g, 0, 0)) : { skipped: true };
+    const saw = r.evs ? r.evs.map((e) => e.type + ':' + (e.abilityName || '')).join(' ') : '';
+    ok('  E1 · ' + name, legal && !r.skipped && r.ok, 'legal ' + legal + '\n      held ' + r.held + '\n      live ' + r.live + '\n      events ' + saw);
+    return saw;
+  };
+  built('Pashupatastra into Hiranyakashipu: the damage, then "floors at 1"', 'Pashupatastra', 'asuras', 'asuras', false, (g, put) => { put(0, 'Ravana'); put(0, 'Meghnad'); put(1, 'Hiranyakashipu', { power: 2 }); put(1, 'Tataka'); });
+  built('Pashupatastra into a Vanara host under Rama’s Signet: "held at 1"', 'Pashupatastra', 'asuras', 'vanaras', false, (g, put) => { put(0, 'Ravana'); put(0, 'Meghnad'); put(1, 'Rama’s Signet'); put(1, 'Vanara Scout'); put(1, 'Tara'); });
+  built('Pashupatastra into a Ratri Hymn round (no damage at all)', 'Pashupatastra', 'asuras', 'devas', true, (g, put) => { put(0, 'Ravana'); put(1, 'Deva Soldier'); put(1, 'Marut'); g.players[1].ratriRound = g.round; });
+  built('Pashupatastra into Holika (unburnt) beside a Unit that dies', 'Pashupatastra', 'asuras', 'asuras', true, (g, put) => { put(0, 'Ravana'); put(0, 'Meghnad'); put(1, 'Holika'); put(1, 'Asura Berserker', { power: 1 }); });
+  built('Pashupatastra into a Dharma-Shielded Unit (the shield does not stop it)', 'Pashupatastra', 'asuras', 'devas', false, (g, put) => { put(0, 'Ravana'); const u = put(1, 'Yama'); put(1, 'Marut', { power: 1 }); g.players[1].shieldUids = [u.uid]; });
+  built('Pashupatastra kills an Amrita-blessed Unit: it revives at 1 at the row’s end; an enemy Simhika sees it', 'Pashupatastra', 'asuras', 'devas', true, (g, put) => { put(0, 'Ravana'); put(0, 'Simhika'); put(1, 'Marut', { power: 1, aegis: true }); put(1, 'Yama'); put(1, 'Deva Soldier'); });
+  built('Pashupatastra kills a warded Vanara: it survives at 1 and the witnesses rally +1', 'Pashupatastra', 'asuras', 'vanaras', false, (g, put) => { put(0, 'Ravana'); put(1, 'Vanara Scout', { power: 1, ward: true }); put(1, 'Tara'); put(1, 'Nala'); });
+  built('Pashupatastra kills beside Yama: his ghost rises (and takes the engine\'s uid)', 'Pashupatastra', 'asuras', 'devas', false, (g, put) => { put(0, 'Ravana'); put(0, 'Meghnad'); put(1, 'Marut', { power: 1 }); put(1, 'Yama'); put(1, 'Deva Soldier'); });
+  built('Brahmastra through Yama, an old ghost and a revival: every death, the ghosts, the aegis', 'Brahmastra', 'devas', 'devas', false, (g, put) => { put(0, 'Indra'); put(1, 'Marut', { aegis: true }); put(1, 'Deva Soldier'); put(1, 'Yama'); g.players[1].units.push({ uid: 9001, id: 'ghost', n: 'Ghost of Agni', sub: '', t: 'unit', p: 1, r: 'C', power: 1, base: 1, ghost: true, txt: '' }); put(1, 'Kubera'); });
+  built('Brahmastra under Raktabija’s Curse: the first death raises two Rakta tokens', 'Brahmastra', 'devas', 'asuras', true, (g, put) => { put(0, 'Marut'); put(1, 'Tataka'); put(1, 'Maricha'); g.players[1].raktabijaCurse = true; });
+  built('Brahmastra into a Naga host under Ananta Coil (a coil per fallen Naga), Nirmoka spitting venom, Vishalakshi feeding', 'Brahmastra', 'nagas', 'nagas', true, (g, put) => { put(0, 'Vishalakshi the Pale'); put(0, 'Coil Sentry' in ctx.CB ? 'Coil Sentry' : 'Naga Dwarapala'); put(1, 'Ananta Coil'); put(1, 'Nirmoka', { venom: 1 }); put(1, 'Naga Warrior', { venom: 2 }); });
+  built("Brahmastra into Kartikeya's Vanguard and Kartikeya: the death listeners and the permanent +1", 'Brahmastra', 'devas', 'devas', true, (g, put) => { put(0, 'Marut'); put(1, 'Kartikeya'); put(1, 'Kartikeya’s Vanguard' in ctx.CB ? 'Kartikeya’s Vanguard' : "Kartikeya's Vanguard"); put(1, 'Marut', { aegis: true }); });
+  built('Pashupatastra doubled by Chandrahas, Chaos Surge on the caster, Bana and Berserker, Tripura shattered', 'Pashupatastra', 'asuras', 'asuras', false, (g, put) => { put(0, 'Chandrahas'); put(0, 'Bana Asura'); put(0, 'Asura Berserker'); put(1, 'Tripura'); put(1, 'Ravana'); put(1, 'Tataka'); });
+  built('Pashupatastra in Patala (+1 to each hit)', 'Pashupatastra', 'asuras', 'devas', false, (g, put) => { put(0, 'Ravana'); put(0, 'Meghnad'); put(1, 'Yama'); put(1, 'Marut'); put(1, 'Deva Soldier'); }, 'patala');
+  built('the next turn starts for the struck side: a sleeping Kumbhakarna wakes and sweeps 3, Kalanemi is unmasked (their flags clear on their own sweeps)', 'Pashupatastra', 'asuras', 'asuras', false, (g, put) => { put(0, 'Asura Berserker'); put(1, 'Kumbhakarna', { asleep: true }); put(1, 'Kalanemi', { revealPending: true }); });
+  built('the next turn starts for the caster (the other side has passed): Deva Soldier steels +1 under Indra — a log line, no event', 'Brahmastra', 'devas', 'asuras', false, (g, put) => { put(0, 'Indra'); put(0, 'Deva Soldier'); put(0, 'Marut'); put(1, 'Tataka'); g.players[1].passed = true; });
+  built('the Living Bridge fires for the struck side when a revival completes its line of four', 'Pashupatastra', 'asuras', 'vanaras', true, (g, put) => { put(0, 'Ravana'); put(1, 'The Living Bridge'); put(1, 'Vanara Scout', { power: 1, aegis: true }); put(1, 'Tara'); put(1, 'Nala'); put(1, 'Kishkindha Runner'); g.players[1].bridgeFiredRound = 0; });
+
+  // E8 · THE STAKED ROAD — the server's REAL room and buildView (web3), read by the page's own viewToState; the copy is the OLD view
+  let buildView = null, createRoom = null, ES = null;
+  try { buildView = require(path.join(MS, 'src', 'redactedview.js')).buildView; createRoom = require(path.join(MS, 'src', 'match.js')).createRoom; ES = require(path.join(MS, 'src', 'engineguard.js')).loadGuardedEngine().engine; } catch (e) { buildView = null; }
+  if (!buildView || !createRoom || !ES) { fail++; console.log('  ✖ E8 SKIPPED LOUDLY — the web3 checkout is absent (' + MS + '; set DY_WEB3).'); }
+  else {
+    const vctx = mkCtx(true), VH = vctx.H;
+    const adapterSrc = extractFn(HTML, 'defById') + '\n' + extractFn(HTML, 'viewToState');
+    const mkAdapter = (me) => new Function('DECKS', 'CARD_BY_NAME', 'let ME=' + me + ', OPP=' + (1 - me) + ', DEF_BY_ID=null; const isViewState=(x)=>!!(x&&x._view);\n' + adapterSrc + '\nreturn { viewToState };')(E.DECKS, ctx.CB);
+    const hall = (v) => { const c = Object.assign({}, v); delete c.myName; delete c.oppName; return c; };
+    let vcasts = 0, vbad = 0, inPlace = 0, drift = 0, vsample = '', vseats = [0, 0];
+    for (let m = 0; m < 60; m++) {
+      const [f0, f1] = [F[m % 4], F[(m >> 2) % 4]];
+      const room = createRoom(ES, { seed: (0x5A11 * (m + 7)) >>> 0, seats: [{ address: '0x' + '1'.repeat(40), faction: f0 }, { address: '0x' + '2'.repeat(40), faction: f1 }] });
+      const g = room.state, A = [mkAdapter(0), mkAdapter(1)], st = [null, null]; let cur = 0;
+      const push = (lm) => { const sl = (g.events || []).slice(cur); cur = (g.events || []).length; for (const s of [0, 1]) st[s] = A[s].viewToState(hall(buildView({ E: ES }, room, 'm-held', s, lm, sl)), st[s]); };
+      push(null); for (const s of [0, 1]) { room.apply(s, { type: 'mulligan', indices: [] }); push({ seat: s, type: 'mulligan' }); }
+      let guard = 0, rr = mul(4242 + m);
+      while (!g.over && guard++ < 300) {
+        const s = room.turn, pl = g.players[s];
+        if (!pl.passed && rr() < 0.3) {
+          const name = NAMES[(vcasts + m) % 2], c = Object.assign({}, ctx.CB[name], { uid: 700000 + guard + m * 1000, power: 0, base: 0, ghost: false, lockedRound: 0, aegis: false, revivedShield: false, asleep: false, revealPending: false, venom: 0, doomed: false, disguisedAs: null, ward: false, bound: false, astraImmuneRound: 0, stolenBy: -1 });
+          pl.hand.unshift(c);
+          if (room.validate(s, { type: 'play', handIndex: 0, targetIndex: null }).ok) {
+            const auraOf = () => { const m = {}; for (const pi of [0, 1]) for (const u of g.players[pi].units.concat(g.players[pi].heroes)) if (!u.ghost) m[u.uid] = ES.effPower(g, pi, u) - u.power; return m; };
+            const auraBefore = auraOf();
+            const before = [st[0], st[1]], frozen = before.map((x) => JSON.stringify(x)), held = before.map((x) => VH.heldCopyAny(x));
+            room.apply(s, { type: 'play', handIndex: 0, targetIndex: null }); push({ seat: s, type: 'play', id: c.id, n: c.n });
+            const auraAfter = auraOf();
+            for (const me of [0, 1]) { const evs = st[me].events.slice(before[me].events.length); if (!VH.heldPlayOf(evs)) continue;
+              const gone = {}; evs.forEach((e, i) => VH.heldStep(held[me], e, gone, st[me], evs[i + 1])); VH.heldMidFinish(held[me], st[me]); vcasts++; vseats[me]++;
+              if (JSON.stringify(before[me]) !== frozen[me]) inPlace++;
+              if (VH.heldKey(held[me]) !== VH.heldKey(st[me])) {
+                // a read-time aura (Naga Warrior's count of Venom, Narada…) moves with no event: the view carries only the effective number, so the
+                // copy cannot follow it without the server — the live board wins at the end (R8). Counted apart: same cards, same places, every field
+                // equal but the power of a card no event of this play named.
+                const abs = new Set(); evs.forEach((e) => { if (e.type === 'revive' || e.type === 'ward' || (e.type === 'block' && (e.abilityName === "Rama's Signet" || /floors at 1$/.test(e.text || '')))) (e.targetUids || []).forEach((u) => abs.add(+u)); });   // set to exactly 1 raw power
+                const hk = VH.heldKey(held[me]).split(/[,|/]/), lk = VH.heldKey(st[me]).split(/[,|/]/);
+                const auraOnly = hk.length === lk.length && hk.every((x, i) => { if (x === lk[i]) return true; const p = x.split(':'), q = lk[i].split(':'), u = +p[0];
+                  return p[0] === q[0] && p.length === q.length && p.every((v, j) => j === 2 || v === q[j]) && (+p[2]) - (+q[2]) === (abs.has(u) ? 0 : (auraBefore[u] || 0)) - (auraAfter[u] || 0); });
+                if (auraOnly) { drift++; continue; }
+                vbad++; if (!vsample) vsample = name + ' read by seat ' + me + '\n      held ' + VH.heldKey(held[me]) + '\n      live ' + VH.heldKey(st[me]); } }
+            continue;
+          } else pl.hand.shift();
+        }
+        const d = ES.aiMove(g, s); let a = (d && d.play != null) ? { type: 'play', handIndex: d.play, targetIndex: null } : { type: 'pass' };
+        if (a.type === 'play') { const sp = ES.targetSpec(g, s, pl.hand[d.play]); if (sp && sp.options && sp.options.length) a.targetIndex = 0; }
+        if (!room.validate(s, a).ok) a = { type: 'pass' };
+        const lm = a.type === 'play' ? { seat: s, type: 'play', id: pl.hand[a.handIndex].id, n: pl.hand[a.handIndex].n } : { seat: s, type: a.type };
+        room.apply(s, a); push(lm);
+      }
+    }
+    ok(`E8 · THE STAKED ROAD: ${vcasts} held plays read from the server's real views by both seats (${vseats.join(' / ')}) — the old view is copied, never changed in place (${inPlace} changed), and the copy equals the new view after the last event every time except ${drift} where a read-time aura moved with no event — each difference equal, to the point, to that card's aura change in the server's engine (its aura after the play where an event set it to exactly 1) (the view carries the effective number only; the live board wins at the end, R8)`,
+      vcasts >= 200 && vseats[0] > 50 && vseats[1] > 50 && inPlace === 0 && vbad === 0, vbad + ' differ\n      ' + vsample);
+  }
   }
 }
 
@@ -252,6 +397,202 @@ else {
           ok('  …that page ran clean', Z.errs.length === 0, Z.errs.slice(0, 3).join(' | '));
         }
       }
+    }
+
+    // ═══ 8 · PASHU-ORDER-1 — THE HELD PLAY ON THE PAGE (E2–E8): motion on, real timers, the shipped page ═══
+    console.log('\n── 8 · the held play on the page: nothing moves before its own beat; each death is the real card; the pace is today\'s (E2–E8) ──');
+    {
+      const M = boot('', { reduce: false }), mw = M.w, MT = M.T, m$ = (id) => mw.document.getElementById(id);
+      const notes = []; { const fn = mw.fxNote; mw.fxNote = function (kind, detail) { notes.push(Object.assign({ kind }, detail || {})); return fn.apply(this, arguments); }; }   // the battle log's diagnostics, as they are written
+      const CASTER = { Pashupatastra: 'asuras', Brahmastra: 'devas' }, OWN = { asuras: ['Tataka', 'Maricha'], devas: ['Deva Soldier', 'Marut'] };
+      const ROWS = ['oheroes', 'ounits', 'punits', 'pheroes'];
+      const sigOf = (el) => [...el.children].filter((c) => c.tagName !== 'IMG').map((c) => c.className + '=' + c.textContent).join(';') + '|' + ['bound', 'warded', 'ghostc', 'stolen'].filter((k) => el.classList.contains(k)).join(',');
+      const rowsNow = () => ROWS.map((id) => [...m$(id).querySelectorAll('.bc')].map((el) => ({ u: el.classList.contains('held-gap') ? 'gap' : el.dataset.uid, s: sigOf(el), h: el.style.visibility === 'hidden' })));   // a kept space is a slot too
+      // a board the way a match would have it, the caster at `seat` (0 = the player, 1 = the opponent), on the solo road or the free wire road
+      const lay = (card, seat, board, speed, road) => {
+        mw.resetChoreo();
+        const cf = CASTER[card], pf = seat === 0 ? cf : 'asuras', of = seat === 0 ? 'asuras' : cf;
+        if (road === 'wire') mw.startWireMatch({ seat: 0, matchId: 'm-held', seed: 4242, p0Faction: pf, p1Faction: of }); else mw.startGame(pf, of);
+        const G = MT.G, me = G.players[MT.ME], op = G.players[MT.OPP], cast = G.players[seat], struck = G.players[1 - seat];
+        mw.pump = function () {}; G.realm = 'mrityulok'; me.mulliganed = op.mulliganed = true; m$('mulligan').classList.add('hidden');
+        const mk = (n, x) => Object.assign(mw.mkCard(MT.CARD_BY_NAME[n]), x || {});
+        for (const p of [me, op]) { p.units = []; p.heroes = []; p.artifact = null; p.passed = false; p.astrasThisRound = 0; }
+        cast.units = OWN[cf].map((n) => mk(n));
+        struck.units = [mk('Kalanemi', { power: 1, base: 1 }), mk('Meghnad', { power: 6 }), mk('Ravana', { power: 7 })];
+        if (board === 'five') struck.units.push(mk('Bana Asura'), mk('Kali Asura', { power: 1, aegis: true }));
+        cast.hand = [mk(card)]; G.turn = seat; G.over = false;
+        mw.setSpeed(speed); mw.render(); return G;
+      };
+      // one play: every beat (playEvent) and, when asked, the board every 4 ms from the act to the release
+      const play = async (G, seat, sample, road) => {
+        const beats = [], samples = [], t0 = mw.performance.now(); const pe = mw.playEvent;
+        mw.playEvent = function (ev) { beats.push({ t: mw.performance.now() - t0, ev }); return pe.apply(this, arguments); };
+        const iv = sample ? setInterval(() => samples.push({ t: mw.performance.now() - t0, rows: rowsNow(), clones: [...m$('victimlayer').children].map((n) => n.dataset.uid), boxes: mw.document.querySelectorAll('.dissolve-clone').length, held: !!MT.RE }), 4) : null;
+        const pre = rowsNow();
+        if (road === 'wire') mw.runAction(() => mw.wireApply({ seat, type: 'play', handIndex: 0, targetIndex: null }), { actor: seat });
+        else mw.runAction(() => mw.playCard(G, seat, 0), { actor: seat });
+        await until(() => !MT.choreoActive, 30000); await W(80);
+        if (iv) clearInterval(iv); mw.playEvent = pe;
+        return { beats, samples, pre, post: rowsNow(), RE: MT.RE, reLive: MT.reLive };
+      };
+      // E2 · from the act to each card's own beat: no card leaves, moves, arrives or changes its number, mark or badge
+      const e2 = (r) => { const bad = []; const tOf = (u) => { const b = r.beats.find((x) => (x.ev.targetUids || []).map(String).indexOf(String(u)) >= 0); return b ? b.t : Infinity; };
+        const firstAny = Math.min(...r.beats.filter((b) => (b.ev.targetUids || []).length).map((b) => b.t));
+        const preAt = {}; r.pre.forEach((row, ri) => row.forEach((c, ci) => { preAt[c.u] = { ri, ci, s: c.s }; }));
+        for (const smp of r.samples) {
+          if (smp.t < firstAny - 2 && JSON.stringify(smp.rows.map((row) => row.map((c) => c.u))) !== JSON.stringify(r.pre.map((row) => row.map((c) => c.u)))) { bad.push('rows changed at ' + smp.t.toFixed(0) + ' ms, before the first beat at ' + firstAny.toFixed(0)); break; }
+          smp.rows.forEach((row, ri) => row.forEach((c, ci) => { if (c.u === 'gap') return; const p = preAt[c.u];
+            if (p && smp.t < tOf(c.u) - 2 && (p.ri !== ri || p.ci !== ci)) bad.push('uid ' + c.u + ' moved from slot ' + p.ci + ' to ' + ci + ' at ' + smp.t.toFixed(0) + ' ms, before its beat at ' + tOf(c.u).toFixed(0));
+            if (!p) { if (smp.t < tOf(c.u) - 2) bad.push('uid ' + c.u + ' arrived at ' + smp.t.toFixed(0) + ' before its beat ' + tOf(c.u).toFixed(0)); }
+            else if (smp.t < tOf(c.u) - 2 && c.s !== p.s) bad.push('uid ' + c.u + ' changed at ' + smp.t.toFixed(0) + ' ms before its beat at ' + tOf(c.u).toFixed(0) + ' ms'); }));
+          if (bad.length > 3) break;
+        }
+        return bad; };
+      // E3 · each death: the real card's clone cracks; no placeholder box; its own cell keeps its place (hidden) until the crack ends
+      const e3 = (r) => { const bad = []; const deaths = r.beats.filter((b) => b.ev.type === 'destroy');
+        if (r.samples.some((s) => s.boxes > 0)) bad.push('a placeholder box was drawn');
+        for (const d of deaths) { const u = String(d.ev.targetUids[0]);
+          const during = r.samples.filter((s) => s.t > d.t + 60 && s.clones.indexOf(u) >= 0);
+          if (!during.length) { bad.push('no real-card crack for ' + u); continue; }
+          for (const s of during) { const row = s.rows.find((rw) => rw.some((c) => c.u === u)); const cell = row && row.find((c) => c.u === u);
+            if (!cell || !cell.h) { bad.push('the cracking card ' + u + ' lost its own place at ' + s.t.toFixed(0) + ' ms'); break; } } }
+        return { bad, deaths: deaths.length }; };
+      const leftovers = () => ({ RE: MT.RE === null && MT.reLive === null, lock: !m$('choreolayer').classList.contains('locked') && !MT.choreoActive, clones: m$('victimlayer').children.length === 0,
+        live: JSON.stringify(rowsNow().map((row) => row.filter((c) => c.u !== 'gap').map((c) => c.u))) === JSON.stringify(['heroes', 'units', 'units', 'heroes'].map((z, i) => MT.G.players[i < 2 ? MT.OPP : MT.ME][z].map((c) => String(c.uid)))) });
+
+      // E2 + E3 — both cards, both seats, the owner's board and a five-Unit board (an Amrita revival among them), and a relayed cast on the free wire road
+      const runs = [];
+      for (const card of ['Pashupatastra', 'Brahmastra']) for (const seat of [0, 1]) for (const board of ['owner', 'five']) {
+        const G = lay(card, seat, board, 'normal'); runs.push({ card, seat, board, r: await play(G, seat, true) }); }
+      { const G = lay('Pashupatastra', 1, 'five', 'normal', 'wire'); runs.push({ card: 'Pashupatastra', seat: 1, board: 'five, relayed on the free wire road', r: await play(G, 1, true, 'wire') }); }
+      const e2bad = runs.map((x) => ({ k: x.card + ' seat ' + x.seat + ' ' + x.board, bad: e2(x.r) })).filter((x) => x.bad.length);
+      ok(`E2 · R3: in ${runs.length} plays (both cards, both seats, the owner's board and a five-Unit board, one relayed on the free wire road) no card leaves, moves to another slot or arrives, and no number, mark or badge changes, before its own beat (a fallen card's space is kept while its row still waits) — sampled every 4 ms from the act (through the opponent's showcase) to the release`,
+        runs.length === 9 && e2bad.length === 0 && runs.every((x) => x.r.samples.length > 200), J(e2bad.slice(0, 3)));
+      const e3r = runs.map((x) => Object.assign({ k: x.card + ' seat ' + x.seat + ' ' + x.board }, e3(x.r)));
+      const nDeaths = e3r.reduce((a, x) => a + x.deaths, 0);
+      ok(`E3 · the kills: all ${nDeaths} deaths are the real card cracking in its own place — its clone over its own cell, the cell kept (hidden) until the crack ends, no placeholder box ever drawn`,
+        nDeaths >= 20 && e3r.every((x) => x.bad.length === 0), J(e3r.filter((x) => x.bad.length).slice(0, 3)));
+      ok('  E2/E3 · …and after each play nothing is left: no held board, no lock, no clone, the live board drawn', runs.every((x) => x.r.RE === null && x.r.reLive === null && JSON.stringify(x.r.post.map((row) => row.map((c) => c.u))) !== ''));
+
+      // E4 · the pace: every beat where it falls today, within a frame — at all three speeds, from both seats (held vs the same play with the held road off)
+      const pace = [];
+      // jsdom has no layout engine: the page's board rescale (sizeBoard) costs ~130 ms here against a few in a browser. For the pace the rescale is made
+      // the same small cost in BOTH runs; what is judged is the schedule (the browser's own cost is measured on the real page, in the proof).
+      const sizeKeep = mw.sizeBoard; mw.sizeBoard = function () {};
+
+      for (const card of ['Pashupatastra', 'Brahmastra']) for (const seat of [0, 1]) for (const speed of ['relaxed', 'normal', 'fast']) {
+        const keep = mw.heldPlayOf, A = [], B = [];
+        for (let rep = 0; rep < 2; rep++) {   // held and unheld alternate, twice: the timers' own jitter between two runs (±10 ms here) is averaged, never the schedule
+          let G = lay(card, seat, 'owner', speed); A.push(await play(G, seat, false));
+          mw.heldPlayOf = () => null; G = lay(card, seat, 'owner', speed); B.push(await play(G, seat, false)); mw.heldPlayOf = keep; }
+        const n = A[0].beats.length, same = A.concat(B).every((r) => r.beats.length === n && r.beats.every((x, k) => x.ev.type === A[0].beats[k].ev.type));
+        const mean = (R, k) => R.reduce((s, r) => s + r.beats[k].t, 0) / R.length;
+        const d = same ? Math.max(...A[0].beats.map((x, k) => Math.abs(mean(A, k) - mean(B, k)))) : Infinity;
+        const noise = same ? Math.max(...A[0].beats.map((x, k) => Math.max(Math.abs(A[0].beats[k].t - A[1].beats[k].t), Math.abs(B[0].beats[k].t - B[1].beats[k].t)))) : Infinity;   // the same road run twice: the timers' own jitter right now
+        pace.push({ card, seat, speed, beats: n, d: +d.toFixed(1), noise: +noise.toFixed(1) }); }
+      mw.sizeBoard = sizeKeep;
+      const floor = Math.max(...pace.map((p) => p.noise));
+      ok(`E4 · the pace: every beat of both cards falls where it falls with the held road off — within a frame, or within the timers' own jitter measured in this run (worst difference ${Math.max(...pace.map((p) => p.d))} ms; the same road run twice differed by up to ${floor} ms; ${pace.length} settings: both cards × both seats × relaxed, normal, fast; each the mean of two held and two unheld runs, alternated)`,
+        pace.length === 12 && pace.every((p) => p.beats >= 4 && p.d <= Math.max(17, floor)), J(pace.filter((p) => !(p.d <= Math.max(17, floor)))));
+
+      // E5 · leaving, skipping, the watchdog and a thrown error each leave no held board, lock or clone — the live board shows
+      const midPlay = async (card, seat) => { const G = lay(card, seat, 'five', 'normal'); mw.runAction(() => mw.playCard(G, seat, 0), { actor: seat }); await W(seat ? 2900 : 1700); return { G, held: !!MT.RE && MT.RE.mid }; };
+      const e5 = [];
+      { const m = await midPlay('Pashupatastra', 0); m$('choreolayer').click(); const now = { RE: MT.RE === null, live: leftovers().live };   // the skip: dropped at once
+        await until(() => !MT.choreoActive, 15000); await W(100); e5.push(['a skip (tap)', m.held && now.RE && now.live && Object.values(leftovers()).every(Boolean), J({ m: m.held, now, after: leftovers() })]); }
+      for (const [name, go] of [['the main menu', () => mw.showLanding()], ['a rematch', () => mw.startGame('devas', 'asuras')], ['a Story chapter', () => mw.startStoryChapter('b1c1')]]) {
+        const m = await midPlay('Brahmastra', 1); go(); const at = { RE: MT.RE === null && MT.reLive === null, lock: !m$('choreolayer').classList.contains('locked'), clones: m$('victimlayer').children.length === 0 };
+        let back = false; const iv = setInterval(() => { if (MT.RE) back = true; }, 10); await W(5000); clearInterval(iv);
+        e5.push(['leaving for ' + name, m.held && at.RE && at.lock && at.clones && !back && MT.RE === null, J({ m: m.held, at, back })]); }
+      { const pe0 = mw.playEvent; let hung = 0; mw.playEvent = function (ev) { if (ev.type === 'destroy' && !hung++) return new Promise(() => {}); return pe0.apply(this, arguments); };   // a beat that never ends: the heartbeat stops, the watchdog's 8 s budget runs out
+        const m = await midPlay('Brahmastra', 0); await until(() => !MT.RE, 12000); const at = leftovers().live; await until(() => !MT.choreoActive, 3000); await W(400); mw.playEvent = pe0;
+        e5.push(['the watchdog (a beat that never ends)', m.held && hung === 1 && at && Object.values(leftovers()).every(Boolean), J({ m: m.held, hung, at, after: leftovers() })]); }
+      { const keep = mw.heldStep; let thrown = 0; mw.heldStep = function () { if (!thrown++) throw new Error('test: a broken step'); return keep.apply(this, arguments); };
+        const m = await midPlay('Pashupatastra', 0); const at = { RE: MT.RE === null, live: leftovers().live }; await until(() => !MT.choreoActive, 15000); await W(100); mw.heldStep = keep;
+        const note = notes.some((d) => d.kind === 'held-dropped' && /broken step/.test(d.why || ''));
+        e5.push(['a thrown error inside the held road (a quiet note, no banner)', !m.held && thrown > 0 && at.RE && at.live && note && Object.values(leftovers()).every(Boolean) && m$('banner').classList.contains('hidden'), J({ thrown, at, note, after: leftovers() })]); }
+      { const keep = mw.heldMidFinish; mw.heldMidFinish = function (g) { keep.apply(this, arguments); g.players[MT.OPP].units.forEach((u) => { u.power += 5; }); };   // a copy that ends wrong
+        const G = lay('Pashupatastra', 0, 'five', 'normal'); const r = await play(G, 0, false); mw.heldMidFinish = keep;
+        const note = notes.some((d) => d.kind === 'held-mismatch' && d.card === 'Pashupatastra');
+        e5.push(['a copy that does not equal the live board at the end: the live board wins, a quiet note in the diagnostics, no banner', note && Object.values(leftovers()).every(Boolean) && m$('banner').classList.contains('hidden'), J({ note, after: leftovers() })]); }
+      for (const [name, pass, d] of e5) ok('E5 · ' + name + ': no held board, no lock, no clone, the live board showing', pass, d);
+
+      // E7 · every other card in the sweep plays as today: it never enters the held road and its first frame is the live board
+      const OTHERS = ['Vayu', 'Vajra', 'Agneyastra', 'Shakti Spear', 'Suryastra', 'Tataka', 'Narakasura', 'Rudhira Bali', 'Dhumraksha', 'Mohanastra', 'Surpanakha', 'Vidyutastra', 'Gandiva Arrow', 'Lanka Dahan', "Vinata's Talon", "Jatayu's Last Flight", "Anjaneya's Roar", 'Vasuki', 'Naga Archer', 'Ashvatara', 'Sarpa Satra', 'Hymn of the Depths', "Serpent's Kiss", 'Ajagara'];
+      const cdKeep = mw.cDelay; mw.cDelay = () => Promise.resolve();   // E7 judges the road, not the pace: every wait is made instant (restored below)
+      const e7 = [];
+      for (const n of OTHERS) {
+        const d = MT.CARD_BY_NAME[n]; if (!d) { e7.push([n, 'no such card']); continue; }
+        mw.resetChoreo(); mw.startGame('devas', 'asuras'); const G = MT.G, me = G.players[MT.ME], op = G.players[MT.OPP]; mw.pump = function () {}; me.mulliganed = op.mulliganed = true; m$('mulligan').classList.add('hidden');
+        const mk = (x, o) => Object.assign(mw.mkCard(MT.CARD_BY_NAME[x]), o || {});
+        me.units = [mk('Deva Soldier'), mk('Marut'), mk('Yama')]; me.heroes = []; me.discard = [mk('Marut')]; op.units = [mk('Kalanemi', { power: 1, base: 1 }), mk('Meghnad', { power: 4 }), mk('Ravana', { power: 8, base: 8 }), mk('Bana Asura', { venom: 2 }), mk('Kali Asura')]; op.heroes = [mk('Shukracharya')];
+        me.faction = (Object.keys(MT.DECKS).find((f) => MT.DECKS[f].some((x) => x.n === n))) || 'devas';
+        me.hand = [mk(n)]; G.turn = MT.ME; me.passed = op.passed = false; me.astrasThisRound = 0; me.heroPlayedThisRound = false; mw.render();
+        if (mw.playableIndices(G, MT.ME).indexOf(0) < 0) { e7.push([n, 'not legal on this board']); continue; }
+        let everHeld = false; const iv = setInterval(() => { if (MT.RE) everHeld = true; }, 2);
+        mw.runAction(() => mw.playCard(G, MT.ME, 0), { actor: MT.ME });
+        const first = JSON.stringify(rowsNow().map((row) => row.map((c) => c.u))), live = JSON.stringify(['heroes', 'units', 'units', 'heroes'].map((z, i) => G.players[i < 2 ? MT.OPP : MT.ME][z].map((c) => String(c.uid))));
+        if (MT.RE) everHeld = true;
+        await until(() => !MT.choreoActive, 20000); clearInterval(iv);
+        if (everHeld || first !== live) e7.push([n, everHeld ? 'entered the held road' : 'its first frame is not the live board']);
+      }
+      mw.cDelay = cdKeep;
+      ok(`E7 · every other card in the sweep (${OTHERS.length}) plays as today: it never enters the held road, and the first frame after its play is the live board`, e7.length === 0, J(e7));
+
+      // E8 · the staked road on the page: E2 and E3 on a live server view (the old view is the held copy)
+      let buildView = null, createRoom = null, ES = null;
+      try { buildView = require(path.join(MS, 'src', 'redactedview.js')).buildView; createRoom = require(path.join(MS, 'src', 'match.js')).createRoom; ES = require(path.join(MS, 'src', 'engineguard.js')).loadGuardedEngine().engine; } catch (e) { buildView = null; }
+      if (!buildView) { fail++; console.log('  ✖ E8 (page) SKIPPED LOUDLY — the web3 checkout is absent (' + MS + ').'); }
+      else {
+        const hall = (v) => { const c = Object.assign({}, v); delete c.myName; delete c.oppName; return c; };
+        const sr = [];
+        for (const card of ['Pashupatastra', 'Brahmastra']) for (const caster of [0, 1]) {
+          const cf = CASTER[card], fac = caster === 0 ? [cf, 'asuras'] : ['asuras', cf];
+          const room = createRoom(ES, { seed: 77, seats: [{ address: '0x' + '1'.repeat(40), faction: fac[0] }, { address: '0x' + '2'.repeat(40), faction: fac[1] }] });
+          const g = room.state; let cur = 0;
+          for (const s of [0, 1]) room.apply(s, { type: 'mulligan', indices: [] });
+          let uid = 880000; const mk = (n, o) => Object.assign({}, MT.CARD_BY_NAME[n], { uid: uid++, power: MT.CARD_BY_NAME[n].p, base: MT.CARD_BY_NAME[n].p, ghost: false, lockedRound: 0, aegis: false, revivedShield: false, asleep: false, revealPending: false, venom: 0, doomed: false, disguisedAs: null, ward: false, bound: false, astraImmuneRound: 0, stolenBy: -1 }, o || {});
+          const C = g.players[caster], S = g.players[1 - caster];
+          C.units = OWN[cf].map((n) => mk(n)); S.units = [mk('Kalanemi', { power: 1, base: 1 }), mk('Meghnad', { power: 6 }), mk('Ravana', { power: 7 }), mk('Bana Asura'), mk('Kali Asura', { power: 1, aegis: true })];
+          C.heroes = []; S.heroes = []; C.hand.unshift(mk(card)); g.turn = caster; C.passed = S.passed = false; C.astrasThisRound = 0;
+          cur = g.events.length; const v0s = [0, 1].map((me) => hall(buildView({ E: ES }, room, 'm-staked', me, null, [])));
+          room.apply(caster, { type: 'play', handIndex: 0, targetIndex: null });
+          const v1s = [0, 1].map((me) => hall(buildView({ E: ES }, room, 'm-staked', me, { seat: caster, type: 'play', id: MT.CARD_BY_NAME[card].id, n: card }, g.events.slice(cur))));
+          for (const me of [0, 1]) {
+            mw.resetChoreo(); mw.startWireMatch({ seat: me, matchId: 'm-staked-' + card + caster + me, view: v0s[me] }); mw.pump = function () {};
+            m$('mulligan').classList.add('hidden'); mw.render();
+            const beats = [], samples = [], t0 = mw.performance.now(); const pe = mw.playEvent;
+            mw.playEvent = function (ev) { beats.push({ t: mw.performance.now() - t0, ev }); return pe.apply(this, arguments); };
+            const iv = setInterval(() => samples.push({ t: mw.performance.now() - t0, rows: rowsNow(), clones: [...m$('victimlayer').children].map((n) => n.dataset.uid), boxes: mw.document.querySelectorAll('.dissolve-clone').length }), 4);
+            const pre = rowsNow(); mw.applyView(v1s[me]);
+            const wasHeld = !!(MT.RE && MT.RE.mid);
+            await until(() => !MT.choreoActive, 30000); await W(80); clearInterval(iv); mw.playEvent = pe;
+            const r = { beats, samples, pre };
+            sr.push({ k: card + ' cast by seat ' + caster + ', read by seat ' + me, wasHeld, e2: e2(r), e3: e3(r), after: Object.values(leftovers()).every(Boolean) });
+          }
+        }
+        ok(`E8 · THE STAKED ROAD on the page: ${sr.length} plays from the server's real views (both cards, cast by either seat, read by both) are held, and E2 and E3 hold on them; nothing left after`,
+          sr.length === 8 && sr.every((x) => x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.e3.deaths >= 1 && x.after), J(sr.filter((x) => !(x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.after)).map((x) => ({ k: x.k, h: x.wasHeld, e2: x.e2.slice(0, 2), e3: x.e3.bad.slice(0, 2), after: x.after })).slice(0, 3)));
+      }
+      ok('  …the held-play page ran clean: no script error, no console.log', M.errs.length === 0, M.errs.slice(0, 3).join(' | '));
+    }
+
+    // ═══ 9 · E6 — reduced motion: the held road never runs; the play resolves at once, as today ═══
+    console.log('\n── 9 · reduced motion: instant, as today (E6) ──');
+    {
+      const R6 = boot(''), rw = R6.w, RT = R6.T, r$ = (id) => rw.document.getElementById(id);
+      const res = [];
+      for (const card of ['Pashupatastra', 'Brahmastra']) {
+        rw.resetChoreo(); rw.startGame(card === 'Brahmastra' ? 'devas' : 'asuras', 'asuras'); const G = RT.G, me = G.players[RT.ME], op = G.players[RT.OPP]; rw.pump = function () {}; me.mulliganed = op.mulliganed = true; r$('mulligan').classList.add('hidden');
+        const mk = (x, o) => Object.assign(rw.mkCard(RT.CARD_BY_NAME[x]), o || {});
+        me.units = [mk('Tataka')]; me.heroes = []; op.units = [mk('Kalanemi', { power: 1, base: 1 }), mk('Meghnad', { power: 6 }), mk('Ravana', { power: 7 })]; op.heroes = [];
+        me.hand = [mk(card)]; G.turn = RT.ME; me.passed = op.passed = false; me.astrasThisRound = 0; rw.render();
+        rw.runAction(() => rw.playCard(G, RT.ME, 0), { actor: RT.ME });
+        const rows = JSON.stringify([...r$('ounits').querySelectorAll('.bc')].map((e) => e.dataset.uid)), live = JSON.stringify(op.units.map((u) => String(u.uid)));
+        res.push({ card, RE: RT.RE === null, lock: !RT.choreoActive, rows: rows === live, log: r$('loglast').textContent === rw.fixLogGrammar(G.log[G.log.length - 1].msg) });
+      }
+      ok('E6 · reduced motion: both cards resolve at once — no held board, no lock, the live board and the log line drawn in the same moment, as today', res.every((x) => x.RE && x.lock && x.rows && x.log), J(res));
+      ok('  …that page ran clean', R6.errs.length === 0, R6.errs.slice(0, 3).join(' | '));
     }
   })();
 }

@@ -1,5 +1,5 @@
 {
-  "what": "the game's own suites and their exact counts, recorded at LAW_BASE (6b946e0) before the arcade lab began — every lab commit must leave them exactly so (node lab/arcade/test/run.js --game) · updated 2026-11-03: test_puzzlemode.js 99 after TEST-PUZZLEMODE-1 · updated 2026-11-21 (TIDY-1): test_count_hook.js 26 (SHARE-2, SHARE-3 and ONBOARD-1 added checks); test_roundend.js added at 37 (RULES-FIX-1 Stage 1) · updated 2026-11-21 (HERO-FIT-1 + PASHU-V2 gate): test_puzzlemode.js 113 — the site's daily robot added 14 puzzles (divya-yuddha-web 6740de3, 70 live) and the suite checks each live puzzle, so the count follows the site, not this task · updated 2026-11-22 (HERO-FIT-1): test_manifest.js 103 (H22, A7 too-small-to-show in the glue); test_puzzlemode.js now expects 43 + one per live puzzle, counted from the site checkout",
+  "what": "the game's own suites and their exact counts, recorded at LAW_BASE (6b946e0) before the arcade lab began — every lab commit must leave them exactly so (node lab/arcade/test/run.js --game) · updated 2026-11-03: test_puzzlemode.js 99 after TEST-PUZZLEMODE-1 · updated 2026-11-21 (TIDY-1): test_count_hook.js 26 (SHARE-2, SHARE-3 and ONBOARD-1 added checks); test_roundend.js added at 37 (RULES-FIX-1 Stage 1) · updated 2026-11-21 (HERO-FIT-1 + PASHU-V2 gate): test_puzzlemode.js 113 — the site's daily robot added 14 puzzles (divya-yuddha-web 6740de3, 70 live) and the suite checks each live puzzle, so the count follows the site, not this task · updated 2026-11-22 (HERO-FIT-1): test_manifest.js 103 (H22, A7 too-small-to-show in the glue); test_puzzlemode.js now expects 43 + one per live puzzle, counted from the site checkout · updated 2026-11-22 (PASHU-ORDER-1): test_roundend.js 73 — sections 7–9 add the held play for Brahmastra and Pashupatastra (E1–E8; E8 reads the web3 checkout's real room and views)",
   "suites": [
     {
       "file": "test.js",
@@ -58,7 +58,7 @@
     {
       "file": "test_roundend.js",
       "expect": {
-        "pass": 37
+        "pass": 73
       }
     },
     {
