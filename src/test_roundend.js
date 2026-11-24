@@ -12,8 +12,14 @@
 //                             board target bar picks which; the wire refusal is unchanged.
 // The page is the shipped index.html unless DY_RE_HTML points at another copy (the failing-first proof runs it on the pre-change page).
 // jsdom is borrowed from the site checkout's tests/node_modules (DY_WEB); absent → SKIPPED LOUDLY, a counted failure.
+// THE GATE'S LIGHT SWEEP (GUIDE-1, owner ruling 5, 24 Nov 2026) — the default: E4 (the pace) at Normal only (both cards, both seats,
+// 2 repeats) and E8 on the page with ONE play per card (Pashupatastra cast by seat 1 and read by seat 0, Brahmastra cast by seat 0 and
+// read by seat 1). Same checks, same count (73), the E4 limit unchanged. DY_RE_FULL=1 runs the full sweep (E4 at all three speeds, E8's
+// 8 plays) — REQUIRED on any task that touches the round end or the held play. The first line printed names the sweep that ran.
 const fs = require('fs'), path = require('path'), vm = require('vm');
 const GAME = path.resolve(__dirname, '..');
+const FULL = process.env.DY_RE_FULL === '1';
+console.log(FULL ? '· FULL sweep (DY_RE_FULL=1): E4 at Relaxed, Normal and Fast · E8 on the page, 8 plays' : '· LIGHT sweep (the gate default): E4 at Normal only · E8 on the page, one play per card — DY_RE_FULL=1 for the full sweep (required on round-end / held-play tasks)');
 const WEB = process.env.DY_WEB || path.resolve(GAME, '..', 'divya-yuddha-web');
 let HTML = fs.readFileSync(process.env.DY_RE_HTML || path.join(GAME, 'index.html'), 'utf8');
 // DY_RE_BREAK=<name> breaks one guard of PASHU-ORDER-1 in memory (the file is never written), to prove the check that guards it bites
@@ -480,7 +486,7 @@ else {
       // the same small cost in BOTH runs; what is judged is the schedule (the browser's own cost is measured on the real page, in the proof).
       const sizeKeep = mw.sizeBoard; mw.sizeBoard = function () {};
 
-      for (const card of ['Pashupatastra', 'Brahmastra']) for (const seat of [0, 1]) for (const speed of ['relaxed', 'normal', 'fast']) {
+      for (const card of ['Pashupatastra', 'Brahmastra']) for (const seat of [0, 1]) for (const speed of (FULL ? ['relaxed', 'normal', 'fast'] : ['normal'])) {
         const keep = mw.heldPlayOf, A = [], B = [];
         for (let rep = 0; rep < 2; rep++) {   // held and unheld alternate, twice: the timers' own jitter between two runs (±10 ms here) is averaged, never the schedule
           let G = lay(card, seat, 'owner', speed); A.push(await play(G, seat, false));
@@ -492,8 +498,8 @@ else {
         pace.push({ card, seat, speed, beats: n, d: +d.toFixed(1), noise: +noise.toFixed(1) }); }
       mw.sizeBoard = sizeKeep;
       const floor = Math.max(...pace.map((p) => p.noise));
-      ok(`E4 · the pace: every beat of both cards falls where it falls with the held road off — within a frame, or within the timers' own jitter measured in this run (worst difference ${Math.max(...pace.map((p) => p.d))} ms; the same road run twice differed by up to ${floor} ms; ${pace.length} settings: both cards × both seats × relaxed, normal, fast; each the mean of two held and two unheld runs, alternated)`,
-        pace.length === 12 && pace.every((p) => p.beats >= 4 && p.d <= Math.max(17, floor)), J(pace.filter((p) => !(p.d <= Math.max(17, floor)))));
+      ok(`E4 · the pace: every beat of both cards falls where it falls with the held road off — within a frame, or within the timers' own jitter measured in this run (worst difference ${Math.max(...pace.map((p) => p.d))} ms; the same road run twice differed by up to ${floor} ms; ${pace.length} settings: both cards × both seats × ${FULL ? 'relaxed, normal, fast' : 'normal (the light sweep)'}; each the mean of two held and two unheld runs, alternated)`,
+        pace.length === (FULL ? 12 : 4) && pace.every((p) => p.beats >= 4 && p.d <= Math.max(17, floor)), J(pace.filter((p) => !(p.d <= Math.max(17, floor)))));
 
       // E5 · leaving, skipping, the watchdog and a thrown error each leave no held board, lock or clone — the live board shows
       const midPlay = async (card, seat) => { const G = lay(card, seat, 'five', 'normal'); mw.runAction(() => mw.playCard(G, seat, 0), { actor: seat }); await W(seat ? 2900 : 1700); return { G, held: !!MT.RE && MT.RE.mid }; };
@@ -547,6 +553,7 @@ else {
         const hall = (v) => { const c = Object.assign({}, v); delete c.myName; delete c.oppName; return c; };
         const sr = [];
         for (const card of ['Pashupatastra', 'Brahmastra']) for (const caster of [0, 1]) {
+          if (!FULL && caster !== (card === 'Pashupatastra' ? 1 : 0)) continue;   // the light sweep: one play per card
           const cf = CASTER[card], fac = caster === 0 ? [cf, 'asuras'] : ['asuras', cf];
           const room = createRoom(ES, { seed: 77, seats: [{ address: '0x' + '1'.repeat(40), faction: fac[0] }, { address: '0x' + '2'.repeat(40), faction: fac[1] }] });
           const g = room.state; let cur = 0;
@@ -559,6 +566,7 @@ else {
           room.apply(caster, { type: 'play', handIndex: 0, targetIndex: null });
           const v1s = [0, 1].map((me) => hall(buildView({ E: ES }, room, 'm-staked', me, { seat: caster, type: 'play', id: MT.CARD_BY_NAME[card].id, n: card }, g.events.slice(cur))));
           for (const me of [0, 1]) {
+            if (!FULL && me === caster) continue;   // the light sweep: read by the other seat
             mw.resetChoreo(); mw.startWireMatch({ seat: me, matchId: 'm-staked-' + card + caster + me, view: v0s[me] }); mw.pump = function () {};
             m$('mulligan').classList.add('hidden'); mw.render();
             const beats = [], samples = [], t0 = mw.performance.now(); const pe = mw.playEvent;
@@ -572,7 +580,7 @@ else {
           }
         }
         ok(`E8 · THE STAKED ROAD on the page: ${sr.length} plays from the server's real views (both cards, cast by either seat, read by both) are held, and E2 and E3 hold on them; nothing left after`,
-          sr.length === 8 && sr.every((x) => x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.e3.deaths >= 1 && x.after), J(sr.filter((x) => !(x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.after)).map((x) => ({ k: x.k, h: x.wasHeld, e2: x.e2.slice(0, 2), e3: x.e3.bad.slice(0, 2), after: x.after })).slice(0, 3)));
+          sr.length === (FULL ? 8 : 2) && sr.every((x) => x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.e3.deaths >= 1 && x.after), J(sr.filter((x) => !(x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.after)).map((x) => ({ k: x.k, h: x.wasHeld, e2: x.e2.slice(0, 2), e3: x.e3.bad.slice(0, 2), after: x.after })).slice(0, 3)));
       }
       ok('  …the held-play page ran clean: no script error, no console.log', M.errs.length === 0, M.errs.slice(0, 3).join(' | '));
     }

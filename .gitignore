@@ -27,3 +27,8 @@ assets/fonts/
 assets/vfx/concepts/
 # owner ruling 2026-11-21: the board masters stay on this Mac (plural folder only; assets/board/ stays tracked)
 assets/boards/
+# GUIDE-1 (owner ruling, 24 Nov 2026): the owner's 1254px guide originals stay out of git and out of the build — only their 256px
+# copies (assets/guide/*_256.webp|png) ship. Re-make the copies from these when the art changes.
+assets/guide/hand.png
+assets/guide/hand_pressed.png
+assets/guide/glow.png
