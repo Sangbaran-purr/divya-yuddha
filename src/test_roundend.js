@@ -118,13 +118,13 @@ function extractFn(src, name) { const i = src.indexOf('function ' + name + '(');
   // one held play: the copy before, the engine's play, every event through the copy, then the turn's start
   const runHeld = (g, act) => { const held = H.heldCopyOf(g), e0 = g.events.length; act(); const evs = g.events.slice(e0);
     if (!H.heldPlayOf(evs)) return { skipped: true };
-    const gone = {}; evs.forEach((e, i) => H.heldStep(held, e, gone, g, evs[i + 1])); H.heldMidFinish(held, g);
+    const gone = {}; evs.forEach((e, i) => H.heldStep(held, e, gone, g, evs[i + 1], true)); H.heldMidFinish(held, g);   // atBeat: the silent plays (WAVE1-CLIPS-1 batch 2) land at their play's beat
     return { ok: H.heldKey(held) === H.heldKey(g), held: H.heldKey(held), live: H.heldKey(g), evs }; };
   // the sweep: full AI matches, every faction pair, every realm, launch and wave decks; at random turns the card goes into the hand and is cast
-  const F = ['devas', 'asuras', 'vanaras', 'nagas'], R = E.REALMS.map((r) => r.id || r), NAMES = ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra'];   // WAVE1-CLIPS-1: + Agneyastra and Nagastra
+  const F = ['devas', 'asuras', 'vanaras', 'nagas'], R = E.REALMS.map((r) => r.id || r), NAMES = ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra', 'Pavamana', 'Tamasa', 'Dharma Kavacha'];   // WAVE1-CLIPS-1: + Agneyastra and Nagastra (batch 1), Pavamana, Tamasa and Dharma Kavacha (batch 2)
   const casts = {}, bad = {}, seats = [0, 0], shapes = new Set(); NAMES.forEach((n) => { casts[n] = 0; bad[n] = 0; });
   let sample = '', leapsFirst = 0;
-  for (let k = 0; NAMES.some((n) => casts[n] < 450) && k < 6000; k++) {
+  for (let k = 0; NAMES.some((n) => casts[n] < 450) && k < 9000; k++) {
     const wave = k % 2 === 1, rng = mul(91000 + k);
     const g = E.newGame({ p0Faction: F[k % 4], p1Faction: F[(k >> 2) % 4], rng, realm: R[k % R.length], wave1: wave });
     for (const s of [0, 1]) E.mulligan(g, s, E.aiMulliganPlan(g, s));
@@ -181,6 +181,13 @@ function extractFn(src, name) { const i = src.indexOf('function ' + name + '(');
   built('Agneyastra in Patala (+1: 4 damage)', 'Agneyastra', 'devas', 'asuras', true, (g, put) => { put(0, 'Marut'); put(1, 'Ravana'); }, 'patala');
   built('Nagastra: a Venom token on every enemy Unit, and the caster\'s Chaos Surge', 'Nagastra', 'asuras', 'devas', false, (g, put) => { put(0, 'Tataka'); put(1, 'Yama'); put(1, 'Marut'); put(1, 'Deva Soldier'); });
   built('Nagastra onto Units already poisoned (the tokens stack)', 'Nagastra', 'asuras', 'nagas', false, (g, put) => { put(0, 'Tataka'); put(1, 'Naga Archer', { venom: 1 }); put(1, 'Naga Warrior', { venom: 2 }); });
+  // WAVE1-CLIPS-1 batch 2: the three silent plays — their effect lands on the copy at the play's beat
+  built('Pavamana heals a wounded Unit and strips Venom: +1 per effect lifted', 'Pavamana', 'devas', 'nagas', false, (g, put) => { put(0, 'Yama', { power: 3 }); put(0, 'Marut', { venom: 2 }); put(0, 'Deva Soldier'); put(1, 'Naga Archer'); });
+  built('Pavamana in the Rishi Mandala (the cast Mantra returns to the hand — the caster is found there)', 'Pavamana', 'devas', 'asuras', false, (g, put) => { put(0, 'Yama', { power: 2 }); put(0, 'Marut', { venom: 1 }); put(1, 'Tataka'); }, 'rishi');
+  built('Pavamana with nothing to purify (the copy does not move)', 'Pavamana', 'devas', 'asuras', false, (g, put) => { put(0, 'Yama'); put(1, 'Tataka'); });
+  built('Tamasa: the opponent skips their next turn, and the caster\'s Chaos Surge', 'Tamasa', 'asuras', 'devas', false, (g, put) => { put(0, 'Tataka'); put(0, 'Bana Asura'); put(1, 'Yama'); });
+  built('Dharma Kavacha takes the artifact slot (a human designates by hand: no shield)', 'Dharma Kavacha', 'devas', 'asuras', false, (g, put) => { put(0, 'Yama'); put(0, 'Marut'); g.players[0].manualShield = true; put(1, 'Tataka'); });
+  built('Dharma Kavacha replaces an artifact; the AI raises two shields on their own beats', 'Dharma Kavacha', 'devas', 'asuras', false, (g, put) => { put(0, 'Yama'); put(0, 'Marut'); put(0, 'Deva Soldier'); put(0, 'Amrita Kalasha'); put(1, 'Tataka'); });
 
   // E8 · THE STAKED ROAD — the server's REAL room and buildView (web3), read by the page's own viewToState; the copy is the OLD view
   let buildView = null, createRoom = null, ES = null;
@@ -211,7 +218,7 @@ function extractFn(src, name) { const i = src.indexOf('function ' + name + '(');
             room.apply(s, { type: 'play', handIndex: 0, targetIndex: null }); push({ seat: s, type: 'play', id: c.id, n: c.n });
             const auraAfter = auraOf();
             for (const me of [0, 1]) { const evs = st[me].events.slice(before[me].events.length); if (!VH.heldPlayOf(evs)) continue;
-              const gone = {}; evs.forEach((e, i) => VH.heldStep(held[me], e, gone, st[me], evs[i + 1])); VH.heldMidFinish(held[me], st[me]); vcasts++; vseats[me]++;
+              const gone = {}; evs.forEach((e, i) => VH.heldStep(held[me], e, gone, st[me], evs[i + 1], true)); VH.heldMidFinish(held[me], st[me]); vcasts++; vseats[me]++;
               if (JSON.stringify(before[me]) !== frozen[me]) inPlace++;
               if (VH.heldKey(held[me]) !== VH.heldKey(st[me])) {
                 // a read-time aura (Naga Warrior's count of Venom, Narada…) moves with no event: the view carries only the effective number, so the
@@ -426,9 +433,10 @@ else {
     {
       const M = boot('', { reduce: false }), mw = M.w, MT = M.T, m$ = (id) => mw.document.getElementById(id);
       const notes = []; { const fn = mw.fxNote; mw.fxNote = function (kind, detail) { notes.push(Object.assign({ kind }, detail || {})); return fn.apply(this, arguments); }; }   // the battle log's diagnostics, as they are written
-      const CASTER = { Pashupatastra: 'asuras', Brahmastra: 'devas', Agneyastra: 'devas', Nagastra: 'asuras' }, OWN = { asuras: ['Tataka', 'Maricha'], devas: ['Deva Soldier', 'Marut'] };
+      const CASTER = { Pashupatastra: 'asuras', Brahmastra: 'devas', Agneyastra: 'devas', Nagastra: 'asuras', Pavamana: 'devas', Tamasa: 'asuras', 'Dharma Kavacha': 'devas' }, OWN = { asuras: ['Tataka', 'Maricha'], devas: ['Deva Soldier', 'Marut'] };
       const ROWS = ['oheroes', 'ounits', 'punits', 'pheroes'];
       const sigOf = (el) => [...el.children].filter((c) => c.tagName !== 'IMG').map((c) => c.className + '=' + c.textContent).join(';') + '|' + ['bound', 'warded', 'ghostc', 'stolen'].filter((k) => el.classList.contains(k)).join(',');
+      const hudNow = () => [m$('part') ? m$('part').textContent + '|' + m$('part').className : '', m$('oart') ? m$('oart').textContent + '|' + m$('oart').className : '', m$('turnind').textContent];
       const rowsNow = () => ROWS.map((id) => [...m$(id).querySelectorAll('.bc')].map((el) => ({ u: el.classList.contains('held-gap') ? 'gap' : el.dataset.uid, s: sigOf(el), h: el.style.visibility === 'hidden' })));   // a kept space is a slot too
       // a board the way a match would have it, the caster at `seat` (0 = the player, 1 = the opponent), on the solo road or the free wire road
       const lay = (card, seat, board, speed, road) => {
@@ -439,7 +447,7 @@ else {
         mw.pump = function () {}; G.realm = 'mrityulok'; me.mulliganed = op.mulliganed = true; m$('mulligan').classList.add('hidden');
         const mk = (n, x) => Object.assign(mw.mkCard(MT.CARD_BY_NAME[n]), x || {});
         for (const p of [me, op]) { p.units = []; p.heroes = []; p.artifact = null; p.passed = false; p.astrasThisRound = 0; }
-        cast.units = OWN[cf].map((n) => mk(n));
+        cast.units = OWN[cf].map((n, k) => card === 'Pavamana' ? mk(n, k ? { venom: 2 } : { power: 1 }) : mk(n));   // WAVE1-CLIPS-1 batch 2: Pavamana needs something to purify (a wound, two Venom tokens)
         struck.units = [mk('Kalanemi', { power: 1, base: 1 }), mk('Meghnad', { power: 6 }), mk('Ravana', { power: 7 })];
         if (board === 'five') struck.units.push(mk('Bana Asura'), mk('Kali Asura', { power: 1, aegis: true }));
         cast.hand = [mk(card)]; G.turn = seat; G.over = false;
@@ -448,17 +456,24 @@ else {
       // one play: every beat (playEvent) and, when asked, the board every 4 ms from the act to the release
       const play = async (G, seat, sample, road) => {
         const beats = [], samples = [], t0 = mw.performance.now(); const pe = mw.playEvent;
-        mw.playEvent = function (ev) { beats.push({ t: mw.performance.now() - t0, ev }); return pe.apply(this, arguments); };
-        const iv = sample ? setInterval(() => samples.push({ t: mw.performance.now() - t0, rows: rowsNow(), clones: [...m$('victimlayer').children].map((n) => n.dataset.uid), boxes: mw.document.querySelectorAll('.dissolve-clone').length, held: !!MT.RE }), 4) : null;
-        const pre = rowsNow();
+        mw.playEvent = function (ev) { const b = { t: mw.performance.now() - t0, ev }; beats.push(b); const r = pe.apply(this, arguments); Promise.resolve(r).then(() => { b.tEnd = mw.performance.now() - t0; }); return r; };   // tEnd: when this beat ended (a silent play's effect lands there)
+        const iv = sample ? setInterval(() => samples.push({ t: mw.performance.now() - t0, rows: rowsNow(), hud: hudNow(), clones: [...m$('victimlayer').children].map((n) => n.dataset.uid), boxes: mw.document.querySelectorAll('.dissolve-clone').length, held: !!MT.RE }), 4) : null;
+        const pre = rowsNow(), preHud = hudNow();
         if (road === 'wire') mw.runAction(() => mw.wireApply({ seat, type: 'play', handIndex: 0, targetIndex: null }), { actor: seat });
         else mw.runAction(() => mw.playCard(G, seat, 0), { actor: seat });
         await until(() => !MT.choreoActive, 30000); await W(80);
         if (iv) clearInterval(iv); mw.playEvent = pe;
-        return { beats, samples, pre, post: rowsNow(), RE: MT.RE, reLive: MT.reLive };
+        return { beats, samples, pre, preHud, seat, post: rowsNow(), RE: MT.RE, reLive: MT.reLive };
       };
       // E2 · from the act to each card's own beat: no card leaves, moves, arrives or changes its number, mark or badge
-      const e2 = (r) => { const bad = []; const tOf = (u) => { const b = r.beats.find((x) => (x.ev.targetUids || []).map(String).indexOf(String(u)) >= 0); return b ? b.t : Infinity; };
+      // WAVE1-CLIPS-1 batch 2: a SILENT play (Pavamana, Tamasa, Dharma Kavacha — no event of its own names a card) lands at the END of its play beat:
+      // every card's beat is then that moment at the latest, and the artifact chips and the turn indicator (hudNow) must not change before it either
+      const SILENT = { Pavamana: 1, Tamasa: 1, 'Dharma Kavacha': 1 };
+      const e2 = (r) => { const bad = []; const sb = r.beats.find((x) => x.ev.type === 'play' && SILENT[x.ev.abilityName]), sEnd = sb ? (sb.tEnd != null ? sb.tEnd : Infinity) : Infinity;
+        const tOf = (u) => { const b = r.beats.find((x) => (x.ev.targetUids || []).map(String).indexOf(String(u)) >= 0); return Math.min(b ? b.t : Infinity, sEnd); };
+        if (sb && r.preHud) for (const smp of r.samples) { if (!(smp.t < sEnd - 2 && smp.hud)) continue;
+          if (smp.hud[0] !== r.preHud[0] || smp.hud[1] !== r.preHud[1]) { bad.push('an artifact chip changed at ' + smp.t.toFixed(0) + ' ms, before the silent beat ended at ' + sEnd.toFixed(0) + ': ' + JSON.stringify(smp.hud)); break; }
+          if (sb.ev.abilityName === 'Tamasa' && r.seat === 0 && smp.hud[2] !== 'OPPONENT…') { bad.push('the turn indicator showed the skip ("' + smp.hud[2] + '") at ' + smp.t.toFixed(0) + ' ms, before the slam at ' + sEnd.toFixed(0)); break; } }
         const firstAny = Math.min(...r.beats.filter((b) => (b.ev.targetUids || []).length).map((b) => b.t));
         const preAt = {}; r.pre.forEach((row, ri) => row.forEach((c, ci) => { preAt[c.u] = { ri, ci, s: c.s }; }));
         for (const smp of r.samples) {
@@ -484,12 +499,12 @@ else {
 
       // E2 + E3 — both cards, both seats, the owner's board and a five-Unit board (an Amrita revival among them), and a relayed cast on the free wire road
       const runs = [];
-      for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra']) for (const seat of [0, 1]) for (const board of ['owner', 'five']) {
+      for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra', 'Pavamana', 'Tamasa', 'Dharma Kavacha']) for (const seat of [0, 1]) for (const board of ['owner', 'five']) {
         const G = lay(card, seat, board, 'normal'); runs.push({ card, seat, board, r: await play(G, seat, true) }); }
       { const G = lay('Pashupatastra', 1, 'five', 'normal', 'wire'); runs.push({ card: 'Pashupatastra', seat: 1, board: 'five, relayed on the free wire road', r: await play(G, 1, true, 'wire') }); }
       const e2bad = runs.map((x) => ({ k: x.card + ' seat ' + x.seat + ' ' + x.board, bad: e2(x.r) })).filter((x) => x.bad.length);
-      ok(`E2 · R3: in ${runs.length} plays (all four held cards — Pashupatastra, Brahmastra, and from WAVE1-CLIPS-1 Agneyastra and Nagastra — both seats, the owner's board and a five-Unit board, one relayed on the free wire road) no card leaves, moves to another slot or arrives, and no number, mark or badge changes, before its own beat (a fallen card's space is kept while its row still waits) — sampled every 4 ms from the act (through the opponent's showcase) to the release`,
-        runs.length === 17 && e2bad.length === 0 && runs.every((x) => x.r.samples.length > 200), J(e2bad.slice(0, 3)));
+      ok(`E2 · R3: in ${runs.length} plays (all seven held cards — Pashupatastra, Brahmastra, and from WAVE1-CLIPS-1 Agneyastra, Nagastra, Pavamana, Tamasa and Dharma Kavacha — both seats, the owner's board and a five-Unit board, one relayed on the free wire road) no card leaves, moves to another slot or arrives, and no number, mark or badge changes, before its own beat (a fallen card's space is kept while its row still waits) — sampled every 4 ms from the act (through the opponent's showcase) to the release`,
+        runs.length === 29 && e2bad.length === 0 && runs.every((x) => x.r.samples.length > 200), J(e2bad.slice(0, 3)));
       const e3r = runs.map((x) => Object.assign({ k: x.card + ' seat ' + x.seat + ' ' + x.board }, e3(x.r)));
       const nDeaths = e3r.reduce((a, x) => a + x.deaths, 0);
       ok(`E3 · the kills: all ${nDeaths} deaths are the real card cracking in its own place — its clone over its own cell, the cell kept (hidden) until the crack ends, no placeholder box ever drawn`,
@@ -502,7 +517,7 @@ else {
       // the same small cost in BOTH runs; what is judged is the schedule (the browser's own cost is measured on the real page, in the proof).
       const sizeKeep = mw.sizeBoard; mw.sizeBoard = function () {};
 
-      for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra']) for (const seat of [0, 1]) for (const speed of (FULL ? ['relaxed', 'normal', 'fast'] : ['normal'])) {
+      for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra', 'Pavamana', 'Tamasa', 'Dharma Kavacha']) for (const seat of [0, 1]) for (const speed of (FULL ? ['relaxed', 'normal', 'fast'] : ['normal'])) {
         const keep = mw.heldPlayOf, A = [], B = [];
         for (let rep = 0; rep < 2; rep++) {   // held and unheld alternate, twice: the timers' own jitter between two runs (±10 ms here) is averaged, never the schedule
           let G = lay(card, seat, 'owner', speed); A.push(await play(G, seat, false));
@@ -514,8 +529,8 @@ else {
         pace.push({ card, seat, speed, beats: n, d: +d.toFixed(1), noise: +noise.toFixed(1) }); }
       mw.sizeBoard = sizeKeep;
       const floor = Math.max(...pace.map((p) => p.noise));
-      ok(`E4 · the pace: every beat of all four held cards falls where it falls with the held road off — within a frame, or within the timers' own jitter measured in this run (worst difference ${Math.max(...pace.map((p) => p.d))} ms; the same road run twice differed by up to ${floor} ms; ${pace.length} settings: four cards × both seats × ${FULL ? 'relaxed, normal, fast' : 'normal (the light sweep)'}; each the mean of two held and two unheld runs, alternated)`,
-        pace.length === (FULL ? 24 : 8) && pace.every((p) => p.beats >= (p.card === 'Agneyastra' || p.card === 'Nagastra' ? 2 : 4) && p.d <= Math.max(17, floor)), J(pace.filter((p) => !(p.d <= Math.max(17, floor)))));
+      ok(`E4 · the pace: every beat of all seven held cards falls where it falls with the held road off — within a frame, or within the timers' own jitter measured in this run (worst difference ${Math.max(...pace.map((p) => p.d))} ms; the same road run twice differed by up to ${floor} ms; ${pace.length} settings: seven cards × both seats × ${FULL ? 'relaxed, normal, fast' : 'normal (the light sweep)'}; each the mean of two held and two unheld runs, alternated)`,
+        pace.length === (FULL ? 42 : 14) && pace.every((p) => p.beats >= (/^(Pashupatastra|Brahmastra)$/.test(p.card) ? 4 : 1) && p.d <= Math.max(17, floor)), J(pace.filter((p) => !(p.d <= Math.max(17, floor)))));
 
       // E5 · leaving, skipping, the watchdog and a thrown error each leave no held board, lock or clone — the live board shows
       const midPlay = async (card, seat) => { const G = lay(card, seat, 'five', 'normal'); mw.runAction(() => mw.playCard(G, seat, 0), { actor: seat }); await W(seat ? 2900 : 1700); return { G, held: !!MT.RE && MT.RE.mid }; };
@@ -568,8 +583,8 @@ else {
       else {
         const hall = (v) => { const c = Object.assign({}, v); delete c.myName; delete c.oppName; return c; };
         const sr = [];
-        for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra']) for (const caster of [0, 1]) {
-          if (!FULL && caster !== (card === 'Pashupatastra' || card === 'Nagastra' ? 1 : 0)) continue;   // the light sweep: one play per card
+        for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra', 'Pavamana', 'Tamasa', 'Dharma Kavacha']) for (const caster of [0, 1]) {
+          if (!FULL && caster !== (/^(Pashupatastra|Nagastra|Tamasa)$/.test(card) ? 1 : 0)) continue;   // the light sweep: one play per card
           const cf = CASTER[card], fac = caster === 0 ? [cf, 'asuras'] : ['asuras', cf];
           const room = createRoom(ES, { seed: 77, seats: [{ address: '0x' + '1'.repeat(40), faction: fac[0] }, { address: '0x' + '2'.repeat(40), faction: fac[1] }] });
           const g = room.state; let cur = 0;
@@ -595,8 +610,8 @@ else {
             sr.push({ k: card + ' cast by seat ' + caster + ', read by seat ' + me, wasHeld, e2: e2(r), e3: e3(r), after: Object.values(leftovers()).every(Boolean) });
           }
         }
-        ok(`E8 · THE STAKED ROAD on the page: ${sr.length} plays from the server's real views (all four held cards, cast by either seat, read by both) are held, and E2 and E3 hold on them; nothing left after`,
-          sr.length === (FULL ? 16 : 4) && sr.every((x) => x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && (x.e3.deaths >= 1 || /^(Agneyastra|Nagastra) /.test(x.k)) && x.after), J(sr.filter((x) => !(x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.after)).map((x) => ({ k: x.k, h: x.wasHeld, e2: x.e2.slice(0, 2), e3: x.e3.bad.slice(0, 2), after: x.after })).slice(0, 3)));
+        ok(`E8 · THE STAKED ROAD on the page: ${sr.length} plays from the server's real views (all seven held cards, cast by either seat, read by both) are held, and E2 and E3 hold on them; nothing left after`,
+          sr.length === (FULL ? 28 : 7) && sr.every((x) => x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && (x.e3.deaths >= 1 || /^(Agneyastra|Nagastra|Pavamana|Tamasa|Dharma Kavacha) /.test(x.k)) && x.after), J(sr.filter((x) => !(x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.after)).map((x) => ({ k: x.k, h: x.wasHeld, e2: x.e2.slice(0, 2), e3: x.e3.bad.slice(0, 2), after: x.after })).slice(0, 3)));
       }
       ok('  …the held-play page ran clean: no script error, no console.log', M.errs.length === 0, M.errs.slice(0, 3).join(' | '));
     }
@@ -606,8 +621,8 @@ else {
     {
       const R6 = boot(''), rw = R6.w, RT = R6.T, r$ = (id) => rw.document.getElementById(id);
       const res = [];
-      for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra']) {
-        rw.resetChoreo(); rw.startGame(card === 'Brahmastra' || card === 'Agneyastra' ? 'devas' : 'asuras', 'asuras'); const G = RT.G, me = G.players[RT.ME], op = G.players[RT.OPP]; rw.pump = function () {}; me.mulliganed = op.mulliganed = true; r$('mulligan').classList.add('hidden');
+      for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra', 'Pavamana', 'Tamasa', 'Dharma Kavacha']) {
+        rw.resetChoreo(); rw.startGame(/^(Brahmastra|Agneyastra|Pavamana|Dharma Kavacha)$/.test(card) ? 'devas' : 'asuras', 'asuras'); const G = RT.G, me = G.players[RT.ME], op = G.players[RT.OPP]; rw.pump = function () {}; me.mulliganed = op.mulliganed = true; r$('mulligan').classList.add('hidden');
         const mk = (x, o) => Object.assign(rw.mkCard(RT.CARD_BY_NAME[x]), o || {});
         me.units = [mk('Tataka')]; me.heroes = []; op.units = [mk('Kalanemi', { power: 1, base: 1 }), mk('Meghnad', { power: 6 }), mk('Ravana', { power: 7 })]; op.heroes = [];
         me.hand = [mk(card)]; G.turn = RT.ME; me.passed = op.passed = false; me.astrasThisRound = 0; rw.render();
@@ -615,7 +630,7 @@ else {
         const rows = JSON.stringify([...r$('ounits').querySelectorAll('.bc')].map((e) => e.dataset.uid)), live = JSON.stringify(op.units.map((u) => String(u.uid)));
         res.push({ card, RE: RT.RE === null, lock: !RT.choreoActive, rows: rows === live, log: r$('loglast').textContent === rw.fixLogGrammar(G.log[G.log.length - 1].msg) });
       }
-      ok('E6 · reduced motion: all four held cards resolve at once — no held board, no lock, the live board and the log line drawn in the same moment, as today', res.every((x) => x.RE && x.lock && x.rows && x.log), J(res));
+      ok('E6 · reduced motion: all seven held cards resolve at once — no held board, no lock, the live board and the log line drawn in the same moment, as today', res.every((x) => x.RE && x.lock && x.rows && x.log), J(res));
       ok('  …that page ran clean', R6.errs.length === 0, R6.errs.slice(0, 3).join(' | '));
     }
 
@@ -626,9 +641,11 @@ else {
       const notes = []; { const fn = nw.fxNote; nw.fxNote = function (kind, detail) { notes.push(Object.assign({ kind }, detail || {})); return fn.apply(this, arguments); }; }
       const sigOf = (el) => !el ? 'gone' : [...el.children].filter((c) => c.tagName !== 'IMG').map((c) => c.className + '=' + c.textContent).join(';') + '|' + ['bound', 'warded', 'ghostc', 'stolen'].filter((k) => el.classList.contains(k)).join(',');
       const cardSig = (u) => sigOf(nw.document.querySelector(`#field .row .bc[data-uid="${u}"]:not(.held-gap)`));
-      const SPEC = { Agneyastra: ['agneyastra', 'devas', 'damage'], Nagastra: ['nagastra', 'asuras', 'token'] };
+      // what each card visibly changes: the struck cards (batch 1); the caster's own cards (Pavamana's heal and +1); the turn indicator (Tamasa's skip:
+      // until the slam it shows the turn as it would be without the skip); the artifact chip (Kavacha)
+      const SPEC = { Agneyastra: ['agneyastra', 'devas', 'damage'], Nagastra: ['nagastra', 'asuras', 'token'], Pavamana: ['pavamana', 'devas', 'own'], Tamasa: ['tamasa', 'asuras', 'turn'], 'Dharma Kavacha': ['kavacha', 'devas', 'chip'] };
       const res = [];
-      for (const card of ['Agneyastra', 'Nagastra']) for (const seat of [0, 1]) {
+      for (const card of Object.keys(SPEC)) for (const seat of [0, 1]) {
         const [id, cf, trig] = SPEC[card];
         const man = JSON.parse(fs.readFileSync(path.join(GAME, 'assets', 'manifest', 'effects', id, 'manifest.json'), 'utf8')), impSrc = man.cells[man.impact].src;
         const cellOf = (d) => { const c = man.cells.find((x) => x.x === d.x && x.y === d.y); return c ? c.src : -1; };
@@ -637,29 +654,38 @@ else {
         nw.pump = function () {}; G.realm = 'mrityulok'; me.mulliganed = op.mulliganed = true; n$('mulligan').classList.add('hidden');
         const mk = (n, x) => Object.assign(nw.mkCard(NT.CARD_BY_NAME[n]), x || {});
         for (const p of [me, op]) { p.units = []; p.heroes = []; p.artifact = null; p.passed = false; p.astrasThisRound = 0; }
-        cast.units = [mk(cf === 'devas' ? 'Marut' : 'Tataka')]; hit.units = [mk('Kalanemi', { power: 1, base: 1 }), mk('Meghnad', { power: 6 }), mk('Ravana', { power: 7 })];
+        cast.units = trig === 'own' ? [mk('Yama', { power: 3 }), mk('Marut', { venom: 2 })] : [mk(cf === 'devas' ? 'Marut' : 'Tataka')];
+        if (trig === 'chip') cast.manualShield = seat === 0;
+        hit.units = [mk('Kalanemi', { power: 1, base: 1 }), mk('Meghnad', { power: 6 }), mk('Ravana', { power: 7 })];
         cast.hand = [mk(card)]; G.turn = seat; G.over = false; nw.setSpeed('normal'); nw.render();
         await nw.fxBoot(); const got = await nw.fxPrefetch(id);
         const ready = Array.isArray(got) && got.length > 0 && got.every((b) => b && b.__wh && b.__wh[0] > 0);   // the atlas bytes in hand: the page's own readiness
-        // the screen as it is shown: one sample at the end of each clip frame (the frame the clip has just drawn into)
-        const frames = []; let struck = [], pre = {};
-        const ft = nw.fxTick; nw.fxTick = function () { const r = ft.apply(this, arguments); const d = draws[draws.length - 1];
-          frames.push({ t: nw.performance.now(), cell: d ? cellOf(d) : -1, sig: struck.map((u) => cardSig(u)) }); return r; };
+        let watch = () => [];
+        const frames = [];
+        // the screen as painted: a browser paints after the frame's callbacks AND the promise work they set off (the held board moves in that work),
+        // so each frame's sample is read once those have run (setTimeout 0, before the next frame) — labelled with the cell that frame drew
+        const ft = nw.fxTick; nw.fxTick = function () { const r = ft.apply(this, arguments); const d = draws[draws.length - 1], cell = d ? cellOf(d) : -1, t = nw.performance.now();
+          setTimeout(() => frames.push({ t, cell, sig: watch() }), 0); return r; };
         const d0 = draws.length;
+        const ownUids = cast.units.map((u) => String(u.uid)), artId = seat === NT.ME ? 'part' : 'oart';
+        if (trig === 'own') watch = () => ownUids.map((u) => cardSig(u));
+        else if (trig === 'turn') watch = () => [n$('turnind').textContent];
+        else if (trig === 'chip') watch = () => [n$(artId).textContent + '|' + n$(artId).className];
+        const pre0 = watch();   // the board before the play
+        const playBeat = {}; { const pe = nw.playEvent; nw.playEvent = function (ev) { const r = pe.apply(this, arguments); if (ev.type === 'play' && playBeat.t0 == null) { playBeat.t0 = nw.performance.now(); Promise.resolve(r).then(() => { playBeat.ms = nw.performance.now() - playBeat.t0; }); } return r; }; playBeat.restore = () => { nw.playEvent = pe; }; }   // the play beat's own length, cast to its end
         nw.runAction(() => nw.playCard(G, seat, 0), { actor: seat });
-        const evs = G.events.slice(-12), bev = evs.find((e) => e.type === trig && e.abilityName === card);
-        struck = (bev && bev.targetUids || []).map(String); pre = {}; for (const u of struck) pre[u] = null;
-        // the board before the play is the HELD board: read the struck cards now (the play has not been drawn), before any frame
-        for (const u of struck) pre[u] = cardSig(u);
-        await until(() => !NT.choreoActive, 30000); await W(80); nw.fxTick = ft;
-        const mine = draws.slice(d0).map(cellOf), early = frames.filter((f) => f.cell < impSrc && f.sig.some((x, k) => x !== pre[struck[k]]));
-        const firstTurn = frames.find((f) => f.sig.some((x, k) => x !== pre[struck[k]]));
-        res.push({ card, seat, ready, struck: struck.length, drawn: mine.length, impactDrawn: mine.indexOf(impSrc) >= 0, frames: frames.length, early: early.length,
-          turnedAtCell: firstTurn ? firstTurn.cell : null, impSrc, fell: notes.filter((x) => /fell-back|not-ready|clip-error/.test(x.kind)).length, left: NT.RE === null && !NT.choreoActive });
+        if (trig === 'damage' || trig === 'token') { const evs = G.events.slice(-12), bev = evs.find((e) => e.type === trig && e.abilityName === card), struck = (bev && bev.targetUids || []).map(String); watch = () => struck.map((u) => cardSig(u)); }
+        const pre = watch();   // what shows once the play has begun (the turn has passed): it must hold until the impact frame
+        await until(() => !NT.choreoActive, 30000); await W(80); nw.fxTick = ft; playBeat.restore();
+        const mine = draws.slice(d0).map(cellOf), changed = (f) => JSON.stringify(f.sig) !== JSON.stringify(pre);
+        const early = frames.filter((f) => f.cell < impSrc && changed(f)), firstTurn = frames.find(changed), post = watch();
+        const expectChange = true;   // the player's Tamasa: "OPPONENT…" → "YOUR TURN" at the slam; the opponent's: "YOUR TURN" (the turn as it would be without the skip) → "OPPONENT…" at the slam
+        res.push({ card, seat, ready, watched: pre.length, drawn: mine.length, impactDrawn: mine.indexOf(impSrc) >= 0, frames: frames.length, early: early.length,
+          turnedAtCell: firstTurn ? firstTurn.cell : null, impSrc, expectChange, playMs: playBeat.ms != null ? +playBeat.ms.toFixed(1) : null, wantMs: { Pavamana: 910, Tamasa: 1083.3, 'Dharma Kavacha': 1462.5 }[card] || null, before: pre0, during: pre, after: post, fell: notes.filter((x) => /fell-back|not-ready|clip-error|impact-wait-cap/.test(x.kind)).length, left: NT.RE === null && !NT.choreoActive });
         notes.length = 0;
       }
-      ok(`E9 · WITH THE CLIP PLAYING (the real packs, decoded, drawn on the page's own clock — Agneyastra and Nagastra, both seats): no struck card's number, mark or Venom tokens change on screen before the frame that draws the impact cell (f003 / f032), and they turn in that very frame (${res.map((x) => x.card + ' seat ' + x.seat + ': turned at f' + String(x.turnedAtCell).padStart(3, '0') + ' over ' + x.frames + ' frames').join(', ')}); the clip owned every one (never fell back), nothing left after. The classic path (clip not ready) keeps the same order: E2 above runs every play with no clip`,
-        res.length === 4 && res.every((x) => x.ready && x.struck >= 1 && x.drawn > 20 && x.impactDrawn && x.early === 0 && x.turnedAtCell === x.impSrc && x.fell === 0 && x.left), J(res));
+      ok(`E9 · WITH THE CLIP PLAYING (the real packs, decoded, drawn on the page's own clock — Agneyastra, Nagastra, Pavamana, Tamasa and Dharma Kavacha, both seats): nothing the card changes on screen — a struck card's number, mark or Venom tokens, the caster's own healed numbers, the artifact chip, the turn indicator — changes before the frame that draws the impact cell (f003 / f032 / f040 / f020 / f044), and it turns in that very frame (${res.map((x) => x.card + ' seat ' + x.seat + ': ' + (x.turnedAtCell == null ? 'no visible change' : 'turned at f' + String(x.turnedAtCell).padStart(3, '0'))).join(', ')}); the play beat of a play-triggered clip runs its ruled time at Normal — Pavamana 910 ms (the classic), Tamasa 1083 ms (+82, accepted), Dharma Kavacha 1462.5 ms (+552, the Artifact's build-up, ruled): measured ${res.filter((x) => x.wantMs).map((x) => x.card + ' ' + x.playMs).join(', ')} ms (within 40 ms — the frame clock and the cast's own work); the clip owned every one (never fell back, never capped), nothing left after. The classic path (clip not ready) keeps the same order: E2 above runs every play with no clip`,
+        res.length === 10 && res.every((x) => x.ready && x.watched >= 1 && x.drawn > 20 && x.impactDrawn && x.early === 0 && (x.expectChange ? x.turnedAtCell === x.impSrc : x.turnedAtCell === null) && x.fell === 0 && x.left && (!x.wantMs || (x.playMs != null && Math.abs(x.playMs - x.wantMs) <= 40))), J(res.filter((x) => !(x.ready && x.early === 0 && (x.expectChange ? x.turnedAtCell === x.impSrc : x.turnedAtCell === null) && x.fell === 0 && x.left))));
       ok('  …that page ran clean', M9.errs.length === 0, M9.errs.slice(0, 3).join(' | '));
     }
   })();
