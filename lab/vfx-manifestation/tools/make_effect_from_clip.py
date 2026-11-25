@@ -239,6 +239,40 @@ EFFECTS = {
                            "castHitStopMs": 110, "castHoldMs": 1000, "flightMs": 0, "crackAfterMs": 0, "exitKind": "none", "destroyDwellMs": 577,
                            "afterglowDelayMs": 1125, "anchor": "enemy-half-divider", "afterglowAnchor": "caster-half-divider", "awaited": False,
                            "note": "the fire's impact on the FIRST damage beat (+1447 ms at Normal); the gold on the classic wash timer - (18/16) x vfxT x 1000 after the burn, 1462 ms at Normal, 877 at Fast - fire first, inspiration second, never simultaneous"}},
+    # WAVE1-CLIPS-1 · BATCH 1 (owner rulings 2026-11-25). The owner's Kling clips staged as sources/<name>/<name>.mp4 (sha256-pinned below).
+    # AGNEYASTRA — the Vajra class: a single-target strike on the target card. The fire dart has already landed on f000; the burst peaks at f003 (the
+    # largest picture change, measured), pinned to the card's own damage beat (ruling 2). Ruling 3: shrunk so the settled fire ring (measured off the
+    # dart's column on f060, 920 px) sits ON the target card at 1.25 card widths — one Unit is hit, never across the neighbours; the smaller cells keep
+    # the pack under E1 (the largest cell that fits). Fade-in 2 frames, fade tail 10 frames (0.42 s, ruling 1). The beat is the Rare Astra's COMBAT
+    # tier: a 70 ms hit-stop + the 700 ms hold before the damage (vfxTier), not the spectacle's 110 + 1000.
+    "agneyastra": {"label": "Agneyastra", "clip": "agneyastra/agneyastra.mp4", "card_id": "agneyastra",
+              "clip_sha256": "baaa9a6fa495bbc638c4a7ddb9736416a15b9002e2158ffaae8978d79a6e5a07",
+              "range": (0, 72), "impact": 3, "impact_window": (1, 8),
+              "card_floor": 0.294,   # EXPORT-4 ruling 2: the card floor, as Vajra
+              "cell_px": "largest", "fade_in": 2, "fade_tail": 10, "feather_top": 64, "feather_bottom": 0,
+              "scale_frame": 60, "card_widths": 1.25, "beam_half": 120, "ring_floor": 700,
+              "contract": {"trigger": "damage", "abilityName": "Agneyastra", "anchor": "target-card-centre", "castSound": "sfx_astra", "impactSound": "sfx_debuff",
+                           "castHitStopMs": 70, "castHoldMs": 700, "flightMs": 0, "crackAfterMs": 40, "destroyDwellMs": 600, "exitKind": "none", "awaited": False}},
+    # NAGASTRA — the vignette class on the ENEMY half, CENTRED, fitted to the half's width and never taller than it (ruling 4: nothing outside the board
+    # or across the middle line). The serpents rise, then strike the ground at f032 (the largest picture change, measured), pinned to the Venom
+    # tokens' beat (ruling 2). The kept range starts at f014 so the strike lands on that beat at 0 ms of wire clock: 18 lead cells (750 ms at
+    # Normal) fit inside the combat tier's 70 + 700 ms; f000-f013 (the serpents' first rise) stay in the source. Every edge is feathered (the halo
+    # ring is cut by the top edge, the ripples by the sides and bottom): top 16 %, bottom 10 %, sides 12 % of the frame. Fade-in 4, fade tail 8 (0.33 s).
+    "nagastra": {"kind": "vignette-clip", "label": "Nagastra", "clip": "nagastra/nagastra.mp4", "card_id": "nagastra",
+              "clip_sha256": "5d31f102df41baeb3fc2899ca3b49877c1d64d904310bd4393ad6548f316f01b",
+              "range": (14, 72), "impact": 32, "impact_rule": "largestchange", "impact_window": (26, 38),
+              "cell_px": "largest", "fade_in": 4, "fade_tail": 8,
+              "feather_top": 173, "feather_bottom": 108, "feather_left": 230, "feather_right": 230,
+              "anchor_region": "centre", "anchor_place": "enemy-half-centre",
+              "anchor_note": "WAVE1-CLIPS-1 ruling 4: the plate's CENTRE sits on the enemy half's centre, fitted to the half's width and never taller than it, so it never leaves the half — nothing outside the board, nothing across the middle line; its cut edges are hidden by the four baked feathers",
+              "scale": {"feature": "plate width (the clip's content box)", "frame": 32, "half_fraction": 1.0, "height_cap": 1.0, "card_widths": 5.17},   # card widths DERIVED commentary only: 388 px half / 75 px card at the 390 px phone
+              "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0,
+                        "ruled_into_band": {"top": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" — the halo ring above the serpents and their heads reach into the 173 px top band (the top edge cuts the halo); the band is ruled over them so the plate fades in from the half instead of starting with a flat cut, the PASHU-V2 B4 precedent",
+                                            "bottom": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" — the ground ripples where the venom lands run down to the bottom edge and join the serpents' body; the 108 px bottom band is ruled over them so they fade out above the middle line instead of being cut by it",
+                                            "left": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" — the outer serpents and their splash rings reach the frame's left edge from the strike on; the 230 px side band is ruled over them so they fade into the half's left border, never a flat cut",
+                                            "right": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" — the outer serpents and their splash rings reach the frame's right edge from the strike on; the 230 px side band is ruled over them so they fade into the half's right border, never a flat cut"}},
+              "contract": {"trigger": "token", "abilityName": "Nagastra", "anchor": "enemy-half-centre", "castSound": "sfx_astra", "impactSound": "sfx_venom_apply",
+                           "castHitStopMs": 70, "castHoldMs": 700, "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 0, "exitKind": "none", "awaited": False}},
 }
 E1_CAP = 3072 * 1536 * 4   # the effect layer's hi-rung class (LAB-19)
 
@@ -417,6 +451,7 @@ def main(key):
     if key not in EFFECTS: sys.exit("unknown effect %r — one of %s" % (key, ", ".join(EFFECTS)))
     C = EFFECTS[key]; clip = os.path.join(LAB, "sources", C["clip"])
     if not os.path.exists(clip): sys.exit("the source clip is not at " + clip)
+    if C.get("clip_sha256") and hashlib.sha256(open(clip, "rb").read()).hexdigest() != C["clip_sha256"]: sys.exit("the source clip's sha256 is not the staged %s - STOP" % C["clip_sha256"])   # WAVE1-CLIPS-1: provenance before any decode
     frames, fps = decode(clip); N = len(frames); H, W = frames[0].shape[:2]
     sha = hashlib.sha256(open(clip, "rb").read()).hexdigest()
     L = [luma(f) for f in frames]
@@ -463,7 +498,15 @@ def main(key):
     into = [i for i in kept if i >= tail0 and body_low(i) >= H - fb] if fb else []
 
     # per frame: crop, feather, fade (in source space), then one scale for every cell
-    s = C["cell_px"] / float(max(bw, bh)); cw, ch = round(bw * s), round(bh * s)
+    cell_px = C["cell_px"]
+    if cell_px == "largest":
+        # WAVE1-CLIPS-1 ruling 3: the smaller cells — the LARGEST cell (long side, px) whose pack stays under E1 (the PASHU-V2 rule, in this class)
+        def fits(c):
+            s2 = c / float(max(bw, bh)); cw2, ch2 = round(bw * s2), round(bh * s2); per = max(1, (4096 - PAD) // (cw2 + PAD)); rows2 = (len(kept) + per - 1) // per
+            AW2, AH2 = per * cw2 + (per + 1) * PAD, rows2 * ch2 + (rows2 + 1) * PAD
+            return AW2 <= 4096 and AH2 <= 4096 and AW2 * AH2 * 4 <= E1_CAP
+        cell_px = max(c for c in range(160, 513) if fits(c))
+    s = cell_px / float(max(bw, bh)); cw, ch = round(bw * s), round(bh * s)
     ramp_y = np.ones(H, np.float32)
     if ft: ramp_y[:ft] = np.linspace(0.0, 1.0, ft, endpoint=False, dtype=np.float32)
     if fb: ramp_y[H - fb:] = np.minimum(ramp_y[H - fb:], np.linspace(1.0, 0.0, fb, endpoint=True, dtype=np.float32))
@@ -478,6 +521,7 @@ def main(key):
         placed.append((i, c, x, y)); x += c.width + PAD; rowh = max(rowh, c.height)
     AW = max(p[2] + p[1].width for p in placed) + PAD; AH = max(p[3] + p[1].height for p in placed) + PAD
     if AW > 4096 or AH > 4096: sys.exit("atlas %dx%d exceeds 4096" % (AW, AH))
+    if AW * AH * 4 > E1_CAP: sys.exit("atlas %dx%d decodes to %.2f MB, past the E1 cap" % (AW, AH, AW * AH * 4 / 1048576))   # WAVE1-CLIPS-1: E1 enforced in this class too
     atlas = Image.new("RGB", (AW, AH), (0, 0, 0))
     for i, c, cx, cy in placed: atlas.paste(c, (cx, cy))
     out = os.path.join(LAB, "effects", key); os.makedirs(out, exist_ok=True)
@@ -495,6 +539,7 @@ def main(key):
         "contract": C["contract"],
         "audit": {"range": [a, b], "droppedHead": [0, a - 1] if a > 0 else None, "droppedTail": [b + 1, N - 1] if b < N - 1 else None,
                   "impactSrc": impact, "impactWindow": list(C["impact_window"]), "impactChange": round(change[impact], 2), "impactPoint": list(IMP),
+                  **({"cellPx": {"asked": "largest", "used": cell_px, "why": "WAVE1-CLIPS-1 ruling 3: the largest cell whose pack decodes under the E1 cap"}, "sourceSha256": sha} if C["cell_px"] == "largest" else {}),
                   "box": [x0, y0, x1, y1], "scale": round(s, 5),
                   "ground": {"cornersMax": corners, "farMax": far},
                   "edges": {"top": top_cut, "bottom": bot_cut, "sides": side_cut, "of": len(kept)},
@@ -680,6 +725,13 @@ def main_vignette(key):
         if impact != C["impact"]: sys.exit("the measured corona snap f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
         imp_note = {"rule": "coronasnap", "window": [w0, w1], "litRiseOver3Frames": round(rise[impact], 4), "litAtSnap": round(lit[impact], 4),
                     "why": "the vortex becomes the corona: the Surge's +3 lands on the buff beat, and the snap is pinned to it"}
+    elif C["impact_rule"] == "largestchange":
+        # WAVE1-CLIPS-1: the LARGEST PICTURE CHANGE inside the window — the mean |luma(f) - luma(f-1)|, the Vajra-class measure (LAB-19), in this class
+        w0, w1 = C["impact_window"]; change = {i: float(np.abs(L[i] - L[i - 1]).mean()) for i in range(w0, w1 + 1)}
+        impact = max(change, key=change.get)
+        if impact != C["impact"]: sys.exit("the measured largest change f%03d disagrees with the ruled f%03d" % (impact, C["impact"]))
+        imp_note = {"rule": "largestchange", "window": [w0, w1], "changes": {"f%03d" % i: round(v, 2) for i, v in change.items()},
+                    "why": "WAVE1-CLIPS-1 ruling 2: the serpents strike the ground; the Venom tokens land on that beat"}
     elif C["impact_rule"] == "none":
         impact = None; imp_note = ({"rule": "none", "why": "an AFTERGLOW: it starts on the game's own wash timer after the burn (positional, the classic delay x vfxT), so it has no impact cell and no beat gate"}
                                    if C.get("role") == "afterglow" else {"rule": "none", "why": "an ARMING visual: the cast resolves nothing (flag-only), so the rise has no impact cell and no beat gate"})   # LAB-25
@@ -867,7 +919,7 @@ def main_vignette(key):
                   "anchorRule": ({"kind": "top-flush", "place": "enemy-half-top", "dependency": C.get("anchor_note", "the top band is 0 because the beam and the crown touch the top edge on every frame; the cut is hidden only because the plate's top sits flush with the enemy half's top edge (owner ruling LAB-22/4) — RE-RULE if the anchor or the scale changes")}
                                  if C["anchor_region"] == "top-flush" else {"kind": "bottom-flush", "place": C["anchor_place"], "dependency": "the bottom band is 0 because the ground ring touches the bottom edge on every frame; the cut is hidden only because the plate's bottom sits flush with its half's bottom edge (LAB-24) - RE-RULE if the anchor or the scale changes"}
                                  if C["anchor_region"] == "bottom-flush" else {"kind": "divider-flush", "place": C["anchor_place"], "dependency": "the plate's edge nearest the divider sits ON the divider (its bottom on the upper half, its top on the lower half); neither clip touches its top or bottom edge, so no cut hides there (LAB-25)"}
-                                 if C["anchor_region"] == "divider-flush" else {"kind": "centre", "place": C["anchor_place"], "dependency": "the plate's CENTRE sits on the blessed Unit's card centre (LAB-26, the unit-anchored mode); the top and bottom feathers carry the faint edge haze, and the lit core never enters either band (measured)"}
+                                 if C["anchor_region"] == "divider-flush" else {"kind": "centre", "place": C["anchor_place"], "dependency": C.get("anchor_note", "the plate's CENTRE sits on the blessed Unit's card centre (LAB-26, the unit-anchored mode); the top and bottom feathers carry the faint edge haze, and the lit core never enters either band (measured)")}
                                  if C["anchor_region"] == "centre" else {"kind": "core-point", "place": "enemy-half"})},
     }
     with open(os.path.join(out, "manifest.json"), "w") as fh: json.dump(manifest, fh, indent=2); fh.write("\n")

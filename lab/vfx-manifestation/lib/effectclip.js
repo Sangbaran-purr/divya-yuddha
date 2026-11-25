@@ -213,7 +213,7 @@
     }
     cues.forEach(function (c) { if (c.sound === null) delete c.sound; });
     cues.sort(function (x, y) { return x.t - y.t; });
-    return { mode: mode, chained: chained, clip: clip, strike: !!b.strike, arming: arming, drain: b.drain || null, targetUid: b.targetUid, casterSeat: opts.casterSeat != null ? opts.casterSeat : null,
+    return { mode: mode, chained: chained, clip: clip, strike: !!b.strike, arming: arming, drain: b.drain || null, targetUid: b.targetUid, struckUids: (b.strike && b.strike.targetUids) ? b.strike.targetUids.slice() : [], casterSeat: opts.casterSeat != null ? opts.casterSeat : null,
              timeline: T, segments: segments, cues: cues, end: cues[cues.length - 1].t };
   }
 
@@ -332,7 +332,16 @@
         // LAB-22: TOP-FLUSH — the plate's anchor (its top-centre) on the enemy half's TOP edge; a half that reports no top plays no clip (fail-open)
         // EXPORT-4: a height-capped plate needs the half's height (no height, no clip — it could not be kept inside the half)
         if (sg.place === 'enemy-half-top') return hh && target && hh.top != null && (!m.scaleRule.halfFraction || hh.w > 0) && (!m.scaleRule.heightCap || hh.h > 0) ? place(m, { cx: hh.cx, cy: hh.top, w: target.w, halfW: hh.w, halfH: hh.h }) : null;
-        return hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w, halfW: hh.w, halfH: hh.h }) : null;   // the card width still sets the scale (cardWidths), the half sets the centre
+        var pc = hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w, halfW: hh.w, halfH: hh.h }) : null;   // the card width still sets the scale (cardWidths), the half sets the centre
+        // WAVE1-CLIPS-1 (owner ruling, 25 Nov 2026): on a half wider than the plate, the plate is centred on the SPAN of the Units it strikes, slid
+        // only as far as keeps it wholly inside the half (never past its sides; its height never leaves the half, so never across the middle line).
+        // Where the plate is the half's full width (a phone) there is no room to slide: unchanged.
+        if (pc && sg.place === 'enemy-half' && env.cardOf && p.struckUids && p.struckUids.length && pc.w < hh.w) {
+          var lo = Infinity, hi = -Infinity;
+          p.struckUids.forEach(function (u) { var c = env.cardOf(u); if (c && c.w > 0) { lo = Math.min(lo, c.cx - c.w / 2); hi = Math.max(hi, c.cx + c.w / 2); } });
+          if (hi > lo) { var left = hh.cx - hh.w / 2, cx = Math.max(left + pc.w / 2, Math.min(left + hh.w - pc.w / 2, (lo + hi) / 2)); pc.x += cx - hh.cx; }
+        }
+        return pc;
       });
       if (st.loaded) release();
       env.render(boards.before);

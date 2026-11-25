@@ -49,6 +49,19 @@
         "moment": "wash",
         "anchor": "caster-half-divider (width-fit, the edge nearest the divider on it); the chain's afterglow at the burn + (18/16) x vfxT x 1000, decoded only after the fire is released"
       }
+    },
+    "agneyastra": {
+      "spec": "effects/agneyastra/manifest.json",
+      "replaces": "sprDamage",
+      "moment": "damage",
+      "anchor": "target-card-centre (the fire ring 1.25 card widths across, on the one Unit hit)",
+      "note": "Agneyastra had no effect of its own; its fallback (WAVE1-CLIPS-1 ruling 3) is the game\u2019s shared damage strike, drawn at strike size (1.6 card widths) on the target"
+    },
+    "nagastra": {
+      "spec": "effects/nagastra/manifest.json",
+      "replaces": "sprNagastra",
+      "moment": "token",
+      "anchor": "enemy-half-centre (fitted: 1.0 of the half\u2019s width, never taller than the half; feathered on all four edges \u2014 never outside the board, never across the middle line)"
     }
   },
   "pinned": {

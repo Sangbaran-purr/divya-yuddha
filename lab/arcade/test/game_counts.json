@@ -1,5 +1,5 @@
 {
-  "what": "the game's own suites and their exact counts, recorded at LAW_BASE (6b946e0) before the arcade lab began — every lab commit must leave them exactly so (node lab/arcade/test/run.js --game) · updated 2026-11-03: test_puzzlemode.js 99 after TEST-PUZZLEMODE-1 · updated 2026-11-21 (TIDY-1): test_count_hook.js 26 (SHARE-2, SHARE-3 and ONBOARD-1 added checks); test_roundend.js added at 37 (RULES-FIX-1 Stage 1) · updated 2026-11-21 (HERO-FIT-1 + PASHU-V2 gate): test_puzzlemode.js 113 — the site's daily robot added 14 puzzles (divya-yuddha-web 6740de3, 70 live) and the suite checks each live puzzle, so the count follows the site, not this task · updated 2026-11-22 (HERO-FIT-1): test_manifest.js 103 (H22, A7 too-small-to-show in the glue); test_puzzlemode.js now expects 43 + one per live puzzle, counted from the site checkout · updated 2026-11-22 (PASHU-ORDER-1): test_roundend.js 73 — sections 7–9 add the held play for Brahmastra and Pashupatastra (E1–E8; E8 reads the web3 checkout's real room and views) · updated 2026-11-24 (GUIDE-1): test_guide.js added at 41 (the first-battle hand guide — the ruled lines, the layer, the art, each step once in order, Skip, Replay, the roads, reduced motion, the same-task fixes, the originals kept out of git, each step's approach and the hand kept off every other control, 4 breakages); test_roundend.js stays 73 — the gate now runs its LIGHT sweep by default (E4 at Normal, E8 one play per card; owner ruling 5), DY_RE_FULL=1 for the full sweep",
+  "what": "the game's own suites and their exact counts, recorded at LAW_BASE (6b946e0) before the arcade lab began — every lab commit must leave them exactly so (node lab/arcade/test/run.js --game) · updated 2026-11-03: test_puzzlemode.js 99 after TEST-PUZZLEMODE-1 · updated 2026-11-21 (TIDY-1): test_count_hook.js 26 (SHARE-2, SHARE-3 and ONBOARD-1 added checks); test_roundend.js added at 37 (RULES-FIX-1 Stage 1) · updated 2026-11-21 (HERO-FIT-1 + PASHU-V2 gate): test_puzzlemode.js 113 — the site's daily robot added 14 puzzles (divya-yuddha-web 6740de3, 70 live) and the suite checks each live puzzle, so the count follows the site, not this task · updated 2026-11-22 (HERO-FIT-1): test_manifest.js 103 (H22, A7 too-small-to-show in the glue); test_puzzlemode.js now expects 43 + one per live puzzle, counted from the site checkout · updated 2026-11-22 (PASHU-ORDER-1): test_roundend.js 73 — sections 7–9 add the held play for Brahmastra and Pashupatastra (E1–E8; E8 reads the web3 checkout's real room and views) · updated 2026-11-24 (GUIDE-1): test_guide.js added at 41 (the first-battle hand guide — the ruled lines, the layer, the art, each step once in order, Skip, Replay, the roads, reduced motion, the same-task fixes, the originals kept out of git, each step's approach and the hand kept off every other control, 4 breakages); test_roundend.js stays 73 — the gate now runs its LIGHT sweep by default (E4 at Normal, E8 one play per card; owner ruling 5), DY_RE_FULL=1 for the full sweep · updated 2026-11-25 (WAVE1-CLIPS-1 batch 1): test_manifest.js 111 — section V adds Agneyastra and Nagastra (V1–V8: the packs as ruled, the routes and their combat beats, registration only, the impact on the game's own beat at three speeds, Nagastra inside the enemy half on all 16 screens, Agneyastra's ring on its one target, the gated lines, fail-open); X1 extends the design freeze 82 → 86 · updated 2026-11-25 (WAVE1-CLIPS-1 fix round, owner rulings): test_manifest.js 112 — V5 proves Nagastra centred on the struck Units' span on a wide half (phones unchanged), V9 proves the player change is exactly those lines over the certified LAB-25 player; test_roundend.js 80 — Agneyastra and Nagastra join the held play (five built boards in E1) and E9 plays the real packs and proves the struck cards turn in the frame that draws the impact cell",
   "suites": [
     {
       "file": "test.js",
@@ -46,7 +46,7 @@
     {
       "file": "test_manifest.js",
       "expect": {
-        "pass": 103
+        "pass": 112
       }
     },
     {
@@ -58,7 +58,7 @@
     {
       "file": "test_roundend.js",
       "expect": {
-        "pass": 73
+        "pass": 80
       }
     },
     {

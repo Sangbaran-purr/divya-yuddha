@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 'use strict';
-// src/test_manifest.js — EXPORT-1/3: the premium effects in the live game (Vajra, Sudarshana Chakra, Pashupatastra; Brahmastra from EXPORT-3).
+// src/test_manifest.js — EXPORT-1/3: the premium effects in the live game (Vajra, Sudarshana Chakra, Pashupatastra; Brahmastra from EXPORT-3;
+//   Agneyastra and Nagastra from WAVE1-CLIPS-1 batch 1 — section V).
 //
 //   node src/test_manifest.js
 //
@@ -28,7 +29,8 @@ const PIN = {
   inlinedEngine: 'd70e94b34248bf85c9a3bf00724a724e0997580fdadb16f3d8bfa753d79d8791',
   sprBrahmastra: 'ca7898c5da25a7ec39b5beb28fb5196e14f111a5d69b3b812f03b41bca80166a',
   unitLanding: 'cd4ed62d5f7b67d61599a5f7d6e67c0ab9606adea88bc08d3bf5a6636e813011',
-  effectPlayer: 'ad4f573c2e2f23bac1be225a42da34290f0de7b216861dba72e29f62c5bee8c7',   // EXPORT-7 (the LAB-25 player, verbatim): the afterglow role, the strike-afterglow chain and its timeline, the second-segment handoff, divider-flush halves; EXPORT-6 3b6efc548057…: the arming and empowered-drain moments, height-fit, bottom-flush halves, the ready-anchored rise; EXPORT-5 5d3ba4b04935…: the beat gate (hold · cap · beat()); EXPORT-4 0be2d7225a54…: the fitted law + the card floor; EXPORT-3 shipped 3a780fe5ec52…, EXPORT-1 30219bcb370e…
+  effectPlayer: '2f2ad812fe7a2381cd3591b02e3a366d091dc108f96d94637242f12bf3dacb9a',   // WAVE1-CLIPS-1 (owner ruling 2, 2026-11-25): the LAB-25 player + the span centring of an enemy-half plate (struckUids in the plan; slid inside the half) — V9 proves that with those lines taken out it is ad4f573c2e2f… again
+  effectPlayer25: 'ad4f573c2e2f23bac1be225a42da34290f0de7b216861dba72e29f62c5bee8c7',   // EXPORT-7 (the LAB-25 player, verbatim): the afterglow role, the strike-afterglow chain and its timeline, the second-segment handoff, divider-flush halves; EXPORT-6 3b6efc548057…: the arming and empowered-drain moments, height-fit, bottom-flush halves, the ready-anchored rise; EXPORT-5 5d3ba4b04935…: the beat gate (hold · cap · beat()); EXPORT-4 0be2d7225a54…: the fitted law + the card floor; EXPORT-3 shipped 3a780fe5ec52…, EXPORT-1 30219bcb370e…
   wireTypes: ['leap', 'mulligan', 'pass', 'play', 'shield'],
   // EXPORT-2: the nine actor modules and the faction effects, as certified in the manifestation lab when the export was built
   // (recorded here, never read from the lab: nothing outside the lab may name it — its own rule G2)
@@ -52,6 +54,12 @@ const PIN = {
   // here, never read from the lab — G2). The 82, 77 and 73 still reproduce their digests with the v1 pair substituted back in
   certifiedAssets82p2: '5c2d4e3e91dc40b348baf66138b15972e29a9a77384a13347909b0e02b47e2c7',
   pashupataV2: { 'effects/pashupata/atlas.webp': '2c10cc2ce393b16619f39f8b1b97ba6b2949eed56e3873029d5fbee98e8136f7', 'effects/pashupata/manifest.json': '600ff83e485c4d499dd9f62d5bc0e2d7618832ab816f6bbc2e3f5e005d17dd8e' },
+  // WAVE1-CLIPS-1 · BATCH 1 (owner rulings 2026-11-25) · THE CERTIFIED SET EXTENDS 82 → 86: Agneyastra's and Nagastra's packs, byte-identical to the
+  // lab packs (hashes recorded here, never read from the lab — G2); the 82 (and through them the 77 and the 73) reproduce their digests with the four
+  // files out and the registry without its two new routes
+  certifiedAssets86: '17e645219b6ef5e01b03b6ab7a8f3d9538f642d3884898e3c488fe04c8266823',
+  wave1b1Packs: { 'effects/agneyastra/atlas.webp': '5e3601764e5f72e6b997df6c6465373e220f81dbe3a3d6c2ef6db7485225b097', 'effects/agneyastra/manifest.json': '245711cce2baccc4342497a1cb5b6675a76e8c34d2ee3db0e1b0d93d3fe6f05d',
+                  'effects/nagastra/atlas.webp': 'f1fc521bcadef01292d1bba69db761d135f0e73ff77bee619a2fb23266d04185', 'effects/nagastra/manifest.json': 'f237d4dac94c74a80acac10068e1e481a10118a96b8dd1fd425c1dcd43c9563c' },
   pashupataV1: { 'effects/pashupata/atlas.webp': '2d0b7ff6f297efb59337e8e8329a7616a2678c8149a2d6c6605b647c931b50fc', 'effects/pashupata/manifest.json': '067e9c823b3b02291c1ab85276b62a396ab0423d87563b5c2f7bb130a1c7402b' },
 };
 const ROUTED = ['brahmastra', 'pashupata', 'sudarshana', 'vajra'];
@@ -84,7 +92,7 @@ function webpSize(b) {
 console.log('── R · the routing table (assets/manifest/registry.json) ──');
 {
   const routes = REG.routes || {};
-  ok('R1 · exactly six routes — Vajra, Sudarshana Chakra, Pashupatastra, (EXPORT-3) Brahmastra, (EXPORT-6) Vasuki Venom Strike and (EXPORT-7) Lanka Dahan (' + J(Object.keys(routes).sort()) + ')', J(Object.keys(routes).sort()) === J(ROUTED.concat(['venomstrike', 'lankadahan']).sort()));
+  ok('R1 · exactly eight routes — Vajra, Sudarshana Chakra, Pashupatastra, (EXPORT-3) Brahmastra, (EXPORT-6) Vasuki Venom Strike, (EXPORT-7) Lanka Dahan and (WAVE1-CLIPS-1 batch 1) Agneyastra and Nagastra (' + J(Object.keys(routes).sort()) + ')', J(Object.keys(routes).sort()) === J(ROUTED.concat(['venomstrike', 'lankadahan', 'agneyastra', 'nagastra']).sort()));
   ok('R2 · each route names the classic sprite it replaces and the beat it owns: vajra → sprVajra at the destroy, sudarshana → sprSudarshana at the passive (the bite), pashupata → sprPashupatastra and brahmastra → sprBrahmastra at the play (the cast)',
      routes.vajra && routes.vajra.replaces === 'sprVajra' && routes.vajra.moment === 'destroy' && routes.sudarshana && routes.sudarshana.replaces === 'sprSudarshana' && routes.sudarshana.moment === 'passive' &&
      routes.pashupata && routes.pashupata.replaces === 'sprPashupatastra' && routes.pashupata.moment === 'play' && routes.brahmastra && routes.brahmastra.replaces === 'sprBrahmastra' && routes.brahmastra.moment === 'play', J(routes));
@@ -130,8 +138,8 @@ const SPECS = {}, ALLFILES = [];
   const all = [], walk = (d) => fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else all.push(path.relative(MAN, q)); });
   walk(MAN);
   const fxFiles = all.filter((f) => f.indexOf('effects/') === 0).sort();
-  ok('A4 · assets/manifest/effects holds exactly the two chains and the nine clips (' + fxFiles.length + ' files, ' + (rows.reduce((a, r) => a + r.file, 0) / 1048576).toFixed(2) + ' MB of atlas) — the actors (EXPORT-2) are inventoried in H3',
-     J(fxFiles) === J(['effects/brahmastra/atlas.webp', 'effects/brahmastra/manifest.json', 'effects/lankadahan/chain.json', 'effects/lankadahan_fire/atlas.webp', 'effects/lankadahan_fire/manifest.json', 'effects/lankadahan_gold/atlas.webp', 'effects/lankadahan_gold/manifest.json', 'effects/pashupata/atlas.webp', 'effects/pashupata/manifest.json', 'effects/sudarshana/chain.json', 'effects/sudarshana_invoke/atlas.webp', 'effects/sudarshana_invoke/manifest.json',
+  ok('A4 · assets/manifest/effects holds exactly the two chains and the eleven clips (WAVE1-CLIPS-1 batch 1: + Agneyastra, Nagastra) (' + fxFiles.length + ' files, ' + (rows.reduce((a, r) => a + r.file, 0) / 1048576).toFixed(2) + ' MB of atlas) — the actors (EXPORT-2) are inventoried in H3',
+     J(fxFiles) === J(['effects/agneyastra/atlas.webp', 'effects/agneyastra/manifest.json', 'effects/brahmastra/atlas.webp', 'effects/brahmastra/manifest.json', 'effects/lankadahan/chain.json', 'effects/lankadahan_fire/atlas.webp', 'effects/lankadahan_fire/manifest.json', 'effects/lankadahan_gold/atlas.webp', 'effects/lankadahan_gold/manifest.json', 'effects/nagastra/atlas.webp', 'effects/nagastra/manifest.json', 'effects/pashupata/atlas.webp', 'effects/pashupata/manifest.json', 'effects/sudarshana/chain.json', 'effects/sudarshana_invoke/atlas.webp', 'effects/sudarshana_invoke/manifest.json',
                        'effects/sudarshana_strike/atlas.webp', 'effects/sudarshana_strike/manifest.json', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json',
                        'effects/venomstrike_flood/atlas.webp', 'effects/venomstrike_flood/manifest.json', 'effects/venomstrike_rise/atlas.webp', 'effects/venomstrike_rise/manifest.json']), J(fxFiles));   /* EXPORT-6: + Vasuki Venom Strike's rise and flood; EXPORT-7: + Lanka Dahan's chain, fire and gold */
   ALLFILES.push(...all);
@@ -566,13 +574,16 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     const regWithout = (drop) => { const r = JSON.parse(fs.readFileSync(path.join(MAN, 'registry.json'), 'utf8')); drop.forEach((k) => delete r.routes[k]); return esc(JSON.stringify(r, null, 2)) + '\n'; };
     // PASHU-V2: the earlier sets are reproduced with the v1 Pashupatastra pair substituted back (its recorded hashes)
     const fileSha = (f) => { const rel = path.relative(MAN, f); return rel === 'registry.json' ? null : (PIN.pashupataV1[rel] || sha(fs.readFileSync(f))); };
-    const digestOf = (out, drop) => sha(all.filter((f) => out.indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regWithout(drop)) : fileSha(f))).join('\n'));
-    const digest82 = sha(all.map((f) => path.relative(MAN, f) + ' ' + (fileSha(f) || sha(fs.readFileSync(f)))).join('\n'));
+    const W1 = Object.keys(PIN.wave1b1Packs), W1R = ['agneyastra', 'nagastra'];   // WAVE1-CLIPS-1 batch 1: out of every earlier set
+    const digestOf = (out, drop) => sha(all.filter((f) => out.concat(W1).indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regWithout(drop.concat(W1R))) : fileSha(f))).join('\n'));
+    const digest82 = digestOf([], []);
+    const digest82p2 = sha(all.filter((f) => W1.indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regWithout(W1R)) : sha(fs.readFileSync(f)))).join('\n'));
+    const w1ok = W1.every((rel) => sha(fs.readFileSync(path.join(MAN, rel))) === PIN.wave1b1Packs[rel]);
     const v2ok = Object.keys(PIN.pashupataV2).every((rel) => sha(fs.readFileSync(path.join(MAN, rel))) === PIN.pashupataV2[rel]);
     const NEW7 = Object.keys(PIN.lankaPacks), NEW6 = Object.keys(PIN.vasukiPacks);
     const digest77 = digestOf(NEW7, ['lankadahan']), digest73 = digestOf(NEW7.concat(NEW6), ['lankadahan', 'venomstrike']);
-    ok('X1 · THE DESIGN FREEZE (owner, binding): every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chains, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…); PASHU-V2 replaces Pashupatastra\'s pack (atlas + manifest, each byte-identical to the lab\'s certified v2 pack: ' + v2ok + ') and, with the v1 pair substituted back, the 82 reproduce their EXPORT-7 digest (' + digest82.slice(0, 12) + '…); EXPORT-7 extends it 77 → 82 with Lanka Dahan\'s chain and its two packs, the 77 still reproduce their digest (' + digest77.slice(0, 12) + '…, the registry without its one new route) and the ORIGINAL 73 theirs (' + digest73.slice(0, 12) + '…)',
-       digest === PIN.certifiedAssets82p2 && v2ok && digest82 === PIN.certifiedAssets82 && all.length === 82 && digest77 === PIN.certifiedAssets77 && digest73 === PIN.certifiedAssets, J({ digest, digest82, digest77, digest73, v2ok }));
+    ok('X1 · THE DESIGN FREEZE (owner, binding; WAVE1-CLIPS-1 batch 1 extends it 82 → 86, the four new pack files byte-identical to the lab\'s: ' + w1ok + ', and the 82 reproduce their digest with them out and the registry without their two routes) — every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chains, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…); PASHU-V2 replaces Pashupatastra\'s pack (atlas + manifest, each byte-identical to the lab\'s certified v2 pack: ' + v2ok + ') and, with the v1 pair substituted back, the 82 reproduce their EXPORT-7 digest (' + digest82.slice(0, 12) + '…); EXPORT-7 extends it 77 → 82 with Lanka Dahan\'s chain and its two packs, the 77 still reproduce their digest (' + digest77.slice(0, 12) + '…, the registry without its one new route) and the ORIGINAL 73 theirs (' + digest73.slice(0, 12) + '…)',
+       digest === PIN.certifiedAssets86 && all.length === 86 && w1ok && digest82p2 === PIN.certifiedAssets82p2 && v2ok && digest82 === PIN.certifiedAssets82 && digest77 === PIN.certifiedAssets77 && digest73 === PIN.certifiedAssets, J({ digest, digest82p2, digest82, digest77, digest73, v2ok, w1ok }));
 
     // the player on a fake clock: every drawn cell with its time, and the cues as they fired
     const RATE = 1000 / 60;
@@ -899,13 +910,13 @@ const card = (id) => ({ id, n: id, t: 'astra' });
 
     // Z2 · the page's player is the LAB-25 player, verbatim, and knows the new shape
     const sw = JSON.parse(JSON.stringify(LK.chain));
-    ok('Z2 · THE PAGE\'S PLAYER IS THE LAB-25 PLAYER, VERBATIM (sha256 ' + sha(PLAYER_SRC || '').slice(0, 12) + '…): it knows the strike-afterglow shape — the Lanka chain validates, the same clips in the wrong order are refused, a chain without its afterglow delay is refused — and the Sudarshana invoke→strike chain still validates',
+    ok('Z2 · THE PAGE\'S PLAYER IS THE LAB-25 PLAYER, VERBATIM, + WAVE1-CLIPS-1\'s span centring (V9) (sha256 ' + sha(PLAYER_SRC || '').slice(0, 12) + '…): it knows the strike-afterglow shape — the Lanka chain validates, the same clips in the wrong order are refused, a chain without its afterglow delay is refused — and the Sudarshana invoke→strike chain still validates',
        sha(PLAYER_SRC || '') === PIN.effectPlayer && EC.validateChain(LK.chain, LK.clips).ok && !EC.validateChain(sw, [LG, LF]).ok && (() => { const c = JSON.parse(JSON.stringify(LK.chain)); delete c.contract.afterglowDelayMs; return !EC.validateChain(c, LK.clips).ok; })() &&
        (() => { const su = loadSpec(REG.routes.sudarshana.spec); return EC.validateChain(su.chain, su.clips).ok; })());
 
     // Z3 · registration only
-    ok('Z3 · REGISTRATION ONLY: the registry gains exactly one route (lankadahan) and nothing else moves — with it taken out, the registry is byte-identical to the certified 77 (X1 proves the digest); the route names the chain, the beat it owns (the damage) and the classic pair it replaces',
-       J(Object.keys(REG.routes)) === J(['vajra', 'sudarshana', 'pashupata', 'brahmastra', 'venomstrike', 'lankadahan']) && J(Object.keys(rt).sort()) === J(['anchor', 'moment', 'replaces', 'spec', 'wash']) && J(Object.keys(rt.wash).sort()) === J(['anchor', 'moment', 'replaces', 'spec']));
+    ok('Z3 · REGISTRATION ONLY: the registry gains exactly one route (lankadahan; WAVE1-CLIPS-1 batch 1 then appends agneyastra and nagastra after it, proven in V3) and nothing else moves — with it taken out, the registry is byte-identical to the certified 77 (X1 proves the digest); the route names the chain, the beat it owns (the damage) and the classic pair it replaces',
+       J(Object.keys(REG.routes)) === J(['vajra', 'sudarshana', 'pashupata', 'brahmastra', 'venomstrike', 'lankadahan', 'agneyastra', 'nagastra']) && J(Object.keys(rt).sort()) === J(['anchor', 'moment', 'replaces', 'spec', 'wash']) && J(Object.keys(rt.wash).sort()) === J(['anchor', 'moment', 'replaces', 'spec']));
 
     // Z4 · the fire's impact on the FIRST damage beat through the EXPORT-5 gate; past the cap the gold never decodes and the classic pair fires once each
     const onT = [await lkRun(0), await lkRun(1)], lateR = await lkRun(0, { beatDelay: 1000 }), capR = await lkRun(1, { beatDelay: 5000, maxTicks: 260 });
@@ -1095,6 +1106,110 @@ const card = (id) => ({ id, n: id, t: 'astra' });
        phones.filter((t) => t.card === MINI_MAX).length === 3 && phones.filter((t) => t.card < MINI_MAX).every((t) => t.vp === '360x800'), J(phones));
   }
 
+  // ═══ V · WAVE1-CLIPS-1 · BATCH 1: AGNEYASTRA AND NAGASTRA ═══
+  console.log('\n── V · Agneyastra and Nagastra in the live game (WAVE1-CLIPS-1 batch 1) ──');
+  {
+    const VA = loadSpec(REG.routes.agneyastra.spec), VN = loadSpec(REG.routes.nagastra.spec), ra = REG.routes.agneyastra, rn = REG.routes.nagastra;
+    // V1 · the packs: the lab's files, valid, under E1, cut as ruled
+    const packs = Object.keys(PIN.wave1b1Packs).map((rel) => ({ rel, ok: sha(fs.readFileSync(path.join(MAN, rel))) === PIN.wave1b1Packs[rel] }));
+    const size = (m) => { const b2 = fs.readFileSync(path.join(path.dirname(m.__file), m.atlas)), px = webpSize(b2); return { px, want: m.atlasSize, kb: Math.round(b2.length / 1024), mb: +(m.atlasSize.w * m.atlasSize.h * 4 / 1048576).toFixed(2) }; };
+    const zA = size(VA), zN = size(VN), gN = VN.audit.vignette, EDGES = ['top', 'bottom', 'left', 'right'];
+    ok('V1 · THE PACKS ARE THE LAB\'S, CUT AS RULED: all four files match the hashes recorded from the lab packs (' + packs.map((x) => x.rel.split('/').slice(1).join('/') + (x.ok ? ' ✓' : ' ✗')).join(', ') + '); both validate under the page\'s own player and decode under E1 — Agneyastra ' + VA.cells.length + ' cells f000–f072 at ' + VA.cellSize.w + '×' + VA.cellSize.h + ' (the largest cell under the cap, ruling 3), ' + zA.mb + ' MB decoded, ' + zA.kb + ' KB; Nagastra ' + VN.cells.length + ' cells f014–f072 at ' + VN.cellSize.w + '×' + VN.cellSize.h + ', ' + zN.mb + ' MB, ' + zN.kb + ' KB. Impacts: Agneyastra cell ' + VA.impact + ' = f003 (the largest change, measured), Nagastra cell ' + VN.impact + ' = f032 (largestchange); fades 2-in/10-tail and 4-in/8-tail (ruling 1); Nagastra\'s four feathers ruled into its body by ruling 4 (as previewed)',
+       packs.length === 4 && packs.every((x) => x.ok) && EC.validate(VA).ok && EC.validate(VN).ok && [zA, zN].every((z) => z.px && z.px.w === z.want.w && z.px.h === z.want.h && z.mb * 1048576 <= EC.E1.capBytes) &&
+       VA.cells.length === 73 && VA.impact === 3 && VA.cells[3].src === 3 && VA.audit.impactSrc === 3 && VA.audit.fadeIn.length === 2 && VA.audit.fadeTail.length === 10 && VA.audit.cellPx && VA.audit.cellPx.asked === 'largest' &&
+       VN.cells.length === 59 && VN.impact === 18 && VN.cells[18].src === 32 && VN.audit.impact.rule === 'largestchange' && J(VN.audit.range) === J([14, 72]) && VN.audit.fadeIn.length === 4 && VN.audit.fadeTail.length === 8 &&
+       EDGES.every((e) => /^WAVE1-CLIPS-1 ruling 4/.test(gN[e].ruledIntoBand || '')) && J(EDGES.map((e) => gN[e].px)) === J([173, 108, 230, 230]), J({ packs, zA, zN }));
+    // V2 · the routes and the contracts: the beats are the Rare Astra's COMBAT tier, read from the page
+    const COMBAT = { hitStop: +(/else if\(tier==='combat'\)\{ hitStop=(\d+); \}/.exec(HTML) || [])[1], hold: +(/let hold=(\d+), hitStop=0;/.exec(HTML) || [])[1] };
+    const kA = VA.contract, kN = VN.contract;
+    ok('V2 · THE ROUTES AND THEIR BEATS: agneyastra → its damage beat on the target card (replaces ' + ra.replaces + ', the fallback it lacked), nagastra → the Venom tokens\' beat on the enemy half, centred (replaces ' + rn.replaces + '); both are Rare Astras, so both contracts carry the COMBAT tier the page plays them at — a ' + COMBAT.hitStop + ' ms hit-stop + the ' + COMBAT.hold + ' ms hold — read from the page, not the spectacle\'s 110 + 1000',
+       ra.spec === 'effects/agneyastra/manifest.json' && ra.moment === 'damage' && ra.replaces === 'sprDamage' && rn.spec === 'effects/nagastra/manifest.json' && rn.moment === 'token' && rn.replaces === 'sprNagastra' &&
+       kA.trigger === 'damage' && kA.abilityName === 'Agneyastra' && kA.anchor === 'target-card-centre' && kN.trigger === 'token' && kN.abilityName === 'Nagastra' && kN.anchor === 'enemy-half-centre' &&
+       COMBAT.hitStop === 70 && COMBAT.hold === 700 && [kA, kN].every((k) => k.castHitStopMs === COMBAT.hitStop && k.castHoldMs === COMBAT.hold && !k.flightMs && k.exitKind === 'none'), J({ ra, rn, COMBAT }));
+    // V3 · registration only
+    const prev = JSON.parse(fs.readFileSync(path.join(MAN, 'registry.json'), 'utf8')); delete prev.routes.agneyastra; delete prev.routes.nagastra;
+    ok('V3 · REGISTRATION ONLY: the registry gains exactly the two routes, appended after Lanka Dahan, and nothing else moves — with them taken out it is the certified 82\'s registry, byte for byte (X1 proves the digest)',
+       J(Object.keys(REG.routes).slice(-2)) === J(['agneyastra', 'nagastra']) && J(Object.keys(prev.routes)) === J(['vajra', 'sudarshana', 'pashupata', 'brahmastra', 'venomstrike', 'lankadahan']));
+    // a real cast of each, through the engine
+    function castW(which) {
+      const deva = ['Yama', 'Marut', 'Chandra Dev', 'Gandharva', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Narada', 'Vishwakarma', 'Indra'];
+      const asura = ['Bana Asura', 'Ravana', 'Vibhishana', 'Narakasura', 'Maricha', 'Tataka', 'Kumbhakarna', 'Mahabali', 'Kalanemi', 'Hiranyakashipu', 'Meghnad'];
+      const S2 = which === 'agneyastra' ? { mine: ['Agneyastra'].concat(deva), theirs: asura, fac: ['devas', 'asuras'], lay: [[1, 'Bana Asura']], card: 'Agneyastra' }
+                                        : { mine: ['Nagastra'].concat(asura), theirs: deva, fac: ['asuras', 'devas'], lay: [[1, 'Yama'], [0, 'Bana Asura'], [1, 'Marut']], card: 'Nagastra' };
+      for (let seed = 1; seed < 500; seed++) {
+        let x = seed; const rng = () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
+        const g = E.newGame({ rng, realm: 'mrityulok', wave1: true, p0Faction: S2.fac[0], p1Faction: S2.fac[1], scenario: { p0Deck: S2.mine.slice(0, 12), p1Deck: S2.theirs.slice(0, 12), p0Hand: S2.mine.slice(0, 10), p1Hand: S2.theirs.slice(0, 10), mulligan: 0 } });
+        if (g.turn !== S2.lay[0][0]) continue;
+        let okLay = true; for (const [s3, n] of S2.lay) { if (g.turn !== s3) { okLay = false; break; } const i = g.players[s3].hand.findIndex((c) => c.n === n); if (i < 0) { okLay = false; break; } E.playCard(g, s3, i); }
+        if (!okLay || g.turn !== 0) continue;
+        const h = g.players[0].hand.findIndex((c) => c.n === S2.card); if (E.playableIndices(g, 0).indexOf(h) < 0) continue;
+        const e0 = g.events.length; E.playCard(g, 0, h); return { events: g.events.slice(e0), casterSeat: 0 };
+      }
+      return null;
+    }
+    const BW = { agneyastra: castW('agneyastra'), nagastra: castW('nagastra') }, SPW = { agneyastra: VA, nagastra: VN };
+    // V4 · the impact lands on the game's own beat, at every speed, at 0 ms of wire clock
+    const TW = [];
+    for (const id of ['agneyastra', 'nagastra']) for (const sp of ['relaxed', 'normal', 'fast']) {
+      const vfxT = BEAT.speeds[sp] * BEAT.choreo, p = BW[id] && EC.plan(BW[id], SPW[id], { mode: 'full', choreoSpeed: vfxT, casterSeat: 0 });
+      TW.push(p ? { id, sp, clip: p.clip, impact: +p.timeline.impactAt.toFixed(2), cue: +((COMBAT.hitStop + COMBAT.hold) * vfxT).toFixed(2), start: +p.timeline.clipStart.toFixed(1), cost: p.timeline.waitCostMs } : { id, sp, clip: false });
+    }
+    ok('V4 · THE IMPACT IS THE GAME\'S OWN BEAT: through the engine, Agneyastra plays ' + (BW.agneyastra ? BW.agneyastra.events.map((e) => e.type).join('+') : 'NO BOARD') + ' and Nagastra ' + (BW.nagastra ? BW.nagastra.events.map((e) => e.type).join('+') : 'NO BOARD') + '; at Relaxed, Normal and Fast each clip\'s impact cell lands exactly when the damage / the Venom tokens land (' + TW.filter((x) => x.sp === 'normal').map((x) => x.id + ' ' + x.impact + ' ms').join(', ') + ' at Normal), and each starts after the cast (' + TW.filter((x) => x.sp === 'fast').map((x) => x.id + ' +' + x.start + ' ms').join(', ') + ' at Fast) — 0 ms of wire clock',
+       !!BW.agneyastra && !!BW.nagastra && BW.agneyastra.events.some((e) => e.type === 'damage' && e.abilityName === 'Agneyastra') && BW.nagastra.events.some((e) => e.type === 'token' && e.abilityName === 'Nagastra') &&
+       TW.every((x) => x.clip && Math.abs(x.impact - x.cue) < 0.01 && x.cost === 0 && x.start >= 0), J(TW));
+    // V5 · NAGASTRA NEVER LEAVES THE ENEMY HALF (ruling 4) and, on a wide half, sits over the enemy's Units (ruling 2, 25 Nov) — on every measured screen,
+    //      the player's own placement, the struck Units laid out as the game lays a row (left-packed from the half's edge)
+    const DMV = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports, inside = [];
+    const struck = (BW.nagastra.events.find((e) => e.type === 'token' && e.abilityName === 'Nagastra') || {}).targetUids || [];
+    for (const v of DMV) for (const n of [1, struck.length, 5]) {
+      const w = v.half.w, h = v.half.h, halves = { 1: { cx: w / 2, cy: h / 2, top: 0, w, h }, 0: { cx: w / 2, cy: h + 2 + h / 2, top: h + 2, w, h } };
+      const cw = v.card.w, gap = 6, x0 = Math.min(0.06 * w, 40), pos = {}; const uids = struck.slice(0, Math.min(n, struck.length)); while (uids.length < n) uids.push('x' + uids.length);
+      uids.forEach((u, k) => { pos[u] = { cx: x0 + cw / 2 + k * (cw + gap), cy: h * 0.6, w: cw }; });
+      const evs = BW.nagastra.events.map((e) => e.type === 'token' && e.abilityName === 'Nagastra' ? Object.assign({}, e, { targetUids: uids }) : e);
+      const env = { now: () => 0, canvas: { width: w * 2, height: h * 4, getContext: () => ({ setTransform() {}, clearRect() {}, drawImage() {}, globalAlpha: 1, globalCompositeOperation: 'source-over' }) }, dpr: 2,
+        cardOf: (u) => pos[u] || { cx: w / 2, cy: h * 0.75, w: cw }, halfOf: (st) => halves[st], loadAtlas: (m) => ({ source: {}, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() {} }),
+        render() {}, sound() {}, crack() {}, removal() {}, callout() {}, onDone() {} };
+      const run = EC.createPlayer(env).play({ events: evs }, VN, { before: null, after: null }, { mode: 'full', choreoSpeed: 1.3, casterSeat: 0 }), pl = run && run.places && run.places[0];
+      const lo = x0, hi = x0 + n * cw + (n - 1) * gap, full = !!pl && Math.abs(pl.w - w) < 0.05;
+      const want = full ? 0 : Math.max(0, Math.min(w - (pl ? pl.w : 0), (lo + hi) / 2 - (pl ? pl.w : 0) / 2));
+      inside.push({ vp: v.vw + 'x' + v.vh, n, pl: pl && [+pl.x.toFixed(1), +pl.y.toFixed(1), +pl.w.toFixed(1), +pl.h.toFixed(1)], half: [w, +h.toFixed(1)], span: [+lo.toFixed(1), +hi.toFixed(1)], full,
+                    covers: !!pl && pl.x <= lo + 0.01 && pl.x + pl.w >= hi - 0.01,
+                    ok: !!pl && pl.x >= -0.01 && pl.y >= -0.01 && pl.x + pl.w <= w + 0.01 && pl.y + pl.h <= h + 0.01 && (full || Math.abs(pl.h - h) < 0.05) && Math.abs(pl.x - want) < 0.01 });
+    }
+    const wide = inside.filter((x) => !x.full), phones = inside.filter((x) => x.full && /^(360|375|390|430)x/.test(x.vp));
+    ok('V5 · NAGASTRA STAYS INSIDE THE ENEMY HALF ON EVERY MEASURED SCREEN (ruling 4), AND ON A WIDE HALF SITS OVER THE ENEMY\'S UNITS (ruling 2): on all ' + DMV.length + ' viewports, with 1, ' + struck.length + ' and 5 struck Units laid out as the game lays a row, the plate is inside the half — never above the board\'s top, never past its sides, never across the middle line. Where it is the half\'s full width (every phone: ' + phones.length + ' cases) it is exactly where it was; where the half is wider than the plate (' + wide.length + ' cases) it is as tall as the half — the largest it can be inside it — and centred on the span of the struck Units, slid only as far as keeps it inside (' + wide.filter((x) => x.n === struck.length).slice(0, 3).map((x) => x.vp + ': span ' + x.span.join('–') + ' → plate ' + x.pl[0] + '–' + (+(x.pl[0] + x.pl[2]).toFixed(1))).join(', ') + '); it covers the whole span in ' + wide.filter((x) => x.covers).length + ' of ' + wide.length + (wide.some((x) => !x.covers) ? ' (' + wide.filter((x) => !x.covers).map((x) => x.vp + ' ×' + x.n).join(', ') + ' — a span wider than the tallest plate the half allows)' : ''),
+       inside.length === DMV.length * 3 && inside.every((x) => x.ok) && phones.length >= 12 && wide.length >= 12, J(inside.filter((x) => !x.ok).slice(0, 4)));
+    // V6 · AGNEYASTRA ON ITS ONE TARGET (ruling 3): the fire ring is 1.25 card widths across and centred on the card, on every measured screen
+    const ring = [];
+    for (const v of DMV) {
+      const w = v.half.w, h = v.half.h, card = { cx: w / 2, cy: h * 0.5, w: v.card.w };
+      const env = { now: () => 0, canvas: { width: w * 2, height: h * 4, getContext: () => ({ setTransform() {}, clearRect() {}, drawImage() {}, globalAlpha: 1, globalCompositeOperation: 'source-over' }) }, dpr: 2,
+        cardOf: () => card, halfOf: (st) => ({ cx: w / 2, cy: st ? h / 2 : h * 1.5, top: st ? 0 : h, w, h }), loadAtlas: (m) => ({ source: {}, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() {} }),
+        render() {}, sound() {}, crack() {}, removal() {}, callout() {}, onDone() {} };
+      const run = EC.createPlayer(env).play({ events: BW.agneyastra.events }, VA, { before: null, after: null }, { mode: 'full', choreoSpeed: 1.3, casterSeat: 0 }), pl = run && run.places && run.places[0];
+      const cw = Math.max(v.card.w, VA.scaleRule.cardFloorOfHalfH * h), dia = pl ? pl.scale * VA.scaleRule.ringDiameterCell : 0;
+      ring.push({ vp: v.vw + 'x' + v.vh, ringInCards: +(dia / v.card.w).toFixed(3), want: +(1.25 * cw / v.card.w).toFixed(3), centre: pl ? [+(pl.x + VA.anchor.x * pl.scale - card.cx).toFixed(3), +(pl.y + VA.anchor.y * pl.scale - card.cy).toFixed(3)] : null });
+    }
+    ok('V6 · AGNEYASTRA SITS ON ITS ONE TARGET (ruling 3): on all ' + ring.length + ' measured screens the fire ring is 1.25 card widths across (the card floor only where the field outgrows the cards, as Vajra) and its centre — the strike point — is the target card\'s centre (' + ring.filter((x, i) => i % 5 === 0).map((x) => x.vp + ' ' + x.ringInCards + ' cards').join(', ') + '); the plate is ' + (VA.cellSize.w / VA.scaleRule.ringDiameterCell * 1.25).toFixed(2) + ' card widths wide, the size of the target and the gaps beside it',
+       ring.length === 16 && ring.every((x) => Math.abs(x.ringInCards - x.want) < 0.005 && x.centre && Math.abs(x.centre[0]) < 0.01 && Math.abs(x.centre[1]) < 0.01) && ring.filter((x) => x.want === 1.25).length >= 8, J(ring));
+    // V7 · the page's own gated lines, and only there
+    const gN2 = /fire=\(\)=>VFX\.sprNagastra\(r\.left\+r\.width\/2, r\.top\+r\.height\*0\.5, r\.width\*1\.04\); if\(fxOwnsMoment\('nagastra'\)\) FX\.pendingFire=fire; else fire\(\);/.test(HTML);
+    const gA2 = /if\(ev\.type==='damage' && ev\.abilityName==='Agneyastra'\)\{ const t0=\(ev\.targetUids\|\|\[\]\)\[0\], dp=t0!=null\?posOf\(t0, snap\):null; if\(dp\)\{ const fire=\(\)=>VFX\.sprDamage\(dp\.cx, dp\.rect\.top\+dp\.rect\.height\/2, dp\.rect\.width\*1\.6\); if\(fxOwnsMoment\('agneyastra'\)\) FX\.pendingFire=fire; else fire\(\); \} \}/.test(HTML);
+    ok('V7 · THE PAGE GATES BOTH MOMENTS: Nagastra\'s classic plate is still called at the tokens\' beat, behind the clip\'s ownership test — and only there (sprNagastra ' + (HTML.match(/VFX\.sprNagastra\(/g) || []).length + ' call site); Agneyastra\'s damage beat gains the fallback it lacked — the shared damage strike at 1.6 card widths on the target — behind the same test; both fire LATE if the clip fails after the beat (the Lanka precedent)',
+       gN2 && gA2 && (HTML.match(/VFX\.sprNagastra\(/g) || []).length === 1 && (HTML.match(/fxOwnsMoment\('agneyastra'\)/g) || []).length === 1 && (HTML.match(/fxOwnsMoment\('nagastra'\)/g) || []).length === 1);
+    // V8 · fail-open on the shipped glue: not ready → the classic plays at the beat; a failed decode → the classic, late, once; ready → the clip owns it
+    const fo = {};
+    for (const id of ['agneyastra', 'nagastra']) {
+      const ev = BW[id].events, S1 = sandbox(); await S1.fx.fxBoot(); const notReady = S1.fx.fxCast(card(id), ev[0], ev, {});
+      const S2 = sandbox(); await S2.fx.fxBoot(); await S2.fx.fxPrefetch(id); await flush(); const r2 = S2.fx.fxCast(card(id), ev[0], ev, {}); await flush(); S2.tick(16); const owns = S2.fx.fxOwnsMoment(id);
+      const S3 = sandbox({ decodeFails: true }); await S3.fx.fxBoot(); await S3.fx.fxPrefetch(id); await flush(); const r3 = S3.fx.fxCast(card(id), ev[0], ev, {}); await flush(); await flush(); S3.tick(16);
+      let fired = 0; const owns3 = S3.fx.fxOwnsMoment(id); if (!owns3) fired++;
+      fo[id] = { notReady: notReady === null && S1.fx.FX.diag.some((d) => d.kind === 'not-ready-at-cast'), ready: !!r2 && r2.plan.clip && owns === true, failed: !!r3 && owns3 === false && fired === 1 && S3.fx.FX.run === null };
+    }
+    ok('V8 · FAIL-OPEN, ON THE SHIPPED GLUE: for both cards a clip NOT READY at the cast never starts (the classic plays at the beat, noted not-ready-at-cast); a clip that is ready OWNS its beat; a clip whose atlas will not decode does NOT own it, so the classic fires once and nothing is left running — yesterday\'s game, never absence',
+       Object.values(fo).every((x) => x.notReady && x.ready && x.failed), J(fo));
+  }
+
   // ═══ W · THE WIRE ═══
   console.log('\n── W · the wire ──');
   const types = [...new Set([...HTML.matchAll(/wireSend\(\{\s*type:\s*'([a-z_]+)'/g)].map((m) => m[1]))].sort();
@@ -1109,6 +1224,15 @@ const card = (id) => ({ id, n: id, t: 'astra' });
   ok('P2 · BRAHMASTRA\'S CLASSIC SPRITE IS ITS FALLBACK (EXPORT-3 reverses the pin): sprBrahmastra itself is byte-identical to the pre-export game, and its one call site is the gated line R5 checks', sha(fnBody('sprBrahmastra')) === PIN.sprBrahmastra && (HTML.match(/VFX\.sprBrahmastra\(/g) || []).length === 1);
   ok('P3 · MEGHNAD PINNED: his presentation is the Unit landing path, byte-identical to the pre-export game, and nothing in the export names him', sha(lineOf('} else VFX.sprLanding(fac,')) === PIN.unitLanding && !/meghnad/i.test(GLUE));
   ok('P4 · the inlined effect player is the exported module, verbatim (sha256 ' + PIN.effectPlayer.slice(0, 12) + '…)', PLAYER_SRC && sha(PLAYER_SRC) === PIN.effectPlayer);
+  { // V9 · WAVE1-CLIPS-1 (owner ruling 2): the page's player differs from the certified LAB-25 player by exactly the span-centring lines
+    const PLAN_NEW = "targetUid: b.targetUid, struckUids: (b.strike && b.strike.targetUids) ? b.strike.targetUids.slice() : [], casterSeat:", PLAN_OLD = "targetUid: b.targetUid, casterSeat:";
+    const a0 = (PLAYER_SRC || '').indexOf('        var pc = hh && target ? place(m,'), a1 = (PLAYER_SRC || '').indexOf('        return pc;\n', a0);
+    const hunk = a0 >= 0 && a1 > a0 ? PLAYER_SRC.slice(a0, a1 + '        return pc;\n'.length) : '';
+    const OLD_LINE = "        return hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w, halfW: hh.w, halfH: hh.h }) : null;   // the card width still sets the scale (cardWidths), the half sets the centre\n";
+    const back = hunk ? PLAYER_SRC.split(PLAN_NEW).join(PLAN_OLD).split(hunk).join(OLD_LINE) : '';
+    ok('V9 · THE PLAYER CHANGE IS EXACTLY THE RULED ONE (WAVE1-CLIPS-1 ruling 2): the page\'s player with the span-centring lines taken out (the plan\'s struckUids and the one enemy-half slide, ' + hunk.split('\n').length + ' lines) is the certified LAB-25 player again (sha256 ' + PIN.effectPlayer25.slice(0, 12) + '…) — nothing else in the player moved',
+       !!hunk && (PLAYER_SRC.split(PLAN_NEW).length === 2) && sha(back) === PIN.effectPlayer25, sha(back));
+  }
   ok('P5 · the page carries no console.log', !/console\.log\(/.test(HTML));
 
   console.log('\n' + (fail === 0 ? '✓ ALL ' + pass + ' EFFECT-EXPORT CHECKS PASS' : '✖ ' + fail + ' FAILURES / ' + pass + ' passed'));

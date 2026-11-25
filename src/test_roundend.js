@@ -28,6 +28,8 @@ const BREAKS = {
   e5: ['RE=null; reLive=null; return true;\n}', 'return true;\n}'],
   e7: ['return (p && HELD_PLAYS[p.abilityName]) ? p : null;', 'return p || null;'],
   e8: ['function heldCopyAny(g){ if (!g) return null;', 'function heldCopyAny(g){ if (!g) return null; if (g._view) return g;'],
+  e9: ["if (heldLive() && ev.type!=='destroy' && clipHoldsBeat(ev)){", "if (false){"],   // WAVE1-CLIPS-1: the held board moves at the start of the beat, not in the impact frame
+  e9b: ["'Agneyastra':1, 'Nagastra':1 };", "};"],   // WAVE1-CLIPS-1: Agneyastra and Nagastra off the held road (the live board at the play, as before the ruling)
 };
 if (process.env.DY_RE_BREAK) { const br = BREAKS[process.env.DY_RE_BREAK]; if (!br || HTML.indexOf(br[0]) < 0) { console.log('✖ unknown or stale DY_RE_BREAK ' + process.env.DY_RE_BREAK); process.exit(2); } HTML = HTML.split(br[0]).join(br[1]); console.log('⚠ DY_RE_BREAK=' + process.env.DY_RE_BREAK + ' — one guard broken in memory'); }
 let pass = 0, fail = 0;
@@ -97,7 +99,7 @@ console.log('── 1 · the held board, against the board the engine scored ─
 // ═══ 7 · PASHU-ORDER-1 — THE HELD PLAY (E1, and E8's views): Brahmastra and Pashupatastra show the board from before the play, moved
 //     one event at a time; after the last event the copy must equal the engine's board (place, power, base, Venom, bind, ward, tokens,
 //     ghosts, the artifact). The page's own helpers, the engine as shipped (no hook needed: the truth is the board after the play).
-console.log('\n── 7 · the held play: the copy equals the engine\'s board after every Brahmastra and Pashupatastra (E1, E8) ──');
+console.log('\n── 7 · the held play: the copy equals the engine\'s board after every Brahmastra, Pashupatastra, Agneyastra and Nagastra (E1, E8) ──');
 const W3 = process.env.DY_WEB3 || path.resolve(GAME, '..', 'divya-yuddha-web3'), MS = path.join(W3, 'services', 'match-server');
 function extractFn(src, name) { const i = src.indexOf('function ' + name + '('); if (i < 0) throw new Error('cannot find function ' + name);
   let depth = 0; for (let k = src.indexOf('{', i); k < src.length; k++) { if (src[k] === '{') depth++; else if (src[k] === '}') { depth--; if (depth === 0) return src.slice(i, k + 1); } } throw new Error('unbalanced ' + name); }
@@ -119,10 +121,10 @@ function extractFn(src, name) { const i = src.indexOf('function ' + name + '(');
     const gone = {}; evs.forEach((e, i) => H.heldStep(held, e, gone, g, evs[i + 1])); H.heldMidFinish(held, g);
     return { ok: H.heldKey(held) === H.heldKey(g), held: H.heldKey(held), live: H.heldKey(g), evs }; };
   // the sweep: full AI matches, every faction pair, every realm, launch and wave decks; at random turns the card goes into the hand and is cast
-  const F = ['devas', 'asuras', 'vanaras', 'nagas'], R = E.REALMS.map((r) => r.id || r), NAMES = ['Pashupatastra', 'Brahmastra'];
-  const casts = { Pashupatastra: 0, Brahmastra: 0 }, bad = { Pashupatastra: 0, Brahmastra: 0 }, seats = [0, 0], shapes = new Set();
+  const F = ['devas', 'asuras', 'vanaras', 'nagas'], R = E.REALMS.map((r) => r.id || r), NAMES = ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra'];   // WAVE1-CLIPS-1: + Agneyastra and Nagastra
+  const casts = {}, bad = {}, seats = [0, 0], shapes = new Set(); NAMES.forEach((n) => { casts[n] = 0; bad[n] = 0; });
   let sample = '', leapsFirst = 0;
-  for (let k = 0; (casts.Pashupatastra < 450 || casts.Brahmastra < 450) && k < 2000; k++) {
+  for (let k = 0; NAMES.some((n) => casts[n] < 450) && k < 6000; k++) {
     const wave = k % 2 === 1, rng = mul(91000 + k);
     const g = E.newGame({ p0Faction: F[k % 4], p1Faction: F[(k >> 2) % 4], rng, realm: R[k % R.length], wave1: wave });
     for (const s of [0, 1]) E.mulligan(g, s, E.aiMulliganPlan(g, s));
@@ -130,7 +132,7 @@ function extractFn(src, name) { const i = src.indexOf('function ' + name + '(');
     while (!g.over && guard++ < 400) {
       const s = g.turn, pl = g.players[s];
       if (!pl.passed && rng() < 0.3) {
-        const name = NAMES[(casts.Pashupatastra + casts.Brahmastra + k) % 2], c = ctx.mk(ctx.CB[name]);
+        const name = NAMES[(NAMES.reduce((t, n) => t + casts[n], 0) + k) % NAMES.length], c = ctx.mk(ctx.CB[name]);
         pl.hand.unshift(c); pl.mustPlayUnit = false;
         if (E.playableIndices(g, s).indexOf(0) >= 0) {
           const r = runHeld(g, () => { if (pl.faction === 'vanaras' && E.canLeap(g, s) && rng() < 0.5) { const bl = E.bestLeap(g, s); if (bl) { E.doLeap(g, s, bl.leaper, bl.target, false); leapsFirst++; } } E.playCard(g, s, 0); });
@@ -142,8 +144,8 @@ function extractFn(src, name) { const i = src.indexOf('function ' + name + '(');
       E.aiTakeTurn(g, s);
     }
   }
-  ok(`E1 · THE SWEEP: after ${casts.Pashupatastra} Pashupatastra and ${casts.Brahmastra} Brahmastra casts in full AI matches (every faction pair and realm, launch and wave decks, both seats: ${seats.join(' / ')}; ${leapsFirst} after a free Leap in the same action), the held copy equals the engine's board every time (${shapes.size} event shapes seen)`,
-    casts.Pashupatastra >= 400 && casts.Brahmastra >= 400 && seats[0] > 100 && seats[1] > 100 && bad.Pashupatastra === 0 && bad.Brahmastra === 0, J(bad) + '\n      ' + sample);
+  ok(`E1 · THE SWEEP: after ${NAMES.map((n) => casts[n] + ' ' + n).join(', ')} casts in full AI matches (every faction pair and realm, launch and wave decks, both seats: ${seats.join(' / ')}; ${leapsFirst} after a free Leap in the same action), the held copy equals the engine's board every time (${shapes.size} event shapes seen)`,
+    NAMES.every((n) => casts[n] >= 400 && bad[n] === 0) && seats[0] > 100 && seats[1] > 100, J(bad) + '\n      ' + sample);
   // the built boards: each shape a strike can produce, one at a time
   const built = (name, card, f0, f1, wave, setup, realm) => {
     const g = E.newGame({ p0Faction: f0, p1Faction: f1, rng: mul(11), realm: realm || 'mrityulok', wave1: wave });
@@ -173,6 +175,12 @@ function extractFn(src, name) { const i = src.indexOf('function ' + name + '(');
   built('the next turn starts for the struck side: a sleeping Kumbhakarna wakes and sweeps 3, Kalanemi is unmasked (their flags clear on their own sweeps)', 'Pashupatastra', 'asuras', 'asuras', false, (g, put) => { put(0, 'Asura Berserker'); put(1, 'Kumbhakarna', { asleep: true }); put(1, 'Kalanemi', { revealPending: true }); });
   built('the next turn starts for the caster (the other side has passed): Deva Soldier steels +1 under Indra — a log line, no event', 'Brahmastra', 'devas', 'asuras', false, (g, put) => { put(0, 'Indra'); put(0, 'Deva Soldier'); put(0, 'Marut'); put(1, 'Tataka'); g.players[1].passed = true; });
   built('the Living Bridge fires for the struck side when a revival completes its line of four', 'Pashupatastra', 'asuras', 'vanaras', true, (g, put) => { put(0, 'Ravana'); put(1, 'The Living Bridge'); put(1, 'Vanara Scout', { power: 1, aegis: true }); put(1, 'Tara'); put(1, 'Nala'); put(1, 'Kishkindha Runner'); g.players[1].bridgeFiredRound = 0; });
+  // WAVE1-CLIPS-1 (owner ruling, 25 Nov 2026): Agneyastra and Nagastra ride the held play too
+  built('Agneyastra kills a Unit beside Yama: the 3 damage, the death and his ghost', 'Agneyastra', 'devas', 'devas', true, (g, put) => { put(0, 'Marut'); put(1, 'Marut', { power: 2 }); put(1, 'Yama'); });
+  built('Agneyastra into Holika (unburnt: an Astra deals her nothing)', 'Agneyastra', 'devas', 'asuras', true, (g, put) => { put(0, 'Marut'); put(1, 'Holika'); });
+  built('Agneyastra in Patala (+1: 4 damage)', 'Agneyastra', 'devas', 'asuras', true, (g, put) => { put(0, 'Marut'); put(1, 'Ravana'); }, 'patala');
+  built('Nagastra: a Venom token on every enemy Unit, and the caster\'s Chaos Surge', 'Nagastra', 'asuras', 'devas', false, (g, put) => { put(0, 'Tataka'); put(1, 'Yama'); put(1, 'Marut'); put(1, 'Deva Soldier'); });
+  built('Nagastra onto Units already poisoned (the tokens stack)', 'Nagastra', 'asuras', 'nagas', false, (g, put) => { put(0, 'Tataka'); put(1, 'Naga Archer', { venom: 1 }); put(1, 'Naga Warrior', { venom: 2 }); });
 
   // E8 · THE STAKED ROAD — the server's REAL room and buildView (web3), read by the page's own viewToState; the copy is the OLD view
   let buildView = null, createRoom = null, ES = null;
@@ -247,9 +255,17 @@ else {
     const w = dom.window;
     w.matchMedia = (q) => ({ matches: o.reduce !== false && /reduce/.test(q), media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
     const ctx2 = new Proxy({}, { get: (t, k) => k === 'measureText' ? () => ({ width: 10 }) : /^create(Linear|Radial)Gradient$|^createPattern$/.test(String(k)) ? () => ({ addColorStop() {} }) : k === 'getImageData' ? () => ({ data: new Uint8ClampedArray(4) }) : () => {} });
-    w.HTMLCanvasElement.prototype.getContext = () => ctx2;
+    w.HTMLCanvasElement.prototype.getContext = o.packs ? function () { const cv = this; return new Proxy({}, { get: (t, k) => k === 'drawImage' ? (...a) => { if (cv.id === 'effectclip' && a.length === 9) o.draws.push({ t: w.performance.now(), x: a[1], y: a[2] }); } : ctx2[k] }); } : () => ctx2;
     w.HTMLMediaElement.prototype.play = () => Promise.resolve(); w.HTMLMediaElement.prototype.pause = () => {}; w.HTMLMediaElement.prototype.load = () => {};
     w.fetch = () => Promise.resolve({ ok: false, status: 404, arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)), json: () => Promise.resolve({}), text: () => Promise.resolve('') });
+    if (o.packs) {   // WAVE1-CLIPS-1 E9: the real effect packs from disk (assets/manifest only), a decoded-bitmap stand-in the atlas's true size, and every cell the clip draws
+      const webpWH = (b) => { const t = b.toString('ascii', 12, 16); if (t === 'VP8X') return [1 + b.readUIntLE(24, 3), 1 + b.readUIntLE(27, 3)]; if (t === 'VP8L') { const v = b.readUInt32LE(21); return [1 + (v & 0x3fff), 1 + ((v >> 14) & 0x3fff)]; } if (t === 'VP8 ') return [b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff]; return [0, 0]; };
+      w.fetch = (u) => { const pth = decodeURIComponent(new URL(u, 'https://game.test/index.html').pathname).replace(/^\//, ''), f = path.join(GAME, pth);
+        if (pth.indexOf('assets/manifest/') !== 0 || !fs.existsSync(f)) return Promise.resolve({ ok: false, status: 404, arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)), json: () => Promise.resolve({}), text: () => Promise.resolve('') });
+        const buf = fs.readFileSync(f);
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(buf.toString('utf8'))), text: () => Promise.resolve(buf.toString('utf8')), blob: () => { const bl = new w.Blob([buf]); bl.__wh = webpWH(buf); return Promise.resolve(bl); } }); };
+      w.createImageBitmap = (bl) => Promise.resolve({ width: bl.__wh[0], height: bl.__wh[1], close() {} });
+    }
     w.scrollTo = () => {};
     if (o.core) { w.postMessage = (m) => posted.push(JSON.parse(JSON.stringify(m))); w.eval(o.core); }   // puzzle mode: the parent page's puzzle code, and the frame's words to its parent recorded
     w.eval(scripts.join('\n;\n') + '\n;window.__T = { get G(){ return G; }, get Pz(){ return typeof Pz==="undefined" ? null : Pz; }, get ME(){ return ME; }, get OPP(){ return OPP; }, get RE(){ return RE; }, get reLive(){ return reLive; }, get choreoActive(){ return choreoActive; }, get bannerQ(){ return bannerQ; }, DECKS, CARD_BY_NAME };');
@@ -410,7 +426,7 @@ else {
     {
       const M = boot('', { reduce: false }), mw = M.w, MT = M.T, m$ = (id) => mw.document.getElementById(id);
       const notes = []; { const fn = mw.fxNote; mw.fxNote = function (kind, detail) { notes.push(Object.assign({ kind }, detail || {})); return fn.apply(this, arguments); }; }   // the battle log's diagnostics, as they are written
-      const CASTER = { Pashupatastra: 'asuras', Brahmastra: 'devas' }, OWN = { asuras: ['Tataka', 'Maricha'], devas: ['Deva Soldier', 'Marut'] };
+      const CASTER = { Pashupatastra: 'asuras', Brahmastra: 'devas', Agneyastra: 'devas', Nagastra: 'asuras' }, OWN = { asuras: ['Tataka', 'Maricha'], devas: ['Deva Soldier', 'Marut'] };
       const ROWS = ['oheroes', 'ounits', 'punits', 'pheroes'];
       const sigOf = (el) => [...el.children].filter((c) => c.tagName !== 'IMG').map((c) => c.className + '=' + c.textContent).join(';') + '|' + ['bound', 'warded', 'ghostc', 'stolen'].filter((k) => el.classList.contains(k)).join(',');
       const rowsNow = () => ROWS.map((id) => [...m$(id).querySelectorAll('.bc')].map((el) => ({ u: el.classList.contains('held-gap') ? 'gap' : el.dataset.uid, s: sigOf(el), h: el.style.visibility === 'hidden' })));   // a kept space is a slot too
@@ -468,12 +484,12 @@ else {
 
       // E2 + E3 — both cards, both seats, the owner's board and a five-Unit board (an Amrita revival among them), and a relayed cast on the free wire road
       const runs = [];
-      for (const card of ['Pashupatastra', 'Brahmastra']) for (const seat of [0, 1]) for (const board of ['owner', 'five']) {
+      for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra']) for (const seat of [0, 1]) for (const board of ['owner', 'five']) {
         const G = lay(card, seat, board, 'normal'); runs.push({ card, seat, board, r: await play(G, seat, true) }); }
       { const G = lay('Pashupatastra', 1, 'five', 'normal', 'wire'); runs.push({ card: 'Pashupatastra', seat: 1, board: 'five, relayed on the free wire road', r: await play(G, 1, true, 'wire') }); }
       const e2bad = runs.map((x) => ({ k: x.card + ' seat ' + x.seat + ' ' + x.board, bad: e2(x.r) })).filter((x) => x.bad.length);
-      ok(`E2 · R3: in ${runs.length} plays (both cards, both seats, the owner's board and a five-Unit board, one relayed on the free wire road) no card leaves, moves to another slot or arrives, and no number, mark or badge changes, before its own beat (a fallen card's space is kept while its row still waits) — sampled every 4 ms from the act (through the opponent's showcase) to the release`,
-        runs.length === 9 && e2bad.length === 0 && runs.every((x) => x.r.samples.length > 200), J(e2bad.slice(0, 3)));
+      ok(`E2 · R3: in ${runs.length} plays (all four held cards — Pashupatastra, Brahmastra, and from WAVE1-CLIPS-1 Agneyastra and Nagastra — both seats, the owner's board and a five-Unit board, one relayed on the free wire road) no card leaves, moves to another slot or arrives, and no number, mark or badge changes, before its own beat (a fallen card's space is kept while its row still waits) — sampled every 4 ms from the act (through the opponent's showcase) to the release`,
+        runs.length === 17 && e2bad.length === 0 && runs.every((x) => x.r.samples.length > 200), J(e2bad.slice(0, 3)));
       const e3r = runs.map((x) => Object.assign({ k: x.card + ' seat ' + x.seat + ' ' + x.board }, e3(x.r)));
       const nDeaths = e3r.reduce((a, x) => a + x.deaths, 0);
       ok(`E3 · the kills: all ${nDeaths} deaths are the real card cracking in its own place — its clone over its own cell, the cell kept (hidden) until the crack ends, no placeholder box ever drawn`,
@@ -486,7 +502,7 @@ else {
       // the same small cost in BOTH runs; what is judged is the schedule (the browser's own cost is measured on the real page, in the proof).
       const sizeKeep = mw.sizeBoard; mw.sizeBoard = function () {};
 
-      for (const card of ['Pashupatastra', 'Brahmastra']) for (const seat of [0, 1]) for (const speed of (FULL ? ['relaxed', 'normal', 'fast'] : ['normal'])) {
+      for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra']) for (const seat of [0, 1]) for (const speed of (FULL ? ['relaxed', 'normal', 'fast'] : ['normal'])) {
         const keep = mw.heldPlayOf, A = [], B = [];
         for (let rep = 0; rep < 2; rep++) {   // held and unheld alternate, twice: the timers' own jitter between two runs (±10 ms here) is averaged, never the schedule
           let G = lay(card, seat, 'owner', speed); A.push(await play(G, seat, false));
@@ -498,8 +514,8 @@ else {
         pace.push({ card, seat, speed, beats: n, d: +d.toFixed(1), noise: +noise.toFixed(1) }); }
       mw.sizeBoard = sizeKeep;
       const floor = Math.max(...pace.map((p) => p.noise));
-      ok(`E4 · the pace: every beat of both cards falls where it falls with the held road off — within a frame, or within the timers' own jitter measured in this run (worst difference ${Math.max(...pace.map((p) => p.d))} ms; the same road run twice differed by up to ${floor} ms; ${pace.length} settings: both cards × both seats × ${FULL ? 'relaxed, normal, fast' : 'normal (the light sweep)'}; each the mean of two held and two unheld runs, alternated)`,
-        pace.length === (FULL ? 12 : 4) && pace.every((p) => p.beats >= 4 && p.d <= Math.max(17, floor)), J(pace.filter((p) => !(p.d <= Math.max(17, floor)))));
+      ok(`E4 · the pace: every beat of all four held cards falls where it falls with the held road off — within a frame, or within the timers' own jitter measured in this run (worst difference ${Math.max(...pace.map((p) => p.d))} ms; the same road run twice differed by up to ${floor} ms; ${pace.length} settings: four cards × both seats × ${FULL ? 'relaxed, normal, fast' : 'normal (the light sweep)'}; each the mean of two held and two unheld runs, alternated)`,
+        pace.length === (FULL ? 24 : 8) && pace.every((p) => p.beats >= (p.card === 'Agneyastra' || p.card === 'Nagastra' ? 2 : 4) && p.d <= Math.max(17, floor)), J(pace.filter((p) => !(p.d <= Math.max(17, floor)))));
 
       // E5 · leaving, skipping, the watchdog and a thrown error each leave no held board, lock or clone — the live board shows
       const midPlay = async (card, seat) => { const G = lay(card, seat, 'five', 'normal'); mw.runAction(() => mw.playCard(G, seat, 0), { actor: seat }); await W(seat ? 2900 : 1700); return { G, held: !!MT.RE && MT.RE.mid }; };
@@ -524,7 +540,7 @@ else {
       for (const [name, pass, d] of e5) ok('E5 · ' + name + ': no held board, no lock, no clone, the live board showing', pass, d);
 
       // E7 · every other card in the sweep plays as today: it never enters the held road and its first frame is the live board
-      const OTHERS = ['Vayu', 'Vajra', 'Agneyastra', 'Shakti Spear', 'Suryastra', 'Tataka', 'Narakasura', 'Rudhira Bali', 'Dhumraksha', 'Mohanastra', 'Surpanakha', 'Vidyutastra', 'Gandiva Arrow', 'Lanka Dahan', "Vinata's Talon", "Jatayu's Last Flight", "Anjaneya's Roar", 'Vasuki', 'Naga Archer', 'Ashvatara', 'Sarpa Satra', 'Hymn of the Depths', "Serpent's Kiss", 'Ajagara'];
+      const OTHERS = ['Vayu', 'Vajra', 'Shakti Spear', 'Suryastra', 'Tataka', 'Narakasura', 'Rudhira Bali', 'Dhumraksha', 'Mohanastra', 'Surpanakha', 'Vidyutastra', 'Gandiva Arrow', 'Lanka Dahan', "Vinata's Talon", "Jatayu's Last Flight", "Anjaneya's Roar", 'Vasuki', 'Naga Archer', 'Ashvatara', 'Sarpa Satra', 'Hymn of the Depths', "Serpent's Kiss", 'Ajagara'];
       const cdKeep = mw.cDelay; mw.cDelay = () => Promise.resolve();   // E7 judges the road, not the pace: every wait is made instant (restored below)
       const e7 = [];
       for (const n of OTHERS) {
@@ -552,8 +568,8 @@ else {
       else {
         const hall = (v) => { const c = Object.assign({}, v); delete c.myName; delete c.oppName; return c; };
         const sr = [];
-        for (const card of ['Pashupatastra', 'Brahmastra']) for (const caster of [0, 1]) {
-          if (!FULL && caster !== (card === 'Pashupatastra' ? 1 : 0)) continue;   // the light sweep: one play per card
+        for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra']) for (const caster of [0, 1]) {
+          if (!FULL && caster !== (card === 'Pashupatastra' || card === 'Nagastra' ? 1 : 0)) continue;   // the light sweep: one play per card
           const cf = CASTER[card], fac = caster === 0 ? [cf, 'asuras'] : ['asuras', cf];
           const room = createRoom(ES, { seed: 77, seats: [{ address: '0x' + '1'.repeat(40), faction: fac[0] }, { address: '0x' + '2'.repeat(40), faction: fac[1] }] });
           const g = room.state; let cur = 0;
@@ -579,8 +595,8 @@ else {
             sr.push({ k: card + ' cast by seat ' + caster + ', read by seat ' + me, wasHeld, e2: e2(r), e3: e3(r), after: Object.values(leftovers()).every(Boolean) });
           }
         }
-        ok(`E8 · THE STAKED ROAD on the page: ${sr.length} plays from the server's real views (both cards, cast by either seat, read by both) are held, and E2 and E3 hold on them; nothing left after`,
-          sr.length === (FULL ? 8 : 2) && sr.every((x) => x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.e3.deaths >= 1 && x.after), J(sr.filter((x) => !(x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.after)).map((x) => ({ k: x.k, h: x.wasHeld, e2: x.e2.slice(0, 2), e3: x.e3.bad.slice(0, 2), after: x.after })).slice(0, 3)));
+        ok(`E8 · THE STAKED ROAD on the page: ${sr.length} plays from the server's real views (all four held cards, cast by either seat, read by both) are held, and E2 and E3 hold on them; nothing left after`,
+          sr.length === (FULL ? 16 : 4) && sr.every((x) => x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && (x.e3.deaths >= 1 || /^(Agneyastra|Nagastra) /.test(x.k)) && x.after), J(sr.filter((x) => !(x.wasHeld && x.e2.length === 0 && x.e3.bad.length === 0 && x.after)).map((x) => ({ k: x.k, h: x.wasHeld, e2: x.e2.slice(0, 2), e3: x.e3.bad.slice(0, 2), after: x.after })).slice(0, 3)));
       }
       ok('  …the held-play page ran clean: no script error, no console.log', M.errs.length === 0, M.errs.slice(0, 3).join(' | '));
     }
@@ -590,8 +606,8 @@ else {
     {
       const R6 = boot(''), rw = R6.w, RT = R6.T, r$ = (id) => rw.document.getElementById(id);
       const res = [];
-      for (const card of ['Pashupatastra', 'Brahmastra']) {
-        rw.resetChoreo(); rw.startGame(card === 'Brahmastra' ? 'devas' : 'asuras', 'asuras'); const G = RT.G, me = G.players[RT.ME], op = G.players[RT.OPP]; rw.pump = function () {}; me.mulliganed = op.mulliganed = true; r$('mulligan').classList.add('hidden');
+      for (const card of ['Pashupatastra', 'Brahmastra', 'Agneyastra', 'Nagastra']) {
+        rw.resetChoreo(); rw.startGame(card === 'Brahmastra' || card === 'Agneyastra' ? 'devas' : 'asuras', 'asuras'); const G = RT.G, me = G.players[RT.ME], op = G.players[RT.OPP]; rw.pump = function () {}; me.mulliganed = op.mulliganed = true; r$('mulligan').classList.add('hidden');
         const mk = (x, o) => Object.assign(rw.mkCard(RT.CARD_BY_NAME[x]), o || {});
         me.units = [mk('Tataka')]; me.heroes = []; op.units = [mk('Kalanemi', { power: 1, base: 1 }), mk('Meghnad', { power: 6 }), mk('Ravana', { power: 7 })]; op.heroes = [];
         me.hand = [mk(card)]; G.turn = RT.ME; me.passed = op.passed = false; me.astrasThisRound = 0; rw.render();
@@ -599,8 +615,52 @@ else {
         const rows = JSON.stringify([...r$('ounits').querySelectorAll('.bc')].map((e) => e.dataset.uid)), live = JSON.stringify(op.units.map((u) => String(u.uid)));
         res.push({ card, RE: RT.RE === null, lock: !RT.choreoActive, rows: rows === live, log: r$('loglast').textContent === rw.fixLogGrammar(G.log[G.log.length - 1].msg) });
       }
-      ok('E6 · reduced motion: both cards resolve at once — no held board, no lock, the live board and the log line drawn in the same moment, as today', res.every((x) => x.RE && x.lock && x.rows && x.log), J(res));
+      ok('E6 · reduced motion: all four held cards resolve at once — no held board, no lock, the live board and the log line drawn in the same moment, as today', res.every((x) => x.RE && x.lock && x.rows && x.log), J(res));
       ok('  …that page ran clean', R6.errs.length === 0, R6.errs.slice(0, 3).join(' | '));
+    }
+
+    // ═══ 10 · E9 — WAVE1-CLIPS-1 (owner ruling, 25 Nov 2026): WITH THE CLIP PLAYING, nothing struck changes before its impact frame is on screen ═══
+    console.log('\n── 10 · the clip on the held board: the struck card\'s number, mark and tokens turn in the frame that draws the impact cell (E9) ──');
+    {
+      const draws = [], M9 = boot('', { reduce: false, packs: true, draws }), nw = M9.w, NT = M9.T, n$ = (id) => nw.document.getElementById(id);
+      const notes = []; { const fn = nw.fxNote; nw.fxNote = function (kind, detail) { notes.push(Object.assign({ kind }, detail || {})); return fn.apply(this, arguments); }; }
+      const sigOf = (el) => !el ? 'gone' : [...el.children].filter((c) => c.tagName !== 'IMG').map((c) => c.className + '=' + c.textContent).join(';') + '|' + ['bound', 'warded', 'ghostc', 'stolen'].filter((k) => el.classList.contains(k)).join(',');
+      const cardSig = (u) => sigOf(nw.document.querySelector(`#field .row .bc[data-uid="${u}"]:not(.held-gap)`));
+      const SPEC = { Agneyastra: ['agneyastra', 'devas', 'damage'], Nagastra: ['nagastra', 'asuras', 'token'] };
+      const res = [];
+      for (const card of ['Agneyastra', 'Nagastra']) for (const seat of [0, 1]) {
+        const [id, cf, trig] = SPEC[card];
+        const man = JSON.parse(fs.readFileSync(path.join(GAME, 'assets', 'manifest', 'effects', id, 'manifest.json'), 'utf8')), impSrc = man.cells[man.impact].src;
+        const cellOf = (d) => { const c = man.cells.find((x) => x.x === d.x && x.y === d.y); return c ? c.src : -1; };
+        nw.resetChoreo(); const pf = seat === 0 ? cf : 'asuras', of = seat === 0 ? 'asuras' : cf; nw.startGame(pf, of);
+        const G = NT.G, me = G.players[NT.ME], op = G.players[NT.OPP], cast = G.players[seat], hit = G.players[1 - seat];
+        nw.pump = function () {}; G.realm = 'mrityulok'; me.mulliganed = op.mulliganed = true; n$('mulligan').classList.add('hidden');
+        const mk = (n, x) => Object.assign(nw.mkCard(NT.CARD_BY_NAME[n]), x || {});
+        for (const p of [me, op]) { p.units = []; p.heroes = []; p.artifact = null; p.passed = false; p.astrasThisRound = 0; }
+        cast.units = [mk(cf === 'devas' ? 'Marut' : 'Tataka')]; hit.units = [mk('Kalanemi', { power: 1, base: 1 }), mk('Meghnad', { power: 6 }), mk('Ravana', { power: 7 })];
+        cast.hand = [mk(card)]; G.turn = seat; G.over = false; nw.setSpeed('normal'); nw.render();
+        await nw.fxBoot(); const got = await nw.fxPrefetch(id);
+        const ready = Array.isArray(got) && got.length > 0 && got.every((b) => b && b.__wh && b.__wh[0] > 0);   // the atlas bytes in hand: the page's own readiness
+        // the screen as it is shown: one sample at the end of each clip frame (the frame the clip has just drawn into)
+        const frames = []; let struck = [], pre = {};
+        const ft = nw.fxTick; nw.fxTick = function () { const r = ft.apply(this, arguments); const d = draws[draws.length - 1];
+          frames.push({ t: nw.performance.now(), cell: d ? cellOf(d) : -1, sig: struck.map((u) => cardSig(u)) }); return r; };
+        const d0 = draws.length;
+        nw.runAction(() => nw.playCard(G, seat, 0), { actor: seat });
+        const evs = G.events.slice(-12), bev = evs.find((e) => e.type === trig && e.abilityName === card);
+        struck = (bev && bev.targetUids || []).map(String); pre = {}; for (const u of struck) pre[u] = null;
+        // the board before the play is the HELD board: read the struck cards now (the play has not been drawn), before any frame
+        for (const u of struck) pre[u] = cardSig(u);
+        await until(() => !NT.choreoActive, 30000); await W(80); nw.fxTick = ft;
+        const mine = draws.slice(d0).map(cellOf), early = frames.filter((f) => f.cell < impSrc && f.sig.some((x, k) => x !== pre[struck[k]]));
+        const firstTurn = frames.find((f) => f.sig.some((x, k) => x !== pre[struck[k]]));
+        res.push({ card, seat, ready, struck: struck.length, drawn: mine.length, impactDrawn: mine.indexOf(impSrc) >= 0, frames: frames.length, early: early.length,
+          turnedAtCell: firstTurn ? firstTurn.cell : null, impSrc, fell: notes.filter((x) => /fell-back|not-ready|clip-error/.test(x.kind)).length, left: NT.RE === null && !NT.choreoActive });
+        notes.length = 0;
+      }
+      ok(`E9 · WITH THE CLIP PLAYING (the real packs, decoded, drawn on the page's own clock — Agneyastra and Nagastra, both seats): no struck card's number, mark or Venom tokens change on screen before the frame that draws the impact cell (f003 / f032), and they turn in that very frame (${res.map((x) => x.card + ' seat ' + x.seat + ': turned at f' + String(x.turnedAtCell).padStart(3, '0') + ' over ' + x.frames + ' frames').join(', ')}); the clip owned every one (never fell back), nothing left after. The classic path (clip not ready) keeps the same order: E2 above runs every play with no clip`,
+        res.length === 4 && res.every((x) => x.ready && x.struck >= 1 && x.drawn > 20 && x.impactDrawn && x.early === 0 && x.turnedAtCell === x.impSrc && x.fell === 0 && x.left), J(res));
+      ok('  …that page ran clean', M9.errs.length === 0, M9.errs.slice(0, 3).join(' | '));
     }
   })();
 }

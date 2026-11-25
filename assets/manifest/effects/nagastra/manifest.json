@@ -1,0 +1,868 @@
+{
+  "cardId": "nagastra",
+  "class": "effect-clip",
+  "version": 1,
+  "source": "Kling clip nagastra.mp4 (sha256 5d31f102df41\u2026, 73 frames @ 24 fps, 1916x1080, black ground) \u2014 kept f014\u2013f072; packed by tools/make_effect_from_clip.py",
+  "atlas": "atlas.webp",
+  "atlasSize": {
+    "w": 3896,
+    "h": 1202
+  },
+  "channels": "rgb",
+  "blend": "add",
+  "alpha": "luminance",
+  "fps": 24,
+  "timing": "native",
+  "cellPx": 352,
+  "cellSize": {
+    "w": 352,
+    "h": 198
+  },
+  "cells": [
+    {
+      "name": "f014",
+      "src": 14,
+      "x": 2,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f015",
+      "src": 15,
+      "x": 356,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f016",
+      "src": 16,
+      "x": 710,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f017",
+      "src": 17,
+      "x": 1064,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f018",
+      "src": 18,
+      "x": 1418,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f019",
+      "src": 19,
+      "x": 1772,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f020",
+      "src": 20,
+      "x": 2126,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f021",
+      "src": 21,
+      "x": 2480,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f022",
+      "src": 22,
+      "x": 2834,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f023",
+      "src": 23,
+      "x": 3188,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f024",
+      "src": 24,
+      "x": 3542,
+      "y": 2,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f025",
+      "src": 25,
+      "x": 2,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f026",
+      "src": 26,
+      "x": 356,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f027",
+      "src": 27,
+      "x": 710,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f028",
+      "src": 28,
+      "x": 1064,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f029",
+      "src": 29,
+      "x": 1418,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f030",
+      "src": 30,
+      "x": 1772,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f031",
+      "src": 31,
+      "x": 2126,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f032",
+      "src": 32,
+      "x": 2480,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f033",
+      "src": 33,
+      "x": 2834,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f034",
+      "src": 34,
+      "x": 3188,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f035",
+      "src": 35,
+      "x": 3542,
+      "y": 202,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f036",
+      "src": 36,
+      "x": 2,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f037",
+      "src": 37,
+      "x": 356,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f038",
+      "src": 38,
+      "x": 710,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f039",
+      "src": 39,
+      "x": 1064,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f040",
+      "src": 40,
+      "x": 1418,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f041",
+      "src": 41,
+      "x": 1772,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f042",
+      "src": 42,
+      "x": 2126,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f043",
+      "src": 43,
+      "x": 2480,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f044",
+      "src": 44,
+      "x": 2834,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f045",
+      "src": 45,
+      "x": 3188,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f046",
+      "src": 46,
+      "x": 3542,
+      "y": 402,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f047",
+      "src": 47,
+      "x": 2,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f048",
+      "src": 48,
+      "x": 356,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f049",
+      "src": 49,
+      "x": 710,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f050",
+      "src": 50,
+      "x": 1064,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f051",
+      "src": 51,
+      "x": 1418,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f052",
+      "src": 52,
+      "x": 1772,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f053",
+      "src": 53,
+      "x": 2126,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f054",
+      "src": 54,
+      "x": 2480,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f055",
+      "src": 55,
+      "x": 2834,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f056",
+      "src": 56,
+      "x": 3188,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f057",
+      "src": 57,
+      "x": 3542,
+      "y": 602,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f058",
+      "src": 58,
+      "x": 2,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f059",
+      "src": 59,
+      "x": 356,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f060",
+      "src": 60,
+      "x": 710,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f061",
+      "src": 61,
+      "x": 1064,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f062",
+      "src": 62,
+      "x": 1418,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f063",
+      "src": 63,
+      "x": 1772,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f064",
+      "src": 64,
+      "x": 2126,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f065",
+      "src": 65,
+      "x": 2480,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f066",
+      "src": 66,
+      "x": 2834,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f067",
+      "src": 67,
+      "x": 3188,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f068",
+      "src": 68,
+      "x": 3542,
+      "y": 802,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f069",
+      "src": 69,
+      "x": 2,
+      "y": 1002,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f070",
+      "src": 70,
+      "x": 356,
+      "y": 1002,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f071",
+      "src": 71,
+      "x": 710,
+      "y": 1002,
+      "w": 352,
+      "h": 198
+    },
+    {
+      "name": "f072",
+      "src": 72,
+      "x": 1064,
+      "y": 1002,
+      "w": 352,
+      "h": 198
+    }
+  ],
+  "impact": 18,
+  "anchor": {
+    "x": 176.0,
+    "y": 99.0
+  },
+  "scaleRule": {
+    "feature": "plate width (the clip's content box)",
+    "frame": 32,
+    "spanSrc": 1916,
+    "spanCell": 352.0,
+    "cardWidths": 5.17,
+    "ruledDefaultCardWidths": null,
+    "halfFraction": 1.0,
+    "heightCap": 1.0,
+    "legibility": null,
+    "note": "THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only \u2014 LAB-21's ring-based cw and a plate-based cw are not the same unit"
+  },
+  "contract": {
+    "trigger": "token",
+    "abilityName": "Nagastra",
+    "anchor": "enemy-half-centre",
+    "castSound": "sfx_astra",
+    "impactSound": "sfx_venom_apply",
+    "castHitStopMs": 70,
+    "castHoldMs": 700,
+    "flightMs": 0,
+    "crackAfterMs": 0,
+    "destroyDwellMs": 0,
+    "exitKind": "none",
+    "awaited": false
+  },
+  "audit": {
+    "range": [
+      14,
+      72
+    ],
+    "droppedHead": [
+      0,
+      13
+    ],
+    "droppedTail": null,
+    "impactSrc": 32,
+    "impact": {
+      "rule": "largestchange",
+      "window": [
+        26,
+        38
+      ],
+      "changes": {
+        "f026": 9.83,
+        "f027": 9.86,
+        "f028": 9.74,
+        "f029": 9.49,
+        "f030": 10.41,
+        "f031": 11.17,
+        "f032": 11.85,
+        "f033": 10.27,
+        "f034": 9.95,
+        "f035": 9.51,
+        "f036": 9.29,
+        "f037": 9.79,
+        "f038": 9.82
+      },
+      "why": "WAVE1-CLIPS-1 ruling 2: the serpents strike the ground; the Venom tokens land on that beat"
+    },
+    "corePoint": [
+      920,
+      868
+    ],
+    "scale": 0.18372,
+    "box": [
+      0,
+      0,
+      1916,
+      1080
+    ],
+    "cellPx": {
+      "used": 352,
+      "asked": "largest",
+      "steppedDown": null,
+      "largest": {
+        "rule": "largest",
+        "used": 352,
+        "why": "owner ruling B2: the largest cell whose pack decodes under the E1 cap (the next size up, 353, does not fit)"
+      }
+    },
+    "decodedBytes": 18731968,
+    "e1CapBytes": 18874368,
+    "ground": {
+      "cornersMax": 115,
+      "farMax": 0,
+      "method": "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) \u2014 stated beside the bake metric",
+      "zeroShareMin": 0.03078,
+      "pedestal1to4ShareMax": 0.08443
+    },
+    "edges": {
+      "top": 59,
+      "bottom": 1,
+      "left": 28,
+      "right": 36,
+      "of": 59
+    },
+    "fadeIn": [
+      [
+        14,
+        0.2
+      ],
+      [
+        15,
+        0.4
+      ],
+      [
+        16,
+        0.6
+      ],
+      [
+        17,
+        0.8
+      ]
+    ],
+    "fadeTail": [
+      [
+        65,
+        1.0
+      ],
+      [
+        66,
+        0.8571
+      ],
+      [
+        67,
+        0.7143
+      ],
+      [
+        68,
+        0.5714
+      ],
+      [
+        69,
+        0.4286
+      ],
+      [
+        70,
+        0.2857
+      ],
+      [
+        71,
+        0.1429
+      ],
+      [
+        72,
+        0.0
+      ]
+    ],
+    "vignette": {
+      "top": {
+        "px": 173,
+        "cellPxAtScale": 31.8,
+        "coreMarginMin": 0,
+        "coreMarginMinAt": 27,
+        "bodyInBand": [
+          "f017",
+          "f018",
+          "f019",
+          "f020",
+          "f023",
+          "f026",
+          "f027",
+          "f031",
+          "f035",
+          "f036",
+          "f037",
+          "f038",
+          "f039",
+          "f040",
+          "f041",
+          "f042",
+          "f043",
+          "f044",
+          "f045",
+          "f046",
+          "f047",
+          "f048",
+          "f049",
+          "f050",
+          "f051",
+          "f052",
+          "f053"
+        ],
+        "bodyInBandOutsideTail": [],
+        "ruledIntoBand": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" \u2014 the halo ring above the serpents and their heads reach into the 173 px top band (the top edge cuts the halo); the band is ruled over them so the plate fades in from the half instead of starting with a flat cut, the PASHU-V2 B4 precedent",
+        "bodyInBandRuled": 27
+      },
+      "bottom": {
+        "px": 108,
+        "cellPxAtScale": 19.8,
+        "coreMarginMin": 27,
+        "coreMarginMinAt": 31,
+        "bodyInBand": [
+          "f014",
+          "f015",
+          "f016",
+          "f017",
+          "f018",
+          "f019",
+          "f020",
+          "f021",
+          "f022",
+          "f023",
+          "f024",
+          "f025",
+          "f026",
+          "f027",
+          "f028",
+          "f029",
+          "f030",
+          "f031",
+          "f032",
+          "f033",
+          "f034",
+          "f035",
+          "f036",
+          "f037",
+          "f041",
+          "f042",
+          "f043",
+          "f044",
+          "f045",
+          "f046",
+          "f047",
+          "f048",
+          "f049",
+          "f050",
+          "f053",
+          "f054",
+          "f055",
+          "f056",
+          "f057",
+          "f059",
+          "f060",
+          "f071"
+        ],
+        "bodyInBandOutsideTail": [],
+        "ruledIntoBand": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" \u2014 the ground ripples where the venom lands run down to the bottom edge and join the serpents' body; the 108 px bottom band is ruled over them so they fade out above the middle line instead of being cut by it",
+        "bodyInBandRuled": 41
+      },
+      "left": {
+        "px": 230,
+        "cellPxAtScale": 42.3,
+        "coreMarginMin": 57,
+        "coreMarginMinAt": 40,
+        "bodyInBand": [
+          "f027",
+          "f028",
+          "f029",
+          "f030",
+          "f031",
+          "f032",
+          "f033",
+          "f034",
+          "f035",
+          "f036",
+          "f037",
+          "f038",
+          "f039",
+          "f040",
+          "f041",
+          "f042",
+          "f043",
+          "f044",
+          "f045",
+          "f046",
+          "f047",
+          "f048",
+          "f049",
+          "f050",
+          "f051",
+          "f052",
+          "f053",
+          "f054",
+          "f055",
+          "f056",
+          "f057",
+          "f058",
+          "f059",
+          "f060",
+          "f061",
+          "f062",
+          "f063",
+          "f064",
+          "f065",
+          "f066",
+          "f067",
+          "f068"
+        ],
+        "bodyInBandOutsideTail": [],
+        "ruledIntoBand": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" \u2014 the outer serpents and their splash rings reach the frame's left edge from the strike on; the 230 px side band is ruled over them so they fade into the half's left border, never a flat cut",
+        "bodyInBandRuled": 38
+      },
+      "right": {
+        "px": 230,
+        "cellPxAtScale": 42.3,
+        "coreMarginMin": 91,
+        "coreMarginMinAt": 42,
+        "bodyInBand": [
+          "f014",
+          "f015",
+          "f016",
+          "f017",
+          "f018",
+          "f019",
+          "f020",
+          "f021",
+          "f022",
+          "f023",
+          "f024",
+          "f025",
+          "f026",
+          "f027",
+          "f028",
+          "f029",
+          "f030",
+          "f031",
+          "f032",
+          "f033",
+          "f034",
+          "f035",
+          "f036",
+          "f037",
+          "f038",
+          "f039",
+          "f040",
+          "f041",
+          "f042",
+          "f043",
+          "f044",
+          "f045",
+          "f046",
+          "f047",
+          "f048",
+          "f049",
+          "f050",
+          "f051",
+          "f052",
+          "f053",
+          "f054",
+          "f055",
+          "f056",
+          "f057",
+          "f058",
+          "f059",
+          "f060",
+          "f061",
+          "f062",
+          "f063",
+          "f064",
+          "f065",
+          "f066",
+          "f067"
+        ],
+        "bodyInBandOutsideTail": [],
+        "ruledIntoBand": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" \u2014 the outer serpents and their splash rings reach the frame's right edge from the strike on; the 230 px side band is ruled over them so they fade into the half's right border, never a flat cut",
+        "bodyInBandRuled": 51
+      }
+    },
+    "guardKind": "blob",
+    "guardTailStart": 65,
+    "anchorRule": {
+      "kind": "centre",
+      "place": "enemy-half-centre",
+      "dependency": "WAVE1-CLIPS-1 ruling 4: the plate's CENTRE sits on the enemy half's centre, fitted to the half's width and never taller than it, so it never leaves the half \u2014 nothing outside the board, nothing across the middle line; its cut edges are hidden by the four baked feathers"
+    }
+  }
+}
