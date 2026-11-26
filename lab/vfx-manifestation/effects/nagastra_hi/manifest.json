@@ -1,0 +1,806 @@
+{
+  "cardId": "nagastra",
+  "class": "effect-clip",
+  "version": 1,
+  "source": "Kling clip nagastra_premium.mp4 (sha256 bfe80d4790ea\u2026, 72 frames @ 24 fps, 1920x1080, black ground) \u2014 kept f000\u2013f071; packed by tools/make_effect_from_clip.py",
+  "atlas": "atlas.webp",
+  "atlasSize": {
+    "w": 4082,
+    "h": 2558
+  },
+  "channels": "rgb",
+  "blend": "add",
+  "alpha": "luminance",
+  "fps": 24,
+  "timing": "native",
+  "cellPx": 508,
+  "cellSize": {
+    "w": 508,
+    "h": 282
+  },
+  "cells": [
+    {
+      "name": "f000",
+      "src": 0,
+      "x": 2,
+      "y": 2,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f001",
+      "src": 1,
+      "x": 512,
+      "y": 2,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f002",
+      "src": 2,
+      "x": 1022,
+      "y": 2,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f003",
+      "src": 3,
+      "x": 1532,
+      "y": 2,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f004",
+      "src": 4,
+      "x": 2042,
+      "y": 2,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f005",
+      "src": 5,
+      "x": 2552,
+      "y": 2,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f006",
+      "src": 6,
+      "x": 3062,
+      "y": 2,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f007",
+      "src": 7,
+      "x": 3572,
+      "y": 2,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f008",
+      "src": 8,
+      "x": 2,
+      "y": 286,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f009",
+      "src": 9,
+      "x": 512,
+      "y": 286,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f010",
+      "src": 10,
+      "x": 1022,
+      "y": 286,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f011",
+      "src": 11,
+      "x": 1532,
+      "y": 286,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f012",
+      "src": 12,
+      "x": 2042,
+      "y": 286,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f013",
+      "src": 13,
+      "x": 2552,
+      "y": 286,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f014",
+      "src": 14,
+      "x": 3062,
+      "y": 286,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f015",
+      "src": 15,
+      "x": 3572,
+      "y": 286,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f016",
+      "src": 16,
+      "x": 2,
+      "y": 570,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f017",
+      "src": 17,
+      "x": 512,
+      "y": 570,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f018",
+      "src": 18,
+      "x": 1022,
+      "y": 570,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f019",
+      "src": 19,
+      "x": 1532,
+      "y": 570,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f020",
+      "src": 20,
+      "x": 2042,
+      "y": 570,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f021",
+      "src": 21,
+      "x": 2552,
+      "y": 570,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f022",
+      "src": 22,
+      "x": 3062,
+      "y": 570,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f023",
+      "src": 23,
+      "x": 3572,
+      "y": 570,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f024",
+      "src": 24,
+      "x": 2,
+      "y": 854,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f025",
+      "src": 25,
+      "x": 512,
+      "y": 854,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f026",
+      "src": 26,
+      "x": 1022,
+      "y": 854,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f027",
+      "src": 27,
+      "x": 1532,
+      "y": 854,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f028",
+      "src": 28,
+      "x": 2042,
+      "y": 854,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f029",
+      "src": 29,
+      "x": 2552,
+      "y": 854,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f030",
+      "src": 30,
+      "x": 3062,
+      "y": 854,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f031",
+      "src": 31,
+      "x": 3572,
+      "y": 854,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f032",
+      "src": 32,
+      "x": 2,
+      "y": 1138,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f033",
+      "src": 33,
+      "x": 512,
+      "y": 1138,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f034",
+      "src": 34,
+      "x": 1022,
+      "y": 1138,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f035",
+      "src": 35,
+      "x": 1532,
+      "y": 1138,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f036",
+      "src": 36,
+      "x": 2042,
+      "y": 1138,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f037",
+      "src": 37,
+      "x": 2552,
+      "y": 1138,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f038",
+      "src": 38,
+      "x": 3062,
+      "y": 1138,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f039",
+      "src": 39,
+      "x": 3572,
+      "y": 1138,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f040",
+      "src": 40,
+      "x": 2,
+      "y": 1422,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f041",
+      "src": 41,
+      "x": 512,
+      "y": 1422,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f042",
+      "src": 42,
+      "x": 1022,
+      "y": 1422,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f043",
+      "src": 43,
+      "x": 1532,
+      "y": 1422,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f044",
+      "src": 44,
+      "x": 2042,
+      "y": 1422,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f045",
+      "src": 45,
+      "x": 2552,
+      "y": 1422,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f046",
+      "src": 46,
+      "x": 3062,
+      "y": 1422,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f047",
+      "src": 47,
+      "x": 3572,
+      "y": 1422,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f048",
+      "src": 48,
+      "x": 2,
+      "y": 1706,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f049",
+      "src": 49,
+      "x": 512,
+      "y": 1706,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f050",
+      "src": 50,
+      "x": 1022,
+      "y": 1706,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f051",
+      "src": 51,
+      "x": 1532,
+      "y": 1706,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f052",
+      "src": 52,
+      "x": 2042,
+      "y": 1706,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f053",
+      "src": 53,
+      "x": 2552,
+      "y": 1706,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f054",
+      "src": 54,
+      "x": 3062,
+      "y": 1706,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f055",
+      "src": 55,
+      "x": 3572,
+      "y": 1706,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f056",
+      "src": 56,
+      "x": 2,
+      "y": 1990,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f057",
+      "src": 57,
+      "x": 512,
+      "y": 1990,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f058",
+      "src": 58,
+      "x": 1022,
+      "y": 1990,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f059",
+      "src": 59,
+      "x": 1532,
+      "y": 1990,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f060",
+      "src": 60,
+      "x": 2042,
+      "y": 1990,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f061",
+      "src": 61,
+      "x": 2552,
+      "y": 1990,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f062",
+      "src": 62,
+      "x": 3062,
+      "y": 1990,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f063",
+      "src": 63,
+      "x": 3572,
+      "y": 1990,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f064",
+      "src": 64,
+      "x": 2,
+      "y": 2274,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f065",
+      "src": 65,
+      "x": 512,
+      "y": 2274,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f066",
+      "src": 66,
+      "x": 1022,
+      "y": 2274,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f067",
+      "src": 67,
+      "x": 1532,
+      "y": 2274,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f068",
+      "src": 68,
+      "x": 2042,
+      "y": 2274,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f069",
+      "src": 69,
+      "x": 2552,
+      "y": 2274,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f070",
+      "src": 70,
+      "x": 3062,
+      "y": 2274,
+      "w": 508,
+      "h": 282
+    },
+    {
+      "name": "f071",
+      "src": 71,
+      "x": 3572,
+      "y": 2274,
+      "w": 508,
+      "h": 282
+    }
+  ],
+  "impact": 32,
+  "anchor": {
+    "x": 254.0,
+    "y": 211.5
+  },
+  "litBox": {
+    "x0": 2,
+    "y0": 1,
+    "x1": 507,
+    "y1": 278,
+    "thr": 40,
+    "minShare": 0.004,
+    "rule": "NO-CUT ruling (owner, 2026-11-26 18:04): the lit extent over all cells (luminance >= 40 on >= 0.4% of a row/column, after the lift); on a wide board this box is fitted to the half it acts on with a margin, and anything fainter outside it is feathered out at the half's edge"
+  },
+  "rung": "hi",
+  "lift": 0.6,
+  "scaleRule": {
+    "feature": "plate width (the clip's content box)",
+    "frame": 32,
+    "spanSrc": 1520,
+    "spanCell": 508.0,
+    "cardWidths": 5.17,
+    "ruledDefaultCardWidths": null,
+    "halfFraction": 1.0,
+    "heightCap": 1.0,
+    "legibility": null,
+    "note": "THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only \u2014 LAB-21's ring-based cw and a plate-based cw are not the same unit"
+  },
+  "contract": {
+    "trigger": "token",
+    "abilityName": "Nagastra",
+    "anchor": "enemy-board-row",
+    "veil": 0.65,
+    "castSound": "sfx_astra",
+    "impactSound": "sfx_venom_apply",
+    "castHitStopMs": 70,
+    "castHoldMs": 1263.3333333333333,
+    "flightMs": 0,
+    "crackAfterMs": 0,
+    "destroyDwellMs": 0,
+    "exitKind": "none",
+    "awaited": false
+  },
+  "audit": {
+    "range": [
+      0,
+      71
+    ],
+    "droppedHead": null,
+    "droppedTail": null,
+    "impactSrc": 32,
+    "impact": {
+      "rule": "ruled",
+      "changes": {
+        "f026": 12.03,
+        "f027": 6.36,
+        "f028": 5.25,
+        "f029": 4.01,
+        "f030": 2.83,
+        "f031": 2.7,
+        "f032": 2.13,
+        "f033": 1.97,
+        "f034": 1.99,
+        "f035": 2.06,
+        "f036": 2.01,
+        "f037": 1.95,
+        "f038": 0.15
+      },
+      "why": "NO-CUT ruling (owner, 2026-11-26 18:04): f032, the venom drops reach the ground - the Venom tokens land there (the largest picture change, f026, is the mouths snapping open)"
+    },
+    "corePoint": [
+      1028,
+      724
+    ],
+    "scale": 0.33421,
+    "box": [
+      184,
+      55,
+      1704,
+      898
+    ],
+    "cellPx": {
+      "used": 508,
+      "asked": "base*1.5",
+      "steppedDown": null
+    },
+    "decodedBytes": 41767024,
+    "e1CapBytes": 42467328,
+    "ground": {
+      "cornersMax": 0,
+      "farMax": 37,
+      "method": "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) \u2014 stated beside the bake metric",
+      "zeroShareMin": 0.65994,
+      "pedestal1to4ShareMax": 0.0
+    },
+    "edges": {
+      "top": 0,
+      "bottom": 0,
+      "left": 0,
+      "right": 0,
+      "of": 72
+    },
+    "fadeIn": [
+      [
+        0,
+        0.2
+      ],
+      [
+        1,
+        0.4
+      ],
+      [
+        2,
+        0.6
+      ],
+      [
+        3,
+        0.8
+      ]
+    ],
+    "fadeTail": [
+      [
+        64,
+        1.0
+      ],
+      [
+        65,
+        0.8571
+      ],
+      [
+        66,
+        0.7143
+      ],
+      [
+        67,
+        0.5714
+      ],
+      [
+        68,
+        0.4286
+      ],
+      [
+        69,
+        0.2857
+      ],
+      [
+        70,
+        0.1429
+      ],
+      [
+        71,
+        0.0
+      ]
+    ],
+    "vignette": {
+      "top": {
+        "px": 64,
+        "cellPxAtScale": 21.4,
+        "coreMarginMin": 61,
+        "coreMarginMinAt": 18,
+        "bodyInBand": [
+          "f017",
+          "f018"
+        ],
+        "bodyInBandOutsideTail": [],
+        "ruledIntoBand": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)",
+        "bodyInBandRuled": 2
+      },
+      "bottom": {
+        "px": 96,
+        "cellPxAtScale": 32.1,
+        "coreMarginMin": 200,
+        "coreMarginMinAt": 23,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": [],
+        "ruledIntoBand": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)",
+        "bodyInBandRuled": 0
+      },
+      "left": {
+        "px": 128,
+        "cellPxAtScale": 42.8,
+        "coreMarginMin": 244,
+        "coreMarginMinAt": 31,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": [],
+        "ruledIntoBand": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)",
+        "bodyInBandRuled": 0
+      },
+      "right": {
+        "px": 128,
+        "cellPxAtScale": 42.8,
+        "coreMarginMin": 252,
+        "coreMarginMinAt": 54,
+        "bodyInBand": [],
+        "bodyInBandOutsideTail": [],
+        "ruledIntoBand": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)",
+        "bodyInBandRuled": 0
+      }
+    },
+    "guardKind": "blob",
+    "guardTailStart": 64,
+    "anchorRule": {
+      "kind": "centre",
+      "place": "enemy-board-row",
+      "dependency": "NO-CUT ruling (owner, 2026-11-26 18:04): on a phone the strike point sits on the opponent's card row, the whole picture inside the board (fit); on a wide board the whole picture is drawn inside the opponent's half, its lit box fitted to the half with a margin, centred across it, clipped to the half and feathered there"
+    }
+  }
+}

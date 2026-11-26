@@ -27,7 +27,9 @@
 (function (root) {
   'use strict';
   var CHOREO_SPEED = 1.3;
-  var E1 = { capClass: 'the effect layer hi rung (the game sheet vfx_vajra hi: 3072x1536 RGBA)', capBytes: 3072 * 1536 * 4, oneAtATime: true };
+  var WHOLE_HALF = { marginPx: 8, featherPx: 8 };   // NO-CUT ruling (owner, 2026-11-26 18:04): the lit box sits 8 CSS px inside its half; an 8 px feather at the half's edges takes out the fainter glow beyond it
+  var E1 = { capClass: 'the effect layer hi rung (the game sheet vfx_vajra hi: 3072x1536 RGBA)', capBytes: 3072 * 1536 * 4, oneAtATime: true,
+             hiCapBytes: 3072 * 1536 * 4 * 9 / 4, hiClass: 'WAVE1-CLIPS-1 FINAL ruling 5 (owner, 2026-11-25 23:29): the large-screen set (x1.5 each way) — a ruled exception for large screens only, never a phone' };
   var num = function (x) { return typeof x === 'number' && isFinite(x); };
 
   function validate(m) {
@@ -62,7 +64,7 @@
     if (!member) e = e.concat(contractErrors(m.contract));
     else if (m.contract !== undefined) e.push('a chain member carries no contract (the chain does)');
     if (m.moment === 'empowered-drain' && !(m.contract && m.contract.castEvent && m.contract.castEvent.type && m.contract.castEvent.abilityName && num(m.contract.minDrain))) e.push('an empowered-drain clip names its cast event and its minimum drain');
-    if (m.atlasSize && m.atlasSize.w * m.atlasSize.h * 4 > E1.capBytes) e.push('the atlas decodes past the E1 cap');
+    if (m.atlasSize && m.atlasSize.w * m.atlasSize.h * 4 > (m.rung === 'hi' ? E1.hiCapBytes : E1.capBytes)) e.push('the atlas decodes past the E1 cap');   // FINAL ruling 5: a large-screen pack (rung hi) has its own ruled cap
     return { ok: e.length === 0, errors: e };
   }
   function contractErrors(k) {
@@ -191,7 +193,7 @@
     var glow = chained && spec.chain.shape === 'strike-afterglow';
     var T = glow ? afterglowTimeline(spec.chain, spec.clips, SPEED[mode], opts.choreoSpeed) : chained ? chainTimeline(spec.chain, spec.clips, SPEED[mode], opts.choreoSpeed) : arming ? armingTimeline(spec, SPEED[mode], opts.choreoSpeed) : timeline(spec, SPEED[mode], opts.choreoSpeed);
     var clip = !!(b.cast && (b.strike || arming)) && mode !== 'reduced', segments = [], cues = [];
-    var HALF_PLACES = { 'enemy-half-centre': 'enemy-half', 'enemy-half-top': 'enemy-half-top', 'enemy-half-bottom': 'enemy-half-bottom', 'caster-half-bottom': 'caster-half-bottom', 'caster-half-centre': 'caster-half' };   // WAVE1-CLIPS-1 batch 2: + the caster's own half, centred
+    var HALF_PLACES = { 'enemy-half-centre': 'enemy-half', 'enemy-half-top': 'enemy-half-top', 'enemy-half-bottom': 'enemy-half-bottom', 'caster-half-bottom': 'caster-half-bottom', 'caster-half-centre': 'caster-half', 'enemy-board-row': 'enemy-board', 'caster-board-row': 'caster-board' };   // WAVE1-CLIPS-1 batch 2: + the caster's own half, centred; REBUILD: + the board-sized plates
     if (clip && glow) segments.push({ role: 'strike', clip: 0, start: T.strikeStart, end: Math.min(T.strikeEnd, T.handoffAt), frameMs: T.frameMs, place: k.anchor, impact: spec.clips[0].impact },
                                     { role: 'afterglow', clip: 1, start: T.afterglowStart, end: T.afterglowEnd, frameMs: T.afterglowFrameMs, place: k.afterglowAnchor, impact: null });
     else if (clip && chained) segments.push({ role: 'invoke', clip: 0, start: T.invokeStart, end: T.handoffAt, frameMs: T.invokeFrameMs, place: 'caster-half' },
@@ -317,7 +319,7 @@
       var withHalf = function (c, h) { return { cx: c.cx, cy: c.cy, w: c.w, halfW: h && h.w, halfH: h && h.h }; };
       var places = p.segments.map(function (sg) {
         var m = clips[sg.clip];
-        if (sg.place === 'target') return target ? place(m, withHalf(target, hE)) : null;
+        if (sg.place === 'target' && !(m.scaleRule && m.scaleRule.boardFit)) return target ? place(m, withHalf(target, hE)) : null;   // REBUILD: a board-fit strike is placed below
         var seat = (sg.place === 'enemy-half' || sg.place === 'enemy-half-top' || sg.place === 'enemy-half-bottom') ? (p.casterSeat != null ? 1 - p.casterSeat : null) : p.casterSeat;   // LAB-21: the enemy half is the caster's opposite seat
         var hh = seat != null && env.halfOf ? env.halfOf(seat) : null;
         // LAB-25: DIVIDER-FLUSH on a LOGICAL half — the plate's edge nearest the divider sits ON it (its bottom on the upper half, its top on the lower)
@@ -332,6 +334,57 @@
         // LAB-22: TOP-FLUSH — the plate's anchor (its top-centre) on the enemy half's TOP edge; a half that reports no top plays no clip (fail-open)
         // EXPORT-4: a height-capped plate needs the half's height (no height, no clip — it could not be kept inside the half)
         if (sg.place === 'enemy-half-top') return hh && target && hh.top != null && (!m.scaleRule.halfFraction || hh.w > 0) && (!m.scaleRule.heightCap || hh.h > 0) ? place(m, { cx: hh.cx, cy: hh.top, w: target.w, halfW: hh.w, halfH: hh.h }) : null;
+        // WAVE1-CLIPS-1 REBUILD (owner rulings 2026-11-25 20:49): LARGE, ANCHORED ON ITS SIDE. The plate is as large as the board allows (it fits the
+        // board's frame — FINAL ruling 2 (2026-11-25 23:29): "fit" on every screen); its main action (the manifest's anchor) sits over its
+        // half's card row — the span of that half's Units — and the plate then slides toward the middle as far as keeps the picture inside the frame. It may
+        // spill across the middle line; nothing is drawn outside the board (the canvas is the board). A single-target strike (boardFit) keeps its strike point
+        // on the target card at the same size, the frame cutting it where it must.
+        if (sg.place === 'enemy-board' || sg.place === 'caster-board' || (sg.place === 'target' && m.scaleRule && m.scaleRule.boardFit)) {
+          var bseat = sg.place === 'caster-board' ? p.casterSeat : (p.casterSeat != null ? 1 - p.casterSeat : null), bh = bseat != null && env.halfOf ? env.halfOf(bseat) : null, fd = env.fieldOf ? env.fieldOf() : null;
+          if (!bh || !fd || !(fd.w > 0) || !(fd.h > 0)) return null;
+          var bs = Math.min(fd.w / m.cellSize.w, fd.h / m.cellSize.h), bw = m.cellSize.w * bs, bhh = m.cellSize.h * bs;
+          if (sg.place === 'target') return target ? { scale: bs, x: target.cx - m.anchor.x * bs, y: target.cy - m.anchor.y * bs, w: bw, h: bhh } : null;
+          // NO-CUT ruling (owner, 2026-11-26 18:04) — THE STANDING PLACEMENT RULE, on a WIDE board (env.wideBoard: the page's own test, the one that has picked the
+          // large-screen pack): an effect not aimed at a single card plays WHOLE inside the half it acts on — its lit box (m.litBox: the clip's real extent over
+          // all frames) fitted to that half with a margin and centred across it; it is drawn clipped to the half (nothing outside it) and feathered at the half's
+          // edges, so the faint glow outside the lit box fades out, never a hard line. It follows the seat. Phones keep the placement below.
+          if (m.litBox && env.wideBoard && env.wideBoard(m)) {
+            var lb = m.litBox, mg = WHOLE_HALF.marginPx, hl = bh.cx - bh.w / 2, ht = bh.top != null ? bh.top : bh.cy - bh.h / 2;
+            var ws = Math.min((bh.w - 2 * mg) / (lb.x1 - lb.x0), (bh.h - 2 * mg) / (lb.y1 - lb.y0));
+            return { scale: ws, x: bh.cx - (lb.x0 + lb.x1) / 2 * ws, y: ht + bh.h / 2 - (lb.y0 + lb.y1) / 2 * ws, w: m.cellSize.w * ws, h: m.cellSize.h * ws,
+                     clip: { x: hl, y: ht, w: bh.w, h: bh.h }, feather: WHOLE_HALF.featherPx };
+          }
+          var ur = env.unitsOf ? (env.unitsOf(bseat) || []) : [], blo = Infinity, bhi = -Infinity, bcy = 0, bcl = 0, bn = 0, rtop = Infinity, rbot = -Infinity;
+          ur.forEach(function (c) { if (c && c.w > 0) { var ch = c.h || c.w * 4 / 3; blo = Math.min(blo, c.cx - c.w / 2); bhi = Math.max(bhi, c.cx + c.w / 2); bcy += c.cy; bcl += c.cy + 0.25 * ch; rtop = Math.min(rtop, c.cy - ch / 2); rbot = Math.max(rbot, c.cy + ch / 2); bn++; } });
+          if (!bn) { rtop = bh.top != null ? bh.top : bh.cy - bh.h / 2; rbot = rtop + bh.h; }   // no Units: the half itself is the row
+          // REBUILD (owner ruling 2026-11-25 22:10; design note, FINAL ruling 9): an effect ON THE OPPONENT'S HALF keeps its strike/base point on that row's cards
+          // (their lower part), centred on their Units — this outranks "as large as the board allows" — at the largest size that keeps the WHOLE picture inside
+          // the frame. (No opponent-half clip is routed today: Nagastra and Tamasa play their classic plates until their clips are regenerated.)
+          if (sg.place === 'enemy-board' && bn) {
+            var eay = bcl / bn, eax = (blo + bhi) / 2;
+            bs = Math.min(bs, eay / m.anchor.y, (fd.h - eay) / (m.cellSize.h - m.anchor.y)); bw = m.cellSize.w * bs; bhh = m.cellSize.h * bs;
+            var ex = eax - m.anchor.x * bs; if (bw <= fd.w + 0.01) ex = Math.max(0, Math.min(fd.w - bw, ex));
+            return { scale: bs, x: ex, y: eay - m.anchor.y * bs, w: bw, h: bhh };
+          }
+          var ax = bn ? (blo + bhi) / 2 : bh.cx, ay = bn ? bcy / bn : bh.cy, bx = ax - m.anchor.x * bs, by = ay - m.anchor.y * bs;
+          if (bw <= fd.w + 0.01) bx = Math.max(0, Math.min(fd.w - bw, bx));   // + 0.01: a width-fit plate IS the board's width (float residue)
+          if (bhh <= fd.h + 0.01) by = Math.max(0, Math.min(fd.h - bhh, by));
+          // FINAL ruling 2 (2026-11-25 23:29): the main action stays ON ITS OWN HALF'S CARD ROW — the slide toward the middle stops where the action would
+          // leave the row (its "cut at the board's edge" is superseded by KAVACHA-ANCHOR's shrink below, 2026-11-26)
+          // KAVACHA-ANCHOR (owner rulings, 2026-11-26): the order for a plate anchored on its own half's card row — 1) the main action (m.anchor) on the
+          // caster's row at full size ("fit") where the whole picture fits so; 2) otherwise the plate SHRINKS just enough that the whole picture fits
+          // inside the board with the main action on the caster's row, centred on the caster's Units (the opponent-half placement law, for any effect
+          // cast from either seat — the action never lands on the other player's row); 3) a cut only where a ruling says so for that clip (none today)
+          var mA = m.anchor, cH = m.cellSize.h, lo0 = Math.max(0, rtop - mA.y * bs), hi0 = Math.min(fd.h - bhh, rbot - mA.y * bs);
+          if (lo0 <= hi0 + 0.01) by = Math.max(lo0, Math.min(Math.max(lo0, hi0), ay - mA.y * bs));
+          else if (mA.y > 0 && mA.y < cH) {
+            var ry = Math.max(rtop, Math.min(rbot, fd.h * mA.y / cH));   // the row point that allows the largest whole picture
+            bs = Math.min(bs, ry / mA.y, (fd.h - ry) / (cH - mA.y)); bw = m.cellSize.w * bs; bhh = cH * bs;
+            bx = ax - mA.x * bs; if (bw <= fd.w + 0.01) bx = Math.max(0, Math.min(fd.w - bw, bx));
+            by = ry - mA.y * bs;
+          } else by = Math.max(rtop - mA.y * bs, Math.min(rbot - mA.y * bs, by));
+          return { scale: bs, x: bx, y: by, w: bw, h: bhh };
+        }
         var halfPlate = sg.place === 'enemy-half' || sg.place === 'caster-half';
         var pc = hh && (target || (halfPlate && m.scaleRule.halfFraction)) ? place(m, { cx: hh.cx, cy: hh.cy, w: target ? target.w : 0, halfW: hh.w, halfH: hh.h }) : null;   // the card width still sets the scale (cardWidths), the half sets the centre; WAVE1-CLIPS-1 batch 2: a half plate sized by the half needs no target card (a play-triggered clip)
         // WAVE1-CLIPS-1 (owner ruling, 25 Nov 2026): on a half wider than the plate, the plate is centred on the SPAN of the Units it strikes, slid
@@ -418,6 +471,17 @@
           g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, -m.anchor.x, -m.anchor.y, cell.w, cell.h);
           g.setTransform(1, 0, 0, 1, 0, 0);
           run.log.travel.push({ t: tr, cell: ix, x: pose.x, y: pose.y, rot: pose.rot, scale: pose.scale, u: pose.u });
+        }
+        else if (r.clip) {   // NO-CUT ruling (2026-11-26): a whole-in-half plate — drawn only inside its half, its edges feathered out there
+          var cr = r.clip, fe = Math.max(0, (r.feather || 0) * d), X0 = cr.x * d, Y0 = cr.y * d, X1 = (cr.x + cr.w) * d, Y1 = (cr.y + cr.h) * d;
+          g.save(); g.beginPath(); g.rect(X0, Y0, X1 - X0, Y1 - Y0); g.clip();
+          g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, r.x * d, r.y * d, r.w * d, r.h * d);
+          if (fe > 0 && g.createLinearGradient) {
+            g.globalCompositeOperation = 'destination-out';
+            [[X0, 0, X0 + fe, 0, X0, Y0, fe, Y1 - Y0], [X1, 0, X1 - fe, 0, X1 - fe, Y0, fe, Y1 - Y0], [0, Y0, 0, Y0 + fe, X0, Y0, X1 - X0, fe], [0, Y1, 0, Y1 - fe, X0, Y1 - fe, X1 - X0, fe]].forEach(function (b) {
+              var gr = g.createLinearGradient(b[0], b[1], b[2], b[3]); gr.addColorStop(0, 'rgba(0,0,0,1)'); gr.addColorStop(1, 'rgba(0,0,0,0)'); g.fillStyle = gr; g.fillRect(b[4], b[5], b[6], b[7]); });
+          }
+          g.restore();
         }
         else g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, r.x * d, r.y * d, r.w * d, r.h * d);
         g.globalCompositeOperation = 'source-over';

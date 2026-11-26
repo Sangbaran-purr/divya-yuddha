@@ -251,28 +251,30 @@ EFFECTS = {
               "card_floor": 0.294,   # EXPORT-4 ruling 2: the card floor, as Vajra
               "cell_px": "largest", "fade_in": 2, "fade_tail": 10, "feather_top": 64, "feather_bottom": 0,
               "scale_frame": 60, "card_widths": 1.25, "beam_half": 120, "ring_floor": 700,
-              "contract": {"trigger": "damage", "abilityName": "Agneyastra", "anchor": "target-card-centre", "castSound": "sfx_astra", "impactSound": "sfx_debuff",
+              "board_fit": True,   # REBUILD (owner rulings 2026-11-25 20:49): as large as the board allows, the strike point still on the one target card
+              "lift": 0.6,   # REBUILD FINAL (owner, 2026-11-25 23:29) ruling 3: the mid-tone lift (gamma 0.6 on every channel of the source frames) so thin and mid-bright strokes read over a bright board
+              "contract": {"trigger": "damage", "abilityName": "Agneyastra", "anchor": "target-card-centre", "veil": 0.45, "castSound": "sfx_astra", "impactSound": "sfx_debuff",
                            "castHitStopMs": 70, "castHoldMs": 700, "flightMs": 0, "crackAfterMs": 40, "destroyDwellMs": 600, "exitKind": "none", "awaited": False}},
     # NAGASTRA — the vignette class on the ENEMY half, CENTRED, fitted to the half's width and never taller than it (ruling 4: nothing outside the board
     # or across the middle line). The serpents rise, then strike the ground at f032 (the largest picture change, measured), pinned to the Venom
     # tokens' beat (ruling 2). The kept range starts at f014 so the strike lands on that beat at 0 ms of wire clock: 18 lead cells (750 ms at
     # Normal) fit inside the combat tier's 70 + 700 ms; f000-f013 (the serpents' first rise) stay in the source. Every edge is feathered (the halo
     # ring is cut by the top edge, the ripples by the sides and bottom): top 16 %, bottom 10 %, sides 12 % of the frame. Fade-in 4, fade tail 8 (0.33 s).
-    "nagastra": {"kind": "vignette-clip", "label": "Nagastra", "clip": "nagastra/nagastra.mp4", "card_id": "nagastra",
-              "clip_sha256": "5d31f102df41baeb3fc2899ca3b49877c1d64d904310bd4393ad6548f316f01b",
-              "range": (14, 72), "impact": 32, "impact_rule": "largestchange", "impact_window": (26, 38),
-              "cell_px": "largest", "fade_in": 4, "fade_tail": 8,
-              "feather_top": 173, "feather_bottom": 108, "feather_left": 230, "feather_right": 230,
-              "anchor_region": "centre", "anchor_place": "enemy-half-centre",
-              "anchor_note": "WAVE1-CLIPS-1 ruling 4: the plate's CENTRE sits on the enemy half's centre, fitted to the half's width and never taller than it, so it never leaves the half — nothing outside the board, nothing across the middle line; its cut edges are hidden by the four baked feathers",
-              "scale": {"feature": "plate width (the clip's content box)", "frame": 32, "half_fraction": 1.0, "height_cap": 1.0, "card_widths": 5.17},   # card widths DERIVED commentary only: 388 px half / 75 px card at the 390 px phone
-              "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0,
-                        "ruled_into_band": {"top": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" — the halo ring above the serpents and their heads reach into the 173 px top band (the top edge cuts the halo); the band is ruled over them so the plate fades in from the half instead of starting with a flat cut, the PASHU-V2 B4 precedent",
-                                            "bottom": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" — the ground ripples where the venom lands run down to the bottom edge and join the serpents' body; the 108 px bottom band is ruled over them so they fade out above the middle line instead of being cut by it",
-                                            "left": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" — the outer serpents and their splash rings reach the frame's left edge from the strike on; the 230 px side band is ruled over them so they fade into the half's left border, never a flat cut",
-                                            "right": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" — the outer serpents and their splash rings reach the frame's right edge from the strike on; the 230 px side band is ruled over them so they fade into the half's right border, never a flat cut"}},
-              "contract": {"trigger": "token", "abilityName": "Nagastra", "anchor": "enemy-half-centre", "castSound": "sfx_astra", "impactSound": "sfx_venom_apply",
-                           "castHitStopMs": 70, "castHoldMs": 700, "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 0, "exitKind": "none", "awaited": False}},
+    # NAGASTRA — REGENERATED (owner ruling 2026-11-26 18:04): the owner's premium clip (sha256 bfe80d47..., the copy in assets/vfx/source/asura_premium_review/;
+    # the transfer copies elsewhere differ and are ignored), routed back on. Whole clip f000-f071, mid-tone lift, beat f032 (ruled: the venom drops reach the
+    # ground = the Venom tokens; measured: the clip's largest picture change is f026, the mouths snapping open, 11.75 vs 2.17 at f032). Fades 4/8. The opposite half.
+    "nagastra": {"kind": "vignette-clip", "label": "Nagastra", "clip": "nagastra/nagastra_premium.mp4", "card_id": "nagastra",
+              "clip_sha256": "bfe80d4790eaa6364efd34e4a915e2422bb832395ce7ce586cf0f5a63c4b29f8",
+              "range": (0, 71), "impact": 32, "impact_rule": "ruled", "impact_window": (26, 38),
+              "impact_why": "NO-CUT ruling (owner, 2026-11-26 18:04): f032, the venom drops reach the ground - the Venom tokens land there (the largest picture change, f026, is the mouths snapping open)",
+              "cell_px": "largest", "fade_in": 4, "fade_tail": 8, "lift": 0.6,
+              "feather_top": 64, "feather_bottom": 96, "feather_left": 128, "feather_right": 128,
+              "anchor_region": "centre", "anchor_place": "enemy-board-row", "action": (0.5, 0.75),   # the strike point (the coils on the ground) over the enemy's card row - the phone placement
+              "anchor_note": "NO-CUT ruling (owner, 2026-11-26 18:04): on a phone the strike point sits on the opponent's card row, the whole picture inside the board (fit); on a wide board the whole picture is drawn inside the opponent's half, its lit box fitted to the half with a margin, centred across it, clipped to the half and feathered there",
+              "scale": {"feature": "plate width (the clip's content box)", "frame": 32, "half_fraction": 1.0, "height_cap": 1.0, "card_widths": 5.17},
+              "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0, "ruled_into_band": {"top": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)", "bottom": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)", "left": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)", "right": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)"}},
+              "contract": {"trigger": "token", "abilityName": "Nagastra", "anchor": "enemy-board-row", "veil": 0.65, "castSound": "sfx_astra", "impactSound": "sfx_venom_apply",
+                           "castHitStopMs": 70, "castHoldMs": 32 * 1000 / 24 - 70, "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 0, "exitKind": "none", "awaited": False}},
     # WAVE1-CLIPS-1 · BATCH 2 (owner rulings 2026-11-25). Three half plates whose beat is the clip's OWN frame — none of these cards carries a later engine
     # event to hang a beat on (Pavamana and Tamasa change state silently; Kavacha's shields come only from the AI's designation), so the contract trigger is
     # the PLAY itself and the page's play beat ends on the frame that draws the impact cell (index.html fxImpactWait). Each is fitted to its half (width-fit,
@@ -282,30 +284,33 @@ EFFECTS = {
     # stay in the source. Fade-in 4, fade tail 10 (ruling).
     "pavamana": {"kind": "vignette-clip", "label": "Pavamana", "clip": "pavamana/pavamana.mp4", "card_id": "pavamana",
               "clip_sha256": "4432dc238147d68f49facb68d577cac097d2570a46df693a94c01be42033b731",
-              "range": (24, 96), "impact": 40, "impact_rule": "ruled", "impact_window": (36, 44),
+              "range": (0, 96), "impact": 40, "impact_rule": "ruled", "impact_window": (36, 44),   # REBUILD ruling 1: the whole clip
               "impact_why": "WAVE1-CLIPS-1 batch 2 (owner ruling, 2026-11-25): f040, the white cleansing ring, is the heal and the +1",
               "cell_px": "largest", "fade_in": 4, "fade_tail": 10,
               "feather_top": 173, "feather_bottom": 108, "feather_left": 230, "feather_right": 230,
-              "anchor_region": "centre", "anchor_place": "caster-half-centre",
+              "anchor_region": "centre", "anchor_place": "caster-board-row", "action": (0.5, 0.78), "lift": 0.6,   # FINAL ruling 3: the mid-tone lift
+                # REBUILD ruling 3: the lotus over the caster's card row
               "anchor_note": "WAVE1-CLIPS-1 batch 2: the plate's CENTRE sits on the caster's own half, fitted to the half's width and never taller than it, so it never leaves the half; on a half wider than the plate it slides to centre on the caster's Units",
               "scale": {"feature": "plate width (the clip's content box)", "frame": 40, "half_fraction": 1.0, "height_cap": 1.0, "card_widths": 5.17},
               "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0, "ruled_into_band": {"top": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent", "bottom": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent", "left": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent", "right": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent"}},
-              "contract": {"trigger": "play", "abilityName": "Pavamana", "anchor": "caster-half-centre", "castSound": "sfx_heal", "impactSound": None,
-                           "castHitStopMs": 0, "castHoldMs": 700, "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 0, "exitKind": "none", "awaited": False}},
+              "contract": {"trigger": "play", "abilityName": "Pavamana", "anchor": "caster-board-row", "veil": 0.45, "castSound": "sfx_heal", "impactSound": None,
+                           "castHitStopMs": 0, "castHoldMs": 40 * 1000 / 24, "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 0, "exitKind": "none", "awaited": False}},   # REBUILD: the whole clip from the cast, the play beat ends on f040
     # TAMASA — the ENEMY half, played from the cast (f000 on the cast); f020 the dome slams down (the largest picture change, measured). The contract's hold is
     # the lead to f020 (833 ms unscaled = the combat tier's 70 ms hit-stop + 763 ms), so the page's play beat ends on the slam (82 ms past today's 1001 ms at
     # Normal). The clip ends at black: fade-in 4, no fade tail (ruling).
-    "tamasa": {"kind": "vignette-clip", "label": "Tamasa", "clip": "tamasa/tamasa.mp4", "card_id": "tamasa",
-              "clip_sha256": "305c69b307564b80690c7ae5c89ee04a1d2261f2b33c5c599e194fa58932246e",
-              "range": (0, 72), "impact": 20, "impact_rule": "largestchange", "impact_window": (16, 24),
-              "cell_px": "largest", "fade_in": 4, "fade_tail": 0,
-              "feather_top": 173, "feather_bottom": 108, "feather_left": 230, "feather_right": 230,
-              "anchor_region": "centre", "anchor_place": "enemy-half-centre",
-              "anchor_note": "WAVE1-CLIPS-1 batch 2: the plate's CENTRE sits on the enemy half, fitted to the half's width and never taller than it, so it never leaves the half; on a half wider than the plate it slides to centre on the enemy's Units",
-              "scale": {"feature": "plate width (the clip's content box)", "frame": 20, "half_fraction": 1.0, "height_cap": 1.0, "card_widths": 5.17},
-              "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0, "ruled_into_band": {"top": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent", "bottom": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent", "left": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent", "right": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent"}},
-              "contract": {"trigger": "play", "abilityName": "Tamasa", "anchor": "enemy-half-centre", "castSound": "sfx_astra", "impactSound": None,
-                           "castHitStopMs": 70, "castHoldMs": 20 * 1000 / 24 - 70,   # the lead to f020 less the hit-stop, exact
+    # TAMASA — REGENERATED (owner ruling 2026-11-26 18:04): the owner's premium clip (sha256 fdbdfc78...), routed back on. Whole clip f000-f071, mid-tone lift,
+    # beat f031 = the slam (measured: the largest picture change in the clip, 17.63) - the turn indicator changes there. Fades 4/8. The opposite half.
+    "tamasa": {"kind": "vignette-clip", "label": "Tamasa", "clip": "tamasa/tamasa_premium.mp4", "card_id": "tamasa",
+              "clip_sha256": "fdbdfc78ebb8b0e11c6bd0a8d93978ecc99d82afea60faa54231143e9342d1ae",
+              "range": (0, 71), "impact": 31, "impact_rule": "largestchange", "impact_window": (26, 38),
+              "cell_px": "largest", "fade_in": 4, "fade_tail": 8, "lift": 0.6,
+              "feather_top": 64, "feather_bottom": 108, "feather_left": 128, "feather_right": 128,
+              "anchor_region": "centre", "anchor_place": "enemy-board-row", "action": (0.5, 0.55),   # the dome over the enemy's card row - the phone placement
+              "anchor_note": "NO-CUT ruling (owner, 2026-11-26 18:04): on a phone the dome sits on the opponent's card row, the whole picture inside the board (fit); on a wide board the whole picture is drawn inside the opponent's half, its lit box fitted to the half with a margin, centred across it, clipped to the half and feathered there",
+              "scale": {"feature": "plate width (the clip's content box)", "frame": 31, "half_fraction": 1.0, "height_cap": 1.0, "card_widths": 5.17},
+              "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0, "ruled_into_band": {"top": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)", "bottom": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)", "left": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)", "right": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)"}},
+              "contract": {"trigger": "play", "abilityName": "Tamasa", "anchor": "enemy-board-row", "veil": 0.65, "castSound": "sfx_astra", "impactSound": None,
+                           "castHitStopMs": 70, "castHoldMs": 31 * 1000 / 24 - 70,   # the whole clip from the cast: the play beat ends on f031 (1291.7 ms unscaled)
                            "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 0, "exitKind": "none", "awaited": False}},
     # DHARMA KAVACHA — the caster's OWN half; f044 the domes turn blue (owner ruling). The standing pace rule (batch 2 final rulings, 25 Nov 18:41): Astras and
     # Mantras land their beat inside the card's normal hold; an ARTIFACT may run longer to show its build-up. Ruling 3, the middle option: the kept range starts
@@ -314,19 +319,30 @@ EFFECTS = {
     # Fade-in 4 (f017-f020, as the flash begins), fade tail 8 (ruling).
     "kavacha": {"kind": "vignette-clip", "label": "Dharma Kavacha", "clip": "dharma_kavacha/dharma_kavacha.mp4", "card_id": "kavacha",
               "clip_sha256": "19bb1d2340e4fc331648e85a7d1dd1894071d1d3aba55dc8a0c9849672d94933",
-              "range": (17, 72), "impact": 44, "impact_rule": "ruled", "impact_window": (40, 48),   # WAVE1-CLIPS-1 batch 2 final ruling 3 (owner, 2026-11-25 18:41): an Artifact may run longer to show its build-up — start just before the medallion's first flash
+              "range": (0, 72), "impact": 44, "impact_rule": "ruled", "impact_window": (40, 48),   # REBUILD ruling 1: the whole clip   # WAVE1-CLIPS-1 batch 2 final ruling 3 (owner, 2026-11-25 18:41): an Artifact may run longer to show its build-up — start just before the medallion's first flash
               "impact_why": "WAVE1-CLIPS-1 batch 2 (owner ruling, 2026-11-25): f044, the domes turn blue, is the Kavacha's beat",
               "cell_px": "largest", "fade_in": 4, "fade_tail": 8,
               "feather_top": 173, "feather_bottom": 108, "feather_left": 230, "feather_right": 230,
-              "anchor_region": "centre", "anchor_place": "caster-half-centre",
-              "anchor_note": "WAVE1-CLIPS-1 batch 2: the plate's CENTRE sits on the caster's own half, fitted to the half's width and never taller than it, so it never leaves the half; on a half wider than the plate it slides to centre on the caster's Units",
+              "anchor_region": "centre", "anchor_place": "caster-board-row", "action": (0.5, 0.835), "lift": 0.6,   # FINAL ruling 3: the mid-tone lift
+                # KAVACHA-ANCHOR (owner fix, 2026-11-26): the main action is the DOMES — their base (the blue's lowest row at f044, 147/176 = 0.835) on the
+                # caster's card row, the medallion rising above it across the middle line; where the whole picture cannot fit so, the player shrinks the plate
+              "anchor_note": "KAVACHA-ANCHOR (owner rulings, 2026-11-26): the main action is the DOMES - their base (0.835 of the cell's height, the blue's lowest row at f044) sits on the caster's card row and the medallion rises above it, spilling across the middle line. Order: 1) the domes' base on the caster's row at full size where the whole picture fits; 2) otherwise the plate shrinks just enough that the whole picture fits inside the board with the domes' base on the caster's row, centred on the caster's Units (the opponent-half placement law, from either seat; the domes never land on the other player's row); 3) a cut only where a ruling says so for this clip (none)",
               "scale": {"feature": "plate width (the clip's content box)", "frame": 44, "half_fraction": 1.0, "height_cap": 1.0, "card_widths": 5.17},
               "guard": {"kind": "blob", "thr": 170, "top_frac": 1.0, "ruled_into_band": {"top": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent", "bottom": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent", "left": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent", "right": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent"}},
-              "contract": {"trigger": "play", "abilityName": "Dharma Kavacha", "anchor": "caster-half-centre", "castSound": "sfx_artifact", "impactSound": None,
-                           "castHitStopMs": 0, "castHoldMs": 27 * 1000 / 24,   # final ruling 3: the lead to f044 from f017 (1125 ms unscaled = 1462.5 at Normal, +552.5 over the classic 910), exact
+              "contract": {"trigger": "play", "abilityName": "Dharma Kavacha", "anchor": "caster-board-row", "veil": 0.45, "castSound": "sfx_artifact", "impactSound": None,
+                           "castHitStopMs": 0, "castHoldMs": 44 * 1000 / 24,   # REBUILD: the whole clip from the cast, the play beat ends on f044
+                             # final ruling 3: the lead to f044 from f017 (1125 ms unscaled = 1462.5 at Normal, +552.5 over the classic 910), exact
                            "flightMs": 0, "crackAfterMs": 0, "destroyDwellMs": 0, "exitKind": "none", "awaited": False}},
 }
 E1_CAP = 3072 * 1536 * 4   # the effect layer's hi-rung class (LAB-19)
+E1_HI_CAP = E1_CAP * 9 // 4   # REBUILD FINAL ruling 5 (owner, 2026-11-25 23:29): the LARGE-SCREEN set, x1.5 each way — a ruled exception to the 18 MB cap, for large screens only (never a phone)
+for _b in ("agneyastra", "pavamana", "kavacha", "nagastra", "tamasa"):   # FINAL ruling 5: the large-screen set; NO-CUT ruling (2026-11-26): + the regenerated Nagastra and Tamasa
+    EFFECTS[_b + "_hi"] = dict(EFFECTS[_b], label=EFFECTS[_b]["label"] + " (large-screen set, x1.5)", cell_px="base*1.5", rung="hi")
+def e1cap(C): return E1_HI_CAP if C.get("rung") == "hi" else E1_CAP
+def lift_frames(frames, g):   # FINAL ruling 3: raise the mid-tones (gamma g < 1); 0 and 255 stay where they are, so no highlight clips and no pool grows
+    lut = np.array([round(255.0 * (i / 255.0) ** g) for i in range(256)], np.uint8); return [lut[f] for f in frames]
+def base_cell(key):   # the long side of the normal pack's cell, for the large-screen set (cell_px "base*1.5")
+    m = json.load(open(os.path.join(LAB, "effects", key.replace("_hi", ""), "manifest.json"))); return max(m["cellSize"]["w"], m["cellSize"]["h"])
 
 def sl(l, edge):
     return l[:3] if edge == "top" else l[-3:] if edge == "bottom" else l[:, :3] if edge == "left" else l[:, -3:]
@@ -409,7 +425,7 @@ def main_chain_clip(key):
         "fps": round(fps), "timing": "native", "cellPx": max(cw, ch), "cellSize": {"w": cw, "h": ch},
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height} for i, c, cx, cy in placed],
         "impact": kept.index(impact) if impact is not None else None, "anchor": anchor,
-        "scaleRule": {"feature": C["scale"]["feature"], "frame": sf, "spanSrc": span, "spanCell": round(span * s, 2), "cardWidths": C["scale"]["card_widths"], **({"cardFloorOfHalfH": C["card_floor"]} if C.get("card_floor") else {})},
+        "scaleRule": {"feature": C["scale"]["feature"], "frame": sf, "spanSrc": span, "spanCell": round(span * s, 2), "cardWidths": C["scale"]["card_widths"], **({"cardFloorOfHalfH": C["card_floor"]} if C.get("card_floor") else {}), **({"boardFit": True} if C.get("board_fit") else {})},
         "audit": {"range": [a, b], "droppedHead": [0, a - 1] if a > 0 else None, "droppedTail": [b + 1, N - 1] if b < N - 1 else None,
                   "anchorFrame": C["anchor_frame"], "anchorPoint": list(CORE), "coreDriftMax": round(drift, 1),
                   "box": [x0, y0, x1, y1], "scale": round(s, 5), "ground": {"cornersMax": corners, "farMax": far, "farMeanMax": round(far_mean, 3)}, "edges": edges,
@@ -505,6 +521,7 @@ def main(key):
     if not os.path.exists(clip): sys.exit("the source clip is not at " + clip)
     if C.get("clip_sha256") and hashlib.sha256(open(clip, "rb").read()).hexdigest() != C["clip_sha256"]: sys.exit("the source clip's sha256 is not the staged %s - STOP" % C["clip_sha256"])   # WAVE1-CLIPS-1: provenance before any decode
     frames, fps = decode(clip); N = len(frames); H, W = frames[0].shape[:2]
+    if C.get("lift"): frames = lift_frames(frames, C["lift"])   # FINAL ruling 3
     sha = hashlib.sha256(open(clip, "rb").read()).hexdigest()
     L = [luma(f) for f in frames]
 
@@ -550,13 +567,14 @@ def main(key):
     into = [i for i in kept if i >= tail0 and body_low(i) >= H - fb] if fb else []
 
     # per frame: crop, feather, fade (in source space), then one scale for every cell
-    cell_px = C["cell_px"]
+    cell_px = C["cell_px"]; CAP = e1cap(C)
+    if isinstance(cell_px, str) and cell_px.startswith("base*"): cell_px = int(round(base_cell(key) * float(cell_px[5:])))   # FINAL ruling 5
     if cell_px == "largest":
         # WAVE1-CLIPS-1 ruling 3: the smaller cells — the LARGEST cell (long side, px) whose pack stays under E1 (the PASHU-V2 rule, in this class)
         def fits(c):
             s2 = c / float(max(bw, bh)); cw2, ch2 = round(bw * s2), round(bh * s2); per = max(1, (4096 - PAD) // (cw2 + PAD)); rows2 = (len(kept) + per - 1) // per
             AW2, AH2 = per * cw2 + (per + 1) * PAD, rows2 * ch2 + (rows2 + 1) * PAD
-            return AW2 <= 4096 and AH2 <= 4096 and AW2 * AH2 * 4 <= E1_CAP
+            return AW2 <= 4096 and AH2 <= 4096 and AW2 * AH2 * 4 <= CAP
         cell_px = max(c for c in range(160, 513) if fits(c))
     s = cell_px / float(max(bw, bh)); cw, ch = round(bw * s), round(bh * s)
     ramp_y = np.ones(H, np.float32)
@@ -573,7 +591,7 @@ def main(key):
         placed.append((i, c, x, y)); x += c.width + PAD; rowh = max(rowh, c.height)
     AW = max(p[2] + p[1].width for p in placed) + PAD; AH = max(p[3] + p[1].height for p in placed) + PAD
     if AW > 4096 or AH > 4096: sys.exit("atlas %dx%d exceeds 4096" % (AW, AH))
-    if AW * AH * 4 > E1_CAP: sys.exit("atlas %dx%d decodes to %.2f MB, past the E1 cap" % (AW, AH, AW * AH * 4 / 1048576))   # WAVE1-CLIPS-1: E1 enforced in this class too
+    if AW * AH * 4 > CAP: sys.exit("atlas %dx%d decodes to %.2f MB, past the E1 cap" % (AW, AH, AW * AH * 4 / 1048576))   # WAVE1-CLIPS-1: E1 enforced in this class too
     atlas = Image.new("RGB", (AW, AH), (0, 0, 0))
     for i, c, cx, cy in placed: atlas.paste(c, (cx, cy))
     out = os.path.join(LAB, "effects", key); os.makedirs(out, exist_ok=True)
@@ -586,8 +604,8 @@ def main(key):
         "atlas": "atlas.webp", "atlasSize": {"w": AW, "h": AH}, "channels": "rgb", "blend": "add", "alpha": "luminance",
         "fps": round(fps), "timing": "native", "cellPx": max(cw, ch), "cellSize": {"w": cw, "h": ch},
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height} for i, c, cx, cy in placed],
-        "impact": kept.index(impact), "anchor": anchor,
-        "scaleRule": {"ringFrame": C["scale_frame"], "ringDiameterSrc": ring_d, "ringDiameterCell": round(ring_d * s, 2), "cardWidths": C["card_widths"], **({"cardFloorOfHalfH": C["card_floor"]} if C.get("card_floor") else {})},
+        "impact": kept.index(impact), "anchor": anchor, **({"rung": "hi"} if C.get("rung") == "hi" else {}), **({"lift": C["lift"]} if C.get("lift") else {}),
+        "scaleRule": {"ringFrame": C["scale_frame"], "ringDiameterSrc": ring_d, "ringDiameterCell": round(ring_d * s, 2), "cardWidths": C["card_widths"], **({"cardFloorOfHalfH": C["card_floor"]} if C.get("card_floor") else {}), **({"boardFit": True} if C.get("board_fit") else {})},
         "contract": C["contract"],
         "audit": {"range": [a, b], "droppedHead": [0, a - 1] if a > 0 else None, "droppedTail": [b + 1, N - 1] if b < N - 1 else None,
                   "impactSrc": impact, "impactWindow": list(C["impact_window"]), "impactChange": round(change[impact], 2), "impactPoint": list(IMP),
@@ -633,6 +651,7 @@ def main_vignette(key):
     if C.get("clip_md5") and hashlib.md5(open(clip, "rb").read()).hexdigest() != C["clip_md5"]: sys.exit("the source clip's md5 is not the staged %s - STOP" % C["clip_md5"])   # LAB-24: provenance before any decode
     if C.get("clip_sha256") and hashlib.sha256(open(clip, "rb").read()).hexdigest() != C["clip_sha256"]: sys.exit("the source clip's sha256 is not the staged %s - STOP" % C["clip_sha256"])   # PASHU-V2: provenance before any decode
     frames, fps = decode(clip); N = len(frames); H, W = frames[0].shape[:2]
+    if C.get("lift"): frames = lift_frames(frames, C["lift"])   # FINAL ruling 3
     sha = hashlib.sha256(open(clip, "rb").read()).hexdigest()
     L = [luma(f) for f in frames]
     a, b = C["range"]; kept = list(range(a, b + 1))
@@ -820,7 +839,9 @@ def main_vignette(key):
     # the crop box: the union of content (luma > 4) over the kept frames
     x0, y0, x1, y1 = W, H, 0, 0
     for i in kept:
-        ys, xs = np.where(L[i] > 4); x0, y0, x1, y1 = min(x0, int(xs.min())), min(y0, int(ys.min())), max(x1, int(xs.max()) + 1), max(y1, int(ys.max()) + 1)
+        ys, xs = np.where(L[i] > 4)
+        if not xs.size: continue   # NO-CUT ruling (2026-11-26): the premium clips open on a fully black f000 - an empty frame adds nothing to the box
+        x0, y0, x1, y1 = min(x0, int(xs.min())), min(y0, int(ys.min())), max(x1, int(xs.max()) + 1), max(y1, int(ys.max()) + 1)
     bw, bh = x1 - x0, y1 - y0
     if span is None: span = bw
     edges = {e: sum(1 for i in kept if (sl(L[i], e) > 40).any()) for e in ("top", "bottom", "left", "right")}
@@ -910,7 +931,12 @@ def main_vignette(key):
         s2 = cell_px / float(max(bw, bh)); cw2, ch2 = round(bw * s2), round(bh * s2)
         per = max(1, (4096 - PAD) // (cw2 + PAD)); rows2 = (len(kept) + per - 1) // per
         return s2, cw2, ch2, per * cw2 + (per + 1) * PAD, rows2 * ch2 + (rows2 + 1) * PAD
-    cell_px = C["cell_px"]; stepped = None; largest = None
+    cell_px = C["cell_px"]; stepped = None; largest = None; E1_CAP = e1cap(C)   # FINAL ruling 5: the hi class has its own (ruled) cap
+    if isinstance(cell_px, str) and cell_px.startswith("base*"): cell_px = int(round(base_cell(key) * float(cell_px[5:])))
+    if C.get("rung") == "hi":   # FINAL ruling 5: x1.5 of the normal cell, stepped down only as far as the hi cap needs (Pavamana's 97 frames)
+        want = cell_px
+        while (lambda r: r[3] > 4096 or r[3] * r[4] * 4 > E1_CAP)(pack_at(cell_px)): cell_px -= 1
+        if cell_px != want: largest = {"rule": "x1.5, stepped to the hi cap", "used": cell_px, "asked": want, "why": "FINAL ruling 5: 1.5x the normal cell, the largest under the large-screen cap"}
     if cell_px == "largest":
         # PASHU-V2 (owner ruling B2): the full aftermath outranks sharpness — the LARGEST cell (long side, px) whose pack stays under E1
         fits = [c for c in range(160, 513) if (lambda r: r[3] <= 4096 and r[3] * r[4] * 4 <= E1_CAP)(pack_at(c))]
@@ -949,15 +975,16 @@ def main_vignette(key):
               else {"x": round(cw / 2.0, 1), "y": 0.0} if C["anchor_region"] == "top-flush" else {"x": round(cw / 2.0, 1), "y": float(ch)} if C["anchor_region"] == "bottom-flush"
               else {"x": round(cw / 2.0, 1), "y": round(ch / 2.0, 1)} if C["anchor_region"] == "divider-flush"
               else {"x": round((CORE[0] - x0) * s, 1), "y": round((CORE[1] - y0) * s, 1)})   # LAB-24: BOTTOM-FLUSH - the plate's bottom-centre on its half's bottom edge
+    if C.get("action"): anchor = {"x": round(cw * C["action"][0], 1), "y": round(ch * C["action"][1], 1)}   # WAVE1-CLIPS-1 rebuild (owner rulings 2026-11-25 20:49): the clip's MAIN ACTION (dome, lotus, medallion, strike), placed over its half's card row
     manifest = {
         "cardId": C["card_id"], "class": "effect-clip", "version": 1,
         "source": "Kling clip %s (sha256 %s\u2026, %d frames @ %d fps, %dx%d, black ground) \u2014 kept f%03d\u2013f%03d; packed by tools/make_effect_from_clip.py" % (os.path.basename(clip), sha[:12], N, round(fps), W, H, a, b),
         "atlas": "atlas.webp", "atlasSize": {"w": AW, "h": AH}, "channels": "rgb", "blend": "add", "alpha": "luminance",
         "fps": round(fps), "timing": "native", "cellPx": max(cw, ch), "cellSize": {"w": cw, "h": ch},
         "cells": [{"name": "f%03d" % i, "src": i, "x": cx, "y": cy, "w": c.width, "h": c.height} for i, c, cx, cy in placed],
-        "impact": kept.index(impact) if impact is not None else None, "anchor": anchor, **({"moment": C["moment"]} if C.get("moment") else {}),
+        "impact": kept.index(impact) if impact is not None else None, "anchor": anchor, **({"moment": C["moment"]} if C.get("moment") else {}), **({"rung": "hi"} if C.get("rung") == "hi" else {}), **({"lift": C["lift"]} if C.get("lift") else {}),
         "scaleRule": {"feature": C["scale"]["feature"], "frame": sf, "spanSrc": span, "spanCell": round(span * s, 2), "cardWidths": C["scale"]["card_widths"],
-                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "halfFraction": C["scale"].get("half_fraction"), "heightCap": C["scale"].get("height_cap"), **({"unit": "WIDTH FRACTION OF THE HALF (owner ruling LAB-25, package S): the plate's WIDTH is halfFraction x its half's WIDTH, never taller than heightCap x the half's HEIGHT (the fitted law). This is NOT a height fraction (the LAB-22 near-miss)"} if C["scale"].get("width_unit") else {}), **({"heightFraction": C["scale"]["height_fraction"], "unit": "HEIGHT FRACTION OF THE HALF (owner ruling A, LAB-24): the plate's HEIGHT is heightFraction x its half's HEIGHT and its width follows the clip's aspect. This is NOT a width fraction (halfFraction is absent on purpose - the LAB-22 near-miss)"} if C["scale"].get("height_fraction") else {}), "legibility": C["scale"].get("measured"),
+                      "ruledDefaultCardWidths": C["scale"].get("ruled_default_card_widths"), "halfFraction": C["scale"].get("half_fraction"), "heightCap": C["scale"].get("height_cap"), **({"boardFit": True} if C["scale"].get("board_fit") else {}), **({"unit": "WIDTH FRACTION OF THE HALF (owner ruling LAB-25, package S): the plate's WIDTH is halfFraction x its half's WIDTH, never taller than heightCap x the half's HEIGHT (the fitted law). This is NOT a height fraction (the LAB-22 near-miss)"} if C["scale"].get("width_unit") else {}), **({"heightFraction": C["scale"]["height_fraction"], "unit": "HEIGHT FRACTION OF THE HALF (owner ruling A, LAB-24): the plate's HEIGHT is heightFraction x its half's HEIGHT and its width follows the clip's aspect. This is NOT a width fraction (halfFraction is absent on purpose - the LAB-22 near-miss)"} if C["scale"].get("height_fraction") else {}), "legibility": C["scale"].get("measured"),
                       "note": ("THE SCALE IS A FRACTION OF THE ENEMY HALF (owner ruling LAB-22/3): the plate is halfFraction x the half's width; cardWidths is derived commentary only — LAB-21's ring-based cw and a plate-based cw are not the same unit"
                                if C["scale"].get("half_fraction") else "2.4 card widths is the DEFAULT of the effects shelf, not a law (owner ruling LAB-21/3): the scale is per-clip measured legibility over the real board")},
         **({"role": C["role"]} if C.get("role") else {"contract": C["contract"]}),

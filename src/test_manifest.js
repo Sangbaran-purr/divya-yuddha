@@ -29,7 +29,7 @@ const PIN = {
   inlinedEngine: 'd70e94b34248bf85c9a3bf00724a724e0997580fdadb16f3d8bfa753d79d8791',
   sprBrahmastra: 'ca7898c5da25a7ec39b5beb28fb5196e14f111a5d69b3b812f03b41bca80166a',
   unitLanding: 'cd4ed62d5f7b67d61599a5f7d6e67c0ab9606adea88bc08d3bf5a6636e813011',
-  effectPlayer: '964dafca77070e7e2722553b5905657c3926aa04b9e9e6104845a8011ba10c46',   // WAVE1-CLIPS-1 (owner ruling 2, 2026-11-25): the LAB-25 player + the span centring of an enemy-half plate (struckUids in the plan; slid inside the half); batch 2: + the caster's half, centred, and a half plate needs no target card — V9 proves that with those lines taken out it is ad4f573c2e2f… again
+  effectPlayer: '5dc4047dbce226908489f9b9e7fb914828781906baa898742ef19fa50d201b05',   // WAVE1-CLIPS-1 (owner rulings 2026-11-25/26): the LAB-25 player + batch 1-2's half-plate span centring + the REBUILD's board-sized plates (FINAL ruling 2; KAVACHA-ANCHOR's order on a phone) + the large-screen cap (FINAL ruling 5) + the NO-CUT ruling's whole-in-half plate on a wide board (its constant, placement and clipped draw) — V9 proves that with those lines taken out it is ad4f573c2e2f… again
   effectPlayer25: 'ad4f573c2e2f23bac1be225a42da34290f0de7b216861dba72e29f62c5bee8c7',   // EXPORT-7 (the LAB-25 player, verbatim): the afterglow role, the strike-afterglow chain and its timeline, the second-segment handoff, divider-flush halves; EXPORT-6 3b6efc548057…: the arming and empowered-drain moments, height-fit, bottom-flush halves, the ready-anchored rise; EXPORT-5 5d3ba4b04935…: the beat gate (hold · cap · beat()); EXPORT-4 0be2d7225a54…: the fitted law + the card floor; EXPORT-3 shipped 3a780fe5ec52…, EXPORT-1 30219bcb370e…
   wireTypes: ['leap', 'mulligan', 'pass', 'play', 'shield'],
   // EXPORT-2: the nine actor modules and the faction effects, as certified in the manifestation lab when the export was built
@@ -54,21 +54,35 @@ const PIN = {
   // here, never read from the lab — G2). The 82, 77 and 73 still reproduce their digests with the v1 pair substituted back in
   certifiedAssets82p2: '5c2d4e3e91dc40b348baf66138b15972e29a9a77384a13347909b0e02b47e2c7',
   pashupataV2: { 'effects/pashupata/atlas.webp': '2c10cc2ce393b16619f39f8b1b97ba6b2949eed56e3873029d5fbee98e8136f7', 'effects/pashupata/manifest.json': '600ff83e485c4d499dd9f62d5bc0e2d7618832ab816f6bbc2e3f5e005d17dd8e' },
-  // WAVE1-CLIPS-1 · BATCH 1 (owner rulings 2026-11-25) · THE CERTIFIED SET EXTENDS 82 → 86: Agneyastra's and Nagastra's packs, byte-identical to the
-  // lab packs (hashes recorded here, never read from the lab — G2); the 82 (and through them the 77 and the 73) reproduce their digests with the four
-  // files out and the registry without its two new routes
-  certifiedAssets86: '17e645219b6ef5e01b03b6ab7a8f3d9538f642d3884898e3c488fe04c8266823',
-  certifiedAssets92: '5d3f673a61abc93b790244511cc4a42abed06dd6b348e33e9a71694de509d873',   // WAVE1-CLIPS-1 batch 2: + Pavamana, Tamasa, Dharma Kavacha (six pack files, three routes)
-  wave1b2Packs: {
-    'effects/pavamana/atlas.webp': 'dde1ac382ea63493f394e86077e5011f7408173021d55d70c773bc8f6c4357b9',
-    'effects/pavamana/manifest.json': '933bc8a2ab97b0109bd006c2f4e462193694333d4e4f46829de0788a892fb344',
-    'effects/tamasa/atlas.webp': 'db5e838baef267b651373dacbd1ca21a6b14e1841fa36217ff3a9240f49123a1',
-    'effects/tamasa/manifest.json': '568459a284507107687fa3d89cbb80b8eef4300c77d55764656717aa64594b2e',
-    'effects/kavacha/atlas.webp': '25fa0ddb444559dc791d778116b05ffcd4afbf1633483586775148a6b8fc01a7',
-    'effects/kavacha/manifest.json': '6d61444548d3743f223e03336f3a0e507f324464b230e5f35a72e6a6a693afb6',
+  // WAVE1-CLIPS-1 · THE REBUILD (owner FINAL rulings, 2026-11-25 23:29) · THE CERTIFIED SET IS 82 + 16: Agneyastra, Pavamana and Dharma Kavacha rebuilt whole and lifted, each with
+  // its large-screen (x1.5) set, and the kept, unrouted Nagastra and Tamasa packs — byte-identical to the lab packs (hashes recorded here, never read from the lab — G2).
+  // The 82 reproduce their digest with all sixteen out and the registry without its three routes. (Batch 1 and 2's packs and digests, 86 and 92, are retired by the rebuild.)
+  // NO-CUT ruling (owner, 2026-11-26 18:04): the regenerated Nagastra and Tamasa replace the kept packs and gain their large-screen sets (twenty files); Pavamana's and
+  // Kavacha's manifests gain their litBox; the 82 still reproduce their digest with all twenty out and the registry without its five routes.
+  rebuildPacks: {
+    'effects/agneyastra/atlas.webp': '035ed497b9ed466c76e8cde09a56923e17407e97700476260f0e08e976c8f6bc',
+    'effects/agneyastra/manifest.json': '99a489cfab8829d405b673fdeb639ec788b8f3ae968465a8d59eeaf663f69981',
+    'effects/agneyastra_hi/atlas.webp': '34ce9e740454b2b390f3cd20f1d90369bbd54fda9209736a74f4619ef99e015b',
+    'effects/agneyastra_hi/manifest.json': 'f0a9fc0567f579bfddbfb90680d448ccd1716745b0d21edf926b20e9159bea29',
+    'effects/pavamana/atlas.webp': '8f7b91b5f33e16d161929eed5c26852b19bdc88f0aa26a9a4eb8835d7ebe530d',
+    'effects/pavamana/manifest.json': 'f6adafd220571cb5c1f535332c4b5f734f5b949ad10b79f31d3d02ea3b1f68e5',
+    'effects/pavamana_hi/atlas.webp': 'e81069a4c4869dbd5ab5844f6092fc831f5c666e372e9ee2afc638dc623100db',
+    'effects/pavamana_hi/manifest.json': 'a804a973aa0d3d8cad7cabe47962e52f2b86934ac2560a2ba646ca2fcf73ea73',
+    'effects/kavacha/atlas.webp': '2eae06431d03f0684d74c1411fb996e11e95ac0db6c950fc9537bc666e5dfd41',
+    'effects/kavacha/manifest.json': 'ac1d68f4c98fb92c7f2c52543b18912b297f3972d3c8319e5bf3e8fd2061d8a5',
+    'effects/kavacha_hi/atlas.webp': '7e3079c71dc8a4f7f812090a9276c8b9deb8bc1f3136c1d55d98f4c0b1571c07',
+    'effects/kavacha_hi/manifest.json': 'e0ea6e9efdb56e5fcb8ff1afcb09714bea7ff85459dadd3483056a745ae66537',
+    'effects/nagastra/atlas.webp': 'bf9275de8e6435ec80002fc719b14d4111b4038fb8f0031e30a35a9d0308678b',
+    'effects/nagastra/manifest.json': '67ecc96db05f105cc1a50f43300edc18c5f6f81f36d8e2761207ac85cf521f9a',
+    'effects/nagastra_hi/atlas.webp': '6fe37c9093a5dd969c3d9b46db9a90e47e4fc09bd18157c88c82237932d5bd64',
+    'effects/nagastra_hi/manifest.json': '4f12ff27c30cbc710c3abfc6be73017f06865a6293884f2a028711ac4b9868c7',
+    'effects/tamasa/atlas.webp': 'ea0a45d15612884cf83ec51960949bd1da47dc97c8541014aafeb85950b7306e',
+    'effects/tamasa/manifest.json': 'e1afc22b05a39356fcc09d0358973664be2804ccc57cafdebecaf19d8c55df09',
+    'effects/tamasa_hi/atlas.webp': '550e7d82b8e47f0393d21b81f8ae983ca0ad593f5f765febe0c40cc64334b981',
+    'effects/tamasa_hi/manifest.json': 'c3b2af4697b8d3f5572b57a4356ce5b199aa5492365b99be71be587425f1a46e',
   },
-  wave1b1Packs: { 'effects/agneyastra/atlas.webp': '5e3601764e5f72e6b997df6c6465373e220f81dbe3a3d6c2ef6db7485225b097', 'effects/agneyastra/manifest.json': '245711cce2baccc4342497a1cb5b6675a76e8c34d2ee3db0e1b0d93d3fe6f05d',
-                  'effects/nagastra/atlas.webp': 'f1fc521bcadef01292d1bba69db761d135f0e73ff77bee619a2fb23266d04185', 'effects/nagastra/manifest.json': 'f237d4dac94c74a80acac10068e1e481a10118a96b8dd1fd425c1dcd43c9563c' },
+
+  certifiedAssets98: '98895dcaa2c5bed748abab7f5bb9775d5efb3a237bd0b27d97318abb01f76f01',   // the NO-CUT ruling (owner, 2026-11-26 18:04): 102 files — the regenerated Nagastra and Tamasa (+ their large-screen sets) and Pavamana's and Kavacha's lit boxes
   pashupataV1: { 'effects/pashupata/atlas.webp': '2d0b7ff6f297efb59337e8e8329a7616a2678c8149a2d6c6605b647c931b50fc', 'effects/pashupata/manifest.json': '067e9c823b3b02291c1ab85276b62a396ab0423d87563b5c2f7bb130a1c7402b' },
 };
 const ROUTED = ['brahmastra', 'pashupata', 'sudarshana', 'vajra'];
@@ -101,7 +115,7 @@ function webpSize(b) {
 console.log('── R · the routing table (assets/manifest/registry.json) ──');
 {
   const routes = REG.routes || {};
-  ok('R1 · exactly eleven routes — Vajra, Sudarshana Chakra, Pashupatastra, (EXPORT-3) Brahmastra, (EXPORT-6) Vasuki Venom Strike, (EXPORT-7) Lanka Dahan, (WAVE1-CLIPS-1 batch 1) Agneyastra and Nagastra, (batch 2) Pavamana, Tamasa and Dharma Kavacha (' + J(Object.keys(routes).sort()) + ')', J(Object.keys(routes).sort()) === J(ROUTED.concat(['venomstrike', 'lankadahan', 'agneyastra', 'nagastra', 'pavamana', 'tamasa', 'kavacha']).sort()));
+  ok('R1 · exactly eleven routes — Vajra, Sudarshana Chakra, Pashupatastra, (EXPORT-3) Brahmastra, (EXPORT-6) Vasuki Venom Strike, (EXPORT-7) Lanka Dahan, (WAVE1-CLIPS-1, rebuilt) Agneyastra, Pavamana and Dharma Kavacha, and (the NO-CUT ruling, 26 Nov 2026) the regenerated Nagastra and Tamasa (' + J(Object.keys(routes).sort()) + ')', J(Object.keys(routes).sort()) === J(ROUTED.concat(['venomstrike', 'lankadahan', 'agneyastra', 'pavamana', 'kavacha', 'nagastra', 'tamasa']).sort()));
   ok('R2 · each route names the classic sprite it replaces and the beat it owns: vajra → sprVajra at the destroy, sudarshana → sprSudarshana at the passive (the bite), pashupata → sprPashupatastra and brahmastra → sprBrahmastra at the play (the cast)',
      routes.vajra && routes.vajra.replaces === 'sprVajra' && routes.vajra.moment === 'destroy' && routes.sudarshana && routes.sudarshana.replaces === 'sprSudarshana' && routes.sudarshana.moment === 'passive' &&
      routes.pashupata && routes.pashupata.replaces === 'sprPashupatastra' && routes.pashupata.moment === 'play' && routes.brahmastra && routes.brahmastra.replaces === 'sprBrahmastra' && routes.brahmastra.moment === 'play', J(routes));
@@ -147,9 +161,9 @@ const SPECS = {}, ALLFILES = [];
   const all = [], walk = (d) => fs.readdirSync(d).forEach((n) => { const q = path.join(d, n); if (fs.statSync(q).isDirectory()) walk(q); else all.push(path.relative(MAN, q)); });
   walk(MAN);
   const fxFiles = all.filter((f) => f.indexOf('effects/') === 0).sort();
-  ok('A4 · assets/manifest/effects holds exactly the two chains and the fourteen clips (WAVE1-CLIPS-1 batch 1: + Agneyastra, Nagastra; batch 2: + Pavamana, Tamasa, Dharma Kavacha) (' + fxFiles.length + ' files, ' + (rows.reduce((a, r) => a + r.file, 0) / 1048576).toFixed(2) + ' MB of atlas) — the actors (EXPORT-2) are inventoried in H3',
-     J(fxFiles) === J(['effects/agneyastra/atlas.webp', 'effects/agneyastra/manifest.json', 'effects/brahmastra/atlas.webp', 'effects/brahmastra/manifest.json', 'effects/kavacha/atlas.webp', 'effects/kavacha/manifest.json', 'effects/lankadahan/chain.json', 'effects/lankadahan_fire/atlas.webp', 'effects/lankadahan_fire/manifest.json', 'effects/lankadahan_gold/atlas.webp', 'effects/lankadahan_gold/manifest.json', 'effects/nagastra/atlas.webp', 'effects/nagastra/manifest.json', 'effects/pashupata/atlas.webp', 'effects/pashupata/manifest.json', 'effects/pavamana/atlas.webp', 'effects/pavamana/manifest.json', 'effects/sudarshana/chain.json', 'effects/sudarshana_invoke/atlas.webp', 'effects/sudarshana_invoke/manifest.json',
-                       'effects/sudarshana_strike/atlas.webp', 'effects/sudarshana_strike/manifest.json', 'effects/tamasa/atlas.webp', 'effects/tamasa/manifest.json', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json',
+  ok('A4 · assets/manifest/effects holds exactly the two chains and the nineteen clips (WAVE1-CLIPS-1: + Agneyastra, Pavamana, Dharma Kavacha, the regenerated Nagastra and Tamasa, and their large-screen sets) (' + fxFiles.length + ' files, ' + (rows.reduce((a, r) => a + r.file, 0) / 1048576).toFixed(2) + ' MB of atlas) — the actors (EXPORT-2) are inventoried in H3',
+     J(fxFiles) === J(['effects/agneyastra/atlas.webp', 'effects/agneyastra/manifest.json', 'effects/agneyastra_hi/atlas.webp', 'effects/agneyastra_hi/manifest.json', 'effects/brahmastra/atlas.webp', 'effects/brahmastra/manifest.json', 'effects/kavacha/atlas.webp', 'effects/kavacha/manifest.json', 'effects/kavacha_hi/atlas.webp', 'effects/kavacha_hi/manifest.json', 'effects/lankadahan/chain.json', 'effects/lankadahan_fire/atlas.webp', 'effects/lankadahan_fire/manifest.json', 'effects/lankadahan_gold/atlas.webp', 'effects/lankadahan_gold/manifest.json', 'effects/nagastra/atlas.webp', 'effects/nagastra/manifest.json', 'effects/nagastra_hi/atlas.webp', 'effects/nagastra_hi/manifest.json', 'effects/pashupata/atlas.webp', 'effects/pashupata/manifest.json', 'effects/pavamana/atlas.webp', 'effects/pavamana/manifest.json', 'effects/pavamana_hi/atlas.webp', 'effects/pavamana_hi/manifest.json', 'effects/sudarshana/chain.json', 'effects/sudarshana_invoke/atlas.webp', 'effects/sudarshana_invoke/manifest.json',
+                       'effects/sudarshana_strike/atlas.webp', 'effects/sudarshana_strike/manifest.json', 'effects/tamasa/atlas.webp', 'effects/tamasa/manifest.json', 'effects/tamasa_hi/atlas.webp', 'effects/tamasa_hi/manifest.json', 'effects/vajra/atlas.webp', 'effects/vajra/manifest.json',
                        'effects/venomstrike_flood/atlas.webp', 'effects/venomstrike_flood/manifest.json', 'effects/venomstrike_rise/atlas.webp', 'effects/venomstrike_rise/manifest.json']), J(fxFiles));   /* EXPORT-6: + Vasuki Venom Strike's rise and flood; EXPORT-7: + Lanka Dahan's chain, fire and gold */
   ALLFILES.push(...all);
 }
@@ -209,7 +223,8 @@ const GLUE = between('/* ══ EXPORT-1 — THE PREMIUM EFFECTS', 'function run
 function sandbox(o) {
   o = o || {};
   let now = 1000; const logs = [], warns = [], files = {}, fetched = [];
-  const rect = { left: 0, top: 0, width: 355, height: 420, right: 355, bottom: 420 };
+  const rect = o.fieldRect || { left: 0, top: 0, width: 355, height: 420, right: 355, bottom: 420 };
+  const veil = { style: { opacity: '0' } };   // WAVE1-CLIPS-1 FINAL ruling 4: #fxveil
   const el = { getBoundingClientRect: () => rect, width: 0, height: 0, getContext: () => ({ setTransform() {}, clearRect() {}, drawImage() {}, globalCompositeOperation: 'source-over', globalAlpha: 1, getImageData: (x, y, w, h) => ({ data: new Uint8ClampedArray(4) }), putImageData() {} }) };
   const abs = (u) => new URL(u, 'https://game.test/index.html');
   const read = (u) => { const rel = decodeURIComponent(abs(u).pathname).replace(/^\//, ''); const p = path.join(GAME, rel); return fs.existsSync(p) ? p : null; };
@@ -224,15 +239,15 @@ function sandbox(o) {
       return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(fs.readFileSync(p, 'utf8'))), blob: () => Promise.resolve(new Blob([fs.readFileSync(p)])) }); },
     createImageBitmap: (b) => (o.decodeFails === true || (typeof o.decodeFails === 'function' && o.decodeFails())) ? Promise.reject(new Error('decode refused')) : (o.decodeGate ? o.decodeGate.then(() => ({ width: 64, height: 32, close() {} })) : Promise.resolve({ width: 64, height: 32, close() {} })),
     Image: function () { const im = this; setTimeout(() => { if (im.onerror) im.onerror(); }, 0); },
-    document: { createElement: () => el, querySelector: (sel) => o.halves && o.halves[sel] ? Object.assign({}, el, { getBoundingClientRect: () => o.halves[sel] }) : o.halfRect ? Object.assign({}, el, { getBoundingClientRect: () => o.halfRect }) : el },
-    $: () => el, EffectClip: EC, G: { players: [{ hand: [] }, { hand: [] }] }, BLog: { fx: null },
+    document: { createElement: () => el, querySelectorAll: () => [], querySelector: (sel) => o.halves && o.halves[sel] ? Object.assign({}, el, { getBoundingClientRect: () => o.halves[sel] }) : o.halfRect ? Object.assign({}, el, { getBoundingClientRect: () => o.halfRect }) : el },
+    $: (id) => (id === 'fxveil' ? veil : el), EffectClip: EC, G: { players: [{ hand: [] }, { hand: [] }] }, BLog: { fx: null },
     posOf: () => ({ cx: 120, top: 60, rect: { top: 40, height: 90, width: 64, left: 88 } }), halfSel: (s) => s ? '.half.opp' : '.half.me',
     ownerPiOfUid: (u) => (o.ownerPi ? o.ownerPi(u) : 0), playSeatOf: (u) => (o.ownerPi ? o.ownerPi(u) : 0), actionActorSeat: null, ME: 0, reducedMotion: () => !!o.reduced, vfxT: () => 1.3, choreoSkip: false,
   };
   ctx.window = ctx; ctx.URL.createObjectURL = ctx.URL.createObjectURL || (() => 'blob:x'); ctx.URL.revokeObjectURL = ctx.URL.revokeObjectURL || (() => {});
   vm.createContext(ctx);
-  vm.runInContext(GLUE + '\n;globalThis.__fx = { FX, fxBoot, fxPrefetch, fxPrefetchHands, fxReady, fxCast, fxOwnsMoment, fxOnError, fxSkip, fxClips, fxAtlasUrl, fxBeatFrom, fxLoadAtlas, ASSET_RETRY, fxRoute, VS, vsNoteCasts, vsStriker, vsDrainPick, fxVenomDrain, fxCastDrain, fxGlow, fxSeatFromTarget, fxChainLive, fxLankaBurn };', ctx);
-  return { ctx, fx: ctx.__fx, logs, warns, fetched, advance: (ms) => { now += ms; }, get now() { return now; }, tick: (ms) => { now += ms; if (ctx.__fx.FX.player && ctx.__fx.FX.run) ctx.__fx.FX.player.frame(now); } };
+  vm.runInContext(GLUE + '\n;globalThis.__fx = { fxVeil, fxVeilOff, fxHiPick, fxWideBoard, fxSpec, fxImpactWait, FX, fxBoot, fxPrefetch, fxPrefetchHands, fxReady, fxCast, fxOwnsMoment, fxOnError, fxSkip, fxClips, fxAtlasUrl, fxBeatFrom, fxLoadAtlas, ASSET_RETRY, fxRoute, VS, vsNoteCasts, vsStriker, vsDrainPick, fxVenomDrain, fxCastDrain, fxGlow, fxSeatFromTarget, fxChainLive, fxLankaBurn };', ctx);
+  return { ctx, veil, fx: ctx.__fx, logs, warns, fetched, advance: (ms) => { now += ms; }, get now() { return now; }, tick: (ms) => { now += ms; if (ctx.__fx.FX.player && ctx.__fx.FX.run) ctx.__fx.FX.player.frame(now); } };
 }
 const flush = () => new Promise((r) => setTimeout(r, 5));
 // a hang is a failure, loudly: the whole suite must finish (a manifestation that waits forever would otherwise just never end)
@@ -583,18 +598,16 @@ const card = (id) => ({ id, n: id, t: 'astra' });
     const regWithout = (drop) => { const r = JSON.parse(fs.readFileSync(path.join(MAN, 'registry.json'), 'utf8')); drop.forEach((k) => delete r.routes[k]); return esc(JSON.stringify(r, null, 2)) + '\n'; };
     // PASHU-V2: the earlier sets are reproduced with the v1 Pashupatastra pair substituted back (its recorded hashes)
     const fileSha = (f) => { const rel = path.relative(MAN, f); return rel === 'registry.json' ? null : (PIN.pashupataV1[rel] || sha(fs.readFileSync(f))); };
-    const W2 = Object.keys(PIN.wave1b2Packs), W2R = ['pavamana', 'tamasa', 'kavacha'];   // WAVE1-CLIPS-1 batch 2: out of every earlier set
-    const W1 = Object.keys(PIN.wave1b1Packs).concat(W2), W1R = ['agneyastra', 'nagastra'].concat(W2R);   // WAVE1-CLIPS-1 batch 1: out of every earlier set
+    const W1 = Object.keys(PIN.rebuildPacks), W1R = ['agneyastra', 'pavamana', 'kavacha', 'nagastra', 'tamasa'];   // WAVE1-CLIPS-1 (the rebuild): out of every earlier set
     const digestOf = (out, drop) => sha(all.filter((f) => out.concat(W1).indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regWithout(drop.concat(W1R))) : fileSha(f))).join('\n'));
     const digest82 = digestOf([], []);
     const digest82p2 = sha(all.filter((f) => W1.indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regWithout(W1R)) : sha(fs.readFileSync(f)))).join('\n'));
-    const digest86 = sha(all.filter((f) => W2.indexOf(path.relative(MAN, f)) < 0).map((f) => path.relative(MAN, f) + ' ' + (path.relative(MAN, f) === 'registry.json' ? sha(regWithout(W2R)) : sha(fs.readFileSync(f)))).join('\n'));
-    const w1ok = Object.keys(PIN.wave1b1Packs).every((rel) => sha(fs.readFileSync(path.join(MAN, rel))) === PIN.wave1b1Packs[rel]), w2ok = W2.every((rel) => sha(fs.readFileSync(path.join(MAN, rel))) === PIN.wave1b2Packs[rel]);
+    const wok = W1.every((rel) => sha(fs.readFileSync(path.join(MAN, rel))) === PIN.rebuildPacks[rel]);
     const v2ok = Object.keys(PIN.pashupataV2).every((rel) => sha(fs.readFileSync(path.join(MAN, rel))) === PIN.pashupataV2[rel]);
     const NEW7 = Object.keys(PIN.lankaPacks), NEW6 = Object.keys(PIN.vasukiPacks);
     const digest77 = digestOf(NEW7, ['lankadahan']), digest73 = digestOf(NEW7.concat(NEW6), ['lankadahan', 'venomstrike']);
-    ok('X1 · THE DESIGN FREEZE (owner, binding; WAVE1-CLIPS-1 batch 2 extends it 86 → 92, the six new pack files byte-identical to the lab\'s: ' + w2ok + ', and the 86 reproduce their digest with them out and the registry without their three routes; batch 1 extended it 82 → 86, the four pack files byte-identical: ' + w1ok + ', and the 82 reproduce theirs) — every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chains, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…); PASHU-V2 replaces Pashupatastra\'s pack (atlas + manifest, each byte-identical to the lab\'s certified v2 pack: ' + v2ok + ') and, with the v1 pair substituted back, the 82 reproduce their EXPORT-7 digest (' + digest82.slice(0, 12) + '…); EXPORT-7 extends it 77 → 82 with Lanka Dahan\'s chain and its two packs, the 77 still reproduce their digest (' + digest77.slice(0, 12) + '…, the registry without its one new route) and the ORIGINAL 73 theirs (' + digest73.slice(0, 12) + '…)',
-       digest === PIN.certifiedAssets92 && all.length === 92 && w2ok && digest86 === PIN.certifiedAssets86 && w1ok && digest82p2 === PIN.certifiedAssets82p2 && v2ok && digest82 === PIN.certifiedAssets82 && digest77 === PIN.certifiedAssets77 && digest73 === PIN.certifiedAssets, J({ digest, digest86, digest82p2, digest82, digest77, digest73, v2ok, w1ok, w2ok }));
+    ok('X1 · THE DESIGN FREEZE (owner, binding; WAVE1-CLIPS-1 makes it 82 → 102: the twenty pack files — the five clips (Agneyastra, Pavamana, Dharma Kavacha and the regenerated Nagastra and Tamasa) and their large-screen sets — byte-identical to the lab\'s: ' + wok + ', and the 82 reproduce their digest with them out and the registry without its five routes) — every certified file in assets/manifest — ' + all.length + ' atlases, manifests, the chains, the registry and the faction effects — is byte-identical to the certified set (digest ' + digest.slice(0, 12) + '…); PASHU-V2 replaces Pashupatastra\'s pack (atlas + manifest, each byte-identical to the lab\'s certified v2 pack: ' + v2ok + ') and, with the v1 pair substituted back, the 82 reproduce their EXPORT-7 digest (' + digest82.slice(0, 12) + '…); EXPORT-7 extends it 77 → 82 with Lanka Dahan\'s chain and its two packs, the 77 still reproduce their digest (' + digest77.slice(0, 12) + '…, the registry without its one new route) and the ORIGINAL 73 theirs (' + digest73.slice(0, 12) + '…)',
+       digest === PIN.certifiedAssets98 && all.length === 102 && wok && digest82p2 === PIN.certifiedAssets82p2 && v2ok && digest82 === PIN.certifiedAssets82 && digest77 === PIN.certifiedAssets77 && digest73 === PIN.certifiedAssets, J({ digest, digest82p2, digest82, digest77, digest73, v2ok, wok }));
 
     // the player on a fake clock: every drawn cell with its time, and the cues as they fired
     const RATE = 1000 / 60;
@@ -921,13 +934,13 @@ const card = (id) => ({ id, n: id, t: 'astra' });
 
     // Z2 · the page's player is the LAB-25 player, verbatim, and knows the new shape
     const sw = JSON.parse(JSON.stringify(LK.chain));
-    ok('Z2 · THE PAGE\'S PLAYER IS THE LAB-25 PLAYER, VERBATIM, + WAVE1-CLIPS-1\'s span centring (V9) (sha256 ' + sha(PLAYER_SRC || '').slice(0, 12) + '…): it knows the strike-afterglow shape — the Lanka chain validates, the same clips in the wrong order are refused, a chain without its afterglow delay is refused — and the Sudarshana invoke→strike chain still validates',
+    ok('Z2 · THE PAGE\'S PLAYER IS THE LAB-25 PLAYER, VERBATIM, + WAVE1-CLIPS-1\'s ruled lines (V9) (sha256 ' + sha(PLAYER_SRC || '').slice(0, 12) + '…): it knows the strike-afterglow shape — the Lanka chain validates, the same clips in the wrong order are refused, a chain without its afterglow delay is refused — and the Sudarshana invoke→strike chain still validates',
        sha(PLAYER_SRC || '') === PIN.effectPlayer && EC.validateChain(LK.chain, LK.clips).ok && !EC.validateChain(sw, [LG, LF]).ok && (() => { const c = JSON.parse(JSON.stringify(LK.chain)); delete c.contract.afterglowDelayMs; return !EC.validateChain(c, LK.clips).ok; })() &&
        (() => { const su = loadSpec(REG.routes.sudarshana.spec); return EC.validateChain(su.chain, su.clips).ok; })());
 
     // Z3 · registration only
-    ok('Z3 · REGISTRATION ONLY: the registry gains exactly one route (lankadahan; WAVE1-CLIPS-1 batch 1 then appends agneyastra and nagastra after it, proven in V3, and batch 2 pavamana, tamasa and kavacha, proven in K2) and nothing else moves — with it taken out, the registry is byte-identical to the certified 77 (X1 proves the digest); the route names the chain, the beat it owns (the damage) and the classic pair it replaces',
-       J(Object.keys(REG.routes)) === J(['vajra', 'sudarshana', 'pashupata', 'brahmastra', 'venomstrike', 'lankadahan', 'agneyastra', 'nagastra', 'pavamana', 'tamasa', 'kavacha']) && J(Object.keys(rt).sort()) === J(['anchor', 'moment', 'replaces', 'spec', 'wash']) && J(Object.keys(rt.wash).sort()) === J(['anchor', 'moment', 'replaces', 'spec']));
+    ok('Z3 · REGISTRATION ONLY: the registry gains exactly one route (lankadahan; WAVE1-CLIPS-1 then appends agneyastra, pavamana, kavacha, nagastra and tamasa after it, proven in V3) and nothing else moves — with it taken out, the registry is byte-identical to the certified 77 (X1 proves the digest); the route names the chain, the beat it owns (the damage) and the classic pair it replaces',
+       J(Object.keys(REG.routes)) === J(['vajra', 'sudarshana', 'pashupata', 'brahmastra', 'venomstrike', 'lankadahan', 'agneyastra', 'pavamana', 'kavacha', 'nagastra', 'tamasa']) && J(Object.keys(rt).sort()) === J(['anchor', 'moment', 'replaces', 'spec', 'wash']) && J(Object.keys(rt.wash).sort()) === J(['anchor', 'moment', 'replaces', 'spec']));
 
     // Z4 · the fire's impact on the FIRST damage beat through the EXPORT-5 gate; past the cap the gold never decodes and the classic pair fires once each
     const onT = [await lkRun(0), await lkRun(1)], lateR = await lkRun(0, { beatDelay: 1000 }), capR = await lkRun(1, { beatDelay: 5000, maxTicks: 260 });
@@ -1118,185 +1131,207 @@ const card = (id) => ({ id, n: id, t: 'astra' });
   }
 
   // ═══ V · WAVE1-CLIPS-1 · BATCH 1: AGNEYASTRA AND NAGASTRA ═══
-  console.log('\n── V · Agneyastra and Nagastra in the live game (WAVE1-CLIPS-1 batch 1) ──');
+  console.log('\n── V · the rebuild: Agneyastra, Pavamana and Dharma Kavacha (WAVE1-CLIPS-1 FINAL rulings, 25 Nov 2026 23:29) ──');
   {
-    const VA = loadSpec(REG.routes.agneyastra.spec), VN = loadSpec(REG.routes.nagastra.spec), ra = REG.routes.agneyastra, rn = REG.routes.nagastra;
-    // V1 · the packs: the lab's files, valid, under E1, cut as ruled
-    const packs = Object.keys(PIN.wave1b1Packs).map((rel) => ({ rel, ok: sha(fs.readFileSync(path.join(MAN, rel))) === PIN.wave1b1Packs[rel] }));
-    const size = (m) => { const b2 = fs.readFileSync(path.join(path.dirname(m.__file), m.atlas)), px = webpSize(b2); return { px, want: m.atlasSize, kb: Math.round(b2.length / 1024), mb: +(m.atlasSize.w * m.atlasSize.h * 4 / 1048576).toFixed(2) }; };
-    const zA = size(VA), zN = size(VN), gN = VN.audit.vignette, EDGES = ['top', 'bottom', 'left', 'right'];
-    ok('V1 · THE PACKS ARE THE LAB\'S, CUT AS RULED: all four files match the hashes recorded from the lab packs (' + packs.map((x) => x.rel.split('/').slice(1).join('/') + (x.ok ? ' ✓' : ' ✗')).join(', ') + '); both validate under the page\'s own player and decode under E1 — Agneyastra ' + VA.cells.length + ' cells f000–f072 at ' + VA.cellSize.w + '×' + VA.cellSize.h + ' (the largest cell under the cap, ruling 3), ' + zA.mb + ' MB decoded, ' + zA.kb + ' KB; Nagastra ' + VN.cells.length + ' cells f014–f072 at ' + VN.cellSize.w + '×' + VN.cellSize.h + ', ' + zN.mb + ' MB, ' + zN.kb + ' KB. Impacts: Agneyastra cell ' + VA.impact + ' = f003 (the largest change, measured), Nagastra cell ' + VN.impact + ' = f032 (largestchange); fades 2-in/10-tail and 4-in/8-tail (ruling 1); Nagastra\'s four feathers ruled into its body by ruling 4 (as previewed)',
-       packs.length === 4 && packs.every((x) => x.ok) && EC.validate(VA).ok && EC.validate(VN).ok && [zA, zN].every((z) => z.px && z.px.w === z.want.w && z.px.h === z.want.h && z.mb * 1048576 <= EC.E1.capBytes) &&
-       VA.cells.length === 73 && VA.impact === 3 && VA.cells[3].src === 3 && VA.audit.impactSrc === 3 && VA.audit.fadeIn.length === 2 && VA.audit.fadeTail.length === 10 && VA.audit.cellPx && VA.audit.cellPx.asked === 'largest' &&
-       VN.cells.length === 59 && VN.impact === 18 && VN.cells[18].src === 32 && VN.audit.impact.rule === 'largestchange' && J(VN.audit.range) === J([14, 72]) && VN.audit.fadeIn.length === 4 && VN.audit.fadeTail.length === 8 &&
-       EDGES.every((e) => /^WAVE1-CLIPS-1 ruling 4/.test(gN[e].ruledIntoBand || '')) && J(EDGES.map((e) => gN[e].px)) === J([173, 108, 230, 230]), J({ packs, zA, zN }));
-    // V2 · the routes and the contracts: the beats are the Rare Astra's COMBAT tier, read from the page
+    const RB = { agneyastra: { card: 'Agneyastra', n: 73, imp: 3, beat: 'f003', fades: [2, 10], t: 'astra' },
+                 pavamana: { card: 'Pavamana', n: 97, imp: 40, beat: 'f040', fades: [4, 10], t: 'mantra' },
+                 kavacha: { card: 'Dharma Kavacha', n: 73, imp: 44, beat: 'f044', fades: [4, 8], t: 'artifact' } };
+    const SPN = {}, SPH = {}; for (const id in RB) { SPN[id] = loadSpec(REG.routes[id].spec); SPH[id] = loadSpec(REG.routes[id].hi); }
+    // V1 · the packs: the lab's files, the whole clip, the lift, both sets under their caps
+    const packs = Object.keys(PIN.rebuildPacks).filter((rel) => /agneyastra|pavamana|kavacha/.test(rel)).map((rel) => ({ rel, ok: sha(fs.readFileSync(path.join(MAN, rel))) === PIN.rebuildPacks[rel] }));
+    const facts = Object.keys(RB).map((id) => { const b = RB[id], one = (m, hi) => { const bz = fs.readFileSync(path.join(path.dirname(m.__file), m.atlas)), px = webpSize(bz), dec = m.atlasSize.w * m.atlasSize.h * 4;
+        return { cell: m.cellSize.w + '×' + m.cellSize.h, mb: +(dec / 1048576).toFixed(2), kb: Math.round(bz.length / 1024),
+                 ok: EC.validate(m).ok && px && px.w === m.atlasSize.w && px.h === m.atlasSize.h && dec <= (hi ? EC.E1.hiCapBytes : EC.E1.capBytes) && (hi ? m.rung === 'hi' : m.rung === undefined) &&
+                     m.cells.length === b.n && m.cells[0].src === 0 && m.cells[b.n - 1].src === b.n - 1 && m.cells[m.impact].src === b.imp && m.lift === 0.6 && m.contract.veil === 0.45 &&
+                     m.audit.fadeIn.length === b.fades[0] && m.audit.fadeTail.length === b.fades[1] }; };
+      const N = one(SPN[id], false), H = one(SPH[id], true), r = SPH[id].cellSize.w / SPN[id].cellSize.w;
+      const wh = REG.routes[id].wholeHalf, lb = SPN[id].litBox, litOk = id === 'agneyastra' ? !lb && !wh : !!lb && !!SPH[id].litBox && !!wh && wh.cellW === SPN[id].cellSize.w && wh.litW === lb.x1 - lb.x0 && wh.litH === lb.y1 - lb.y0 && wh.maxStretch === 1.5 && lb.thr === 40 && lb.minShare === 0.004;   // NO-CUT ruling: the lit box (rule 2) and the route's copy for the pack pick
+      return { id, N, H, ratio: +r.toFixed(3), lit: lb ? [lb.x0, lb.y0, lb.x1, lb.y1] : null, ok: N.ok && H.ok && litOk && r > 1.45 && r <= 1.5 + 1e-9 && !EC.validate(Object.assign({}, SPH[id], { rung: undefined })).ok }; });
+    ok('V1 · THE PACKS ARE THE LAB\'S, WHOLE AND LIFTED (FINAL rulings 1, 3, 5): the twelve files match the hashes recorded from the lab packs (' + packs.filter((x) => x.ok).length + '/12); each clip plays first frame to last (' + Object.keys(RB).map((id) => RB[id].card + ' ' + RB[id].n + ' cells, beat ' + RB[id].beat).join(', ') + ') with its fades, the mid-tone lift (gamma 0.6) and the 45% veil in its contract; Pavamana and Dharma Kavacha carry their lit box (NO-CUT ruling 2: luminance >= 40 on >= 0.4% of a row/column over all cells, after the lift) and their route a copy of it for the pack pick; the normal set decodes under E1 and the large-screen set (×1.5, rung "hi") under its ruled cap of ' + (EC.E1.hiCapBytes / 1048576).toFixed(2) + ' MB — and is refused without its rung — ' + facts.map((f) => f.id + ' ' + f.N.cell + ' ' + f.N.mb + ' MB ' + f.N.kb + ' KB / ' + f.H.cell + ' ' + f.H.mb + ' MB ' + f.H.kb + ' KB').join('; '),
+       packs.length === 12 && packs.every((x) => x.ok) && facts.every((f) => f.ok) && EC.E1.hiCapBytes === EC.E1.capBytes * 9 / 4, J(facts.filter((f) => !f.ok)));
+    // V2 · the routes and contracts
     const COMBAT = { hitStop: +(/else if\(tier==='combat'\)\{ hitStop=(\d+); \}/.exec(HTML) || [])[1], hold: +(/let hold=(\d+), hitStop=0;/.exec(HTML) || [])[1] };
-    const kA = VA.contract, kN = VN.contract;
-    ok('V2 · THE ROUTES AND THEIR BEATS: agneyastra → its damage beat on the target card (replaces ' + ra.replaces + ', the fallback it lacked), nagastra → the Venom tokens\' beat on the enemy half, centred (replaces ' + rn.replaces + '); both are Rare Astras, so both contracts carry the COMBAT tier the page plays them at — a ' + COMBAT.hitStop + ' ms hit-stop + the ' + COMBAT.hold + ' ms hold — read from the page, not the spectacle\'s 110 + 1000',
-       ra.spec === 'effects/agneyastra/manifest.json' && ra.moment === 'damage' && ra.replaces === 'sprDamage' && rn.spec === 'effects/nagastra/manifest.json' && rn.moment === 'token' && rn.replaces === 'sprNagastra' &&
-       kA.trigger === 'damage' && kA.abilityName === 'Agneyastra' && kA.anchor === 'target-card-centre' && kN.trigger === 'token' && kN.abilityName === 'Nagastra' && kN.anchor === 'enemy-half-centre' &&
-       COMBAT.hitStop === 70 && COMBAT.hold === 700 && [kA, kN].every((k) => k.castHitStopMs === COMBAT.hitStop && k.castHoldMs === COMBAT.hold && !k.flightMs && k.exitKind === 'none'), J({ ra, rn, COMBAT }));
-    // V3 · registration only
-    const prev = JSON.parse(fs.readFileSync(path.join(MAN, 'registry.json'), 'utf8')); ['agneyastra', 'nagastra', 'pavamana', 'tamasa', 'kavacha'].forEach((k) => delete prev.routes[k]);
-    ok('V3 · REGISTRATION ONLY: the registry gains exactly the two routes, appended after Lanka Dahan, and nothing else moves — with them taken out it is the certified 82\'s registry, byte for byte (X1 proves the digest)',
-       J(Object.keys(REG.routes).slice(6, 8)) === J(['agneyastra', 'nagastra']) && J(Object.keys(prev.routes)) === J(['vajra', 'sudarshana', 'pashupata', 'brahmastra', 'venomstrike', 'lankadahan']));
+    const U2 = Object.keys(RB).map((id) => { const r = REG.routes[id], k = SPN[id].contract, kh = SPH[id].contract, lead = RB[id].imp * 1000 / SPN[id].fps;
+      return { id, moment: r.moment, replaces: r.replaces, hold: +(k.castHitStopMs + k.castHoldMs).toFixed(2), lead: +lead.toFixed(2), aspect: r.aspect,
+               ok: r.spec === 'effects/' + id + '/manifest.json' && r.hi === 'effects/' + id + '_hi/manifest.json' && r.hiAbovePx === 500 && Math.abs(r.aspect - SPN[id].cellSize.w / SPN[id].cellSize.h) < 0.01 && J(k) === J(kh) &&
+                   (id === 'agneyastra' ? r.moment === 'damage' && r.replaces === 'sprDamage' && k.trigger === 'damage' && k.anchor === 'target-card-centre' && k.castHitStopMs === COMBAT.hitStop && k.castHoldMs === COMBAT.hold && SPN[id].scaleRule.boardFit === true
+                                        : r.moment === 'play' && r.replaces === (id === 'pavamana' ? 'sprPavamana' : 'sprKavacha') && k.trigger === 'play' && k.anchor === 'caster-board-row' && Math.abs(k.castHitStopMs + k.castHoldMs - lead) < 0.01) }; });
+    ok('V2 · THE ROUTES AND THEIR BEATS: agneyastra → its damage beat on the target card (the combat tier, ' + COMBAT.hitStop + ' + ' + COMBAT.hold + ' ms, as before; its strike sized to the board — boardFit), pavamana and kavacha → the play, anchored on the caster\'s own card row, their hold the lead to the beat frame (' + U2.filter((x) => x.id !== 'agneyastra').map((x) => x.id + ' ' + x.lead + ' ms unscaled').join(', ') + '); each route names its large-screen pack, its threshold (500 CSS px) and its clip\'s aspect (' + U2.map((x) => x.id + ' ' + x.aspect).join(', ') + '); the two sets carry the same contract',
+       COMBAT.hitStop === 70 && COMBAT.hold === 700 && U2.every((x) => x.ok), J(U2));
+    // V3 · registration
+    const prev = JSON.parse(fs.readFileSync(path.join(MAN, 'registry.json'), 'utf8')); ['agneyastra', 'pavamana', 'kavacha', 'nagastra', 'tamasa'].forEach((k) => delete prev.routes[k]);
+    ok('V3 · REGISTRATION: the registry routes the three rebuilt clips after Lanka Dahan, then the regenerated Nagastra and Tamasa (section K), and nothing else moves — with the five taken out it is the certified 82\'s registry, byte for byte (X1 proves the digest)',
+       J(Object.keys(REG.routes).slice(6)) === J(['agneyastra', 'pavamana', 'kavacha', 'nagastra', 'tamasa']) && J(Object.keys(prev.routes)) === J(['vajra', 'sudarshana', 'pashupata', 'brahmastra', 'venomstrike', 'lankadahan']));
     // a real cast of each, through the engine
-    function castW(which) {
-      const deva = ['Yama', 'Marut', 'Chandra Dev', 'Gandharva', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Narada', 'Vishwakarma', 'Indra'];
-      const asura = ['Bana Asura', 'Ravana', 'Vibhishana', 'Narakasura', 'Maricha', 'Tataka', 'Kumbhakarna', 'Mahabali', 'Kalanemi', 'Hiranyakashipu', 'Meghnad'];
-      const S2 = which === 'agneyastra' ? { mine: ['Agneyastra'].concat(deva), theirs: asura, fac: ['devas', 'asuras'], lay: [[1, 'Bana Asura']], card: 'Agneyastra' }
-                                        : { mine: ['Nagastra'].concat(asura), theirs: deva, fac: ['asuras', 'devas'], lay: [[1, 'Yama'], [0, 'Bana Asura'], [1, 'Marut']], card: 'Nagastra' };
-      for (let seed = 1; seed < 500; seed++) {
-        let x = seed; const rng = () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
-        const g = E.newGame({ rng, realm: 'mrityulok', wave1: true, p0Faction: S2.fac[0], p1Faction: S2.fac[1], scenario: { p0Deck: S2.mine.slice(0, 12), p1Deck: S2.theirs.slice(0, 12), p0Hand: S2.mine.slice(0, 10), p1Hand: S2.theirs.slice(0, 10), mulligan: 0 } });
-        if (g.turn !== S2.lay[0][0]) continue;
-        let okLay = true; for (const [s3, n] of S2.lay) { if (g.turn !== s3) { okLay = false; break; } const i = g.players[s3].hand.findIndex((c) => c.n === n); if (i < 0) { okLay = false; break; } E.playCard(g, s3, i); }
-        if (!okLay || g.turn !== 0) continue;
-        const h = g.players[0].hand.findIndex((c) => c.n === S2.card); if (E.playableIndices(g, 0).indexOf(h) < 0) continue;
-        const e0 = g.events.length; E.playCard(g, 0, h); return { events: g.events.slice(e0), casterSeat: 0 };
+    const castR = (id) => { const deva = ['Yama', 'Marut', 'Chandra Dev', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Narada', 'Vishwakarma', 'Indra', 'Gandharva'], asura = ['Bana Asura', 'Ravana', 'Vibhishana', 'Narakasura', 'Maricha', 'Tataka', 'Kumbhakarna', 'Mahabali', 'Kalanemi', 'Hiranyakashipu', 'Meghnad'];
+      const b = RB[id], mine = [b.card].concat(deva), lay = id === 'agneyastra' ? [[1, 'Bana Asura']] : [];
+      for (let seed = 1; seed < 500; seed++) { let x = seed; const rng = () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
+        const g = E.newGame({ rng, realm: 'mrityulok', wave1: true, p0Faction: 'devas', p1Faction: 'asuras', scenario: { p0Deck: mine.slice(0, 12), p1Deck: asura.slice(0, 12), p0Hand: mine.slice(0, 10), p1Hand: asura.slice(0, 10), mulligan: 0 } });
+        if (g.turn !== (lay.length ? lay[0][0] : 0)) continue; let okL = true;
+        for (const [s3, n] of lay) { if (g.turn !== s3) { okL = false; break; } const i = g.players[s3].hand.findIndex((c) => c.n === n); if (i < 0) { okL = false; break; } E.playCard(g, s3, i); }
+        if (!okL || g.turn !== 0) continue; const h = g.players[0].hand.findIndex((c) => c.n === b.card); if (E.playableIndices(g, 0).indexOf(h) < 0) continue;
+        const e0 = g.events.length; E.playCard(g, 0, h); return { events: g.events.slice(e0), casterSeat: 0 }; } return null; };
+    const BR = {}; for (const id in RB) BR[id] = castR(id);
+    // V4 · whole-clip turn times
+    const TU = [];
+    for (const id in RB) for (const sp of ['relaxed', 'normal', 'fast']) { const vfxT = BEAT.speeds[sp] * BEAT.choreo, p = BR[id] && EC.plan(BR[id], SPN[id], { mode: 'full', choreoSpeed: vfxT, casterSeat: 0 }), k = SPN[id].contract;
+      TU.push(p ? { id, sp, clip: p.clip, impact: +p.timeline.impactAt.toFixed(1), want: +((k.castHitStopMs + k.castHoldMs) * vfxT).toFixed(1), start: +p.timeline.clipStart.toFixed(1), end: +p.timeline.clipEnd.toFixed(1), cost: p.timeline.waitCostMs } : { id, sp, clip: false }); }
+    const nrm = (id) => TU.find((x) => x.id === id && x.sp === 'normal') || {};
+    ok('V4 · THE WHOLE CLIP, ITS BEAT ON THE HELD BOARD (FINAL ruling 1): through the engine (' + Object.keys(RB).map((id) => RB[id].card + ' ' + (BR[id] ? BR[id].events.map((e) => e.type).join('+') : 'NO BOARD')).join(' · ') + '), at Relaxed, Normal and Fast each clip\'s beat cell lands at the end of its cast beat — the moment the held board turns — with 0 ms of wire clock. At Normal: Agneyastra ' + nrm('agneyastra').impact + ' ms (the classic\'s own beat, unchanged), Pavamana ' + nrm('pavamana').impact + ' ms and Dharma Kavacha ' + nrm('kavacha').impact + ' ms (the classic 910: the whole clip\'s lead to its beat); each plays to its last frame (' + Object.keys(RB).map((id) => id + ' ends ' + nrm(id).end + ' ms').join(', ') + ')',
+       Object.values(BR).every(Boolean) && TU.every((x) => x.clip && Math.abs(x.impact - x.want) < 0.1 && x.cost < 1e-6 && x.start >= -0.1) && Math.abs(nrm('pavamana').impact - 2166.7) < 0.1 && Math.abs(nrm('kavacha').impact - 2383.3) < 0.1 && Math.abs(nrm('agneyastra').impact - 1001) < 0.1, J(TU));
+    // V5 · THE STANDING PLACEMENT RULE (owner, NO-CUT ruling 2026-11-26 18:04), judged independently of the player's code on all 16 measured screens
+    const DMV = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports, place = [];
+    // a WIDE board = the large-screen test (the plate at "fit" wider than the route's hiAbovePx, 500), re-implemented here from the registry (V6: the page agrees)
+    const WIDE = (w, h, m) => { const rt = REG.routes[m.cardId], a = rt && rt.aspect ? rt.aspect : m.cellSize.w / m.cellSize.h; return Math.min(w, h * a) > (rt && rt.hiAbovePx ? rt.hiAbovePx : 500); };
+    const fenv = (w, h, halves, rows, card) => ({ now: () => 0, canvas: { width: w * 2, height: h * 4, getContext: () => ({ setTransform() {}, clearRect() {}, drawImage() {}, globalAlpha: 1, globalCompositeOperation: 'source-over' }) }, dpr: 2,
+      cardOf: () => card, halfOf: (st) => halves[st], fieldOf: () => ({ w, h }), unitsOf: (st) => rows[st] || [], wideBoard: (m) => WIDE(w, h, m), loadAtlas: (m) => ({ source: {}, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() {} }),
+      render() {}, sound() {}, crack() {}, removal() {}, callout() {}, onDone() {} });
+    // the whole-in-half expectation: the lit box fitted to the half with an 8 px margin, centred across it; clipped to the half, feathered 8 px there
+    const halfFit = (m, hf) => { const lb = m.litBox, s2 = Math.min((hf.w - 16) / (lb.x1 - lb.x0), (hf.h - 16) / (lb.y1 - lb.y0)); return { scale: s2, x: hf.cx - (lb.x0 + lb.x1) / 2 * s2, y: hf.top + hf.h / 2 - (lb.y0 + lb.y1) / 2 * s2 }; };
+    for (const id in RB) for (const v of DMV) for (const seat of [0, 1]) for (const n of [1, 3, 5]) {
+      const w = v.half.w, hh = v.half.h, FH = 2 * hh + 2, halves = { 1: { cx: w / 2, cy: hh / 2, top: 0, w, h: hh }, 0: { cx: w / 2, cy: hh + 2 + hh / 2, top: hh + 2, w, h: hh } };
+      const cw = v.card.w, ch = v.card.h, gap = 6, x0 = Math.min(0.06 * w, 40), row = (st) => Array.from({ length: n }, (_, k) => ({ cx: x0 + cw / 2 + k * (cw + gap), cy: halves[st].top + hh * 0.55, w: cw, h: ch }));
+      const rows = { 0: row(0), 1: row(1) }, tgt = rows[1 - seat][Math.floor(n / 2)];
+      const run = EC.createPlayer(fenv(w, FH, halves, rows, tgt)).play(Object.assign({}, BR[id], { casterSeat: seat }), SPN[id], { before: null, after: null }, { mode: 'full', choreoSpeed: 1.3, casterSeat: seat }), pl = run && run.places && run.places[0];
+      const m = SPN[id], ax = pl ? pl.x + m.anchor.x * pl.scale : NaN, ay = pl ? pl.y + m.anchor.y * pl.scale : NaN, own = id === 'agneyastra' ? 1 - seat : seat, R = rows[own], hf = halves[own];
+      const rtop = Math.min(...R.map((c) => c.cy - c.h / 2)), rbot = Math.max(...R.map((c) => c.cy + c.h / 2)), fit = Math.min(w / m.cellSize.w, FH / m.cellSize.h), wide = WIDE(w, FH, m);
+      const mode = id === 'agneyastra' ? 'target' : wide ? 'half' : 'row';
+      let ok2 = !!pl, extra = {};
+      if (mode === 'target') ok2 = ok2 && Math.abs(pl.scale - fit) < 1e-6 && Math.abs(ax - tgt.cx) < 0.01 && Math.abs(ay - tgt.cy) < 0.01 && !pl.clip;
+      else if (mode === 'half') {   // wide: the WHOLE picture inside the half it acts on — nothing outside it — the lit box 8 px inside its edges, centred across it
+        const e = halfFit(m, hf), lb = m.litBox, L = pl.x + lb.x0 * pl.scale, T = pl.y + lb.y0 * pl.scale, Rr = pl.x + lb.x1 * pl.scale, B = pl.y + lb.y1 * pl.scale;
+        extra = { drawn: [Math.round(pl.w), Math.round(pl.h)], ofHalf: +(pl.w / w).toFixed(3), lit: [+L.toFixed(1), +T.toFixed(1), +Rr.toFixed(1), +B.toFixed(1)] };
+        ok2 = ok2 && Math.abs(pl.scale - e.scale) < 1e-9 && Math.abs(pl.x - e.x) < 0.01 && Math.abs(pl.y - e.y) < 0.01 && !!pl.clip && J(pl.clip) === J({ x: 0, y: hf.top, w, h: hh }) && pl.feather === 8 &&
+          L >= 8 - 0.01 && Rr <= w - 8 + 0.01 && T >= hf.top + 8 - 0.01 && B <= hf.top + hh - 8 + 0.01 && (Math.abs(L - 8) < 0.01 && Math.abs(Rr - (w - 8)) < 0.01 || Math.abs(T - hf.top - 8) < 0.01 && Math.abs(B - (hf.top + hh - 8)) < 0.01);
+      } else {   // a phone: "fit", the main action on the caster's row, at full size where the whole picture fits so, else shrunk just enough (never a cut)
+        const feas = (s2) => m.cellSize.w * s2 <= w + 0.01 && Math.max(0, rtop - m.anchor.y * s2) <= Math.min(FH - m.cellSize.h * s2, rbot - m.anchor.y * s2) + 0.01;
+        const full = Math.abs(pl.scale - fit) < 1e-6; extra = { full, frac: +(pl.scale / fit).toFixed(3) };
+        ok2 = ok2 && !pl.clip && ay >= rtop - 0.01 && ay <= rbot + 0.01 && pl.x >= -0.01 && pl.x + pl.w <= w + 0.01 && pl.y >= -0.01 && pl.y + pl.h <= FH + 0.01 && pl.scale <= fit + 1e-9 && (full ? feas(fit) : !feas(fit) && !feas(pl.scale * 1.005));
       }
-      return null;
+      place.push(Object.assign({ id, vp: v.vw + 'x' + v.vh, seat, n, wide, mode, pl: pl && [+pl.x.toFixed(1), +pl.y.toFixed(1), +pl.w.toFixed(1), +pl.h.toFixed(1)], ok: ok2 }, extra));
     }
-    const BW = { agneyastra: castW('agneyastra'), nagastra: castW('nagastra') }, SPW = { agneyastra: VA, nagastra: VN };
-    // V4 · the impact lands on the game's own beat, at every speed, at 0 ms of wire clock
-    const TW = [];
-    for (const id of ['agneyastra', 'nagastra']) for (const sp of ['relaxed', 'normal', 'fast']) {
-      const vfxT = BEAT.speeds[sp] * BEAT.choreo, p = BW[id] && EC.plan(BW[id], SPW[id], { mode: 'full', choreoSpeed: vfxT, casterSeat: 0 });
-      TW.push(p ? { id, sp, clip: p.clip, impact: +p.timeline.impactAt.toFixed(2), cue: +((COMBAT.hitStop + COMBAT.hold) * vfxT).toFixed(2), start: +p.timeline.clipStart.toFixed(1), cost: p.timeline.waitCostMs } : { id, sp, clip: false });
+    const wideVps = [...new Set(place.filter((x) => x.id === 'pavamana' && x.wide).map((x) => x.vp))], narrowVps = [...new Set(place.filter((x) => x.id === 'pavamana' && !x.wide).map((x) => x.vp))];
+    const symm = ['pavamana', 'kavacha'].every((id2) => wideVps.every((vp) => { const a2 = place.filter((x) => x.id === id2 && x.vp === vp).map((x) => [x.pl[0], x.pl[2], x.pl[3]].join()); return new Set(a2).size === 1; }));
+    const at = (id2, vp) => place.find((x) => x.id === id2 && x.vp === vp && x.seat === 0 && x.n === 3) || {};
+    ok('V5 · THE STANDING PLACEMENT RULE (NO-CUT ruling, owner, 26 Nov 2026 18:04 — every earlier wide-board placement ruling withdrawn), on all ' + DMV.length + ' measured screens, both seats, with 1, 3 and 5 Units (' + place.length + ' placements), judged independently: on the ' + wideVps.length + ' WIDE screens (' + wideVps.join(', ') + ') Pavamana and Dharma Kavacha play WHOLE inside the caster\'s half — the lit box fitted to the half with an 8 px margin and centred across it, the plate clipped to the half and feathered 8 px there, nothing drawn outside it, the same size for both seats and any Units (' + symm + '); 1280x800: Pavamana ' + J(at('pavamana', '1280x800').drawn) + ' px (' + Math.round(100 * at('pavamana', '1280x800').ofHalf) + '% of the half\'s width), Kavacha ' + J(at('kavacha', '1280x800').drawn) + ' px (' + Math.round(100 * at('kavacha', '1280x800').ofHalf) + '%); on the ' + narrowVps.length + ' phones (' + narrowVps.join(', ') + ') the "fit" placement as built — the main action (Kavacha\'s domes\' base) on the caster\'s row, at full size where the whole picture fits so, else shrunk just enough, never a cut; Agneyastra stays large on its one target card on every screen',
+       place.length === 3 * DMV.length * 6 && place.every((x) => x.ok) && symm && wideVps.length === 12 && narrowVps.length === 4, J(place.filter((x) => !x.ok).slice(0, 4)));
+    // V6 · the pack pick, on the shipped glue, over every measured screen: the two tests of the NO-CUT ruling (owner, 26 Nov 2026) — the large-screen test decides
+    // the PLACEMENT (fxWideBoard), the drawn stretch decides the PACK (fxHiPick): a whole-in-half clip takes the large-screen set only where its normal pack would be
+    // stretched past x1.5 at the size it is drawn; Agneyastra keeps the old pick. The pick is made at hand entry, never at the cast (ruling 2 of stage 2).
+    const picks = [];
+    for (const v of DMV) { const w = v.half.w, hh = v.half.h, FH = 2 * hh + 2;
+      const S = sandbox({ fieldRect: { left: 0, top: 0, width: w, height: FH }, halves: { '.half.opp': { left: 0, top: 0, width: w, height: hh }, '.half.me': { left: 0, top: hh + 2, width: w, height: hh } } }); await S.fx.fxBoot();
+      const p = {}, want = {}, wb = {};
+      for (const id in RB) { const m = SPN[id], lb = m.litBox, wide = WIDE(w, FH, m); p[id] = S.fx.fxHiPick(REG.routes[id]); wb[id] = S.fx.fxWideBoard(REG.routes[id].aspect, REG.routes[id].hiAbovePx) === wide;
+        want[id] = id === 'agneyastra' ? wide : wide && Math.min((w - 16) / (lb.x1 - lb.x0), (hh - 16) / (lb.y1 - lb.y0)) > 1.5; }
+      const spec = await S.fx.fxSpec('pavamana');
+      picks.push({ vp: v.vw + 'x' + v.vh, tier: v.tier, p, want, wb, stretch: +Math.min((w - 16) / (SPN.pavamana.litBox.x1 - SPN.pavamana.litBox.x0), (hh - 16) / (SPN.pavamana.litBox.y1 - SPN.pavamana.litBox.y0)).toFixed(2),
+                   fetched: S.fetched.filter((f) => /effects\//.test(f[0])).map((f) => f[0]), rung: spec && spec.rung }); }
+    const S0 = sandbox({ fieldRect: { left: 0, top: 0, width: 0, height: 0 } }); await S0.fx.fxBoot(); const unlaid = Object.keys(RB).every((id) => S0.fx.fxHiPick(REG.routes[id]) === false);
+    const phoneP = picks.filter((x) => x.tier === 'phone'), bigP = picks.filter((x) => x.tier !== 'phone');
+    ok('V6 · THE TWO TESTS (NO-CUT ruling, owner, 26 Nov 2026), ON THE SHIPPED GLUE: the large-screen test (fxWideBoard) decides the placement and agrees with V5\'s on every screen; the PACK is the smallest that is sharp where it is drawn — Pavamana and Dharma Kavacha take the large-screen set only where their normal pack would be stretched past ×1.5 inside the half (' + bigP.map((x) => x.vp + ' ×' + x.stretch + (x.p.pavamana ? ' hi' : ' normal')).join(', ') + ' for Pavamana), Agneyastra keeps the old test; no phone ever picks it (' + phoneP.map((x) => x.vp).join(', ') + ' → normal, and only the normal manifest is fetched); each pick fetches only its own manifest; a board not yet laid out picks the normal pack',
+       phoneP.length === 4 && phoneP.every((x) => !x.p.agneyastra && !x.p.pavamana && !x.p.kavacha && x.rung === undefined && J(x.fetched) === J(['assets/manifest/effects/pavamana/manifest.json'])) &&
+       picks.every((x) => Object.values(x.wb).every(Boolean) && Object.keys(RB).every((id) => x.p[id] === x.want[id]) && J(x.fetched) === J(['assets/manifest/effects/' + (x.p.pavamana ? 'pavamana_hi' : 'pavamana') + '/manifest.json']) && (x.rung === (x.p.pavamana ? 'hi' : undefined))) &&
+       bigP.some((x) => x.p.pavamana) && bigP.some((x) => !x.p.pavamana) && unlaid, J(picks.filter((x) => !(Object.keys(RB).every((id) => x.p[id] === x.want[id])))));
+    // V7 · the veil, on the shipped glue and the real packs: off until the clip draws, in over cells 0–3, out with the fade tail, never stuck
+    const veil = {};
+    for (const id in RB) {
+      const c = { id, n: RB[id].card, t: RB[id].t }, ev = BR[id].events, m = SPN[id], tail = m.audit.fadeTail.length - 1, nC = m.cells.length;
+      const H7 = { '.half.opp': { left: 0, top: 0, width: 355, height: 209 }, '.half.me': { left: 0, top: 211, width: 355, height: 209 } };   // the default sandbox board, 355x420, in two halves
+      const S = sandbox({ halves: H7 }); await S.fx.fxBoot(); await S.fx.fxPrefetch(id); await flush(); const r = S.fx.fxCast(c, ev[0], ev, {}); await flush();
+      // NO-CUT ruling 8: the veil lies on the half the effect acts on (the caster's: the lower half for seat 0), softened at the middle line; Agneyastra's (one card) keeps the board
+      const vs = S.veil.style, place8 = id === 'agneyastra' ? vs.top === '0' && vs.height === '100%' && !vs.maskImage : vs.top === '211px' && vs.height === '209px' && vs.maskImage === 'linear-gradient(to bottom, transparent 0, #000 24px)' && vs.webkitMaskImage === vs.maskImage;
+      const before = S.veil.style.opacity; const seen = {}; let guard = 0;
+      while (S.fx.FX.run && !S.fx.FX.run.done && guard++ < 4000) { S.tick(8); if (id === 'agneyastra' && guard === 140) S.fx.fxBeatFrom(ev.find((e) => e.type === 'damage' && e.abilityName === 'Agneyastra')); S.fx.fxVeil(); const dr = S.fx.FX.run && S.fx.FX.run.log.drawn; if (dr && dr.length) { const ix = dr[dr.length - 1]; if (seen[ix] == null) seen[ix] = +S.veil.style.opacity; } }
+      S.fx.fxVeil(); const after = S.veil.style.opacity;
+      const want = (ix) => +(0.45 * Math.max(0, Math.min(1, (ix + 1) / 4, (nC - 1 - ix) / tail))).toFixed(3);
+      const ixs = Object.keys(seen).map(Number), bad = ixs.filter((ix) => Math.abs(seen[ix] - want(ix)) > 0.0015);
+      // skip, error, fail-open: never left on, never shown with the classic
+      const S2 = sandbox(); await S2.fx.fxBoot(); await S2.fx.fxPrefetch(id); await flush(); S2.fx.fxCast(c, ev[0], ev, {}); await flush(); for (let i = 0; i < 90; i++) S2.tick(16); S2.fx.fxVeil(); const mid2 = +S2.veil.style.opacity; S2.fx.fxSkip(); const skipped = S2.veil.style.opacity;
+      const S3 = sandbox(); await S3.fx.fxBoot(); await S3.fx.fxPrefetch(id); await flush(); S3.fx.fxCast(c, ev[0], ev, {}); await flush(); for (let i = 0; i < 90; i++) S3.tick(16); S3.fx.fxVeil(); const mid3 = +S3.veil.style.opacity; S3.fx.fxOnError(new Error('x')); const errored = S3.veil.style.opacity;
+      const S4 = sandbox({ decodeFails: true }); await S4.fx.fxBoot(); await S4.fx.fxPrefetch(id); await flush(); S4.fx.fxCast(c, ev[0], ev, {}); await flush(); await flush(); S4.tick(16); S4.fx.fxVeil(); const failed = S4.veil.style.opacity;
+      const S5 = sandbox(); await S5.fx.fxBoot(); const nr = S5.fx.fxCast(c, ev[0], ev, {}); S5.fx.fxVeil(); const classic = S5.veil.style.opacity;
+      veil[id] = { place8, at: [vs.top, vs.height], cells: ixs.length, first: seen[0], full: seen[10], last: seen[nC - 1], before, after, bad: bad.slice(0, 3), mid2, skipped, mid3, errored, failed, classic, nr: nr === null,
+        ok: !!r && place8 && before === '0' && ixs.length >= nC - 2 && !bad.length && seen[10] === 0.45 && after === '0' && mid2 > 0 && skipped === '0' && mid3 > 0 && errored === '0' && failed === '0' && classic === '0' && nr === null };
     }
-    ok('V4 · THE IMPACT IS THE GAME\'S OWN BEAT: through the engine, Agneyastra plays ' + (BW.agneyastra ? BW.agneyastra.events.map((e) => e.type).join('+') : 'NO BOARD') + ' and Nagastra ' + (BW.nagastra ? BW.nagastra.events.map((e) => e.type).join('+') : 'NO BOARD') + '; at Relaxed, Normal and Fast each clip\'s impact cell lands exactly when the damage / the Venom tokens land (' + TW.filter((x) => x.sp === 'normal').map((x) => x.id + ' ' + x.impact + ' ms').join(', ') + ' at Normal), and each starts after the cast (' + TW.filter((x) => x.sp === 'fast').map((x) => x.id + ' +' + x.start + ' ms').join(', ') + ' at Fast) — 0 ms of wire clock',
-       !!BW.agneyastra && !!BW.nagastra && BW.agneyastra.events.some((e) => e.type === 'damage' && e.abilityName === 'Agneyastra') && BW.nagastra.events.some((e) => e.type === 'token' && e.abilityName === 'Nagastra') &&
-       TW.every((x) => x.clip && Math.abs(x.impact - x.cue) < 0.01 && x.cost === 0 && x.start >= 0), J(TW));
-    // V5 · NAGASTRA NEVER LEAVES THE ENEMY HALF (ruling 4) and, on a wide half, sits over the enemy's Units (ruling 2, 25 Nov) — on every measured screen,
-    //      the player's own placement, the struck Units laid out as the game lays a row (left-packed from the half's edge)
-    const DMV = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports, inside = [];
-    const struck = (BW.nagastra.events.find((e) => e.type === 'token' && e.abilityName === 'Nagastra') || {}).targetUids || [];
-    for (const v of DMV) for (const n of [1, struck.length, 5]) {
-      const w = v.half.w, h = v.half.h, halves = { 1: { cx: w / 2, cy: h / 2, top: 0, w, h }, 0: { cx: w / 2, cy: h + 2 + h / 2, top: h + 2, w, h } };
-      const cw = v.card.w, gap = 6, x0 = Math.min(0.06 * w, 40), pos = {}; const uids = struck.slice(0, Math.min(n, struck.length)); while (uids.length < n) uids.push('x' + uids.length);
-      uids.forEach((u, k) => { pos[u] = { cx: x0 + cw / 2 + k * (cw + gap), cy: h * 0.6, w: cw }; });
-      const evs = BW.nagastra.events.map((e) => e.type === 'token' && e.abilityName === 'Nagastra' ? Object.assign({}, e, { targetUids: uids }) : e);
-      const env = { now: () => 0, canvas: { width: w * 2, height: h * 4, getContext: () => ({ setTransform() {}, clearRect() {}, drawImage() {}, globalAlpha: 1, globalCompositeOperation: 'source-over' }) }, dpr: 2,
-        cardOf: (u) => pos[u] || { cx: w / 2, cy: h * 0.75, w: cw }, halfOf: (st) => halves[st], loadAtlas: (m) => ({ source: {}, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() {} }),
-        render() {}, sound() {}, crack() {}, removal() {}, callout() {}, onDone() {} };
-      const run = EC.createPlayer(env).play({ events: evs }, VN, { before: null, after: null }, { mode: 'full', choreoSpeed: 1.3, casterSeat: 0 }), pl = run && run.places && run.places[0];
-      const lo = x0, hi = x0 + n * cw + (n - 1) * gap, full = !!pl && Math.abs(pl.w - w) < 0.05;
-      const want = full ? 0 : Math.max(0, Math.min(w - (pl ? pl.w : 0), (lo + hi) / 2 - (pl ? pl.w : 0) / 2));
-      inside.push({ vp: v.vw + 'x' + v.vh, n, pl: pl && [+pl.x.toFixed(1), +pl.y.toFixed(1), +pl.w.toFixed(1), +pl.h.toFixed(1)], half: [w, +h.toFixed(1)], span: [+lo.toFixed(1), +hi.toFixed(1)], full,
-                    covers: !!pl && pl.x <= lo + 0.01 && pl.x + pl.w >= hi - 0.01,
-                    ok: !!pl && pl.x >= -0.01 && pl.y >= -0.01 && pl.x + pl.w <= w + 0.01 && pl.y + pl.h <= h + 0.01 && (full || Math.abs(pl.h - h) < 0.05) && Math.abs(pl.x - want) < 0.01 });
+    ok('V7 · THE VEIL (FINAL ruling 4), ON THE SHIPPED GLUE AND THE REAL PACKS: #fxveil is off until the clip draws its first cell, rises over cells 0–3, holds at 45%, falls with the clip\'s own fade tail to 0 on its last cell — sampled cell by cell for all three (' + Object.keys(veil).map((id) => id + ' ' + veil[id].cells + ' cells: ' + veil[id].first + ' → ' + veil[id].full + ' → ' + veil[id].last).join('; ') + ') — and is 0 the moment the clip ends, is skipped, errors or fails to decode; a classic fallback (not ready at the cast) never shows it. NO-CUT ruling 8: it lies on the half the effect acts on only — Pavamana\'s and Kavacha\'s on the caster\'s half, softened over 24 px at the middle line (' + Object.keys(veil).map((id) => id + ' ' + veil[id].at.join('/')).join(', ') + '); Agneyastra\'s, aimed at one card, keeps the whole board',
+       Object.values(veil).every((x) => x.ok), J(veil));
+    // V8 · the page's lines and fail-open
+    const has = (re) => re.test(HTML), fo = {};
+    const u8 = { veilLayer: has(/<div id="victimlayer"><\/div>[^\n]*\n    <div id="fxveil"><\/div>[^\n]*\n    <canvas id="vfxcanvas"><\/canvas>\n    <canvas id="effectclip"><\/canvas>/) && has(/#fxveil\{ position:absolute; left:0; right:0; top:0; height:100%; z-index:4; background:#000; opacity:0; pointer-events:none; \}/) && has(/    try\{ fxVeilPlace\(\/-board-row\$\/\.test\(k\.anchor\|\|''\) \? \(k\.anchor==='enemy-board-row' \? 1-casterSeat : casterSeat\) : null\); \}catch\(e\)\{\}/) && has(/#victimlayer\{[^}]*z-index:4/),
+      tick: has(/try\{ fxVeil\(\); \}catch\(e\)\{ fxVeilOff\(\); \}/) && has(/function fxSkip\(\)\{ fxVeilOff\(\);/) && has(/function fxOnError\(e\)\{\n  fxVeilOff\(\);/) && has(/FX\.raf=0; fxVeilOff\(\);/),
+      noSwitches: !/__dyFx|sizeMode|enemyMode/.test(HTML),
+      agneyastra: has(/if\(fxOwnsMoment\('agneyastra'\)\) FX\.pendingFire=fire; else fire\(\);/), pavamana: has(/if\(!fxOwnsMoment\('pavamana', fire\)\) fire\(\);/), kavacha: has(/if\(!fxOwnsMoment\('kavacha', fire\)\) fire\(\);/) };
+    for (const id in RB) {
+      const ev = BR[id].events, c = { id, n: RB[id].card, t: RB[id].t };
+      const S1 = sandbox(); await S1.fx.fxBoot(); const notReady = S1.fx.fxCast(c, ev[0], ev, {});
+      const S2 = sandbox(); await S2.fx.fxBoot(); await S2.fx.fxPrefetch(id); await flush(); const r2 = S2.fx.fxCast(c, ev[0], ev, {}); await flush(); S2.tick(16); const owns = S2.fx.fxOwnsMoment(id, () => {});
+      const S3 = sandbox({ decodeFails: true }); await S3.fx.fxBoot(); await S3.fx.fxPrefetch(id); await flush(); const r3 = S3.fx.fxCast(c, ev[0], ev, {}); await flush(); await flush(); S3.tick(16); let f3 = 0; const owns3 = S3.fx.fxOwnsMoment(id, () => f3++); await flush(); if (!owns3) f3++;
+      fo[id] = { notReady: notReady === null, ready: !!r2 && r2.plan.clip && owns === true, failed: !!r3 && f3 === 1 };
     }
-    const wide = inside.filter((x) => !x.full), phones = inside.filter((x) => x.full && /^(360|375|390|430)x/.test(x.vp));
-    ok('V5 · NAGASTRA STAYS INSIDE THE ENEMY HALF ON EVERY MEASURED SCREEN (ruling 4), AND ON A WIDE HALF SITS OVER THE ENEMY\'S UNITS (ruling 2): on all ' + DMV.length + ' viewports, with 1, ' + struck.length + ' and 5 struck Units laid out as the game lays a row, the plate is inside the half — never above the board\'s top, never past its sides, never across the middle line. Where it is the half\'s full width (every phone: ' + phones.length + ' cases) it is exactly where it was; where the half is wider than the plate (' + wide.length + ' cases) it is as tall as the half — the largest it can be inside it — and centred on the span of the struck Units, slid only as far as keeps it inside (' + wide.filter((x) => x.n === struck.length).slice(0, 3).map((x) => x.vp + ': span ' + x.span.join('–') + ' → plate ' + x.pl[0] + '–' + (+(x.pl[0] + x.pl[2]).toFixed(1))).join(', ') + '); it covers the whole span in ' + wide.filter((x) => x.covers).length + ' of ' + wide.length + (wide.some((x) => !x.covers) ? ' (' + wide.filter((x) => !x.covers).map((x) => x.vp + ' ×' + x.n).join(', ') + ' — a span wider than the tallest plate the half allows)' : ''),
-       inside.length === DMV.length * 3 && inside.every((x) => x.ok) && phones.length >= 12 && wide.length >= 12, J(inside.filter((x) => !x.ok).slice(0, 4)));
-    // V6 · AGNEYASTRA ON ITS ONE TARGET (ruling 3): the fire ring is 1.25 card widths across and centred on the card, on every measured screen
-    const ring = [];
-    for (const v of DMV) {
-      const w = v.half.w, h = v.half.h, card = { cx: w / 2, cy: h * 0.5, w: v.card.w };
-      const env = { now: () => 0, canvas: { width: w * 2, height: h * 4, getContext: () => ({ setTransform() {}, clearRect() {}, drawImage() {}, globalAlpha: 1, globalCompositeOperation: 'source-over' }) }, dpr: 2,
-        cardOf: () => card, halfOf: (st) => ({ cx: w / 2, cy: st ? h / 2 : h * 1.5, top: st ? 0 : h, w, h }), loadAtlas: (m) => ({ source: {}, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() {} }),
-        render() {}, sound() {}, crack() {}, removal() {}, callout() {}, onDone() {} };
-      const run = EC.createPlayer(env).play({ events: BW.agneyastra.events }, VA, { before: null, after: null }, { mode: 'full', choreoSpeed: 1.3, casterSeat: 0 }), pl = run && run.places && run.places[0];
-      const cw = Math.max(v.card.w, VA.scaleRule.cardFloorOfHalfH * h), dia = pl ? pl.scale * VA.scaleRule.ringDiameterCell : 0;
-      ring.push({ vp: v.vw + 'x' + v.vh, ringInCards: +(dia / v.card.w).toFixed(3), want: +(1.25 * cw / v.card.w).toFixed(3), centre: pl ? [+(pl.x + VA.anchor.x * pl.scale - card.cx).toFixed(3), +(pl.y + VA.anchor.y * pl.scale - card.cy).toFixed(3)] : null });
-    }
-    ok('V6 · AGNEYASTRA SITS ON ITS ONE TARGET (ruling 3): on all ' + ring.length + ' measured screens the fire ring is 1.25 card widths across (the card floor only where the field outgrows the cards, as Vajra) and its centre — the strike point — is the target card\'s centre (' + ring.filter((x, i) => i % 5 === 0).map((x) => x.vp + ' ' + x.ringInCards + ' cards').join(', ') + '); the plate is ' + (VA.cellSize.w / VA.scaleRule.ringDiameterCell * 1.25).toFixed(2) + ' card widths wide, the size of the target and the gaps beside it',
-       ring.length === 16 && ring.every((x) => Math.abs(x.ringInCards - x.want) < 0.005 && x.centre && Math.abs(x.centre[0]) < 0.01 && Math.abs(x.centre[1]) < 0.01) && ring.filter((x) => x.want === 1.25).length >= 8, J(ring));
-    // V7 · the page's own gated lines, and only there
-    const gN2 = /fire=\(\)=>VFX\.sprNagastra\(r\.left\+r\.width\/2, r\.top\+r\.height\*0\.5, r\.width\*1\.04\); if\(fxOwnsMoment\('nagastra'\)\) FX\.pendingFire=fire; else fire\(\);/.test(HTML);
-    const gA2 = /if\(ev\.type==='damage' && ev\.abilityName==='Agneyastra'\)\{ const t0=\(ev\.targetUids\|\|\[\]\)\[0\], dp=t0!=null\?posOf\(t0, snap\):null; if\(dp\)\{ const fire=\(\)=>VFX\.sprDamage\(dp\.cx, dp\.rect\.top\+dp\.rect\.height\/2, dp\.rect\.width\*1\.6\); if\(fxOwnsMoment\('agneyastra'\)\) FX\.pendingFire=fire; else fire\(\); \} \}/.test(HTML);
-    ok('V7 · THE PAGE GATES BOTH MOMENTS: Nagastra\'s classic plate is still called at the tokens\' beat, behind the clip\'s ownership test — and only there (sprNagastra ' + (HTML.match(/VFX\.sprNagastra\(/g) || []).length + ' call site); Agneyastra\'s damage beat gains the fallback it lacked — the shared damage strike at 1.6 card widths on the target — behind the same test; both fire LATE if the clip fails after the beat (the Lanka precedent)',
-       gN2 && gA2 && (HTML.match(/VFX\.sprNagastra\(/g) || []).length === 1 && (HTML.match(/fxOwnsMoment\('agneyastra'\)/g) || []).length === 1 && (HTML.match(/fxOwnsMoment\('nagastra'\)/g) || []).length === 1);
-    // V8 · fail-open on the shipped glue: not ready → the classic plays at the beat; a failed decode → the classic, late, once; ready → the clip owns it
-    const fo = {};
-    for (const id of ['agneyastra', 'nagastra']) {
-      const ev = BW[id].events, S1 = sandbox(); await S1.fx.fxBoot(); const notReady = S1.fx.fxCast(card(id), ev[0], ev, {});
-      const S2 = sandbox(); await S2.fx.fxBoot(); await S2.fx.fxPrefetch(id); await flush(); const r2 = S2.fx.fxCast(card(id), ev[0], ev, {}); await flush(); S2.tick(16); const owns = S2.fx.fxOwnsMoment(id);
-      const S3 = sandbox({ decodeFails: true }); await S3.fx.fxBoot(); await S3.fx.fxPrefetch(id); await flush(); const r3 = S3.fx.fxCast(card(id), ev[0], ev, {}); await flush(); await flush(); S3.tick(16);
-      let fired = 0; const owns3 = S3.fx.fxOwnsMoment(id); if (!owns3) fired++;
-      fo[id] = { notReady: notReady === null && S1.fx.FX.diag.some((d) => d.kind === 'not-ready-at-cast'), ready: !!r2 && r2.plan.clip && owns === true, failed: !!r3 && owns3 === false && fired === 1 && S3.fx.FX.run === null };
-    }
-    ok('V8 · FAIL-OPEN, ON THE SHIPPED GLUE: for both cards a clip NOT READY at the cast never starts (the classic plays at the beat, noted not-ready-at-cast); a clip that is ready OWNS its beat; a clip whose atlas will not decode does NOT own it, so the classic fires once and nothing is left running — yesterday\'s game, never absence',
-       Object.values(fo).every((x) => x.notReady && x.ready && x.failed), J(fo));
+    ok('V8 · THE PAGE\'S LINES AND FAIL-OPEN: the veil layer sits inside the board above the cards, the board art and the victim clones (z 4, after #victimlayer) and under both effect layers (#vfxcanvas z 5, #effectclip z 6) — the score plaques live in #hudwrap (fixed, z 95), above the board, so the veil never covers them; it is driven only by the clip\'s own frame loop and turned off on skip, error and finish; the cast places it on the half the effect acts on (NO-CUT ruling 8); the preview switches (tall, cut, whole) are gone; each classic plate stays behind its clip\'s ownership test; for all three a clip not ready at the cast never starts (the classic plays), a ready clip owns its moment, a clip that will not decode hands the moment back to the classic, once: ' + J(u8),
+       Object.values(u8).every(Boolean) && Object.values(fo).every((x) => x.notReady && x.ready && x.failed), J({ u8, fo }));
   }
 
-  // ═══ K · WAVE1-CLIPS-1 · BATCH 2: PAVAMANA, TAMASA, DHARMA KAVACHA ═══
-  console.log('\n── K · Pavamana, Tamasa and Dharma Kavacha in the live game (WAVE1-CLIPS-1 batch 2) ──');
+  // ═══ K · THE NO-CUT RULING (owner, 2026-11-26 18:04): THE REGENERATED NAGASTRA AND TAMASA, ROUTED BACK ON ═══
+  console.log('\n── K · Nagastra and Tamasa: the regenerated clips (the NO-CUT ruling, 26 Nov 2026) ──');
   {
-    const B2 = { pavamana: { card: 'Pavamana', fac: 'devas', half: 'caster', imp: 40, range: [24, 96], fades: [4, 10], hit: 0, lead: 16 },
-                 tamasa: { card: 'Tamasa', fac: 'asuras', half: 'enemy', imp: 20, range: [0, 72], fades: [4, 0], hit: 70, lead: 20 },
-                 kavacha: { card: 'Dharma Kavacha', fac: 'devas', half: 'caster', imp: 44, range: [17, 72], fades: [4, 8], hit: 0, lead: 27 } };   // final ruling 3: an Artifact may run longer — f017, just before the medallion's first flash
-    const SP = {}; for (const id in B2) SP[id] = loadSpec(REG.routes[id].spec);
-    const EDGES = ['top', 'bottom', 'left', 'right'];
-    // K1 · the packs, cut as ruled
-    const packs = Object.keys(PIN.wave1b2Packs).map((rel) => ({ rel, ok: sha(fs.readFileSync(path.join(MAN, rel))) === PIN.wave1b2Packs[rel] }));
-    const facts = Object.keys(B2).map((id) => { const m = SP[id], b = B2[id], bz = fs.readFileSync(path.join(path.dirname(m.__file), m.atlas)), px = webpSize(bz), g = m.audit.vignette || {};
-      return { id, ok: EC.validate(m).ok && px && px.w === m.atlasSize.w && px.h === m.atlasSize.h && m.atlasSize.w * m.atlasSize.h * 4 <= EC.E1.capBytes && m.cells.length === b.range[1] - b.range[0] + 1 && m.cells[0].src === b.range[0] && m.cells[m.impact].src === b.imp &&
-                   m.audit.fadeIn.length === b.fades[0] && m.audit.fadeTail.length === b.fades[1] && EDGES.every((e) => /^WAVE1-CLIPS-1 batch 2 ruling 3/.test((g[e] || {}).ruledIntoBand || '')),
-               mb: +(m.atlasSize.w * m.atlasSize.h * 4 / 1048576).toFixed(2), kb: Math.round(bz.length / 1024), cell: m.cellSize.w + '×' + m.cellSize.h, impact: 'f' + String(m.cells[m.impact].src).padStart(3, '0'), rule: m.audit.impact && m.audit.impact.rule }; });
-    ok('K1 · THE PACKS ARE THE LAB\'S, CUT AS RULED: the six files match the hashes recorded from the lab packs (' + packs.filter((x) => x.ok).length + '/6); each validates under the page\'s player and decodes under E1 — ' + facts.map((f) => f.id + ' ' + f.cell + ', ' + f.mb + ' MB decoded, ' + f.kb + ' KB, beat ' + f.impact + ' (' + f.rule + ')').join('; ') + '. Pavamana keeps f024–f096 (16 cells lead the white ring, inside the Mantra\'s own hold — the pace rule for Astras and Mantras), Tamasa f000–f072 (played from the cast, +82 ms accepted), Dharma Kavacha f017–f072 (an Artifact may run longer: from just before the medallion\'s first flash — final ruling 3); fades 4/10, 4/none (it ends at black), 4/8. All twelve edge bands are ruled in as previewed (ruling 3)',
-       packs.length === 6 && packs.every((x) => x.ok) && facts.every((f) => f.ok), J(facts.filter((f) => !f.ok)));
-    // K2 · the routes and contracts: the play IS the trigger; the hold is the lead to the beat frame
-    const AMB = { hold: +(/let hold=(\d+), hitStop=0;/.exec(HTML) || [])[1] }, CMB = +(/else if\(tier==='combat'\)\{ hitStop=(\d+); \}/.exec(HTML) || [])[1];
-    const U2 = Object.keys(B2).map((id) => { const r = REG.routes[id], k = SP[id].contract, b = B2[id], lead = b.lead * 1000 / SP[id].fps;
-      return { id, r: r.moment + '/' + r.replaces, hit: k.castHitStopMs, hold: k.castHoldMs, lead: +lead.toFixed(2),
-               ok: r.spec === 'effects/' + id + '/manifest.json' && r.moment === 'play' && r.replaces === { pavamana: 'sprPavamana', tamasa: 'sprTamasa', kavacha: 'sprKavacha' }[id] && k.trigger === 'play' && k.abilityName === b.card &&
-                   k.anchor === b.half + '-half-centre' && k.castHitStopMs === b.hit && (id === 'pavamana' ? k.castHoldMs === AMB.hold && lead <= k.castHoldMs : Math.abs(k.castHitStopMs + k.castHoldMs - lead) < 0.01) }; });
-    ok('K2 · THE ROUTES AND THEIR BEATS: each route is moment "play" and replaces its classic plate (' + U2.map((x) => x.id + ' → ' + x.r).join(', ') + '); each contract\'s trigger is the PLAY itself — none of these cards carries a later engine event to hang a beat on. Pavamana\'s hold is the Mantra\'s own ' + AMB.hold + ' ms (the "ambient" tier: no hit-stop), its 16 lead cells (' + U2[0].lead + ' ms) inside it; Tamasa (the combat tier\'s ' + CMB + ' ms hit-stop) and Dharma Kavacha play their kept range from the cast, so their hold IS the lead to the beat (' + U2[1].lead + ' ms unscaled for Tamasa, +82 ms at Normal, accepted; ' + U2[2].lead + ' ms for Kavacha, ' + (U2[2].lead * 1.3).toFixed(1) + ' ms at Normal against the classic\'s ' + (AMB.hold * 1.3).toFixed(0) + ', the ruled +' + ((U2[2].lead - AMB.hold) * 1.3).toFixed(1) + ' ms)',
-       CMB === 70 && AMB.hold === 700 && U2.every((x) => x.ok), J(U2));
-    // a real cast of each, through the engine
-    const castB = (b) => { const deva = ['Yama', 'Marut', 'Chandra Dev', 'Deva Soldier', 'Kubera', 'Urvashi', 'Brihaspati', 'Narada', 'Vishwakarma', 'Indra', 'Gandharva'], asura = ['Bana Asura', 'Ravana', 'Vibhishana', 'Narakasura', 'Maricha', 'Tataka', 'Kumbhakarna', 'Mahabali', 'Kalanemi', 'Hiranyakashipu', 'Meghnad'];
-      const mine = [b.card].concat(b.fac === 'devas' ? deva : asura), theirs = b.fac === 'devas' ? asura : deva;
-      for (let seed = 1; seed < 500; seed++) { let x = seed; const rng = () => { x = (x * 1103515245 + 12345) % 2147483648; return x / 2147483648; };
-        const g = E.newGame({ rng, realm: 'mrityulok', p0Faction: b.fac, p1Faction: b.fac === 'devas' ? 'asuras' : 'devas', scenario: { p0Deck: mine.slice(0, 12), p1Deck: theirs.slice(0, 12), p0Hand: mine.slice(0, 10), p1Hand: theirs.slice(0, 10), mulligan: 0 } });
-        if (g.turn !== 0) continue; const h = g.players[0].hand.findIndex((c) => c.n === b.card); if (E.playableIndices(g, 0).indexOf(h) < 0) continue;
-        const e0 = g.events.length; E.playCard(g, 0, h); return { events: g.events.slice(e0), casterSeat: 0 }; } return null; };
-    const BB = {}; for (const id in B2) BB[id] = castB(B2[id]);
-    // K3 · the beat frame lands where the page's play beat ends; the clip starts at or after the cast (0 ms of wire clock)
-    const TU = [];
-    for (const id in B2) for (const sp of ['relaxed', 'normal', 'fast']) { const vfxT = BEAT.speeds[sp] * BEAT.choreo, p = BB[id] && EC.plan(BB[id], SP[id], { mode: 'full', choreoSpeed: vfxT, casterSeat: 0 }), k = SP[id].contract;
-      TU.push(p ? { id, sp, clip: p.clip, impact: +p.timeline.impactAt.toFixed(1), want: +((k.castHitStopMs + k.castHoldMs) * vfxT).toFixed(1), start: +p.timeline.clipStart.toFixed(1), cost: p.timeline.waitCostMs } : { id, sp, clip: false }); }
-    ok('K3 · THE BEAT FRAME IS WHERE THE PLAY BEAT ENDS: through the engine (' + Object.keys(B2).map((id) => B2[id].card + ' ' + (BB[id] ? BB[id].events.map((e) => e.type).join('+') : 'NO BOARD')).join(' · ') + '), at Relaxed, Normal and Fast each clip\'s impact cell lands at the end of its play beat (' + TU.filter((x) => x.sp === 'normal').map((x) => x.id + ' ' + x.impact + ' ms').join(', ') + ' at Normal — the page ends the hold on the frame that draws it, fxImpactWait); Pavamana starts ' + (TU.find((x) => x.id === 'pavamana' && x.sp === 'normal') || {}).start + ' ms after the cast (0 ms of wire clock — the turn is as long as the classic), Tamasa and Dharma Kavacha AT the cast (their first kept frame on the cast); Dharma Kavacha\'s beat lands at 1462.5 ms at Normal, the ruled time',
-       Object.values(BB).every(Boolean) && TU.every((x) => x.clip && Math.abs(x.impact - x.want) < 0.1 && x.cost < 1e-6 &&   /* float residue only (4.5e-13 ms at Relaxed) */ (x.id === 'pavamana' ? x.start >= 0 : Math.abs(x.start) < 0.1)) && Math.abs((TU.find((x) => x.id === 'kavacha' && x.sp === 'normal') || {}).impact - 1462.5) < 0.1, J(TU));
-    // K4 · each stays inside its half on every measured screen; on a wide half it sits over the Units it acts on
-    const DMV = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports, place = [];
-    for (const id in B2) for (const v of DMV) for (const n of [1, 3, 5]) {
-      const w = v.half.w, h = v.half.h, halves = { 1: { cx: w / 2, cy: h / 2, top: 0, w, h }, 0: { cx: w / 2, cy: h + 2 + h / 2, top: h + 2, w, h } }, seat = B2[id].half === 'enemy' ? 1 : 0;
-      const cw = v.card.w, gap = 6, x0 = Math.min(0.06 * w, 40), rects = Array.from({ length: n }, (_, k) => ({ cx: x0 + cw / 2 + k * (cw + gap), cy: halves[seat].top + h * 0.6, w: cw }));
-      const env = { now: () => 0, canvas: { width: w * 2, height: h * 4, getContext: () => ({ setTransform() {}, clearRect() {}, drawImage() {}, globalAlpha: 1, globalCompositeOperation: 'source-over' }) }, dpr: 2,
-        cardOf: () => null, halfOf: (st) => halves[st], unitsOf: (st) => (st === seat ? rects : []), loadAtlas: (m) => ({ source: {}, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() {} }),
-        render() {}, sound() {}, crack() {}, removal() {}, callout() {}, onDone() {} };
-      const run = EC.createPlayer(env).play(BB[id], SP[id], { before: null, after: null }, { mode: 'full', choreoSpeed: 1.3, casterSeat: 0 }), pl = run && run.places && run.places[0], H = halves[seat];
-      const lo = x0, hi = x0 + n * cw + (n - 1) * gap, full = !!pl && Math.abs(pl.w - w) < 0.05, want = !pl ? 0 : full ? 0 : Math.max(0, Math.min(w - pl.w, (lo + hi) / 2 - pl.w / 2));
-      place.push({ id, vp: v.vw + 'x' + v.vh, n, full, covers: !!pl && pl.x <= lo + 0.01 && pl.x + pl.w >= hi - 0.01, pl: pl && [+pl.x.toFixed(1), +pl.y.toFixed(1), +pl.w.toFixed(1), +pl.h.toFixed(1)],
-        ok: !!pl && pl.x >= -0.01 && pl.x + pl.w <= w + 0.01 && pl.y >= H.top - 0.01 && pl.y + pl.h <= H.top + h + 0.01 && (full || Math.abs(pl.h - h) < 0.05) && Math.abs(pl.x - want) < 0.01 });
-    }
-    const wideU = place.filter((x) => !x.full);
-    ok('K4 · EACH STAYS INSIDE ITS HALF ON EVERY MEASURED SCREEN, AND ON A WIDE HALF SITS OVER THE UNITS IT ACTS ON: on all ' + DMV.length + ' viewports, with 1, 3 and 5 Units laid out as the game lays a row, Pavamana and Dharma Kavacha sit inside the caster\'s OWN half and Tamasa inside the ENEMY half — never past the board, never across the middle line (' + place.length + ' placements). Where the plate is the half\'s full width (every phone) it is exactly centred, as before; where the half is wider (' + wideU.length + ' cases) it is as tall as the half and centred on that half\'s Units, slid only as far as keeps it inside; it covers the whole row in ' + wideU.filter((x) => x.covers).length + ' of ' + wideU.length,
-       place.length === 3 * DMV.length * 3 && place.every((x) => x.ok) && wideU.length >= 36, J(place.filter((x) => !x.ok).slice(0, 4)));
-    // K5 · the page's lines
+    const KB = { nagastra: { card: 'Nagastra', n: 72, imp: 32, trig: 'token', rep: 'sprNagastra', src: 'bfe80d47' }, tamasa: { card: 'Tamasa', n: 72, imp: 31, trig: 'play', rep: 'sprTamasa', src: 'fdbdfc78' } };
+    const KS = {}, KH = {}; for (const id in KB) { KS[id] = loadSpec(REG.routes[id].spec); KH[id] = loadSpec(REG.routes[id].hi); }
+    // K1 · the packs and routes: the lab's files, the owner's clips (the source hash in the manifest), the whole clip, the lift, 65% veil, the lit box
+    const kp = Object.keys(PIN.rebuildPacks).filter((rel) => /nagastra|tamasa/.test(rel)).map((rel) => sha(fs.readFileSync(path.join(MAN, rel))) === PIN.rebuildPacks[rel]);
+    const k1 = Object.keys(KB).map((id) => { const b = KB[id], r = REG.routes[id], one = (m, hi) => { const bz = fs.readFileSync(path.join(path.dirname(m.__file), m.atlas)), dec = m.atlasSize.w * m.atlasSize.h * 4, lb = m.litBox;
+        return { cell: m.cellSize.w + '×' + m.cellSize.h, mb: +(dec / 1048576).toFixed(2), kb: Math.round(bz.length / 1024),
+                 ok: EC.validate(m).ok && dec <= (hi ? EC.E1.hiCapBytes : EC.E1.capBytes) && (hi ? m.rung === 'hi' : m.rung === undefined) && m.source.indexOf(b.src) >= 0 && m.cells.length === b.n && m.cells[0].src === 0 && m.cells[b.n - 1].src === b.n - 1 &&
+                     m.cells[m.impact].src === b.imp && m.lift === 0.6 && m.contract.veil === 0.65 && m.contract.trigger === b.trig && m.contract.anchor === 'enemy-board-row' && Math.abs(m.contract.castHitStopMs + m.contract.castHoldMs - b.imp * 1000 / 24) < 0.01 &&
+                     m.audit.fadeIn.length === 4 && m.audit.fadeTail.length === 8 && !!lb && lb.thr === 40 }; };
+      const N = one(KS[id], false), H = one(KH[id], true), lb = KS[id].litBox;
+      return { id, N, H, ok: N.ok && H.ok && r.moment === b.trig && r.replaces === b.rep && r.hi === 'effects/' + id + '_hi/manifest.json' && r.hiAbovePx === 500 && Math.abs(r.aspect - KS[id].cellSize.w / KS[id].cellSize.h) < 0.01 &&
+                         J(r.wholeHalf) === J({ cellW: KS[id].cellSize.w, litW: lb.x1 - lb.x0, litH: lb.y1 - lb.y0, maxStretch: 1.5 }) }; });
+    ok('K1 · ROUTED BACK ON, FROM THE OWNER\'S CLIPS (the NO-CUT ruling, rule 7): nagastra → the Venom tokens\' beat (f032), tamasa → the play, its own beat f031 (the slam — the clip\'s largest picture change, measured); both packed from the owner\'s premium clips (sha256 bfe80d47…, fdbdfc78… in each manifest), the whole clip (72 cells, f000–f071), the mid-tone lift, fades 4/8, the 65% veil, their lit box and its route copy; all eight files byte-identical to the lab\'s (' + kp.filter(Boolean).length + '/8) — ' + k1.map((x) => x.id + ' ' + x.N.cell + ' ' + x.N.mb + ' MB ' + x.N.kb + ' KB / ' + x.H.cell + ' ' + x.H.mb + ' MB ' + x.H.kb + ' KB').join('; '),
+       kp.length === 8 && kp.every(Boolean) && k1.every((x) => x.ok), J(k1.filter((x) => !x.ok)));
+    // K2 · on the shipped glue: the hand-entry prefetch fetches them, the cast starts the clip and it owns its moment; not ready or a failed decode → the classic, once
+    const evK = { nagastra: [{ type: 'play', sourceUid: 1, abilityName: 'Nagastra' }, { type: 'token', abilityName: 'Nagastra', targetUids: [5, 6] }], tamasa: [{ type: 'play', sourceUid: 2, abilityName: 'Tamasa' }] };
+    const S = sandbox(); await S.fx.fxBoot(); S.ctx.G.players[0].hand.push({ id: 'nagastra', n: 'Nagastra' }, { id: 'tamasa', n: 'Tamasa' }); S.fx.fxPrefetchHands(); await flush(); await flush();
+    const got = S.fetched.filter((f) => /nagastra|tamasa/.test(f[0])).map((f) => f[0]).sort(), k2 = {};
+    for (const id in KB) { const Sx = sandbox(); await Sx.fx.fxBoot(); await Sx.fx.fxPrefetch(id); await flush(); const r = Sx.fx.fxCast({ id, n: KB[id].card, t: 'astra' }, evK[id][0], evK[id], {}); await flush(); Sx.tick(16); const owns = Sx.fx.fxOwnsMoment(id, () => {});
+      const Sn = sandbox(); await Sn.fx.fxBoot(); const nr = Sn.fx.fxCast({ id, n: KB[id].card, t: 'astra' }, evK[id][0], evK[id], {}); let fn = 0; if (!Sn.fx.fxOwnsMoment(id, () => fn++)) fn++;
+      const Sf = sandbox({ decodeFails: true }); await Sf.fx.fxBoot(); await Sf.fx.fxPrefetch(id); await flush(); const rf = Sf.fx.fxCast({ id, n: KB[id].card, t: 'astra' }, evK[id][0], evK[id], {}); await flush(); await flush(); Sf.tick(16); let ff = 0; const of = Sf.fx.fxOwnsMoment(id, () => ff++); await flush(); if (!of) ff++;
+      k2[id] = { ready: !!r && r.plan.clip && owns === true, notReady: nr === null && fn === 1, failed: !!rf && ff === 1 }; }
+    ok('K2 · ON THE SHIPPED GLUE: with both cards in hand the hand-entry prefetch fetches their manifests and atlases (' + got.length + ' fetches) — the pack is picked there, never at the cast; a ready clip starts at the cast and owns its moment; a clip not ready at the cast never starts and the classic plate fires once; a clip that will not decode hands the moment back to the classic, once: ' + J(k2),
+       got.filter((f) => /manifest\.json$/.test(f)).length === 2 && got.filter((f) => /atlas\.webp$/.test(f)).length === 2 && Object.values(k2).every((x) => x.ready && x.notReady && x.failed), J({ got, k2 }));
+    // K3 · the classic plates stay as the fail-open fallback, at their one call site behind the ownership test
     const has = (re) => re.test(HTML);
-    const u5 = { castHook: has(/if\(c && \(isAstra \|\| c\.t==='mantra' \|\| c\.t==='artifact'\)\) fxCast\(c, ev, evs, snap\);/),
-      tamasa: has(/fire=\(\)=>VFX\.sprTamasa\(r\.left\+r\.width\/2, r\.top\+r\.height\*0\.5, r\.width\*1\.04\); if\(!fxOwnsMoment\('tamasa', fire\)\) fire\(\);/) && (HTML.match(/VFX\.sprTamasa\(/g) || []).length === 1,
-      kavacha: has(/fire=\(\)=>VFX\.sprKavacha\(r\.left\+r\.width\/2, r\.top\+r\.height\*0\.5, r\.width\*1\.04\); if\(!fxOwnsMoment\('kavacha', fire\)\) fire\(\);/) && (HTML.match(/VFX\.sprKavacha\(/g) || []).length === 1,
-      pavamana: has(/fire=\(\)=>VFX\.sprPavamana\(r\.left\+r\.width\/2, r\.top\+r\.height\*0\.5, r\.width\*1\.04\); if\(!fxOwnsMoment\('pavamana', fire\)\) fire\(\);/) && (HTML.match(/VFX\.sprPavamana\(/g) || []).length === 1,
-      hold: has(/if\(hitStop\) await cDelay\(hitStop\);[^\n]*\n    await fxImpactWait\(c, hold\); return;/),
-      noGate: has(/const own = !arming && k\.trigger==='play';/) && has(/beatGate:!own, readyAnchor:arming/) && has(/FX\.beatWant = \(arming \|\| own\) \? null :/),
-      unitsOf: has(/unitsOf: \(seat\)=>\{ const f=fxFieldRect\(\); return \[\.\.\.document\.querySelectorAll\('#'\+\(seat===ME\?'punits':'ounits'\)\+' \.bc:not\(\.held-gap\)'\)\]/) };
-    ok('K5 · THE PAGE\'S LINES: the cast hook now starts a routed Mantra\'s or Artifact\'s clip too; each classic plate (sprPavamana, sprTamasa, sprKavacha — one call site each) waits behind the clip\'s ownership of the cast and fires late, once, if the clip fails; a play-triggered clip runs with no beat gate (its beat is its own frame) and the play beat\'s hold ends on that frame (fxImpactWait); the player reads a half\'s Units from the page (unitsOf)',
-       Object.values(u5).every(Boolean), J(u5));
-    // K6 · fail-open on the shipped glue
-    const fo2 = {};
-    for (const id in B2) {
-      const ev = BB[id].events, c = { id, n: B2[id].card, t: id === 'pavamana' ? 'mantra' : id === 'kavacha' ? 'artifact' : 'astra' };
-      const S1 = sandbox(); await S1.fx.fxBoot(); const notReady = S1.fx.fxCast(c, ev[0], ev, {}); let f1 = 0; const owns1 = S1.fx.fxOwnsMoment(id, () => f1++); if (!owns1) f1++;
-      const S2 = sandbox(); await S2.fx.fxBoot(); await S2.fx.fxPrefetch(id); await flush(); const r2 = S2.fx.fxCast(c, ev[0], ev, {}); let f2 = 0; const owns2 = S2.fx.fxOwnsMoment(id, () => f2++); await flush(); S2.tick(16);
-      const S3 = sandbox({ decodeFails: true }); await S3.fx.fxBoot(); await S3.fx.fxPrefetch(id); await flush(); const r3 = S3.fx.fxCast(c, ev[0], ev, {}); let f3 = 0; const owns3 = S3.fx.fxOwnsMoment(id, () => f3++); await flush(); await flush(); S3.tick(16); await flush();
-      fo2[id] = { notReady: notReady === null && !owns1 && f1 === 1, ready: !!r2 && r2.plan.clip && owns2 && f2 === 0 && S2.fx.FX.beatWant === null, failedLate: !!r3 && owns3 && f3 === 1 };
-    }
-    ok('K6 · FAIL-OPEN, ON THE SHIPPED GLUE: for all three a clip NOT READY at the cast never starts and the classic plate fires at the cast; a ready clip owns the cast (the classic held, no beat awaited — the clip\'s own frame is the beat); a clip whose atlas will not decode fires the classic plate late, once — yesterday\'s game, never absence',
-       Object.values(fo2).every((x) => x.notReady && x.ready && x.failedLate), J(fo2));
+    const lines = { nagastra: has(/fire=\(\)=>VFX\.sprNagastra\(r\.left\+r\.width\/2, r\.top\+r\.height\*0\.5, r\.width\*1\.04\); if\(fxOwnsMoment\('nagastra'\)\) FX\.pendingFire=fire; else fire\(\);/) && (HTML.match(/VFX\.sprNagastra\(/g) || []).length === 1,
+      tamasa: has(/fire=\(\)=>VFX\.sprTamasa\(r\.left\+r\.width\/2, r\.top\+r\.height\*0\.5, r\.width\*1\.04\); if\(!fxOwnsMoment\('tamasa', fire\)\) fire\(\);/) && (HTML.match(/VFX\.sprTamasa\(/g) || []).length === 1 };
+    ok('K3 · THE CLASSIC PLATES ARE THE FAIL-OPEN FALLBACK, UNCHANGED: sprNagastra at the Venom tokens\' beat and sprTamasa at the cast, each at its one call site behind the clip\'s ownership test (one effect at a time): ' + J(lines), lines.nagastra && lines.tamasa);
+    // K4 · the turn: the whole clip from the cast, the play beat ending on the beat frame — Nagastra 1733.3 ms, Tamasa 1679.2 ms at Normal (the classic 1001)
+    const k4 = []; for (const id in KB) for (const sp of ['relaxed', 'normal', 'fast']) { const vfxT = BEAT.speeds[sp] * BEAT.choreo, pl = EC.plan({ events: evK[id], casterSeat: 0 }, KS[id], { mode: 'full', choreoSpeed: vfxT, casterSeat: 0 }), k = KS[id].contract;
+      k4.push({ id, sp, impact: pl ? +pl.timeline.impactAt.toFixed(1) : null, want: +((k.castHitStopMs + k.castHoldMs) * vfxT).toFixed(1), start: pl ? +pl.timeline.clipStart.toFixed(1) : null }); }
+    const kn = (id) => (k4.find((x) => x.id === id && x.sp === 'normal') || {}).impact;
+    ok('K4 · THE WHOLE CLIP FROM THE CAST, ITS BEAT AT THE END OF THE PLAY BEAT: at Relaxed, Normal and Fast each clip starts at the cast and its beat cell lands where the play beat ends — at Normal Nagastra ' + kn('nagastra') + ' ms (f032, the Venom tokens) and Tamasa ' + kn('tamasa') + ' ms (f031, the turn indicator), against the classic 1001',
+       k4.every((x) => x.impact != null && Math.abs(x.impact - x.want) < 0.1 && x.start === 0) && Math.abs(kn('nagastra') - 1733.3) < 0.1 && Math.abs(kn('tamasa') - 1679.2) < 0.1, J(k4));
+    // K5 · placement (the standing rule): wide → whole inside the OPPOSITE half; a phone → the "fit" placement, the strike point on the opponent's card row, whole
+    const DMV = JSON.parse(fs.readFileSync(path.join(GAME, 'src', 'device_matrix.json'), 'utf8')).viewports, op = [];
+    const WIDEK = (w, h, m) => { const rt = REG.routes[m.cardId], a2 = rt && rt.aspect ? rt.aspect : m.cellSize.w / m.cellSize.h; return Math.min(w, h * a2) > (rt && rt.hiAbovePx ? rt.hiAbovePx : 500); };
+    for (const id in KB) for (const v of DMV) for (const seat of [0, 1]) { const w = v.half.w, hh = v.half.h, FH = 2 * hh + 2, halves = { 1: { cx: w / 2, cy: hh / 2, top: 0, w, h: hh }, 0: { cx: w / 2, cy: hh + 2 + hh / 2, top: hh + 2, w, h: hh } }, hit = halves[1 - seat];
+      const cw = v.card.w, chh = v.card.h, x0 = Math.min(0.06 * w, 40), R = Array.from({ length: 3 }, (_, k) => ({ cx: x0 + cw / 2 + k * (cw + 6), cy: hit.top + hh * 0.55, w: cw, h: chh }));
+      const env = { now: () => 0, canvas: { width: w * 2, height: FH * 2, getContext: () => ({ setTransform() {}, clearRect() {}, drawImage() {}, globalAlpha: 1, globalCompositeOperation: 'source-over' }) }, dpr: 2,
+        cardOf: () => null, halfOf: (st) => halves[st], fieldOf: () => ({ w, h: FH }), unitsOf: (st) => (st === 1 - seat ? R : []), wideBoard: (m) => WIDEK(w, FH, m), loadAtlas: (m) => ({ source: {}, bytes: m.atlasSize.w * m.atlasSize.h * 4, close() {} }), render() {}, sound() {}, crack() {}, removal() {}, callout() {}, onDone() {} };
+      const m = KS[id], run = EC.createPlayer(env).play({ events: evK[id], casterSeat: seat }, m, { before: null, after: null }, { mode: 'full', choreoSpeed: 1.3, casterSeat: seat }), pl = run && run.places && run.places[0];
+      const wide = WIDEK(w, FH, m), whole = !!pl && pl.x >= -0.01 && pl.y >= -0.01 && pl.x + pl.w <= w + 0.01 && pl.y + pl.h <= FH + 0.01;
+      let ok2 = !!pl;
+      if (wide) { const lb = m.litBox, s2 = Math.min((w - 16) / (lb.x1 - lb.x0), (hh - 16) / (lb.y1 - lb.y0));
+        ok2 = ok2 && Math.abs(pl.scale - s2) < 1e-9 && Math.abs(pl.x + (lb.x0 + lb.x1) / 2 * s2 - w / 2) < 0.01 && Math.abs(pl.y + (lb.y0 + lb.y1) / 2 * s2 - (hit.top + hh / 2)) < 0.01 && J(pl.clip) === J({ x: 0, y: hit.top, w, h: hh }) && pl.feather === 8; }
+      else { const ay = pl ? pl.y + m.anchor.y * pl.scale : NaN, rtop = Math.min(...R.map((c) => c.cy - c.h / 2)), rbot = Math.max(...R.map((c) => c.cy + c.h / 2));
+        ok2 = ok2 && whole && !pl.clip && ay >= rtop - 0.01 && ay <= rbot + 0.01 && pl.scale <= Math.min(w / m.cellSize.w, FH / m.cellSize.h) + 1e-9; }
+      op.push({ id, vp: v.vw + 'x' + v.vh, seat, wide, pl: pl && [Math.round(pl.x), Math.round(pl.y), Math.round(pl.w), Math.round(pl.h)], ok: ok2 }); }
+    const d8 = (id) => (op.find((x) => x.id === id && x.vp === '1280x800' && x.seat === 0) || {}).pl;
+    ok('K5 · THE STANDING PLACEMENT RULE: on the ' + op.filter((x) => x.wide && x.id === 'nagastra' && x.seat === 0).length + ' wide screens each plays WHOLE inside the half it strikes — the OPPOSITE half, following the seat — its lit box fitted to the half with an 8 px margin, centred across it, clipped to the half and feathered there (1280x800: Nagastra ' + J(d8('nagastra')) + ', Tamasa ' + J(d8('tamasa')) + '); on the ' + op.filter((x) => !x.wide && x.id === 'nagastra' && x.seat === 0).length + ' phones the "fit" placement, the strike point on the opponent\'s card row, the whole picture inside the board',
+       op.length === 64 && op.every((x) => x.ok), J(op.filter((x) => !x.ok).slice(0, 4)));
+    // K6 · the held board: both held plays — the tokens and the turn indicator change on the clip's beat frame (test_roundend E2 and E9 prove it in play)
+    ok('K6 · THE HELD BOARD (unchanged): Nagastra and Tamasa remain held plays — the Venom tokens change on f032 and the turn indicator on f031, the frame that draws the beat (test_roundend E2 and E9 prove it in play)',
+       /const HELD_PLAYS=\{[^}]*'Nagastra':1[^}]*'Tamasa':1/.test(HTML) && /const HELD_SILENT=\{[^}]*'Tamasa':1/.test(HTML));
   }
 
   // K7 · ruling 4: the caster of a Mantra in the Rishi Mandala (it returns to the HAND) — the classic Gayatri, Rama Naam and Pavamana plates and the clip all read playSeatOf
@@ -1324,16 +1359,28 @@ const card = (id) => ({ id, n: id, t: 'astra' });
   ok('P2 · BRAHMASTRA\'S CLASSIC SPRITE IS ITS FALLBACK (EXPORT-3 reverses the pin): sprBrahmastra itself is byte-identical to the pre-export game, and its one call site is the gated line R5 checks', sha(fnBody('sprBrahmastra')) === PIN.sprBrahmastra && (HTML.match(/VFX\.sprBrahmastra\(/g) || []).length === 1);
   ok('P3 · MEGHNAD PINNED: his presentation is the Unit landing path, byte-identical to the pre-export game, and nothing in the export names him', sha(lineOf('} else VFX.sprLanding(fac,')) === PIN.unitLanding && !/meghnad/i.test(GLUE));
   ok('P4 · the inlined effect player is the exported module, verbatim (sha256 ' + PIN.effectPlayer.slice(0, 12) + '…)', PLAYER_SRC && sha(PLAYER_SRC) === PIN.effectPlayer);
-  { // V9 · WAVE1-CLIPS-1 (owner ruling 2): the page's player differs from the certified LAB-25 player by exactly the span-centring lines
-    const PLAN_NEW = "targetUid: b.targetUid, struckUids: (b.strike && b.strike.targetUids) ? b.strike.targetUids.slice() : [], casterSeat:", PLAN_OLD = "targetUid: b.targetUid, casterSeat:";
-    const a0 = (PLAYER_SRC || '').indexOf('        var halfPlate = '), a1 = (PLAYER_SRC || '').indexOf('        return pc;\n', a0);   // batch 2 opens the hunk one line earlier
-    const HP_NEW = "var HALF_PLACES = { 'enemy-half-centre': 'enemy-half', 'enemy-half-top': 'enemy-half-top', 'enemy-half-bottom': 'enemy-half-bottom', 'caster-half-bottom': 'caster-half-bottom', 'caster-half-centre': 'caster-half' };   // WAVE1-CLIPS-1 batch 2: + the caster's own half, centred",
-          HP_OLD = "var HALF_PLACES = { 'enemy-half-centre': 'enemy-half', 'enemy-half-top': 'enemy-half-top', 'enemy-half-bottom': 'enemy-half-bottom', 'caster-half-bottom': 'caster-half-bottom' };";
-    const hunk = a0 >= 0 && a1 > a0 ? PLAYER_SRC.slice(a0, a1 + '        return pc;\n'.length) : '';
-    const OLD_LINE = "        return hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w, halfW: hh.w, halfH: hh.h }) : null;   // the card width still sets the scale (cardWidths), the half sets the centre\n";
-    const back = hunk ? PLAYER_SRC.split(PLAN_NEW).join(PLAN_OLD).split(hunk).join(OLD_LINE).split(HP_NEW).join(HP_OLD) : '';
-    ok('V9 · THE PLAYER CHANGE IS EXACTLY THE RULED ONE (WAVE1-CLIPS-1 ruling 2; batch 2): the page\'s player with the span-centring lines taken out (the plan\'s struckUids, the half-plate slide — the struck Units, or a half\'s Units for a play-triggered plate — and the caster\'s own half, ' + hunk.split('\n').length + ' lines in the place hunk) is the certified LAB-25 player again (sha256 ' + PIN.effectPlayer25.slice(0, 12) + '…) — nothing else in the player moved',
-       !!hunk && (PLAYER_SRC.split(PLAN_NEW).length === 2) && (PLAYER_SRC.split(HP_NEW).length === 2) && sha(back) === PIN.effectPlayer25, sha(back));
+  { // V9 · WAVE1-CLIPS-1 (owner rulings 2026-11-25: batch 1 ruling 2, batch 2, the REBUILD and its FINAL rulings 2 and 5): the page's player differs from the certified LAB-25 player by exactly the ruled lines
+    const P = PLAYER_SRC || '', R = [];
+    const swap = (nw, old) => R.push([nw, old]);
+    swap("  var E1 = { capClass: 'the effect layer hi rung (the game sheet vfx_vajra hi: 3072x1536 RGBA)', capBytes: 3072 * 1536 * 4, oneAtATime: true,\n             hiCapBytes: 3072 * 1536 * 4 * 9 / 4, hiClass: 'WAVE1-CLIPS-1 FINAL ruling 5 (owner, 2026-11-25 23:29): the large-screen set (x1.5 each way) — a ruled exception for large screens only, never a phone' };",
+         "  var E1 = { capClass: 'the effect layer hi rung (the game sheet vfx_vajra hi: 3072x1536 RGBA)', capBytes: 3072 * 1536 * 4, oneAtATime: true };");
+    swap("    if (m.atlasSize && m.atlasSize.w * m.atlasSize.h * 4 > (m.rung === 'hi' ? E1.hiCapBytes : E1.capBytes)) e.push('the atlas decodes past the E1 cap');   // FINAL ruling 5: a large-screen pack (rung hi) has its own ruled cap",
+         "    if (m.atlasSize && m.atlasSize.w * m.atlasSize.h * 4 > E1.capBytes) e.push('the atlas decodes past the E1 cap');");
+    swap("    var HALF_PLACES = { 'enemy-half-centre': 'enemy-half', 'enemy-half-top': 'enemy-half-top', 'enemy-half-bottom': 'enemy-half-bottom', 'caster-half-bottom': 'caster-half-bottom', 'caster-half-centre': 'caster-half', 'enemy-board-row': 'enemy-board', 'caster-board-row': 'caster-board' };   // WAVE1-CLIPS-1 batch 2: + the caster's own half, centred; REBUILD: + the board-sized plates",
+         "    var HALF_PLACES = { 'enemy-half-centre': 'enemy-half', 'enemy-half-top': 'enemy-half-top', 'enemy-half-bottom': 'enemy-half-bottom', 'caster-half-bottom': 'caster-half-bottom' };");
+    swap("targetUid: b.targetUid, struckUids: (b.strike && b.strike.targetUids) ? b.strike.targetUids.slice() : [], casterSeat:", "targetUid: b.targetUid, casterSeat:");
+    swap("        if (sg.place === 'target' && !(m.scaleRule && m.scaleRule.boardFit)) return target ? place(m, withHalf(target, hE)) : null;   // REBUILD: a board-fit strike is placed below",
+         "        if (sg.place === 'target') return target ? place(m, withHalf(target, hE)) : null;");
+    const a0 = P.indexOf('        // WAVE1-CLIPS-1 REBUILD (owner rulings 2026-11-25 20:49)'), a1 = P.indexOf('        return pc;\n', a0);
+    const hunk = a0 >= 0 && a1 > a0 ? P.slice(a0, a1 + '        return pc;\n'.length) : '';
+    swap(hunk, "        return hh && target ? place(m, { cx: hh.cx, cy: hh.cy, w: target.w, halfW: hh.w, halfH: hh.h }) : null;   // the card width still sets the scale (cardWidths), the half sets the centre\n");
+    // the NO-CUT ruling (owner, 2026-11-26 18:04): the whole-in-half margin/feather constant and the clipped, feathered draw of a whole-in-half plate (its placement sits in the hunk above)
+    { const w0 = P.indexOf('  var WHOLE_HALF = {'), w1 = P.indexOf('\n', w0) + 1; swap(w0 >= 0 ? P.slice(w0, w1) : '', ''); }
+    { const d0 = P.indexOf('        else if (r.clip) {'), d1 = P.indexOf('        else g.drawImage(st.loaded.source, cell.x, cell.y, cell.w, cell.h, r.x * d, r.y * d, r.w * d, r.h * d);', d0); swap(d0 >= 0 && d1 > d0 ? P.slice(d0, d1) : '', ''); }
+    const once = R.every(([nw]) => nw && P.split(nw).length === 2);
+    const back = R.reduce((t, [nw, old]) => t.split(nw).join(old), P);
+    ok('V9 · THE PLAYER CHANGE IS EXACTLY THE RULED ONE (WAVE1-CLIPS-1): the page\'s player with its ruled lines taken out — the large-screen cap (E1.hiCapBytes and the validate line, FINAL ruling 5), the board-sized anchors in HALF_PLACES, the plan\'s struckUids, the board-fit strike\'s target line, the NO-CUT ruling\'s whole-in-half constant (WHOLE_HALF) and its clipped, feathered draw, and the place hunk (' + hunk.split('\n').length + ' lines: the board-sized plates of the rebuild — the main action on its own row, FINAL ruling 2, or, where the whole picture cannot fit so, shrunk just enough, KAVACHA-ANCHOR — the whole-in-half plate of the NO-CUT ruling on a wide board — and the half-plate span centring of batches 1 and 2) — is the certified LAB-25 player again (sha256 ' + PIN.effectPlayer25.slice(0, 12) + '…): nothing else in the player moved; the lab\'s copy carries the same lines',
+       !!hunk && once && sha(back) === PIN.effectPlayer25, sha(back));
   }
   ok('P5 · the page carries no console.log', !/console\.log\(/.test(HTML));
 

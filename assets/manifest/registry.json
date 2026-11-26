@@ -54,35 +54,75 @@
       "spec": "effects/agneyastra/manifest.json",
       "replaces": "sprDamage",
       "moment": "damage",
-      "anchor": "target-card-centre (the fire ring 1.25 card widths across, on the one Unit hit)",
-      "note": "Agneyastra had no effect of its own; its fallback (WAVE1-CLIPS-1 ruling 3) is the game\u2019s shared damage strike, drawn at strike size (1.6 card widths) on the target"
-    },
-    "nagastra": {
-      "spec": "effects/nagastra/manifest.json",
-      "replaces": "sprNagastra",
-      "moment": "token",
-      "anchor": "enemy-half-centre (fitted: 1.0 of the half\u2019s width, never taller than the half; feathered on all four edges \u2014 never outside the board, never across the middle line)"
+      "anchor": "target-card-centre, as large as the board allows (the strike on the one target card)",
+      "note": "Agneyastra had no effect of its own; its fallback (WAVE1-CLIPS-1 ruling 3) is the game\u2019s shared damage strike, drawn at strike size (1.6 card widths) on the target",
+      "hi": "effects/agneyastra_hi/manifest.json",
+      "hiAbovePx": 500,
+      "aspect": 1.363
     },
     "pavamana": {
       "spec": "effects/pavamana/manifest.json",
       "replaces": "sprPavamana",
       "moment": "play",
-      "anchor": "caster-half-centre (fitted: 1.0 of the half\u2019s width, never taller than the half; on a wide half centred on the caster\u2019s Units)",
-      "note": "the clip owns its own beat: f040, the white cleansing ring \u2014 the heal and the +1 land on that frame (the play beat ends there)"
-    },
-    "tamasa": {
-      "spec": "effects/tamasa/manifest.json",
-      "replaces": "sprTamasa",
-      "moment": "play",
-      "anchor": "enemy-half-centre (fitted: 1.0 of the half\u2019s width, never taller than the half; on a wide half centred on the enemy\u2019s Units)",
-      "note": "played from the cast; the clip owns its own beat: f020, the dome slams down \u2014 the skip shows on that frame"
+      "anchor": "caster's half \u2014 NO-CUT ruling (owner, 2026-11-26 18:04): on a wide board (the hiAbovePx test) the WHOLE picture plays inside the half it acts on \u2014 its lit box fitted to that half with an 8 px margin, centred across it, clipped and feathered at the half's edges; on a phone the fit placement on the card row",
+      "note": "the clip owns its own beat: f040, the white cleansing ring \u2014 the heal and the +1 land on that frame (the play beat ends there)",
+      "hi": "effects/pavamana_hi/manifest.json",
+      "hiAbovePx": 500,
+      "aspect": 1.773,
+      "wholeHalf": {
+        "cellW": 289,
+        "litW": 279,
+        "litH": 155,
+        "maxStretch": 1.5
+      }
     },
     "kavacha": {
       "spec": "effects/kavacha/manifest.json",
       "replaces": "sprKavacha",
       "moment": "play",
-      "anchor": "caster-half-centre (fitted: 1.0 of the half\u2019s width, never taller than the half; on a wide half centred on the caster\u2019s Units)",
-      "note": "played from the cast; the clip owns its own beat: f044, the domes turn blue \u2014 the artifact takes its slot on that frame"
+      "anchor": "caster's half \u2014 NO-CUT ruling (owner, 2026-11-26 18:04): on a wide board (the hiAbovePx test) the WHOLE picture plays inside the half it acts on \u2014 its lit box fitted to that half with an 8 px margin, centred across it, clipped and feathered at the half's edges; on a phone the fit placement on the card row",
+      "note": "played from the cast; the clip owns its own beat: f044, the domes turn blue \u2014 the artifact takes its slot on that frame",
+      "hi": "effects/kavacha_hi/manifest.json",
+      "hiAbovePx": 500,
+      "aspect": 1.773,
+      "wholeHalf": {
+        "cellW": 312,
+        "litW": 285,
+        "litH": 161,
+        "maxStretch": 1.5
+      }
+    },
+    "nagastra": {
+      "spec": "effects/nagastra/manifest.json",
+      "replaces": "sprNagastra",
+      "moment": "token",
+      "anchor": "the opposite half \u2014 NO-CUT ruling (owner, 2026-11-26 18:04): on a wide board (the hiAbovePx test) the WHOLE picture plays inside the half it acts on \u2014 its lit box fitted to that half with an 8 px margin, centred across it, clipped and feathered at the half's edges; on a phone the fit placement on the card row",
+      "note": "the clip owns the strike; its beat is the token event: f032, the venom drops reach the ground \u2014 the Venom tokens land on that frame",
+      "hi": "effects/nagastra_hi/manifest.json",
+      "hiAbovePx": 500,
+      "aspect": 1.803,
+      "wholeHalf": {
+        "cellW": 339,
+        "litW": 337,
+        "litH": 185,
+        "maxStretch": 1.5
+      }
+    },
+    "tamasa": {
+      "spec": "effects/tamasa/manifest.json",
+      "replaces": "sprTamasa",
+      "moment": "play",
+      "anchor": "the opposite half \u2014 NO-CUT ruling (owner, 2026-11-26 18:04): on a wide board (the hiAbovePx test) the WHOLE picture plays inside the half it acts on \u2014 its lit box fitted to that half with an 8 px margin, centred across it, clipped and feathered at the half's edges; on a phone the fit placement on the card row",
+      "note": "played from the cast; the clip owns its own beat: f031, the slam \u2014 the turn indicator changes on that frame",
+      "hi": "effects/tamasa_hi/manifest.json",
+      "hiAbovePx": 500,
+      "aspect": 1.873,
+      "wholeHalf": {
+        "cellW": 339,
+        "litW": 275,
+        "litH": 150,
+        "maxStretch": 1.5
+      }
     }
   },
   "pinned": {

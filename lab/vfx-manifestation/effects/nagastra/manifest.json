@@ -2,506 +2,620 @@
   "cardId": "nagastra",
   "class": "effect-clip",
   "version": 1,
-  "source": "Kling clip nagastra.mp4 (sha256 5d31f102df41\u2026, 73 frames @ 24 fps, 1916x1080, black ground) \u2014 kept f014\u2013f072; packed by tools/make_effect_from_clip.py",
+  "source": "Kling clip nagastra_premium.mp4 (sha256 bfe80d4790ea\u2026, 72 frames @ 24 fps, 1920x1080, black ground) \u2014 kept f000\u2013f071; packed by tools/make_effect_from_clip.py",
   "atlas": "atlas.webp",
   "atlasSize": {
-    "w": 3896,
-    "h": 1202
+    "w": 4094,
+    "h": 1142
   },
   "channels": "rgb",
   "blend": "add",
   "alpha": "luminance",
   "fps": 24,
   "timing": "native",
-  "cellPx": 352,
+  "cellPx": 339,
   "cellSize": {
-    "w": 352,
-    "h": 198
+    "w": 339,
+    "h": 188
   },
   "cells": [
     {
-      "name": "f014",
-      "src": 14,
+      "name": "f000",
+      "src": 0,
       "x": 2,
       "y": 2,
-      "w": 352,
-      "h": 198
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f001",
+      "src": 1,
+      "x": 343,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f002",
+      "src": 2,
+      "x": 684,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f003",
+      "src": 3,
+      "x": 1025,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f004",
+      "src": 4,
+      "x": 1366,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f005",
+      "src": 5,
+      "x": 1707,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f006",
+      "src": 6,
+      "x": 2048,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f007",
+      "src": 7,
+      "x": 2389,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f008",
+      "src": 8,
+      "x": 2730,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f009",
+      "src": 9,
+      "x": 3071,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f010",
+      "src": 10,
+      "x": 3412,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f011",
+      "src": 11,
+      "x": 3753,
+      "y": 2,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f012",
+      "src": 12,
+      "x": 2,
+      "y": 192,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f013",
+      "src": 13,
+      "x": 343,
+      "y": 192,
+      "w": 339,
+      "h": 188
+    },
+    {
+      "name": "f014",
+      "src": 14,
+      "x": 684,
+      "y": 192,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f015",
       "src": 15,
-      "x": 356,
-      "y": 2,
-      "w": 352,
-      "h": 198
+      "x": 1025,
+      "y": 192,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f016",
       "src": 16,
-      "x": 710,
-      "y": 2,
-      "w": 352,
-      "h": 198
+      "x": 1366,
+      "y": 192,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f017",
       "src": 17,
-      "x": 1064,
-      "y": 2,
-      "w": 352,
-      "h": 198
+      "x": 1707,
+      "y": 192,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f018",
       "src": 18,
-      "x": 1418,
-      "y": 2,
-      "w": 352,
-      "h": 198
+      "x": 2048,
+      "y": 192,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f019",
       "src": 19,
-      "x": 1772,
-      "y": 2,
-      "w": 352,
-      "h": 198
+      "x": 2389,
+      "y": 192,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f020",
       "src": 20,
-      "x": 2126,
-      "y": 2,
-      "w": 352,
-      "h": 198
+      "x": 2730,
+      "y": 192,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f021",
       "src": 21,
-      "x": 2480,
-      "y": 2,
-      "w": 352,
-      "h": 198
+      "x": 3071,
+      "y": 192,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f022",
       "src": 22,
-      "x": 2834,
-      "y": 2,
-      "w": 352,
-      "h": 198
+      "x": 3412,
+      "y": 192,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f023",
       "src": 23,
-      "x": 3188,
-      "y": 2,
-      "w": 352,
-      "h": 198
+      "x": 3753,
+      "y": 192,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f024",
       "src": 24,
-      "x": 3542,
-      "y": 2,
-      "w": 352,
-      "h": 198
+      "x": 2,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f025",
       "src": 25,
-      "x": 2,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 343,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f026",
       "src": 26,
-      "x": 356,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 684,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f027",
       "src": 27,
-      "x": 710,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 1025,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f028",
       "src": 28,
-      "x": 1064,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 1366,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f029",
       "src": 29,
-      "x": 1418,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 1707,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f030",
       "src": 30,
-      "x": 1772,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 2048,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f031",
       "src": 31,
-      "x": 2126,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 2389,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f032",
       "src": 32,
-      "x": 2480,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 2730,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f033",
       "src": 33,
-      "x": 2834,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 3071,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f034",
       "src": 34,
-      "x": 3188,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 3412,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f035",
       "src": 35,
-      "x": 3542,
-      "y": 202,
-      "w": 352,
-      "h": 198
+      "x": 3753,
+      "y": 382,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f036",
       "src": 36,
       "x": 2,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f037",
       "src": 37,
-      "x": 356,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 343,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f038",
       "src": 38,
-      "x": 710,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 684,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f039",
       "src": 39,
-      "x": 1064,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 1025,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f040",
       "src": 40,
-      "x": 1418,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 1366,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f041",
       "src": 41,
-      "x": 1772,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 1707,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f042",
       "src": 42,
-      "x": 2126,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 2048,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f043",
       "src": 43,
-      "x": 2480,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 2389,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f044",
       "src": 44,
-      "x": 2834,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 2730,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f045",
       "src": 45,
-      "x": 3188,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 3071,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f046",
       "src": 46,
-      "x": 3542,
-      "y": 402,
-      "w": 352,
-      "h": 198
+      "x": 3412,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f047",
       "src": 47,
-      "x": 2,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 3753,
+      "y": 572,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f048",
       "src": 48,
-      "x": 356,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 2,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f049",
       "src": 49,
-      "x": 710,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 343,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f050",
       "src": 50,
-      "x": 1064,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 684,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f051",
       "src": 51,
-      "x": 1418,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 1025,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f052",
       "src": 52,
-      "x": 1772,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 1366,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f053",
       "src": 53,
-      "x": 2126,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 1707,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f054",
       "src": 54,
-      "x": 2480,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 2048,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f055",
       "src": 55,
-      "x": 2834,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 2389,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f056",
       "src": 56,
-      "x": 3188,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 2730,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f057",
       "src": 57,
-      "x": 3542,
-      "y": 602,
-      "w": 352,
-      "h": 198
+      "x": 3071,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f058",
       "src": 58,
-      "x": 2,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 3412,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f059",
       "src": 59,
-      "x": 356,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 3753,
+      "y": 762,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f060",
       "src": 60,
-      "x": 710,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 2,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f061",
       "src": 61,
-      "x": 1064,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 343,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f062",
       "src": 62,
-      "x": 1418,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 684,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f063",
       "src": 63,
-      "x": 1772,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 1025,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f064",
       "src": 64,
-      "x": 2126,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 1366,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f065",
       "src": 65,
-      "x": 2480,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 1707,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f066",
       "src": 66,
-      "x": 2834,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 2048,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f067",
       "src": 67,
-      "x": 3188,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 2389,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f068",
       "src": 68,
-      "x": 3542,
-      "y": 802,
-      "w": 352,
-      "h": 198
+      "x": 2730,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f069",
       "src": 69,
-      "x": 2,
-      "y": 1002,
-      "w": 352,
-      "h": 198
+      "x": 3071,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f070",
       "src": 70,
-      "x": 356,
-      "y": 1002,
-      "w": 352,
-      "h": 198
+      "x": 3412,
+      "y": 952,
+      "w": 339,
+      "h": 188
     },
     {
       "name": "f071",
       "src": 71,
-      "x": 710,
-      "y": 1002,
-      "w": 352,
-      "h": 198
-    },
-    {
-      "name": "f072",
-      "src": 72,
-      "x": 1064,
-      "y": 1002,
-      "w": 352,
-      "h": 198
+      "x": 3753,
+      "y": 952,
+      "w": 339,
+      "h": 188
     }
   ],
-  "impact": 18,
+  "impact": 32,
   "anchor": {
-    "x": 176.0,
-    "y": 99.0
+    "x": 169.5,
+    "y": 141.0
   },
+  "litBox": {
+    "x0": 1,
+    "y0": 1,
+    "x1": 338,
+    "y1": 186,
+    "thr": 40,
+    "minShare": 0.004,
+    "rule": "NO-CUT ruling (owner, 2026-11-26 18:04): the lit extent over all cells (luminance >= 40 on >= 0.4% of a row/column, after the lift); on a wide board this box is fitted to the half it acts on with a margin, and anything fainter outside it is feathered out at the half's edge"
+  },
+  "lift": 0.6,
   "scaleRule": {
     "feature": "plate width (the clip's content box)",
     "frame": 32,
-    "spanSrc": 1916,
-    "spanCell": 352.0,
+    "spanSrc": 1520,
+    "spanCell": 339.0,
     "cardWidths": 5.17,
     "ruledDefaultCardWidths": null,
     "halfFraction": 1.0,
@@ -512,11 +626,12 @@
   "contract": {
     "trigger": "token",
     "abilityName": "Nagastra",
-    "anchor": "enemy-half-centre",
+    "anchor": "enemy-board-row",
+    "veil": 0.65,
     "castSound": "sfx_astra",
     "impactSound": "sfx_venom_apply",
     "castHitStopMs": 70,
-    "castHoldMs": 700,
+    "castHoldMs": 1263.3333333333333,
     "flightMs": 0,
     "crackAfterMs": 0,
     "destroyDwellMs": 0,
@@ -525,344 +640,171 @@
   },
   "audit": {
     "range": [
-      14,
-      72
-    ],
-    "droppedHead": [
       0,
-      13
+      71
     ],
+    "droppedHead": null,
     "droppedTail": null,
     "impactSrc": 32,
     "impact": {
-      "rule": "largestchange",
-      "window": [
-        26,
-        38
-      ],
+      "rule": "ruled",
       "changes": {
-        "f026": 9.83,
-        "f027": 9.86,
-        "f028": 9.74,
-        "f029": 9.49,
-        "f030": 10.41,
-        "f031": 11.17,
-        "f032": 11.85,
-        "f033": 10.27,
-        "f034": 9.95,
-        "f035": 9.51,
-        "f036": 9.29,
-        "f037": 9.79,
-        "f038": 9.82
+        "f026": 12.03,
+        "f027": 6.36,
+        "f028": 5.25,
+        "f029": 4.01,
+        "f030": 2.83,
+        "f031": 2.7,
+        "f032": 2.13,
+        "f033": 1.97,
+        "f034": 1.99,
+        "f035": 2.06,
+        "f036": 2.01,
+        "f037": 1.95,
+        "f038": 0.15
       },
-      "why": "WAVE1-CLIPS-1 ruling 2: the serpents strike the ground; the Venom tokens land on that beat"
+      "why": "NO-CUT ruling (owner, 2026-11-26 18:04): f032, the venom drops reach the ground - the Venom tokens land there (the largest picture change, f026, is the mouths snapping open)"
     },
     "corePoint": [
-      920,
-      868
+      1028,
+      724
     ],
-    "scale": 0.18372,
+    "scale": 0.22303,
     "box": [
-      0,
-      0,
-      1916,
-      1080
+      184,
+      55,
+      1704,
+      898
     ],
     "cellPx": {
-      "used": 352,
+      "used": 339,
       "asked": "largest",
       "steppedDown": null,
       "largest": {
         "rule": "largest",
-        "used": 352,
-        "why": "owner ruling B2: the largest cell whose pack decodes under the E1 cap (the next size up, 353, does not fit)"
+        "used": 339,
+        "why": "owner ruling B2: the largest cell whose pack decodes under the E1 cap (the next size up, 340, does not fit)"
       }
     },
-    "decodedBytes": 18731968,
+    "decodedBytes": 18701392,
     "e1CapBytes": 18874368,
     "ground": {
-      "cornersMax": 115,
-      "farMax": 0,
+      "cornersMax": 0,
+      "farMax": 37,
       "method": "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) \u2014 stated beside the bake metric",
-      "zeroShareMin": 0.03078,
-      "pedestal1to4ShareMax": 0.08443
+      "zeroShareMin": 0.65994,
+      "pedestal1to4ShareMax": 0.0
     },
     "edges": {
-      "top": 59,
-      "bottom": 1,
-      "left": 28,
-      "right": 36,
-      "of": 59
+      "top": 0,
+      "bottom": 0,
+      "left": 0,
+      "right": 0,
+      "of": 72
     },
     "fadeIn": [
       [
-        14,
+        0,
         0.2
       ],
       [
-        15,
+        1,
         0.4
       ],
       [
-        16,
+        2,
         0.6
       ],
       [
-        17,
+        3,
         0.8
       ]
     ],
     "fadeTail": [
       [
-        65,
+        64,
         1.0
       ],
       [
-        66,
+        65,
         0.8571
       ],
       [
-        67,
+        66,
         0.7143
       ],
       [
-        68,
+        67,
         0.5714
       ],
       [
-        69,
+        68,
         0.4286
       ],
       [
-        70,
+        69,
         0.2857
       ],
       [
-        71,
+        70,
         0.1429
       ],
       [
-        72,
+        71,
         0.0
       ]
     ],
     "vignette": {
       "top": {
-        "px": 173,
-        "cellPxAtScale": 31.8,
-        "coreMarginMin": 0,
-        "coreMarginMinAt": 27,
+        "px": 64,
+        "cellPxAtScale": 14.3,
+        "coreMarginMin": 61,
+        "coreMarginMinAt": 18,
         "bodyInBand": [
           "f017",
-          "f018",
-          "f019",
-          "f020",
-          "f023",
-          "f026",
-          "f027",
-          "f031",
-          "f035",
-          "f036",
-          "f037",
-          "f038",
-          "f039",
-          "f040",
-          "f041",
-          "f042",
-          "f043",
-          "f044",
-          "f045",
-          "f046",
-          "f047",
-          "f048",
-          "f049",
-          "f050",
-          "f051",
-          "f052",
-          "f053"
+          "f018"
         ],
         "bodyInBandOutsideTail": [],
-        "ruledIntoBand": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" \u2014 the halo ring above the serpents and their heads reach into the 173 px top band (the top edge cuts the halo); the band is ruled over them so the plate fades in from the half instead of starting with a flat cut, the PASHU-V2 B4 precedent",
-        "bodyInBandRuled": 27
+        "ruledIntoBand": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)",
+        "bodyInBandRuled": 2
       },
       "bottom": {
-        "px": 108,
-        "cellPxAtScale": 19.8,
-        "coreMarginMin": 27,
-        "coreMarginMinAt": 31,
-        "bodyInBand": [
-          "f014",
-          "f015",
-          "f016",
-          "f017",
-          "f018",
-          "f019",
-          "f020",
-          "f021",
-          "f022",
-          "f023",
-          "f024",
-          "f025",
-          "f026",
-          "f027",
-          "f028",
-          "f029",
-          "f030",
-          "f031",
-          "f032",
-          "f033",
-          "f034",
-          "f035",
-          "f036",
-          "f037",
-          "f041",
-          "f042",
-          "f043",
-          "f044",
-          "f045",
-          "f046",
-          "f047",
-          "f048",
-          "f049",
-          "f050",
-          "f053",
-          "f054",
-          "f055",
-          "f056",
-          "f057",
-          "f059",
-          "f060",
-          "f071"
-        ],
+        "px": 96,
+        "cellPxAtScale": 21.4,
+        "coreMarginMin": 200,
+        "coreMarginMinAt": 23,
+        "bodyInBand": [],
         "bodyInBandOutsideTail": [],
-        "ruledIntoBand": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" \u2014 the ground ripples where the venom lands run down to the bottom edge and join the serpents' body; the 108 px bottom band is ruled over them so they fade out above the middle line instead of being cut by it",
-        "bodyInBandRuled": 41
+        "ruledIntoBand": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)",
+        "bodyInBandRuled": 0
       },
       "left": {
-        "px": 230,
-        "cellPxAtScale": 42.3,
-        "coreMarginMin": 57,
-        "coreMarginMinAt": 40,
-        "bodyInBand": [
-          "f027",
-          "f028",
-          "f029",
-          "f030",
-          "f031",
-          "f032",
-          "f033",
-          "f034",
-          "f035",
-          "f036",
-          "f037",
-          "f038",
-          "f039",
-          "f040",
-          "f041",
-          "f042",
-          "f043",
-          "f044",
-          "f045",
-          "f046",
-          "f047",
-          "f048",
-          "f049",
-          "f050",
-          "f051",
-          "f052",
-          "f053",
-          "f054",
-          "f055",
-          "f056",
-          "f057",
-          "f058",
-          "f059",
-          "f060",
-          "f061",
-          "f062",
-          "f063",
-          "f064",
-          "f065",
-          "f066",
-          "f067",
-          "f068"
-        ],
+        "px": 128,
+        "cellPxAtScale": 28.5,
+        "coreMarginMin": 244,
+        "coreMarginMinAt": 31,
+        "bodyInBand": [],
         "bodyInBandOutsideTail": [],
-        "ruledIntoBand": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" \u2014 the outer serpents and their splash rings reach the frame's left edge from the strike on; the 230 px side band is ruled over them so they fade into the half's left border, never a flat cut",
-        "bodyInBandRuled": 38
+        "ruledIntoBand": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)",
+        "bodyInBandRuled": 0
       },
       "right": {
-        "px": 230,
-        "cellPxAtScale": 42.3,
-        "coreMarginMin": 91,
-        "coreMarginMinAt": 42,
-        "bodyInBand": [
-          "f014",
-          "f015",
-          "f016",
-          "f017",
-          "f018",
-          "f019",
-          "f020",
-          "f021",
-          "f022",
-          "f023",
-          "f024",
-          "f025",
-          "f026",
-          "f027",
-          "f028",
-          "f029",
-          "f030",
-          "f031",
-          "f032",
-          "f033",
-          "f034",
-          "f035",
-          "f036",
-          "f037",
-          "f038",
-          "f039",
-          "f040",
-          "f041",
-          "f042",
-          "f043",
-          "f044",
-          "f045",
-          "f046",
-          "f047",
-          "f048",
-          "f049",
-          "f050",
-          "f051",
-          "f052",
-          "f053",
-          "f054",
-          "f055",
-          "f056",
-          "f057",
-          "f058",
-          "f059",
-          "f060",
-          "f061",
-          "f062",
-          "f063",
-          "f064",
-          "f065",
-          "f066",
-          "f067"
-        ],
+        "px": 128,
+        "cellPxAtScale": 28.5,
+        "coreMarginMin": 252,
+        "coreMarginMinAt": 54,
+        "bodyInBand": [],
         "bodyInBandOutsideTail": [],
-        "ruledIntoBand": "WAVE1-CLIPS-1 ruling 4 (owner, 2026-11-25): \"as previewed\" \u2014 the outer serpents and their splash rings reach the frame's right edge from the strike on; the 230 px side band is ruled over them so they fade into the half's right border, never a flat cut",
-        "bodyInBandRuled": 51
+        "ruledIntoBand": "NO-CUT ruling (owner, 2026-11-26 18:04): real packs with feathers - the bright body reaches this edge on some frames; the band is ruled over it so the plate never ends in a flat cut (on a wide board the player also clips the plate to its half and feathers it there)",
+        "bodyInBandRuled": 0
       }
     },
     "guardKind": "blob",
-    "guardTailStart": 65,
+    "guardTailStart": 64,
     "anchorRule": {
       "kind": "centre",
-      "place": "enemy-half-centre",
-      "dependency": "WAVE1-CLIPS-1 ruling 4: the plate's CENTRE sits on the enemy half's centre, fitted to the half's width and never taller than it, so it never leaves the half \u2014 nothing outside the board, nothing across the middle line; its cut edges are hidden by the four baked feathers"
+      "place": "enemy-board-row",
+      "dependency": "NO-CUT ruling (owner, 2026-11-26 18:04): on a phone the strike point sits on the opponent's card row, the whole picture inside the board (fit); on a wide board the whole picture is drawn inside the opponent's half, its lit box fitted to the half with a margin, centred across it, clipped to the half and feathered there"
     }
   }
 }

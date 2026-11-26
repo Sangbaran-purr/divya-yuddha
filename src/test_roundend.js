@@ -29,7 +29,7 @@ const BREAKS = {
   e7: ['return (p && HELD_PLAYS[p.abilityName]) ? p : null;', 'return p || null;'],
   e8: ['function heldCopyAny(g){ if (!g) return null;', 'function heldCopyAny(g){ if (!g) return null; if (g._view) return g;'],
   e9: ["if (heldLive() && ev.type!=='destroy' && clipHoldsBeat(ev)){", "if (false){"],   // WAVE1-CLIPS-1: the held board moves at the start of the beat, not in the impact frame
-  e9b: ["'Agneyastra':1, 'Nagastra':1 };", "};"],   // WAVE1-CLIPS-1: Agneyastra and Nagastra off the held road (the live board at the play, as before the ruling)
+  e9b: ["'Agneyastra':1, 'Nagastra':1, 'Pavamana':1, 'Tamasa':1, 'Dharma Kavacha':1 };", "'Nagastra':1, 'Tamasa':1 };"],   // WAVE1-CLIPS-1: the three clip cards off the held road (the live board at the play, as before the ruling)
 };
 if (process.env.DY_RE_BREAK) { const br = BREAKS[process.env.DY_RE_BREAK]; if (!br || HTML.indexOf(br[0]) < 0) { console.log('✖ unknown or stale DY_RE_BREAK ' + process.env.DY_RE_BREAK); process.exit(2); } HTML = HTML.split(br[0]).join(br[1]); console.log('⚠ DY_RE_BREAK=' + process.env.DY_RE_BREAK + ' — one guard broken in memory'); }
 let pass = 0, fail = 0;
@@ -272,6 +272,14 @@ else {
         const buf = fs.readFileSync(f);
         return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(JSON.parse(buf.toString('utf8'))), text: () => Promise.resolve(buf.toString('utf8')), blob: () => { const bl = new w.Blob([buf]); bl.__wh = webpWH(buf); return Promise.resolve(bl); } }); };
       w.createImageBitmap = (bl) => Promise.resolve({ width: bl.__wh[0], height: bl.__wh[1], close() {} });
+      // WAVE1-CLIPS-1 FINAL: a phone's layout (390 px board) — the board-sized plates need the board's frame and its rows (jsdom lays out nothing)
+      const R = (l, t, wd, h) => ({ left: l, top: t, width: wd, height: h, right: l + wd, bottom: t + h, x: l, y: t });
+      w.Element.prototype.getBoundingClientRect = function () {
+        if (this.id === 'field') return R(0, 100, 390, 460);
+        const cl = this.classList;
+        if (cl && cl.contains('half')) return cl.contains('opp') ? R(0, 100, 390, 229) : R(0, 331, 390, 229);
+        if (cl && cl.contains('bc')) { const top = this.closest('#punits') ? 331 : this.closest('#ounits') ? 100 : null; if (top != null) { const i = [...this.parentNode.children].indexOf(this); return R(20 + i * 66, top + 70, 60, 80); } }
+        return R(0, 0, 0, 0); };
     }
     w.scrollTo = () => {};
     if (o.core) { w.postMessage = (m) => posted.push(JSON.parse(JSON.stringify(m))); w.eval(o.core); }   // puzzle mode: the parent page's puzzle code, and the frame's words to its parent recorded
@@ -644,6 +652,7 @@ else {
       // what each card visibly changes: the struck cards (batch 1); the caster's own cards (Pavamana's heal and +1); the turn indicator (Tamasa's skip:
       // until the slam it shows the turn as it would be without the skip); the artifact chip (Kavacha)
       const SPEC = { Agneyastra: ['agneyastra', 'devas', 'damage'], Nagastra: ['nagastra', 'asuras', 'token'], Pavamana: ['pavamana', 'devas', 'own'], Tamasa: ['tamasa', 'asuras', 'turn'], 'Dharma Kavacha': ['kavacha', 'devas', 'chip'] };
+      const CLASSIC = {};   // NO-CUT ruling (owner, 2026-11-26 18:04): the regenerated Nagastra and Tamasa are routed again — all five play their clips
       const res = [];
       for (const card of Object.keys(SPEC)) for (const seat of [0, 1]) {
         const [id, cf, trig] = SPEC[card];
@@ -664,8 +673,8 @@ else {
         const frames = [];
         // the screen as painted: a browser paints after the frame's callbacks AND the promise work they set off (the held board moves in that work),
         // so each frame's sample is read once those have run (setTimeout 0, before the next frame) — labelled with the cell that frame drew
-        const ft = nw.fxTick; nw.fxTick = function () { const r = ft.apply(this, arguments); const d = draws[draws.length - 1], cell = d ? cellOf(d) : -1, t = nw.performance.now();
-          setTimeout(() => frames.push({ t, cell, sig: watch() }), 0); return r; };
+        const ft = nw.fxTick; nw.fxTick = function () { const r = ft.apply(this, arguments); const d = draws.length > d0 ? draws[draws.length - 1] : null, cell = d ? cellOf(d) : -1, t = nw.performance.now(), veil = n$('fxveil').style.opacity;
+          setTimeout(() => frames.push({ t, cell, sig: watch(), veil }), 0); return r; };
         const d0 = draws.length;
         const ownUids = cast.units.map((u) => String(u.uid)), artId = seat === NT.ME ? 'part' : 'oart';
         if (trig === 'own') watch = () => ownUids.map((u) => cardSig(u));
@@ -676,16 +685,22 @@ else {
         nw.runAction(() => nw.playCard(G, seat, 0), { actor: seat });
         if (trig === 'damage' || trig === 'token') { const evs = G.events.slice(-12), bev = evs.find((e) => e.type === trig && e.abilityName === card), struck = (bev && bev.targetUids || []).map(String); watch = () => struck.map((u) => cardSig(u)); }
         const pre = watch();   // what shows once the play has begun (the turn has passed): it must hold until the impact frame
-        await until(() => !NT.choreoActive, 30000); await W(80); nw.fxTick = ft; playBeat.restore();
+        await until(() => !NT.choreoActive, 30000); await W(80);
+        { let last = -1, still = 0; await until(() => { const c = draws.length; still = c === last ? still + 1 : 0; last = c; return still >= 30; }, 15000); }   // the whole clip runs past the action: wait until it has drawn its last cell (300 ms with no new draw)
+        nw.fxTick = ft; playBeat.restore();
         const mine = draws.slice(d0).map(cellOf), changed = (f) => JSON.stringify(f.sig) !== JSON.stringify(pre);
-        const early = frames.filter((f) => f.cell < impSrc && changed(f)), firstTurn = frames.find(changed), post = watch();
+        const early = frames.filter((f) => f.cell < impSrc && changed(f)), firstTurn = frames.find(changed), post = watch(), nC = man.cells.length, tail = man.audit.fadeTail.length - 1;
+        const veilWant = (ix) => ix < 0 ? 0 : +(man.contract.veil * Math.max(0, Math.min(1, (ix + 1) / 4, (nC - 1 - ix) / tail))).toFixed(3), veilBad = frames.filter((f) => Math.abs(+f.veil - veilWant(f.cell)) > 0.0015).length, veilEnd = n$('fxveil').style.opacity;
         const expectChange = true;   // the player's Tamasa: "OPPONENT…" → "YOUR TURN" at the slam; the opponent's: "YOUR TURN" (the turn as it would be without the skip) → "OPPONENT…" at the slam
         res.push({ card, seat, ready, watched: pre.length, drawn: mine.length, impactDrawn: mine.indexOf(impSrc) >= 0, frames: frames.length, early: early.length,
-          turnedAtCell: firstTurn ? firstTurn.cell : null, impSrc, expectChange, playMs: playBeat.ms != null ? +playBeat.ms.toFixed(1) : null, wantMs: { Pavamana: 910, Tamasa: 1083.3, 'Dharma Kavacha': 1462.5 }[card] || null, before: pre0, during: pre, after: post, fell: notes.filter((x) => /fell-back|not-ready|clip-error|impact-wait-cap/.test(x.kind)).length, left: NT.RE === null && !NT.choreoActive });
+          turnedAtCell: firstTurn ? firstTurn.cell : null, impSrc, expectChange, playMs: playBeat.ms != null ? +playBeat.ms.toFixed(1) : null, wantMs: { Pavamana: 2166.7, Tamasa: 1679.2, 'Dharma Kavacha': 2383.3, Nagastra: 1733.3 }[card] || null, veilWant: man.contract.veil, before: pre0, during: pre, after: post,
+          classic: !!CLASSIC[card], changedAfter: JSON.stringify(post) !== JSON.stringify(pre), veilBad, veilPeak: Math.max(0, ...frames.map((f) => +f.veil)), veilEnd, lastCell: mine.length ? mine[mine.length - 1] : null, nC, fell: notes.filter((x) => /fell-back|not-ready|clip-error|impact-wait-cap/.test(x.kind)).length, left: NT.RE === null && !NT.choreoActive });
         notes.length = 0;
       }
-      ok(`E9 · WITH THE CLIP PLAYING (the real packs, decoded, drawn on the page's own clock — Agneyastra, Nagastra, Pavamana, Tamasa and Dharma Kavacha, both seats): nothing the card changes on screen — a struck card's number, mark or Venom tokens, the caster's own healed numbers, the artifact chip, the turn indicator — changes before the frame that draws the impact cell (f003 / f032 / f040 / f020 / f044), and it turns in that very frame (${res.map((x) => x.card + ' seat ' + x.seat + ': ' + (x.turnedAtCell == null ? 'no visible change' : 'turned at f' + String(x.turnedAtCell).padStart(3, '0'))).join(', ')}); the play beat of a play-triggered clip runs its ruled time at Normal — Pavamana 910 ms (the classic), Tamasa 1083 ms (+82, accepted), Dharma Kavacha 1462.5 ms (+552, the Artifact's build-up, ruled): measured ${res.filter((x) => x.wantMs).map((x) => x.card + ' ' + x.playMs).join(', ')} ms (within 40 ms — the frame clock and the cast's own work); the clip owned every one (never fell back, never capped), nothing left after. The classic path (clip not ready) keeps the same order: E2 above runs every play with no clip`,
-        res.length === 10 && res.every((x) => x.ready && x.watched >= 1 && x.drawn > 20 && x.impactDrawn && x.early === 0 && (x.expectChange ? x.turnedAtCell === x.impSrc : x.turnedAtCell === null) && x.fell === 0 && x.left && (!x.wantMs || (x.playMs != null && Math.abs(x.playMs - x.wantMs) <= 40))), J(res.filter((x) => !(x.ready && x.early === 0 && (x.expectChange ? x.turnedAtCell === x.impSrc : x.turnedAtCell === null) && x.fell === 0 && x.left))));
+      const clipR = res.filter((x) => !x.classic), clsR = res.filter((x) => x.classic);
+      ok(`E9 · WITH THE CLIP PLAYING (the real packs, decoded, drawn on the page's own clock — Agneyastra, Pavamana, Dharma Kavacha and, from the NO-CUT ruling (26 Nov 2026), the regenerated Nagastra and Tamasa, both seats; WAVE1-CLIPS-1 FINAL rulings 1 and 4): each plays its whole clip, first frame to last; nothing the card changes on screen — the struck card's number and mark, the caster's own healed numbers, the artifact chip — changes before the frame that draws its beat cell (f003 / f040 / f044 / Nagastra's Venom tokens f032 / Tamasa's turn indicator f031), and it turns in that very frame (${clipR.map((x) => x.card + ' seat ' + x.seat + ': turned at f' + String(x.turnedAtCell).padStart(3, '0') + ', ' + x.drawn + ' frames to f' + String(x.lastCell).padStart(3, '0')).join(', ')}); the veil follows each clip cell by cell — 0 before its first drawn frame, in over cells 0–3, its contract's veil at most (45%; 65% for Nagastra and Tamasa, on the affected half only), out with the fade tail, 0 on the last cell and after (${clipR.reduce((a, x) => a + x.veilBad, 0)} frames off the rule); the play beat runs the whole clip's lead to its beat at Normal — Pavamana 2166.7 ms, Dharma Kavacha 2383.3 ms (the classic 910), Nagastra 1733.3 ms and Tamasa 1679.2 ms (the classic 1001): measured ${clipR.filter((x) => x.wantMs).map((x) => x.card + ' ' + x.playMs).join(', ')} ms (within 40 ms); the clip owned every one, nothing left after. E2 above proves the held order with every play`,
+        res.length === 10 && clipR.length === 10 && clipR.every((x) => x.ready && x.watched >= 1 && x.drawn > 60 && x.impactDrawn && x.early === 0 && x.turnedAtCell === x.impSrc && x.lastCell === x.nC - 1 && x.veilBad === 0 && x.veilPeak === x.veilWant && x.veilEnd === '0' && x.fell === 0 && x.left && (!x.wantMs || (x.playMs != null && Math.abs(x.playMs - x.wantMs) <= 40))) &&
+        clsR.length === 0 && clsR.every((x) => !x.ready && x.drawn === 0 && x.changedAfter && x.veilPeak === 0 && x.left && x.playMs != null && Math.abs(x.playMs - x.wantMs) <= 40), J(res.filter((x) => x.classic ? !(x.drawn === 0 && x.changedAfter && Math.abs(x.playMs - x.wantMs) <= 40) : !(x.ready && x.early === 0 && x.turnedAtCell === x.impSrc && x.veilBad === 0 && x.fell === 0 && x.left && x.lastCell === x.nC - 1 && Math.abs((x.playMs || 0) - (x.wantMs || x.playMs || 0)) <= 40)).map((x) => Object.assign({}, x, { before: undefined, during: undefined, after: undefined }))));
       ok('  …that page ran clean', M9.errs.length === 0, M9.errs.slice(0, 3).join(' | '));
     }
   })();

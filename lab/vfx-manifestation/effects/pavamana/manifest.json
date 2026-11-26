@@ -2,618 +2,820 @@
   "cardId": "pavamana",
   "class": "effect-clip",
   "version": 1,
-  "source": "Kling clip pavamana.mp4 (sha256 4432dc238147\u2026, 97 frames @ 24 fps, 1916x1080, black ground) \u2014 kept f024\u2013f096; packed by tools/make_effect_from_clip.py",
+  "source": "Kling clip pavamana.mp4 (sha256 4432dc238147\u2026, 97 frames @ 24 fps, 1916x1080, black ground) \u2014 kept f000\u2013f096; packed by tools/make_effect_from_clip.py",
   "atlas": "atlas.webp",
   "atlasSize": {
-    "w": 4084,
-    "h": 1070
+    "w": 4076,
+    "h": 1157
   },
   "channels": "rgb",
   "blend": "add",
   "alpha": "luminance",
   "fps": 24,
   "timing": "native",
-  "cellPx": 312,
+  "cellPx": 289,
   "cellSize": {
-    "w": 312,
-    "h": 176
+    "w": 289,
+    "h": 163
   },
   "cells": [
     {
-      "name": "f024",
-      "src": 24,
+      "name": "f000",
+      "src": 0,
       "x": 2,
       "y": 2,
-      "w": 312,
-      "h": 176
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f001",
+      "src": 1,
+      "x": 293,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f002",
+      "src": 2,
+      "x": 584,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f003",
+      "src": 3,
+      "x": 875,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f004",
+      "src": 4,
+      "x": 1166,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f005",
+      "src": 5,
+      "x": 1457,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f006",
+      "src": 6,
+      "x": 1748,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f007",
+      "src": 7,
+      "x": 2039,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f008",
+      "src": 8,
+      "x": 2330,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f009",
+      "src": 9,
+      "x": 2621,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f010",
+      "src": 10,
+      "x": 2912,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f011",
+      "src": 11,
+      "x": 3203,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f012",
+      "src": 12,
+      "x": 3494,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f013",
+      "src": 13,
+      "x": 3785,
+      "y": 2,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f014",
+      "src": 14,
+      "x": 2,
+      "y": 167,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f015",
+      "src": 15,
+      "x": 293,
+      "y": 167,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f016",
+      "src": 16,
+      "x": 584,
+      "y": 167,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f017",
+      "src": 17,
+      "x": 875,
+      "y": 167,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f018",
+      "src": 18,
+      "x": 1166,
+      "y": 167,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f019",
+      "src": 19,
+      "x": 1457,
+      "y": 167,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f020",
+      "src": 20,
+      "x": 1748,
+      "y": 167,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f021",
+      "src": 21,
+      "x": 2039,
+      "y": 167,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f022",
+      "src": 22,
+      "x": 2330,
+      "y": 167,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f023",
+      "src": 23,
+      "x": 2621,
+      "y": 167,
+      "w": 289,
+      "h": 163
+    },
+    {
+      "name": "f024",
+      "src": 24,
+      "x": 2912,
+      "y": 167,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f025",
       "src": 25,
-      "x": 316,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 3203,
+      "y": 167,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f026",
       "src": 26,
-      "x": 630,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 3494,
+      "y": 167,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f027",
       "src": 27,
-      "x": 944,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 3785,
+      "y": 167,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f028",
       "src": 28,
-      "x": 1258,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 2,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f029",
       "src": 29,
-      "x": 1572,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 293,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f030",
       "src": 30,
-      "x": 1886,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 584,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f031",
       "src": 31,
-      "x": 2200,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 875,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f032",
       "src": 32,
-      "x": 2514,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 1166,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f033",
       "src": 33,
-      "x": 2828,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 1457,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f034",
       "src": 34,
-      "x": 3142,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 1748,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f035",
       "src": 35,
-      "x": 3456,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 2039,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f036",
       "src": 36,
-      "x": 3770,
-      "y": 2,
-      "w": 312,
-      "h": 176
+      "x": 2330,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f037",
       "src": 37,
-      "x": 2,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 2621,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f038",
       "src": 38,
-      "x": 316,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 2912,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f039",
       "src": 39,
-      "x": 630,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 3203,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f040",
       "src": 40,
-      "x": 944,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 3494,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f041",
       "src": 41,
-      "x": 1258,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 3785,
+      "y": 332,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f042",
       "src": 42,
-      "x": 1572,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 2,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f043",
       "src": 43,
-      "x": 1886,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 293,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f044",
       "src": 44,
-      "x": 2200,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 584,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f045",
       "src": 45,
-      "x": 2514,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 875,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f046",
       "src": 46,
-      "x": 2828,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 1166,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f047",
       "src": 47,
-      "x": 3142,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 1457,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f048",
       "src": 48,
-      "x": 3456,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 1748,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f049",
       "src": 49,
-      "x": 3770,
-      "y": 180,
-      "w": 312,
-      "h": 176
+      "x": 2039,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f050",
       "src": 50,
-      "x": 2,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 2330,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f051",
       "src": 51,
-      "x": 316,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 2621,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f052",
       "src": 52,
-      "x": 630,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 2912,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f053",
       "src": 53,
-      "x": 944,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 3203,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f054",
       "src": 54,
-      "x": 1258,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 3494,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f055",
       "src": 55,
-      "x": 1572,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 3785,
+      "y": 497,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f056",
       "src": 56,
-      "x": 1886,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 2,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f057",
       "src": 57,
-      "x": 2200,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 293,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f058",
       "src": 58,
-      "x": 2514,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 584,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f059",
       "src": 59,
-      "x": 2828,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 875,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f060",
       "src": 60,
-      "x": 3142,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 1166,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f061",
       "src": 61,
-      "x": 3456,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 1457,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f062",
       "src": 62,
-      "x": 3770,
-      "y": 358,
-      "w": 312,
-      "h": 176
+      "x": 1748,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f063",
       "src": 63,
-      "x": 2,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 2039,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f064",
       "src": 64,
-      "x": 316,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 2330,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f065",
       "src": 65,
-      "x": 630,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 2621,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f066",
       "src": 66,
-      "x": 944,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 2912,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f067",
       "src": 67,
-      "x": 1258,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 3203,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f068",
       "src": 68,
-      "x": 1572,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 3494,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f069",
       "src": 69,
-      "x": 1886,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 3785,
+      "y": 662,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f070",
       "src": 70,
-      "x": 2200,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 2,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f071",
       "src": 71,
-      "x": 2514,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 293,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f072",
       "src": 72,
-      "x": 2828,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 584,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f073",
       "src": 73,
-      "x": 3142,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 875,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f074",
       "src": 74,
-      "x": 3456,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 1166,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f075",
       "src": 75,
-      "x": 3770,
-      "y": 536,
-      "w": 312,
-      "h": 176
+      "x": 1457,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f076",
       "src": 76,
-      "x": 2,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 1748,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f077",
       "src": 77,
-      "x": 316,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 2039,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f078",
       "src": 78,
-      "x": 630,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 2330,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f079",
       "src": 79,
-      "x": 944,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 2621,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f080",
       "src": 80,
-      "x": 1258,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 2912,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f081",
       "src": 81,
-      "x": 1572,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 3203,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f082",
       "src": 82,
-      "x": 1886,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 3494,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f083",
       "src": 83,
-      "x": 2200,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 3785,
+      "y": 827,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f084",
       "src": 84,
-      "x": 2514,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 2,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f085",
       "src": 85,
-      "x": 2828,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 293,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f086",
       "src": 86,
-      "x": 3142,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 584,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f087",
       "src": 87,
-      "x": 3456,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 875,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f088",
       "src": 88,
-      "x": 3770,
-      "y": 714,
-      "w": 312,
-      "h": 176
+      "x": 1166,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f089",
       "src": 89,
-      "x": 2,
-      "y": 892,
-      "w": 312,
-      "h": 176
+      "x": 1457,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f090",
       "src": 90,
-      "x": 316,
-      "y": 892,
-      "w": 312,
-      "h": 176
+      "x": 1748,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f091",
       "src": 91,
-      "x": 630,
-      "y": 892,
-      "w": 312,
-      "h": 176
+      "x": 2039,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f092",
       "src": 92,
-      "x": 944,
-      "y": 892,
-      "w": 312,
-      "h": 176
+      "x": 2330,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f093",
       "src": 93,
-      "x": 1258,
-      "y": 892,
-      "w": 312,
-      "h": 176
+      "x": 2621,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f094",
       "src": 94,
-      "x": 1572,
-      "y": 892,
-      "w": 312,
-      "h": 176
+      "x": 2912,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f095",
       "src": 95,
-      "x": 1886,
-      "y": 892,
-      "w": 312,
-      "h": 176
+      "x": 3203,
+      "y": 992,
+      "w": 289,
+      "h": 163
     },
     {
       "name": "f096",
       "src": 96,
-      "x": 2200,
-      "y": 892,
-      "w": 312,
-      "h": 176
+      "x": 3494,
+      "y": 992,
+      "w": 289,
+      "h": 163
     }
   ],
-  "impact": 16,
+  "impact": 40,
   "anchor": {
-    "x": 156.0,
-    "y": 88.0
+    "x": 144.5,
+    "y": 127.1
   },
+  "litBox": {
+    "x0": 5,
+    "y0": 4,
+    "x1": 284,
+    "y1": 159,
+    "thr": 40,
+    "minShare": 0.004,
+    "rule": "NO-CUT ruling (owner, 2026-11-26 18:04): the lit extent over all cells (luminance >= 40 on >= 0.4% of a row/column, after the lift); on a wide board this box is fitted to the half it acts on with a margin, and anything fainter outside it is feathered out at the half's edge"
+  },
+  "lift": 0.6,
   "scaleRule": {
     "feature": "plate width (the clip's content box)",
     "frame": 40,
     "spanSrc": 1916,
-    "spanCell": 312.0,
+    "spanCell": 289.0,
     "cardWidths": 5.17,
     "ruledDefaultCardWidths": null,
     "halfFraction": 1.0,
@@ -624,11 +826,12 @@
   "contract": {
     "trigger": "play",
     "abilityName": "Pavamana",
-    "anchor": "caster-half-centre",
+    "anchor": "caster-board-row",
+    "veil": 0.45,
     "castSound": "sfx_heal",
     "impactSound": null,
     "castHitStopMs": 0,
-    "castHoldMs": 700,
+    "castHoldMs": 1666.6666666666667,
     "flightMs": 0,
     "crackAfterMs": 0,
     "destroyDwellMs": 0,
@@ -637,27 +840,24 @@
   },
   "audit": {
     "range": [
-      24,
+      0,
       96
     ],
-    "droppedHead": [
-      0,
-      23
-    ],
+    "droppedHead": null,
     "droppedTail": null,
     "impactSrc": 40,
     "impact": {
       "rule": "ruled",
       "changes": {
-        "f036": 9.6,
-        "f037": 9.78,
-        "f038": 10.2,
-        "f039": 10.38,
-        "f040": 10.48,
-        "f041": 10.12,
-        "f042": 10.04,
-        "f043": 9.97,
-        "f044": 9.84
+        "f036": 8.48,
+        "f037": 8.67,
+        "f038": 9.16,
+        "f039": 9.29,
+        "f040": 9.29,
+        "f041": 8.92,
+        "f042": 8.75,
+        "f043": 8.68,
+        "f044": 8.53
       },
       "why": "WAVE1-CLIPS-1 batch 2 (owner ruling, 2026-11-25): f040, the white cleansing ring, is the heal and the +1"
     },
@@ -665,7 +865,7 @@
       958,
       703
     ],
-    "scale": 0.16284,
+    "scale": 0.15084,
     "box": [
       0,
       0,
@@ -673,46 +873,46 @@
       1080
     ],
     "cellPx": {
-      "used": 312,
+      "used": 289,
       "asked": "largest",
       "steppedDown": null,
       "largest": {
         "rule": "largest",
-        "used": 312,
-        "why": "owner ruling B2: the largest cell whose pack decodes under the E1 cap (the next size up, 313, does not fit)"
+        "used": 289,
+        "why": "owner ruling B2: the largest cell whose pack decodes under the E1 cap (the next size up, 290, does not fit)"
       }
     },
-    "decodedBytes": 17479520,
+    "decodedBytes": 18863728,
     "e1CapBytes": 18874368,
     "ground": {
       "cornersMax": 0,
-      "farMax": 2,
+      "farMax": 14,
       "method": "some kept frames leave regions > 300 px from content, so the Vajra-class reading IS available (farMax, the brightest pixel there) \u2014 stated beside the bake metric",
       "zeroShareMin": 0.31896,
-      "pedestal1to4ShareMax": 0.09396
+      "pedestal1to4ShareMax": 0.0
     },
     "edges": {
-      "top": 33,
-      "bottom": 5,
-      "left": 39,
-      "right": 37,
-      "of": 73
+      "top": 71,
+      "bottom": 42,
+      "left": 47,
+      "right": 46,
+      "of": 97
     },
     "fadeIn": [
       [
-        24,
+        0,
         0.2
       ],
       [
-        25,
+        1,
         0.4
       ],
       [
-        26,
+        2,
         0.6
       ],
       [
-        27,
+        3,
         0.8
       ]
     ],
@@ -761,10 +961,34 @@
     "vignette": {
       "top": {
         "px": 173,
-        "cellPxAtScale": 28.2,
+        "cellPxAtScale": 26.1,
         "coreMarginMin": 0,
-        "coreMarginMinAt": 24,
+        "coreMarginMinAt": 0,
         "bodyInBand": [
+          "f000",
+          "f001",
+          "f002",
+          "f003",
+          "f004",
+          "f005",
+          "f006",
+          "f007",
+          "f008",
+          "f009",
+          "f010",
+          "f011",
+          "f012",
+          "f013",
+          "f014",
+          "f015",
+          "f016",
+          "f017",
+          "f018",
+          "f019",
+          "f020",
+          "f021",
+          "f022",
+          "f023",
           "f024",
           "f025",
           "f026",
@@ -825,13 +1049,13 @@
         ],
         "bodyInBandOutsideTail": [],
         "ruledIntoBand": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent",
-        "bodyInBandRuled": 57
+        "bodyInBandRuled": 81
       },
       "bottom": {
         "px": 108,
-        "cellPxAtScale": 17.6,
-        "coreMarginMin": 31,
-        "coreMarginMinAt": 46,
+        "cellPxAtScale": 16.3,
+        "coreMarginMin": 28,
+        "coreMarginMinAt": 65,
         "bodyInBand": [
           "f038",
           "f039",
@@ -846,6 +1070,9 @@
           "f049",
           "f050",
           "f051",
+          "f052",
+          "f053",
+          "f055",
           "f056",
           "f057",
           "f058",
@@ -855,18 +1082,60 @@
           "f062",
           "f063",
           "f064",
-          "f067"
+          "f065",
+          "f066",
+          "f067",
+          "f068",
+          "f069",
+          "f070",
+          "f071",
+          "f072",
+          "f073",
+          "f074",
+          "f075",
+          "f076",
+          "f077",
+          "f078",
+          "f079",
+          "f080",
+          "f081",
+          "f082",
+          "f083",
+          "f084"
         ],
         "bodyInBandOutsideTail": [],
         "ruledIntoBand": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent",
-        "bodyInBandRuled": 23
+        "bodyInBandRuled": 45
       },
       "left": {
         "px": 230,
-        "cellPxAtScale": 37.5,
+        "cellPxAtScale": 34.7,
         "coreMarginMin": 0,
         "coreMarginMinAt": 41,
         "bodyInBand": [
+          "f000",
+          "f001",
+          "f002",
+          "f003",
+          "f004",
+          "f005",
+          "f006",
+          "f007",
+          "f008",
+          "f009",
+          "f010",
+          "f011",
+          "f012",
+          "f013",
+          "f014",
+          "f015",
+          "f016",
+          "f017",
+          "f018",
+          "f019",
+          "f020",
+          "f021",
+          "f022",
           "f035",
           "f036",
           "f037",
@@ -916,18 +1185,24 @@
           "f081",
           "f082",
           "f083",
-          "f084"
+          "f084",
+          "f085",
+          "f086",
+          "f087"
         ],
         "bodyInBandOutsideTail": [],
         "ruledIntoBand": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent",
-        "bodyInBandRuled": 50
+        "bodyInBandRuled": 75
       },
       "right": {
         "px": 230,
-        "cellPxAtScale": 37.5,
+        "cellPxAtScale": 34.7,
         "coreMarginMin": 0,
         "coreMarginMinAt": 42,
         "bodyInBand": [
+          "f010",
+          "f011",
+          "f012",
           "f036",
           "f037",
           "f038",
@@ -959,20 +1234,36 @@
           "f064",
           "f065",
           "f066",
+          "f067",
+          "f068",
+          "f069",
+          "f070",
           "f071",
           "f072",
-          "f080"
+          "f073",
+          "f074",
+          "f075",
+          "f076",
+          "f077",
+          "f078",
+          "f079",
+          "f080",
+          "f081",
+          "f082",
+          "f083",
+          "f084",
+          "f085"
         ],
         "bodyInBandOutsideTail": [],
         "ruledIntoBand": "WAVE1-CLIPS-1 batch 2 ruling 3 (owner, 2026-11-25): \"as previewed\" - the plate's bright body reaches this edge on some frames; the band is ruled over it so the plate fades into its half instead of a flat cut, the Nagastra precedent",
-        "bodyInBandRuled": 34
+        "bodyInBandRuled": 53
       }
     },
     "guardKind": "blob",
     "guardTailStart": 87,
     "anchorRule": {
       "kind": "centre",
-      "place": "caster-half-centre",
+      "place": "caster-board-row",
       "dependency": "WAVE1-CLIPS-1 batch 2: the plate's CENTRE sits on the caster's own half, fitted to the half's width and never taller than it, so it never leaves the half; on a half wider than the plate it slides to centre on the caster's Units"
     }
   }
